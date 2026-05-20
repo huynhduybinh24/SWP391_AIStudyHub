@@ -3,6 +3,9 @@ import { Brain, Zap } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 
 function isNavActive(pathname: string, path: string) {
+  if (path === '/dashboard') {
+    return pathname === '/dashboard' || pathname === '/dashboard/'
+  }
   if (path === '/') {
     return pathname === '/' || pathname === ''
   }
