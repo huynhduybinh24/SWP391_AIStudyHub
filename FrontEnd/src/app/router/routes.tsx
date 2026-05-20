@@ -13,6 +13,7 @@ import { DEV_SKIP_AUTH } from '@/config/dev'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 import { LandingPage } from '@/features/landing/pages/LandingPage'
+import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +23,10 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/register',
+    element: <RegisterPage />,
   },
   {
     path: '/reset-password',
