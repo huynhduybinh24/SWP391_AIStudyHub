@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'ai-study-hub-auth',
+      name: 'ai-study-hub-auth-v2',
       merge: (persisted, current) => {
         if (!DEV_SKIP_AUTH) {
           return { ...current, ...(persisted as Partial<AuthState>) }
