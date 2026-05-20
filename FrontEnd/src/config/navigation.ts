@@ -19,7 +19,7 @@ export interface NavItem {
 }
 
 export const mainNavItems: NavItem[] = [
-  { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { label: 'My Documents', path: '/documents', icon: FileText },
   { label: 'Upload', path: '/upload', icon: Upload },
   { label: 'AI Chatbot', path: '/chat', icon: Bot },
