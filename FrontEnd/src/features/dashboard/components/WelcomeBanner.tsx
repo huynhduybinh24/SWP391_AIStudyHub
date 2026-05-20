@@ -6,9 +6,10 @@ import { useAuthStore } from '@/stores/authStore'
 interface WelcomeBannerProps {
   pendingPlans: number
   newSharedDocuments: number
+  onNewPlanClick?: () => void
 }
 
-export function WelcomeBanner({ pendingPlans, newSharedDocuments }: WelcomeBannerProps) {
+export function WelcomeBanner({ pendingPlans, newSharedDocuments, onNewPlanClick }: WelcomeBannerProps) {
   const user = useAuthStore((s) => s.user)
   const firstName = user?.name.split(' ')[0] ?? 'there'
 
@@ -23,7 +24,7 @@ export function WelcomeBanner({ pendingPlans, newSharedDocuments }: WelcomeBanne
           documents to review.
         </p>
       </div>
-      <Button className="gap-2">
+      <Button className="gap-2" onClick={onNewPlanClick}>
         <Plus className="size-3" />
         New Study Plan
       </Button>
