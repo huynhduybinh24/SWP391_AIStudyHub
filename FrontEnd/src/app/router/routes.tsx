@@ -11,6 +11,7 @@ import { AdminDashboardPage } from '@/features/admin/pages/AdminDashboardPage'
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
 import { DEV_SKIP_AUTH } from '@/config/dev'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
+import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 import { LandingPage } from '@/features/landing/pages/LandingPage'
 
 export const router = createBrowserRouter([
@@ -21,6 +22,10 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />,
   },
   {
     path: '/dashboard',
