@@ -14,6 +14,7 @@ import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 import { LandingPage } from '@/features/landing/pages/LandingPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
+import { SetNewPasswordPage } from '@/features/auth/pages/SetNewPasswordPage'
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,10 @@ export const router = createBrowserRouter([
   {
     path: '/reset-password',
     element: <ResetPasswordPage />,
+  },
+  {
+    path: '/set-new-password',
+    element: <SetNewPasswordPage />,
   },
   {
     path: '/dashboard',
