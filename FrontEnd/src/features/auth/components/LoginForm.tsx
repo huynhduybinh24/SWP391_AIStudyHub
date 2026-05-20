@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
@@ -124,9 +125,9 @@ export function LoginForm() {
 
           <div className="flex items-center justify-between pt-1">
             <Checkbox id="remember" label="Remember me" />
-            <a href="#" className="text-sm font-semibold text-primary hover:underline">
+            <Link to="/reset-password" className="text-sm font-semibold text-primary hover:underline">
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           {login.isError ? (
