@@ -42,13 +42,15 @@ export function Sidebar() {
   return (
     <aside className="flex h-full w-[256px] shrink-0 flex-col justify-between border-r border-[rgba(195,198,215,0.3)] bg-white py-6 pl-6 pr-[25px] shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
       <div>
-        <div className="mb-8 flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#e5eeff]">
-            <Brain className="size-6 text-[#2563eb]" strokeWidth={2} />
-          </div>
-          <div>
-            <p className="text-xl font-bold leading-[25px] text-[#2563eb]">AI Study Hub</p>
-            <p className="text-xs font-normal leading-3 text-[#737686]">Focused Intelligence</p>
+        <div className="mb-8 flex items-center gap-2.5">
+          <img 
+            src="/logo.png" 
+            alt="AI Study Hub" 
+            className="w-8 h-8 shrink-0 object-contain" 
+          />
+          <div className="flex flex-col justify-center">
+            <h1 className="text-[18px] font-bold leading-tight text-[#2563eb] tracking-tight">AI Study Hub</h1>
+            <p className="text-[11px] font-medium leading-tight text-[#737686] mt-0.5">Focused Intelligence</p>
           </div>
         </div>
 
