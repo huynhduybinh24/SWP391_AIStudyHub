@@ -22,3 +22,9 @@ export interface LoginResponse {
   user: AuthUser
   tokens: AuthTokens
 }
+
+export interface RegisterCredentials {
+  fullName: string
+  email: string
+  password: string
+}
