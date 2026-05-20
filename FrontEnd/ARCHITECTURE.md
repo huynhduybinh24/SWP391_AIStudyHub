@@ -1,112 +1,137 @@
-# AI Study Hub — Frontend Architecture
+# React + TypeScript Scalable Architecture
 
-Enterprise-grade React + TypeScript (Vite) structure aligned with the Figma dashboard design.
+This document outlines the strict, scalable enterprise-level architecture used in the **AI Study Hub** frontend. All future developments must adhere to these structural and coding guidelines.
 
-## Recommended packages (installed)
+## 📦 Core Technologies
 
-| Package | Purpose |
-|---------|---------|
-| `react-router-dom` | Routing, protected & role-based routes |
-| `@tanstack/react-query` | Server/API state, caching, loading & errors |
-| `zustand` | Global client state (auth, UI) |
-| `react-hook-form` + `@hookform/resolvers` + `zod` | Forms & validation |
-| `axios` | HTTP client with interceptors |
-| `tailwindcss` + `@tailwindcss/vite` | Styling (Figma tokens) |
-| `lucide-react` | Icons |
-| `recharts` | Weekly activity chart |
-| `clsx` + `tailwind-merge` | Conditional class names |
+- **Framework**: React 19 + TypeScript + Vite
+- **Global State**: Zustand (for UI state, auth state, and theme)
+- **Server State**: React Query (TanStack Query) for data fetching, caching, and mutations
+- **Forms & Validation**: React Hook Form + Zod
+- **Styling**: TailwindCSS (v4)
+- **HTTP Client**: Axios (with centralized interceptors)
+- **Routing**: React Router DOM (v7)
 
-## Folder structure
+## 📂 Folder Structure
 
-```
+The project strictly follows a **Feature-Based Architecture** (screaming architecture) to ensure scalability, modularity, and maintainability.
+
+```text
 src/
-├── app/                    # Application shell
-│   ├── providers/          # React Query, Router providers
-│   └── router/             # routes, ProtectedRoute, RoleRoute
-├── components/
-│   ├── ui/                 # Reusable primitives (Button, Card, Input…)
-│   ├── layout/             # Sidebar, Header, Footer, DashboardLayout
-│   └── feedback/           # LoadingOverlay, ErrorState
-├── config/                 # env, navigation constants
-├── features/               # Feature modules (vertical slices)
-│   ├── auth/               # Login, session, auth service
-│   ├── dashboard/          # Figma dashboard screen
-│   ├── documents/          # Document management
-│   ├── quizzes/            # Quizzes
-│   ├── ai-chatbot/         # AI chat
-│   └── admin/              # Admin dashboard (role-gated)
-├── hooks/                  # Shared hooks (useAsyncQuery)
-├── lib/                    # axios, queryClient, utils
-├── stores/                 # Zustand stores
-└── types/                  # Shared TypeScript types
+├── app/                  # Application-wide configurations (Router, App context providers)
+├── assets/               # Static assets (images, global SVGs, fonts)
+├── components/           # Shared, reusable global components
+│   ├── ui/               # Dumb components (Button, Input, Modal, Card)
+│   └── layout/           # Layout wrappers (DashboardLayout, Sidebar, Navbar)
+├── config/               # Environment variables, global constants, dev toggles
+├── features/             # Feature modules (Domain-driven)
+│   ├── admin/            # Admin dashboard & user management
+│   ├── ai-chatbot/       # AI conversational interface & contextual queries
+│   ├── auth/             # Authentication (Login, Register, OAuth, Tokens)
+│   ├── dashboard/        # Main user dashboard & analytics
+│   ├── documents/        # File uploads, cloud storage, vault management
+│   └── quizzes/          # AI generated quizzes and results
+├── hooks/                # Global reusable React hooks (e.g., useDebounce, useMediaQuery)
+├── lib/                  # Third-party library configurations (Axios instances, utility wrappers)
+├── stores/               # Global Zustand stores (authStore, uiStore)
+├── types/                # Global TypeScript definitions & API types
+├── utils/                # Pure helper functions (formatDate, string manipulators)
+├── main.tsx              # App Entry Point
+└── index.css             # Global Tailwind imports & CSS variables
 ```
 
-### Per-feature module layout
+### Anatomy of a Feature (`src/features/*`)
+Each feature folder acts as a self-contained module. Cross-feature imports should be minimized.
 
-Each feature under `features/<name>/` follows:
-
-```
-features/<name>/
-├── api/           # Optional: thin API wrappers
-├── components/    # UI only — no business rules
-├── hooks/         # React Query / custom hooks (business orchestration)
-├── pages/         # Route entry components
-├── schemas/       # Zod schemas (forms)
-├── services/      # Business logic & API calls
-└── types/         # Feature-specific types
+```text
+src/features/auth/
+├── components/           # Components specific to auth (LoginForm, SocialButtons)
+├── hooks/                # Hooks containing business logic (useLogin, useRegister)
+├── pages/                # Page-level components used directly by React Router
+├── schemas/              # Zod schemas for form validation (loginSchema)
+└── services/             # API calls (authService.ts) using the Axios instance
 ```
 
-| Folder | Responsibility |
-|--------|----------------|
-| `app/` | Bootstraps providers and routing; no feature logic |
-| `components/ui/` | Design-system primitives; stateless, reusable |
-| `components/layout/` | App chrome matching Figma (sidebar, header) |
-| `features/*/services/` | API + domain logic (testable without React) |
-| `features/*/hooks/` | Connect services to UI via React Query |
-| `features/*/pages/` | Compose components for a route |
-| `lib/axios.ts` | Auth header injection, 401 logout |
-| `stores/` | Cross-cutting client state (auth session, UI) |
+## 🛠️ Best Practices & SOLID Principles
 
-## Import alias
+### 1. Separation of Concerns (Business Logic vs. UI)
+- **Never** write `fetch` or complex API logic directly inside a `.tsx` UI component.
+- Extract API calls into `services/` (e.g., `authService.login`).
+- Extract React Query mutations/queries into `hooks/` (e.g., `useLogin`).
+- The UI component (`LoginForm.tsx`) should only handle presentation and wiring up the hook.
 
-`@/` → `src/` (configured in `vite.config.ts` and `tsconfig.json`).
+### 2. Form Handling
+- Always use **React Hook Form** for performance (prevents unnecessary re-renders).
+- Always use **Zod** for schema-based validation. Define schemas in the `schemas/` folder.
 
-## Auth & authorization
+### 3. State Management (Zustand vs React Query)
+- **React Query**: Use for any data that comes from the backend (documents, user profile, chat history). It handles caching, loading states, and error retries out-of-the-box.
+- **Zustand**: Use *only* for client-side global state that the backend doesn't care about (e.g., isSidebarOpen, activeTheme, JWT token storage).
 
-- **Protected routes**: `ProtectedRoute` redirects unauthenticated users to `/login`.
-- **Role routes**: `RoleRoute` restricts paths (e.g. `/admin` → `admin` only).
-- **Demo accounts**:
-  - `alex@example.com` / `password` → student
-  - `admin@example.com` / `password` → admin
+### 4. API & Error Handling
+- Use the centralized `apiClient` (Axios instance) located in `src/lib/axios.ts` or similar.
+- Rely on Axios interceptors to attach `Bearer` tokens automatically and handle `401 Unauthorized` token refreshes or logouts globally.
+- Error handling should be graceful. Hooks should return standard error structures that components can render as Toast notifications or inline alerts.
 
-## Figma implementation
+### 5. Security & Authorization
+- **Protected Routes**: Wrap routes that require login with `<ProtectedRoute>`.
+- **Role-Based Access**: Wrap routes that require specific roles (e.g., Admin) with `<RoleRoute allowedRoles={['admin']}>`.
 
-Dashboard (`node-id=5-7285`) is implemented in `features/dashboard/`:
+### 6. Clean Imports
+- Always use absolute imports with the `@/` alias (e.g., `import { Button } from '@/components/ui/Button'`) rather than relative paths (`../../components/ui/Button`).
 
-- Sidebar navigation, header search & user menu
-- Welcome banner, quick actions, storage ring
-- Recent documents, Quick Ask AI, weekly chart, alerts
-- FAB → AI Chatbot
+## 💻 Example Code Structure
 
-Design tokens: primary `#2563eb`, surface `#f8f9ff`, foreground `#0b1c30`.
+**1. Service (`authService.ts`)**
+```typescript
+import { apiClient } from '@/lib/apiClient';
 
-## Best practices
-
-1. **SOLID**: Services are single-purpose; UI components depend on hooks, not axios directly.
-2. **No duplication**: Shared UI in `components/ui`, shared query wrapper in `hooks/useAsyncQuery`.
-3. **Separation**: Pages compose; hooks fetch; services call API.
-4. **Errors**: `ApiError` + React Query `isError` + `ErrorState` component.
-5. **Loading**: Query `isLoading` + `LoadingOverlay`.
-6. **Forms**: `react-hook-form` + Zod resolver (see `LoginForm`).
-
-## Scripts
-
-```bash
-npm run dev      # http://localhost:5173
-npm run build
-npm run preview
+export const authService = {
+  login: async (credentials: LoginCredentials) => {
+    const { data } = await apiClient.post('/auth/login', credentials);
+    return data;
+  }
+}
 ```
 
-## Environment
+**2. Custom Hook (`useLogin.ts`)**
+```typescript
+import { useMutation } from '@tanstack/react-query';
+import { authService } from '../services/authService';
+import { useAuthStore } from '@/stores/authStore';
 
-Copy `.env.example` → `.env` and set `VITE_API_BASE_URL`.
+export function useLogin() {
+  const setSession = useAuthStore(s => s.setSession);
+  
+  return useMutation({
+    mutationFn: authService.login,
+    onSuccess: (data) => {
+      setSession(data.user, data.tokens);
+    }
+  });
+}
+```
+
+**3. UI Component (`LoginForm.tsx`)**
+```tsx
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useLogin } from '../hooks/useLogin';
+import { loginSchema } from '../schemas/loginSchema';
+
+export function LoginForm() {
+  const loginMutation = useLogin();
+  const form = useForm({ resolver: zodResolver(loginSchema) });
+
+  const onSubmit = (values) => loginMutation.mutate(values);
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)}>
+      {/* Input fields */}
+      <Button disabled={loginMutation.isPending}>
+        {loginMutation.isPending ? 'Logging in...' : 'Login'}
+      </Button>
+    </form>
+  );
+}
+```
