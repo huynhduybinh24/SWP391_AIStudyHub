@@ -21,6 +21,15 @@ const MOCK_USERS: Record<string, LoginResponse> = {
     },
     tokens: { accessToken: 'mock-admin-token' },
   },
+  'student@university.edu': {
+    user: {
+      id: '3',
+      name: 'Test Student',
+      email: 'student@university.edu',
+      role: 'student',
+    },
+    tokens: { accessToken: 'mock-test-token' },
+  },
 }
 
 export const authService = {
@@ -34,6 +43,19 @@ export const authService = {
         return mock
       }
       throw new Error('Invalid email or password')
+    }
+  },
+
+  async socialLogin(provider: 'google' | 'facebook' | 'github'): Promise<LoginResponse> {
+    // Mock successful social login
+    return {
+      user: {
+        id: `mock-${provider}-user`,
+        name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+        email: `${provider}@example.com`,
+        role: 'student',
+      },
+      tokens: { accessToken: `mock-${provider}-token` },
     }
   },
 
