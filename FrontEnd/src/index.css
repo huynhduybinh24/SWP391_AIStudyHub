@@ -13,6 +13,20 @@
   --color-danger: #ba1a1a;
   --color-nav-active: #2563eb;
   --color-nav-inactive: #434655;
+  
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-sparkle-1: sparkle 2.5s ease-in-out infinite;
+  --animate-sparkle-2: sparkle 3.2s ease-in-out infinite 0.7s;
+  --animate-sparkle-3: sparkle 1.9s ease-in-out infinite 0.3s;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes sparkle {
+    0%, 100% { opacity: 0.3; transform: scale(0.7) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1.2) rotate(20deg); }
+  }
 }
 
 @layer base {
@@ -26,4 +40,5 @@
     @apply font-sans antialiased text-body bg-surface;
   }
 }
+
 
