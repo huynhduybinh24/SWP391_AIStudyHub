@@ -26,7 +26,10 @@ export function LandingPage() {
       {/* Header */}
       <header className="w-full bg-white border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div 
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={scrollToHome}
+          >
             <img src="/logo.png" alt="AI Study Hub Logo" className="h-8 w-auto object-contain" />
             <h1 className="text-2xl font-bold text-primary tracking-tight">AI Study Hub</h1>
           </div>
