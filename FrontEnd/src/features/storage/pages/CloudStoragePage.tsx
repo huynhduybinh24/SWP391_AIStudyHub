@@ -9,6 +9,7 @@ import {
   Eraser,
   Trash2,
   FileIcon,
+  BarChart2,
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Link } from 'react-router-dom'
