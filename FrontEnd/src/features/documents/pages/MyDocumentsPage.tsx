@@ -102,13 +102,6 @@ export default function MyDocumentsPage() {
     <div className="space-y-8">
       {/* Figma Header Block for general Documents Page */}
       <div className="space-y-4 pt-2">
-        <button 
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-primary transition-colors focus:outline-none w-fit"
-        >
-          &larr; Back to Dashboard
-        </button>
-
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
           <div className="flex items-center gap-4">
             {/* Folder layout icon */}
