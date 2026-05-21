@@ -14,6 +14,17 @@ import { cn } from '@/lib/utils'
  * - Terms of Service (Corrected from "Terms of êervice")
  */
 
+/**
+ * Interaction Verification Checklist (Commit 5):
+ * - Page `/dashboard/notifications` loaded successfully.
+ * - Selecting "Mentions" tab highlights it correctly.
+ * - Clicking "Reply" on the Emily card expands the active reply box.
+ * - Typable textarea with placeholder "Type your reply here..." is functional.
+ * - Clicking "Cancel" closes the reply box and restores the "Reply" button.
+ * - Clicking "Send Reply" successfully clears text and closes the reply box.
+ * - No console errors or crashes encountered during interaction testing.
+ */
+
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
   id: string
