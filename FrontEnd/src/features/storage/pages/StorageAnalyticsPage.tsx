@@ -136,9 +136,9 @@ export function StorageAnalyticsPage() {
             </button>
           </CardHeader>
           <CardContent className="p-6 pt-4 flex-1 flex flex-col min-h-0">
-            <div className="w-full h-full min-h-[240px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <div className="w-full h-full min-h-[240px] [&_.recharts-wrapper]:outline-none [&_.recharts-surface]:outline-none">
+              <ResponsiveContainer width="99%" height="100%" minHeight={240}>
+                <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} style={{ outline: 'none' }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis 
                     dataKey="name" 
@@ -170,7 +170,7 @@ export function StorageAnalyticsPage() {
                       <Cell 
                         key={`cell-${index}`} 
                         fill={index === barChartData.length - 1 ? '#2563eb' : '#93c5fd'} 
-                        className="transition-all duration-300 hover:opacity-80 cursor-pointer"
+                        className="cursor-pointer outline-none focus:outline-none hover:opacity-80"
                       />
                     ))}
                   </Bar>
@@ -186,9 +186,9 @@ export function StorageAnalyticsPage() {
             <CardTitle className="text-base font-bold">File Type Distribution</CardTitle>
           </CardHeader>
           <CardContent className="p-6 pt-4 flex-1 flex flex-col min-h-0">
-            <div className="w-[180px] h-[180px] min-h-[180px] relative mx-auto mb-8">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+            <div className="w-[180px] h-[180px] min-h-[180px] relative mx-auto mb-8 [&_.recharts-wrapper]:outline-none [&_.recharts-surface]:outline-none">
+              <ResponsiveContainer width="99%" height="100%" minHeight={180}>
+                <PieChart style={{ outline: 'none' }}>
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: number) => [`${value} GB`, 'Size']}
@@ -207,11 +207,10 @@ export function StorageAnalyticsPage() {
                       <Cell 
                         key={`cell-${index}`} 
                         fill={entry.color} 
-                        className="transition-all duration-300 cursor-pointer"
+                        className="cursor-pointer outline-none focus:outline-none transition-opacity duration-300"
                         style={{
                           opacity: activeIndex === undefined || activeIndex === index ? 1 : 0.5,
-                          transform: activeIndex === index ? 'scale(1.05)' : 'scale(1)',
-                          transformOrigin: 'center'
+                          outline: 'none'
                         }}
                       />
                     ))}
