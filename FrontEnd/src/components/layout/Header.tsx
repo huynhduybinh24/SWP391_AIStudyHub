@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bell, CircleHelp, LogOut, Settings, User } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
 import { Input } from '@/components/ui/Input'
@@ -11,6 +12,10 @@ import { cn } from '@/lib/utils'
 
 export function Header() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const urlKeyword = searchParams.get('keyword') || ''
+  const [searchVal, setSearchVal] = useState(urlKeyword)
+  
   const { pathname } = useLocation()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -18,6 +23,10 @@ export function Header() {
   const menuRef = useRef<HTMLDivElement>(null)
 
   const isNotificationsPage = pathname === '/dashboard/notifications' || pathname === '/dashboard/notifications/'
+
+  useEffect(() => {
+    setSearchVal(urlKeyword)
+  }, [urlKeyword])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -35,9 +44,16 @@ export function Header() {
     navigate('/')
   }
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchVal.trim()) {
+      navigate(`/dashboard/documents/search?keyword=${encodeURIComponent(searchVal.trim())}`)
+    }
+  }
+
   return (
     <header className="relative z-10 flex h-[72px] shrink-0 items-center justify-between border-b border-border bg-white px-8 shadow-sm">
-      <div className="flex flex-1 items-center">
+      <form onSubmit={handleSearchSubmit} className="flex flex-1 items-center">
         <Input
           placeholder={
             pathname === '/dashboard/shared-files/research-materials' ||
@@ -47,8 +63,10 @@ export function Header() {
           }
           className="max-w-[400px] bg-[#f0f4ff]/70 border border-[#e2e8f0]/40 rounded-xl"
           aria-label="Search"
+          value={searchVal}
+          onChange={(e) => setSearchVal(e.target.value)}
         />
-      </div>
+      </form>
 
       <div className="relative flex items-center gap-4" ref={menuRef}>
         <Button variant="ghost" size="icon" aria-label="Help">

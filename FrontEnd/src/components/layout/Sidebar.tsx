@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Brain, Zap } from 'lucide-react'
+import { Zap } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 
 function isNavActive(pathname: string, path: string) {
@@ -26,19 +26,29 @@ function SidebarLink({
 }) {
   const { pathname } = useLocation()
   const active = isNavActive(pathname, to)
-  const color = active ? '#ffffff' : '#434655'
 
   return (
     <Link
       to={to}
       aria-current={active ? 'page' : undefined}
+      className={`
+        flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200 no-underline select-none
+        ${active 
+          ? 'bg-[#2557E8] text-white rounded-xl shadow-sm' 
+          : 'text-[#4b5563] hover:bg-slate-50 hover:text-slate-900 rounded-xl'
+        }
+      `}
       className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-normal leading-6 no-underline transition-colors hover:bg-slate-100"
       style={{
         backgroundColor: active ? '#3155F6' : 'transparent',
         color,
       }}
     >
-      <Icon className="size-[18px] shrink-0" style={{ color }} strokeWidth={active ? 2 : 1.75} />
+      <Icon 
+        className="size-[18px] shrink-0" 
+        strokeWidth={active ? 2 : 1.75} 
+        style={{ color: active ? '#ffffff' : '#6B7280' }}
+      />
       <span>{label}</span>
     </Link>
   )
@@ -46,41 +56,53 @@ function SidebarLink({
 
 export function Sidebar() {
   return (
-    <aside className="flex h-full w-[256px] shrink-0 flex-col justify-between border-r border-[rgba(195,198,215,0.3)] bg-white py-6 pl-6 pr-[25px] shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
-      <div>
-        <div className="mb-8 flex items-center gap-2.5">
+    <aside className="flex h-screen w-[256px] shrink-0 flex-col justify-between border-r border-[#EAECF0] bg-white py-6 px-4 sticky top-0 left-0 z-30 select-none">
+      <div className="flex flex-col gap-6 flex-1 min-h-0">
+        {/* Logo and Brand */}
+        <div className="px-2 flex items-center gap-3 shrink-0">
           <img 
             src="/logo.png" 
             alt="AI Study Hub" 
-            className="w-8 h-8 shrink-0 object-contain" 
+            className="w-9 h-9 shrink-0 object-contain" 
           />
           <div className="flex flex-col justify-center">
+            <h1 className="text-[19px] font-bold leading-tight text-[#2557E8] tracking-tight">AI Study Hub</h1>
+            <p className="text-[11px] font-medium leading-none text-[#737686] mt-0.5">Focused Intelligence</p>
             <h1 className="text-[18px] font-bold leading-tight text-[#3155F6] tracking-tight">AI Study Hub</h1>
             <p className="text-[11px] font-medium leading-tight text-[#737686] mt-0.5">Focused Intelligence</p>
           </div>
         </div>
 
-        <nav className="flex flex-col gap-1 overflow-y-auto pr-2">
+        {/* Navigation list */}
+        <nav className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1">
           {mainNavItems.map((item) => (
             <SidebarLink key={item.path} to={item.path} icon={item.icon} label={item.label} />
           ))}
         </nav>
       </div>
 
-      <div className="border-t border-[rgba(195,198,215,0.3)] pt-[25px]">
+      <div className="flex flex-col gap-1 px-1 shrink-0 mt-auto">
+        {/* Divider */}
+        <div className="border-t border-[#EAECF0] my-3 w-full" />
+        
+        {/* Bottom Nav items */}
         <nav className="flex flex-col gap-1">
           {bottomNavItems.map((item) => (
             <SidebarLink key={item.path} to={item.path} icon={item.icon} label={item.label} />
           ))}
         </nav>
+
+        {/* Upgrade to Pro button */}
         <button
           type="button"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2557E8] py-3 text-sm font-semibold text-white hover:bg-[#1a45cb] transition-all duration-200 cursor-pointer shadow-sm shadow-[#2557E8]/10 shrink-0"
           className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[#3155F6] py-2.5 text-base font-normal text-white hover:bg-[#2563eb] transition-colors"
         >
-          <Zap className="size-3.5 text-white" strokeWidth={2} />
+          <Zap className="size-4 text-white" strokeWidth={2} />
           Upgrade to Pro
         </button>
       </div>
     </aside>
   )
 }
+
