@@ -10,11 +10,16 @@ import {
   Trash2,
   FileIcon,
   BarChart2,
+  AlertTriangle,
+  Archive,
+  Trash,
+  Zap
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
 import { useState, useRef, useMemo } from 'react'
 
 const INITIAL_UPLOADS = [
@@ -50,7 +55,6 @@ const INITIAL_UPLOADS = [
   },
 ]
 
-const BASE_USED_STORAGE_GB = 74.992; // Baseline used storage (75GB - 8.3MB)
 const TOTAL_STORAGE_GB = 100;
 const SHARED_FILES_GB = 1.2;
 
@@ -73,13 +77,17 @@ const formatSize = (bytes: number) => {
 export function CloudStoragePage() {
   const [uploads, setUploads] = useState(INITIAL_UPLOADS)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [baseUsedStorage, setBaseUsedStorage] = useState(74.992)
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false)
+  const [trashSize, setTrashSize] = useState(2.5)
+  const [tempSize, setTempSize] = useState(1.2)
 
   const recentUploadsSizeGB = useMemo(() => {
     const totalBytes = uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0)
     return totalBytes / (1024 * 1024 * 1024)
   }, [uploads])
 
-  const totalUsedGB = (BASE_USED_STORAGE_GB + recentUploadsSizeGB).toFixed(1)
+  const totalUsedGB = (baseUsedStorage + recentUploadsSizeGB).toFixed(1)
   const remainingGB = (TOTAL_STORAGE_GB - parseFloat(totalUsedGB)).toFixed(1)
   const usedPercentage = Math.round((parseFloat(totalUsedGB) / TOTAL_STORAGE_GB) * 100)
 
@@ -301,7 +309,7 @@ export function CloudStoragePage() {
               You're approaching your limit.
             </p>
             
-            <Button variant="secondary" className="w-full text-[#2563eb] bg-[#f0f4ff] border-none hover:bg-[#e0e8ff]">
+            <Button onClick={() => setIsManageModalOpen(true)} variant="secondary" className="w-full text-[#2563eb] bg-[#f0f4ff] border-none hover:bg-[#e0e8ff]">
               Manage Storage
             </Button>
           </Card>
@@ -333,6 +341,92 @@ export function CloudStoragePage() {
           </Card>
         </div>
       </div>
+
+      <Modal
+        isOpen={isManageModalOpen}
+        onClose={() => setIsManageModalOpen(false)}
+        title="Manage Storage"
+        description="Review your storage usage and clean up space."
+      >
+        <div className="flex flex-col gap-4 mt-2">
+          {trashSize === 0 && tempSize === 0 ? (
+            <div className="bg-emerald-50 text-emerald-600 p-4 rounded-lg flex items-center justify-center font-medium border border-emerald-100 shadow-sm">
+              Your storage is optimized!
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-2 text-amber-700 font-bold mb-1">
+                <AlertTriangle className="size-4" />
+                Recommendations
+              </div>
+              <p className="text-sm text-amber-600/80 mb-4">
+                You can free up to {(trashSize + tempSize).toFixed(1)} GB of space by clearing these items.
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                {trashSize > 0 && (
+                  <div className="flex items-center justify-between bg-white p-3 rounded-md border border-amber-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-amber-100 p-2 rounded-lg">
+                        <Trash className="size-4 text-amber-700" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-[14px] text-foreground">Empty Trash</h4>
+                        <p className="text-xs text-muted">Free up {trashSize.toFixed(1)} GB</p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        setBaseUsedStorage(prev => prev - trashSize);
+                        setTrashSize(0);
+                      }}
+                      variant="secondary" 
+                      className="text-danger hover:bg-danger/10 h-8 text-xs font-semibold px-3"
+                    >
+                      Empty
+                    </Button>
+                  </div>
+                )}
+
+                {tempSize > 0 && (
+                  <div className="flex items-center justify-between bg-white p-3 rounded-md border border-amber-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-amber-100 p-2 rounded-lg">
+                        <Archive className="size-4 text-amber-700" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-[14px] text-foreground">Clear Temp Files</h4>
+                        <p className="text-xs text-muted">Free up {tempSize.toFixed(1)} GB</p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        setBaseUsedStorage(prev => prev - tempSize);
+                        setTempSize(0);
+                      }}
+                      variant="secondary" 
+                      className="text-primary hover:bg-primary/10 h-8 text-xs font-semibold px-3"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-[#f8fafc] rounded-lg p-4 border border-slate-100 flex items-center justify-between mt-2 shadow-sm">
+            <div>
+              <h4 className="font-bold text-[14px] text-foreground">Need more space?</h4>
+              <p className="text-[12px] text-muted mt-0.5">Upgrade to Pro for 1TB of storage.</p>
+            </div>
+            <Button onClick={() => setIsManageModalOpen(false)} className="bg-[#3155F6] hover:bg-[#2563eb] text-white gap-1.5 h-9 text-sm px-4">
+              <Zap className="size-3.5" fill="currentColor" />
+              Upgrade
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
