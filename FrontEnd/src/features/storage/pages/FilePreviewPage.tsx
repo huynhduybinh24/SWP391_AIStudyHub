@@ -5,6 +5,7 @@ import {
   ZoomOut,
   ZoomIn,
   Maximize,
+  Minimize,
   Share2,
   Download
 } from 'lucide-react'
@@ -53,9 +54,9 @@ export function FilePreviewPage() {
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Left PDF Viewer */}
-        <div className="flex-1 flex flex-col w-full">
+        <div className={isFullscreen ? "fixed inset-0 z-50 bg-[#f8fafc] flex flex-col w-full h-full" : "flex-1 flex flex-col w-full"}>
           {/* Viewer Toolbar */}
-          <div className="h-12 bg-white border border-border rounded-t-xl flex items-center justify-between px-4">
+          <div className={`h-12 bg-white border-border flex items-center justify-between px-4 ${isFullscreen ? 'border-b' : 'border rounded-t-xl'}`}>
             <div className="flex items-center gap-2">
               <FileText className="size-4 text-[#ef4444]" />
               <span className="text-sm font-semibold text-foreground truncate max-w-[150px] sm:max-w-none">Neuroscience_Ch4_Synap...</span>
@@ -68,15 +69,17 @@ export function FilePreviewPage() {
               </div>
               <div className="hidden sm:block w-px h-4 bg-border"></div>
               <span className="select-none">Page 1 / 42</span>
-              <button onClick={() => setIsFullscreen(!isFullscreen)} className="hover:text-foreground transition-colors p-1 hidden sm:block" title="Toggle Fullscreen"><Maximize className="size-4" /></button>
+              <button onClick={() => setIsFullscreen(!isFullscreen)} className="hover:text-foreground transition-colors p-1 hidden sm:block" title="Toggle Fullscreen">
+                {isFullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
+              </button>
             </div>
           </div>
           
           {/* Document Content */}
-          <div className="bg-[#f8fafc] border border-t-0 border-border rounded-b-xl p-4 sm:p-8 flex justify-center min-h-[600px] overflow-auto">
+          <div className={`bg-[#f8fafc] border-border p-4 sm:p-8 flex justify-center overflow-auto ${isFullscreen ? 'flex-1' : 'border border-t-0 rounded-b-xl min-h-[600px]'}`}>
             <div 
-              className="bg-white w-full max-w-[600px] shadow-sm border border-border p-6 sm:p-10 flex flex-col h-fit transition-all duration-200 origin-top"
-              style={{ transform: `scale(${zoom / 100})` }}
+              className="bg-white w-full max-w-[600px] shadow-sm border border-border p-6 sm:p-10 flex flex-col h-fit transition-all duration-200"
+              style={{ zoom: `${zoom}%` } as React.CSSProperties}
             >
               <h2 className="text-2xl sm:text-[28px] font-bold leading-tight text-[#1e293b] mb-1">Advanced Neuroscience: Neural Connectivity & Synaptic Plasticity</h2>
               <p className="text-[#3b82f6] text-[11px] font-bold tracking-widest uppercase mb-6">NEURO-402 SYLLABUS 2024</p>
