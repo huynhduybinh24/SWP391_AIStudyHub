@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bell, CircleHelp, LogOut, Settings, User } from 'lucide-react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
