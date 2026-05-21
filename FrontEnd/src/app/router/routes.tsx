@@ -22,6 +22,7 @@ import { DEV_SKIP_AUTH } from '@/config/dev'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 import { LandingPage } from '@/features/landing/pages/LandingPage'
+import { HelpCenterPage } from '@/features/landing/pages/HelpCenterPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { SetNewPasswordPage } from '@/features/auth/pages/SetNewPasswordPage'
 
@@ -29,6 +30,10 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <LandingPage />,
+  },
+  {
+    path: '/help',
+    element: <HelpCenterPage />,
   },
   {
     path: '/login',
