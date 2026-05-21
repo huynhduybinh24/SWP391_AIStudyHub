@@ -7,10 +7,11 @@ import {
   Sparkles,
   MoreVertical
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { Link, useNavigate } from 'react-router-dom'
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { useState } from 'react'
 
 const barChartData = [
   { name: 'Jan', value: 12 },
@@ -28,6 +29,17 @@ const pieChartData = [
 ]
 
 export function StorageAnalyticsPage() {
+  const navigate = useNavigate()
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(pieChartData.length - 1)
+
+  const onPieEnter = (_: any, index: number) => {
+    setActiveIndex(index)
+  }
+
+  const onPieLeave = () => {
+    setActiveIndex(undefined)
+  }
+
   return (
     <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
       {/* Header Area */}
@@ -49,7 +61,7 @@ export function StorageAnalyticsPage() {
 
       {/* Top Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border">
+        <Card className="border-border hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
               <span className="text-[13px] font-semibold text-muted-foreground">Total Used</span>
@@ -60,14 +72,14 @@ export function StorageAnalyticsPage() {
             <div>
               <div className="text-[28px] font-bold text-foreground leading-none">45.2 GB</div>
               <div className="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full" style={{ width: '45.2%' }}></div>
+                <div className="h-full bg-blue-600 rounded-full transition-all duration-1000" style={{ width: '45.2%' }}></div>
               </div>
               <p className="text-[11px] text-muted mt-2 font-medium">of 100 GB Total</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border">
+        <Card className="border-border hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
               <span className="text-[13px] font-semibold text-muted-foreground">Free Space</span>
@@ -82,7 +94,7 @@ export function StorageAnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border">
+        <Card className="border-border hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
               <span className="text-[13px] font-semibold text-muted-foreground">Total Files</span>
@@ -97,7 +109,7 @@ export function StorageAnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border">
+        <Card className="border-border hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
               <span className="text-[13px] font-semibold text-muted-foreground">Shared Items</span>
@@ -143,6 +155,11 @@ export function StorageAnalyticsPage() {
                     domain={[0, 50]}
                     ticks={[0, 10, 20, 30, 40, 50]}
                   />
+                  <Tooltip 
+                    cursor={{ fill: '#f8fafc' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value: number) => [`${value} GB`, 'Storage Used']}
+                  />
                   <Bar 
                     dataKey="value" 
                     fill="#2563eb" 
@@ -153,6 +170,7 @@ export function StorageAnalyticsPage() {
                       <Cell 
                         key={`cell-${index}`} 
                         fill={index === barChartData.length - 1 ? '#2563eb' : '#93c5fd'} 
+                        className="transition-all duration-300 hover:opacity-80 cursor-pointer"
                       />
                     ))}
                   </Bar>
@@ -171,6 +189,10 @@ export function StorageAnalyticsPage() {
             <div className="w-[180px] h-[180px] relative mx-auto mb-8">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value: number) => [`${value} GB`, 'Size']}
+                  />
                   <Pie
                     data={pieChartData}
                     innerRadius={70}
@@ -178,41 +200,54 @@ export function StorageAnalyticsPage() {
                     paddingAngle={2}
                     dataKey="value"
                     stroke="none"
+                    onMouseEnter={onPieEnter}
+                    onMouseLeave={onPieLeave}
                   >
                     {pieChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color} 
+                        className="transition-all duration-300 cursor-pointer"
+                        style={{
+                          opacity: activeIndex === undefined || activeIndex === index ? 1 : 0.5,
+                          transform: activeIndex === index ? 'scale(1.05)' : 'scale(1)',
+                          transformOrigin: 'center'
+                        }}
+                      />
                     ))}
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex items-center justify-center flex-col">
-                <span className="text-2xl font-bold text-foreground">45.2</span>
-                <span className="text-[10px] text-muted font-medium mt-0.5">GB Total</span>
+              <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                <span className="text-2xl font-bold text-foreground">
+                  {activeIndex !== undefined ? pieChartData[activeIndex].value : '45.2'}
+                </span>
+                <span className="text-[10px] text-muted font-medium mt-0.5">
+                  {activeIndex !== undefined ? 'GB Used' : 'GB Total'}
+                </span>
               </div>
             </div>
 
             <div className="flex flex-col gap-4 mt-auto">
-              <div className="flex items-center justify-between text-[13px]">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#2563eb]"></div>
-                  <span className="text-foreground font-medium">Documents <span className="text-muted font-normal">(PDF, Docx)</span></span>
+              {pieChartData.map((item, index) => (
+                <div 
+                  key={item.name}
+                  className={`flex items-center justify-between text-[13px] transition-opacity duration-300 ${activeIndex !== undefined && activeIndex !== index ? 'opacity-50' : 'opacity-100'}`}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onMouseLeave={() => setActiveIndex(undefined)}
+                >
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
+                    <span className="text-foreground font-medium">
+                      {item.name} 
+                      {item.name === 'Documents' && <span className="text-muted font-normal"> (PDF, Docx)</span>}
+                      {item.name === 'Media' && <span className="text-muted font-normal"> (Video, Audio)</span>}
+                      {item.name === 'Other' && <span className="text-muted font-normal"> (Zips, Code)</span>}
+                    </span>
+                  </div>
+                  <span className="text-muted font-medium">{item.value} GB</span>
                 </div>
-                <span className="text-muted font-medium">22.1 GB</span>
-              </div>
-              <div className="flex items-center justify-between text-[13px]">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#0d9488]"></div>
-                  <span className="text-foreground font-medium">Media <span className="text-muted font-normal">(Video, Audio)</span></span>
-                </div>
-                <span className="text-muted font-medium">15.5 GB</span>
-              </div>
-              <div className="flex items-center justify-between text-[13px]">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#8b5cf6]"></div>
-                  <span className="text-foreground font-medium">Other <span className="text-muted font-normal">(Zips, Code)</span></span>
-                </div>
-                <span className="text-muted font-medium">7.6 GB</span>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -233,7 +268,11 @@ export function StorageAnalyticsPage() {
             </div>
           </div>
           <div className="p-6 pt-0 sm:pt-6 shrink-0 w-full sm:w-auto">
-            <Button variant="primary" className="w-full sm:w-auto bg-[#2563eb] hover:bg-[#1d4ed8] text-white">
+            <Button 
+              variant="primary" 
+              className="w-full sm:w-auto bg-[#2563eb] hover:bg-[#1d4ed8] text-white transition-colors"
+              onClick={() => navigate('/dashboard/storage/explorer')}
+            >
               Review Files
             </Button>
           </div>
