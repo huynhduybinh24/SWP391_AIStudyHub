@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { Outlet } from 'react-router-dom'
 import { Outlet, useNavigate } from 'react-router-dom'
 import {
   X,
@@ -734,6 +733,14 @@ export function DocumentsPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isToastVisible, setIsToastVisible] = useState(false)
 
+  // AI Workspace Analytics Insights Modal States & Variables
+  const [isInsightsModalOpen, setIsInsightsModalOpen] = useState(false)
+  
+  // Dynamic Storage calculations for AI Workspace Analytics Insights Modal
+  const totalStorageMb = documents.reduce((acc, doc) => acc + (doc.sizeKb || 0), 0) / 1024
+  const totalStorageFormatted = totalStorageMb.toFixed(1)
+  const storagePercentage = Math.min(100, Math.round((totalStorageMb / 100) * 100))
+
   // Helper trigger notification toast
   const showToast = (message: string) => {
     setToastMessage(message)
@@ -1009,34 +1016,10 @@ export function DocumentsPage() {
         context={{
           documents,
           setDocuments,
-          searchQuery,
-          setSearchQuery,
-          subjectFilter,
-          setSubjectFilter,
-          typeFilter,
-          setTypeFilter,
-          viewMode,
-          setViewMode,
-          isUploadModalOpen,
-          setIsUploadModalOpen,
-          handleOpenChat,
-          handleOpenPreview,
-          handleDownloadFile,
-          handleDeleteDocument,
-          activeMenuId,
-          setActiveMenuId,
-          menuRef,
-          renderFileIcon,
-          renderStatusBadge,
-          isInsightsModalOpen,
-          setIsInsightsModalOpen,
-          showToast
-        }}
-      />
-
           openUploadModal: () => setIsUploadModalOpen(true),
           openChatDrawer: handleOpenChat,
           openPreviewModal: handleOpenPreview,
+          handleOpenPreview,
           openQuizModal: () => {
             setCurrentQuizQuestion(0)
             setSelectedQuizAnswer(null)
