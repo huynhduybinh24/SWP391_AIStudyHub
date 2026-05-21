@@ -12,6 +12,7 @@ import { QuizzesPage } from '@/features/quizzes/pages/QuizzesPage'
 import { AdminDashboardPage } from '@/features/admin/pages/AdminDashboardPage'
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
 import { CloudStoragePage } from '@/features/storage/pages/CloudStoragePage'
+import { StorageExplorerPage } from '@/features/storage/pages/StorageExplorerPage'
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
 import { SummaryDetailPage } from '@/features/notifications/pages/SummaryDetailPage'
 import { SharedFolderPage } from '@/features/shared-files/pages/SharedFolderPage'
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
           { path: 'shared', element: <PlaceholderPage title="Shared Files" /> },
           { path: 'shared-files/research-materials', element: <SharedFolderPage /> },
           { path: 'storage', element: <CloudStoragePage /> },
+          { path: 'storage/explorer', element: <StorageExplorerPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'notifications/summary', element: <SummaryDetailPage /> },
           { path: 'study-plans', element: <PlaceholderPage title="Study Plans" /> },
