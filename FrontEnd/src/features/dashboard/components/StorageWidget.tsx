@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Card, CardTitle } from '@/components/ui/Card'
 
 interface StorageWidgetProps {
@@ -37,9 +38,9 @@ export function StorageWidget({ usedGb, totalGb }: StorageWidgetProps) {
           <p className="text-base text-body">
             {usedGb} GB of {totalGb} GB used
           </p>
-          <button type="button" className="mt-2 text-base text-primary hover:underline">
+          <Link to="/dashboard/storage" className="mt-2 block text-base text-primary hover:underline">
             Manage Storage
-          </button>
+          </Link>
         </div>
       </Card>
     </section>
