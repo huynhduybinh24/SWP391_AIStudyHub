@@ -26,6 +26,7 @@ import { LandingPage } from '@/features/landing/pages/LandingPage'
 import { HelpCenterPage } from '@/features/landing/pages/HelpCenterPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { SetNewPasswordPage } from '@/features/auth/pages/SetNewPasswordPage'
+import { ProfileDashboard } from '@/features/profile/pages/Dashboard'
 
 export const router = createBrowserRouter([
   {
@@ -80,7 +81,7 @@ export const router = createBrowserRouter([
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'notifications/summary', element: <SummaryDetailPage /> },
           { path: 'study-plans', element: <PlaceholderPage title="Study Plans" /> },
-          { path: 'profile', element: <PlaceholderPage title="Profile" /> },
+          { path: 'profile', element: <ProfileDashboard /> },
           { path: 'settings', element: <PlaceholderPage title="Settings" /> },
           { path: 'quizzes', element: <QuizzesPage /> },
           ...(DEV_SKIP_AUTH
