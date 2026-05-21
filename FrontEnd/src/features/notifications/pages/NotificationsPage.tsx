@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Bot, Folder, ArrowRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export function NotificationsPage() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('All')
   const [commentText, setCommentText] = useState('')
 
@@ -61,6 +63,7 @@ export function NotificationsPage() {
             <div>
               <button
                 type="button"
+                onClick={() => navigate('/dashboard/notifications/summary')}
                 className="inline-flex items-center gap-1 bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] px-4 py-2 rounded-lg text-sm font-semibold mt-3.5 transition-colors cursor-pointer"
               >
                 <span>View Summary</span>
