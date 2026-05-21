@@ -28,6 +28,7 @@ import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { SetNewPasswordPage } from '@/features/auth/pages/SetNewPasswordPage'
 import { ProfileDashboard } from '@/features/profile/pages/Dashboard'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
+import { PricingPage } from '@/features/upgrade/pages/PricingPage'
 
 export const router = createBrowserRouter([
   {
@@ -84,6 +85,7 @@ export const router = createBrowserRouter([
           { path: 'study-plans', element: <PlaceholderPage title="Study Plans" /> },
           { path: 'profile', element: <ProfileDashboard /> },
           { path: 'settings', element: <SettingsPage /> },
+          { path: 'upgrade', element: <PricingPage /> },
           { path: 'quizzes', element: <QuizzesPage /> },
           ...(DEV_SKIP_AUTH
             ? [{ path: 'admin', element: <AdminDashboardPage /> }]

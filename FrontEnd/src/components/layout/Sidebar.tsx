@@ -50,6 +50,8 @@ function SidebarLink({
 }
 
 export function Sidebar() {
+  const { pathname } = useLocation()
+
   return (
     <aside className="flex h-screen w-[256px] shrink-0 flex-col justify-between border-r border-[#EAECF0] bg-white py-6 px-4 sticky top-0 left-0 z-30 select-none">
       <div className="flex flex-col gap-6 flex-1 min-h-0">
@@ -86,13 +88,17 @@ export function Sidebar() {
         </nav>
 
         {/* Upgrade to Pro button */}
-        <button
-          type="button"
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#3155F6] py-3 text-sm font-semibold text-white hover:bg-[#2563eb] transition-all duration-200 cursor-pointer shadow-sm shadow-[#3155F6]/10 shrink-0"
+        <Link
+          to="/dashboard/upgrade"
+          className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-all duration-200 cursor-pointer shadow-sm shrink-0 no-underline ${
+            pathname === '/dashboard/upgrade'
+              ? 'bg-[#1e40af] hover:bg-[#1d4ed8] shadow-[#1e40af]/20'
+              : 'bg-[#3155F6] hover:bg-[#2563eb] shadow-[#3155F6]/10'
+          }`}
         >
           <Zap className="size-4 text-white" strokeWidth={2} />
           Upgrade to Pro
-        </button>
+        </Link>
       </div>
     </aside>
   )
