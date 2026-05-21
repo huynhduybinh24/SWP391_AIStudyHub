@@ -4,12 +4,10 @@ import { ProtectedRoute } from '@/app/router/ProtectedRoute'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { DocumentsPage } from '@/features/documents/pages/DocumentsPage'
-import { MyDocumentsPage } from '@/features/documents/pages/MyDocumentsPage'
-import { SubjectCategoryPage } from '@/features/documents/pages/SubjectCategoryPage'
-import { UploadSubjectDocumentPage } from '@/features/documents/pages/UploadSubjectDocumentPage'
-import { SearchResultsPage } from '@/features/documents/pages/SearchResultsPage'
 import MyDocumentsPage from '@/features/documents/pages/MyDocumentsPage'
 import SubjectCategoryPage from '@/features/documents/pages/SubjectCategoryPage'
+import { UploadSubjectDocumentPage } from '@/features/documents/pages/UploadSubjectDocumentPage'
+import { SearchResultsPage } from '@/features/documents/pages/SearchResultsPage'
 import { UploadPage } from '@/features/documents/pages/UploadPage'
 import { ChatPage } from '@/features/ai-chatbot/pages/ChatPage'
 import { QuizzesPage } from '@/features/quizzes/pages/QuizzesPage'
@@ -64,7 +62,6 @@ export const router = createBrowserRouter([
               { path: 'subject/:subjectId/upload', element: <UploadSubjectDocumentPage /> },
               { path: 'search', element: <SearchResultsPage /> }
             ]
-            ],
           },
           { path: 'upload', element: <UploadPage /> },
           { path: 'chat', element: <ChatPage /> },
