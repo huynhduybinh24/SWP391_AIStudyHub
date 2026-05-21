@@ -445,6 +445,26 @@ export function NotificationsPage() {
         },
       ],
     },
+    {
+      id: 'shared-doc-1',
+      type: 'document',
+      title: 'Alex Chen shared a document',
+      time: '5h ago',
+      isUnread: false,
+      description: (
+        <>
+          Document: <span className="font-semibold text-[#0b1c30]">Advanced Neuroscience Syllabus 2024.pdf</span>
+        </>
+      ),
+      buttons: [
+        {
+          text: 'View Document',
+          variant: 'shared-btn',
+          icon: <Eye className="w-3.5 h-3.5 text-[#3155F6]" />,
+          url: '/dashboard/notifications/summary',
+        },
+      ],
+    },
   ]
 
   // 5. "AI Updates" Filter Data
