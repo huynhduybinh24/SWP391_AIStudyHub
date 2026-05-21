@@ -57,44 +57,44 @@ export function Header() {
           aria-expanded={userMenuOpen}
           aria-haspopup="menu"
         >
-          <Avatar name={user?.name ?? 'User'} className="cursor-pointer" />
+          <Avatar src="/avatar.svg" name={user?.name ?? 'Alex Rivera'} className="cursor-pointer" />
         </button>
 
-        {userMenuOpen && user ? (
+        {userMenuOpen ? (
           <div
             className={cn(
-              'absolute right-0 top-[52px] w-64 rounded-lg border border-border bg-white py-2 shadow-xl',
+              'absolute right-0 top-[52px] w-64 rounded-xl border border-border/80 bg-white py-2 shadow-xl z-50',
             )}
             role="menu"
           >
             <div className="border-b border-border/50 px-4 py-3">
-              <p className="text-sm font-bold text-foreground">{user.name}</p>
-              <p className="text-xs text-muted">{user.email}</p>
+              <p className="text-sm font-bold text-foreground">{user?.name ?? 'Alex Rivera'}</p>
+              <p className="text-xs text-muted">{user?.email ?? 'alex@example.com'}</p>
             </div>
             <button
               type="button"
-              className="flex w-full items-center gap-3 px-4 py-2 text-sm text-body hover:bg-surface"
-              onClick={() => navigate('/profile')}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-body hover:bg-surface transition-colors text-left cursor-pointer"
+              onClick={() => navigate('/dashboard/profile')}
             >
-              <User className="size-3" />
+              <User className="size-4 text-muted" />
               View Profile
             </button>
             <button
               type="button"
-              className="flex w-full items-center gap-3 px-4 py-2 text-sm text-body hover:bg-surface"
-              onClick={() => navigate('/settings')}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-body hover:bg-surface transition-colors text-left cursor-pointer"
+              onClick={() => navigate('/dashboard/settings')}
             >
-              <Settings className="size-3" />
-              Account Settings
+              <Settings className="size-4 text-muted" />
+              Settings
             </button>
             <div className="mt-1 border-t border-border/50 pt-1">
               <button
                 type="button"
-                className="flex w-full items-center gap-3 px-4 py-2 text-sm text-danger hover:bg-danger/5"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors text-left font-medium cursor-pointer"
                 onClick={handleLogout}
               >
-                <LogOut className="size-3.5" />
-                Logout
+                <LogOut className="size-4 text-danger" />
+                Log Out
               </button>
             </div>
           </div>
