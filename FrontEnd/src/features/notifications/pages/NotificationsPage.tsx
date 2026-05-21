@@ -268,12 +268,16 @@ export function NotificationsPage() {
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
 
+  // Normalizes filter strings (e.g., 'shared-files' or 'Shared Files' -> 'sharedfiles')
+  const normalize = (str: string) => str.toLowerCase().replace(/[\s-_]+/g, '')
+
   const activeTab = tabs.find(
-    (t) => t.toLowerCase().replace(' ', '') === activeFilter.toLowerCase().replace(' ', '')
+    (t) => normalize(t) === normalize(activeFilter)
   ) || 'All'
 
   const handleTabClick = (tab: string) => {
-    const filterKey = tab.toLowerCase().replace(' ', '')
+    // Generate parameter key (e.g. "Shared Files" -> "shared-files")
+    const filterKey = tab.toLowerCase().replace(/\s+/g, '-')
     setActiveFilter(filterKey)
     setSearchParams({ filter: filterKey })
   }
