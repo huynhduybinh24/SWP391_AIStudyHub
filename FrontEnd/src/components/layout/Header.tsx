@@ -39,7 +39,12 @@ export function Header() {
     <header className="relative z-10 flex h-[72px] shrink-0 items-center justify-between border-b border-border bg-white px-8 shadow-sm">
       <div className="flex flex-1 items-center">
         <Input
-          placeholder="Search documents, chats, plans..."
+          placeholder={
+            pathname === '/dashboard/shared-files/research-materials' ||
+            pathname === '/dashboard/shared-files/research-materials/'
+              ? 'Search in this folder...'
+              : 'Search documents, chats, plans...'
+          }
           className="max-w-[400px] bg-[#f0f4ff]/70 border border-[#e2e8f0]/40 rounded-xl"
           aria-label="Search"
         />
