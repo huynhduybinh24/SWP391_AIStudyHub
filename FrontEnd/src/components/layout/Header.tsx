@@ -9,6 +9,7 @@ import { useUiStore } from '@/stores/uiStore'
 import { useProfileStore } from '@/features/profile/stores/profileStore'
 import { authService } from '@/features/auth/services/authService'
 import { cn } from '@/lib/utils'
+import { useSettingsStore } from '@/features/settings/stores/settingsStore'
 
 export function Header() {
   const navigate = useNavigate()
@@ -23,38 +24,19 @@ export function Header() {
   const { profile } = useProfileStore()
   const menuRef = useRef<HTMLDivElement>(null)
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-    }
-    return 'light'
-  })
+  const storeTheme = useSettingsStore((s) => s.theme)
+  const setThemeStore = useSettingsStore((s) => s.setTheme)
 
   useEffect(() => {
-    // Initialize theme based on document class or localStorage
-    const savedTheme = localStorage.getItem('theme')
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      document.documentElement.classList.add('dark')
-      setTheme('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      setTheme('light')
-    }
-  }, [])
+    setThemeStore(storeTheme)
+  }, [storeTheme, setThemeStore])
 
   const toggleTheme = () => {
-    if (theme === 'light') {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-      setTheme('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-      setTheme('light')
-    }
+    const isCurrentlyDark = document.documentElement.classList.contains('dark')
+    setThemeStore(isCurrentlyDark ? 'light' : 'dark')
   }
+
+  const isDark = storeTheme === 'dark' || (storeTheme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   const isNotificationsPage = pathname === '/dashboard/notifications' || pathname === '/dashboard/notifications/'
 
@@ -110,7 +92,7 @@ export function Header() {
           onClick={toggleTheme}
           className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
-          {theme === 'dark' ? (
+          {isDark ? (
             <Sun className="size-5 text-slate-400 hover:text-amber-500 transition-colors" />
           ) : (
             <Moon className="size-5 text-body" />
