@@ -711,22 +711,7 @@ export function DocumentsPage() {
         }}
       />
 
-      {/* Floating Robot Chatbot Button */}
-      <button
-        onClick={() => {
-          const targetDoc = documents.find(d => d.id === 'doc-design-patterns') || documents[0];
-          if (targetDoc) {
-            handleOpenChat(targetDoc)
-          } else {
-            showToast("Please upload a document to begin chatting with AI!")
-          }
-        }}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#2563eb] text-white shadow-xl hover:bg-blue-700 hover:scale-110 active:scale-95 transition-all duration-300 animate-float"
-        title="Chat with AI Study Assistant"
-        aria-label="Chat with AI"
-      >
-        <Bot className="h-6 w-6 stroke-[1.8]" />
-      </button>
+
 
       {/* Practice Quiz Modal */}
       {isQuizModalOpen && (
