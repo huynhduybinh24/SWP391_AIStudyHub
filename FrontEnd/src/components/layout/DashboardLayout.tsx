@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { Bot } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button'
 
 export function DashboardLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const isChatPage = location.pathname === '/dashboard/chat' || location.pathname === '/dashboard/chat/'
 
   return (
     <div className="flex h-full min-h-screen">
@@ -19,14 +21,16 @@ export function DashboardLayout() {
           </div>
         </main>
         <Footer />
-        <Button
-          size="icon"
-          className="fixed bottom-24 right-8 z-20 size-14 rounded-full bg-primary-dark shadow-lg hover:bg-primary"
-          aria-label="Open AI Chatbot"
-          onClick={() => navigate('/chat')}
-        >
-          <Bot className="size-6 text-white" />
-        </Button>
+        {!isChatPage && (
+          <Button
+            size="icon"
+            className="fixed bottom-24 right-8 z-20 size-14 rounded-full bg-primary-dark shadow-lg hover:bg-primary"
+            aria-label="Open AI Chatbot"
+            onClick={() => navigate('/dashboard/chat')}
+          >
+            <Bot className="size-6 text-white" />
+          </Button>
+        )}
       </div>
     </div>
   )
