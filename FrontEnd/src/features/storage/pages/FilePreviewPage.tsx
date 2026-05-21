@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   ArrowLeft,
   FileText,
@@ -13,6 +14,12 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Avatar } from '@/components/ui/Avatar'
 
 export function FilePreviewPage() {
+  const [zoom, setZoom] = useState(100)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 10, 150))
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 10, 50))
+
   return (
     <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
       {/* Header */}
@@ -55,20 +62,23 @@ export function FilePreviewPage() {
             </div>
             <div className="flex items-center gap-4 text-muted text-sm font-medium">
               <div className="hidden sm:flex items-center gap-3">
-                <button className="hover:text-foreground transition-colors p-1"><ZoomOut className="size-4" /></button>
-                <span className="w-12 text-center">100%</span>
-                <button className="hover:text-foreground transition-colors p-1"><ZoomIn className="size-4" /></button>
+                <button onClick={handleZoomOut} className="hover:text-foreground transition-colors p-1" title="Zoom Out"><ZoomOut className="size-4" /></button>
+                <span className="w-12 text-center select-none">{zoom}%</span>
+                <button onClick={handleZoomIn} className="hover:text-foreground transition-colors p-1" title="Zoom In"><ZoomIn className="size-4" /></button>
               </div>
               <div className="hidden sm:block w-px h-4 bg-border"></div>
-              <span>Page 1 / 42</span>
-              <button className="hover:text-foreground transition-colors p-1 hidden sm:block"><Maximize className="size-4" /></button>
+              <span className="select-none">Page 1 / 42</span>
+              <button onClick={() => setIsFullscreen(!isFullscreen)} className="hover:text-foreground transition-colors p-1 hidden sm:block" title="Toggle Fullscreen"><Maximize className="size-4" /></button>
             </div>
           </div>
           
           {/* Document Content */}
-          <div className="bg-[#f8fafc] border border-t-0 border-border rounded-b-xl p-4 sm:p-8 flex justify-center min-h-[600px] overflow-hidden">
-            <div className="bg-white w-full max-w-[600px] shadow-sm border border-border p-6 sm:p-10 flex flex-col h-fit">
-              <h2 className="text-2xl sm:text-[28px] font-bold leading-tight text-[#1e293b] mb-1">Advanced Neuroscience: Neural<br/>Connectivity & Synaptic Plasticity</h2>
+          <div className="bg-[#f8fafc] border border-t-0 border-border rounded-b-xl p-4 sm:p-8 flex justify-center min-h-[600px] overflow-auto">
+            <div 
+              className="bg-white w-full max-w-[600px] shadow-sm border border-border p-6 sm:p-10 flex flex-col h-fit transition-all duration-200 origin-top"
+              style={{ transform: `scale(${zoom / 100})` }}
+            >
+              <h2 className="text-2xl sm:text-[28px] font-bold leading-tight text-[#1e293b] mb-1">Advanced Neuroscience: Neural Connectivity & Synaptic Plasticity</h2>
               <p className="text-[#3b82f6] text-[11px] font-bold tracking-widest uppercase mb-6">NEURO-402 SYLLABUS 2024</p>
               
               <div className="w-full aspect-[2/1] bg-black rounded-lg mb-8 overflow-hidden relative border border-border">
@@ -87,7 +97,7 @@ export function FilePreviewPage() {
         </div>
 
         {/* Right Details Panel */}
-        <Card className="w-full lg:w-[320px] shrink-0 border-border bg-white shadow-sm">
+        <Card className="w-full lg:w-[320px] shrink-0 border-border bg-white shadow-sm lg:sticky lg:top-6">
           <CardContent className="p-6">
             <h3 className="font-bold text-foreground text-lg mb-6">File Details</h3>
             
