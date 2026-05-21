@@ -1,19 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet } from 'react-router-dom'
-import { Outlet, useNavigate } from 'react-router-dom'
 import {
   X,
-  Bot,
   Send,
   Sparkles,
   CheckCircle2,
   BrainCircuit,
   CloudUpload,
-  MoreVertical,
-  MessageSquare,
-  ExternalLink,
-  Download,
-  Trash2,
   FileText,
   FileCode,
   BookOpen,
@@ -734,6 +727,22 @@ export function DocumentsPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isToastVisible, setIsToastVisible] = useState(false)
 
+  // Layout States for MyDocumentsPage
+  const [searchQuery, setSearchQuery] = useState('')
+  const [subjectFilter, setSubjectFilter] = useState('ALL')
+  const [typeFilter, setTypeFilter] = useState('ALL')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Insights Modal States
+  const [isInsightsModalOpen, setIsInsightsModalOpen] = useState(false)
+  
+  // Insights Calculations
+  const totalStorageKb = documents.reduce((acc, doc) => acc + (doc.sizeKb || 0), 0)
+  const totalStorageFormatted = (totalStorageKb / 1024).toFixed(1)
+  const storagePercentage = Math.min(100, Math.round((totalStorageKb / 1024) / 100 * 100))
+
   // Helper trigger notification toast
   const showToast = (message: string) => {
     setToastMessage(message)
@@ -1007,33 +1016,16 @@ export function DocumentsPage() {
       {/* Renders MyDocumentsPage or SubjectCategoryPage */}
       <Outlet
         context={{
+          // Shared Context
           documents,
           setDocuments,
-          searchQuery,
-          setSearchQuery,
-          subjectFilter,
-          setSubjectFilter,
-          typeFilter,
-          setTypeFilter,
-          viewMode,
-          setViewMode,
-          isUploadModalOpen,
-          setIsUploadModalOpen,
-          handleOpenChat,
-          handleOpenPreview,
+          showToast,
           handleDownloadFile,
           handleDeleteDocument,
-          activeMenuId,
-          setActiveMenuId,
-          menuRef,
           renderFileIcon,
           renderStatusBadge,
-          isInsightsModalOpen,
-          setIsInsightsModalOpen,
-          showToast
-        }}
-      />
 
+          // DocumentsContextType (for legacy pages)
           openUploadModal: () => setIsUploadModalOpen(true),
           openChatDrawer: handleOpenChat,
           openPreviewModal: handleOpenPreview,
@@ -1044,11 +1036,23 @@ export function DocumentsPage() {
             setShowQuizResults(false)
             setIsQuizModalOpen(true)
           },
-          showToast,
-          handleDownloadFile,
-          handleDeleteDocument,
-          renderFileIcon,
-          renderStatusBadge
+          
+          // DocumentsLayoutContext (for MyDocumentsPage)
+          searchQuery,
+          setSearchQuery,
+          subjectFilter,
+          setSubjectFilter,
+          typeFilter,
+          setTypeFilter,
+          viewMode,
+          setViewMode,
+          setIsUploadModalOpen,
+          setIsInsightsModalOpen,
+          handleOpenChat,
+          handleOpenPreview,
+          activeMenuId,
+          setActiveMenuId,
+          menuRef
         }}
       />
 
