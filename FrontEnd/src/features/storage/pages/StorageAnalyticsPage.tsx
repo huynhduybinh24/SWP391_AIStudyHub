@@ -32,7 +32,7 @@ export function StorageAnalyticsPage() {
   const navigate = useNavigate()
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
 
-  const onPieEnter = (_: any, index: number) => {
+  const onPieEnter = (_: unknown, index: number) => {
     setActiveIndex(index)
   }
 
@@ -262,7 +262,7 @@ export function StorageAnalyticsPage() {
             <div>
               <h3 className="font-bold text-foreground text-[15px]">AI Storage Insights</h3>
               <p className="text-muted text-[13px] mt-1 leading-relaxed max-w-3xl">
-                We noticed you have 4.2 GB of duplicate study guides from last semester and several large video files that haven't been opened in 6 months.
+                We noticed you have 4.2 GB of duplicate study guides from last semester and several large video files that haven&apos;t been opened in 6 months.
               </p>
             </div>
           </div>
