@@ -12,13 +12,16 @@ import {
   FileIcon,
   Sparkles,
   Trash2,
-  Check
+  Check,
+  CheckCircle2,
+  Zap
 } from 'lucide-react'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
 
 const INITIAL_FOLDERS = [
   { id: '1', name: 'Physics 101', items: '12 Items', size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe', category: 'Study' },
@@ -84,6 +87,7 @@ export function StorageExplorerPage() {
   
   const [showFolderDropdown, setShowFolderDropdown] = useState(false)
   const [showTypeDropdown, setShowTypeDropdown] = useState(false)
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
 
   const folderDropdownRef = useRef<HTMLDivElement>(null)
   const typeDropdownRef = useRef<HTMLDivElement>(null)
@@ -475,13 +479,56 @@ export function StorageExplorerPage() {
               <p className="text-[11px] text-muted mt-1.5 mb-4 leading-relaxed">
                 Upgrade to Pro for 1TB of storage and advanced AI tools.
               </p>
-              <Button variant="secondary" className="w-full bg-white text-primary border border-primary/20 hover:bg-primary/5 h-9 text-sm">
+              <Button 
+                onClick={() => setIsPlanModalOpen(true)}
+                variant="secondary" 
+                className="w-full bg-white text-primary border border-primary/20 hover:bg-primary/5 h-9 text-sm transition-colors"
+              >
                 View Plans
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <Modal 
+        isOpen={isPlanModalOpen} 
+        onClose={() => setIsPlanModalOpen(false)}
+        title="Upgrade to Pro"
+        description="Choose the right plan to expand your storage and AI capabilities."
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+          <Card className="border-border flex flex-col shadow-none">
+            <CardContent className="p-6 flex-1 flex flex-col">
+              <h3 className="font-bold text-lg mb-2 text-foreground">Basic</h3>
+              <div className="text-3xl font-bold mb-4 text-foreground">$0<span className="text-sm font-normal text-muted">/mo</span></div>
+              <ul className="space-y-3 mb-6 flex-1">
+                <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> 100 GB Storage</li>
+                <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> Basic AI Tools</li>
+                <li className="flex items-center gap-2 text-sm text-muted opacity-50"><CheckCircle2 className="size-4 text-slate-300"/> Priority Support</li>
+              </ul>
+              <Button variant="secondary" className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600" onClick={() => setIsPlanModalOpen(false)}>Current Plan</Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary bg-primary/[0.03] flex flex-col relative overflow-hidden shadow-sm">
+            <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg">POPULAR</div>
+            <CardContent className="p-6 flex-1 flex flex-col">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-bold text-lg text-primary">Pro</h3>
+                <Zap className="size-4 text-primary fill-primary/20" />
+              </div>
+              <div className="text-3xl font-bold mb-4 text-foreground">$9.99<span className="text-sm font-normal text-muted">/mo</span></div>
+              <ul className="space-y-3 mb-6 flex-1">
+                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary"/> 1 TB Storage</li>
+                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary"/> Advanced AI Summarization</li>
+                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary"/> Priority Support</li>
+              </ul>
+              <Button className="w-full bg-primary hover:bg-primary/90 text-white" onClick={() => setIsPlanModalOpen(false)}>Upgrade Now</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Modal>
     </div>
   )
 }
