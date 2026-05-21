@@ -13,6 +13,7 @@ import { AdminDashboardPage } from '@/features/admin/pages/AdminDashboardPage'
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
 import { CloudStoragePage } from '@/features/storage/pages/CloudStoragePage'
 import { StorageExplorerPage } from '@/features/storage/pages/StorageExplorerPage'
+import { FilePreviewPage } from '@/features/storage/pages/FilePreviewPage'
 import { StorageAnalyticsPage } from '@/features/storage/pages/StorageAnalyticsPage'
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
 import { SummaryDetailPage } from '@/features/notifications/pages/SummaryDetailPage'
@@ -67,6 +68,7 @@ export const router = createBrowserRouter([
           { path: 'shared-files/research-materials', element: <SharedFolderPage /> },
           { path: 'storage', element: <CloudStoragePage /> },
           { path: 'storage/explorer', element: <StorageExplorerPage /> },
+          { path: 'storage/explorer/preview', element: <FilePreviewPage /> },
           { path: 'storage/analytics', element: <StorageAnalyticsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'notifications/summary', element: <SummaryDetailPage /> },

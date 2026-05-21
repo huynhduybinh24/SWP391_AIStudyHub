@@ -17,7 +17,7 @@ import {
   Zap
 } from 'lucide-react'
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -77,6 +77,7 @@ const INITIAL_FILES = [
 ]
 
 export function StorageExplorerPage() {
+  const navigate = useNavigate()
   const [folders, setFolders] = useState(INITIAL_FOLDERS)
   const [files, setFiles] = useState(INITIAL_FILES)
   const [searchQuery, setSearchQuery] = useState('')
@@ -355,7 +356,11 @@ export function StorageExplorerPage() {
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredFiles.map((file) => (
-                  <Card key={file.id} className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border group">
+                  <Card 
+                    key={file.id} 
+                    onClick={() => navigate('/dashboard/storage/explorer/preview')}
+                    className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border group"
+                  >
                     <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] border border-slate-100 flex items-center justify-center relative mb-3 overflow-hidden">
                       <file.icon className="size-12 text-[#93c5fd]" strokeWidth={1.5} />
                       {file.aiSummarized && (
@@ -382,7 +387,11 @@ export function StorageExplorerPage() {
             ) : (
               <div className="flex flex-col gap-3">
                 {filteredFiles.map((file) => (
-                  <Card key={file.id} className="p-3 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer border-border group">
+                  <Card 
+                    key={file.id} 
+                    onClick={() => navigate('/dashboard/storage/explorer/preview')}
+                    className="p-3 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer border-border group"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-lg bg-[#f8fafc] border border-slate-100 flex items-center justify-center shrink-0">
                         <file.icon className="size-5 text-[#93c5fd]" />
