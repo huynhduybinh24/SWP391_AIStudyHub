@@ -450,7 +450,7 @@ export function SearchResultsPage() {
               return (
                 <div
                   key={doc.id}
-                  onClick={() => handleOpenPreview(doc)}
+                  onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
                   className="group relative flex flex-col justify-between rounded-3xl border border-slate-100 bg-white p-8 shadow-[0_4px_25px_rgba(0,0,0,0.02)] hover:border-[#3155F6]/10 hover:shadow-[0_8px_30px_rgba(49,85,246,0.04)] hover:-translate-y-0.5 cursor-pointer transition-all duration-300"
                 >
                   
