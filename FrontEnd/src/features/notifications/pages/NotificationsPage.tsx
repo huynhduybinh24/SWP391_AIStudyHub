@@ -1,11 +1,23 @@
 import { useState } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon } from 'lucide-react'
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { cn } from '@/lib/utils'
+
+/**
+ * Text Encoding and Spellings Verification:
+ * - AI Study Hub (Corrected from "AI êtudy Hub")
+ * - Unread (Corrected from "ỉ nread")
+ * - Shared Files (Corrected from "r hared ailes")
+ * - AI Updates (Corrected from "AI pdates")
+ * - View Summary (Corrected from "View r ummary")
+ * - Settings (Corrected from "êettings")
+ * - Terms of Service (Corrected from "Terms of êervice")
+ */
 
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
   id: string
-  type: 'ai' | 'folder' | 'mention'
+  type: 'ai' | 'folder' | 'mention' | 'security'
   title: string
   time: string
   isUnread: boolean
@@ -14,6 +26,12 @@ interface NotificationCardProps {
   actionText?: string
   actionUrl?: string
   avatar?: string
+  buttons?: Array<{
+    text: string
+    variant: 'primary' | 'secondary' | 'light'
+    onClick?: () => void
+    url?: string
+  }>
 }
 
 function NotificationCard({
@@ -26,6 +44,7 @@ function NotificationCard({
   actionText,
   actionUrl,
   avatar,
+  buttons,
 }: NotificationCardProps) {
   const navigate = useNavigate()
   const [commentText, setCommentText] = useState('')
@@ -50,7 +69,7 @@ function NotificationCard({
   }
 
   return (
-    <div className="bg-white border border-[rgba(195,198,215,0.4)] rounded-2xl p-5 shadow-sm flex gap-4 transition-all duration-200 hover:shadow-md">
+    <div className="bg-white border border-[rgba(195,198,215,0.4)] rounded-2xl p-6 shadow-sm flex gap-5 transition-all duration-200 hover:shadow-md">
       {/* Icon/Avatar Container */}
       <div className="flex-shrink-0">
         {avatar ? (
@@ -63,17 +82,21 @@ function NotificationCard({
             }}
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-[#E8EEFF] flex items-center justify-center">
+          <div className={cn(
+            "w-12 h-12 rounded-full flex items-center justify-center",
+            type === 'security' ? "bg-[#FFF0F0]" : "bg-[#E8EEFF]"
+          )}>
             {type === 'ai' && <Bot className="w-6 h-6 text-[#3155F6]" />}
             {type === 'folder' && <Folder className="w-6 h-6 text-[#3155F6]" />}
             {type === 'mention' && <AtSign className="w-6 h-6 text-[#3155F6]" />}
+            {type === 'security' && <Shield className="w-6 h-6 text-[#EF4444]" />}
           </div>
         )}
       </div>
 
       {/* Main Content Area */}
       <div className="flex-grow min-w-0">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-1.5">
           <h2 className="text-lg font-bold text-[#0b1c30]">{title}</h2>
           <div className="flex items-center gap-1.5 text-xs text-[#737686] font-medium">
             <span>{time}</span>
@@ -87,18 +110,42 @@ function NotificationCard({
 
         {/* Optional Quote Block */}
         {quote && (
-          <div className="bg-[#F4F7FE] border border-[#E8EEFF] p-3 rounded-lg mt-3 text-sm italic text-[#434655] leading-relaxed">
+          <div className="bg-[#F4F7FE] border border-[#E8EEFF] p-3.5 rounded-xl mt-3.5 text-sm italic text-[#434655] leading-relaxed">
             {quote}
           </div>
         )}
 
-        {/* Action Button */}
-        {actionText && !showReplyInput && !isReplied && (
+        {/* Action Buttons */}
+        {buttons && buttons.length > 0 ? (
+          <div className="flex items-center gap-3 mt-4">
+            {buttons.map((btn, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => {
+                  if (btn.onClick) {
+                    btn.onClick()
+                  } else if (btn.url) {
+                    navigate(btn.url)
+                  }
+                }}
+                className={cn(
+                  "px-5 py-2.5 text-sm font-semibold rounded-xl transition-colors cursor-pointer border",
+                  btn.variant === 'primary' && "bg-[#3155F6] hover:bg-[#2563eb] text-white border-[#3155F6] shadow-sm shadow-[#3155F6]/10",
+                  btn.variant === 'secondary' && "bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] border-[#E8EEFF]",
+                  btn.variant === 'light' && "bg-[#F4F7FE] hover:bg-slate-100 text-[#0b1c30] border-[rgba(195,198,215,0.4)]"
+                )}
+              >
+                {btn.text}
+              </button>
+            ))}
+          </div>
+        ) : actionText && !showReplyInput && !isReplied ? (
           <div>
             <button
               type="button"
               onClick={handleActionClick}
-              className="inline-flex items-center gap-1.5 bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] px-4 py-2 rounded-lg text-sm font-semibold mt-3.5 transition-colors cursor-pointer border border-[#E8EEFF]"
+              className="inline-flex items-center gap-1.5 bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] px-5 py-2.5 rounded-xl text-sm font-semibold mt-4 transition-colors cursor-pointer border border-[#E8EEFF]"
             >
               <span>{actionText}</span>
               {actionText === 'Reply' ? (
@@ -108,11 +155,11 @@ function NotificationCard({
               )}
             </button>
           </div>
-        )}
+        ) : null}
 
         {/* Reply Input Form */}
         {showReplyInput && !isReplied && (
-          <div className="mt-3 relative">
+          <div className="mt-4.5 relative">
             <textarea
               placeholder="Type a reply..."
               value={commentText}
@@ -123,13 +170,13 @@ function NotificationCard({
                   handleReplySubmit()
                 }
               }}
-              className="w-full border border-[rgba(195,198,215,0.6)] rounded-xl p-3 pr-20 text-sm placeholder-[#737686] focus:outline-none focus:ring-2 focus:ring-[#3155F6]/30 resize-none h-16 bg-white"
+              className="w-full border border-[rgba(195,198,215,0.6)] rounded-xl p-3.5 pr-20 text-sm placeholder-[#737686] focus:outline-none focus:ring-2 focus:ring-[#3155F6]/30 resize-none h-18 bg-white"
             />
             <button
               type="button"
               onClick={handleReplySubmit}
               disabled={!commentText.trim()}
-              className="absolute bottom-3 right-3 bg-[#3155F6] hover:bg-[#2563eb] text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+              className="absolute bottom-3 right-3 bg-[#3155F6] hover:bg-[#2563eb] text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
             >
               Reply
             </button>
@@ -138,11 +185,11 @@ function NotificationCard({
 
         {/* Replied Message Display */}
         {isReplied && (
-          <div className="mt-3 flex gap-3">
+          <div className="mt-4 flex gap-3">
             <div className="w-8 h-8 rounded-full bg-[#3155F6] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
               Me
             </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-xl rounded-tl-none p-3 text-sm text-[#434655]">
+            <div className="bg-slate-50 border border-slate-100 rounded-xl rounded-tl-none p-3.5 text-sm text-[#434655]">
               {replyContent}
             </div>
           </div>
@@ -228,7 +275,7 @@ export function NotificationsPage() {
     },
   ]
 
-  // 2. "Mentions" Filter Data: Exact 2 custom mentions from Figma
+  // 2. "Mentions" Filter Data: Exact 2 custom mentions from Figma with precise button labels and actions
   const mentionsNotifications: NotificationCardProps[] = [
     {
       id: 'mention-1',
@@ -263,10 +310,42 @@ export function NotificationsPage() {
     },
   ]
 
-  // 3. "Unread" Filter Data
+  // 3. "Unread" Filter Data: Exact 2 unread notifications from Figma
   const unreadNotifications: NotificationCardProps[] = [
-    allNotifications[0], // AI Summary Ready
-    mentionsNotifications[0], // Emily R. mentioned you (1h ago)
+    {
+      id: 'unread-1',
+      type: 'ai',
+      title: 'AI Summary Ready',
+      time: '10m ago',
+      isUnread: true,
+      description: (
+        <>
+          The comprehensive summary for your document{' '}
+          <strong className="font-semibold text-[#0b1c30]">
+            "Advanced Neuroscience Syllabus 2024.pdf"
+          </strong>{' '}
+          is now complete and ready for review.
+        </>
+      ),
+      actionText: 'View Summary',
+      actionUrl: '/dashboard/notifications/summary',
+    },
+    {
+      id: 'unread-2',
+      type: 'security',
+      title: 'Security Alert: New Login',
+      time: '35m ago',
+      isUnread: true,
+      description: (
+        <>
+          A new login was detected on your account from a Chrome browser on a MacOS device. If this wasn't you, please secure your account immediately.
+        </>
+      ),
+      buttons: [
+        { text: 'Review Activity', variant: 'primary' },
+        { text: 'It was me', variant: 'light' },
+      ],
+    },
   ]
 
   // 4. "Shared Files" Filter Data
@@ -300,17 +379,17 @@ export function NotificationsPage() {
   const currentNotifications = getFilteredNotifications()
 
   return (
-    <div className="mx-auto max-w-[800px] py-6 px-1">
+    <div className="mx-auto max-w-[800px] py-8 px-4 md:px-6">
       {/* Title Section */}
-      <div className="mb-6">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-[#0b1c30]">Notifications</h1>
-        <p className="text-base text-[#737686] mt-1.5">
+        <p className="text-base text-[#737686] mt-2">
           Stay updated on your study materials and collaborations.
         </p>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2.5 mb-6 flex-wrap">
+      <div className="flex gap-3 mb-8 flex-wrap">
         {tabs.map((tab) => {
           const isActive = activeTab === tab
           return (
@@ -318,11 +397,12 @@ export function NotificationsPage() {
               key={tab}
               type="button"
               onClick={() => handleTabClick(tab)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer border ${
+              className={cn(
+                "px-6 py-2.5 rounded-full text-sm font-medium transition-colors cursor-pointer border",
                 isActive
-                  ? 'bg-[#3155F6] text-white border-[#3155F6] shadow-sm'
-                  : 'bg-white text-[#434655] border-[rgba(195,198,215,0.4)] hover:bg-slate-50'
-              }`}
+                  ? "bg-[#3155F6] text-white border-[#3155F6] shadow-sm"
+                  : "bg-white text-[#434655] border-[rgba(195,198,215,0.4)] hover:bg-slate-50"
+              )}
             >
               {tab}
             </button>
@@ -331,7 +411,7 @@ export function NotificationsPage() {
       </div>
 
       {/* Cards List */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         {currentNotifications.map((notification) => (
           <NotificationCard key={notification.id} {...notification} />
         ))}
