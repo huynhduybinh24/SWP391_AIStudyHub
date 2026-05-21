@@ -157,12 +157,14 @@ export function CloudStoragePage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={handleCleanUp} variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground">
-            <Eraser className="size-4 text-muted-foreground mr-1" />
-            <div className="leading-tight">
-              Clean Up<br />Storage
-            </div>
-          </Button>
+          <Link to="/dashboard/storage/cleanup" className="block">
+            <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground w-full">
+              <Eraser className="size-4 text-muted-foreground mr-1" />
+              <div className="leading-tight">
+                Clean Up<br />Storage
+              </div>
+            </Button>
+          </Link>
           <Link to="/dashboard/storage/explorer" className="block">
             <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground w-full">
               <FolderSearch className="size-4 text-muted-foreground mr-1" />
