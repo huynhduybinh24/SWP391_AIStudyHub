@@ -10,6 +10,7 @@ import { QuizzesPage } from '@/features/quizzes/pages/QuizzesPage'
 import { AdminDashboardPage } from '@/features/admin/pages/AdminDashboardPage'
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
+import { SummaryDetailPage } from '@/features/notifications/pages/SummaryDetailPage'
 import { DEV_SKIP_AUTH } from '@/config/dev'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
           { path: 'shared', element: <PlaceholderPage title="Shared Files" /> },
           { path: 'storage', element: <PlaceholderPage title="Cloud Storage" /> },
           { path: 'notifications', element: <NotificationsPage /> },
+          { path: 'notifications/summary', element: <SummaryDetailPage /> },
           { path: 'study-plans', element: <PlaceholderPage title="Study Plans" /> },
           { path: 'profile', element: <PlaceholderPage title="Profile" /> },
           { path: 'settings', element: <PlaceholderPage title="Settings" /> },
