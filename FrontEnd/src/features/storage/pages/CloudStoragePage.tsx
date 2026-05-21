@@ -11,6 +11,7 @@ import {
   FileIcon,
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { useState, useRef, useMemo } from 'react'
@@ -153,12 +154,14 @@ export function CloudStoragePage() {
               Clean Up<br />Storage
             </div>
           </Button>
-          <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground">
-            <FolderSearch className="size-4 text-muted-foreground mr-1" />
-            <div className="leading-tight">
-              Storage<br />Explorer
-            </div>
-          </Button>
+          <Link to="/dashboard/storage/explorer" className="block">
+            <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground w-full">
+              <FolderSearch className="size-4 text-muted-foreground mr-1" />
+              <div className="leading-tight">
+                Storage<br />Explorer
+              </div>
+            </Button>
+          </Link>
           <Button onClick={handleUploadClick} variant="primary" className="h-[52px] px-4 justify-start text-left font-medium text-sm bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none shadow-sm">
             <Upload className="size-4 mr-1" />
             <div className="leading-tight">
