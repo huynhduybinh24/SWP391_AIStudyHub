@@ -29,9 +29,9 @@ function SidebarLink({
     <Link
       to={to}
       aria-current={active ? 'page' : undefined}
-      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-normal leading-6 no-underline"
+      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-normal leading-6 no-underline transition-colors hover:bg-slate-100"
       style={{
-        backgroundColor: active ? '#2563eb' : 'transparent',
+        backgroundColor: active ? '#3155F6' : 'transparent',
         color,
       }}
     >
@@ -52,7 +52,7 @@ export function Sidebar() {
             className="w-8 h-8 shrink-0 object-contain" 
           />
           <div className="flex flex-col justify-center">
-            <h1 className="text-[18px] font-bold leading-tight text-[#2563eb] tracking-tight">AI Study Hub</h1>
+            <h1 className="text-[18px] font-bold leading-tight text-[#3155F6] tracking-tight">AI Study Hub</h1>
             <p className="text-[11px] font-medium leading-tight text-[#737686] mt-0.5">Focused Intelligence</p>
           </div>
         </div>
@@ -72,7 +72,7 @@ export function Sidebar() {
         </nav>
         <button
           type="button"
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[#2563eb] py-2.5 text-base font-normal text-white hover:bg-[#1d4ed8]"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[#3155F6] py-2.5 text-base font-normal text-white hover:bg-[#2563eb] transition-colors"
         >
           <Zap className="size-3.5 text-white" strokeWidth={2} />
           Upgrade to Pro
