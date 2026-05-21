@@ -36,7 +36,7 @@ export function DashboardLayout() {
               onClick={() => setChatPopupOpen(!isChatPopupOpen)}
             >
               <Bot className="size-6 text-white" />
-              <span className="absolute top-1.5 right-1.5 block h-3 w-3 rounded-full bg-[#e5eeff] border-2 border-[#3155F6]" />
+              <span className="absolute top-1.5 right-1.5 block h-3 w-3 rounded-full bg-[#22C55E] border-2 border-white" />
             </Button>
             {isChatPopupOpen && <ChatPopup onClose={() => setChatPopupOpen(false)} />}
           </>

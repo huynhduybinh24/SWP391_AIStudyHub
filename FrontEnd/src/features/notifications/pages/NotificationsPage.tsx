@@ -176,25 +176,25 @@ function NotificationCard({
 
         {/* Parent-controlled Active Reply Box */}
         {isActiveReply && (
-          <div className="mt-4 relative flex flex-col gap-3">
+          <div className="mt-3.5 flex flex-col gap-3.5 w-full">
             <textarea
               placeholder="Type your reply here..."
               value={replyText || ''}
               onChange={(e) => onReplyTextChange?.(e.target.value)}
-              className="w-full border border-[rgba(195,198,215,0.6)] rounded-xl p-3 text-sm placeholder-[#737686] focus:outline-none focus:ring-2 focus:ring-[#3155F6]/30 resize-none h-24 bg-white"
+              className="w-full bg-[#F4F7FE]/70 border border-[#E8EEFF] rounded-2xl p-4 text-sm text-[#0b1c30] placeholder-[#737686] focus:outline-none focus:ring-2 focus:ring-[#3155F6]/15 resize-none h-[100px]"
             />
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end gap-3 w-full">
               <button
                 type="button"
                 onClick={onCancelClick}
-                className="bg-transparent hover:bg-slate-100 text-[#4b5563] px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+                className="bg-transparent hover:bg-slate-50 text-[#434655] hover:text-[#0b1c30] px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => onSendReplyClick?.(replyText || '')}
-                className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[#3155F6] shadow-sm shadow-[#3155F6]/10"
               >
                 <span>Send Reply</span>
                 <Send className="w-3.5 h-3.5" />
