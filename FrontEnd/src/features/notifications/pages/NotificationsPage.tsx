@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send } from 'lucide-react'
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Eye } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils'
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
   id: string
-  type: 'ai' | 'folder' | 'mention' | 'security'
+  type: 'ai' | 'folder' | 'mention' | 'security' | 'document'
   title: string
   time: string
   isUnread: boolean
@@ -39,7 +39,8 @@ interface NotificationCardProps {
   avatar?: string
   buttons?: Array<{
     text: string
-    variant: 'primary' | 'secondary' | 'light'
+    variant: 'primary' | 'secondary' | 'light' | 'shared-btn'
+    icon?: React.ReactNode
     onClick?: () => void
     url?: string
   }>
@@ -118,6 +119,7 @@ function NotificationCard({
             {type === 'folder' && <Folder className="w-6 h-6 text-[#3155F6]" />}
             {type === 'mention' && <AtSign className="w-6 h-6 text-[#3155F6]" />}
             {type === 'security' && <Shield className="w-6 h-6 text-[#EF4444]" />}
+            {type === 'document' && <FileText className="w-6 h-6 text-[#3155F6]" />}
           </div>
         )}
       </div>
@@ -143,7 +145,6 @@ function NotificationCard({
           </div>
         )}
 
-        {/* Action Buttons */}
         {buttons && buttons.length > 0 ? (
           <div className="flex items-center gap-3 mt-4">
             {buttons.map((btn, index) => (
@@ -158,13 +159,15 @@ function NotificationCard({
                   }
                 }}
                 className={cn(
-                  "px-5 py-2.5 text-sm font-semibold rounded-xl transition-colors cursor-pointer border",
+                  "px-5 py-2.5 text-sm font-semibold rounded-xl transition-colors cursor-pointer border flex items-center gap-1.5",
                   btn.variant === 'primary' && "bg-[#3155F6] hover:bg-[#2563eb] text-white border-[#3155F6] shadow-sm shadow-[#3155F6]/10",
                   btn.variant === 'secondary' && "bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] border-[#E8EEFF]",
-                  btn.variant === 'light' && "bg-[#F4F7FE] hover:bg-slate-100 text-[#0b1c30] border-[rgba(195,198,215,0.4)]"
+                  btn.variant === 'light' && "bg-[#F4F7FE] hover:bg-slate-100 text-[#0b1c30] border-[rgba(195,198,215,0.4)]",
+                  btn.variant === 'shared-btn' && "bg-[#F0F4FF] hover:bg-[#E5EEFF] text-[#3155F6] border-none px-4 py-2 text-xs font-semibold rounded-lg shadow-none"
                 )}
               >
-                {btn.text}
+                <span>{btn.text}</span>
+                {btn.icon && btn.icon}
               </button>
             ))}
           </div>
@@ -268,12 +271,16 @@ export function NotificationsPage() {
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
 
+  // Normalizes filter strings (e.g., 'shared-files' or 'Shared Files' -> 'sharedfiles')
+  const normalize = (str: string) => str.toLowerCase().replace(/[\s-_]+/g, '')
+
   const activeTab = tabs.find(
-    (t) => t.toLowerCase().replace(' ', '') === activeFilter.toLowerCase().replace(' ', '')
+    (t) => normalize(t) === normalize(activeFilter)
   ) || 'All'
 
   const handleTabClick = (tab: string) => {
-    const filterKey = tab.toLowerCase().replace(' ', '')
+    // Generate parameter key (e.g. "Shared Files" -> "shared-files")
+    const filterKey = tab.toLowerCase().replace(/\s+/g, '-')
     setActiveFilter(filterKey)
     setSearchParams({ filter: filterKey })
   }
@@ -418,7 +425,46 @@ export function NotificationsPage() {
 
   // 4. "Shared Files" Filter Data
   const sharedFilesNotifications: NotificationCardProps[] = [
-    allNotifications[1], // New File Shared
+    {
+      id: 'shared-folder-1',
+      type: 'folder',
+      title: 'Sarah Jenkins shared a folder with you',
+      time: '2h ago',
+      isUnread: true,
+      description: (
+        <>
+          Folder: <span className="font-semibold text-[#0b1c30]">Group Project Research Materials</span>
+        </>
+      ),
+      buttons: [
+        {
+          text: 'Open Folder',
+          variant: 'shared-btn',
+          icon: <Folder className="w-3.5 h-3.5 text-[#3155F6]" />,
+          url: '/dashboard/shared-files/research-materials',
+        },
+      ],
+    },
+    {
+      id: 'shared-doc-1',
+      type: 'document',
+      title: 'Alex Chen shared a document',
+      time: '5h ago',
+      isUnread: false,
+      description: (
+        <>
+          Document: <span className="font-semibold text-[#0b1c30]">Advanced Neuroscience Syllabus 2024.pdf</span>
+        </>
+      ),
+      buttons: [
+        {
+          text: 'View Document',
+          variant: 'shared-btn',
+          icon: <Eye className="w-3.5 h-3.5 text-[#3155F6]" />,
+          url: '/dashboard/notifications/summary',
+        },
+      ],
+    },
   ]
 
   // 5. "AI Updates" Filter Data
