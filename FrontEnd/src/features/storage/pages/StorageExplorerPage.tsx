@@ -5,7 +5,6 @@ import {
   ChevronDown,
   LayoutGrid,
   List,
-  MoreVertical,
   Folder,
   Cloud,
   FileText,
@@ -13,29 +12,28 @@ import {
   FileIcon,
   Sparkles,
   Trash2,
-  Plus
+  Check
 } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
 
 const INITIAL_FOLDERS = [
-  { id: '1', name: 'Physics 101', items: '12 Items', size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe' },
-  { id: '2', name: 'Advanced Calculus', items: '45 Items', size: '3.4 GB', color: '#0d9488', bgColor: '#ccfbf1' },
-  { id: '3', name: 'Study Group S23', items: '8 Items', size: '450 MB', color: '#8b5cf6', bgColor: '#ede9fe' },
-  { id: '4', name: 'Archived Notes', items: '102 Items', size: '5.1 GB', color: '#475569', bgColor: '#f1f5f9' },
+  { id: '1', name: 'Physics 101', items: '12 Items', size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe', category: 'Study' },
+  { id: '2', name: 'Advanced Calculus', items: '45 Items', size: '3.4 GB', color: '#0d9488', bgColor: '#ccfbf1', category: 'Study' },
+  { id: '3', name: 'Study Group S23', items: '8 Items', size: '450 MB', color: '#8b5cf6', bgColor: '#ede9fe', category: 'Study' },
+  { id: '4', name: 'Archived Notes', items: '102 Items', size: '5.1 GB', color: '#475569', bgColor: '#f1f5f9', category: 'Archived' },
 ]
 
 const INITIAL_FILES = [
   {
     id: '1',
-    name: 'Chapter_7_Quantum_Mechanics.pdf',
+    name: 'Chapter_4_Quantum_Mechanics.pdf',
     modified: 'Modified 2 hours ago',
     icon: FileText,
-    iconColor: '#3b82f6',
+    type: 'PDF',
     aiSummarized: true,
   },
   {
@@ -43,14 +41,35 @@ const INITIAL_FILES = [
     name: 'Draft_Final_Essay_History.docx',
     modified: 'Modified Yesterday',
     icon: FileText,
-    iconColor: '#3b82f6',
+    type: 'DOCX',
   },
   {
     id: '3',
     name: 'Whiteboard_Lecture_3.jpg',
     modified: 'Modified Oct 12',
     icon: FileImage,
-    iconColor: '#3b82f6',
+    type: 'Image',
+  },
+  {
+    id: '4',
+    name: 'Calculus_Formula_Sheet.pdf',
+    modified: 'Modified Oct 10',
+    icon: FileText,
+    type: 'PDF',
+  },
+  {
+    id: '5',
+    name: 'Group_Project_Notes.docx',
+    modified: 'Modified Oct 8',
+    icon: FileText,
+    type: 'DOCX',
+  },
+  {
+    id: '6',
+    name: 'Physics_Diagram.png',
+    modified: 'Modified Oct 5',
+    icon: FileImage,
+    type: 'Image',
   },
 ]
 
@@ -58,6 +77,29 @@ export function StorageExplorerPage() {
   const [folders, setFolders] = useState(INITIAL_FOLDERS)
   const [files, setFiles] = useState(INITIAL_FILES)
   const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+  const [folderFilter, setFolderFilter] = useState('All Folders')
+  const [typeFilter, setTypeFilter] = useState('All Types')
+  
+  const [showFolderDropdown, setShowFolderDropdown] = useState(false)
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false)
+
+  const folderDropdownRef = useRef<HTMLDivElement>(null)
+  const typeDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (folderDropdownRef.current && !folderDropdownRef.current.contains(event.target as Node)) {
+        setShowFolderDropdown(false)
+      }
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
+        setShowTypeDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleCreateFolder = () => {
     const newFolder = {
@@ -67,6 +109,7 @@ export function StorageExplorerPage() {
       size: '0 MB',
       color: '#64748b',
       bgColor: '#f1f5f9',
+      category: 'New'
     }
     setFolders([newFolder, ...folders])
   }
@@ -82,14 +125,26 @@ export function StorageExplorerPage() {
   }
 
   const filteredFolders = useMemo(() => {
-    if (!searchQuery) return folders
-    return folders.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
-  }, [folders, searchQuery])
+    let result = folders
+    if (folderFilter !== 'All Folders') {
+      result = result.filter(f => f.category === folderFilter)
+    }
+    if (searchQuery) {
+      result = result.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    }
+    return result
+  }, [folders, searchQuery, folderFilter])
 
   const filteredFiles = useMemo(() => {
-    if (!searchQuery) return files
-    return files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
-  }, [files, searchQuery])
+    let result = files
+    if (typeFilter !== 'All Types') {
+      result = result.filter(f => f.type === typeFilter)
+    }
+    if (searchQuery) {
+      result = result.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    }
+    return result
+  }, [files, searchQuery, typeFilter])
 
   const chartData = [
     { name: 'Documents', value: 45, color: '#2563eb' },
@@ -97,6 +152,9 @@ export function StorageExplorerPage() {
     { name: 'Other', value: 9.5, color: '#cbd5e1' },
     { name: 'Remaining', value: 25, color: '#e5eeff' },
   ]
+
+  const folderOptions = ['All Folders', 'Study', 'Archived', 'New']
+  const typeOptions = ['All Types', 'PDF', 'DOCX', 'Image', 'ZIP']
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
@@ -129,7 +187,7 @@ export function StorageExplorerPage() {
         <div className="flex-1 flex flex-col gap-6 w-full">
           {/* Filter Bar */}
           <div className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="relative flex-1">
+            <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted" />
               <input 
                 type="text" 
@@ -140,25 +198,71 @@ export function StorageExplorerPage() {
               />
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              <button className="flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white text-sm font-medium hover:bg-slate-50 flex-1 sm:flex-none justify-between">
-                <div className="flex items-center gap-2">
-                  <Folder className="size-4 text-muted" />
-                  All Folders
-                </div>
-                <ChevronDown className="size-4 text-muted" />
-              </button>
-              <button className="flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white text-sm font-medium hover:bg-slate-50 flex-1 sm:flex-none justify-between">
-                <div className="flex items-center gap-2">
-                  <FileIcon className="size-4 text-muted" />
-                  All Types
-                </div>
-                <ChevronDown className="size-4 text-muted" />
-              </button>
+              <div className="relative flex-1 sm:flex-none" ref={folderDropdownRef}>
+                <button 
+                  onClick={() => setShowFolderDropdown(!showFolderDropdown)}
+                  className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white text-sm font-medium hover:bg-slate-50 justify-between whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-2">
+                    <Folder className="size-4 text-muted" />
+                    {folderFilter}
+                  </div>
+                  <ChevronDown className="size-4 text-muted" />
+                </button>
+                {showFolderDropdown && (
+                  <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-border z-10 py-1">
+                    {folderOptions.map(opt => (
+                      <button
+                        key={opt}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center justify-between text-foreground"
+                        onClick={() => { setFolderFilter(opt); setShowFolderDropdown(false) }}
+                      >
+                        {opt}
+                        {folderFilter === opt && <Check className="size-4 text-primary" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative flex-1 sm:flex-none" ref={typeDropdownRef}>
+                <button 
+                  onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                  className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white text-sm font-medium hover:bg-slate-50 justify-between whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileIcon className="size-4 text-muted" />
+                    {typeFilter}
+                  </div>
+                  <ChevronDown className="size-4 text-muted" />
+                </button>
+                {showTypeDropdown && (
+                  <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-border z-10 py-1">
+                    {typeOptions.map(opt => (
+                      <button
+                        key={opt}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center justify-between text-foreground"
+                        onClick={() => { setTypeFilter(opt); setShowTypeDropdown(false) }}
+                      >
+                        {opt}
+                        {typeFilter === opt && <Check className="size-4 text-primary" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center h-10 rounded-lg border border-border bg-white p-1">
-                <button className="p-1.5 rounded bg-primary/10 text-primary">
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted hover:text-foreground'}`}
+                >
                   <LayoutGrid className="size-4" />
                 </button>
-                <button className="p-1.5 rounded text-muted hover:text-foreground">
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-primary/10 text-primary' : 'text-muted hover:text-foreground'}`}
+                >
                   <List className="size-4" />
                 </button>
               </div>
@@ -168,77 +272,141 @@ export function StorageExplorerPage() {
           {/* FOLDERS Section */}
           <div>
             <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Folders {filteredFolders.length}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {filteredFolders.length === 0 && (
-                <div className="col-span-full py-8 text-center text-muted text-sm border border-dashed rounded-lg">
-                  No folders found.
-                </div>
-              )}
-              {filteredFolders.map((folder) => (
-                <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border">
-                  <CardContent className="p-4 flex flex-col h-[120px] justify-between">
-                    <div className="flex justify-between items-start">
-                      <div 
-                        className="w-10 h-10 rounded-lg flex items-center justify-center" 
-                        style={{ backgroundColor: folder.bgColor }}
-                      >
-                        <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
+            {filteredFolders.length === 0 ? (
+              <div className="py-8 text-center text-muted text-sm border border-dashed rounded-lg bg-white/50">
+                No folders found.
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {filteredFolders.map((folder) => (
+                  <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border group">
+                    <CardContent className="p-4 flex flex-col h-[120px] justify-between">
+                      <div className="flex justify-between items-start">
+                        <div 
+                          className="w-10 h-10 rounded-lg flex items-center justify-center" 
+                          style={{ backgroundColor: folder.bgColor }}
+                        >
+                          <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
+                        </div>
+                        <button 
+                          onClick={(e) => handleDeleteFolder(folder.id, e)}
+                          className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete folder"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
                       </div>
-                      <button 
-                        onClick={(e) => handleDeleteFolder(folder.id, e)}
-                        className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Delete folder"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-[15px] text-foreground truncate">{folder.name}</h3>
-                      <div className="flex items-center justify-between mt-1 text-xs text-muted font-medium">
-                        <span>{folder.items}</span>
-                        <span>{folder.size}</span>
+                      <div>
+                        <h3 className="font-semibold text-[15px] text-foreground truncate">{folder.name}</h3>
+                        <div className="flex items-center justify-between mt-1 text-xs text-muted font-medium">
+                          <span>{folder.items}</span>
+                          <span>{folder.size}</span>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {filteredFolders.map((folder) => (
+                  <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border group">
+                    <CardContent className="p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div 
+                          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" 
+                          style={{ backgroundColor: folder.bgColor }}
+                        >
+                          <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
+                        </div>
+                        <h3 className="font-semibold text-[15px] text-foreground truncate max-w-[200px] sm:max-w-[300px]">{folder.name}</h3>
+                      </div>
+                      <div className="flex items-center gap-4 sm:gap-8">
+                        <div className="hidden sm:flex items-center gap-8 text-sm text-muted font-medium w-[150px] justify-between">
+                          <span>{folder.items}</span>
+                          <span>{folder.size}</span>
+                        </div>
+                        <button 
+                          onClick={(e) => handleDeleteFolder(folder.id, e)}
+                          className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete folder"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* RECENT FILES Section */}
           <div>
             <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Recent Files Displaying {filteredFiles.length}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredFiles.length === 0 && (
-                <div className="col-span-full py-8 text-center text-muted text-sm border border-dashed rounded-lg">
-                  No files found.
-                </div>
-              )}
-              {filteredFiles.map((file) => (
-                <Card key={file.id} className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border group">
-                  <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] border border-slate-100 flex items-center justify-center relative mb-3">
-                    <file.icon className="size-12 text-[#93c5fd]" strokeWidth={1.5} />
-                    {file.aiSummarized && (
-                      <div className="absolute bottom-2 left-2 bg-teal-50 text-teal-600 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 border border-teal-100">
-                        <Sparkles className="size-3" />
-                        AI SUMMARIZED
+            {filteredFiles.length === 0 ? (
+              <div className="py-8 text-center text-muted text-sm border border-dashed rounded-lg bg-white/50">
+                No files found.
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredFiles.map((file) => (
+                  <Card key={file.id} className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border group">
+                    <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] border border-slate-100 flex items-center justify-center relative mb-3 overflow-hidden">
+                      <file.icon className="size-12 text-[#93c5fd]" strokeWidth={1.5} />
+                      {file.aiSummarized && (
+                        <div className="absolute bottom-2 left-2 bg-teal-50 text-teal-600 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 border border-teal-100 shadow-sm">
+                          <Sparkles className="size-3" />
+                          AI SUMMARIZED
+                        </div>
+                      )}
+                      <button 
+                        onClick={(e) => handleDeleteFile(file.id, e)}
+                        className="absolute top-2 right-2 text-muted hover:text-red-500 p-1.5 bg-white shadow-sm border border-slate-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete file"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                    <div className="px-1 flex-1 flex flex-col justify-between">
+                      <h3 className="font-semibold text-[13px] text-foreground line-clamp-2 leading-snug" title={file.name}>{file.name}</h3>
+                      <p className="text-[11px] text-muted mt-1.5">{file.modified}</p>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {filteredFiles.map((file) => (
+                  <Card key={file.id} className="p-3 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer border-border group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-[#f8fafc] border border-slate-100 flex items-center justify-center shrink-0">
+                        <file.icon className="size-5 text-[#93c5fd]" />
                       </div>
-                    )}
-                    <button 
-                      onClick={(e) => handleDeleteFile(file.id, e)}
-                      className="absolute top-2 right-2 text-muted hover:text-red-500 p-1 bg-white/80 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Delete file"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </div>
-                  <div className="px-1 flex-1 flex flex-col justify-between">
-                    <h3 className="font-semibold text-[13px] text-foreground line-clamp-2 leading-snug">{file.name}</h3>
-                    <p className="text-[11px] text-muted mt-1.5">{file.modified}</p>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                      <div>
+                        <h3 className="font-semibold text-[14px] text-foreground truncate max-w-[200px] sm:max-w-[400px]" title={file.name}>{file.name}</h3>
+                        <p className="text-[11px] text-muted mt-0.5">{file.modified}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 sm:gap-6">
+                      {file.aiSummarized && (
+                        <div className="hidden sm:flex bg-teal-50 text-teal-600 text-[10px] font-bold px-2 py-1 rounded items-center gap-1 border border-teal-100">
+                          <Sparkles className="size-3" />
+                          AI SUMMARIZED
+                        </div>
+                      )}
+                      <button 
+                        onClick={(e) => handleDeleteFile(file.id, e)}
+                        className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete file"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -268,7 +436,7 @@ export function StorageExplorerPage() {
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex items-center justify-center flex-col">
+              <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
                 <span className="text-3xl font-bold text-foreground">75%</span>
                 <span className="text-xs text-muted font-medium mt-1">Used</span>
               </div>
