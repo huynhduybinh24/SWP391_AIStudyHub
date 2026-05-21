@@ -6,6 +6,8 @@ export function NotificationsPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('All')
   const [commentText, setCommentText] = useState('')
+  const [isReplied, setIsReplied] = useState(false)
+  const [replyContent, setReplyContent] = useState('')
 
   const tabs = ['All', 'Unread', 'Mentions', 'Shared Files', 'AI Updates']
 
@@ -136,14 +138,48 @@ export function NotificationsPage() {
             </div>
 
             {/* Comment reply input */}
-            <div className="mt-3">
-              <textarea
-                placeholder="cx"
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                className="w-full border border-[rgba(195,198,215,0.6)] rounded-xl p-3 text-sm placeholder-[#737686] focus:outline-none focus:ring-2 focus:ring-[#3155F6]/30 resize-none h-16 bg-white"
-              />
-            </div>
+            {!isReplied ? (
+              <div className="mt-3 relative">
+                <textarea
+                  placeholder="Type a reply..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      if (commentText.trim()) {
+                        setReplyContent(commentText)
+                        setIsReplied(true)
+                        setCommentText('')
+                      }
+                    }
+                  }}
+                  className="w-full border border-[rgba(195,198,215,0.6)] rounded-xl p-3 pr-20 text-sm placeholder-[#737686] focus:outline-none focus:ring-2 focus:ring-[#3155F6]/30 resize-none h-16 bg-white"
+                />
+                <button
+                  onClick={() => {
+                    if (commentText.trim()) {
+                      setReplyContent(commentText)
+                      setIsReplied(true)
+                      setCommentText('')
+                    }
+                  }}
+                  disabled={!commentText.trim()}
+                  className="absolute bottom-3 right-3 bg-[#3155F6] hover:bg-[#2563eb] text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                >
+                  Reply
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 flex gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#3155F6] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                  Me
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl rounded-tl-none p-3 text-sm text-[#434655]">
+                  {replyContent}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
