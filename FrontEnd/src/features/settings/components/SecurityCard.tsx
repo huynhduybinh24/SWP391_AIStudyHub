@@ -1,25 +1,13 @@
 import { useState } from 'react'
-import { Shield, Key, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Shield, Key, AlertTriangle } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { ChangePasswordModal } from './ChangePasswordModal'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-
-const passwordSchema = z
-  .object({
-    currentPassword: z.string().min(6, 'Password must be at least 6 characters'),
-    newPassword: z.string().min(6, 'Password must be at least 6 characters'),
-    confirmPassword: z.string().min(6, 'Password must be at least 6 characters'),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  })
-
-type PasswordFormValues = z.infer<typeof passwordSchema>
 
 const tfaSchema = z.object({
   code: z.string().regex(/^\d{6}$/, 'Code must be exactly 6 digits'),
@@ -31,17 +19,6 @@ export function SecurityCard() {
   const { security, toggleTwoFactor } = useSettingsStore()
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [is2faModalOpen, setIs2faModalOpen] = useState(false)
-  const [passwordSuccess, setPasswordSuccess] = useState(false)
-
-  // React Hook Form for Change Password
-  const {
-    register: registerPassword,
-    handleSubmit: handleSubmitPassword,
-    formState: { errors: passwordErrors },
-    reset: resetPassword,
-  } = useForm<PasswordFormValues>({
-    resolver: zodResolver(passwordSchema),
-  })
 
   // React Hook Form for 2FA Verification
   const {
@@ -52,16 +29,6 @@ export function SecurityCard() {
   } = useForm<TfaFormValues>({
     resolver: zodResolver(tfaSchema),
   })
-
-  const onSubmitPassword = (data: PasswordFormValues) => {
-    console.log('Password changed successfully', data)
-    setPasswordSuccess(true)
-    setTimeout(() => {
-      setPasswordSuccess(false)
-      setIsPasswordModalOpen(false)
-      resetPassword()
-    }, 2000)
-  }
 
   const onSubmit2fa = (data: TfaFormValues) => {
     console.log('2FA Code submitted', data)
@@ -136,74 +103,11 @@ export function SecurityCard() {
         </div>
       </div>
 
-      {/* Password Change Modal */}
-      <Modal
+      {/* Change Password Modal */}
+      <ChangePasswordModal
         isOpen={isPasswordModalOpen}
-        onClose={() => {
-          setIsPasswordModalOpen(false)
-          resetPassword()
-        }}
-        title="Change Password"
-        description="Strengthen your account safety by updating your password."
-        className="max-w-md dark:bg-slate-900 dark:border-slate-800"
-      >
-        {passwordSuccess ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center space-y-3">
-            <CheckCircle className="size-16 text-green-500 animate-bounce" />
-            <h3 className="text-lg font-bold text-foreground dark:text-white">Password Updated!</h3>
-            <p className="text-sm text-muted dark:text-slate-400">Your password has been changed successfully.</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmitPassword(onSubmitPassword)} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground dark:text-slate-300">Current Password</label>
-              <Input
-                type="password"
-                placeholder="Enter current password"
-                error={passwordErrors.currentPassword?.message}
-                {...registerPassword('currentPassword')}
-                className="bg-transparent dark:text-white dark:border-slate-800"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground dark:text-slate-300">New Password</label>
-              <Input
-                type="password"
-                placeholder="Enter new password (min 6 chars)"
-                error={passwordErrors.newPassword?.message}
-                {...registerPassword('newPassword')}
-                className="bg-transparent dark:text-white dark:border-slate-800"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground dark:text-slate-300">Confirm New Password</label>
-              <Input
-                type="password"
-                placeholder="Confirm new password"
-                error={passwordErrors.confirmPassword?.message}
-                {...registerPassword('confirmPassword')}
-                className="bg-transparent dark:text-white dark:border-slate-800"
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-border/60 dark:border-slate-800/80">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setIsPasswordModalOpen(false)
-                  resetPassword()
-                }}
-                className="dark:bg-slate-800 dark:text-white dark:border-slate-700"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-[#2563eb] text-white">
-                Save Password
-              </Button>
-            </div>
-          </form>
-        )}
-      </Modal>
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
 
       {/* 2FA Setup Modal */}
       <Modal
@@ -254,7 +158,7 @@ export function SecurityCard() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground dark:text-slate-300 flex items-center gap-1.5">
+            <label className="text-sm font-semibold text-foreground dark:text-slate-350 flex items-center gap-1.5">
               <AlertTriangle className="size-4 text-amber-500" />
               Enter 6-digit Authenticator Code
             </label>
