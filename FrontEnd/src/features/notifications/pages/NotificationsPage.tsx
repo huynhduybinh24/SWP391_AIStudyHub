@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon } from 'lucide-react'
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
   id: string
-  type: 'ai' | 'folder' | 'mention'
+  type: 'ai' | 'folder' | 'mention' | 'security'
   title: string
   time: string
   isUnread: boolean
@@ -15,6 +15,12 @@ interface NotificationCardProps {
   actionText?: string
   actionUrl?: string
   avatar?: string
+  buttons?: Array<{
+    text: string
+    variant: 'primary' | 'secondary' | 'light'
+    onClick?: () => void
+    url?: string
+  }>
 }
 
 function NotificationCard({
@@ -27,6 +33,7 @@ function NotificationCard({
   actionText,
   actionUrl,
   avatar,
+  buttons,
 }: NotificationCardProps) {
   const navigate = useNavigate()
   const [commentText, setCommentText] = useState('')
@@ -64,10 +71,14 @@ function NotificationCard({
             }}
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-[#E8EEFF] flex items-center justify-center">
+          <div className={cn(
+            "w-12 h-12 rounded-full flex items-center justify-center",
+            type === 'security' ? "bg-[#FFF0F0]" : "bg-[#E8EEFF]"
+          )}>
             {type === 'ai' && <Bot className="w-6 h-6 text-[#3155F6]" />}
             {type === 'folder' && <Folder className="w-6 h-6 text-[#3155F6]" />}
             {type === 'mention' && <AtSign className="w-6 h-6 text-[#3155F6]" />}
+            {type === 'security' && <Shield className="w-6 h-6 text-[#EF4444]" />}
           </div>
         )}
       </div>
@@ -93,8 +104,32 @@ function NotificationCard({
           </div>
         )}
 
-        {/* Action Button */}
-        {actionText && !showReplyInput && !isReplied && (
+        {/* Action Buttons */}
+        {buttons && buttons.length > 0 ? (
+          <div className="flex items-center gap-3 mt-3.5">
+            {buttons.map((btn, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => {
+                  if (btn.onClick) {
+                    btn.onClick()
+                  } else if (btn.url) {
+                    navigate(btn.url)
+                  }
+                }}
+                className={cn(
+                  "px-4 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer border",
+                  btn.variant === 'primary' && "bg-[#3155F6] hover:bg-[#2563eb] text-white border-[#3155F6]",
+                  btn.variant === 'secondary' && "bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] border-[#E8EEFF]",
+                  btn.variant === 'light' && "bg-[#F4F7FE] hover:bg-slate-100 text-[#0b1c30] border-[rgba(195,198,215,0.4)]"
+                )}
+              >
+                {btn.text}
+              </button>
+            ))}
+          </div>
+        ) : actionText && !showReplyInput && !isReplied ? (
           <div>
             <button
               type="button"
@@ -109,7 +144,7 @@ function NotificationCard({
               )}
             </button>
           </div>
-        )}
+        ) : null}
 
         {/* Reply Input Form */}
         {showReplyInput && !isReplied && (
@@ -157,16 +192,14 @@ export function NotificationsPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // Notification categories / tabs configuration
   const tabs = ['All', 'Unread', 'Mentions', 'Shared Files', 'AI Updates']
   
-  // Read and normalize search parameter filter state
+  // Read and normalize search parameter filter
   const filterParam = searchParams.get('filter') || 'all'
   const activeTab = tabs.find(
     (t) => t.toLowerCase().replace(' ', '') === filterParam.toLowerCase().replace(' ', '')
   ) || 'All'
 
-  // Handle active filter switching
   const handleTabClick = (tab: string) => {
     setSearchParams({ filter: tab.toLowerCase().replace(' ', '') })
   }
@@ -266,10 +299,42 @@ export function NotificationsPage() {
     },
   ]
 
-  // 3. "Unread" Filter Data
+  // 3. "Unread" Filter Data: Exact 2 unread notifications from Figma
   const unreadNotifications: NotificationCardProps[] = [
-    allNotifications[0], // AI Summary Ready
-    mentionsNotifications[0], // Emily R. mentioned you (1h ago)
+    {
+      id: 'unread-1',
+      type: 'ai',
+      title: 'AI Summary Ready',
+      time: '10m ago',
+      isUnread: true,
+      description: (
+        <>
+          The comprehensive summary for your document{' '}
+          <strong className="font-semibold text-[#0b1c30]">
+            "Advanced Neuroscience Syllabus 2024.pdf"
+          </strong>{' '}
+          is now complete and ready for review.
+        </>
+      ),
+      actionText: 'View Summary',
+      actionUrl: '/dashboard/notifications/summary',
+    },
+    {
+      id: 'unread-2',
+      type: 'security',
+      title: 'Security Alert: New Login',
+      time: '35m ago',
+      isUnread: true,
+      description: (
+        <>
+          A new login was detected on your account from a Chrome browser on a MacOS device. If this wasn't you, please secure your account immediately.
+        </>
+      ),
+      buttons: [
+        { text: 'Review Activity', variant: 'primary' },
+        { text: 'It was me', variant: 'light' },
+      ],
+    },
   ]
 
   // 4. "Shared Files" Filter Data
