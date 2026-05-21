@@ -4,6 +4,9 @@ import { ProtectedRoute } from '@/app/router/ProtectedRoute'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { DocumentsPage } from '@/features/documents/pages/DocumentsPage'
+import { MyDocumentsPage } from '@/features/documents/pages/MyDocumentsPage'
+import { SubjectCategoryPage } from '@/features/documents/pages/SubjectCategoryPage'
+import { UploadSubjectDocumentPage } from '@/features/documents/pages/UploadSubjectDocumentPage'
 import { UploadPage } from '@/features/documents/pages/UploadPage'
 import { ChatPage } from '@/features/ai-chatbot/pages/ChatPage'
 import { QuizzesPage } from '@/features/quizzes/pages/QuizzesPage'
@@ -35,7 +38,15 @@ export const router = createBrowserRouter([
         element: <DashboardLayout />,
         children: [
           { index: true, element: <DashboardPage /> },
-          { path: 'documents', element: <DocumentsPage /> },
+          {
+            path: 'documents',
+            element: <DocumentsPage />,
+            children: [
+              { index: true, element: <MyDocumentsPage /> },
+              { path: 'subject/:subjectId', element: <SubjectCategoryPage /> },
+              { path: 'subject/:subjectId/upload', element: <UploadSubjectDocumentPage /> }
+            ]
+          },
           { path: 'upload', element: <UploadPage /> },
           { path: 'chat', element: <ChatPage /> },
           { path: 'shared', element: <PlaceholderPage title="Shared Files" /> },
