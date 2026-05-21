@@ -162,6 +162,14 @@ export function CloudStoragePage() {
               </div>
             </Button>
           </Link>
+          <Link to="/dashboard/storage/analytics" className="block">
+            <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground w-full">
+              <BarChart2 className="size-4 text-muted-foreground mr-1" />
+              <div className="leading-tight">
+                Storage<br />Analytics
+              </div>
+            </Button>
+          </Link>
           <Button onClick={handleUploadClick} variant="primary" className="h-[52px] px-4 justify-start text-left font-medium text-sm bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none shadow-sm">
             <Upload className="size-4 mr-1" />
             <div className="leading-tight">
