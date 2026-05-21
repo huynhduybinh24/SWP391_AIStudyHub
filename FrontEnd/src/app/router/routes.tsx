@@ -7,6 +7,7 @@ import { DocumentsPage } from '@/features/documents/pages/DocumentsPage'
 import { MyDocumentsPage } from '@/features/documents/pages/MyDocumentsPage'
 import { SubjectCategoryPage } from '@/features/documents/pages/SubjectCategoryPage'
 import { UploadSubjectDocumentPage } from '@/features/documents/pages/UploadSubjectDocumentPage'
+import { SearchResultsPage } from '@/features/documents/pages/SearchResultsPage'
 import { UploadPage } from '@/features/documents/pages/UploadPage'
 import { ChatPage } from '@/features/ai-chatbot/pages/ChatPage'
 import { QuizzesPage } from '@/features/quizzes/pages/QuizzesPage'
@@ -44,7 +45,8 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <MyDocumentsPage /> },
               { path: 'subject/:subjectId', element: <SubjectCategoryPage /> },
-              { path: 'subject/:subjectId/upload', element: <UploadSubjectDocumentPage /> }
+              { path: 'subject/:subjectId/upload', element: <UploadSubjectDocumentPage /> },
+              { path: 'search', element: <SearchResultsPage /> }
             ]
           },
           { path: 'upload', element: <UploadPage /> },
