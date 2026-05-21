@@ -11,22 +11,25 @@ import {
   FileText,
   FileImage,
   FileIcon,
-  Sparkles
+  Sparkles,
+  Trash2,
+  Plus
 } from 'lucide-react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 
-const folders = [
+const INITIAL_FOLDERS = [
   { id: '1', name: 'Physics 101', items: '12 Items', size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe' },
   { id: '2', name: 'Advanced Calculus', items: '45 Items', size: '3.4 GB', color: '#0d9488', bgColor: '#ccfbf1' },
   { id: '3', name: 'Study Group S23', items: '8 Items', size: '450 MB', color: '#8b5cf6', bgColor: '#ede9fe' },
   { id: '4', name: 'Archived Notes', items: '102 Items', size: '5.1 GB', color: '#475569', bgColor: '#f1f5f9' },
 ]
 
-const recentFiles = [
+const INITIAL_FILES = [
   {
     id: '1',
     name: 'Chapter_7_Quantum_Mechanics.pdf',
@@ -52,6 +55,42 @@ const recentFiles = [
 ]
 
 export function StorageExplorerPage() {
+  const [folders, setFolders] = useState(INITIAL_FOLDERS)
+  const [files, setFiles] = useState(INITIAL_FILES)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const handleCreateFolder = () => {
+    const newFolder = {
+      id: Math.random().toString(36).substring(7),
+      name: 'New Folder',
+      items: '0 Items',
+      size: '0 MB',
+      color: '#64748b',
+      bgColor: '#f1f5f9',
+    }
+    setFolders([newFolder, ...folders])
+  }
+
+  const handleDeleteFolder = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setFolders(folders.filter(f => f.id !== id))
+  }
+
+  const handleDeleteFile = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setFiles(files.filter(f => f.id !== id))
+  }
+
+  const filteredFolders = useMemo(() => {
+    if (!searchQuery) return folders
+    return folders.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  }, [folders, searchQuery])
+
+  const filteredFiles = useMemo(() => {
+    if (!searchQuery) return files
+    return files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  }, [files, searchQuery])
+
   const chartData = [
     { name: 'Documents', value: 45, color: '#2563eb' },
     { name: 'Images', value: 20.5, color: '#0d9488' },
@@ -77,7 +116,7 @@ export function StorageExplorerPage() {
               Browse and organize all cloud-stored study files.
             </p>
           </div>
-          <Button variant="secondary" className="gap-2 bg-white h-10 px-4">
+          <Button onClick={handleCreateFolder} variant="secondary" className="gap-2 bg-white h-10 px-4">
             <FolderPlus className="size-4" />
             New Folder
           </Button>
@@ -95,6 +134,8 @@ export function StorageExplorerPage() {
               <input 
                 type="text" 
                 placeholder="Find in Explorer..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-10 pl-9 pr-4 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
@@ -126,9 +167,14 @@ export function StorageExplorerPage() {
 
           {/* FOLDERS Section */}
           <div>
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Folders 4</h2>
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Folders {filteredFolders.length}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {folders.map((folder) => (
+              {filteredFolders.length === 0 && (
+                <div className="col-span-full py-8 text-center text-muted text-sm border border-dashed rounded-lg">
+                  No folders found.
+                </div>
+              )}
+              {filteredFolders.map((folder) => (
                 <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border">
                   <CardContent className="p-4 flex flex-col h-[120px] justify-between">
                     <div className="flex justify-between items-start">
@@ -138,8 +184,12 @@ export function StorageExplorerPage() {
                       >
                         <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
                       </div>
-                      <button className="text-muted hover:text-foreground p-1">
-                        <MoreVertical className="size-4" />
+                      <button 
+                        onClick={(e) => handleDeleteFolder(folder.id, e)}
+                        className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete folder"
+                      >
+                        <Trash2 className="size-4" />
                       </button>
                     </div>
                     <div>
@@ -157,9 +207,14 @@ export function StorageExplorerPage() {
 
           {/* RECENT FILES Section */}
           <div>
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Recent Files Displaying 6</h2>
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Recent Files Displaying {filteredFiles.length}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recentFiles.map((file) => (
+              {filteredFiles.length === 0 && (
+                <div className="col-span-full py-8 text-center text-muted text-sm border border-dashed rounded-lg">
+                  No files found.
+                </div>
+              )}
+              {filteredFiles.map((file) => (
                 <Card key={file.id} className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border group">
                   <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] border border-slate-100 flex items-center justify-center relative mb-3">
                     <file.icon className="size-12 text-[#93c5fd]" strokeWidth={1.5} />
@@ -169,8 +224,12 @@ export function StorageExplorerPage() {
                         AI SUMMARIZED
                       </div>
                     )}
-                    <button className="absolute top-2 right-2 text-muted hover:text-foreground p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <MoreVertical className="size-4" />
+                    <button 
+                      onClick={(e) => handleDeleteFile(file.id, e)}
+                      className="absolute top-2 right-2 text-muted hover:text-red-500 p-1 bg-white/80 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Delete file"
+                    >
+                      <Trash2 className="size-4" />
                     </button>
                   </div>
                   <div className="px-1 flex-1 flex flex-col justify-between">
