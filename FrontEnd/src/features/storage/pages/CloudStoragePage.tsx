@@ -6,7 +6,7 @@ import {
   Upload,
   FolderOpen,
   FileSpreadsheet,
-  Trash2,
+  Eraser,
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Button } from '@/components/ui/Button'
@@ -68,17 +68,23 @@ export function CloudStoragePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="secondary" className="gap-2">
-            <Trash2 className="size-4" />
-            Clean Up<br className="hidden md:block"/>Storage
+          <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground">
+            <Eraser className="size-4 text-muted-foreground mr-1" />
+            <div className="leading-tight">
+              Clean Up<br />Storage
+            </div>
           </Button>
-          <Button variant="secondary" className="gap-2">
-            <FolderSearch className="size-4" />
-            Storage<br className="hidden md:block"/>Explorer
+          <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground">
+            <FolderSearch className="size-4 text-muted-foreground mr-1" />
+            <div className="leading-tight">
+              Storage<br />Explorer
+            </div>
           </Button>
-          <Button variant="primary" className="gap-2 bg-[#1e40af] hover:bg-[#1e40af]/90">
-            <Upload className="size-4" />
-            Upload<br className="hidden md:block"/>File
+          <Button variant="primary" className="h-[52px] px-4 justify-start text-left font-medium text-sm bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none shadow-sm">
+            <Upload className="size-4 mr-1" />
+            <div className="leading-tight">
+              Upload<br />File
+            </div>
           </Button>
         </div>
       </div>
@@ -91,7 +97,7 @@ export function CloudStoragePage() {
               <HardDrive className="size-4 text-primary" />
               Total Storage
             </div>
-            <div className="text-2xl font-bold text-foreground mt-1">100 GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">100 GB</div>
           </CardContent>
         </Card>
         <Card>
@@ -100,7 +106,7 @@ export function CloudStoragePage() {
               <FileText className="size-4 text-[#8b5cf6]" />
               Used Storage
             </div>
-            <div className="text-2xl font-bold text-foreground mt-1">75 GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">75 GB</div>
           </CardContent>
         </Card>
         <Card>
@@ -109,7 +115,7 @@ export function CloudStoragePage() {
               <Cloud className="size-4 text-[#0ea5e9]" />
               Remaining
             </div>
-            <div className="text-2xl font-bold text-foreground mt-1">25 GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">25 GB</div>
           </CardContent>
         </Card>
         <Card>
@@ -118,7 +124,7 @@ export function CloudStoragePage() {
               <FolderOpen className="size-4 text-[#2563eb]" />
               Shared Files
             </div>
-            <div className="text-2xl font-bold text-foreground mt-1">1.2 GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">1.2 GB</div>
           </CardContent>
         </Card>
       </div>
@@ -166,8 +172,8 @@ export function CloudStoragePage() {
                 <PieChart>
                   <Pie
                     data={chartData}
-                    innerRadius={55}
-                    outerRadius={75}
+                    innerRadius={62}
+                    outerRadius={80}
                     startAngle={90}
                     endAngle={-270}
                     dataKey="value"
@@ -180,7 +186,7 @@ export function CloudStoragePage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex items-center justify-center flex-col">
-                <span className="text-2xl font-bold text-foreground">75%</span>
+                <span className="text-4xl font-bold text-foreground">75%</span>
               </div>
             </div>
             
@@ -191,7 +197,7 @@ export function CloudStoragePage() {
               You're approaching your limit.
             </p>
             
-            <Button variant="secondary" className="w-full text-[#1e40af] bg-[#f0f4ff] border-none hover:bg-[#e0e8ff]">
+            <Button variant="secondary" className="w-full text-[#2563eb] bg-[#f0f4ff] border-none hover:bg-[#e0e8ff]">
               Manage Storage
             </Button>
           </Card>
