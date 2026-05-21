@@ -24,11 +24,12 @@ export function DashboardLayout() {
         {!isChatPage && (
           <Button
             size="icon"
-            className="fixed bottom-24 right-8 z-20 size-14 rounded-full bg-primary-dark shadow-lg hover:bg-primary"
+            className="fixed bottom-24 right-8 z-20 size-14 rounded-full bg-[#3155F6] shadow-lg hover:bg-[#2563eb] relative"
             aria-label="Open AI Chatbot"
             onClick={() => navigate('/dashboard/chat')}
           >
             <Bot className="size-6 text-white" />
+            <span className="absolute top-1.5 right-1.5 block h-3 w-3 rounded-full bg-[#e5eeff] border-2 border-[#3155F6]" />
           </Button>
         )}
       </div>
