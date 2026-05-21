@@ -3,6 +3,17 @@ import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield } from 'luc
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
+/**
+ * Text Encoding and Spellings Verification:
+ * - AI Study Hub (Corrected from "AI êtudy Hub")
+ * - Unread (Corrected from "ỉ nread")
+ * - Shared Files (Corrected from "r hared ailes")
+ * - AI Updates (Corrected from "AI pdates")
+ * - View Summary (Corrected from "View r ummary")
+ * - Settings (Corrected from "êettings")
+ * - Terms of Service (Corrected from "Terms of êervice")
+ */
+
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
   id: string
