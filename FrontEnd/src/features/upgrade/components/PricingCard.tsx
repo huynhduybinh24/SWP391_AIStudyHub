@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 export interface PricingPlan {
@@ -108,12 +109,12 @@ export function PricingCard({ plan, index }: PricingCardProps) {
             {plan.buttonText}
           </button>
         ) : plan.buttonVariant === 'primary' ? (
-          <button
-            type="button"
-            className="w-full rounded-2xl bg-[#3155F6] py-3.5 px-4 text-sm font-bold text-white transition-all hover:bg-[#2563eb] shadow-md shadow-[#3155F6]/15 hover:shadow-lg hover:shadow-[#3155F6]/20 active:scale-[0.98] cursor-pointer"
+          <Link
+            to="/dashboard/checkout"
+            className="w-full text-center block rounded-2xl bg-[#3155F6] py-3.5 px-4 text-sm font-bold text-white transition-all hover:bg-[#2563eb] shadow-md shadow-[#3155F6]/15 hover:shadow-lg hover:shadow-[#3155F6]/20 active:scale-[0.98] cursor-pointer no-underline"
           >
             {plan.buttonText}
-          </button>
+          </Link>
         ) : (
           <button
             type="button"
