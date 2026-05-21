@@ -203,7 +203,7 @@ export function LandingPage() {
             <a href="#" className="hover:text-primary transition-colors">Features</a>
             <Link to="/login" className="hover:text-primary transition-colors">Login</Link>
             <Link to="/login" className="hover:text-primary transition-colors">Register</Link>
-            <a href="#" className="hover:text-primary transition-colors">Help Center</a>
+            <Link to="/help" className="hover:text-primary transition-colors">Help Center</Link>
           </div>
         </div>
       </footer>
