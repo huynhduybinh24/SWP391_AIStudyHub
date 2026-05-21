@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bell, CircleHelp, LogOut, Settings, User } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -11,10 +11,18 @@ import { cn } from '@/lib/utils'
 
 export function Header() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const urlKeyword = searchParams.get('keyword') || ''
+  const [searchVal, setSearchVal] = useState(urlKeyword)
+  
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const { userMenuOpen, setUserMenuOpen, toggleUserMenu } = useUiStore()
   const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setSearchVal(urlKeyword)
+  }, [urlKeyword])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -32,15 +40,24 @@ export function Header() {
     navigate('/')
   }
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchVal.trim()) {
+      navigate(`/dashboard/documents/search?keyword=${encodeURIComponent(searchVal.trim())}`)
+    }
+  }
+
   return (
     <header className="relative z-10 flex h-[72px] shrink-0 items-center justify-between border-b border-border bg-white px-8 shadow-sm">
-      <div className="flex flex-1 items-center">
+      <form onSubmit={handleSearchSubmit} className="flex flex-1 items-center">
         <Input
           placeholder="Search documents, chats, plans..."
           className="max-w-[400px] bg-surface"
           aria-label="Search"
+          value={searchVal}
+          onChange={(e) => setSearchVal(e.target.value)}
         />
-      </div>
+      </form>
 
       <div className="relative flex items-center gap-4" ref={menuRef}>
         <Button variant="ghost" size="icon" aria-label="Help">
