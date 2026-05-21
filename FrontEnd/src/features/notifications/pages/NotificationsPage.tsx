@@ -264,7 +264,7 @@ export function NotificationsPage() {
     },
   ]
 
-  // 2. "Mentions" Filter Data: Exact 2 custom mentions from Figma
+  // 2. "Mentions" Filter Data: Exact 2 custom mentions from Figma with precise button labels and actions
   const mentionsNotifications: NotificationCardProps[] = [
     {
       id: 'mention-1',
