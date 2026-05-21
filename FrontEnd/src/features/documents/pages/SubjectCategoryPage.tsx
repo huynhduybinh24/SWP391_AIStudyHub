@@ -550,7 +550,7 @@ export default function SubjectCategoryPage() {
                   <div 
                     key={doc.id}
                     className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-500/20 cursor-pointer h-[200px]"
-                    onClick={() => openPreviewModal(doc)}
+                    onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
                   >
                     {/* Top action block */}
                     <div className="flex items-start justify-between" onClick={(e) => e.stopPropagation()}>
@@ -574,7 +574,7 @@ export default function SubjectCategoryPage() {
                         {activeMenuId === doc.id && (
                           <div ref={menuRef} className="absolute right-0 top-8 z-30 w-48 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl animate-fade-in">
                             <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-[#2563eb] transition-colors"><MessageSquare className="h-4 w-4" />Chat with AI</button>
-                            <button onClick={() => openPreviewModal(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
+                            <button onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
                             <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"><Download className="h-4 w-4" />Download File</button>
                             <div className="my-1 border-t border-slate-100" />
                             <button onClick={() => handleDeleteDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 transition-colors"><Trash2 className="h-4 w-4" />Delete Document</button>
@@ -610,7 +610,7 @@ export default function SubjectCategoryPage() {
                   <div 
                     key={doc.id}
                     className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-500/20 cursor-pointer h-[200px]"
-                    onClick={() => openPreviewModal(doc)}
+                    onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
                   >
                     {/* Top action block */}
                     <div className="flex items-start justify-between" onClick={(e) => e.stopPropagation()}>
@@ -632,7 +632,7 @@ export default function SubjectCategoryPage() {
                         {activeMenuId === doc.id && (
                           <div ref={menuRef} className="absolute right-0 top-8 z-30 w-48 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl animate-fade-in">
                             <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-[#2563eb] transition-colors"><MessageSquare className="h-4 w-4" />Chat with AI</button>
-                            <button onClick={() => openPreviewModal(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
+                            <button onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
                             <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"><Download className="h-4 w-4" />Download File</button>
                             <div className="my-1 border-t border-slate-100" />
                             <button onClick={() => handleDeleteDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 transition-colors"><Trash2 className="h-4 w-4" />Delete Document</button>
@@ -667,7 +667,7 @@ export default function SubjectCategoryPage() {
                 <div 
                   key={doc.id}
                   className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-500/20 cursor-pointer h-[200px]"
-                  onClick={() => openPreviewModal(doc)}
+                  onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
                 >
                   <div className="flex items-start justify-between" onClick={(e) => e.stopPropagation()}>
                     {renderFileIcon(doc.type)}
@@ -683,7 +683,7 @@ export default function SubjectCategoryPage() {
                       {activeMenuId === doc.id && (
                         <div ref={menuRef} className="absolute right-0 top-8 z-30 w-48 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl animate-fade-in">
                           <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-[#2563eb] transition-colors"><MessageSquare className="h-4 w-4" />Chat with AI</button>
-                          <button onClick={() => openPreviewModal(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
+                          <button onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
                           <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"><Download className="h-4 w-4" />Download File</button>
                           <div className="my-1 border-t border-slate-100" />
                           <button onClick={() => handleDeleteDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 transition-colors"><Trash2 className="h-4 w-4" />Delete Document</button>
@@ -736,7 +736,7 @@ export default function SubjectCategoryPage() {
                     <tr
                       key={doc.id}
                       className="group hover:bg-slate-50/30 transition-colors cursor-pointer"
-                      onClick={() => openPreviewModal(doc)}
+                      onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
