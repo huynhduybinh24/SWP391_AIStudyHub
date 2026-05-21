@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { cn } from '@/lib/utils'
 
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
@@ -156,14 +157,16 @@ export function NotificationsPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
+  // Notification categories / tabs configuration
   const tabs = ['All', 'Unread', 'Mentions', 'Shared Files', 'AI Updates']
   
-  // Read and normalize search parameter filter
+  // Read and normalize search parameter filter state
   const filterParam = searchParams.get('filter') || 'all'
   const activeTab = tabs.find(
     (t) => t.toLowerCase().replace(' ', '') === filterParam.toLowerCase().replace(' ', '')
   ) || 'All'
 
+  // Handle active filter switching
   const handleTabClick = (tab: string) => {
     setSearchParams({ filter: tab.toLowerCase().replace(' ', '') })
   }
@@ -318,11 +321,12 @@ export function NotificationsPage() {
               key={tab}
               type="button"
               onClick={() => handleTabClick(tab)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer border ${
+              className={cn(
+                "px-5 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer border",
                 isActive
-                  ? 'bg-[#3155F6] text-white border-[#3155F6] shadow-sm'
-                  : 'bg-white text-[#434655] border-[rgba(195,198,215,0.4)] hover:bg-slate-50'
-              }`}
+                  ? "bg-[#3155F6] text-white border-[#3155F6] shadow-sm"
+                  : "bg-white text-[#434655] border-[rgba(195,198,215,0.4)] hover:bg-slate-50"
+              )}
             >
               {tab}
             </button>
