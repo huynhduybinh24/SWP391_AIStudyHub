@@ -148,7 +148,7 @@ export function CloudStoragePage() {
             Manage your study files and storage space in one place.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button onClick={handleCleanUp} variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground">
             <Eraser className="size-4 text-muted-foreground mr-1" />
             <div className="leading-tight">
