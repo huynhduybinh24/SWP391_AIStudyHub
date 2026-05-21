@@ -49,9 +49,17 @@ export function ResetPasswordPage() {
               <p className="text-body text-center text-[15px] mb-8 leading-relaxed max-w-[320px]">
                 We've sent a password recovery link to your email address. Please check your inbox.
               </p>
-              <Button onClick={() => setIsSuccess(false)} variant="outline" className="w-full h-12 rounded-xl font-semibold">
-                Send again
-              </Button>
+              <div className="w-full space-y-3 text-center">
+                <Button onClick={() => setIsSuccess(false)} variant="outline" className="w-full h-12 rounded-xl font-semibold">
+                  Send again
+                </Button>
+                <Link 
+                  to="/set-new-password" 
+                  className="inline-flex w-full items-center justify-center h-12 rounded-xl font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                >
+                  Set new password
+                </Link>
+              </div>
             </div>
           ) : (
             <>

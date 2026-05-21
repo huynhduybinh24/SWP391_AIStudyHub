@@ -3,6 +3,9 @@ import { Zap } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 
 function isNavActive(pathname: string, path: string) {
+  if (pathname === '/dashboard/shared-files/research-materials' || pathname === '/dashboard/shared-files/research-materials/') {
+    return path === '/dashboard/notifications'
+  }
   if (path === '/dashboard') {
     return pathname === '/dashboard' || pathname === '/dashboard/'
   }
@@ -35,6 +38,11 @@ function SidebarLink({
           : 'text-[#4b5563] hover:bg-slate-50 hover:text-slate-900 rounded-xl'
         }
       `}
+      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-normal leading-6 no-underline transition-colors hover:bg-slate-100"
+      style={{
+        backgroundColor: active ? '#3155F6' : 'transparent',
+        color,
+      }}
     >
       <Icon 
         className="size-[18px] shrink-0" 
@@ -60,6 +68,8 @@ export function Sidebar() {
           <div className="flex flex-col justify-center">
             <h1 className="text-[19px] font-bold leading-tight text-[#2557E8] tracking-tight">AI Study Hub</h1>
             <p className="text-[11px] font-medium leading-none text-[#737686] mt-0.5">Focused Intelligence</p>
+            <h1 className="text-[18px] font-bold leading-tight text-[#3155F6] tracking-tight">AI Study Hub</h1>
+            <p className="text-[11px] font-medium leading-tight text-[#737686] mt-0.5">Focused Intelligence</p>
           </div>
         </div>
 
@@ -86,6 +96,7 @@ export function Sidebar() {
         <button
           type="button"
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2557E8] py-3 text-sm font-semibold text-white hover:bg-[#1a45cb] transition-all duration-200 cursor-pointer shadow-sm shadow-[#2557E8]/10 shrink-0"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[#3155F6] py-2.5 text-base font-normal text-white hover:bg-[#2563eb] transition-colors"
         >
           <Zap className="size-4 text-white" strokeWidth={2} />
           Upgrade to Pro

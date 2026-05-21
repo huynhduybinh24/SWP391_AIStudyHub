@@ -1,43 +1,33 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import {
-  Search,
-  ChevronDown,
-  Grid,
-  List,
-  MoreVertical,
-  FileText,
-  FileCode,
-  Image as ImageIcon,
-  FolderDown,
-  BookOpen,
-  Sparkles,
-  Plus,
-  CloudUpload,
-  Trash2,
-  ExternalLink,
-  Download,
-  MessageSquare,
-  Send,
   X,
   Bot,
-  SlidersHorizontal,
-  FolderPlus,
-  Clock,
-  HardDrive,
+  Send,
+  Sparkles,
   CheckCircle2,
-  TrendingUp,
   BrainCircuit,
-  HelpCircle,
-  FileSpreadsheet,
-  FileCheck
+  CloudUpload,
+  MoreVertical,
+  MessageSquare,
+  ExternalLink,
+  Download,
+  Trash2,
+  FileText,
+  FileCode,
+  BookOpen,
+  Image as ImageIcon,
+  FolderDown,
+  HardDrive,
+  TrendingUp
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 
-// 1. Define typescript interface for Documents
+// Types
 interface DocumentItem {
   id: string
   title: string
@@ -49,11 +39,43 @@ interface DocumentItem {
   subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
+  essential?: boolean
 }
 
-// 2. Initial Mock Data matching the Figma screen exactly
+interface SubjectContent {
+  previewText: string
+  summaryBullets: string[]
+  flashcards: Array<{ q: string; a: string }>
+}
+
+// Initial Mock Data
 const INITIAL_DOCUMENTS: DocumentItem[] = [
   // Existing files
+  {
+    id: 'doc-design-patterns',
+    title: 'Design Patterns',
+    fileName: 'Design_Patterns_Java_Guide.pdf',
+    uploadedAt: 'Uploaded 2 hours ago',
+    uploadedDateObj: new Date(),
+    size: '3.8 MB',
+    sizeKb: 3890,
+    subject: 'COMPSCI',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'doc-agile',
+    title: 'Agile Methodologies',
+    fileName: 'Agile_Scrum_Kanban_DeepDive.docx',
+    uploadedAt: 'Uploaded Yesterday',
+    uploadedDateObj: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    size: '1.9 MB',
+    sizeKb: 1945,
+    subject: 'GENERAL',
+    status: 'ANALYZED',
+    type: 'word',
+    essential: true,
+  },
   {
     id: 'doc-1',
     title: '', // Unnamed in Figma
@@ -410,14 +432,57 @@ const INITIAL_DOCUMENTS: DocumentItem[] = [
   },
 ]
 
-// 3. Realistic outline content database for preview modal
-interface SubjectContent {
-  previewText: string
-  summaryBullets: string[]
-  flashcards: Array<{ q: string; a: string }>
-}
-
 const SUBJECTS_CONTENT_DB: Record<string, SubjectContent> = {
+  'doc-design-patterns': {
+    previewText: `SECTION 1: SOFTWARE DESIGN PATTERNS (JAVA WORKSPACE)
+1.1 Creational Patterns:
+  - Singleton: Ensures a class has only one instance and provides a global point of access.
+  - Factory Method: Defines an interface for creating an object, but lets subclasses decide which class to instantiate.
+  - Builder: Separates the construction of a complex object from its representation.
+1.2 Structural Patterns:
+  - Adapter: Allows incompatible interfaces to work together.
+  - Decorator: Attaches additional responsibilities to an object dynamically.
+  - Proxy: Provides a placeholder for another object to control access to it.
+1.3 Behavioral Patterns:
+  - Observer: Defines a one-to-many dependency so that when one object changes state, all its dependents are notified automatically.
+  - Strategy: Defines a family of algorithms, encapsulates each one, and makes them interchangeable.`,
+    summaryBullets: [
+      'Tóm tắt chi tiết 3 loại mẫu thiết kế chính: Creational (Khởi tạo), Structural (Cấu trúc), và Behavioral (Hành vi).',
+      'Phân tích mã nguồn ví dụ thực tế cho mẫu thiết kế Singleton Thread-safe trong ngôn ngữ lập trình Java.',
+      'Hướng dẫn áp dụng mẫu thiết kế Observer cho việc xử lý sự kiện bất đồng bộ và kiến trúc Event-Driven.',
+      'So sánh chi tiết ưu nhược điểm của việc dùng mẫu Strategy so với việc lồng các câu lệnh rẽ nhánh if-else phức tạp.'
+    ],
+    flashcards: [
+      { q: 'Mẫu thiết kế Singleton dùng để làm gì?', a: 'Đảm bảo một lớp chỉ có duy nhất một thực thể (instance) và cung cấp một điểm truy cập toàn cục cho thực thể đó.' },
+      { q: 'Mẫu thiết kế Observer hoạt động theo cơ chế nào?', a: 'Định nghĩa mối quan hệ phụ thuộc một-nhiều giữa các đối tượng. Khi một đối tượng thay đổi trạng thái, tất cả các đối tượng phụ thuộc sẽ được tự động thông báo và cập nhật.' },
+      { q: 'Sự khác biệt giữa Factory Method và Abstract Factory là gì?', a: 'Factory Method sử dụng tính kế thừa để quyết định đối tượng cụ thể nào được khởi tạo. Abstract Factory sử dụng ủy quyền (composition) để khởi tạo một họ các đối tượng liên quan.' }
+    ]
+  },
+  'doc-agile': {
+    previewText: `CHAPTER 2: AGILE FRAMEWORKS & WORKFLOW MANAGEMENT
+2.1 Core Agile Principles:
+  - Customer collaboration over contract negotiation.
+  - Responding to change over following a plan.
+2.2 Scrum Framework:
+  - Roles: Product Owner, Scrum Master, Developers.
+  - Events: Sprint Planning, Daily Scrum, Sprint Review, Sprint Retrospective.
+  - Artifacts: Product Backlog, Sprint Backlog, Increment.
+2.3 Kanban System:
+  - Visualizing work (Kanban Board).
+  - Limiting Work in Progress (WIP) to prevent bottlenecks.
+  - Managing and improving flow continuously.`,
+    summaryBullets: [
+      'Giới thiệu 4 giá trị cốt lõi và 12 nguyên lý của Tuyên ngôn Agile (Agile Manifesto).',
+      'Phân tích chi tiết quy trình Scrum với 3 vai trò, 5 sự kiện chính và 3 tạo tác tiêu chuẩn.',
+      'Giải thích nguyên lý hoạt động của bảng Kanban và tầm quan trọng của việc giới hạn WIP (Work in Progress).',
+      'Hướng dẫn cách đo lường hiệu suất dự án thông qua biểu đồ Burn-down và Burn-up.'
+    ],
+    flashcards: [
+      { q: '3 vai trò cốt lõi trong một Scrum Team là gì?', a: 'Product Owner (Chủ sở hữu sản phẩm), Scrum Master (Bậc thầy Scrum), và Developers (Nhóm phát triển).' },
+      { q: 'Tại sao phải giới hạn WIP (Work in Progress) trong Kanban?', a: 'Để tránh hiện tượng nghẽn cổ chai (bottlenecks), tối ưu hóa luồng công việc và giúp nhóm hoàn thành các công việc đang dang dở nhanh hơn.' },
+      { q: 'Sự kiện Daily Scrum kéo dài tối đa bao lâu và nhằm mục đích gì?', a: 'Kéo dài tối đa 15 phút, nhằm đồng bộ hóa hoạt động của nhóm và lên kế hoạch làm việc cho 24 giờ tiếp theo.' }
+    ]
+  },
   MATHEMATICS: {
     previewText: `SECTION 1: FUNDAMENTAL ALGEBRA & CALCULUS FORMULAS
 1.1 Derivatives of Trigonometric Functions:
@@ -470,7 +535,7 @@ const SUBJECTS_CONTENT_DB: Record<string, SubjectContent> = {
   - De Broglie Wavelength: λ = h/p, where h is Planck's constant and p is momentum.
   - Photoelectric Effect confirms light behaves as particles called photons.
 4.2 Schrödinger Equation:
-  - Time-independent formulation: Ĥψ = Eψ, where Ĥ is the Hamiltonian operator.
+  - Time-independent formulation: Ĥψ = Eψ, where Ĥ Richmond is the Hamiltonian operator.
 4.3 Quantum Tunneling:
   - Phenomenon where a particle passes through a potential barrier higher than its kinetic energy.`,
     summaryBullets: [
@@ -612,49 +677,62 @@ const SUBJECTS_CONTENT_DB: Record<string, SubjectContent> = {
   }
 }
 
+const QUIZ_QUESTIONS = [
+  {
+    q: "Mẫu thiết kế nào dưới đây thuộc nhóm Creational (Khởi tạo)?",
+    options: ["Observer", "Singleton", "Adapter", "Strategy"],
+    answer: 1, // Singleton
+    explain: "Singleton, Factory Method, và Builder là các mẫu thiết kế thuộc nhóm Creational (Khởi tạo) dùng để kiểm soát việc khởi tạo đối tượng."
+  },
+  {
+    q: "Mẫu thiết kế nào cho phép các đối tượng không tương thích có thể làm việc cùng nhau bằng cách bọc giao diện của chúng?",
+    options: ["Decorator", "Facade", "Adapter", "Proxy"],
+    answer: 2, // Adapter
+    explain: "Adapter Pattern hoạt động như một bộ chuyển đổi giữa hai giao diện không tương thích, giúp tái sử dụng mã nguồn cũ."
+  },
+  {
+    q: "Khi muốn định nghĩa một họ các thuật toán, đóng gói từng thuật toán và làm cho chúng có thể thay thế cho nhau tại thời điểm chạy (runtime), ta dùng mẫu thiết kế nào?",
+    options: ["Strategy", "Observer", "Command", "Template Method"],
+    answer: 0, // Strategy
+    explain: "Strategy Pattern định nghĩa các thuật toán độc lập và cho phép khách hàng hoán đổi thuật toán linh hoạt dựa theo ngữ cảnh."
+  }
+]
+
 export function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [subjectFilter, setSubjectFilter] = useState('All')
-  const [typeFilter, setTypeFilter] = useState('All')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  
-  // Modals & Drawers state
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
-  const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false)
-  const [selectedDocForChat, setSelectedDocForChat] = useState<DocumentItem | null>(null)
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
 
-  // ENHANCED state: Document Viewer Modal
+  // Quiz Modal States
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false)
+  const [currentQuizQuestion, setCurrentQuizQuestion] = useState(0)
+  const [selectedQuizAnswer, setSelectedQuizAnswer] = useState<number | null>(null)
+  const [quizScore, setQuizScore] = useState(0)
+  const [showQuizResults, setShowQuizResults] = useState(false)
+
+  // Upload Modal States
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadStepMsg, setUploadStepMsg] = useState('')
+  const [newDocTitle, setNewDocTitle] = useState('')
+  const [newDocSubject, setNewDocSubject] = useState<'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'>('GENERAL')
+  const [newDocType, setNewDocType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+
+  // Preview Modal States
   const [activePreviewDoc, setActivePreviewDoc] = useState<DocumentItem | null>(null)
   const [activePreviewTab, setActivePreviewTab] = useState<'preview' | 'summary' | 'flashcards'>('preview')
   const [activeFlashcardIndex, setActiveFlashcardIndex] = useState(0)
   const [isFlashcardFlipped, setIsFlashcardFlipped] = useState(false)
 
-  // ENHANCED state: AI Workspace Analytics Modal
-  const [isInsightsModalOpen, setIsInsightsModalOpen] = useState(false)
-
-  // ENHANCED state: Per-document chat state store
+  // Quick Chat drawer States
+  const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false)
+  const [selectedDocForChat, setSelectedDocForChat] = useState<DocumentItem | null>(null)
   const [documentChats, setDocumentChats] = useState<Record<string, Array<{ sender: 'user' | 'ai'; text: string; time: string }>>>({})
   const [newChatMessage, setNewChatMessage] = useState('')
 
-  // ENHANCED state: Dynamic Toast Notification
+  // Toast Notification States
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isToastVisible, setIsToastVisible] = useState(false)
-
-  // Upload Form state
-  const [newDocTitle, setNewDocTitle] = useState('')
-  const [newDocSubject, setNewDocSubject] = useState<'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'>('GENERAL')
-  const [newDocType, setNewDocType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  
-  // Progress simulation state
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [uploadStepMsg, setUploadStepMsg] = useState('')
-
-  // Refs for clicking outside menus
-  const menuRef = useRef<HTMLDivElement>(null)
 
   // Helper trigger notification toast
   const showToast = (message: string) => {
@@ -671,32 +749,7 @@ export function DocumentsPage() {
     }
   }, [isToastVisible])
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (activeMenuId && menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        const target = event.target as HTMLElement
-        if (!target.closest('.menu-trigger-btn')) {
-          setActiveMenuId(null)
-        }
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [activeMenuId])
-
-  // Filter logic
-  const filteredDocuments = documents.filter((doc) => {
-    const titleMatch = doc.title.toLowerCase().includes(searchQuery.toLowerCase())
-    const filenameMatch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase())
-    const queryMatch = searchQuery ? (titleMatch || filenameMatch) : true
-
-    const subjectMatch = subjectFilter === 'All' ? true : doc.subject === subjectFilter.toUpperCase()
-    const typeMatch = typeFilter === 'All' ? true : doc.type === typeFilter.toLowerCase()
-
-    return queryMatch && subjectMatch && typeMatch
-  })
-
-  // Simulated upload action
+  // simulated upload
   const handleUploadSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile && !newDocTitle) return
@@ -705,7 +758,6 @@ export function DocumentsPage() {
     setUploadProgress(5)
     setUploadStepMsg('Establishing secure connection...')
 
-    // Step 1: Uploading progress
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
         if (prev < 40) {
@@ -721,7 +773,6 @@ export function DocumentsPage() {
           clearInterval(interval)
           setUploadStepMsg('Summarizing & building instant flashcards...')
           
-          // Complete upload after final step
           setTimeout(() => {
             const finalTitle = newDocTitle || selectedFile?.name.split('.')[0] || 'Untitled Study Material'
             const finalFileName = selectedFile?.name || `${finalTitle.toLowerCase().replace(/\s+/g, '_')}.${newDocType}`
@@ -747,7 +798,6 @@ export function DocumentsPage() {
             setIsUploadModalOpen(false)
             showToast(`Tài liệu "${finalTitle || finalFileName}" tải lên và phân tích AI thành công!`)
             
-            // Reset fields
             setNewDocTitle('')
             setNewDocSubject('GENERAL')
             setNewDocType('pdf')
@@ -760,23 +810,20 @@ export function DocumentsPage() {
     }, 250)
   }
 
-  // ENHANCED Delete Action with Toast
+  // Delete Action
   const handleDeleteDocument = (id: string) => {
     const targetDoc = documents.find(d => d.id === id)
     if (targetDoc) {
       setDocuments((prev) => prev.filter((d) => d.id !== id))
       showToast(`Đã xóa tài liệu "${targetDoc.title || targetDoc.fileName}"`)
     }
-    setActiveMenuId(null)
   }
 
-  // ENHANCED Open Chat Drawer with Persistent History per document
+  // Open Chat Drawer
   const handleOpenChat = (doc: DocumentItem) => {
     setSelectedDocForChat(doc)
     setIsChatDrawerOpen(true)
-    setActiveMenuId(null)
 
-    // Load existing history or create standard welcome message
     if (!documentChats[doc.id]) {
       setDocumentChats((prev) => ({
         ...prev,
@@ -791,7 +838,7 @@ export function DocumentsPage() {
     }
   }
 
-  // ENHANCED Send message in Quick Chat saving history persistently
+  // Chat message send
   const handleSendChatMessage = (e: React.FormEvent, customText?: string) => {
     if (e) e.preventDefault()
     
@@ -804,7 +851,6 @@ export function DocumentsPage() {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
 
-    // Save user message immediately to the persistent store
     setDocumentChats((prev) => ({
       ...prev,
       [selectedDocForChat.id]: [...(prev[selectedDocForChat.id] || []), userMsg]
@@ -812,16 +858,15 @@ export function DocumentsPage() {
 
     if (!customText) setNewChatMessage('')
 
-    // Simulated context-aware AI response based on subject and keywords
     setTimeout(() => {
       let aiText = `Dựa vào tài liệu "${selectedDocForChat.title || selectedDocForChat.fileName}", `
       const lowerText = textToSend.toLowerCase()
 
       if (lowerText.includes('tóm tắt') || lowerText.includes('summarize')) {
-        const db = SUBJECTS_CONTENT_DB[selectedDocForChat.subject] || SUBJECTS_CONTENT_DB.GENERAL
-        aiText += `tôi xin tóm tắt các ý chính như sau:\n\n` + db.summaryBullets.map((bullet, idx) => `• ${bullet}`).join('\n')
+        const db = getDocContent(selectedDocForChat)
+        aiText += `tôi xin tóm tắt các ý chính như sau:\n\n` + db.summaryBullets.map((bullet) => `• ${bullet}`).join('\n')
       } else if (lowerText.includes('flashcard') || lowerText.includes('thẻ')) {
-        const db = SUBJECTS_CONTENT_DB[selectedDocForChat.subject] || SUBJECTS_CONTENT_DB.GENERAL
+        const db = getDocContent(selectedDocForChat)
         aiText += `tôi đã tạo nhanh các flashcard ôn tập sau:\n\n` + db.flashcards.map((fc, idx) => `Thẻ ${idx+1}:\n- Câu hỏi: ${fc.q}\n- Trả lời: ${fc.a}`).join('\n\n')
       } else if (lowerText.includes('trắc nghiệm') || lowerText.includes('đố') || lowerText.includes('quiz')) {
         aiText += `đây là 1 câu hỏi ôn tập nhanh cho bạn:\n\n**Câu hỏi**: Đâu là khái niệm cốt lõi được định nghĩa ở mục 1.1 của tài liệu này?\n\n*Gợi ý*: Trả lời trực tiếp để tôi kiểm tra xem bạn đã nắm vững kiến thức chưa!`
@@ -842,14 +887,12 @@ export function DocumentsPage() {
     }, 900)
   }
 
-  // ENHANCED Download trigger with dynamic file creation & download toast
+  // Download Action
   const handleDownloadFile = (doc: DocumentItem) => {
-    setActiveMenuId(null)
     showToast(`Đang chuẩn bị tải xuống: ${doc.fileName}...`)
 
     setTimeout(() => {
-      // Create mock file content to make a REAL browser download
-      const db = SUBJECTS_CONTENT_DB[doc.subject] || SUBJECTS_CONTENT_DB.GENERAL
+      const db = getDocContent(doc)
       const textContent = `=== AI STUDY HUB - WORKSPACE DOCUMENT ===\nDocument ID: ${doc.id}\nTitle: ${doc.title || doc.fileName}\nSubject: ${doc.subject}\nFile Size: ${doc.size}\nUpload Info: ${doc.uploadedAt}\n\n=== DOCUMENT PREVIEW ===\n${db.previewText}\n\n=== AI GENERATED SUMMARY ===\n${db.summaryBullets.join('\n')}\n`
       
       const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' })
@@ -866,16 +909,20 @@ export function DocumentsPage() {
     }, 1000)
   }
 
-  // ENHANCED Open Document Viewer Modal
+  // Open Preview Modal
   const handleOpenPreview = (doc: DocumentItem) => {
     setActivePreviewDoc(doc)
     setActivePreviewTab('preview')
     setActiveFlashcardIndex(0)
     setIsFlashcardFlipped(false)
-    setActiveMenuId(null)
   }
 
-  // Helper file icons mapper
+  const getDocContent = (doc: DocumentItem | null) => {
+    if (!doc) return SUBJECTS_CONTENT_DB.GENERAL
+    return SUBJECTS_CONTENT_DB[doc.id] || SUBJECTS_CONTENT_DB[doc.subject] || SUBJECTS_CONTENT_DB.GENERAL
+  }
+
+  // File Icon Renderer
   const renderFileIcon = (type: string) => {
     switch (type) {
       case 'pdf':
@@ -912,7 +959,7 @@ export function DocumentsPage() {
     }
   }
 
-  // Helper AI Status color mapper
+  // Status Badge Renderer
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case 'ANALYZED':
@@ -924,7 +971,7 @@ export function DocumentsPage() {
         )
       case 'PENDING':
         return (
-          <span className="rounded-md border border-gray-255 bg-gray-50 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+          <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
             PENDING
           </span>
         )
@@ -944,25 +991,20 @@ export function DocumentsPage() {
     }
   }
 
-  // Calculate storage metrics for Insights Modal
-  const totalStorageSize = documents.reduce((sum, doc) => sum + doc.sizeKb, 0)
-  const totalStorageFormatted = (totalStorageSize / 1024).toFixed(1)
-  const storagePercentage = Math.min(100, Math.round((totalStorageSize / (100 * 1024)) * 100))
-
   return (
-    <div className="space-y-8 pb-12 animate-fade-in">
-      
-      {/* Dynamic Toast popup in bottom-right */}
+    <div className="relative min-h-screen">
+      {/* Toast popup */}
       {isToastVisible && toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3.5 rounded-2xl bg-foreground text-white px-5 py-4 shadow-2xl animate-slide-in-right max-w-sm">
+        <div className="fixed bottom-24 right-6 z-50 flex items-center gap-3.5 rounded-2xl bg-slate-900 text-white px-5 py-4 shadow-2xl animate-slide-in-right max-w-sm">
           <CheckCircle2 className="h-5 w-5 text-blue-400 shrink-0" />
           <p className="text-sm font-medium leading-normal">{toastMessage}</p>
-          <button onClick={() => setIsToastVisible(false)} className="text-white/60 hover:text-white ml-2">
+          <button onClick={() => setIsToastVisible(false)} className="text-white/60 hover:text-white ml-2" aria-label="Close Notification">
             <X className="h-4 w-4" />
           </button>
         </div>
       )}
 
+      {/* Renders MyDocumentsPage or SubjectCategoryPage */}
       <Outlet
         context={{
           documents,
@@ -992,8 +1034,220 @@ export function DocumentsPage() {
         }}
       />
 
+          openUploadModal: () => setIsUploadModalOpen(true),
+          openChatDrawer: handleOpenChat,
+          openPreviewModal: handleOpenPreview,
+          openQuizModal: () => {
+            setCurrentQuizQuestion(0)
+            setSelectedQuizAnswer(null)
+            setQuizScore(0)
+            setShowQuizResults(false)
+            setIsQuizModalOpen(true)
+          },
+          showToast,
+          handleDownloadFile,
+          handleDeleteDocument,
+          renderFileIcon,
+          renderStatusBadge
+        }}
+      />
 
-      {/* 6. High-fidelity "Upload Document" Modal */}
+
+
+      {/* Practice Quiz Modal */}
+      {isQuizModalOpen && (
+        <Modal
+          isOpen={isQuizModalOpen}
+          onClose={() => setIsQuizModalOpen(false)}
+          title="Design Patterns Practice Quiz"
+          description="Test your software architecture skills with AI-curated multiple choice questions."
+          className="max-w-xl animate-fade-in"
+        >
+          <div className="space-y-6 py-2">
+            {!showQuizResults ? (
+              <>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                    <span>QUESTION {currentQuizQuestion + 1} OF {QUIZ_QUESTIONS.length}</span>
+                    <span className="text-[#2563eb]">{Math.round(((currentQuizQuestion) / QUIZ_QUESTIONS.length) * 100)}% Complete</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-[#2563eb] h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${((currentQuizQuestion + 1) / QUIZ_QUESTIONS.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-5 border border-slate-200">
+                  <h4 className="text-base font-extrabold text-slate-800 leading-relaxed">
+                    {QUIZ_QUESTIONS[currentQuizQuestion].q}
+                  </h4>
+                </div>
+
+                <div className="space-y-3">
+                  {QUIZ_QUESTIONS[currentQuizQuestion].options.map((option, idx) => {
+                    const isSelected = selectedQuizAnswer === idx;
+                    const isCorrect = QUIZ_QUESTIONS[currentQuizQuestion].answer === idx;
+                    const hasAnswered = selectedQuizAnswer !== null;
+
+                    let optionClass = "flex items-center justify-between w-full p-4 rounded-xl border text-left font-semibold text-sm transition-all duration-200 focus:outline-none ";
+                    
+                    if (!hasAnswered) {
+                      optionClass += "border-slate-200 bg-white hover:border-[#2563eb]/50 hover:bg-[#2563eb]/5 text-slate-700";
+                    } else if (isSelected) {
+                      optionClass += isCorrect 
+                        ? "border-emerald-500 bg-emerald-50/50 text-emerald-800" 
+                        : "border-rose-500 bg-rose-50/50 text-rose-800";
+                    } else if (isCorrect) {
+                      optionClass += "border-emerald-500 bg-emerald-50/50 text-emerald-800";
+                    } else {
+                      optionClass += "border-slate-200 bg-white text-slate-400 opacity-60";
+                    }
+
+                    return (
+                      <button
+                        key={idx}
+                        disabled={hasAnswered}
+                        onClick={() => {
+                          setSelectedQuizAnswer(idx)
+                          if (idx === QUIZ_QUESTIONS[currentQuizQuestion].answer) {
+                            setQuizScore(prev => prev + 1)
+                          }
+                        }}
+                        className={optionClass}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={cn(
+                            "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold border transition-colors",
+                            !hasAnswered && (isSelected ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-slate-50 border-slate-200 text-slate-400"),
+                            hasAnswered && isCorrect && "bg-emerald-500 text-white border-emerald-500",
+                            hasAnswered && isSelected && !isCorrect && "bg-rose-500 text-white border-rose-500",
+                            hasAnswered && !isSelected && !isCorrect && "bg-slate-100 border-slate-200 text-slate-400"
+                          )}>
+                            {String.fromCharCode(65 + idx)}
+                          </span>
+                          <span className="leading-snug">{option}</span>
+                        </div>
+                        
+                        {hasAnswered && (
+                          <div>
+                            {isCorrect && (
+                              <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                            {isSelected && !isCorrect && (
+                              <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                              </svg>
+                            )}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedQuizAnswer !== null && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4.5 text-xs text-amber-900 leading-relaxed flex gap-3.5 animate-fade-in shadow-xs">
+                    <div className="bg-amber-100 rounded-lg p-2 text-amber-700 h-fit shrink-0">
+                      <svg className="h-4.5 w-4.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                        <path d="M9 18h6" />
+                        <path d="M10 22h4" />
+                      </svg>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-extrabold">AI Tip & Explanation:</p>
+                      <p className="font-medium text-amber-800">{QUIZ_QUESTIONS[currentQuizQuestion].explain}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIsQuizModalOpen(false)}
+                    className="rounded-xl font-semibold text-sm"
+                  >
+                    Quit
+                  </Button>
+                  <Button
+                    disabled={selectedQuizAnswer === null}
+                    onClick={() => {
+                      if (currentQuizQuestion < QUIZ_QUESTIONS.length - 1) {
+                        setCurrentQuizQuestion(prev => prev + 1)
+                        setSelectedQuizAnswer(null)
+                      } else {
+                        setShowQuizResults(true)
+                      }
+                    }}
+                    className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6 py-2.5 text-sm"
+                  >
+                    {currentQuizQuestion === QUIZ_QUESTIONS.length - 1 ? "Finish Quiz" : "Next Question"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="py-6 text-center space-y-6 animate-fade-in">
+                <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+                  <div className="absolute h-full w-full rounded-full border-4 border-slate-100" />
+                  <div 
+                    className="absolute h-full w-full rounded-full border-4 border-emerald-500 border-t-transparent"
+                    style={{ 
+                      transform: `rotate(${(quizScore / QUIZ_QUESTIONS.length) * 360}deg)`,
+                      transition: 'transform 1.5s ease-out'
+                    }}
+                  />
+                  <span className="text-3xl font-black text-slate-800">{quizScore}/{QUIZ_QUESTIONS.length}</span>
+                </div>
+
+                <div className="space-y-2 max-w-sm mx-auto">
+                  <h4 className="text-xl font-extrabold text-slate-800 leading-tight">
+                    {quizScore === QUIZ_QUESTIONS.length 
+                      ? "Excellent Mastery!" 
+                      : quizScore >= 2 
+                        ? "Great Achievement!" 
+                        : "Keep Studying!"}
+                  </h4>
+                  <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                    {quizScore === QUIZ_QUESTIONS.length 
+                      ? "Perfect Score! You have successfully mastered Creational, Structural, and Behavioral patterns." 
+                      : quizScore >= 2 
+                        ? "Solid score! Go over the details of Adapter and Strategy patterns to lock down a perfect mark." 
+                        : "Take another look at the Design Patterns Java Guide and re-run this quiz to test your growth!"}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-center gap-3 border-t border-slate-100 pt-6 mt-8">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setCurrentQuizQuestion(0)
+                      setSelectedQuizAnswer(null)
+                      setQuizScore(0)
+                      setShowQuizResults(false)
+                    }}
+                    className="rounded-xl font-bold"
+                  >
+                    Retake Quiz
+                  </Button>
+                  <Button
+                    onClick={() => setIsQuizModalOpen(false)}
+                    className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6"
+                  >
+                    Close Practice
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {/* Upload Document Modal */}
       <Modal
         isOpen={isUploadModalOpen}
         onClose={() => {
@@ -1008,33 +1262,31 @@ export function DocumentsPage() {
         <form onSubmit={handleUploadSubmit} className="space-y-6">
           {isUploading ? (
             <div className="py-8 text-center space-y-6">
-              {/* Spinner & Progress ring */}
               <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
-                <div className="absolute h-full w-full rounded-full border-4 border-border" />
+                <div className="absolute h-full w-full rounded-full border-4 border-slate-100" />
                 <div
-                  className="absolute h-full w-full rounded-full border-4 border-primary border-t-transparent animate-spin"
+                  className="absolute h-full w-full rounded-full border-4 border-[#2563eb] border-t-transparent animate-spin"
                   style={{ animationDuration: '1.2s' }}
                 />
-                <span className="text-xl font-black text-primary">{uploadProgress}%</span>
+                <span className="text-xl font-black text-[#2563eb]">{uploadProgress}%</span>
               </div>
               <div className="space-y-2 max-w-sm mx-auto">
-                <h4 className="text-base font-bold text-foreground animate-pulse">
+                <h4 className="text-base font-bold text-slate-800 animate-pulse">
                   {uploadStepMsg}
                 </h4>
-                <div className="w-full bg-border rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                   <div
-                    className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                    className="bg-[#2563eb] h-1.5 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
-                <p className="text-xs text-muted">Please keep this window open while AI processes your document</p>
+                <p className="text-xs text-slate-400">Please keep this window open while AI processes your document</p>
               </div>
             </div>
           ) : (
             <>
-              {/* Title input */}
               <div className="space-y-1.5">
-                <label htmlFor="doc-title-input" className="text-sm font-bold text-foreground">
+                <label htmlFor="doc-title-input" className="text-sm font-bold text-slate-700">
                   Document Title (Optional)
                 </label>
                 <Input
@@ -1045,15 +1297,14 @@ export function DocumentsPage() {
                 />
               </div>
 
-              {/* Subject & Type Grid selection */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label htmlFor="subject-select" className="text-sm font-bold text-foreground">Subject</label>
+                  <label htmlFor="subject-select" className="text-sm font-bold text-slate-700">Subject</label>
                   <select
                     id="subject-select"
                     value={newDocSubject}
                     onChange={(e) => setNewDocSubject(e.target.value as any)}
-                    className="w-full appearance-none rounded-lg border border-border bg-surface px-3 py-3 pr-10 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                    className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-3 pr-10 text-base text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
                     <option value="GENERAL">General/Other</option>
                     <option value="MATHEMATICS">Mathematics</option>
@@ -1066,12 +1317,12 @@ export function DocumentsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="type-select" className="text-sm font-bold text-foreground">File Type</label>
+                  <label htmlFor="type-select" className="text-sm font-bold text-slate-700">File Type</label>
                   <select
                     id="type-select"
                     value={newDocType}
                     onChange={(e) => setNewDocType(e.target.value as any)}
-                    className="w-full appearance-none rounded-lg border border-border bg-surface px-3 py-3 pr-10 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                    className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-3 pr-10 text-base text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
                     <option value="pdf">PDF File (.pdf)</option>
                     <option value="word">Word Document (.docx)</option>
@@ -1082,9 +1333,8 @@ export function DocumentsPage() {
                 </div>
               </div>
 
-              {/* Drag and Drop Zone */}
               <div className="space-y-1.5">
-                <label className="text-sm font-bold text-foreground">Document File</label>
+                <label className="text-sm font-bold text-slate-700">Document File</label>
                 <div
                   onClick={() => {
                     const input = document.createElement('input')
@@ -1094,7 +1344,6 @@ export function DocumentsPage() {
                       if (files && files[0]) {
                         setSelectedFile(files[0])
                         if (!newDocTitle) {
-                          // Pre-fill title from name
                           const cleanName = files[0].name.split('.')[0].replace(/[_-]/g, ' ')
                           setNewDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
                         }
@@ -1103,34 +1352,33 @@ export function DocumentsPage() {
                     input.click()
                   }}
                   className={cn(
-                    'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border p-8 text-center cursor-pointer transition-all duration-300',
+                    'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center cursor-pointer transition-all duration-300',
                     selectedFile
-                      ? 'border-primary/60 bg-primary/5'
-                      : 'hover:border-primary/50 hover:bg-surface'
+                      ? 'border-blue-500 bg-blue-50/20'
+                      : 'hover:border-blue-500/50 hover:bg-slate-50'
                   )}
                 >
                   <div className={cn(
                     'flex h-12 w-12 items-center justify-center rounded-full shadow-xs transition-colors',
-                    selectedFile ? 'bg-primary text-white' : 'bg-primary/5 text-primary'
+                    selectedFile ? 'bg-[#2563eb] text-white' : 'bg-blue-50 text-[#2563eb]'
                   )}>
                     <CloudUpload className="h-6 w-6" />
                   </div>
                   {selectedFile ? (
                     <div className="mt-4">
-                      <p className="text-sm font-bold text-foreground">{selectedFile.name}</p>
-                      <p className="text-xs text-muted mt-1">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to process</p>
+                      <p className="text-sm font-bold text-slate-800">{selectedFile.name}</p>
+                      <p className="text-xs text-slate-400 mt-1">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to process</p>
                     </div>
                   ) : (
                     <div className="mt-4">
-                      <p className="text-sm font-bold text-foreground">Drag and drop your document here</p>
-                      <p className="text-xs text-muted mt-1">or click to browse your folders (PDF, DOCX, TXT, PNG, PPTX up to 50MB)</p>
+                      <p className="text-sm font-bold text-slate-800">Drag and drop your document here</p>
+                      <p className="text-xs text-slate-400 mt-1">or click to browse your folders (PDF, DOCX, TXT, PNG, PPTX up to 50MB)</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Footer actions */}
-              <div className="flex items-center justify-end gap-3 border-t border-border pt-4 mt-8">
+              <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-8">
                 <Button
                   type="button"
                   variant="secondary"
@@ -1145,7 +1393,7 @@ export function DocumentsPage() {
                 <Button
                   type="submit"
                   disabled={!selectedFile && !newDocTitle}
-                  className="rounded-xl bg-primary text-white font-semibold shadow-md shadow-primary/10 px-6"
+                  className="rounded-xl bg-[#2563eb] text-white font-semibold shadow-md shadow-blue-500/10 px-6"
                 >
                   Process with AI
                 </Button>
@@ -1155,21 +1403,19 @@ export function DocumentsPage() {
         </form>
       </Modal>
 
-      {/* 7. ENHANCED AI Quick Chat Side Drawer */}
+      {/* AI Quick Chat Drawer */}
       {isChatDrawerOpen && selectedDocForChat && (
-        <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white border-l border-border shadow-2xl animate-slide-in-right">
-          
-          {/* Drawer Header */}
-          <div className="flex items-center justify-between border-b border-border p-4 bg-surface">
+        <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white border-l border-slate-200 shadow-2xl animate-slide-in-right">
+          <div className="flex items-center justify-between border-b border-slate-200 p-4 bg-slate-50">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-[#2563eb]">
                 <Sparkles className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h3 className="truncate text-sm font-bold text-foreground">
+                <h3 className="truncate text-sm font-bold text-slate-800">
                   AI Study Assistant
                 </h3>
-                <p className="truncate text-xs text-muted font-medium">
+                <p className="truncate text-xs text-slate-400 font-medium">
                   Document: {selectedDocForChat.title || selectedDocForChat.fileName}
                 </p>
               </div>
@@ -1177,30 +1423,29 @@ export function DocumentsPage() {
             
             <button
               onClick={() => setIsChatDrawerOpen(false)}
-              className="rounded-lg p-1.5 text-muted hover:bg-border/40 hover:text-foreground transition-all"
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-all"
               aria-label="Close Chat"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Messages list */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#fafbfe]">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
             {(documentChats[selectedDocForChat.id] || []).map((msg, index) => (
               <div
                 key={index}
                 className={cn(
                   'flex max-w-[85%] flex-col rounded-2xl p-3.5 text-sm shadow-xs transition-all',
                   msg.sender === 'user'
-                    ? 'ml-auto bg-primary text-white rounded-br-none'
-                    : 'bg-white text-foreground border border-border/80 rounded-bl-none'
+                    ? 'ml-auto bg-[#2563eb] text-white rounded-br-none'
+                    : 'bg-white text-slate-700 border border-slate-100 rounded-bl-none'
                 )}
               >
                 <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                 <span
                   className={cn(
                     'mt-1.5 self-end text-[9px] font-semibold',
-                    msg.sender === 'user' ? 'text-blue-200' : 'text-muted'
+                    msg.sender === 'user' ? 'text-blue-200' : 'text-slate-400'
                   )}
                 >
                   {msg.time}
@@ -1209,45 +1454,43 @@ export function DocumentsPage() {
             ))}
           </div>
 
-          {/* Quick options buttons */}
-          <div className="border-t border-border/50 px-4 py-2 flex items-center gap-2 overflow-x-auto bg-white whitespace-nowrap scrollbar-none">
+          <div className="border-t border-slate-100 px-4 py-2 flex items-center gap-2 overflow-x-auto bg-white whitespace-nowrap scrollbar-none">
             <button
               onClick={(e) => handleSendChatMessage(e, 'Tóm tắt tài liệu này giúp tôi')}
-              className="rounded-lg border border-border/80 bg-surface px-2.5 py-1 text-xs text-body hover:border-primary/45 hover:text-primary transition-all"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 hover:border-[#2563eb]/45 hover:text-[#2563eb] transition-all"
             >
               📝 Tóm tắt chính
             </button>
             <button
               onClick={(e) => handleSendChatMessage(e, 'Tạo các flashcard ôn tập')}
-              className="rounded-lg border border-border/80 bg-surface px-2.5 py-1 text-xs text-body hover:border-primary/45 hover:text-primary transition-all"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 hover:border-[#2563eb]/45 hover:text-[#2563eb] transition-all"
             >
               🧠 Tạo Flashcard
             </button>
             <button
               onClick={(e) => handleSendChatMessage(e, 'Trắc nghiệm đố vui kiến thức')}
-              className="rounded-lg border border-border/80 bg-surface px-2.5 py-1 text-xs text-body hover:border-primary/45 hover:text-primary transition-all"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 hover:border-[#2563eb]/45 hover:text-[#2563eb] transition-all"
             >
               ❓ Đố kiến thức
             </button>
           </div>
 
-          {/* Message Input bar */}
           <form
             onSubmit={handleSendChatMessage}
-            className="border-t border-border p-4 bg-white flex items-center gap-2"
+            className="border-t border-slate-200 p-4 bg-white flex items-center gap-2"
           >
             <input
               type="text"
               placeholder="Ask anything about this document..."
               value={newChatMessage}
               onChange={(e) => setNewChatMessage(e.target.value)}
-              className="flex-1 rounded-xl border border-border/85 bg-surface px-4 py-2.5 text-sm focus:border-primary/50 focus:bg-white focus:outline-none transition-all"
+              className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-[#2563eb]/50 focus:bg-white focus:outline-none transition-all"
             />
             <Button
               type="submit"
               size="icon"
               disabled={!newChatMessage.trim()}
-              className="rounded-xl bg-primary text-white h-10 w-10 shadow-xs hover:bg-primary-dark shrink-0"
+              className="rounded-xl bg-[#2563eb] text-white h-10 w-10 shadow-xs hover:bg-blue-700 shrink-0"
               aria-label="Send message"
             >
               <Send className="h-4.5 w-4.5" />
@@ -1256,26 +1499,24 @@ export function DocumentsPage() {
         </div>
       )}
 
-      {/* 8. ENHANCED Interactive Document Preview with Summaries & Flashcards Modal */}
+      {/* Interactive Document Preview Modal */}
       {activePreviewDoc && (
         <Modal
           isOpen={!!activePreviewDoc}
           onClose={() => setActivePreviewDoc(null)}
           title={activePreviewDoc.title || activePreviewDoc.fileName}
           description={`${activePreviewDoc.subject} • ${activePreviewDoc.size} • ${activePreviewDoc.uploadedAt}`}
-          className="max-w-4xl"
+          className="max-w-4xl animate-fade-in"
         >
           <div className="space-y-6">
-            
-            {/* Modal Tabs Header */}
-            <div className="flex border-b border-border">
+            <div className="flex border-b border-slate-100">
               <button
                 onClick={() => setActivePreviewTab('preview')}
                 className={cn(
                   'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all',
                   activePreviewTab === 'preview'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted hover:text-foreground'
+                    ? 'border-[#2563eb] text-[#2563eb]'
+                    : 'border-transparent text-slate-400 hover:text-slate-600'
                 )}
               >
                 Document Reader
@@ -1285,8 +1526,8 @@ export function DocumentsPage() {
                 className={cn(
                   'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all',
                   activePreviewTab === 'summary'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted hover:text-foreground'
+                    ? 'border-[#2563eb] text-[#2563eb]'
+                    : 'border-transparent text-slate-400 hover:text-slate-600'
                 )}
               >
                 AI Summary
@@ -1300,23 +1541,22 @@ export function DocumentsPage() {
                 className={cn(
                   'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all',
                   activePreviewTab === 'flashcards'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted hover:text-foreground'
+                    ? 'border-[#2563eb] text-[#2563eb]'
+                    : 'border-transparent text-slate-400 hover:text-slate-600'
                 )}
               >
-                Flashcards ({SUBJECTS_CONTENT_DB[activePreviewDoc.subject]?.flashcards.length || 0})
+                Flashcards ({getDocContent(activePreviewDoc)?.flashcards.length || 0})
               </button>
             </div>
 
-            {/* Tab content 1: Preview text */}
             {activePreviewTab === 'preview' && (
               <div className="space-y-4">
-                <div className="rounded-xl border border-border bg-surface p-5 max-h-[350px] overflow-y-auto font-mono text-sm leading-relaxed text-body whitespace-pre-wrap">
-                  {SUBJECTS_CONTENT_DB[activePreviewDoc.subject]?.previewText || SUBJECTS_CONTENT_DB.GENERAL.previewText}
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 max-h-[350px] overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
+                  {getDocContent(activePreviewDoc)?.previewText}
                 </div>
                 <div className="flex justify-between items-center bg-blue-50/40 rounded-xl p-4 border border-blue-100/50">
-                  <div className="flex items-center gap-3 text-sm text-primary font-medium">
-                    <BrainCircuit className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-3 text-sm text-[#2563eb] font-medium">
+                    <BrainCircuit className="h-5 w-5" />
                     AI has indexed this document successfully
                   </div>
                   <Button
@@ -1326,7 +1566,7 @@ export function DocumentsPage() {
                       setActivePreviewDoc(null)
                       handleOpenChat(doc)
                     }}
-                    className="text-primary hover:bg-primary/5 font-semibold text-sm rounded-lg"
+                    className="text-[#2563eb] hover:bg-blue-50/80 font-semibold text-sm rounded-lg"
                   >
                     Discuss with AI assistant →
                   </Button>
@@ -1334,23 +1574,22 @@ export function DocumentsPage() {
               </div>
             )}
 
-            {/* Tab content 2: AI Bulleted summaries */}
             {activePreviewTab === 'summary' && (
               <div className="space-y-5 py-2">
-                <div className="flex gap-4 items-start bg-primary/5 rounded-2xl p-5 border border-primary/10">
-                  <div className="bg-primary/10 rounded-xl p-2.5 text-primary">
+                <div className="flex gap-4 items-start bg-blue-50/30 rounded-2xl p-5 border border-blue-100/40">
+                  <div className="bg-blue-100 rounded-xl p-2.5 text-[#2563eb]">
                     <Sparkles className="h-6 w-6 stroke-[1.8] animate-pulse" />
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-foreground text-[16px]">AI Executive Summary</h4>
-                    <p className="text-sm text-muted mt-1">Here is a comprehensive semantic summary of the uploaded document, generated instantly by deep reading.</p>
+                    <h4 className="font-extrabold text-slate-800 text-[16px]">AI Executive Summary</h4>
+                    <p className="text-sm text-slate-400 mt-1">Here is a comprehensive semantic summary of the uploaded document, generated instantly by deep reading.</p>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-border/80 bg-white p-5 space-y-4">
-                  {(SUBJECTS_CONTENT_DB[activePreviewDoc.subject]?.summaryBullets || SUBJECTS_CONTENT_DB.GENERAL.summaryBullets).map((bullet, idx) => (
-                    <div key={idx} className="flex gap-3 items-start text-sm text-body leading-relaxed">
-                      <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+                  {getDocContent(activePreviewDoc)?.summaryBullets.map((bullet, idx) => (
+                    <div key={idx} className="flex gap-3 items-start text-sm text-slate-700 leading-relaxed">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
                       <p>{bullet}</p>
                     </div>
                   ))}
@@ -1358,44 +1597,39 @@ export function DocumentsPage() {
               </div>
             )}
 
-            {/* Tab content 3: Interactive Flippable Flashcards */}
             {activePreviewTab === 'flashcards' && (
               <div className="space-y-6 py-2 flex flex-col items-center">
-                
-                {/* Flashcard container */}
                 {(() => {
-                  const db = SUBJECTS_CONTENT_DB[activePreviewDoc.subject] || SUBJECTS_CONTENT_DB.GENERAL
+                  const db = getDocContent(activePreviewDoc)
                   const currentCard = db.flashcards[activeFlashcardIndex]
 
-                  if (!currentCard) return <p className="text-sm text-muted">No flashcards available</p>
+                  if (!currentCard) return <p className="text-sm text-slate-400">No flashcards available</p>
 
                   return (
                     <>
-                      {/* Flippable card */}
                       <div
                         onClick={() => setIsFlashcardFlipped(!isFlashcardFlipped)}
                         className={cn(
-                          'relative h-56 w-full max-w-lg rounded-2xl border cursor-pointer select-none shadow-sm transition-all duration-500 preserve-3d flex items-center justify-center p-8 text-center hover:shadow-md',
+                          'relative h-56 w-full max-w-lg rounded-2xl border cursor-pointer select-none shadow-xs transition-all duration-500 preserve-3d flex items-center justify-center p-8 text-center hover:shadow-md',
                           isFlashcardFlipped
                             ? 'border-blue-200 bg-blue-50/30'
-                            : 'border-border bg-white'
+                            : 'border-slate-200 bg-white'
                         )}
                       >
                         {isFlashcardFlipped ? (
                           <div className="space-y-3">
-                            <span className="text-[10px] uppercase tracking-widest text-primary font-bold bg-blue-100/60 px-2 py-0.5 rounded">Answer / Mặt B</span>
-                            <p className="text-lg font-bold text-foreground leading-relaxed">{currentCard.a}</p>
+                            <span className="text-[10px] uppercase tracking-widest text-[#2563eb] font-bold bg-blue-100/60 px-2 py-0.5 rounded">Answer / Mặt B</span>
+                            <p className="text-lg font-bold text-slate-800 leading-relaxed">{currentCard.a}</p>
                           </div>
                         ) : (
                           <div className="space-y-3">
-                            <span className="text-[10px] uppercase tracking-widest text-muted font-bold bg-surface px-2 py-0.5 rounded">Question / Mặt A</span>
-                            <p className="text-xl font-black text-foreground leading-relaxed">{currentCard.q}</p>
-                            <p className="text-xs text-muted/70 pt-4">Click card to reveal answer</p>
+                            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold bg-slate-50 px-2 py-0.5 rounded">Question / Mặt A</span>
+                            <p className="text-xl font-black text-slate-800 leading-relaxed">{currentCard.q}</p>
+                            <p className="text-xs text-slate-400 pt-4">Click card to reveal answer</p>
                           </div>
                         )}
                       </div>
 
-                      {/* Pagination Controls */}
                       <div className="flex items-center gap-6 mt-4">
                         <Button
                           variant="secondary"
@@ -1409,7 +1643,7 @@ export function DocumentsPage() {
                         >
                           ← Previous
                         </Button>
-                        <span className="text-sm text-muted font-semibold">
+                        <span className="text-sm text-slate-500 font-semibold">
                           {activeFlashcardIndex + 1} / {db.flashcards.length}
                         </span>
                         <Button
@@ -1428,12 +1662,10 @@ export function DocumentsPage() {
                     </>
                   )
                 })()}
-
               </div>
             )}
 
-            {/* Footer action */}
-            <div className="flex justify-end border-t border-border pt-4 mt-6">
+            <div className="flex justify-end border-t border-slate-100 pt-4 mt-6">
               <Button
                 variant="secondary"
                 onClick={() => setActivePreviewDoc(null)}
@@ -1442,7 +1674,6 @@ export function DocumentsPage() {
                 Close Viewer
               </Button>
             </div>
-
           </div>
         </Modal>
       )}

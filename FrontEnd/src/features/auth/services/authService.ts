@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/axios'
-import type { LoginCredentials, LoginResponse } from '@/types/auth'
+import type { LoginCredentials, LoginResponse, RegisterCredentials } from '@/types/auth'
 
 /** Replace with real API when backend is ready */
 const MOCK_USERS: Record<string, LoginResponse> = {
@@ -43,6 +43,24 @@ export const authService = {
         return mock
       }
       throw new Error('Invalid email or password')
+    }
+  },
+
+  async register(credentials: RegisterCredentials): Promise<LoginResponse> {
+    try {
+      const { data } = await apiClient.post<LoginResponse>('/auth/register', credentials)
+      return data
+    } catch {
+      // Mock successful registration
+      return {
+        user: {
+          id: Math.random().toString(36).substr(2, 9),
+          name: credentials.fullName,
+          email: credentials.email,
+          role: 'student',
+        },
+        tokens: { accessToken: 'mock-registered-token' },
+      }
     }
   },
 

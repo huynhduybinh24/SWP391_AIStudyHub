@@ -180,9 +180,9 @@ export function LoginForm() {
 
         <p className="mt-6 text-center text-sm text-body">
           Don't have an account?{' '}
-          <a href="#" className="font-semibold text-primary hover:underline">
+          <Link to="/register" className="font-semibold text-primary hover:underline">
             Register
-          </a>
+          </Link>
         </p>
       </div>
     </div>

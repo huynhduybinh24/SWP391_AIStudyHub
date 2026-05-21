@@ -50,7 +50,7 @@ export function LoginPage() {
           <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <Link to="/" className="hover:text-primary transition-colors">Features</Link>
           <Link to="/login" className="hover:text-primary transition-colors">Login</Link>
-          <Link to="/login" className="hover:text-primary transition-colors">Register</Link>
+          <Link to="/register" className="hover:text-primary transition-colors">Register</Link>
           <Link to="/" className="hover:text-primary transition-colors">Help Center</Link>
         </div>
       </footer>
