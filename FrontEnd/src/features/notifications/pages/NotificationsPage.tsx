@@ -87,13 +87,17 @@ export function NotificationsPage() {
             </div>
             <p className="text-sm text-[#434655] leading-relaxed">
               Sarah Jenkins shared a folder with you:{' '}
-              <span className="text-[#3155F6] hover:underline cursor-pointer font-semibold">
+              <span
+                onClick={() => navigate('/dashboard/shared-files/research-materials')}
+                className="text-[#3155F6] hover:underline cursor-pointer font-semibold"
+              >
                 Group Project Research Materials.
               </span>
             </p>
             <div>
               <button
                 type="button"
+                onClick={() => navigate('/dashboard/shared-files/research-materials')}
                 className="inline-flex items-center bg-[#3155F6] hover:bg-[#2563eb] text-white px-4 py-2 rounded-lg text-sm font-semibold mt-3.5 transition-colors cursor-pointer"
               >
                 Open Folder
