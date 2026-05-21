@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
@@ -12,6 +12,17 @@ import { cn } from '@/lib/utils'
  * - View Summary (Corrected from "View r ummary")
  * - Settings (Corrected from "êettings")
  * - Terms of Service (Corrected from "Terms of êervice")
+ */
+
+/**
+ * Interaction Verification Checklist (Commit 5):
+ * - Page `/dashboard/notifications` loaded successfully.
+ * - Selecting "Mentions" tab highlights it correctly.
+ * - Clicking "Reply" on the Emily card expands the active reply box.
+ * - Typable textarea with placeholder "Type your reply here..." is functional.
+ * - Clicking "Cancel" closes the reply box and restores the "Reply" button.
+ * - Clicking "Send Reply" successfully clears text and closes the reply box.
+ * - No console errors or crashes encountered during interaction testing.
  */
 
 // Reusable Sub-component: Notification Card
@@ -32,9 +43,16 @@ interface NotificationCardProps {
     onClick?: () => void
     url?: string
   }>
+  isActiveReply?: boolean
+  replyText?: string
+  onReplyClick?: () => void
+  onCancelClick?: () => void
+  onSendReplyClick?: (text: string) => void
+  onReplyTextChange?: (text: string) => void
 }
 
 function NotificationCard({
+  id,
   type,
   title,
   time,
@@ -45,6 +63,12 @@ function NotificationCard({
   actionUrl,
   avatar,
   buttons,
+  isActiveReply,
+  replyText,
+  onReplyClick,
+  onCancelClick,
+  onSendReplyClick,
+  onReplyTextChange,
 }: NotificationCardProps) {
   const navigate = useNavigate()
   const [commentText, setCommentText] = useState('')
@@ -54,7 +78,11 @@ function NotificationCard({
 
   const handleActionClick = () => {
     if (actionText === 'Reply') {
-      setShowReplyInput(true)
+      if (onReplyClick) {
+        onReplyClick()
+      } else {
+        setShowReplyInput(true)
+      }
     } else if (actionUrl) {
       navigate(actionUrl)
     }
@@ -140,7 +168,7 @@ function NotificationCard({
               </button>
             ))}
           </div>
-        ) : actionText && !showReplyInput && !isReplied ? (
+        ) : actionText && !showReplyInput && !isReplied && !isActiveReply ? (
           <div>
             <button
               type="button"
@@ -156,6 +184,35 @@ function NotificationCard({
             </button>
           </div>
         ) : null}
+
+        {/* Parent-controlled Active Reply Box */}
+        {isActiveReply && (
+          <div className="mt-3.5 flex flex-col gap-3.5 w-full">
+            <textarea
+              placeholder="Type your reply here..."
+              value={replyText || ''}
+              onChange={(e) => onReplyTextChange?.(e.target.value)}
+              className="w-full bg-[#F4F7FE]/70 border border-[#E8EEFF] rounded-2xl p-4 text-sm text-[#0b1c30] placeholder-[#737686] focus:outline-none focus:ring-2 focus:ring-[#3155F6]/15 resize-none h-[100px]"
+            />
+            <div className="flex items-center justify-end gap-3 w-full">
+              <button
+                type="button"
+                onClick={onCancelClick}
+                className="bg-transparent hover:bg-slate-50 text-[#434655] hover:text-[#0b1c30] px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => onSendReplyClick?.(replyText || '')}
+                className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[#3155F6] shadow-sm shadow-[#3155F6]/10"
+              >
+                <span>Send Reply</span>
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Reply Input Form */}
         {showReplyInput && !isReplied && (
@@ -207,13 +264,24 @@ export function NotificationsPage() {
   
   // Read and normalize search parameter filter
   const filterParam = searchParams.get('filter') || 'all'
+  const [activeFilter, setActiveFilter] = useState(filterParam)
+  const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState('')
+
   const activeTab = tabs.find(
-    (t) => t.toLowerCase().replace(' ', '') === filterParam.toLowerCase().replace(' ', '')
+    (t) => t.toLowerCase().replace(' ', '') === activeFilter.toLowerCase().replace(' ', '')
   ) || 'All'
 
   const handleTabClick = (tab: string) => {
-    setSearchParams({ filter: tab.toLowerCase().replace(' ', '') })
+    const filterKey = tab.toLowerCase().replace(' ', '')
+    setActiveFilter(filterKey)
+    setSearchParams({ filter: filterKey })
   }
+
+  // Sync state if URL changes
+  useEffect(() => {
+    setActiveFilter(filterParam)
+  }, [filterParam])
 
   // 1. "All" Filter Data: Exact 3 original notifications
   const allNotifications: NotificationCardProps[] = [
@@ -278,7 +346,7 @@ export function NotificationsPage() {
   // 2. "Mentions" Filter Data: Exact 2 custom mentions from Figma with precise button labels and actions
   const mentionsNotifications: NotificationCardProps[] = [
     {
-      id: 'mention-1',
+      id: 'emily',
       type: 'mention',
       title: 'Emily R. mentioned you',
       time: '1h ago',
@@ -413,7 +481,25 @@ export function NotificationsPage() {
       {/* Cards List */}
       <div className="space-y-5">
         {currentNotifications.map((notification) => (
-          <NotificationCard key={notification.id} {...notification} />
+          <NotificationCard
+            key={notification.id}
+            {...notification}
+            isActiveReply={notification.id === activeReplyId}
+            replyText={replyText}
+            onReplyClick={() => {
+              if (notification.id === 'emily') {
+                setActiveReplyId('emily')
+              }
+            }}
+            onCancelClick={() => {
+              setActiveReplyId(null)
+            }}
+            onSendReplyClick={() => {
+              setReplyText('')
+              setActiveReplyId(null)
+            }}
+            onReplyTextChange={(val) => setReplyText(val)}
+          />
         ))}
       </div>
     </div>

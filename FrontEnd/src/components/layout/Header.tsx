@@ -120,7 +120,7 @@ export function Header() {
               onClick={() => navigate('/dashboard/profile')}
             >
               <User className="size-4 text-muted" />
-              My Profile
+              Profile
             </button>
             <button
               type="button"
