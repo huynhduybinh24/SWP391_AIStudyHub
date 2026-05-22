@@ -232,9 +232,9 @@ export function CloudStoragePage() {
         <Card className="lg:col-span-2 flex flex-col">
           <div className="flex items-center justify-between p-5 border-b border-border">
             <h2 className="font-bold text-foreground text-[15px]">Recent Uploads</h2>
-            <button className="text-primary text-sm font-medium hover:underline">
+            <Link to="/dashboard/storage/explorer" className="text-primary text-sm font-medium hover:underline">
               View All
-            </button>
+            </Link>
           </div>
           <div className="flex flex-col">
             {uploads.length === 0 ? (
@@ -418,10 +418,12 @@ export function CloudStoragePage() {
               <h4 className="font-bold text-[14px] text-foreground">Need more space?</h4>
               <p className="text-[12px] text-muted mt-0.5">Upgrade to Pro for 1TB of storage.</p>
             </div>
-            <Button onClick={() => setIsManageModalOpen(false)} className="bg-[#3155F6] hover:bg-[#2563eb] text-white gap-1.5 h-9 text-sm px-4">
-              <Zap className="size-3.5" fill="currentColor" />
-              Upgrade
-            </Button>
+            <Link to="/dashboard/upgrade" onClick={() => setIsManageModalOpen(false)}>
+              <Button className="bg-[#3155F6] hover:bg-[#2563eb] text-white gap-1.5 h-9 text-sm px-4">
+                <Zap className="size-3.5" fill="currentColor" />
+                Upgrade
+              </Button>
+            </Link>
           </div>
         </div>
       </Modal>
