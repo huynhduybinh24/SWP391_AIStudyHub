@@ -265,6 +265,8 @@ function KeyTakeawaysCard() {
 }
 
 function StudyTopicsCard() {
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
+  
   const topics = [
     'Neural Circuits',
     'Synaptic Transmission',
@@ -273,7 +275,7 @@ function StudyTopicsCard() {
   ]
 
   return (
-    <div className="bg-white border border-[rgba(195,198,215,0.4)] rounded-2xl p-6 shadow-sm flex flex-col h-full">
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col h-full">
       <div className="flex items-center gap-2 mb-5">
         <FileText className="w-5 h-5 text-[#3155F6]" />
         <h2 className="text-lg font-bold text-[#0b1c30]">Study Topics</h2>
@@ -282,7 +284,8 @@ function StudyTopicsCard() {
         {topics.map((topic) => (
           <div
             key={topic}
-            className="w-full bg-[#F4F7FE] border border-[rgba(195,198,215,0.4)] rounded-xl py-3 px-4 text-sm font-semibold text-[#434655] hover:text-[#3155F6] hover:bg-[#E8EEFF]/60 hover:border-[#3155F6]/20 transition-all cursor-pointer"
+            onClick={() => setSelectedTopic(topic)}
+            className="w-full bg-[#F4F7FE] border border-slate-200 rounded-xl py-3 px-4 text-sm font-semibold text-[#434655] cursor-pointer"
           >
             {topic}
           </div>
