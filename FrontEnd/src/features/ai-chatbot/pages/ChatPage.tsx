@@ -32,6 +32,10 @@ export function ChatPage() {
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const recognitionRef = useRef<any>(null)
 
+  // --- New Chat & Confirm Modal States ---
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [currentChatId, setCurrentChatId] = useState(() => Date.now().toString())
+
   // Auto-clear file errors after 3 seconds
   useEffect(() => {
     if (fileError) {
@@ -217,6 +221,36 @@ export function ChatPage() {
     }
   }
 
+  const handleNewChatClick = () => {
+    if (messages.length > 1) {
+      setIsConfirmOpen(true)
+    }
+  }
+
+  const resetNewChat = () => {
+    setMessages([
+      {
+        id: '1',
+        sender: 'bot',
+        text: "Hello! I'm your AI Study Assistant. How can I help you with your studies today?",
+      },
+    ])
+    setInputText('')
+    setSelectedFiles([])
+    setIsListening(false)
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    setFileError(null)
+    setVoiceError(null)
+    setCurrentChatId(Date.now().toString())
+    setIsConfirmOpen(false)
+  }
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-220px)] justify-between select-none">
       {/* Top Header section */}
@@ -232,9 +266,13 @@ export function ChatPage() {
         <div className="mt-8 flex flex-col gap-6">
           {/* New Chat Started Badge */}
           <div className="flex justify-center">
-            <span className="rounded-full bg-[#e5eeff] px-4 py-1.5 text-xs font-semibold text-[#3155F6] tracking-wide shadow-[0_1px_2px_rgba(49,85,246,0.05)]">
+            <button
+              type="button"
+              onClick={handleNewChatClick}
+              className="rounded-full bg-[#e5eeff] px-4 py-1.5 text-xs font-semibold text-[#3155F6] tracking-wide shadow-[0_1px_2px_rgba(49,85,246,0.05)] hover:bg-[#d8e7ff] active:scale-95 transition-all cursor-pointer outline-none border-none"
+            >
               New Chat Started
-            </span>
+            </button>
           </div>
 
           {/* Messages List */}
@@ -430,6 +468,36 @@ export function ChatPage() {
           </div>
         </div>
       </div>
+
+      {/* Confirm Start New Chat Modal */}
+      {isConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px] transition-opacity animate-in fade-in duration-200">
+          <div className="w-full max-w-[380px] rounded-2xl bg-white p-6 shadow-xl border border-slate-100 animate-in zoom-in-95 duration-150">
+            <h3 className="text-lg font-bold text-[#0b1c30] mb-2 text-left animate-none">
+              Start a new chat?
+            </h3>
+            <p className="text-[14.5px] leading-relaxed text-[#737686] mb-6 text-left animate-none">
+              Your current conversation will be cleared.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsConfirmOpen(false)}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-[#737686] hover:bg-slate-50 border border-slate-200/60 transition-colors cursor-pointer outline-none"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={resetNewChat}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#EF4444] hover:bg-red-600 transition-colors cursor-pointer outline-none border-none"
+              >
+                Start New Chat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
