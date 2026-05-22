@@ -67,51 +67,89 @@ export function Header() {
   const [searchResults, setSearchResults] = useState<typeof CHATBOT_SEARCH_DATA>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
-  const [notifications, setNotifications] = useState<MockNotification[]>([
-    {
-      id: 'syllabus-analyzed',
-      title: 'Syllabus analyzed',
-      description: 'Your CS101 Syllabus was parsed successfully by AI.',
-      time: '5m ago',
-      type: 'doc',
-      isRead: false,
-    },
-    {
-      id: 'study-plan-starting',
-      title: 'Study plan starting',
-      description: 'Your midterm exam study plan starts tomorrow.',
-      time: '1h ago',
-      type: 'plan',
-      isRead: false,
-    },
-    {
-      id: 'new-shared-folder',
-      title: 'New shared folder',
-      description: 'Duy Binh shared "SWE Lab materials" with you.',
-      time: '3h ago',
-      type: 'share',
-      isRead: true,
-    },
-    {
-      id: 'ai-summary-generated',
-      title: 'AI Summary generated',
-      description: 'Summary is ready for Chapter 4: Computer Networking.',
-      time: '1d ago',
-      type: 'chat',
-      isRead: true,
-    },
-  ])
+  const [notifications, setNotifications] = useState<MockNotification[]>(() => {
+    const defaultNotifications: MockNotification[] = [
+      {
+        id: 'syllabus-analyzed',
+        title: 'Syllabus analyzed',
+        description: 'Your CS101 Syllabus was parsed successfully by AI.',
+        time: '5m ago',
+        type: 'doc',
+        isRead: false,
+      },
+      {
+        id: 'study-plan-starting',
+        title: 'Study plan starting',
+        description: 'Your midterm exam study plan starts tomorrow.',
+        time: '1h ago',
+        type: 'plan',
+        isRead: false,
+      },
+      {
+        id: 'new-shared-folder',
+        title: 'New shared folder',
+        description: 'Duy Binh shared "SWE Lab materials" with you.',
+        time: '3h ago',
+        type: 'share',
+        isRead: true,
+      },
+      {
+        id: 'ai-summary-generated',
+        title: 'AI Summary generated',
+        description: 'Summary is ready for Chapter 4: Computer Networking.',
+        time: '1d ago',
+        type: 'chat',
+        isRead: true,
+      },
+    ]
+
+    try {
+      const saved = localStorage.getItem('aiStudyHubHeaderNotificationsReadState')
+      if (saved) {
+        const readMap = JSON.parse(saved)
+        return defaultNotifications.map((n) => ({
+          ...n,
+          isRead: readMap[n.id] !== undefined ? readMap[n.id] : n.isRead,
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to load notifications read state:', err)
+    }
+    return defaultNotifications
+  })
 
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
   const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    )
+    setNotifications((prev) => {
+      const updated = prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      try {
+        const readMap: Record<string, boolean> = {}
+        updated.forEach((n) => {
+          readMap[n.id] = n.isRead
+        })
+        localStorage.setItem('aiStudyHubHeaderNotificationsReadState', JSON.stringify(readMap))
+      } catch (err) {
+        console.error('Failed to save notifications read state:', err)
+      }
+      return updated
+    })
   }
 
   const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+    setNotifications((prev) => {
+      const updated = prev.map((n) => ({ ...n, isRead: true }))
+      try {
+        const readMap: Record<string, boolean> = {}
+        updated.forEach((n) => {
+          readMap[n.id] = n.isRead
+        })
+        localStorage.setItem('aiStudyHubHeaderNotificationsReadState', JSON.stringify(readMap))
+      } catch (err) {
+        console.error('Failed to save notifications read state:', err)
+      }
+      return updated
+    })
     toast.success('All notifications marked as read')
   }
 
