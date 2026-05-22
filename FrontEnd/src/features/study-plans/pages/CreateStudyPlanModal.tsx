@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { BrainCircuit } from 'lucide-react'
+import { BrainCircuit, Loader2 } from 'lucide-react'
 
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
@@ -11,98 +12,193 @@ import { Radio } from '@/components/ui/Radio'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 
-const studyPlanSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  subject: z.string().min(1, 'Subject is required'),
-  description: z.string().optional(),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
-  priority: z.enum(['Low', 'Medium', 'High']),
-  schedule: z.array(z.string()).min(1, 'Select at least one day'),
-})
+// ─── Schema ──────────────────────────────────────────────
+
+const studyPlanSchema = z
+  .object({
+    title:       z.string().min(1, 'Title is required'),
+    subject:     z.string().min(1, 'Subject is required'),
+    description: z.string().optional(),
+    startDate:   z.string().min(1, 'Start date is required'),
+    endDate:     z.string().min(1, 'End date is required'),
+    priority:    z.enum(['Low', 'Medium', 'High']),
+    schedule:    z.array(z.string()).min(1, 'Select at least one day'),
+  })
+  .refine((d) => !d.startDate || !d.endDate || d.endDate >= d.startDate, {
+    message: 'End date must be after start date',
+    path: ['endDate'],
+  })
 
 type StudyPlanFormValues = z.infer<typeof studyPlanSchema>
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-interface CreateStudyPlanModalProps {
-  isOpen: boolean
-  onClose: () => void
+// AI suggestion templates per subject
+const AI_SUGGESTIONS: Record<string, Partial<StudyPlanFormValues>> = {
+  Mathematics:      { title: 'Mathematics Mastery Plan',      description: 'Structured approach to master calculus, algebra, and statistics from fundamentals to advanced topics.',      schedule: ['Mon', 'Wed', 'Fri'] },
+  Physics:          { title: 'Physics Deep Dive',             description: 'Comprehensive study of mechanics, thermodynamics, electromagnetism, and modern physics.',                    schedule: ['Tue', 'Thu', 'Sat'] },
+  'Computer Science': { title: 'CS & Algorithms Bootcamp',   description: 'From data structures to system design — crack technical interviews and build solid CS foundations.',          schedule: ['Mon', 'Tue', 'Thu', 'Fri'] },
+  Literature:       { title: 'Literature Analysis Journey',   description: 'Explore classic and modern literature through close reading, critical analysis, and essay writing practice.', schedule: ['Wed', 'Sat', 'Sun'] },
+  Chemistry:        { title: 'Chemistry Complete Guide',      description: 'Master organic and inorganic chemistry with lab practicals, reaction mechanisms, and exam preparation.',       schedule: ['Mon', 'Wed', 'Fri'] },
+  Biology:          { title: 'Biology Systems Mastery',       description: 'Comprehensive coverage of cell biology, genetics, ecology, and human physiology with diagram practice.',       schedule: ['Tue', 'Thu', 'Sat'] },
 }
 
+// ─── Props ───────────────────────────────────────────────
+
+interface CreateStudyPlanModalProps {
+  isOpen:   boolean
+  onClose:  () => void
+}
+
+// ─── Component ───────────────────────────────────────────
+
 export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalProps) => {
+  const [isGenerating, setIsGenerating] = useState(false)
+
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    reset,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
   } = useForm<StudyPlanFormValues>({
     resolver: zodResolver(studyPlanSchema),
     defaultValues: {
-      title: '',
-      subject: 'Mathematics',
+      title:       '',
+      subject:     'Mathematics',
       description: '',
-      startDate: '',
-      endDate: '',
-      priority: 'High',
-      schedule: [],
+      startDate:   '',
+      endDate:     '',
+      priority:    'High',
+      schedule:    [],
     },
   })
 
+  // Reset form whenever the modal opens fresh
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        title: '', subject: 'Mathematics', description: '',
+        startDate: '', endDate: '', priority: 'High', schedule: [],
+      })
+    }
+  }, [isOpen, reset])
+
+  const currentSubject = watch('subject')
+
+  // ── Generate with AI ─────────────────────────────────
+  const handleGenerateAI = async () => {
+    setIsGenerating(true)
+    // Simulate AI generation delay
+    await new Promise((r) => setTimeout(r, 1200))
+
+    const suggestion = AI_SUGGESTIONS[currentSubject] ?? AI_SUGGESTIONS['Mathematics']
+    if (suggestion.title)       setValue('title', suggestion.title, { shouldValidate: true })
+    if (suggestion.description) setValue('description', suggestion.description, { shouldValidate: true })
+    if (suggestion.schedule)    setValue('schedule', suggestion.schedule, { shouldValidate: true })
+    setValue('priority', 'High')
+
+    // Set start date to today, end date to +30 days
+    const today = new Date()
+    const endDay = new Date(today)
+    endDay.setDate(today.getDate() + 30)
+    setValue('startDate', today.toISOString().split('T')[0], { shouldValidate: true })
+    setValue('endDate',   endDay.toISOString().split('T')[0],  { shouldValidate: true })
+
+    setIsGenerating(false)
+  }
+
+  // ── Submit ───────────────────────────────────────────
   const onSubmit = (data: StudyPlanFormValues) => {
-    console.log('Form data:', data)
-    // Handle form submission logic here
+    console.log('Create Study Plan:', data)
+    // TODO: integrate with backend / global state
+    reset()
     onClose()
   }
 
+  // ── Save as Draft ────────────────────────────────────
+  const handleSaveDraft = () => {
+    const values = watch()
+    console.log('Saved as draft:', values)
+    // Persist to localStorage as demo
+    localStorage.setItem('studyPlanDraft', JSON.stringify(values))
+    onClose()
+  }
+
+  // ── Close handler (also resets) ──────────────────────
+  const handleClose = () => {
+    reset()
+    onClose()
+  }
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Create New Study Plan"
       description="Organize your learning goals and track your progress."
       className="max-w-2xl"
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Title */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Study Plan Title</label>
-          <Input placeholder="e.g. Finals Week Preparation" {...register('title')} error={errors.title?.message} />
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
+        {/* ── Title ── */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-slate-800">
+            Study Plan Title <span className="text-red-500">*</span>
+          </label>
+          <Input
+            placeholder="e.g. Finals Week Preparation"
+            {...register('title')}
+            error={errors.title?.message}
+          />
         </div>
 
-        {/* Subject */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Subject</label>
+        {/* ── Subject ── */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-slate-800">
+            Subject <span className="text-red-500">*</span>
+          </label>
           <Select {...register('subject')} error={errors.subject?.message}>
             <option value="Mathematics">Mathematics</option>
             <option value="Physics">Physics</option>
             <option value="Computer Science">Computer Science</option>
             <option value="Literature">Literature</option>
+            <option value="Chemistry">Chemistry</option>
+            <option value="Biology">Biology</option>
           </Select>
         </div>
 
-        {/* Goal / Description */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Goal / Description</label>
-          <Textarea placeholder="What do you want to achieve?" {...register('description')} error={errors.description?.message} />
+        {/* ── Description ── */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-slate-800">Goal / Description</label>
+          <Textarea
+            placeholder="What do you want to achieve with this study plan?"
+            {...register('description')}
+            error={errors.description?.message}
+          />
         </div>
 
-        {/* Dates */}
+        {/* ── Dates ── */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Start Date</label>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-800">
+              Start Date <span className="text-red-500">*</span>
+            </label>
             <Input type="date" {...register('startDate')} error={errors.startDate?.message} />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">End Date</label>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-800">
+              End Date <span className="text-red-500">*</span>
+            </label>
             <Input type="date" {...register('endDate')} error={errors.endDate?.message} />
           </div>
         </div>
 
-        {/* Priority */}
-        <div className="space-y-3">
-          <label className="text-sm font-medium text-foreground">Priority</label>
+        {/* ── Priority ── */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-800">Priority</label>
           <Controller
             control={control}
             name="priority"
@@ -120,12 +216,14 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
               </div>
             )}
           />
-          {errors.priority && <p className="text-sm text-danger">{errors.priority.message}</p>}
+          {errors.priority && <p className="text-sm text-red-500">{errors.priority.message}</p>}
         </div>
 
-        {/* Study Schedule */}
-        <div className="space-y-3">
-          <label className="text-sm font-medium text-foreground">Study Schedule</label>
+        {/* ── Study Schedule ── */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-800">
+            Study Schedule <span className="text-red-500">*</span>
+          </label>
           <Controller
             control={control}
             name="schedule"
@@ -137,21 +235,20 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
                     <label
                       key={day}
                       className={cn(
-                        'flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                        'flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150 select-none',
                         isSelected
-                          ? 'border-primary bg-primary/5 text-primary'
-                          : 'border-border bg-white text-body hover:bg-surface'
+                          ? 'border-[#2557E8] bg-[#eef2ff] text-[#2557E8]'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300'
                       )}
                     >
                       <input
                         type="checkbox"
                         value={day}
-                        className="peer sr-only"
+                        className="sr-only"
                         checked={isSelected}
                         onChange={(e) => {
-                          const checked = e.target.checked
                           field.onChange(
-                            checked
+                            e.target.checked
                               ? [...field.value, day]
                               : field.value.filter((v: string) => v !== day)
                           )
@@ -159,8 +256,8 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
                       />
                       <div
                         className={cn(
-                          'flex h-4 w-4 items-center justify-center rounded border transition-colors',
-                          isSelected ? 'border-primary bg-primary text-white' : 'border-border bg-white'
+                          'flex h-4 w-4 items-center justify-center rounded border transition-colors shrink-0',
+                          isSelected ? 'border-[#2557E8] bg-[#2557E8] text-white' : 'border-slate-300 bg-white'
                         )}
                       >
                         {isSelected && (
@@ -176,34 +273,51 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
               </div>
             )}
           />
-          {errors.schedule && <p className="text-sm text-danger">{errors.schedule.message}</p>}
+          {errors.schedule && <p className="text-sm text-red-500">{errors.schedule.message}</p>}
         </div>
 
-        {/* AI Suggestion Box */}
-        <div className="flex items-start gap-4 rounded-xl bg-icon-bg/50 p-4 border border-icon-bg">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-sm">
-            <BrainCircuit className="h-5 w-5" />
+        {/* ── AI Suggestion Box ── */}
+        <div className="flex items-start gap-4 rounded-xl bg-[#eef2ff] border border-[#c7d2fe] p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#2557E8] shadow-sm">
+            {isGenerating
+              ? <Loader2 className="h-5 w-5 animate-spin" />
+              : <BrainCircuit className="h-5 w-5" />
+            }
           </div>
-          <div className="flex-1">
-            <h4 className="text-sm font-semibold text-primary">AI Study Suggestion</h4>
-            <p className="mt-1 text-sm text-body">
-              Let AI help you create a smart study schedule based on your deadline and subject.
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-semibold text-[#2557E8]">AI Study Suggestion</h4>
+            <p className="mt-0.5 text-sm text-slate-600">
+              {isGenerating
+                ? `Generating a smart plan for ${currentSubject}...`
+                : 'Let AI help you create a smart study schedule based on your deadline and subject.'}
             </p>
           </div>
-          <Button type="button" variant="primary" size="sm" className="shrink-0 mt-1">
-            Generate with AI
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            className="shrink-0 mt-1 bg-[#2557E8] hover:bg-[#1d4ed8] text-white"
+            onClick={handleGenerateAI}
+            disabled={isGenerating}
+          >
+            {isGenerating ? 'Generating...' : 'Generate with AI'}
           </Button>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4">
-          <Button type="button" variant="ghost" onClick={onClose}>
+        {/* ── Actions ── */}
+        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+          <Button type="button" variant="ghost" onClick={handleClose}>
             Cancel
           </Button>
-          <Button type="button" variant="secondary">
+          <Button type="button" variant="secondary" onClick={handleSaveDraft}>
             Save as Draft
           </Button>
-          <Button type="submit" variant="primary">
+          <Button
+            type="submit"
+            variant="primary"
+            className="bg-[#2557E8] hover:bg-[#1d4ed8] text-white"
+            disabled={isSubmitting}
+          >
             Create Study Plan
           </Button>
         </div>
