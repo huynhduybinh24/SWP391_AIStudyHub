@@ -469,7 +469,58 @@ export function NotificationsPage() {
 
   // 5. "AI Updates" Filter Data
   const aiUpdatesNotifications: NotificationCardProps[] = [
-    allNotifications[0], // AI Summary Ready
+    {
+      id: 'ai-summary',
+      type: 'ai',
+      title: 'AI Summary Ready',
+      time: '10m ago',
+      isUnread: true,
+      description: (
+        <>
+          The comprehensive summary for your document{' '}
+          <strong className="font-semibold text-[#0b1c30]">
+            "Advanced Neuroscience Syllabus 2024.pdf"
+          </strong>{' '}
+          is now complete and ready for review.
+        </>
+      ),
+      actionText: 'View Summary',
+      actionUrl: '/dashboard/notifications/summary',
+    },
+    {
+      id: 'study-plan',
+      type: 'ai',
+      title: 'Study Plan Generated',
+      time: '4h ago',
+      isUnread: false,
+      description: (
+        <>
+          AI has created a personalized 4-week study plan for{' '}
+          <strong className="font-semibold text-[#0b1c30]">
+            "Organic Chemistry"
+          </strong>{' '}
+          based on your recent uploads.
+        </>
+      ),
+      actionText: 'Open Plan',
+      actionUrl: '/dashboard/study-plans',
+    },
+    {
+      id: 'flashcards',
+      type: 'ai',
+      title: 'New Flashcards Available',
+      time: 'Yesterday',
+      isUnread: false,
+      description: (
+        <>
+          25 new flashcards have been automatically generated for{' '}
+          <strong className="font-semibold text-[#0b1c30]">
+            "Cell Biology - Week 4"
+          </strong>.
+        </>
+      ),
+      actionText: 'Practice Now',
+    },
   ]
 
   // Map active tab to current notifications array
