@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
  * - AI Updates (Corrected from "AI pdates")
  * - View Summary (Corrected from "View r ummary")
  * - Settings (Corrected from "êettings")
- * - Terms of Service (Corrected from "Terms of @Service")
+ * - Terms of Service (Corrected from "Terms of Service")
  */
 
 /**
