@@ -92,10 +92,10 @@ export function FilePreviewPage() {
             <Button 
               onClick={handleShare}
               variant="secondary" 
-              className={`gap-2 h-10 px-4 transition-colors ${
+              className={`gap-2 h-9 px-4 text-sm font-medium transition-colors shadow-sm ${
                 isShared 
-                  ? 'text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-50 hover:text-emerald-700' 
-                  : 'text-[#2563eb] border-[#2563eb]/20 hover:bg-[#2563eb]/5 bg-white'
+                  ? 'text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-50' 
+                  : 'text-[#3155F6] border-slate-200 hover:bg-slate-50 bg-white'
               }`}
             >
               {isShared ? <Check className="size-4" /> : <Share2 className="size-4" />}
@@ -104,10 +104,10 @@ export function FilePreviewPage() {
             <Button 
               onClick={handleDownload}
               disabled={isDownloading}
-              className={`gap-2 h-10 px-4 transition-colors ${
+              className={`gap-2 h-9 px-4 text-sm font-medium transition-colors shadow-sm ${
                 isDownloaded
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : 'bg-[#2563eb] hover:bg-[#2563eb]/90 text-white'
+                  : 'bg-[#3155F6] hover:bg-[#2563eb] text-white'
               }`}
             >
               {isDownloading ? (
