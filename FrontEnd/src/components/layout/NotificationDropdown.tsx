@@ -2,68 +2,26 @@ import { motion } from 'framer-motion'
 import { Bell, BookOpen, Bot, Calendar, Share2, Check } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/components/ui/Toast'
-import { useState } from 'react'
+import { MockNotification } from './Header'
 
 interface NotificationDropdownProps {
   onClose: () => void
+  notifications: MockNotification[]
+  setNotifications: React.Dispatch<React.SetStateAction<MockNotification[]>>
 }
 
-interface MockNotification {
-  id: string
-  title: string
-  description: string
-  time: string
-  type: 'doc' | 'chat' | 'plan' | 'share'
-  read: boolean
-}
-
-export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
+export function NotificationDropdown({ onClose, notifications, setNotifications }: NotificationDropdownProps) {
   const navigate = useNavigate()
   const toast = useToast()
-  
-  const [notifications, setNotifications] = useState<MockNotification[]>([
-    {
-      id: '1',
-      title: 'Syllabus analyzed',
-      description: 'Your CS101 Syllabus was parsed successfully by AI.',
-      time: '5m ago',
-      type: 'doc',
-      read: false,
-    },
-    {
-      id: '2',
-      title: 'Study plan starting',
-      description: 'Your midterm exam study plan starts tomorrow.',
-      time: '1h ago',
-      type: 'plan',
-      read: false,
-    },
-    {
-      id: '3',
-      title: 'New shared folder',
-      description: 'Duy Binh shared "SWE Lab materials" with you.',
-      time: '3h ago',
-      type: 'share',
-      read: true,
-    },
-    {
-      id: '4',
-      title: 'AI Summary generated',
-      description: 'Summary is ready for Chapter 4: Computer Networking.',
-      time: '1d ago',
-      type: 'chat',
-      read: true,
-    },
-  ])
 
   const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
     toast.success('All notifications marked as read')
   }
 
   const handleNotificationClick = (item: MockNotification) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+      prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
     )
     toast.success(`Opening: ${item.title}`)
     onClose()
@@ -92,7 +50,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
     }
   }
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const unreadCount = notifications.filter((n) => !n.isRead).length
 
   return (
     <motion.div
@@ -132,7 +90,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
             type="button"
             onClick={() => handleNotificationClick(item)}
             className={`w-full flex gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors cursor-pointer relative items-start ${
-              !item.read ? 'bg-blue-50/20 dark:bg-blue-950/10' : ''
+              !item.isRead ? 'bg-blue-50/20 dark:bg-blue-950/10' : ''
             }`}
           >
             <div className="mt-0.5 size-7 rounded-lg bg-slate-50 dark:bg-slate-800 border border-border/50 dark:border-slate-700/80 flex items-center justify-center shrink-0">
@@ -141,7 +99,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
             
             <div className="flex-1 min-w-0 pr-2">
               <div className="flex items-center justify-between gap-2">
-                <p className={`text-xs truncate ${!item.read ? 'font-bold text-foreground dark:text-white' : 'font-medium text-slate-700 dark:text-slate-350'}`}>
+                <p className={`text-xs truncate ${!item.isRead ? 'font-bold text-foreground dark:text-white' : 'font-medium text-slate-700 dark:text-slate-350'}`}>
                   {item.title}
                 </p>
                 <span className="text-[10px] text-muted dark:text-slate-500 shrink-0 font-medium">
@@ -153,7 +111,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
               </p>
             </div>
 
-            {!item.read && (
+            {!item.isRead && (
               <span className="absolute top-4 right-3 block h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
             )}
           </button>

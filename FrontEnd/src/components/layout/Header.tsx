@@ -45,6 +45,15 @@ const CHATBOT_SEARCH_DATA = [
   { title: 'Chat about Quantum Mechanics', type: 'Chat', route: '/dashboard/chat' }
 ]
 
+export interface MockNotification {
+  id: string
+  title: string
+  description: string
+  time: string
+  type: 'doc' | 'chat' | 'plan' | 'share'
+  isRead: boolean
+}
+
 // ─── Header ───────────────────────────────────────────────────────────────────
 export function Header() {
   const navigate = useNavigate()
@@ -57,6 +66,43 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<typeof CHATBOT_SEARCH_DATA>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+
+  const [notifications, setNotifications] = useState<MockNotification[]>([
+    {
+      id: 'syllabus-analyzed',
+      title: 'Syllabus analyzed',
+      description: 'Your CS101 Syllabus was parsed successfully by AI.',
+      time: '5m ago',
+      type: 'doc',
+      isRead: false,
+    },
+    {
+      id: 'study-plan-starting',
+      title: 'Study plan starting',
+      description: 'Your midterm exam study plan starts tomorrow.',
+      time: '1h ago',
+      type: 'plan',
+      isRead: false,
+    },
+    {
+      id: 'new-shared-folder',
+      title: 'New shared folder',
+      description: 'Duy Binh shared "SWE Lab materials" with you.',
+      time: '3h ago',
+      type: 'share',
+      isRead: true,
+    },
+    {
+      id: 'ai-summary-generated',
+      title: 'AI Summary generated',
+      description: 'Summary is ready for Chapter 4: Computer Networking.',
+      time: '1d ago',
+      type: 'chat',
+      isRead: true,
+    },
+  ])
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length
 
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [history, setHistory] = useState<string[]>(() => {
@@ -513,7 +559,11 @@ export function Header() {
 
           <AnimatePresence>
             {notificationMenuOpen && (
-              <NotificationDropdown onClose={() => setNotificationMenuOpen(false)} />
+              <NotificationDropdown
+                onClose={() => setNotificationMenuOpen(false)}
+                notifications={notifications}
+                setNotifications={setNotifications}
+              />
             )}
           </AnimatePresence>
         </div>
