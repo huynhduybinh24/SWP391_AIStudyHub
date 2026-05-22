@@ -50,6 +50,7 @@ export type CurriculumPlan = {
 interface Props {
   isOpen: boolean
   onClose: () => void
+  onStart?: () => void
   plan: CurriculumPlan | null
 }
 
@@ -74,12 +75,12 @@ function StatusIcon({ status }: { status: LessonStatus }) {
 
 // ─── Component ───────────────────────────────────────────
 
-export function CurriculumModal({ isOpen, onClose, plan }: Props) {
+export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
   // ── All hooks before any conditional return ──────────────
   const [expandedModule, setExpandedModule] = useState<string | null>(null)
   const [highlightedModule, setHighlightedModule] = useState<string | null>(null)
   const activeModuleRef = useRef<HTMLDivElement | null>(null)
-  const activeLesonRef = useRef<HTMLDivElement | null>(null)
+  const activeLessonRef = useRef<HTMLDivElement | null>(null)
   const addToast = useToastStore((s) => s.addToast)
 
   // Reset expanded module whenever a different plan is opened
@@ -112,16 +113,18 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
   const handleStart = () => {
     if (!firstActiveModule) return
     addToast(`Starting module: ${firstActiveModule.title}`, 'success')
-    onClose()
+    if (onStart) onStart()
+    else onClose()
   }
 
-  const handleLessonCLick = (lesson: CurriculumLesson) => {
+  const handleLessonClick = (lesson: CurriculumLesson) => {
     if (lesson.status === 'locked') {
       addToast('This lesson is locked. Complete previous lessons first.', 'info')
       return
     }
     addToast(`Opening lesson: ${lesson.title}`, 'success')
-    onClose()
+    if (onStart) onStart()
+    else onClose()
   }
 
   return (
@@ -215,8 +218,8 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
                     return (
                       <button
                         key={lesson.id}
-                        ref={attachRef ? activeLesonRef : undefined}
-                        onClick={() => handleLessonCLick(lesson)}
+                        ref={attachRef ? activeLessonRef : undefined}
+                        onClick={() => handleLessonClick(lesson)}
                         className={`w-full flex items-center text-left gap-3 px-4 py-2.5 transition-colors ${isLocked
                           ? 'opacity-40 cursor-not-allowed bg-slate-50/50'
                           : 'hover:bg-slate-50/70 cursor-pointer'
