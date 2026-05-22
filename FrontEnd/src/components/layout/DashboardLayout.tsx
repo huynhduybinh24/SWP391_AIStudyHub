@@ -13,10 +13,21 @@ export function DashboardLayout() {
   const isChatPage = location.pathname === '/dashboard/chat' || location.pathname === '/dashboard/chat/'
   const isChatPopupOpen = useUiStore((s) => s.isChatPopupOpen)
   const setChatPopupOpen = useUiStore((s) => s.setChatPopupOpen)
+  const sidebarOpen = useUiStore((s) => s.sidebarOpen)
+  const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface">
+    <div className="flex h-screen overflow-hidden bg-surface relative">
       <Sidebar />
+      
+      {/* Mobile Sidebar Backdrop Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-[#0b1c30]/40 backdrop-blur-sm z-40 md:hidden cursor-pointer"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <div className="relative flex min-w-0 flex-1 flex-col bg-surface h-full">
         <Header />
         <main className="flex-1 flex flex-col overflow-auto">

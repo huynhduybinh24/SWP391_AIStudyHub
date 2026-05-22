@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, CircleHelp, LogOut, Settings, User, Sun, Moon } from 'lucide-react'
+import { Bell, CircleHelp, Sun, Moon, Menu } from 'lucide-react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
 import { Input } from '@/components/ui/Input'
@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/Button'
 import { useAuthStore } from '@/stores/authStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useProfileStore } from '@/features/profile/stores/profileStore'
-import { authService } from '@/features/auth/services/authService'
 import { cn } from '@/lib/utils'
 import { useSettingsStore } from '@/features/settings/stores/settingsStore'
+import { UserDropdown } from '@/components/layout/UserDropdown'
+import { AnimatePresence } from 'framer-motion'
 
 export function Header() {
   const navigate = useNavigate()
@@ -20,7 +21,7 @@ export function Header() {
   const { pathname } = useLocation()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
-  const { userMenuOpen, setUserMenuOpen, toggleUserMenu } = useUiStore()
+  const { userMenuOpen, setUserMenuOpen, toggleUserMenu, setSidebarOpen } = useUiStore()
   const { profile } = useProfileStore()
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -54,12 +55,6 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [setUserMenuOpen])
 
-  async function handleLogout() {
-    await authService.logout()
-    logout()
-    navigate('/')
-  }
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchVal.trim()) {
@@ -69,6 +64,14 @@ export function Header() {
 
   return (
     <header className="relative z-10 flex h-[72px] shrink-0 items-center justify-between border-b border-border bg-white dark:bg-slate-950 dark:border-slate-850 px-8 shadow-sm">
+      <button
+        type="button"
+        onClick={() => setSidebarOpen(true)}
+        className="md:hidden p-2 -ml-2 mr-3 rounded-lg text-slate-550 hover:text-slate-755 dark:text-slate-400 dark:hover:text-slate-255 hover:bg-slate-50 dark:hover:bg-slate-850 shrink-0 cursor-pointer"
+        aria-label="Open sidebar"
+      >
+        <Menu className="size-5" />
+      </button>
       <form onSubmit={handleSearchSubmit} className="flex flex-1 items-center">
         <Input
           placeholder={
@@ -129,50 +132,11 @@ export function Header() {
           <Avatar src={profile.avatarUrl} name={profile.name} className="cursor-pointer border border-slate-200/50 dark:border-slate-800" />
         </button>
 
-        {userMenuOpen ? (
-          <div
-            className={cn(
-              'absolute right-0 top-[52px] w-64 rounded-xl border border-border/80 bg-white dark:bg-slate-900 dark:border-slate-800 py-2 shadow-xl z-50',
-            )}
-            role="menu"
-          >
-            <div className="border-b border-border/50 dark:border-slate-800/80 px-4 py-3 flex items-center gap-3">
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#E8EEFF] dark:bg-slate-800 flex items-center justify-center border border-border/40 dark:border-slate-700/40 overflow-hidden">
-                <img src={profile.avatarUrl} alt="Avatar" className="w-8 h-8 object-cover rounded-full" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-foreground dark:text-slate-200 truncate">{profile.name}</p>
-                <p className="text-xs text-muted dark:text-slate-500 truncate">{user?.email ?? 'alex@example.com'}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-body dark:text-slate-300 hover:bg-surface dark:hover:bg-slate-800/50 transition-colors text-left cursor-pointer font-medium"
-              onClick={() => navigate('/dashboard/profile')}
-            >
-              <User className="size-4 text-muted dark:text-slate-500" />
-              Profile
-            </button>
-            <button
-              type="button"
-              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-body dark:text-slate-300 hover:bg-surface dark:hover:bg-slate-800/50 transition-colors text-left cursor-pointer font-medium"
-              onClick={() => navigate('/dashboard/settings')}
-            >
-              <Settings className="size-4 text-muted dark:text-slate-500" />
-              Settings
-            </button>
-            <div className="mt-1 border-t border-border/50 dark:border-slate-800/80 pt-1">
-              <button
-                type="button"
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors text-left font-medium cursor-pointer"
-                onClick={handleLogout}
-              >
-                <LogOut className="size-4 text-danger" />
-                Log Out
-              </button>
-            </div>
-          </div>
-        ) : null}
+        <AnimatePresence>
+          {userMenuOpen && (
+            <UserDropdown onClose={() => setUserMenuOpen(false)} />
+          )}
+        </AnimatePresence>
       </div>
     </header>
   )
