@@ -20,7 +20,7 @@ const mockOrderData: BillingSummary = {
     {
       id: 'pro_annual',
       name: 'Pro Plan (Annual)',
-      description: 'Billed yearly. Includes advanced AI Tutor and Analytics.',
+      description: 'Billed yearly. Unlocks advanced AI Tutor and Analytics.',
       price: 120.00,
     },
   ],
@@ -82,7 +82,7 @@ export function OrderSummary() {
           <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
             Total Due
           </span>
-          <span className="text-2xl font-extrabold text-[#3155F6] dark:text-blue-450">
+          <span className="text-2xl font-extrabold text-[#2563eb] dark:text-blue-400">
             ${total.toFixed(2)}
           </span>
         </div>
@@ -91,8 +91,8 @@ export function OrderSummary() {
       {/* Security Info & Payment Logos */}
       <div className="space-y-5">
         {/* Safe Badge */}
-        <div className="flex gap-3 bg-[#E8EEFF]/40 dark:bg-blue-950/20 border border-[#E8EEFF]/80 dark:border-blue-950/40 rounded-2xl p-4 text-slate-650 dark:text-slate-300">
-          <Shield className="size-5 text-[#3155F6] shrink-0 mt-0.5" />
+        <div className="flex gap-3 bg-blue-50/45 dark:bg-blue-950/20 border border-blue-100/70 dark:border-blue-950/40 rounded-2xl p-4 text-slate-650 dark:text-slate-300">
+          <Shield className="size-5 text-[#2563eb] dark:text-blue-450 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <p className="text-[11px] font-bold">
               Guaranteed safe & secure checkout.
