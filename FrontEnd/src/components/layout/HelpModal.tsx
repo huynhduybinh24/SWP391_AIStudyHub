@@ -2,7 +2,17 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { Bot, BookOpen, Share2, Sparkles, Key } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import {
+  Upload,
+  MessageSquare,
+  BrainCircuit,
+  BookOpen,
+  Zap,
+  Keyboard,
+  FileText,
+  X
+} from 'lucide-react'
 
 interface HelpModalProps {
   isOpen: boolean
