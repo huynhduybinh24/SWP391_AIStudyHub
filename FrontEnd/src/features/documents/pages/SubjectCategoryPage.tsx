@@ -2,12 +2,11 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
 import {
   Search,
-  ChevronDown,
   Grid,
   List,
   MoreVertical,
+  Plus,
   MessageSquare,
-  ExternalLink,
   Download,
   Trash2,
   CloudUpload,
@@ -34,7 +33,7 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'
+  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
@@ -60,6 +59,8 @@ const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
   PHYSICS: { title: 'Physics', courseCode: 'PHY-301' },
   PHILOSOPHY: { title: 'Philosophy', courseCode: 'PHIL-101' },
   ECONOMICS: { title: 'Economics', courseCode: 'ECON-201' },
+  NEUROSCIENCE: { title: 'Neuroscience', courseCode: 'NEURO-301' },
+  PSYCHOLOGY: { title: 'Psychology', courseCode: 'PSYCH-101' },
   GENERAL: { title: 'General Studies', courseCode: 'GEN-101' }
 }
 
@@ -145,7 +146,7 @@ export default function SubjectCategoryPage() {
       <div className="space-y-4 pt-2">
         <button 
           onClick={() => navigate('/dashboard/documents')}
-          className="flex items-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-primary transition-colors focus:outline-none w-fit"
+          className="flex items-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-[#2563eb] transition-colors focus:outline-none w-fit"
         >
           &larr; Back to Documents
         </button>
@@ -585,7 +586,7 @@ export default function SubjectCategoryPage() {
 
                     {/* Title and details */}
                     <div className="mt-4 flex-1">
-                      <h3 className="text-base font-extrabold text-slate-800 group-hover:text-primary transition-colors leading-tight truncate">
+                      <h3 className="text-base font-extrabold text-slate-800 group-hover:text-[#2563eb] transition-colors leading-tight truncate">
                         {doc.title || doc.fileName}
                       </h3>
                       <p className="mt-1 text-[13px] text-slate-400 line-clamp-2 leading-normal font-medium">
@@ -643,7 +644,7 @@ export default function SubjectCategoryPage() {
 
                     {/* Title and details */}
                     <div className="mt-4 flex-1">
-                      <h3 className="text-base font-extrabold text-slate-800 group-hover:text-primary transition-colors leading-tight truncate">
+                      <h3 className="text-base font-extrabold text-slate-800 group-hover:text-[#2563eb] transition-colors leading-tight truncate">
                         {doc.title || doc.fileName}
                       </h3>
                       <p className="mt-1 text-[13px] text-slate-400 line-clamp-2 leading-normal font-medium">
@@ -693,7 +694,7 @@ export default function SubjectCategoryPage() {
                   </div>
 
                   <div className="mt-4 flex-1">
-                    <h3 className="line-clamp-1 text-[15px] font-bold text-slate-800 group-hover:text-primary transition-colors" title={doc.title || doc.fileName}>
+                    <h3 className="line-clamp-1 text-[15px] font-bold text-slate-800 group-hover:text-[#2563eb] transition-colors" title={doc.title || doc.fileName}>
                       {doc.title || doc.fileName}
                     </h3>
                     <p className="mt-1 text-xs text-slate-400 font-medium">

@@ -7,58 +7,147 @@ import {
   FolderOpen,
   FileSpreadsheet,
   Eraser,
+  Trash2,
+  FileIcon,
+  BarChart2,
+  AlertTriangle,
+  Archive,
+  Trash,
+  Zap
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
+import { useState, useRef, useMemo } from 'react'
+
+const INITIAL_UPLOADS = [
+  {
+    id: '1',
+    name: 'Advanced_Calculus_Ch4.pdf',
+    sizeBytes: 2.4 * 1024 * 1024,
+    time: 'Just now',
+    type: 'pdf',
+    icon: FileText,
+    iconColor: 'text-[#ef4444]',
+    bgColor: 'bg-[#fee2e2]',
+  },
+  {
+    id: '2',
+    name: 'History_Midterm_Notes.docx',
+    sizeBytes: 1.1 * 1024 * 1024,
+    time: '2 hours ago',
+    type: 'doc',
+    icon: FileText,
+    iconColor: 'text-[#3b82f6]',
+    bgColor: 'bg-[#dbeafe]',
+  },
+  {
+    id: '3',
+    name: 'Lab_Results_Dataset.xlsx',
+    sizeBytes: 4.8 * 1024 * 1024,
+    time: 'Yesterday',
+    type: 'xls',
+    icon: FileSpreadsheet,
+    iconColor: 'text-[#22c55e]',
+    bgColor: 'bg-[#dcfce7]',
+  },
+]
+
+const TOTAL_STORAGE_GB = 100;
+const SHARED_FILES_GB = 1.2;
+
+const getFileExtensionInfo = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  if (['pdf'].includes(ext || '')) return { icon: FileText, iconColor: 'text-[#ef4444]', bgColor: 'bg-[#fee2e2]' };
+  if (['doc', 'docx'].includes(ext || '')) return { icon: FileText, iconColor: 'text-[#3b82f6]', bgColor: 'bg-[#dbeafe]' };
+  if (['xls', 'xlsx', 'csv'].includes(ext || '')) return { icon: FileSpreadsheet, iconColor: 'text-[#22c55e]', bgColor: 'bg-[#dcfce7]' };
+  return { icon: FileIcon, iconColor: 'text-[#64748b]', bgColor: 'bg-[#f1f5f9]' };
+}
+
+const formatSize = (bytes: number) => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
 
 export function CloudStoragePage() {
-  const chartData = [
-    { name: 'Used', value: 75, color: '#2563eb' },
-    { name: 'Remaining', value: 25, color: '#e5eeff' },
-  ]
+  const [uploads, setUploads] = useState(INITIAL_UPLOADS)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [baseUsedStorage, setBaseUsedStorage] = useState(74.992)
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false)
+  const [trashSize, setTrashSize] = useState(2.5)
+  const [tempSize, setTempSize] = useState(1.2)
 
-  const recentUploads = [
-    {
-      id: 1,
-      name: 'Advanced_Calculus_Ch4.pdf',
-      size: '2.4 MB',
-      time: 'Just now',
-      type: 'pdf',
-      icon: FileText,
-      iconColor: 'text-[#ef4444]',
-      bgColor: 'bg-[#fee2e2]',
-    },
-    {
-      id: 2,
-      name: 'History_Midterm_Notes.docx',
-      size: '1.1 MB',
-      time: '2 hours ago',
-      type: 'doc',
-      icon: FileText,
-      iconColor: 'text-[#3b82f6]',
-      bgColor: 'bg-[#dbeafe]',
-    },
-    {
-      id: 3,
-      name: 'Lab_Results_Dataset.xlsx',
-      size: '4.8 MB',
-      time: 'Yesterday',
-      type: 'xls',
-      icon: FileSpreadsheet,
-      iconColor: 'text-[#22c55e]',
-      bgColor: 'bg-[#dcfce7]',
-    },
+  const recentUploadsSizeGB = useMemo(() => {
+    const totalBytes = uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0)
+    return totalBytes / (1024 * 1024 * 1024)
+  }, [uploads])
+
+  const totalUsedGB = (baseUsedStorage + recentUploadsSizeGB).toFixed(1)
+  const remainingGB = (TOTAL_STORAGE_GB - parseFloat(totalUsedGB)).toFixed(1)
+  const usedPercentage = Math.round((parseFloat(totalUsedGB) / TOTAL_STORAGE_GB) * 100)
+
+  const chartData = [
+    { name: 'Used', value: usedPercentage, color: '#2563eb' },
+    { name: 'Remaining', value: 100 - usedPercentage, color: '#e5eeff' },
   ]
 
   const subjects = [
-    { name: 'Computer Science', size: '45 GB', progress: 45, color: '#2563eb' },
+    { name: 'Computer Science', size: `${(45 + recentUploadsSizeGB).toFixed(1)} GB`, progress: 45 + Math.round(recentUploadsSizeGB), color: '#2563eb' },
     { name: 'Mathematics', size: '15 GB', progress: 15, color: '#8b5cf6' },
     { name: 'Literature', size: '8 GB', progress: 8, color: '#0f766e' },
   ]
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const { icon, iconColor, bgColor } = getFileExtensionInfo(file.name);
+      
+      const newUpload = {
+        id: Math.random().toString(36).substring(7),
+        name: file.name,
+        sizeBytes: file.size,
+        time: 'Just now',
+        type: file.name.split('.').pop() || '',
+        icon,
+        iconColor,
+        bgColor
+      };
+      
+      setUploads(prev => [newUpload, ...prev]);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
+
+  const handleDelete = (id: string) => {
+    setUploads(prev => prev.filter(u => u.id !== id));
+  }
+
+  const handleCleanUp = () => {
+    setUploads([]);
+  }
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  }
+
   return (
     <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10">
+      {/* Hidden file input */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileUpload} 
+        className="hidden" 
+      />
+
       {/* Header Area */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
@@ -67,20 +156,32 @@ export function CloudStoragePage() {
             Manage your study files and storage space in one place.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground">
-            <Eraser className="size-4 text-muted-foreground mr-1" />
-            <div className="leading-tight">
-              Clean Up<br />Storage
-            </div>
-          </Button>
-          <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground">
-            <FolderSearch className="size-4 text-muted-foreground mr-1" />
-            <div className="leading-tight">
-              Storage<br />Explorer
-            </div>
-          </Button>
-          <Button variant="primary" className="h-[52px] px-4 justify-start text-left font-medium text-sm bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link to="/dashboard/storage/cleanup" className="block">
+            <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground w-full">
+              <Eraser className="size-4 text-muted-foreground mr-1" />
+              <div className="leading-tight">
+                Clean Up<br />Storage
+              </div>
+            </Button>
+          </Link>
+          <Link to="/dashboard/storage/explorer" className="block">
+            <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground w-full">
+              <FolderSearch className="size-4 text-muted-foreground mr-1" />
+              <div className="leading-tight">
+                Storage<br />Explorer
+              </div>
+            </Button>
+          </Link>
+          <Link to="/dashboard/storage/analytics" className="block">
+            <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground w-full">
+              <BarChart2 className="size-4 text-muted-foreground mr-1" />
+              <div className="leading-tight">
+                Storage<br />Analytics
+              </div>
+            </Button>
+          </Link>
+          <Button onClick={handleUploadClick} variant="primary" className="h-[52px] px-4 justify-start text-left font-medium text-sm bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none shadow-sm">
             <Upload className="size-4 mr-1" />
             <div className="leading-tight">
               Upload<br />File
@@ -97,7 +198,7 @@ export function CloudStoragePage() {
               <HardDrive className="size-4 text-primary" />
               Total Storage
             </div>
-            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">100 GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{TOTAL_STORAGE_GB} GB</div>
           </CardContent>
         </Card>
         <Card>
@@ -106,7 +207,7 @@ export function CloudStoragePage() {
               <FileText className="size-4 text-[#8b5cf6]" />
               Used Storage
             </div>
-            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">75 GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{totalUsedGB} GB</div>
           </CardContent>
         </Card>
         <Card>
@@ -115,7 +216,7 @@ export function CloudStoragePage() {
               <Cloud className="size-4 text-[#0ea5e9]" />
               Remaining
             </div>
-            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">25 GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{remainingGB} GB</div>
           </CardContent>
         </Card>
         <Card>
@@ -124,7 +225,7 @@ export function CloudStoragePage() {
               <FolderOpen className="size-4 text-[#2563eb]" />
               Shared Files
             </div>
-            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">1.2 GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{SHARED_FILES_GB} GB</div>
           </CardContent>
         </Card>
       </div>
@@ -140,26 +241,39 @@ export function CloudStoragePage() {
             </button>
           </div>
           <div className="flex flex-col">
-            {recentUploads.map((file, i) => (
-              <div
-                key={file.id}
-                className={`flex items-center gap-4 p-5 ${
-                  i !== recentUploads.length - 1 ? 'border-b border-border' : ''
-                }`}
-              >
-                <div className={`p-2.5 rounded-lg ${file.bgColor}`}>
-                  <file.icon className={`size-6 ${file.iconColor}`} />
-                </div>
-                <div className="flex-1 flex flex-col">
-                  <span className="font-medium text-foreground text-[15px]">
-                    {file.name}
-                  </span>
-                  <span className="text-muted text-xs mt-0.5">
-                    {file.size} • {file.time}
-                  </span>
-                </div>
+            {uploads.length === 0 ? (
+              <div className="p-8 text-center text-muted text-sm">
+                No recent uploads.
               </div>
-            ))}
+            ) : (
+              uploads.map((file, i) => (
+                <div
+                  key={file.id}
+                  className={`flex items-center gap-4 p-5 group ${
+                    i !== uploads.length - 1 ? 'border-b border-border' : ''
+                  }`}
+                >
+                  <div className={`p-2.5 rounded-lg ${file.bgColor}`}>
+                    <file.icon className={`size-6 ${file.iconColor}`} />
+                  </div>
+                  <div className="flex-1 flex flex-col">
+                    <span className="font-medium text-foreground text-[15px]">
+                      {file.name}
+                    </span>
+                    <span className="text-muted text-xs mt-0.5">
+                      {formatSize(file.sizeBytes)} • {file.time}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => handleDelete(file.id)}
+                    className="p-2 text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Delete file"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </Card>
 
@@ -186,18 +300,18 @@ export function CloudStoragePage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex items-center justify-center flex-col">
-                <span className="text-4xl font-bold text-foreground">75%</span>
+                <span className="text-4xl font-bold text-foreground">{usedPercentage}%</span>
               </div>
             </div>
             
             <h3 className="font-bold text-foreground text-[15px] mt-4">
-              75 GB of 100 GB used
+              {totalUsedGB} GB of {TOTAL_STORAGE_GB} GB used
             </h3>
             <p className="text-muted text-xs mt-1.5 mb-6 max-w-[200px]">
               You're approaching your limit.
             </p>
             
-            <Button variant="secondary" className="w-full text-[#2563eb] bg-[#f0f4ff] border-none hover:bg-[#e0e8ff]">
+            <Button onClick={() => setIsManageModalOpen(true)} variant="secondary" className="w-full text-[#2563eb] bg-[#f0f4ff] border-none hover:bg-[#e0e8ff]">
               Manage Storage
             </Button>
           </Card>
@@ -216,7 +330,7 @@ export function CloudStoragePage() {
                   </div>
                   <div className="w-full bg-[#f1f3f5] h-1.5 rounded-full overflow-hidden">
                     <div
-                      className="h-full rounded-full"
+                      className="h-full rounded-full transition-all duration-500 ease-in-out"
                       style={{
                         width: `${subject.progress}%`,
                         backgroundColor: subject.color,
@@ -229,6 +343,92 @@ export function CloudStoragePage() {
           </Card>
         </div>
       </div>
+
+      <Modal
+        isOpen={isManageModalOpen}
+        onClose={() => setIsManageModalOpen(false)}
+        title="Manage Storage"
+        description="Review your storage usage and clean up space."
+      >
+        <div className="flex flex-col gap-4 mt-2">
+          {trashSize === 0 && tempSize === 0 ? (
+            <div className="bg-emerald-50 text-emerald-600 p-4 rounded-lg flex items-center justify-center font-medium border border-emerald-100 shadow-sm">
+              Your storage is optimized!
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-2 text-amber-700 font-bold mb-1">
+                <AlertTriangle className="size-4" />
+                Recommendations
+              </div>
+              <p className="text-sm text-amber-600/80 mb-4">
+                You can free up to {(trashSize + tempSize).toFixed(1)} GB of space by clearing these items.
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                {trashSize > 0 && (
+                  <div className="flex items-center justify-between bg-white p-3 rounded-md border border-amber-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-amber-100 p-2 rounded-lg">
+                        <Trash className="size-4 text-amber-700" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-[14px] text-foreground">Empty Trash</h4>
+                        <p className="text-xs text-muted">Free up {trashSize.toFixed(1)} GB</p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        setBaseUsedStorage(prev => prev - trashSize);
+                        setTrashSize(0);
+                      }}
+                      variant="secondary" 
+                      className="text-danger hover:bg-danger/10 h-8 text-xs font-semibold px-3"
+                    >
+                      Empty
+                    </Button>
+                  </div>
+                )}
+
+                {tempSize > 0 && (
+                  <div className="flex items-center justify-between bg-white p-3 rounded-md border border-amber-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-amber-100 p-2 rounded-lg">
+                        <Archive className="size-4 text-amber-700" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-[14px] text-foreground">Clear Temp Files</h4>
+                        <p className="text-xs text-muted">Free up {tempSize.toFixed(1)} GB</p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        setBaseUsedStorage(prev => prev - tempSize);
+                        setTempSize(0);
+                      }}
+                      variant="secondary" 
+                      className="text-primary hover:bg-primary/10 h-8 text-xs font-semibold px-3"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-[#f8fafc] rounded-lg p-4 border border-slate-100 flex items-center justify-between mt-2 shadow-sm">
+            <div>
+              <h4 className="font-bold text-[14px] text-foreground">Need more space?</h4>
+              <p className="text-[12px] text-muted mt-0.5">Upgrade to Pro for 1TB of storage.</p>
+            </div>
+            <Button onClick={() => setIsManageModalOpen(false)} className="bg-[#3155F6] hover:bg-[#2563eb] text-white gap-1.5 h-9 text-sm px-4">
+              <Zap className="size-3.5" fill="currentColor" />
+              Upgrade
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

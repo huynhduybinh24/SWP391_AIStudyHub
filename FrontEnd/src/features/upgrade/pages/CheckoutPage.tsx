@@ -1,0 +1,85 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { ExpressCheckout } from '../components/ExpressCheckout'
+import { CheckoutForm } from '../components/CheckoutForm'
+import { OrderSummary } from '../components/OrderSummary'
+import { PaymentSuccessModal } from '../components/PaymentSuccessModal'
+
+export function CheckoutPage() {
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+
+  const handlePaymentSuccess = () => {
+    setShowSuccessModal(true)
+  }
+
+  return (
+    <div className="min-h-[85vh] py-6 flex flex-col justify-center items-center bg-[#f8fafc] dark:bg-slate-950 p-2 md:p-8 rounded-3xl transition-colors duration-300">
+      <motion.div
+        key="checkout-card"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl shadow-xl shadow-slate-100/50 dark:shadow-none overflow-hidden"
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[560px]">
+          {/* Left Column: Card Form (7 of 12 columns) */}
+          <div className="lg:col-span-7 p-6 md:p-10 space-y-6 flex flex-col justify-between">
+            <div className="space-y-6">
+              {/* Back to Plans Link */}
+              <Link
+                to="/dashboard/upgrade"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-[#3155F6] dark:text-slate-500 dark:hover:text-blue-400 no-underline transition-colors"
+              >
+                <ArrowLeft className="size-3.5" />
+                Back to Plans
+              </Link>
+
+              {/* Title & Subtitle */}
+              <div className="space-y-1.5">
+                <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  Secure Checkout
+                </h1>
+                <p className="text-xs font-semibold text-slate-450 dark:text-slate-400">
+                  Complete your upgrade to AI Study Hub Pro.
+                </p>
+              </div>
+
+              {/* Express Payment Integration */}
+              <ExpressCheckout />
+
+              {/* Styled Section Divider */}
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-200/50 dark:border-slate-800/60" />
+                <span className="flex-shrink mx-4 text-[9px] font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase">
+                  Or Pay With Card
+                </span>
+                <div className="flex-grow border-t border-slate-200/50 dark:border-slate-800/60" />
+              </div>
+
+              {/* Card Form */}
+              <CheckoutForm onSuccess={handlePaymentSuccess} />
+            </div>
+          </div>
+
+          {/* Right Column: Order Summary (5 of 12 columns) */}
+          <div className="lg:col-span-5 bg-slate-50/40 dark:bg-slate-950/20 border-t lg:border-t-0 lg:border-l border-slate-200/60 dark:border-slate-800/60 p-6 md:p-10">
+            <OrderSummary />
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Payment Success Overlay Modal */}
+      <PaymentSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        planName="Pro Plan (Annual)"
+        transactionId="#ASH-9284751"
+        amount="$132.00"
+      />
+    </div>
+  )
+}
+
+export default CheckoutPage

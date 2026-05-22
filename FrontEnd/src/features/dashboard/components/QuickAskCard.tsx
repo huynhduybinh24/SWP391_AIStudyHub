@@ -1,9 +1,29 @@
+import { useState } from 'react'
 import { Bot, Send } from 'lucide-react'
+import { useUiStore } from '@/stores/uiStore'
 import { Card, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 
 export function QuickAskCard() {
+  const [inputText, setInputText] = useState('')
+  const setChatPopupOpen = useUiStore((s) => s.setChatPopupOpen)
+  const setInitialChatMessage = useUiStore((s) => s.setInitialChatMessage)
+
+  const handleQuickAsk = (prompt: string) => {
+    if (!prompt.trim()) return
+    setInitialChatMessage(prompt)
+    setChatPopupOpen(true)
+    setInputText('')
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleQuickAsk(inputText)
+    }
+  }
+
   return (
     <section className="col-span-4 space-y-4">
       <CardTitle className="normal-case tracking-normal text-base font-bold text-foreground">
@@ -17,20 +37,33 @@ export function QuickAskCard() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={() => handleQuickAsk('Summarize latest upload')}
             className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-body hover:border-primary/30"
           >
             Summarize latest upload
           </button>
           <button
             type="button"
+            onClick={() => handleQuickAsk('Generate quiz from notes')}
             className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-body hover:border-primary/30"
           >
             Generate quiz from notes
           </button>
         </div>
         <div className="flex gap-2">
-          <Input placeholder="Ask AI anything..." className="flex-1" />
-          <Button size="icon" aria-label="Send">
+          <Input 
+            placeholder="Ask AI anything..." 
+            className="flex-1"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <Button 
+            size="icon" 
+            aria-label="Send"
+            onClick={() => handleQuickAsk(inputText)}
+            disabled={!inputText.trim()}
+          >
             <Send className="size-4" />
           </Button>
         </div>

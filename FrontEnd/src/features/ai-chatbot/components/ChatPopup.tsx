@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Bot, Send, Loader2, X, Paperclip, FileIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useUiStore } from '@/stores/uiStore'
 
 interface Message {
   id: string
@@ -32,6 +33,17 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
+
+  const initialChatMessage = useUiStore((s) => s.initialChatMessage)
+  const setInitialChatMessage = useUiStore((s) => s.setInitialChatMessage)
+
+  useEffect(() => {
+    if (initialChatMessage) {
+      handleSend(initialChatMessage)
+      setInitialChatMessage('')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSend = (textToSend?: string) => {
     const text = (textToSend || inputText).trim()

@@ -1,14 +1,24 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, MessageSquare, Cloud, Search, Share2, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 
 export function LandingPage() {
+  const [activeSection, setActiveSection] = useState('home')
+
+  const scrollToHome = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setActiveSection('home')
+  }
+
   const scrollToFeatures = () => {
     document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+    setActiveSection('features')
   }
 
   const scrollToAbout = () => {
     document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })
+    setActiveSection('about')
   }
 
   return (
@@ -16,15 +26,18 @@ export function LandingPage() {
       {/* Header */}
       <header className="w-full bg-white border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div 
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={scrollToHome}
+          >
             <img src="/logo.png" alt="AI Study Hub Logo" className="h-8 w-auto object-contain" />
             <h1 className="text-2xl font-bold text-primary tracking-tight">AI Study Hub</h1>
           </div>
           
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#" className="text-primary font-semibold border-b-2 border-primary pb-1">Home</a>
-            <button onClick={scrollToFeatures} className="text-body font-medium hover:text-foreground transition-colors">Features</button>
-            <button onClick={scrollToAbout} className="text-body font-medium hover:text-foreground transition-colors">About</button>
+            <button onClick={scrollToHome} className={`font-semibold transition-colors ${activeSection === 'home' ? 'text-primary border-b-2 border-primary pb-1' : 'text-body hover:text-foreground'}`}>Home</button>
+            <button onClick={scrollToFeatures} className={`font-semibold transition-colors ${activeSection === 'features' ? 'text-primary border-b-2 border-primary pb-1' : 'text-body hover:text-foreground'}`}>Features</button>
+            <button onClick={scrollToAbout} className={`font-semibold transition-colors ${activeSection === 'about' ? 'text-primary border-b-2 border-primary pb-1' : 'text-body hover:text-foreground'}`}>About</button>
           </nav>
           
           <div className="flex items-center gap-4">
@@ -190,7 +203,7 @@ export function LandingPage() {
             <a href="#" className="hover:text-primary transition-colors">Features</a>
             <Link to="/login" className="hover:text-primary transition-colors">Login</Link>
             <Link to="/login" className="hover:text-primary transition-colors">Register</Link>
-            <a href="#" className="hover:text-primary transition-colors">Help Center</a>
+            <Link to="/help" className="hover:text-primary transition-colors">Help Center</Link>
           </div>
         </div>
       </footer>

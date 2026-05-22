@@ -12,8 +12,6 @@ import {
   Trash2,
   CloudUpload,
   FolderPlus,
-  SlidersHorizontal,
-  Plus,
   FileText
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -27,7 +25,7 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'
+  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
@@ -242,6 +240,8 @@ export default function MyDocumentsPage() {
                 <option value="Compsci">CompSci</option>
                 <option value="Philosophy">Philosophy</option>
                 <option value="Economics">Economics</option>
+                <option value="Neuroscience">Neuroscience</option>
+                <option value="Psychology">Psychology</option>
               </select>
             </div>
 

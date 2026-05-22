@@ -4,11 +4,11 @@ import { CardTitle } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
 
 const actions = [
-  { label: 'Upload', icon: Upload, to: '/upload' },
-  { label: 'Search', icon: Search, to: '/documents' },
-  { label: 'AI Chat', icon: Bot, to: '/chat' },
-  { label: 'Shared', icon: Share2, to: '/shared' },
-  { label: 'Study Plans', icon: CalendarDays, to: '/study-plans' },
+  { label: 'Upload', icon: Upload, to: '/dashboard/upload' },
+  { label: 'Search', icon: Search, to: '/dashboard/documents/search' },
+  { label: 'AI Chat', icon: Bot, to: '/dashboard/chat' },
+  { label: 'Shared', icon: Share2, to: '/dashboard/shared' },
+  { label: 'Study Plans', icon: CalendarDays, to: '/dashboard/study-plans' },
 ] as const
 
 export function QuickActions() {

@@ -1,4 +1,5 @@
-import { FileImage, FileText, Link as LinkIcon } from 'lucide-react'
+import { useState } from 'react'
+import { FileImage, FileText, Link as LinkIcon, Check } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardTitle } from '@/components/ui/Card'
@@ -9,6 +10,27 @@ const iconMap = {
   pdf: { icon: FileText, badge: 'pdf' as const, color: 'text-red-500' },
   word: { icon: FileText, badge: 'word' as const, color: 'text-blue-500' },
   image: { icon: FileImage, badge: 'image' as const, color: 'text-teal-500' },
+}
+
+function CopyLinkButton({ docId }: { docId: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/dashboard/documents/${docId}`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-slate-100 hover:text-foreground"
+      title="Copy Link"
+    >
+      {copied ? <Check className="size-4 text-green-500" /> : <LinkIcon className="size-4" />}
+    </button>
+  )
 }
 
 interface RecentDocumentsProps {
@@ -22,7 +44,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
         <CardTitle className="normal-case tracking-normal text-base font-bold text-foreground">
           Recent Documents
         </CardTitle>
-        <Link to="/documents" className="text-sm text-primary hover:underline">
+        <Link to="/dashboard/documents" className="text-sm text-primary hover:underline">
           View All
         </Link>
       </div>
@@ -40,7 +62,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
                   <span className="text-sm text-muted">{doc.timestamp}</span>
                 </div>
               </div>
-              <LinkIcon className="size-4 shrink-0 text-muted" />
+              <CopyLinkButton docId={doc.id} />
             </div>
           )
         })}

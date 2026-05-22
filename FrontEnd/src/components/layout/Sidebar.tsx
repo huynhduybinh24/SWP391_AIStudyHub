@@ -3,8 +3,8 @@ import { Zap } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 
 function isNavActive(pathname: string, path: string) {
-  if (pathname === '/dashboard/shared-files/research-materials' || pathname === '/dashboard/shared-files/research-materials/') {
-    return path === '/dashboard/notifications'
+  if (pathname.startsWith('/dashboard/shared-files')) {
+    return path === '/dashboard/shared'
   }
   if (path === '/dashboard') {
     return pathname === '/dashboard' || pathname === '/dashboard/'
@@ -34,7 +34,7 @@ function SidebarLink({
       className={`
         flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200 no-underline select-none
         ${active 
-          ? 'bg-[#2557E8] text-white rounded-xl shadow-sm' 
+          ? 'bg-[#3155F6] text-white rounded-xl shadow-sm' 
           : 'text-[#4b5563] hover:bg-slate-50 hover:text-slate-900 rounded-xl'
         }
       `}
@@ -50,6 +50,8 @@ function SidebarLink({
 }
 
 export function Sidebar() {
+  const { pathname } = useLocation()
+
   return (
     <aside className="flex h-screen w-[256px] shrink-0 flex-col justify-between border-r border-[#EAECF0] bg-white py-6 px-4 sticky top-0 left-0 z-30 select-none">
       <div className="flex flex-col gap-6 flex-1 min-h-0">
@@ -92,7 +94,7 @@ export function Sidebar() {
         >
           <Zap className="size-4 text-white" strokeWidth={2} />
           Upgrade to Pro
-        </button>
+        </Link>
       </div>
     </aside>
   )

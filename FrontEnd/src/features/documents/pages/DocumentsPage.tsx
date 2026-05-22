@@ -2,17 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import {
   X,
-  Bot,
   Send,
   Sparkles,
   CheckCircle2,
   BrainCircuit,
   CloudUpload,
-  MoreVertical,
-  MessageSquare,
-  ExternalLink,
-  Download,
-  Trash2,
   FileText,
   FileCode,
   BookOpen,
@@ -1014,6 +1008,7 @@ export function DocumentsPage() {
       {/* Renders MyDocumentsPage or SubjectCategoryPage */}
       <Outlet
         context={{
+          // Shared Context
           documents,
           setDocuments,
           openUploadModal: () => setIsUploadModalOpen(true),
@@ -1027,11 +1022,23 @@ export function DocumentsPage() {
             setShowQuizResults(false)
             setIsQuizModalOpen(true)
           },
-          showToast,
-          handleDownloadFile,
-          handleDeleteDocument,
-          renderFileIcon,
-          renderStatusBadge
+          
+          // DocumentsLayoutContext (for MyDocumentsPage)
+          searchQuery,
+          setSearchQuery,
+          subjectFilter,
+          setSubjectFilter,
+          typeFilter,
+          setTypeFilter,
+          viewMode,
+          setViewMode,
+          setIsUploadModalOpen,
+          setIsInsightsModalOpen,
+          handleOpenChat,
+          handleOpenPreview,
+          activeMenuId,
+          setActiveMenuId,
+          menuRef
         }}
       />
 
