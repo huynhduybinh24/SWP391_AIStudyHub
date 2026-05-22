@@ -291,6 +291,20 @@ const LEARNING_DATA: Record<string, LearningProgressPlan> = {
       ]}
     ]
   },
+  '8': {
+    id: '8', title: 'Advanced Robotics',
+    description: 'Kinematics, control systems, and machine learning integration.',
+    isAiGenerated: true, overallProgress: 0,
+    sections: [
+      { label: 'Kinematics', value: 0, lessons: [
+        { id: 'l1', title: 'Forward Kinematics', duration: '20 min', type: 'video', completed: false },
+        { id: 'l2', title: 'Inverse Kinematics', duration: '25 min', type: 'practice', completed: false },
+      ]},
+      { label: 'Control Systems', value: 0, lessons: [
+        { id: 'l3', title: 'PID Controllers', duration: '30 min', type: 'video', completed: false },
+      ]}
+    ]
+  },
   '4': {
     id: '4', title: 'World History: Modern Era',
     description: 'Explore major events shaping the 20th and 21st centuries.',
@@ -396,6 +410,20 @@ const CURRICULUM_DATA: Record<string, CurriculumPlan> = {
         lessons: [
           { id: 'c5', title: 'Post-Cold War World',  duration: '25 min', type: 'video',   status: 'completed' },
           { id: 'c6', title: 'Comprehensive Exam',   duration: '60 min', type: 'quiz',    status: 'completed' },
+        ]},
+    ],
+  },
+  '8': {
+    id: '8', title: 'Advanced Robotics', documents: 15, hoursEst: 55, difficulty: 'Hard',
+    modules: [
+      { id: 'm1', title: 'Kinematics', description: 'Robot motion and control',
+        lessons: [
+          { id: 'c1', title: 'Forward Kinematics',        duration: '20 min', type: 'video',    status: 'locked' },
+          { id: 'c2', title: 'Inverse Kinematics',        duration: '25 min', type: 'practice', status: 'locked' },
+        ]},
+      { id: 'm2', title: 'Control Systems', description: 'Feedback and automation',
+        lessons: [
+          { id: 'c3', title: 'PID Controllers',           duration: '30 min', type: 'video',    status: 'locked' },
         ]},
     ],
   },
@@ -708,7 +736,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
               onClick={onContinue}
               className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg shadow-sm ${isUpcoming ? 'bg-[#0055d4] hover:bg-[#004bbd]' : isCompleted ? 'bg-[#0055d4] hover:bg-[#004bbd]' : buttonClass}`}
             >
-              {isCompleted ? 'View Review' : isUpcoming ? 'View Details' : isAiTab ? 'Continue' : 'Continue Learning'}
+              {isCompleted ? 'View Review' : isUpcoming ? 'View Details' : 'Continue Learning'}
             </Button>
             {!isUpcoming && (
               <Button
