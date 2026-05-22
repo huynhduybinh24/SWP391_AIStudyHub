@@ -19,6 +19,8 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Avatar } from '@/components/ui/Avatar'
+import { Modal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
 
 export function FilePreviewPage() {
   const [zoom, setZoom] = useState(100)
@@ -26,7 +28,8 @@ export function FilePreviewPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isDownloading, setIsDownloading] = useState(false)
   const [isDownloaded, setIsDownloaded] = useState(false)
-  const [isShared, setIsShared] = useState(false)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isLinkCopied, setIsLinkCopied] = useState(false)
   const [tags, setTags] = useState(['Biology', 'Exam Prep'])
   const [newTag, setNewTag] = useState('')
   const [isAddingTag, setIsAddingTag] = useState(false)
@@ -48,8 +51,7 @@ export function FilePreviewPage() {
   }
 
   const handleShare = () => {
-    setIsShared(true)
-    setTimeout(() => setIsShared(false), 3000)
+    setIsShareModalOpen(true)
   }
 
   const handleRemoveTag = (tagToRemove: string) => {
@@ -92,14 +94,10 @@ export function FilePreviewPage() {
             <Button 
               onClick={handleShare}
               variant="secondary" 
-              className={`gap-2 h-9 px-4 text-sm font-medium transition-colors shadow-sm ${
-                isShared 
-                  ? 'text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-50' 
-                  : 'text-[#3155F6] border-slate-200 hover:bg-slate-50 bg-white'
-              }`}
+              className="gap-2 h-9 px-4 text-sm font-medium transition-colors shadow-sm text-[#3155F6] border-slate-200 hover:bg-slate-50 bg-white"
             >
-              {isShared ? <Check className="size-4" /> : <Share2 className="size-4" />}
-              {isShared ? 'Link Copied' : 'Share Access'}
+              <Share2 className="size-4" />
+              Share Access
             </Button>
             <Button 
               onClick={handleDownload}
@@ -257,6 +255,79 @@ export function FilePreviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Modal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title="Share Access"
+        description="Share this file with your study group or copy the link."
+        className="max-w-md"
+      >
+        <div className="flex flex-col gap-4 mt-2">
+          {/* Link Section */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Share Link</label>
+            <div className="flex items-center gap-2">
+              <input 
+                type="text" 
+                readOnly 
+                value="https://aistudyhub.com/s/Neuroscience_Ch4" 
+                className="flex-1 h-10 px-3 py-2 text-sm rounded-lg border border-border bg-slate-50 text-slate-500 focus:outline-none"
+              />
+              <Button 
+                onClick={() => {
+                  setIsLinkCopied(true);
+                  setTimeout(() => setIsLinkCopied(false), 2000);
+                }}
+                className={`shrink-0 h-10 transition-colors ${
+                  isLinkCopied 
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                    : 'bg-[#3155F6] hover:bg-[#2563eb] text-white'
+                }`}
+              >
+                {isLinkCopied ? <Check className="size-4 mr-1.5" /> : <Share2 className="size-4 mr-1.5" />}
+                {isLinkCopied ? 'Copied!' : 'Copy'}
+              </Button>
+            </div>
+            <p className="text-xs text-muted">Anyone with this link can view and download the file.</p>
+          </div>
+
+          <div className="h-px bg-border my-2"></div>
+
+          {/* Access List */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground">People with access</label>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Avatar src="/avatar.svg" name="Me" className="size-8" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">You</p>
+                  <p className="text-[11px] text-muted">alex.rivera@example.com</p>
+                </div>
+              </div>
+              <span className="text-sm text-muted">Owner</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="size-8 rounded-full bg-blue-100 text-[#3155F6] flex items-center justify-center text-xs font-bold">
+                  SG
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Study Group Alpha</p>
+                  <p className="text-[11px] text-muted">3 members</p>
+                </div>
+              </div>
+              <Select className="w-[100px] h-8 text-xs py-0">
+                <option>Viewer</option>
+                <option>Editor</option>
+                <option>Remove</option>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
