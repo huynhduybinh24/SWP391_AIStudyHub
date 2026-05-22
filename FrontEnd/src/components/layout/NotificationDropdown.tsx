@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Bell, BookOpen, Bot, Calendar, Share2, Check, CircleDot } from 'lucide-react'
+import { Bell, BookOpen, Bot, Calendar, Share2, Check } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/components/ui/Toast'
 import { useState } from 'react'

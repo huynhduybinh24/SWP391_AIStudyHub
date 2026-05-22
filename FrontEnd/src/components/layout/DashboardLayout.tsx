@@ -1,23 +1,18 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { Bot } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { Button } from '@/components/ui/Button'
-import { ChatPopup } from '@/features/ai-chatbot/components/ChatPopup'
+import { FloatingAssistantButton } from '@/components/layout/FloatingAssistantButton'
 import { useUiStore } from '@/stores/uiStore'
 
 export function DashboardLayout() {
-
   const location = useLocation()
   const isChatPage = location.pathname === '/dashboard/chat' || location.pathname === '/dashboard/chat/'
-  const isChatPopupOpen = useUiStore((s) => s.isChatPopupOpen)
-  const setChatPopupOpen = useUiStore((s) => s.setChatPopupOpen)
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface relative">
+    <div className="flex h-screen overflow-hidden bg-[#f5f7fb] text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300 relative">
       <Sidebar />
       
       {/* Mobile Sidebar Backdrop Overlay */}
@@ -28,7 +23,7 @@ export function DashboardLayout() {
         />
       )}
 
-      <div className="relative flex min-w-0 flex-1 flex-col bg-surface h-full">
+      <div className="relative flex min-w-0 flex-1 flex-col bg-[#f5f7fb] dark:bg-slate-950 transition-colors duration-300 h-full">
         <Header />
         
         {/* Main Content Area */}
@@ -42,20 +37,7 @@ export function DashboardLayout() {
         </div>
 
         {/* Interactive Floating Chatbot */}
-        {!isChatPage && (
-          <>
-            <Button
-              size="icon"
-              className="fixed bottom-[20px] right-[20px] z-20 size-14 rounded-full bg-[#3155F6] shadow-lg hover:bg-[#2563eb] transition-all duration-300 hover:scale-105"
-              aria-label="Open AI Chatbot"
-              onClick={() => setChatPopupOpen(!isChatPopupOpen)}
-            >
-              <Bot className="size-6 text-white" />
-              <span className="absolute top-1.5 right-1.5 block h-3 w-3 rounded-full bg-[#22C55E] border-2 border-white" />
-            </Button>
-            {isChatPopupOpen && <ChatPopup onClose={() => setChatPopupOpen(false)} />}
-          </>
-        )}
+        {!isChatPage && <FloatingAssistantButton />}
       </div>
     </div>
   )

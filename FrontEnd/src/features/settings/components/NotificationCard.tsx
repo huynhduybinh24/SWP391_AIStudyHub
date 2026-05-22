@@ -1,14 +1,24 @@
-import { motion } from 'framer-motion'
 import { Bell } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useToast } from '@/components/ui/Toast'
+import { CustomSwitch } from './CustomSwitch'
 
 export function NotificationCard() {
   const { notifications, updateNotifications } = useSettingsStore()
+  const toast = useToast()
 
   const handleToggle = (key: 'emailNotifications' | 'pushNotifications') => {
+    const nextVal = !notifications[key]
     updateNotifications({
-      [key]: !notifications[key],
+      [key]: nextVal,
     })
+
+    const title = key === 'emailNotifications' ? 'Email notifications' : 'Push notifications'
+    if (nextVal) {
+      toast.success(`${title} enabled`)
+    } else {
+      toast.success(`${title} disabled`)
+    }
   }
 
   return (
@@ -24,57 +34,34 @@ export function NotificationCard() {
         {/* Email Notifications */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-foreground dark:text-slate-200">Email Notifications</h3>
+            <h3 id="email-notif-label" className="text-sm font-semibold text-foreground dark:text-slate-200">
+              Email Notifications
+            </h3>
             <p className="text-xs text-muted dark:text-slate-400">Receive weekly summaries and important alerts.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => handleToggle('emailNotifications')}
-            className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 ${
-              notifications.emailNotifications ? 'bg-[#2563eb]' : 'bg-slate-200 dark:bg-slate-700'
-            }`}
-          >
-            <motion.div
-              layout
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm"
-              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            >
-              {notifications.emailNotifications && (
-                <svg className="h-3 w-3 text-[#2563eb]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </motion.div>
-          </button>
+          <CustomSwitch
+            checked={notifications.emailNotifications}
+            onChange={() => handleToggle('emailNotifications')}
+            aria-labelledby="email-notif-label"
+          />
         </div>
 
         {/* Push Notifications */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-foreground dark:text-slate-200">Push Notifications</h3>
+            <h3 id="push-notif-label" className="text-sm font-semibold text-foreground dark:text-slate-200">
+              Push Notifications
+            </h3>
             <p className="text-xs text-muted dark:text-slate-400">Get immediate pings for AI assistance completion.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => handleToggle('pushNotifications')}
-            className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 ${
-              notifications.pushNotifications ? 'bg-[#2563eb]' : 'bg-slate-200 dark:bg-slate-700'
-            }`}
-          >
-            <motion.div
-              layout
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm"
-              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            >
-              {notifications.pushNotifications && (
-                <svg className="h-3 w-3 text-[#2563eb]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </motion.div>
-          </button>
+          <CustomSwitch
+            checked={notifications.pushNotifications}
+            onChange={() => handleToggle('pushNotifications')}
+            aria-labelledby="push-notif-label"
+          />
         </div>
       </div>
     </div>
   )
 }
+

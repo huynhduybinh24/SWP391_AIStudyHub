@@ -1,6 +1,6 @@
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { HelpCircle, Bot, BookOpen, Share2, Sparkles, Key } from 'lucide-react'
+import { Bot, BookOpen, Share2, Sparkles, Key } from 'lucide-react'
 
 interface HelpModalProps {
   isOpen: boolean
