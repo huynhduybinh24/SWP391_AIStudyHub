@@ -1,4 +1,8 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { PricingCard, type PricingPlan } from '../components/PricingCard'
+import { ContactSalesModal } from '../components/ContactSalesModal'
+import { useToast } from '@/components/ui/Toast'
 
 const pricingPlans: PricingPlan[] = [
   {
@@ -48,10 +52,26 @@ const pricingPlans: PricingPlan[] = [
 ]
 
 export function PricingPage() {
+  const navigate = useNavigate()
+  const toast = useToast()
+  const [isContactSalesOpen, setIsContactSalesOpen] = useState(false)
+
+  const handleCurrentPlanClick = () => {
+    toast.info('You are currently on the Free Plan')
+  }
+
+  const handleUpgradeClick = () => {
+    navigate('/dashboard/checkout')
+  }
+
+  const handleContactSalesClick = () => {
+    setIsContactSalesOpen(true)
+  }
+
   return (
-    <div className="space-y-10 py-4 flex flex-col items-center">
+    <div className="space-y-10 py-6 flex flex-col items-center select-none w-full">
       {/* Title & Subtitle */}
-      <div className="text-center space-y-4 max-w-2xl">
+      <div className="text-center space-y-4 max-w-2xl px-4">
         <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
           Choose Your Plan
         </h1>
@@ -61,11 +81,24 @@ export function PricingPage() {
       </div>
 
       {/* Pricing Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch w-full max-w-5xl mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch w-full max-w-5xl mt-6 px-4">
         {pricingPlans.map((plan, index) => (
-          <PricingCard key={plan.name} plan={plan} index={index} />
+          <PricingCard
+            key={plan.name}
+            plan={plan}
+            index={index}
+            onCurrentPlanClick={handleCurrentPlanClick}
+            onUpgradeClick={handleUpgradeClick}
+            onContactSalesClick={handleContactSalesClick}
+          />
         ))}
       </div>
+
+      {/* Contact Sales Form Modal */}
+      <ContactSalesModal
+        isOpen={isContactSalesOpen}
+        onClose={() => setIsContactSalesOpen(false)}
+      />
     </div>
   )
 }

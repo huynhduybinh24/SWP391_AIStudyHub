@@ -141,7 +141,7 @@ export function Sidebar() {
               "mt-4 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-all duration-200 cursor-pointer shadow-sm shrink-0 no-underline",
               "md:max-lg:px-2 md:max-lg:py-3",
               pathname === "/dashboard/upgrade"
-                ? "bg-[#1e40af] hover:bg-[#1d4ed8] shadow-[#1e40af]/20"
+                ? "bg-[#3155F6] hover:bg-[#2563eb] ring-2 ring-blue-500/20 shadow-lg shadow-blue-500/25"
                 : "bg-[#3155F6] hover:bg-[#2563eb] shadow-[#3155F6]/10"
             )}
           >

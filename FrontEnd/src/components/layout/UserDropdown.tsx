@@ -8,9 +8,10 @@ import { useToast } from '@/components/ui/Toast'
 
 interface UserDropdownProps {
   onClose: () => void
+  onLogoutClick?: () => void
 }
 
-export function UserDropdown({ onClose }: UserDropdownProps) {
+export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -77,7 +78,7 @@ export function UserDropdown({ onClose }: UserDropdownProps) {
         <button
           type="button"
           className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors text-left font-semibold cursor-pointer"
-          onClick={handleLogout}
+          onClick={onLogoutClick || handleLogout}
           role="menuitem"
         >
           <LogOut className="size-4 text-danger" />
