@@ -26,7 +26,8 @@ import {
   Copy,
   X,
   Mail,
-  User
+  User,
+  Link
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -212,21 +213,21 @@ export default function DocumentDetailPage() {
       name: 'Alex Rivera',
       email: 'alex@example.com',
       role: 'owner',
-      avatarBg: 'bg-emerald-500/90 text-white font-bold'
+      avatarBg: 'bg-[#0fbf7c] text-white font-bold'
     },
     {
       id: 'collab-1',
       name: 'Huynh Duy Binh',
       email: 'binh@example.com',
       role: 'editor',
-      avatarBg: 'bg-indigo-500/90 text-white font-bold'
+      avatarBg: 'bg-[#5f6ffc] text-white font-bold'
     },
     {
       id: 'collab-2',
       name: 'Ngoc Tan',
       email: 'tan@example.com',
       role: 'commenter',
-      avatarBg: 'bg-amber-500/90 text-white font-bold'
+      avatarBg: 'bg-[#fc9d1c] text-white font-bold'
     }
   ])
   const [newEmail, setNewEmail] = useState<string>('')
@@ -504,22 +505,22 @@ export default function DocumentDetailPage() {
     const newCollabName = newEmail.split('@')[0]
     const formattedName = newCollabName.charAt(0).toUpperCase() + newCollabName.slice(1)
 
-    const backgrounds = [
-      'bg-blue-500/90 text-white',
-      'bg-purple-500/90 text-white',
-      'bg-pink-500/90 text-white',
-      'bg-rose-500/90 text-white',
-      'bg-teal-500/90 text-white',
-      'bg-sky-500/90 text-white'
+    const colors = [
+      'bg-[#5f6ffc] text-white font-bold',
+      'bg-[#fc9d1c] text-white font-bold',
+      'bg-[#ec4899] text-white font-bold',
+      'bg-[#8b5cf6] text-white font-bold',
+      'bg-[#0fbf7c] text-white font-bold',
+      'bg-rose-500 text-white font-bold'
     ]
-    const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)]
+    const randomColor = colors[Math.floor(Math.random() * colors.length)]
 
     const newCollab: Collaborator = {
       id: `collab-${Date.now()}`,
       name: formattedName,
       email: newEmail.trim().toLowerCase(),
       role: newRole,
-      avatarBg: randomBg + ' font-bold'
+      avatarBg: randomColor
     }
 
     setCollaborators(prev => [...prev, newCollab])
@@ -909,18 +910,17 @@ export default function DocumentDetailPage() {
             <Button
               variant="secondary"
               onClick={() => navigate(`/dashboard/documents/document/${activeDoc?.id}/edit`)}
-              className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98"
+              className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98 text-xs"
             >
-              <Settings className="h-4.5 w-4.5" />
-              Edit Details
+              Edit Document
             </Button>
 
             <Button
               variant="secondary"
               onClick={() => setIsShareModalOpen(true)}
-              className="w-full bg-blue-50 hover:bg-blue-100/80 text-blue-600 border border-blue-100 font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98"
+              className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98 text-xs"
             >
-              <Share2 className="h-4.5 w-4.5" />
+              <Share2 className="h-4.5 w-4.5 text-slate-500" />
               Share Access
             </Button>
           </div>
@@ -940,6 +940,7 @@ export default function DocumentDetailPage() {
               exit={{ opacity: 0 }}
               onClick={() => {
                 setIsShareModalOpen(false)
+                setIsSettingsViewOpen(false)
                 setActiveDropdownId(null)
                 setIsGeneralDropdownOpen(false)
                 setIsPublicRoleDropdownOpen(false)
@@ -954,13 +955,13 @@ export default function DocumentDetailPage() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
               transition={{ type: 'spring', duration: 0.35, bounce: 0.15 }}
-              className="bg-white text-slate-800 rounded-[28px] shadow-2xl border border-slate-200/80 w-full max-w-lg mx-4 overflow-hidden z-10 font-sans flex flex-col relative animate-fade-in"
+              className="bg-white text-slate-800 rounded-[28px] shadow-2xl border border-slate-200/80 w-full max-w-lg mx-4 overflow-visible z-10 font-sans flex flex-col relative max-h-[90vh]"
               ref={dropdownRef}
             >
               {isSettingsViewOpen ? (
-                /* Sharing Settings View */
+                /* Advanced Settings View */
                 <div className="flex flex-col h-full animate-fade-in">
-                  {/* Header */}
+                  {/* Settings Header */}
                   <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-slate-100 select-none shrink-0">
                     <button
                       onClick={() => setIsSettingsViewOpen(false)}
@@ -974,9 +975,8 @@ export default function DocumentDetailPage() {
                     </h2>
                   </div>
 
-                  {/* Options Content */}
+                  {/* Settings Options */}
                   <div className="px-6 py-6 flex-1 space-y-6">
-                    {/* Option 1: Editors share privilege */}
                     <label className="flex items-start gap-4 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -997,7 +997,6 @@ export default function DocumentDetailPage() {
                       </div>
                     </label>
 
-                    {/* Option 2: Viewers/Commenters download protection */}
                     <label className="flex items-start gap-4 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -1019,88 +1018,85 @@ export default function DocumentDetailPage() {
                     </label>
                   </div>
 
-                  {/* Footer */}
-                  <div className="px-6 py-4 bg-slate-50 flex justify-end shrink-0 border-t border-slate-100 select-none">
+                  {/* Settings Footer */}
+                  <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end shrink-0 select-none rounded-b-[28px]">
                     <Button
                       onClick={() => setIsSettingsViewOpen(false)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-6 py-3.5 rounded-full shadow-md transition-all hover:scale-[1.03] active:scale-[0.98]"
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-6 py-3.5 rounded-full shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
                       Quay lại
                     </Button>
                   </div>
                 </div>
               ) : (
-                /* Standard Share Access View */
+                /* Main Share Modal View */
                 <>
-                  {/* Header */}
+                  {/* Modal Header */}
                   <div className="flex justify-between items-center px-6 pt-6 pb-2 shrink-0 select-none">
-                    <h2 className="text-xl font-semibold text-slate-900 tracking-tight leading-normal">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight leading-normal truncate max-w-[340px]">
                       Chia sẻ "{activeDoc?.title || mockDetails.courseTitle}"
                     </h2>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={handleGearClick}
                         className={cn(
-                          "p-2 rounded-full transition-colors flex items-center justify-center",
+                          "p-2 rounded-full transition-colors flex items-center justify-center animate-fade-in",
                           canCurrentUserAccessSettings()
                             ? "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
                             : "text-slate-300 cursor-not-allowed opacity-40"
                         )}
                         title="Cài đặt chia sẻ"
                       >
-                        <Settings className="h-5 w-5" />
+                        <Settings className="h-5 w-5 text-slate-400" />
                       </button>
                       <button
                         onClick={() => {
                           setIsShareModalOpen(false)
-                          setActiveDropdownId(null)
+                          setIsNewRoleDropdownOpen(false)
                           setIsGeneralDropdownOpen(false)
                           setIsPublicRoleDropdownOpen(false)
-                          setIsNewRoleDropdownOpen(false)
+                          setActiveDropdownId(null)
                         }}
-                        className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 p-2 rounded-full transition-colors flex items-center justify-center"
+                        className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center"
                         title="Đóng"
                       >
-                        <X className="h-5 w-5" />
+                        <X className="h-5 w-5 text-slate-450" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Add People Form */}
-                  <div className="px-6 py-4 border-b border-slate-100 shrink-0">
-                    <form onSubmit={handleAddCollaborator} className="flex gap-2 items-center">
+                  {/* Invite Row */}
+                  <div className="px-6 py-4 shrink-0">
+                    <form onSubmit={handleAddCollaborator} className="flex gap-2.5 items-center">
+                      {/* Input with Mail icon */}
                       <div className="relative flex-1">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400" />
                         <input
                           type="text"
                           placeholder="Thêm người, nhóm hoặc địa chỉ email"
                           value={newEmail}
                           onChange={(e) => setNewEmail(e.target.value)}
-                          className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 hover:border-slate-355 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 rounded-2xl text-xs font-semibold placeholder-slate-400 transition-all focus:outline-none"
+                          className="w-full pl-11 pr-4 py-3 bg-[#f8fafc] border border-slate-200/60 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 rounded-2xl text-xs font-semibold placeholder-slate-450 transition-all focus:outline-none"
                         />
                       </div>
 
-                      {/* New user role switcher dropdown */}
+                      {/* Role selection dropdown inside invite row */}
                       <div className="relative shrink-0">
                         <button
                           type="button"
                           onClick={() => setIsNewRoleDropdownOpen(!isNewRoleDropdownOpen)}
-                          className="flex items-center gap-1 px-3.5 py-3 border border-slate-200 hover:border-slate-300 bg-white rounded-2xl text-xs font-extrabold text-slate-700 hover:bg-slate-50 transition-all select-none"
+                          className="h-[46px] flex items-center gap-1.5 px-4 border border-slate-200/60 hover:border-slate-350 bg-white rounded-2xl text-xs font-extrabold text-slate-700 hover:bg-slate-50 transition-all select-none shadow-xs"
                         >
-                          <span className="capitalize">
+                          <span>
                             {newRole === 'editor' ? 'Người chỉnh sửa' : newRole === 'commenter' ? 'Người nhận xét' : 'Người xem'}
                           </span>
-                          <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
+                          <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0 ml-0.5" />
                         </button>
 
-                        <AnimatePresence>
-                          {isNewRoleDropdownOpen && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 5 }}
-                              className="absolute right-0 mt-1.5 bg-white border border-slate-250/90 shadow-xl rounded-2xl w-40 overflow-hidden z-30 py-1"
-                            >
+                        {isNewRoleDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setIsNewRoleDropdownOpen(false)} />
+                            <div className="absolute right-0 mt-1.5 bg-white border border-slate-200 shadow-xl rounded-2xl z-50 py-1.5 w-44 animate-fade-in text-left">
                               {(['viewer', 'commenter', 'editor'] as const).map((r) => (
                                 <button
                                   key={r}
@@ -1110,7 +1106,7 @@ export default function DocumentDetailPage() {
                                     setIsNewRoleDropdownOpen(false)
                                   }}
                                   className={cn(
-                                    "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between",
+                                    "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between transition-colors",
                                     newRole === r ? "text-blue-600 bg-blue-50/40" : "text-slate-700"
                                   )}
                                 >
@@ -1118,16 +1114,16 @@ export default function DocumentDetailPage() {
                                   {newRole === r && <Check className="h-3.5 w-3.5 text-blue-600" />}
                                 </button>
                               ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                            </div>
+                          </>
+                        )}
                       </div>
 
-                      {/* Submit Add button */}
+                      {/* Circular UserPlus Add button */}
                       <button
                         type="submit"
                         disabled={!newEmail.trim()}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-400 text-white p-3 rounded-2xl shadow-sm transition-all hover:scale-105 active:scale-95 disabled:scale-100 font-bold shrink-0 flex items-center justify-center"
+                        className="w-[46px] h-[46px] bg-slate-100 hover:bg-slate-200/80 disabled:opacity-40 disabled:hover:bg-slate-100 text-slate-600 rounded-full flex items-center justify-center shadow-xs transition-all active:scale-95 shrink-0"
                         title="Mời cộng tác viên"
                       >
                         <UserPlus className="h-4.5 w-4.5" />
@@ -1135,197 +1131,193 @@ export default function DocumentDetailPage() {
                     </form>
                   </div>
 
-                  {/* People with Access List */}
-                  <div className="px-6 py-4 flex-1 overflow-y-auto max-h-[220px] min-h-[140px] space-y-4 border-b border-slate-100">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 select-none">
+                  <div className="border-t border-slate-100/70 my-1 mx-6 shrink-0" />
+
+                  {/* Collaborators Section */}
+                  <div className="px-6 py-3 flex-1 overflow-visible space-y-4 text-left">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none mb-1">
                       Người có quyền truy cập
                     </h3>
-                    <div className="space-y-3.5">
-                      <AnimatePresence initial={false}>
-                        {collaborators.map((c) => (
-                          <motion.div
-                            key={c.id}
-                            initial={{ opacity: 0, height: 0, y: -10 }}
-                            animate={{ opacity: 1, height: 'auto', y: 0 }}
-                            exit={{ opacity: 0, height: 0, y: -10 }}
-                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            className="flex items-center justify-between overflow-hidden py-0.5"
-                          >
-                            <div className="flex items-center gap-3">
-                              {/* Colored Initials Avatar */}
-                              <div className={cn("w-9.5 h-9.5 rounded-full flex items-center justify-center text-xs shadow-inner shrink-0 select-none", c.avatarBg)}>
-                                {c.name.charAt(0).toUpperCase()}
+                    
+                    <div className="space-y-4">
+                      {collaborators.map((c) => {
+                        const initials = c.name ? c.name.charAt(0).toUpperCase() : 'A'
+                        return (
+                          <div key={c.id} className="flex items-center justify-between gap-3 py-1">
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              {/* Colored initials avatar */}
+                              <div className={cn("w-[38px] h-[38px] rounded-full flex items-center justify-center font-bold text-sm shadow-inner shrink-0 select-none", c.avatarBg)}>
+                                {initials}
                               </div>
-                              <div className="flex flex-col text-left">
-                                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5 leading-normal">
-                                  {c.name}
+                              
+                              <div className="min-w-0 text-left">
+                                <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5 leading-normal">
+                                  {c.name} 
                                   {c.role === 'owner' && (
                                     <span className="bg-slate-100 text-slate-600 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider scale-90 border border-slate-200/50">
                                       Chủ sở hữu
                                     </span>
                                   )}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-medium">
+                                </h4>
+                                <p className="text-[10px] text-slate-400 font-semibold truncate mt-0.5">
                                   {c.email}
-                                </span>
+                                </p>
                               </div>
                             </div>
 
-                            {/* Role selection dropdown */}
-                            {c.role === 'owner' ? (
-                              <span className="text-xs font-bold text-slate-400 select-none mr-3">
-                                Chủ sở hữu
-                              </span>
-                            ) : (
+                            {/* Dropdown for role */}
+                            {c.role !== 'owner' ? (
                               <div className="relative">
                                 <button
                                   type="button"
                                   onClick={() => setActiveDropdownId(activeDropdownId === c.id ? null : c.id)}
-                                  className="flex items-center gap-1 px-3 py-1.5 border border-slate-100 hover:border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 transition-all select-none"
+                                  className="flex items-center gap-1 px-3 py-1.5 border border-slate-200/60 hover:border-slate-350 bg-white hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-650 transition-colors select-none shadow-xs"
                                 >
-                                  <span>{c.role === 'editor' ? 'Người chỉnh sửa' : c.role === 'commenter' ? 'Người nhận xét' : 'Người xem'}</span>
-                                  <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
+                                  <span>
+                                    {c.role === 'editor' ? 'Người chỉnh sửa' : c.role === 'commenter' ? 'Người nhận xét' : 'Người xem'}
+                                  </span>
+                                  <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0 ml-0.5" />
                                 </button>
 
-                                <AnimatePresence>
-                                  {activeDropdownId === c.id && (
-                                    <motion.div
-                                      initial={{ opacity: 0, y: 5 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      exit={{ opacity: 0, y: 5 }}
-                                      className="absolute right-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl w-44 overflow-hidden z-40 py-1"
-                                    >
+                                {activeDropdownId === c.id && (
+                                  <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setActiveDropdownId(null)} />
+                                    <div className="absolute right-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl z-50 py-1.5 w-44 animate-fade-in text-left">
                                       {(['viewer', 'commenter', 'editor'] as const).map((r) => (
                                         <button
                                           key={r}
                                           type="button"
                                           onClick={() => handleChangeRole(c.id, c.name, r)}
                                           className={cn(
-                                            "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between",
+                                            "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between transition-colors",
                                             c.role === r ? "text-blue-600 bg-blue-50/40" : "text-slate-700"
                                           )}
                                         >
                                           <span>{r === 'editor' ? 'Người chỉnh sửa' : r === 'commenter' ? 'Người nhận xét' : 'Người xem'}</span>
-                                          {c.role === r && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                                          {c.role === r && <Check className="h-4 w-4 text-blue-600" />}
                                         </button>
                                       ))}
-                                      <div className="border-t border-slate-100 my-1" />
+                                      
+                                      <div className="my-1 border-t border-slate-100" />
+                                      
                                       <button
                                         type="button"
                                         onClick={() => handleRemoveCollaborator(c.id, c.name)}
-                                        className="w-full text-left px-4 py-2.5 text-xs font-extrabold text-rose-600 hover:bg-rose-50/50 flex items-center gap-2"
+                                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
                                       >
-                                        <Trash2 className="h-3.5 w-3.5 shrink-0" />
-                                        <span>Xóa quyền truy cập</span>
+                                        Xóa quyền truy cập
                                       </button>
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
+                                    </div>
+                                  </>
+                                )}
                               </div>
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 select-none mr-3">
+                                Chủ sở hữu
+                              </span>
                             )}
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
 
-                  {/* General Access Rules */}
-                  <div className="px-6 py-4.5 space-y-3.5 border-b border-slate-100 shrink-0">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 select-none">
+                  {/* General Access Configuration */}
+                  <div className="px-6 py-4 space-y-3.5 shrink-0 border-t border-slate-100/80">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none text-left">
                       Quyền truy cập chung
                     </h3>
+
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-start gap-3.5 text-left">
-                        {/* Access Icon Badge */}
+                      <div className="flex items-start gap-3.5 min-w-0 text-left">
+                        {/* Circular Access Badge */}
                         <div className={cn(
-                          "w-9.5 h-9.5 rounded-full flex items-center justify-center shrink-0 border select-none transition-all duration-305 shadow-inner",
-                          generalAccess === 'restricted'
-                            ? "bg-slate-50 border-slate-200 text-slate-500"
-                            : "bg-blue-50 border-blue-100 text-blue-600"
+                          "w-[38px] h-[38px] rounded-full flex items-center justify-center shrink-0 border select-none transition-all duration-300 shadow-inner",
+                          generalAccess === 'public'
+                            ? "bg-blue-50 border-blue-100 text-blue-600"
+                            : "bg-slate-50 border-slate-200/60 text-slate-500"
                         )}>
-                          {generalAccess === 'restricted' ? (
-                            <Lock className="h-4.5 w-4.5" />
-                          ) : (
-                            <Globe className="h-4.5 w-4.5" />
-                          )}
+                          {generalAccess === 'public' ? <Globe className="h-4.5 w-4.5" /> : <Lock className="h-4.5 w-4.5" />}
                         </div>
-                        <div className="flex flex-col">
-                          {/* Access Scope Dropdown */}
-                          <div className="relative">
+
+                        <div className="min-w-0 flex flex-col">
+                          {/* Access scope dropdown selector */}
+                          <div className="relative inline-block text-left">
                             <button
                               type="button"
                               onClick={() => setIsGeneralDropdownOpen(!isGeneralDropdownOpen)}
                               className="flex items-center gap-1 px-1.5 py-0.5 text-xs font-extrabold text-slate-800 hover:bg-slate-50 rounded-lg select-none text-left"
                             >
-                              <span>{generalAccess === 'restricted' ? 'Bị hạn chế' : 'Bất kỳ ai có đường liên kết'}</span>
-                              <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
+                              <span>
+                                {generalAccess === 'public' ? 'Bất kỳ ai có đường liên kết' : 'Bị hạn chế'}
+                              </span>
+                              <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0 ml-0.5" />
                             </button>
 
-                            <AnimatePresence>
-                              {isGeneralDropdownOpen && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: 5 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: 5 }}
-                                  className="absolute left-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl w-52 overflow-hidden z-30 py-1"
-                                >
+                            {isGeneralDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-40" onClick={() => setIsGeneralDropdownOpen(false)} />
+                                <div className="absolute left-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl z-50 py-1.5 w-56 animate-fade-in text-left">
                                   <button
                                     type="button"
                                     onClick={() => handleGeneralAccessChange('restricted')}
                                     className={cn(
-                                      "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between",
+                                      "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between transition-colors",
                                       generalAccess === 'restricted' ? "text-blue-600 bg-blue-50/40" : "text-slate-700"
                                     )}
                                   >
-                                    <span>Bị hạn chế</span>
-                                    {generalAccess === 'restricted' && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                                    <span className="flex items-center gap-2">
+                                      <Lock className="h-4 w-4 text-slate-400 shrink-0" />
+                                      <span>Bị hạn chế</span>
+                                    </span>
+                                    {generalAccess === 'restricted' && <Check className="h-4 w-4 text-blue-600" />}
                                   </button>
+
                                   <button
                                     type="button"
                                     onClick={() => handleGeneralAccessChange('public')}
                                     className={cn(
-                                      "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between",
+                                      "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between transition-colors",
                                       generalAccess === 'public' ? "text-blue-600 bg-blue-50/40" : "text-slate-700"
                                     )}
                                   >
-                                    <span>Bất kỳ ai có đường liên kết</span>
-                                    {generalAccess === 'public' && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                                    <span className="flex items-center gap-2">
+                                      <Globe className="h-4 w-4 text-slate-450 shrink-0" />
+                                      <span>Bất kỳ ai có đường liên kết</span>
+                                    </span>
+                                    {generalAccess === 'public' && <Check className="h-4 w-4 text-blue-600" />}
                                   </button>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+                                </div>
+                              </>
+                            )}
                           </div>
 
-                          <p className="text-[10px] text-slate-450 font-medium pl-1.5 mt-0.5 select-none leading-relaxed">
-                            {generalAccess === 'restricted'
-                              ? 'Chỉ những người được thêm mới có thể mở bằng đường liên kết này'
-                              : 'Bất kỳ ai trên Internet có đường liên kết này đều có thể truy cập'}
+                          <p className="text-[10px] text-slate-450 font-medium pl-1.5 mt-0.5 leading-relaxed select-none">
+                            {generalAccess === 'public'
+                              ? 'Bất kỳ ai trên Internet có đường liên kết này đều có thể truy cập'
+                              : 'Chỉ những người được thêm mới có thể mở bằng đường liên kết này'}
                           </p>
                         </div>
                       </div>
 
-                      {/* Public role selector (Viewer, Commenter, Editor) */}
+                      {/* Public role selector dropdown */}
                       {generalAccess === 'public' && (
-                        <div className="relative">
+                        <div className="relative shrink-0">
                           <button
                             type="button"
                             onClick={() => setIsPublicRoleDropdownOpen(!isPublicRoleDropdownOpen)}
-                            className="flex items-center gap-1 px-3 py-1.5 border border-slate-100 hover:border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 transition-all select-none"
+                            className="flex items-center gap-1 px-3 py-1.5 border border-slate-200/60 hover:border-slate-350 bg-white hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-650 transition-colors select-none shadow-xs"
                           >
                             <span>
                               {publicRole === 'editor' ? 'Người chỉnh sửa' : publicRole === 'commenter' ? 'Người nhận xét' : 'Người xem'}
                             </span>
-                            <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
+                            <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0 ml-0.5" />
                           </button>
 
-                          <AnimatePresence>
-                            {isPublicRoleDropdownOpen && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 5 }}
-                                className="absolute right-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl w-40 overflow-hidden z-30 py-1"
-                              >
+                          {isPublicRoleDropdownOpen && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setIsPublicRoleDropdownOpen(false)} />
+                              <div className="absolute right-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl z-50 py-1.5 w-40 animate-fade-in text-left">
                                 {(['viewer', 'commenter', 'editor'] as const).map((r) => (
                                   <button
                                     key={r}
@@ -1333,10 +1325,10 @@ export default function DocumentDetailPage() {
                                     onClick={() => {
                                       setPublicRole(r)
                                       setIsPublicRoleDropdownOpen(false)
-                                      showToast(`✏️ Đã cập quyền truy cập chung thành ${r === 'editor' ? 'Người chỉnh sửa' : r === 'commenter' ? 'Người nhận xét' : 'Người xem'}`)
+                                      showToast(`✏️ Đã cập nhật quyền truy cập chung thành ${r === 'editor' ? 'Người chỉnh sửa' : r === 'commenter' ? 'Người nhận xét' : 'Người xem'}`)
                                     }}
                                     className={cn(
-                                      "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between",
+                                      "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between transition-colors",
                                       publicRole === r ? "text-blue-600 bg-blue-50/40" : "text-slate-700"
                                     )}
                                   >
@@ -1344,22 +1336,22 @@ export default function DocumentDetailPage() {
                                     {publicRole === r && <Check className="h-3.5 w-3.5 text-blue-600" />}
                                   </button>
                                 ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                              </div>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* Action Footer */}
-                  <div className="px-6 py-4 bg-slate-50 flex justify-between items-center shrink-0 gap-3 select-none">
+                  <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-between items-center shrink-0 gap-3 select-none rounded-b-[28px]">
                     <button
                       type="button"
                       onClick={handleCopyLink}
-                      className="flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-100 text-blue-600 font-extrabold text-xs px-4.5 py-3 rounded-full shadow-sm transition-all hover:scale-[1.03] active:scale-[0.98] outline-none"
+                      className="flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-100 text-blue-600 font-extrabold text-xs px-5 py-3 rounded-full shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] outline-none"
                     >
-                      <Copy className="h-4 w-4 text-blue-600" />
+                      <Link className="h-4 w-4 text-blue-600 shrink-0" />
                       <span>Sao chép đường liên kết</span>
                     </button>
 
