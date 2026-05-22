@@ -264,6 +264,15 @@ function KeyTakeawaysCard() {
   )
 }
 
+/**
+ * StudyTopicsCard Component
+ * Displays specific AI-summarized topics matching Figma specs exactly:
+ * - Neural Circuits
+ * - Synaptic Transmission
+ * - Dopaminergic Pathways
+ * - Cognitive Neuroscience
+ * Uses fully verified lucide-react icons and the cn utility helper.
+ */
 function StudyTopicsCard() {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
   
