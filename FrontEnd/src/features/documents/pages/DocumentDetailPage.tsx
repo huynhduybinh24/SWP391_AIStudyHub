@@ -165,6 +165,176 @@ const SUBJECT_DETAILS_MOCK: Record<
   }
 }
 
+function getPageContent(subjectKey: string, pageNum: number, mockDetails: any) {
+  if (pageNum === 1) {
+    return {
+      title: mockDetails.courseTitle,
+      subtitle: mockDetails.courseCode,
+      sectionTitle: "Course Overview",
+      body: mockDetails.overview,
+      listTitle: "Learning Objectives",
+      items: mockDetails.objectives,
+      showBrainImage: true,
+    }
+  }
+
+  if (pageNum === 2) {
+    let sectionTitle = "1.1 Foundational Theories & Systems"
+    let body = "Historical foundation and primary architectural frameworks. This chapter outlines the fundamental concepts that form the bedrock of this specialized field of study."
+    let listTitle = "Key Core Precepts"
+    let items = [
+      "Historical paradigms and legacy structures.",
+      "Modern integration criteria and standards.",
+      "Theoretical limits of scale and performance dynamics."
+    ]
+
+    if (subjectKey === 'NEUROSCIENCE') {
+      sectionTitle = "1.1 The Neuron Doctrine & Synaptic Foundation"
+      body = "Historical foundations laid down by Santiago Ramón y Cajal and Camillo Golgi. The discovery that the nervous system is made up of discrete, individual cells rather than a continuous reticular network revolutionized our understanding of neural routing."
+      listTitle = "Pioneering Neuro-Precepts"
+      items = [
+        "Dynamic polarization of neural pathways (dendrites to axons).",
+        "Synaptic cleft gap junctions and neurotransmission mechanisms.",
+        "Glial cell integration and oligodendrocytic myelin wraps."
+      ]
+    } else if (subjectKey === 'COMPSCI') {
+      sectionTitle = "1.1 Microservice Abstractions & SOLID Principles"
+      body = "Historical software engineering paradigms from monolithic design patterns to modern decoupled service architectures. Emphasizes strict interface segregation, single responsibility boundaries, and clean object mappings."
+      listTitle = "Core Engineering Precepts"
+      items = [
+        "Single Responsibility: Each service manages exactly one database context.",
+        "Interface Segregation: Decouple service boundaries using lightweight contracts.",
+        "Dependency Inversion: Program to high-level abstractions, not concrete adapters."
+      ]
+    } else if (subjectKey === 'MATHEMATICS') {
+      sectionTitle = "1.1 Vector Spaces & High-Dimensional Calculus"
+      body = "Analytical extensions of classical single-variable calculus to multi-dimensional vector systems. We define topological boundaries, gradient fields, and vector transformations that govern machine learning backpropagation mechanics."
+      listTitle = "Key Mathematical Axioms"
+      items = [
+        "Linear independence and vector basis span in R^N dimensions.",
+        "Partial derivative Jacobians and Hessian optimization matrices.",
+        "Taylor series expansions governing multi-variable cost mappings."
+      ]
+    } else if (subjectKey === 'BIOLOGY') {
+      sectionTitle = "1.1 Genomic Structures & CRISPR Transcription"
+      body = "Detailed molecular mapping of the double-helix DNA code. This section reviews historical inheritance models leading to modern CRISPR-Cas9 programmable endonuclease double-stranded break modifications."
+      listTitle = "Core Genetic Mechanics"
+      items = [
+        "Watson-Crick base-pairing hydrogen bonds (A-T and C-G).",
+        "RNA polymerase transcription initiation binding sequences.",
+        "Guide RNA (gRNA) matching protospacer adjacent motifs (PAM)."
+      ]
+    } else if (subjectKey === 'PHYSICS') {
+      sectionTitle = "1.1 Wave-Particle Duality & Planck Constants"
+      body = "The foundational quantum mechanical shift from classical particle physics to probability wave distribution densities, as formalized by the historic De Broglie wavelength equations."
+      listTitle = "Core Quantum Precepts"
+      items = [
+        "Wavefunction superposition collapse under active measurement constraints.",
+        "Planck constant scaling of energy packets (E = hf).",
+        "Heisenberg uncertainty bounds between spatial momentum positions."
+      ]
+    }
+
+    return {
+      title: mockDetails.courseTitle,
+      subtitle: `${mockDetails.courseCode} — Chapter 1`,
+      sectionTitle,
+      body,
+      listTitle,
+      items,
+      showBrainImage: false,
+    }
+  }
+
+  if (pageNum === 3) {
+    let sectionTitle = "1.2 Experimental Methodology & Protocols"
+    let body = "Detailed procedural breakdowns and technical implementation rules. Provides hands-on laboratory setups, deployment guides, or equations for real-world application."
+    let listTitle = "Step-by-Step Implementation"
+    let items = [
+      "Establish primary environment variables and boundary conditions.",
+      "Execute high-frequency telemetry tracking and performance sweeps.",
+      "Audit logs for structural anomalies or semantic failures."
+    ]
+
+    if (subjectKey === 'NEUROSCIENCE') {
+      sectionTitle = "1.2 Electrophysiological Patch-Clamp & fMRI Protocols"
+      body = "Detailed procedural configuration for measuring single-ion channel currents in vivo, alongside standard pipeline protocols for correcting voxel motion anomalies in multi-band fMRI scanners."
+      listTitle = "Advanced Neuroscience Protocols"
+      items = [
+        "Configure gigaseal contacts using fire-polished glass pipettes.",
+        "Apply spatial smoothing kernels to fMRI blood-oxygen-level dependent (BOLD) voxel arrays.",
+        "Execute Fourier transformations to analyze active brain wave spectra."
+      ]
+    } else if (subjectKey === 'COMPSCI') {
+      sectionTitle = "1.2 Telemetry Pipelines & Event-Driven Message Brokers"
+      body = "Implementation guidelines for setting up distributed event queues using high-availability cluster brokers. Outlines dead-letter exchange policies, consumer replication scaling, and partition keys."
+      listTitle = "Step-by-Step Telemetry Steps"
+      items = [
+        "Provision a redundant three-node message broker cluster.",
+        "Implement idempotent consumer handlers to avoid duplicate telemetry runs.",
+        "Enforce strict message ordering via consistent hash partition keys."
+      ]
+    } else if (subjectKey === 'MATHEMATICS') {
+      sectionTitle = "1.2 Singular Value Decomposition & Gradient Optimizers"
+      body = "Algorithmic implementation of low-rank matrix approximations using Singular Value Decomposition, and mathematical derivations of Adam optimizer momentum formulas."
+      listTitle = "SVD Calculation Steps"
+      items = [
+        "Compute symmetric covariance matrices from high-dimensional datasets.",
+        "Extract orthonormal eigenvectors to construct orthogonal boundary columns.",
+        "Apply diagonal singular values to filter out low-energy noise features."
+      ]
+    } else if (subjectKey === 'BIOLOGY') {
+      sectionTitle = "1.2 Gel Electrophoresis & PCR Thermal Cycles"
+      body = "Laboratory protocols for amplifying specific genomic segments via Polymerase Chain Reaction, and separating fragment sizes using high-resolution agarose gel currents."
+      listTitle = "SOP PCR Steps"
+      items = [
+        "Denature genomic templates at 95°C to break double-stranded hydrogen bonds.",
+        "Anneal custom primers at 55°C targeting target DNA flanks.",
+        "Extend sequences at 72°C using thermostable Taq DNA polymerases."
+      ]
+    } else if (subjectKey === 'PHYSICS') {
+      sectionTitle = "1.2 Schrödinger Formulation & Tunneling Boundaries"
+      body = "Solving the time-independent wave equation for rectangular potential barrier zones, calculating exact transmission coefficient values, and illustrating quantum tunneling behaviors."
+      listTitle = "Analytical Solver Steps"
+      items = [
+        "Define spatial potential energy functions across three distinct grid zones.",
+        "Apply continuity boundary conditions to wave equations and derivatives.",
+        "Extract exponential decay coefficients inside the forbidden potential region."
+      ]
+    }
+
+    return {
+      title: mockDetails.courseTitle,
+      subtitle: `${mockDetails.courseCode} — Chapter 2`,
+      sectionTitle,
+      body,
+      listTitle,
+      items,
+      showBrainImage: false,
+    }
+  }
+
+  // Appendix / review questions for page 4 and above
+  let sectionTitle = `Syllabus Review & Self-Assessment (Page ${pageNum})`
+  let body = "Comprehensive study review checklist and preparation guide. Utilize these custom queries and conceptual triggers to test active recall mastery prior to midterms."
+  let listTitle = "Assessment Review Checklist"
+  let items = [
+    "Verify definitions of all core terminology introduced in this chapter.",
+    "Formulate working answers to the end-of-section conceptual questions.",
+    "Sync active summaries to your primary AI Chatbot workspace for interactive quizzes."
+  ]
+
+  return {
+    title: mockDetails.courseTitle,
+    subtitle: `${mockDetails.courseCode} — Appendix`,
+    sectionTitle,
+    body,
+    listTitle,
+    items,
+    showBrainImage: false,
+  }
+}
+
 export default function DocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>()
   const navigate = useNavigate()
@@ -185,6 +355,12 @@ export default function DocumentDetailPage() {
   // 2. Local States
   const [zoomScale, setZoomScale] = useState<number>(100) // scale in percent (e.g. 50, 75, 100, 125, 150)
   const [currentPage, setCurrentPage] = useState<number>(1)
+  const [pageInputStr, setPageInputStr] = useState<string>('1')
+  const pageContent = getPageContent(subjectKey, currentPage, mockDetails)
+
+  useEffect(() => {
+    setPageInputStr(currentPage.toString())
+  }, [currentPage])
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false)
   const [aiTypingText, setAiTypingText] = useState<string>('')
   const [isAiResponding, setIsAiResponding] = useState<boolean>(false)
@@ -275,7 +451,7 @@ export default function DocumentDetailPage() {
   const [chatLog, setChatLog] = useState<Array<{ sender: 'user' | 'ai'; text: string; timestamp: string }>>([
     {
       sender: 'ai',
-      text: `Chào bạn! Tôi là Trợ lý học tập AI. Bạn cần tôi phân tích hay giải đáp câu hỏi nào về tài liệu **${activeDoc?.title || mockDetails.courseTitle}** này không?`,
+      text: `Chào bạn! Tôi là Trợ lý học tập AI. Bạn cần tôi phân tích hay giải đáp câu hỏi nào về tài liệu ${activeDoc?.title || mockDetails.courseTitle} này không?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ])
@@ -306,10 +482,17 @@ export default function DocumentDetailPage() {
   }
 
   const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value)
+    const rawVal = e.target.value
+    setPageInputStr(rawVal)
+    
+    const val = parseInt(rawVal)
     if (!isNaN(val) && val >= 1 && val <= mockDetails.pagesCount) {
       setCurrentPage(val)
     }
+  }
+
+  const handlePageInputBlur = () => {
+    setPageInputStr(currentPage.toString())
   }
 
   // Fullscreen trigger handler
@@ -408,11 +591,11 @@ export default function DocumentDetailPage() {
       const lower = prompt.toLowerCase()
 
       if (lower.includes('connectivity') || lower.includes('map') || lower.includes('brain')) {
-        fullResponse = `Dựa trên phân tích hình ảnh và nội dung tài liệu về **Sơ đồ liên kết mạng thần kinh**:\n\n1. **Functional Connectivity**: Thể hiện các mối tương quan có tính chất thống kê giữa các tín hiệu hoạt động đo được từ các vùng não khác nhau (qua fMRI). Sơ đồ não 3D cho thấy các điểm hub phân tán chính tập trung ở Thùy Trán (Frontal Lobe) và Thùy Thái Dương (Temporal Lobe).\n\n2. **Synaptic Density**: Các đường sáng xanh tượng trưng cho các bó sợi trục dẫn truyền liên vùng tạo thành mạng lưới mặc định của não (Default Mode Network - DMN) hỗ trợ cho tư duy chiều sâu và tổng hợp ký ức.\n\n3. **Ứng dụng**: Sơ đồ này chứng minh sự tích hợp đồng bộ giữa các khu vực chức năng hỗ trợ đắc lực cho các cơ chế học tập tích cực (Active Learning).`
+        fullResponse = `Dựa trên phân tích hình ảnh và nội dung tài liệu về Sơ đồ liên kết mạng thần kinh:\n\n1. Functional Connectivity: Thể hiện các mối tương quan có tính chất thống kê giữa các tín hiệu hoạt động đo được từ các vùng não khác nhau (qua fMRI). Sơ đồ não 3D cho thấy các điểm hub phân tán chính tập trung ở Thùy Trán (Frontal Lobe) và Thùy Thái Dương (Temporal Lobe).\n\n2. Synaptic Density: Các đường sáng xanh tượng trưng cho các bó sợi trục dẫn truyền liên vùng tạo thành mạng lưới mặc định của não (Default Mode Network - DMN) hỗ trợ cho tư duy chiều sâu và tổng hợp ký ức.\n\n3. Ứng dụng: Sơ đồ này chứng minh sự tích hợp đồng bộ giữa các khu vực chức năng hỗ trợ đắc lực cho các cơ chế học tập tích cực (Active Learning).`
       } else if (lower.includes('summary') || lower.includes('tóm tắt') || lower.includes('overview')) {
-        fullResponse = `Dưới đây là tóm tắt nhanh AI phục vụ ôn tập:\n\n• **Chủ đề chính**: ${mockDetails.courseTitle} (${mockDetails.courseCode})\n• **Nội dung cốt lõi**: Phân tích sâu các khái niệm quan trọng, hệ thống hóa mục tiêu thực nghiệm thực tiễn và liên kết liên môn.\n• **Ứng dụng ôn tập**: Phù hợp cho việc ôn tập chuẩn bị thi học kỳ nhờ cấu trúc mục tiêu rõ ràng và sơ đồ hệ thống hóa tối ưu.`
+        fullResponse = `Dưới đây là tóm tắt nhanh AI phục vụ ôn tập:\n\n• Chủ đề chính: ${mockDetails.courseTitle} (${mockDetails.courseCode})\n• Nội dung cốt lõi: Phân tích sâu các khái niệm quan trọng, hệ thống hóa mục tiêu thực nghiệm thực tiễn và liên kết liên môn.\n• Ứng dụng ôn tập: Phù hợp cho việc ôn tập chuẩn bị thi học kỳ nhờ cấu trúc mục tiêu rõ ràng và sơ đồ hệ thống hóa tối ưu.`
       } else {
-        fullResponse = `Cảm ơn bạn đã hỏi về nội dung tài liệu **${activeDoc?.title || mockDetails.courseTitle}**.\n\nHệ thống AI của AI Study Hub nhận định đây là phần kiến thức quan trọng nằm trong chương trình học **${mockDetails.courseCode}**. Bạn nên tập trung ôn tập 3 mục tiêu cốt lõi sau:\n\n1. **${mockDetails.objectives[0]}**\n2. **${mockDetails.objectives[1]}**\n3. **${mockDetails.objectives[2]}**\n\nNếu bạn muốn tôi tạo một bộ quiz nhanh hoặc giải thích chi tiết hơn về bất kỳ ý nào trên đây, hãy yêu cầu ngay nhé!`
+        fullResponse = `Cảm ơn bạn đã hỏi về nội dung tài liệu ${activeDoc?.title || mockDetails.courseTitle}.\n\nHệ thống AI của AI Study Hub nhận định đây là phần kiến thức quan trọng nằm trong chương trình học ${mockDetails.courseCode}. Bạn nên tập trung ôn tập 3 mục tiêu cốt lõi sau:\n\n1. ${mockDetails.objectives[0]}\n2. ${mockDetails.objectives[1]}\n3. ${mockDetails.objectives[2]}\n\nNếu bạn muốn tôi tạo một bộ quiz nhanh hoặc giải thích chi tiết hơn về bất kỳ ý nào trên đây, hãy yêu cầu ngay nhé!`
       }
 
       // Typing effect loop
@@ -466,7 +649,7 @@ export default function DocumentDetailPage() {
           // Add AI notification inside chat log
           setChatLog(prev => [...prev, {
             sender: 'ai',
-            text: `⚡ **Phân tích thông minh hoàn tất!** Tôi đã quét toàn bộ tài liệu **${activeDoc?.title || mockDetails.courseTitle}**. Trạng thái tài liệu đã được chuyển sang **ANALYZED**.\n\n*Hệ thống đã tự động liên kết tài liệu này với sơ đồ năng lực Thần kinh học của bạn.* Bạn có thể đặt câu hỏi chuyên sâu ngay bây giờ!`,
+            text: `⚡ Phân tích thông minh hoàn tất! Tôi đã quét toàn bộ tài liệu ${activeDoc?.title || mockDetails.courseTitle}. Trạng thái tài liệu đã được chuyển sang ANALYZED.\n\n*Hệ thống đã tự động liên kết tài liệu này với sơ đồ năng lực Thần kinh học của bạn.* Bạn có thể đặt câu hỏi chuyên sâu ngay bây giờ!`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }])
         }, 600)
@@ -620,8 +803,9 @@ export default function DocumentDetailPage() {
               <div className="flex items-center gap-1.5">
                 <input
                   type="text"
-                  value={currentPage}
+                  value={pageInputStr}
                   onChange={handlePageInputChange}
+                  onBlur={handlePageInputBlur}
                   className="w-12 text-center font-bold text-slate-800 border border-slate-300 rounded-xl bg-white py-1 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <span className="text-slate-500 text-xs font-semibold select-none">
@@ -676,30 +860,30 @@ export default function DocumentDetailPage() {
               {/* Title & metadata heading header */}
               <div className="space-y-2 border-b border-slate-100 pb-6 mb-8">
                 <h1 className="text-3xl font-extrabold text-slate-900 font-serif leading-tight">
-                  {mockDetails.courseTitle}
+                  {pageContent.title}
                 </h1>
                 <p className="text-sm font-semibold text-slate-400 font-mono tracking-wider">
-                  {mockDetails.courseCode}
+                  {pageContent.subtitle}
                 </p>
               </div>
 
               {/* Course Overview Section */}
               <div className="space-y-4 mb-8">
                 <h3 className="text-lg font-bold text-slate-800 font-sans tracking-wide">
-                  Course Overview
+                  {pageContent.sectionTitle}
                 </h3>
                 <p className="text-sm text-slate-600 leading-relaxed font-sans text-justify">
-                  {mockDetails.overview}
+                  {pageContent.body}
                 </p>
               </div>
 
               {/* Learning Objectives Section */}
               <div className="space-y-4 mb-8">
                 <h3 className="text-lg font-bold text-slate-800 font-sans tracking-wide">
-                  Learning Objectives
+                  {pageContent.listTitle}
                 </h3>
                 <ul className="space-y-3 pl-1">
-                  {mockDetails.objectives.map((obj, i) => (
+                  {pageContent.items.map((obj, i) => (
                     <li key={i} className="flex items-start gap-3.5 text-sm text-slate-600 font-sans leading-relaxed">
                       <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 shrink-0" />
                       <span>{obj}</span>
@@ -709,14 +893,16 @@ export default function DocumentDetailPage() {
               </div>
 
               {/* Neural Brain Graphic block with glowing overlay */}
-              <div className="mt-8 border border-slate-200/85 rounded-2xl overflow-hidden shadow-inner bg-slate-950 p-2.5 relative group">
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/10 to-transparent pointer-events-none opacity-60 transition-opacity group-hover:opacity-85" />
-                <img
-                  src="/glowing_blue_brain.png"
-                  alt="Glowing Brain Neural Network Network Graph"
-                  className="w-full h-auto object-cover rounded-xl select-none"
-                />
-              </div>
+              {pageContent.showBrainImage && (
+                <div className="mt-8 border border-slate-200/85 rounded-2xl overflow-hidden shadow-inner bg-slate-950 p-2.5 relative group">
+                  <div className="absolute inset-0 bg-gradient-to-t from-blue-900/10 to-transparent pointer-events-none opacity-60 transition-opacity group-hover:opacity-85" />
+                  <img
+                    src="/glowing_blue_brain.png"
+                    alt="Glowing Brain Neural Network Network Graph"
+                    className="w-full h-auto object-cover rounded-xl select-none"
+                  />
+                </div>
+              )}
 
               {/* Sheet page footer number */}
               <div className="border-t border-slate-100 pt-6 mt-10 flex items-center justify-between text-xs text-slate-400 font-mono">
