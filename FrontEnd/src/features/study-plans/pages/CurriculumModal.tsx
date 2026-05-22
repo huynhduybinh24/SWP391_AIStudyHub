@@ -265,7 +265,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
             className="bg-[#2557E8] hover:bg-[#1d4ed8] text-white"
             onClick={handleStart}
           >
-            {firstActiveModule ? `Start: ${firstActiveModule.title}` : 'Review All'}
+            {firstActiveModule ? 'Start Learning' : 'Review All'}
           </Button>
         )}
       </div>
