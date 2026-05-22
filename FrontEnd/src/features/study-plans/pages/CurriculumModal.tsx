@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/Button'
 
 // ─── Types ───────────────────────────────────────────────
 
-type LessonType   = 'video' | 'reading' | 'quiz' | 'practice'
+type LessonType = 'video' | 'reading' | 'quiz' | 'practice'
 type LessonStatus = 'completed' | 'in-progress' | 'locked'
 
 export type CurriculumLesson = {
@@ -56,18 +56,18 @@ interface Props {
 
 function LessonTypeIcon({ type }: { type: LessonType }) {
   const map: Record<LessonType, { icon: React.ComponentType<{ className?: string }>, color: string }> = {
-    video:    { icon: PlayCircle, color: 'text-[#2557E8]'  },
-    reading:  { icon: FileText,   color: 'text-slate-400'  },
-    quiz:     { icon: HelpCircle, color: 'text-amber-500'  },
-    practice: { icon: Code2,      color: 'text-emerald-500' },
+    video: { icon: PlayCircle, color: 'text-[#2557E8]' },
+    reading: { icon: FileText, color: 'text-slate-400' },
+    quiz: { icon: HelpCircle, color: 'text-amber-500' },
+    practice: { icon: Code2, color: 'text-emerald-500' },
   }
   const { icon: Icon, color } = map[type]
   return <Icon className={`size-4 shrink-0 ${color}`} />
 }
 
 function StatusIcon({ status }: { status: LessonStatus }) {
-  if (status === 'completed')   return <CheckCircle2 className="size-4 text-[#2557E8] shrink-0" />
-  if (status === 'in-progress') return <PlayCircle   className="size-4 text-amber-500 shrink-0" />
+  if (status === 'completed') return <CheckCircle2 className="size-4 text-[#2557E8] shrink-0" />
+  if (status === 'in-progress') return <PlayCircle className="size-4 text-amber-500 shrink-0" />
   return <Lock className="size-3.5 text-slate-300 shrink-0" />
 }
 
@@ -75,10 +75,10 @@ function StatusIcon({ status }: { status: LessonStatus }) {
 
 export function CurriculumModal({ isOpen, onClose, plan }: Props) {
   // ── All hooks before any conditional return ──────────────
-  const [expandedModule, setExpandedModule]     = useState<string | null>(null)
+  const [expandedModule, setExpandedModule] = useState<string | null>(null)
   const [highlightedModule, setHighlightedModule] = useState<string | null>(null)
   const activeModuleRef = useRef<HTMLDivElement | null>(null)
-  const activeLesonRef  = useRef<HTMLDivElement | null>(null)
+  const activeLesonRef = useRef<HTMLDivElement | null>(null)
 
   // Reset expanded module whenever a different plan is opened
   useEffect(() => {
@@ -94,9 +94,9 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
   if (!plan) return null
 
   // ── Derived values ────────────────────────────────────────
-  const allLessons     = plan.modules.flatMap((m) => m.lessons)
+  const allLessons = plan.modules.flatMap((m) => m.lessons)
   const completedCount = allLessons.filter((l) => l.status === 'completed').length
-  const totalCount     = allLessons.length
+  const totalCount = allLessons.length
 
   const firstActiveModule = plan.modules.find((m) =>
     m.lessons.some((l) => l.status !== 'completed')
@@ -140,9 +140,9 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
       {/* ── Overview stats ── */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[
-          { icon: BookOpen, label: 'Modules',   value: String(plan.modules.length),       color: 'text-[#2557E8] bg-[#e5eeff]'    },
-          { icon: Link2,    label: 'Lessons',   value: `${completedCount}/${totalCount}`,  color: 'text-emerald-700 bg-emerald-50' },
-          { icon: Clock,    label: 'Est. Time', value: `${plan.hoursEst}h`,               color: 'text-amber-700 bg-amber-50'     },
+          { icon: BookOpen, label: 'Modules', value: String(plan.modules.length), color: 'text-[#2557E8] bg-[#e5eeff]' },
+          { icon: Link2, label: 'Lessons', value: `${completedCount}/${totalCount}`, color: 'text-emerald-700 bg-emerald-50' },
+          { icon: Clock, label: 'Est. Time', value: `${plan.hoursEst}h`, color: 'text-amber-700 bg-amber-50' },
         ].map(({ icon: Icon, label, value, color }) => (
           <div key={label} className="rounded-xl border border-slate-200 bg-white p-3 flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
@@ -161,7 +161,7 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
         {plan.modules.map((mod, idx) => {
           const isExpanded = expandedModule === mod.id
           const done = mod.lessons.filter((l) => l.status === 'completed').length
-          const pct  = mod.lessons.length
+          const pct = mod.lessons.length
             ? Math.round((done / mod.lessons.length) * 100)
             : 0
           const isFullyDone = pct === 100
@@ -170,11 +170,10 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
             <div
               key={mod.id}
               ref={mod.id === firstActiveModule?.id ? activeModuleRef : null}
-              className={`rounded-xl border overflow-hidden transition-all duration-300 ${
-                highlightedModule === mod.id
-                  ? 'border-[#2557E8] ring-2 ring-[#2557E8]/30 shadow-md'
-                  : 'border-slate-200'
-              }`}>
+              className={`rounded-xl border overflow-hidden transition-all duration-300 ${highlightedModule === mod.id
+                ? 'border-[#2557E8] ring-2 ring-[#2557E8]/30 shadow-md'
+                : 'border-slate-200'
+                }`}>
               {/* Module header */}
               <button
                 type="button"
@@ -182,11 +181,10 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
                 className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
               >
                 {/* Index / trophy badge */}
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
-                  isFullyDone
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : 'bg-[#e5eeff] text-[#2557E8]'
-                }`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${isFullyDone
+                  ? 'bg-emerald-50 text-emerald-600'
+                  : 'bg-[#e5eeff] text-[#2557E8]'
+                  }`}>
                   {isFullyDone ? <Trophy className="size-3.5" /> : idx + 1}
                 </div>
 
@@ -199,16 +197,15 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
                   {/* Module progress bar */}
                   <div className="mt-2 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        isFullyDone ? 'bg-emerald-500' : 'bg-[#2557E8]'
-                      }`}
+                      className={`h-full rounded-full transition-all duration-500 ${isFullyDone ? 'bg-emerald-500' : 'bg-[#2557E8]'
+                        }`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
                 </div>
 
                 {isExpanded
-                  ? <ChevronUp   className="size-4 text-slate-400 shrink-0 mt-1" />
+                  ? <ChevronUp className="size-4 text-slate-400 shrink-0 mt-1" />
                   : <ChevronDown className="size-4 text-slate-400 shrink-0 mt-1" />
                 }
               </button>
@@ -224,19 +221,17 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
                       <div
                         key={lesson.id}
                         ref={attachRef ? activeLesonRef : undefined}
-                        className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
-                          isLocked
-                            ? 'opacity-40 cursor-not-allowed bg-slate-50/50'
-                            : 'hover:bg-slate-50/70 cursor-default'
-                        }`}
+                        className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${isLocked
+                          ? 'opacity-40 cursor-not-allowed bg-slate-50/50'
+                          : 'hover:bg-slate-50/70 cursor-default'
+                          }`}
                       >
                         <StatusIcon status={lesson.status} />
                         <LessonTypeIcon type={lesson.type} />
-                        <span className={`flex-1 text-sm ${
-                          lesson.status === 'completed'
-                            ? 'text-slate-400 line-through'
-                            : 'text-slate-700'
-                        }`}>
+                        <span className={`flex-1 text-sm ${lesson.status === 'completed'
+                          ? 'text-slate-400 line-through'
+                          : 'text-slate-700'
+                          }`}>
                           {lesson.title}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
