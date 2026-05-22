@@ -9,6 +9,7 @@ import SubjectCategoryPage from '@/features/documents/pages/SubjectCategoryPage'
 import { UploadSubjectDocumentPage } from '@/features/documents/pages/UploadSubjectDocumentPage'
 import { SearchResultsPage } from '@/features/documents/pages/SearchResultsPage'
 import DocumentDetailPage from '@/features/documents/pages/DocumentDetailPage'
+import EditDocumentPage from '@/features/documents/pages/EditDocumentPage'
 import { UploadPage } from '@/features/documents/pages/UploadPage'
 import { ChatPage } from '@/features/ai-chatbot/pages/ChatPage'
 import { QuizzesPage } from '@/features/quizzes/pages/QuizzesPage'
@@ -79,7 +80,8 @@ export const router = createBrowserRouter([
               { path: 'subject/:subjectId', element: <SubjectCategoryPage /> },
               { path: 'subject/:subjectId/upload', element: <UploadSubjectDocumentPage /> },
               { path: 'search', element: <SearchResultsPage /> },
-              { path: 'document/:documentId', element: <DocumentDetailPage /> }
+              { path: 'document/:documentId', element: <DocumentDetailPage /> },
+              { path: 'document/:documentId/edit', element: <EditDocumentPage /> }
             ]
           },
           { path: 'upload', element: <UploadPage /> },
