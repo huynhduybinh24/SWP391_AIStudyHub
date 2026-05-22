@@ -99,6 +99,14 @@ export function SummaryDetailPage() {
       })
   }
 
+  const handleDeleteDocument = () => {
+    setIsDeleteModalOpen(false)
+    toast.success('Document deleted successfully.')
+    setTimeout(() => {
+      navigate('/dashboard/notifications')
+    }, 1000)
+  }
+
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Left Column: Summary Content */}
@@ -181,7 +189,7 @@ export function SummaryDetailPage() {
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onDelete={() => {}}
+        onDelete={handleDeleteDocument}
       />
     </div>
   )
