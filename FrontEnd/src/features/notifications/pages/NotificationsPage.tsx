@@ -516,7 +516,7 @@ export function NotificationsPage() {
     },
     {
       id: 'flashcards',
-      type: 'ai',
+      type: 'flashcard',
       title: 'New Flashcards Available',
       time: 'Yesterday',
       isUnread: false,
@@ -528,7 +528,14 @@ export function NotificationsPage() {
           </strong>.
         </>
       ),
-      actionText: 'Practice Now',
+      buttons: [
+        {
+          text: 'Practice Now',
+          variant: 'secondary',
+          icon: <ExternalLink className="w-3.5 h-3.5 text-[#3155F6]" />,
+          url: '/dashboard/quizzes',
+        },
+      ],
     },
   ]
 
