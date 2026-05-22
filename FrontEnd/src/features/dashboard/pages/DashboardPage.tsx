@@ -9,7 +9,7 @@ import { QuickAskCard } from '@/features/dashboard/components/QuickAskCard'
 import { WeeklyActivityChart } from '@/features/dashboard/components/WeeklyActivityChart'
 import { RecentAlerts } from '@/features/dashboard/components/RecentAlerts'
 import { useDashboard } from '@/features/dashboard/hooks/useDashboard'
-import { CreateStudyPlanModal } from '@/features/study-plans/components/CreateStudyPlanModal'
+import { CreateStudyPlanModal } from '@/features/documents/pages/CreateStudyPlanModal'
 
 export function DashboardPage() {
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false)
