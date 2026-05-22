@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import {
   X,
@@ -727,21 +727,13 @@ export function DocumentsPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isToastVisible, setIsToastVisible] = useState(false)
 
-  // Layout States for MyDocumentsPage
-  const [searchQuery, setSearchQuery] = useState('')
-  const [subjectFilter, setSubjectFilter] = useState('ALL')
-  const [typeFilter, setTypeFilter] = useState('ALL')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  // Insights Modal States
+  // AI Workspace Analytics Insights Modal States & Variables
   const [isInsightsModalOpen, setIsInsightsModalOpen] = useState(false)
   
-  // Insights Calculations
-  const totalStorageKb = documents.reduce((acc, doc) => acc + (doc.sizeKb || 0), 0)
-  const totalStorageFormatted = (totalStorageKb / 1024).toFixed(1)
-  const storagePercentage = Math.min(100, Math.round((totalStorageKb / 1024) / 100 * 100))
+  // Dynamic Storage calculations for AI Workspace Analytics Insights Modal
+  const totalStorageMb = documents.reduce((acc, doc) => acc + (doc.sizeKb || 0), 0) / 1024
+  const totalStorageFormatted = totalStorageMb.toFixed(1)
+  const storagePercentage = Math.min(100, Math.round((totalStorageMb / 100) * 100))
 
   // Helper trigger notification toast
   const showToast = (message: string) => {
@@ -1019,16 +1011,10 @@ export function DocumentsPage() {
           // Shared Context
           documents,
           setDocuments,
-          showToast,
-          handleDownloadFile,
-          handleDeleteDocument,
-          renderFileIcon,
-          renderStatusBadge,
-
-          // DocumentsContextType (for legacy pages)
           openUploadModal: () => setIsUploadModalOpen(true),
           openChatDrawer: handleOpenChat,
           openPreviewModal: handleOpenPreview,
+          handleOpenPreview,
           openQuizModal: () => {
             setCurrentQuizQuestion(0)
             setSelectedQuizAnswer(null)
@@ -1036,23 +1022,17 @@ export function DocumentsPage() {
             setShowQuizResults(false)
             setIsQuizModalOpen(true)
           },
-          
-          // DocumentsLayoutContext (for MyDocumentsPage)
-          searchQuery,
-          setSearchQuery,
-          subjectFilter,
-          setSubjectFilter,
-          typeFilter,
-          setTypeFilter,
-          viewMode,
-          setViewMode,
+
+          // Utilities passed down to child pages
+          showToast,
+          handleDownloadFile,
+          handleDeleteDocument,
+          renderFileIcon,
+          renderStatusBadge,
+
           setIsUploadModalOpen,
           setIsInsightsModalOpen,
           handleOpenChat,
-          handleOpenPreview,
-          activeMenuId,
-          setActiveMenuId,
-          menuRef
         }}
       />
 

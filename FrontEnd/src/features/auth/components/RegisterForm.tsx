@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Mail, Lock, Eye, EyeOff, User, History, ArrowRight } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, LockKeyhole, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Checkbox'
@@ -92,7 +92,7 @@ export function RegisterForm() {
         <p className="text-[#434655] text-base">Start your journey to better grades today.</p>
       </div>
 
-      <form className="space-y-4" onSubmit={handleSubmit((values) => registerMutation.mutate(values))}>
+      <form className="space-y-4" onSubmit={handleSubmit(({ fullName, email, password }) => registerMutation.mutate({ fullName, email, password }))}>
         <div>
           <label className="mb-1.5 block text-sm font-semibold text-[#0B1C30]" htmlFor="fullName">
             Full Name
@@ -170,7 +170,7 @@ export function RegisterForm() {
             id="confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
             placeholder="••••••••"
-            startIcon={<History className="w-5 h-5 text-muted" />}
+            startIcon={<LockKeyhole className="w-5 h-5 text-muted" />}
             endIcon={
               <button 
                 type="button" 

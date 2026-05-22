@@ -4,17 +4,21 @@ import { ProtectedRoute } from '@/app/router/ProtectedRoute'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { DocumentsPage } from '@/features/documents/pages/DocumentsPage'
-import { UploadSubjectDocumentPage } from '@/features/documents/pages/UploadSubjectDocumentPage'
-import { SearchResultsPage } from '@/features/documents/pages/SearchResultsPage'
 import MyDocumentsPage from '@/features/documents/pages/MyDocumentsPage'
 import SubjectCategoryPage from '@/features/documents/pages/SubjectCategoryPage'
+import { UploadSubjectDocumentPage } from '@/features/documents/pages/UploadSubjectDocumentPage'
+import { SearchResultsPage } from '@/features/documents/pages/SearchResultsPage'
+import DocumentDetailPage from '@/features/documents/pages/DocumentDetailPage'
 import { UploadPage } from '@/features/documents/pages/UploadPage'
 import { ChatPage } from '@/features/ai-chatbot/pages/ChatPage'
 import { QuizzesPage } from '@/features/quizzes/pages/QuizzesPage'
 import { AdminDashboardPage } from '@/features/admin/pages/AdminDashboardPage'
+import { StudyPlansPage } from '@/features/documents/pages/StudyPlansPage'
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
 import { CloudStoragePage } from '@/features/storage/pages/CloudStoragePage'
 import { StorageExplorerPage } from '@/features/storage/pages/StorageExplorerPage'
+import { FilePreviewPage } from '@/features/storage/pages/FilePreviewPage'
+import { StorageCleanupPage } from '@/features/storage/pages/StorageCleanupPage'
 import { StorageAnalyticsPage } from '@/features/storage/pages/StorageAnalyticsPage'
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
 import { SummaryDetailPage } from '@/features/notifications/pages/SummaryDetailPage'
@@ -71,7 +75,8 @@ export const router = createBrowserRouter([
               { index: true, element: <MyDocumentsPage /> },
               { path: 'subject/:subjectId', element: <SubjectCategoryPage /> },
               { path: 'subject/:subjectId/upload', element: <UploadSubjectDocumentPage /> },
-              { path: 'search', element: <SearchResultsPage /> }
+              { path: 'search', element: <SearchResultsPage /> },
+              { path: 'document/:documentId', element: <DocumentDetailPage /> }
             ]
           },
           { path: 'upload', element: <UploadPage /> },
@@ -80,6 +85,8 @@ export const router = createBrowserRouter([
           { path: 'shared-files/research-materials', element: <SharedFolderPage /> },
           { path: 'storage', element: <CloudStoragePage /> },
           { path: 'storage/explorer', element: <StorageExplorerPage /> },
+          { path: 'storage/explorer/preview', element: <FilePreviewPage /> },
+          { path: 'storage/cleanup', element: <StorageCleanupPage /> },
           { path: 'storage/analytics', element: <StorageAnalyticsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'notifications/summary', element: <SummaryDetailPage /> },
