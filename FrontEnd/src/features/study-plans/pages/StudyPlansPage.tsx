@@ -98,8 +98,8 @@ const STUDY_PLANS: StudyPlan[] = [
     id: '2',
     title: 'Organic Chemistry Deep Dive',
     description:
-      'Exploring functional groups, reaction mechanisms, and stereochemistry.',
-    isAiGenerated: false,
+      'Exploring carbon compounds and metabolic pathways.',
+    isAiGenerated: true,
     status: 'Active',
     documents: 8,
     hoursEst: 30,
@@ -165,6 +165,19 @@ const STUDY_PLANS: StudyPlan[] = [
     startsAt: 'Jan 05, 2025',
     tasks: 90,
     iconType: 'languages',
+  },
+  {
+    id: '8',
+    title: 'Advanced Robotics',
+    description: 'Kinematics, control systems, and machine learning integration.',
+    isAiGenerated: true,
+    status: 'Active',
+    documents: 15,
+    hoursEst: 55,
+    difficulty: 'Hard',
+    overallProgress: 0,
+    themeColor: 'blue',
+    segments: [],
   },
   {
     id: '4',
@@ -470,7 +483,7 @@ interface CardCallbacks {
   onDelete: () => void
 }
 
-function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, onArchive, onDelete }: { plan: StudyPlan } & CardCallbacks) {
+function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDuplicate, onArchive, onDelete }: { plan: StudyPlan, isAiTab?: boolean } & CardCallbacks) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const menuItems = [
@@ -483,13 +496,13 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
   const isPurple = plan.themeColor === 'purple'
   const isTeal = plan.themeColor === 'teal'
   const accentClass = isTeal ? 'bg-teal-700' : isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
-  const iconBgClass = isTeal ? 'bg-teal-50' : isPurple ? 'bg-indigo-50' : 'bg-[#e8eeff]'
-  const iconTextClass = isTeal ? 'text-teal-700' : isPurple ? 'text-indigo-600' : 'text-[#2557E8]'
+  const iconBgClass = isAiTab ? 'bg-[#e5eeff]' : isTeal ? 'bg-teal-50' : isPurple ? 'bg-indigo-50' : 'bg-[#e8eeff]'
+  const iconTextClass = isAiTab ? 'text-[#2557E8]' : isTeal ? 'text-teal-700' : isPurple ? 'text-indigo-600' : 'text-[#2557E8]'
   const buttonClass = isPurple 
     ? 'bg-indigo-600 hover:bg-indigo-700' 
     : 'bg-[#0055d4] hover:bg-[#004bbd]'
 
-  const IconComponent = plan.iconType === 'rocket' ? Rocket 
+  const IconComponent = isAiTab ? Sparkles : plan.iconType === 'rocket' ? Rocket 
     : plan.iconType === 'bot' ? Bot 
     : plan.iconType === 'cpu' ? Cpu 
     : plan.iconType === 'languages' ? Languages 
@@ -531,6 +544,27 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#e5eeff] text-[#2557E8] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
                     Upcoming
                   </span>
+                ) : isAiTab ? (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#2557E8] text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
+                      AI Generated
+                    </span>
+                    {plan.difficulty === 'Hard' && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
+                        Hard
+                      </span>
+                    )}
+                    {plan.difficulty === 'Medium' && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
+                        Medium
+                      </span>
+                    )}
+                    {plan.difficulty === 'Easy' && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
+                        Easy
+                      </span>
+                    )}
+                  </div>
                 ) : plan.isAiGenerated ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#00897B] text-white text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
                     <Sparkles className="size-3" strokeWidth={2} />
@@ -600,7 +634,7 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
                     <Clock className="size-3.5 text-slate-400" />
                     {plan.hoursEst} Hours Est.
                   </span>
-                  <DifficultyPill level={plan.difficulty} />
+                  {!isAiTab && <DifficultyPill level={plan.difficulty} />}
                 </>
               )}
             </div>
@@ -610,22 +644,31 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
               <div className="mt-4">
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    {isCompleted ? 'Final Grade' : 'Overall Progress'}
+                    {isCompleted ? 'Final Grade' : isAiTab ? 'Progress' : 'Overall Progress'}
                   </span>
                   <span className={`text-xs font-bold ${iconTextClass}`}>
                     {plan.overallProgress}%
                   </span>
                 </div>
-                <SegmentedProgress segments={plan.segments} themeColor={plan.themeColor} />
+                {isAiTab ? (
+                  <div className="h-[6px] w-full rounded-full overflow-hidden bg-[#e5eeff]">
+                    <div
+                      className="h-full rounded-full transition-all duration-700 bg-[#2557E8]"
+                      style={{ width: `${plan.overallProgress}%` }}
+                    />
+                  </div>
+                ) : (
+                  <SegmentedProgress segments={plan.segments} themeColor={plan.themeColor} />
+                )}
               </div>
             )}
           </div>
         </div>
 
         {/* ── RIGHT PANEL ── */}
-        <div className={`shrink-0 sm:w-[220px] border-t sm:border-t-0 sm:border-l border-[#e5eeff] flex flex-col p-5 gap-4 bg-[#fafbff] ${(isCompleted || isUpcoming) ? 'justify-center' : 'justify-between'}`}>
+        <div className={`shrink-0 sm:w-[220px] border-t sm:border-t-0 sm:border-l border-[#e5eeff] flex flex-col p-5 gap-4 bg-[#fafbff] ${(isCompleted || isUpcoming || isAiTab) ? 'justify-center' : 'justify-between'}`}>
           {/* Milestone */}
-          {!isCompleted && !isUpcoming && plan.milestone && (
+          {!isCompleted && !isUpcoming && !isAiTab && plan.milestone && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
                 Next Milestone
@@ -664,7 +707,7 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
               onClick={onContinue}
               className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg shadow-sm ${isUpcoming ? 'bg-[#0055d4] hover:bg-[#004bbd]' : buttonClass}`}
             >
-              {isCompleted ? 'View Review' : isUpcoming ? 'View Details' : 'Continue Learning'}
+              {isCompleted ? 'View Review' : isUpcoming ? 'View Details' : isAiTab ? 'Continue' : 'Continue Learning'}
             </Button>
             {!isUpcoming && (
               <Button
@@ -821,6 +864,7 @@ export function StudyPlansPage() {
               <StudyPlanCard
                 key={plan.id}
                 plan={plan}
+                isAiTab={activeTab === 'AI Generated'}
                 onContinue={() => setLearningPlan(LEARNING_DATA[plan.id] ?? null)}
                 onCurriculum={() => setCurriculumPlan(CURRICULUM_DATA[plan.id] ?? null)}
                 onEdit={() => setCreateOpen(true)}
