@@ -51,7 +51,6 @@ function SidebarLink({ to, icon: Icon, label, onClick }: SidebarLinkProps) {
 }
 
 export function Sidebar() {
-  const { pathname } = useLocation()
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
 
