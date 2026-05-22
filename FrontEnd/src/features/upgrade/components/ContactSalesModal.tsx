@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
-import { Building2, Mail, MessageSquare, User } from 'lucide-react'
+import { Building2, Mail, User } from 'lucide-react'
 
 const contactSalesSchema = z.object({
   name: z.string().min(1, 'Name is required'),
