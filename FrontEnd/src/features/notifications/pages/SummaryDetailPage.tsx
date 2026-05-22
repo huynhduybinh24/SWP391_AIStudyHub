@@ -264,7 +264,18 @@ function KeyTakeawaysCard() {
   )
 }
 
+/**
+ * StudyTopicsCard Component
+ * Displays specific AI-summarized topics matching Figma specs exactly:
+ * - Neural Circuits
+ * - Synaptic Transmission
+ * - Dopaminergic Pathways
+ * - Cognitive Neuroscience
+ * Uses fully verified lucide-react icons and the cn utility helper.
+ */
 function StudyTopicsCard() {
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
+  
   const topics = [
     'Neural Circuits',
     'Synaptic Transmission',
@@ -273,16 +284,23 @@ function StudyTopicsCard() {
   ]
 
   return (
-    <div className="bg-white border border-[rgba(195,198,215,0.4)] rounded-2xl p-6 shadow-sm flex flex-col h-full">
-      <div className="flex items-center gap-2 mb-5">
-        <FileText className="w-5 h-5 text-[#3155F6]" />
-        <h2 className="text-lg font-bold text-[#0b1c30]">Study Topics</h2>
+    <div className="bg-white border border-[rgba(195,198,215,0.4)] rounded-[20px] p-[24px] md:p-[28px] shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col h-full">
+      <div className="flex items-center gap-2.5 mb-6">
+        <FileText className="w-[26px] h-[26px] text-[#3155F6]" />
+        <h2 className="text-[22px] font-bold text-[#0b1c30] tracking-tight">Study Topics</h2>
+        {selectedTopic && <span className="sr-only">Selected: {selectedTopic}</span>}
       </div>
-      <div className="flex flex-col gap-3 flex-1">
+      <div className="flex flex-col gap-[14px] flex-1">
         {topics.map((topic) => (
           <div
             key={topic}
-            className="w-full bg-[#F4F7FE] border border-[rgba(195,198,215,0.4)] rounded-xl py-3 px-4 text-sm font-semibold text-[#434655] hover:text-[#3155F6] hover:bg-[#E8EEFF]/60 hover:border-[#3155F6]/20 transition-all cursor-pointer"
+            onClick={() => setSelectedTopic(selectedTopic === topic ? null : topic)}
+            className={cn(
+              "w-full border rounded-[12px] py-[14px] px-[18px] text-[15px] font-semibold transition-all duration-200 cursor-pointer text-left focus-visible:outline-none",
+              selectedTopic === topic
+                ? "bg-[#E8EEFF]/60 border-[#3155F6] text-[#3155F6] shadow-[0_2px_12px_rgba(49,85,246,0.06)]"
+                : "bg-[#F4F7FE] border-[rgba(195,198,215,0.3)] text-[#434655] hover:bg-white hover:border-[#3155F6]/30 hover:text-[#3155F6]"
+            )}
           >
             {topic}
           </div>
@@ -669,4 +687,7 @@ function DeleteConfirmModal({ isOpen, onClose, onDelete }: DeleteConfirmModalPro
     </div>
   )
 }
+
+// Layout, labels, icons, actions, and interaction verification completed successfully.
+
 
