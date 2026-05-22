@@ -7,39 +7,13 @@ import { Button } from '@/components/ui/Button'
 import { useUiStore } from '@/stores/uiStore'
 import { useProfileStore } from '@/features/profile/stores/profileStore'
 import { cn } from '@/lib/utils'
-import { useSettingsStore } from '@/features/settings/stores/settingsStore'
+import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { UserDropdown } from '@/components/layout/UserDropdown'
 import { NotificationDropdown } from '@/components/layout/NotificationDropdown'
 import { HelpModal } from '@/components/layout/HelpModal'
 import { ConfirmLogoutModal } from '@/components/layout/ConfirmLogoutModal'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
-
-// Pre-defined search suggestion documents/topics matching mock document database
-const SEARCH_SUGGESTION_TOPICS = [
-  { id: 'neuro-1', title: 'Neuroscience 101: Brain Structures', category: 'Neuroscience' },
-  { id: 'neuro-2', title: 'Cognitive Neuroscience Notes', category: 'Neuroscience' },
-  { id: 'neuro-3', title: 'Neurotransmitters Study Guide', category: 'Neuroscience' },
-  { id: 'neuro-4', title: 'Introduction to Synapses', category: 'Neuroscience' },
-  { id: 'neuro-5', title: 'Neuroplasticity Research Paper', category: 'Neuroscience' },
-  { id: 'doc-design-patterns', title: 'Design Patterns Java Guide', category: 'Computer Science' },
-  { id: 'doc-agile', title: 'Agile Scrum Kanban Deep-Dive', category: 'Computer Science' },
-  { id: 'doc-3', title: 'Introduction to Quantum Mechanics', category: 'Physics' },
-  { id: 'doc-5', title: 'Philosophy 101 Epistemology Notes', category: 'Philosophy' },
-  { id: 'doc-7', title: 'Macroeconomics Q3 Dataset', category: 'Economics' },
-  { id: 'doc-1', title: 'Mathematics Calculus Cheat Sheet', category: 'Mathematics' },
-  { id: 'doc-2', title: 'Molecular Biology Lecture Notes', category: 'Biology' },
-  { id: 'doc-6', title: 'Genetics Lab Report Draft', category: 'Biology' },
-  { id: 'psych-1', title: 'Introduction to Neuropsychology', category: 'Psychology' },
-  { id: 'psych-2', title: 'Behavioral Psychology Basics', category: 'Psychology' }
-]
-
-const TRENDING_TOPICS = [
-  'Design Patterns',
-  'Quantum Mechanics',
-  'Agile Methodologies',
-  'Neurotransmitters'
-]
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 export function Header() {
@@ -61,59 +35,23 @@ export function Header() {
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const [logoutModalOpen, setLogoutModalOpen] = useState(false)
 
-  // Search suggestion states
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [history, setHistory] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('ai_study_hub_search_history')
-      return saved ? JSON.parse(saved) : ['Neuroscience', 'Psychology', 'Brain', 'Biology']
-    } catch {
-      return ['Neuroscience', 'Psychology', 'Brain', 'Biology']
-    }
-  })
-
-  // Synchronize history
-  const saveSearchToHistory = (term: string) => {
-    if (!term.trim()) return
-    const cleanTerm = term.trim()
-    setHistory((prev) => {
-      const filtered = prev.filter((item) => item.toLowerCase() !== cleanTerm.toLowerCase())
-      const updated = [cleanTerm, ...filtered].slice(0, 5)
-      localStorage.setItem('ai_study_hub_search_history', JSON.stringify(updated))
-      return updated
-    })
-  }
-
-  const deleteHistoryItem = (e: React.MouseEvent, itemToDelete: string) => {
-    e.stopPropagation()
-    setHistory((prev) => {
-      const updated = prev.filter((item) => item !== itemToDelete)
-      localStorage.setItem('ai_study_hub_search_history', JSON.stringify(updated))
-      return updated
-    })
-  }
-
-  const storeTheme = useSettingsStore((s) => s.theme)
-  const setThemeStore = useSettingsStore((s) => s.setTheme)
-
-  useEffect(() => {
-    setThemeStore(storeTheme)
-  }, [storeTheme, setThemeStore])
+  const { theme, setTheme } = useTheme()
 
   const toggleTheme = () => {
     const isCurrentlyDark = document.documentElement.classList.contains('dark')
-    setThemeStore(isCurrentlyDark ? 'light' : 'dark')
+    setTheme(isCurrentlyDark ? 'light' : 'dark')
   }
 
   const isDark =
-    storeTheme === 'dark' ||
-    (storeTheme === 'system' &&
+    theme === 'dark' ||
+    (theme === 'system' &&
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   useEffect(() => {
     setSearchVal(urlKeyword)
   }, [urlKeyword])
+
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -135,8 +73,7 @@ export function Header() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchVal.trim()) {
-      saveSearchToHistory(searchVal.trim())
-      toast.success(`Searching results for: "${searchVal.trim()}"`)
+      toast.success(`Searching for: ${searchVal.trim()}`)
       navigate(`/dashboard/documents/search?keyword=${encodeURIComponent(searchVal.trim())}`)
       setShowSuggestions(false)
     }

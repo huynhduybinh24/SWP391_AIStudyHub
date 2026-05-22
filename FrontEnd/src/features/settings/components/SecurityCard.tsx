@@ -4,11 +4,20 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { Button } from '@/components/ui/Button'
 import { ChangePasswordModal } from './ChangePasswordModal'
 import { TwoFactorModal } from './TwoFactorModal'
+import { ConfirmModal } from './ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 
 export function SecurityCard() {
   const { security, toggleTwoFactor } = useSettingsStore()
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [is2faModalOpen, setIs2faModalOpen] = useState(false)
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
+  const toast = useToast()
+
+  const handleConfirmDisable = () => {
+    toggleTwoFactor()
+    toast.success('Two-factor authentication disabled')
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between h-full">
@@ -59,12 +68,12 @@ export function SecurityCard() {
               type="button"
               className={`w-full text-xs font-semibold py-2.5 ${
                 security.isTwoFactorEnabled
-                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  ? 'bg-red-600 hover:bg-red-750 text-white'
                   : 'bg-[#e5eeff] dark:bg-blue-950/40 hover:bg-[#d0e1ff] dark:hover:bg-blue-950/60 text-[#2563eb] dark:text-blue-400 border-none'
               }`}
               onClick={() => {
                 if (security.isTwoFactorEnabled) {
-                  toggleTwoFactor()
+                  setIsConfirmModalOpen(true)
                 } else {
                   setIs2faModalOpen(true)
                 }
@@ -86,6 +95,13 @@ export function SecurityCard() {
       <TwoFactorModal
         isOpen={is2faModalOpen}
         onClose={() => setIs2faModalOpen(false)}
+      />
+
+      {/* Disable 2FA Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={handleConfirmDisable}
       />
     </div>
   )

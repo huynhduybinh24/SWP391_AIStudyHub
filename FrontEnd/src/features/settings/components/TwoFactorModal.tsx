@@ -5,6 +5,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { OTPInput } from './OTPInput'
 import { QRCodeCard } from './QRCodeCard'
 import { Button } from '@/components/ui/Button'
+import { useToast } from '@/components/ui/Toast'
 
 interface TwoFactorModalProps {
   isOpen: boolean
@@ -13,6 +14,7 @@ interface TwoFactorModalProps {
 
 export function TwoFactorModal({ isOpen, onClose }: TwoFactorModalProps) {
   const { toggleTwoFactor } = useSettingsStore()
+  const toast = useToast()
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
@@ -58,6 +60,7 @@ export function TwoFactorModal({ isOpen, onClose }: TwoFactorModalProps) {
       await new Promise((resolve) => setTimeout(resolve, 1500))
       
       toggleTwoFactor()
+      toast.success('Two-factor authentication enabled')
       setIsSuccess(true)
       
       // Delay before closing

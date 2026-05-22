@@ -38,18 +38,18 @@ export const useSettingsStore = create<SettingsState>()(
       account: {
         email: 'student@university.edu',
         name: 'Alex Morgan',
-        language: 'en-US',
-        timezone: 'America/Los_Angeles',
+        language: 'English (US)',
+        timezone: 'Pacific Time (PT)',
       },
       security: {
         isTwoFactorEnabled: false,
         lastPasswordChanged: '3 months ago',
       },
       notifications: {
-        emailNotifications: true,
-        pushNotifications: false,
+        emailNotifications: typeof window !== 'undefined' && localStorage.getItem('ai-study-hub-email-notifications') !== 'false',
+        pushNotifications: typeof window !== 'undefined' && localStorage.getItem('ai-study-hub-push-notifications') === 'true',
       },
-      theme: 'light',
+      theme: (typeof window !== 'undefined' && localStorage.getItem('ai-study-hub-theme') as ThemePreference) || 'light',
       updateAccount: (data) => {
         set((state) => ({
           account: { ...state.account, ...data },
@@ -66,13 +66,25 @@ export const useSettingsStore = create<SettingsState>()(
             isTwoFactorEnabled: !state.security.isTwoFactorEnabled,
           },
         })),
-      updateNotifications: (data) =>
-        set((state) => ({
-          notifications: { ...state.notifications, ...data },
-        })),
+      updateNotifications: (data) => {
+        set((state) => {
+          const nextNotifications = { ...state.notifications, ...data }
+          if (typeof window !== 'undefined') {
+            if (data.emailNotifications !== undefined) {
+              localStorage.setItem('ai-study-hub-email-notifications', String(data.emailNotifications))
+            }
+            if (data.pushNotifications !== undefined) {
+              localStorage.setItem('ai-study-hub-push-notifications', String(data.pushNotifications))
+            }
+          }
+          return { notifications: nextNotifications }
+        })
+      },
       setTheme: (newTheme) => {
         set({ theme: newTheme })
-        localStorage.setItem('theme', newTheme)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('ai-study-hub-theme', newTheme)
+        }
 
         const applyTheme = (isDark: boolean) => {
           if (isDark) {
