@@ -50,7 +50,7 @@ export function ResetPasswordPage() {
                 We've sent a password recovery link to your email address. Please check your inbox.
               </p>
               <div className="w-full space-y-3 text-center">
-                <Button onClick={() => setIsSuccess(false)} variant="outline" className="w-full h-12 rounded-xl font-semibold">
+                <Button onClick={() => setIsSuccess(false)} variant="secondary" className="w-full h-12 rounded-xl font-semibold">
                   Send again
                 </Button>
                 <Link 
