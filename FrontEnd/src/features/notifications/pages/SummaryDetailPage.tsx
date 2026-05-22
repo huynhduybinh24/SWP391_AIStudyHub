@@ -55,6 +55,47 @@ export function SummaryDetailPage() {
     toast.success('PDF downloaded successfully.')
   }
 
+  const handleShareAccess = () => {
+    setErrorMessage('')
+    setSuccessMessage('')
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!shareEmail || !emailRegex.test(shareEmail.trim())) {
+      setErrorMessage('Please enter a valid email address.')
+      return
+    }
+
+    const newSharedUser = {
+      email: shareEmail.trim(),
+      permission: permission,
+    }
+    setSharedUsers([...sharedUsers, newSharedUser])
+    setShareEmail('')
+    setSuccessMessage('Access shared successfully.')
+    toast.success('Access shared successfully.')
+  }
+
+  const handleCopyLink = () => {
+    const shareLink = window.location.origin + '/dashboard/notifications/summary'
+    navigator.clipboard.writeText(shareLink)
+      .then(() => {
+        toast.success('Share link copied.')
+      })
+      .catch(() => {
+        const textArea = document.createElement('textarea')
+        textArea.value = shareLink
+        document.body.appendChild(textArea)
+        textArea.select()
+        try {
+          document.execCommand('copy')
+          toast.success('Share link copied.')
+        } catch (err) {
+          toast.error('Failed to copy link.')
+        }
+        document.body.removeChild(textArea)
+      })
+  }
+
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Left Column: Summary Content */}
@@ -128,8 +169,8 @@ export function SummaryDetailPage() {
         permission={permission}
         setPermission={setPermission}
         sharedUsers={sharedUsers}
-        onShare={() => {}}
-        onCopyLink={() => {}}
+        onShare={handleShareAccess}
+        onCopyLink={handleCopyLink}
         errorMessage={errorMessage}
         successMessage={successMessage}
       />
