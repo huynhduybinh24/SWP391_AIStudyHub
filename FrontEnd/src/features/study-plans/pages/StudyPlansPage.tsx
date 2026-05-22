@@ -17,6 +17,10 @@ import {
   CheckCircle2,
   Rocket,
   Calendar,
+  Bot,
+  Cpu,
+  Languages,
+  ClipboardList,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -56,7 +60,9 @@ type StudyPlan = {
   milestone?: Milestone
   themeColor: 'blue' | 'purple' | 'teal'
   completedAt?: string
-  iconType?: 'flask' | 'rocket'
+  startsAt?: string
+  tasks?: number
+  iconType?: 'flask' | 'rocket' | 'bot' | 'cpu' | 'languages'
 }
 
 // ─────────────────────────────────────────────
@@ -114,27 +120,51 @@ const STUDY_PLANS: StudyPlan[] = [
   },
   {
     id: '3',
-    title: 'Data Structures & Algorithms',
-    description:
-      'From arrays to graphs — crack competitive programming interviews.',
-    isAiGenerated: true,
+    title: 'Final Exam Prep: Advanced Robotics',
+    description: 'Advanced kinematics and autonomous navigation systems.',
+    isAiGenerated: false,
     status: 'Upcoming',
-    documents: 15,
-    hoursEst: 60,
+    documents: 12,
+    hoursEst: 0,
     difficulty: 'Hard',
     overallProgress: 0,
     themeColor: 'blue',
-    segments: [
-      { label: 'Arrays & Strings', value: 0 },
-      { label: 'Trees & Graphs', value: 0 },
-      { label: 'Dynamic Prog.', value: 0 },
-    ],
-    milestone: {
-      month: 'NOV',
-      day: 10,
-      title: 'Arrays & Sorting Quiz',
-      time: '9:00 AM, Nov 10',
-    },
+    segments: [],
+    startsAt: 'Nov 15, 2024',
+    tasks: 24,
+    iconType: 'bot',
+  },
+  {
+    id: '6',
+    title: 'Winter Session: Deep Learning Fundamentals',
+    description: 'Foundations of neural networks and gradient descent optimization.',
+    isAiGenerated: false,
+    status: 'Upcoming',
+    documents: 8,
+    hoursEst: 0,
+    difficulty: 'Hard',
+    overallProgress: 0,
+    themeColor: 'blue',
+    segments: [],
+    startsAt: 'Dec 10, 2024',
+    tasks: 45,
+    iconType: 'cpu',
+  },
+  {
+    id: '7',
+    title: 'GRE Vocabulary & Logic Track',
+    description: 'Intensive verbal reasoning and analytical writing preparation.',
+    isAiGenerated: false,
+    status: 'Upcoming',
+    documents: 30,
+    hoursEst: 0,
+    difficulty: 'Hard',
+    overallProgress: 0,
+    themeColor: 'blue',
+    segments: [],
+    startsAt: 'Jan 05, 2025',
+    tasks: 90,
+    iconType: 'languages',
   },
   {
     id: '4',
@@ -443,9 +473,14 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
     ? 'bg-indigo-600 hover:bg-indigo-700' 
     : 'bg-[#0055d4] hover:bg-[#004bbd]'
 
-  const IconComponent = plan.iconType === 'rocket' ? Rocket : FlaskConical
+  const IconComponent = plan.iconType === 'rocket' ? Rocket 
+    : plan.iconType === 'bot' ? Bot 
+    : plan.iconType === 'cpu' ? Cpu 
+    : plan.iconType === 'languages' ? Languages 
+    : FlaskConical
 
   const isCompleted = plan.status === 'Completed'
+  const isUpcoming = plan.status === 'Upcoming'
 
   return (
     <Card className="flex overflow-hidden border border-[#e5eeff] shadow-sm hover:shadow-md transition-shadow duration-200 rounded-xl">
@@ -475,6 +510,10 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#ccfbf1] text-teal-700 text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
                     <CheckCircle2 className="size-3" strokeWidth={2} />
                     Completed
+                  </span>
+                ) : isUpcoming ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#e5eeff] text-[#2557E8] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
+                    Upcoming
                   </span>
                 ) : plan.isAiGenerated ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#00897B] text-white text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
@@ -523,11 +562,23 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
                   Completed {plan.completedAt}
                 </span>
               )}
+              {isUpcoming && plan.startsAt && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                  <Calendar className="size-3.5 text-slate-400" />
+                  Starts {plan.startsAt}
+                </span>
+              )}
+              {isUpcoming && plan.tasks && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                  <ClipboardList className="size-3.5 text-slate-400" />
+                  {plan.tasks} Tasks
+                </span>
+              )}
               <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                 <Link2 className="size-3.5 text-slate-400" />
                 {plan.documents} Documents
               </span>
-              {!isCompleted && (
+              {!isCompleted && !isUpcoming && (
                 <>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                     <Clock className="size-3.5 text-slate-400" />
@@ -539,24 +590,26 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
             </div>
 
             {/* Progress */}
-            <div className="mt-4">
-              <div className="flex justify-between items-center mb-1.5">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  {isCompleted ? 'Final Grade' : 'Overall Progress'}
-                </span>
-                <span className={`text-xs font-bold ${iconTextClass}`}>
-                  {plan.overallProgress}%
-                </span>
+            {!isUpcoming && (
+              <div className="mt-4">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    {isCompleted ? 'Final Grade' : 'Overall Progress'}
+                  </span>
+                  <span className={`text-xs font-bold ${iconTextClass}`}>
+                    {plan.overallProgress}%
+                  </span>
+                </div>
+                <SegmentedProgress segments={plan.segments} themeColor={plan.themeColor} />
               </div>
-              <SegmentedProgress segments={plan.segments} themeColor={plan.themeColor} />
-            </div>
+            )}
           </div>
         </div>
 
         {/* ── RIGHT PANEL ── */}
-        <div className={`shrink-0 sm:w-[220px] border-t sm:border-t-0 sm:border-l border-[#e5eeff] flex flex-col p-5 gap-4 bg-[#fafbff] ${isCompleted ? 'justify-center' : 'justify-between'}`}>
+        <div className={`shrink-0 sm:w-[220px] border-t sm:border-t-0 sm:border-l border-[#e5eeff] flex flex-col p-5 gap-4 bg-[#fafbff] ${(isCompleted || isUpcoming) ? 'justify-center' : 'justify-between'}`}>
           {/* Milestone */}
-          {!isCompleted && plan.milestone && (
+          {!isCompleted && !isUpcoming && plan.milestone && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
                 Next Milestone
@@ -593,18 +646,20 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
               variant="primary"
               size="sm"
               onClick={onContinue}
-              className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg shadow-sm ${buttonClass}`}
+              className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg shadow-sm ${isUpcoming ? 'bg-[#0055d4] hover:bg-[#004bbd]' : buttonClass}`}
             >
-              {isCompleted ? 'View Review' : 'Continue Learning'}
+              {isCompleted ? 'View Review' : isUpcoming ? 'View Details' : 'Continue Learning'}
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onCurriculum}
-              className="w-full justify-center font-semibold text-[13px] py-2.5 rounded-lg border-slate-200 text-slate-700 hover:bg-slate-50"
-            >
-              {isCompleted ? 'View Summary' : 'View Curriculum'}
-            </Button>
+            {!isUpcoming && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onCurriculum}
+                className="w-full justify-center font-semibold text-[13px] py-2.5 rounded-lg border-slate-200 text-slate-700 hover:bg-slate-50"
+              >
+                {isCompleted ? 'View Summary' : 'View Curriculum'}
+              </Button>
+            )}
           </div>
         </div>
       </div>
