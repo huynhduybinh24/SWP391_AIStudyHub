@@ -8,9 +8,10 @@ interface NotificationDropdownProps {
   onClose: () => void
   notifications: MockNotification[]
   setNotifications: React.Dispatch<React.SetStateAction<MockNotification[]>>
+  markAsRead: (id: string) => void
 }
 
-export function NotificationDropdown({ onClose, notifications, setNotifications }: NotificationDropdownProps) {
+export function NotificationDropdown({ onClose, notifications, setNotifications, markAsRead }: NotificationDropdownProps) {
   const navigate = useNavigate()
   const toast = useToast()
 
@@ -20,9 +21,7 @@ export function NotificationDropdown({ onClose, notifications, setNotifications 
   }
 
   const handleNotificationClick = (item: MockNotification) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
-    )
+    markAsRead(item.id)
     toast.success(`Opening: ${item.title}`)
     onClose()
     if (item.type === 'doc') {

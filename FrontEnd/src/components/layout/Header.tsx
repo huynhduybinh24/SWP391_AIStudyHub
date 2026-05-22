@@ -104,6 +104,12 @@ export function Header() {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
+  const markAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+    )
+  }
+
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [history, setHistory] = useState<string[]>(() => {
     try {
@@ -565,6 +571,7 @@ export function Header() {
                 onClose={() => setNotificationMenuOpen(false)}
                 notifications={notifications}
                 setNotifications={setNotifications}
+                markAsRead={markAsRead}
               />
             )}
           </AnimatePresence>
