@@ -50,6 +50,7 @@ type StudyPlan = {
   overallProgress: number
   segments: ProgressSegment[]
   milestone: Milestone
+  themeColor: 'blue' | 'purple'
 }
 
 // ─────────────────────────────────────────────
@@ -68,6 +69,7 @@ const STUDY_PLANS: StudyPlan[] = [
     hoursEst: 48,
     difficulty: 'Hard',
     overallProgress: 65,
+    themeColor: 'blue',
     segments: [
       { label: 'Core Concepts', value: 100 },
       { label: 'Advanced Theory', value: 65 },
@@ -82,25 +84,26 @@ const STUDY_PLANS: StudyPlan[] = [
   },
   {
     id: '2',
-    title: 'Organic Chemistry Fundamentals',
+    title: 'Organic Chemistry Deep Dive',
     description:
-      'Master reaction mechanisms, functional groups, and synthesis pathways.',
+      'Exploring functional groups, reaction mechanisms, and stereochemistry.',
     isAiGenerated: false,
     status: 'Active',
     documents: 8,
-    hoursEst: 32,
+    hoursEst: 30,
     difficulty: 'Medium',
-    overallProgress: 40,
+    overallProgress: 20,
+    themeColor: 'purple',
     segments: [
-      { label: 'Basics', value: 100 },
-      { label: 'Reactions', value: 40 },
-      { label: 'Synthesis', value: 0 },
+      { label: 'Nomenclature', value: 100 },
+      { label: 'Substitution', value: 20 },
+      { label: 'Elimination', value: 0 },
     ],
     milestone: {
-      month: 'NOV',
-      day: 3,
-      title: 'Reaction Mechanisms Test',
-      time: '2:00 PM, Next Week',
+      month: 'OCT',
+      day: 26,
+      title: 'Alkanes & Cycloalkanes',
+      time: '2:00 PM Wednesday',
     },
   },
   {
@@ -114,6 +117,7 @@ const STUDY_PLANS: StudyPlan[] = [
     hoursEst: 60,
     difficulty: 'Hard',
     overallProgress: 0,
+    themeColor: 'blue',
     segments: [
       { label: 'Arrays & Strings', value: 0 },
       { label: 'Trees & Graphs', value: 0 },
@@ -136,6 +140,7 @@ const STUDY_PLANS: StudyPlan[] = [
     hoursEst: 20,
     difficulty: 'Easy',
     overallProgress: 100,
+    themeColor: 'blue',
     segments: [
       { label: 'WWI & WWII', value: 100 },
       { label: 'Cold War', value: 100 },
@@ -348,16 +353,20 @@ function DifficultyPill({ level }: { level: StudyPlan['difficulty'] }) {
 // Segmented progress bar
 // ─────────────────────────────────────────────
 
-function SegmentedProgress({ segments }: { segments: ProgressSegment[] }) {
+function SegmentedProgress({ segments, themeColor }: { segments: ProgressSegment[], themeColor: string }) {
+  const isPurple = themeColor === 'purple'
+  const fillClass = isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
+  const bgClass = isPurple ? 'bg-indigo-100' : 'bg-[#e5eeff]'
+
   return (
     <div className="flex flex-col gap-1.5 mt-2">
       {/* Track */}
       <div className="flex gap-1 h-[6px] w-full">
         {segments.map((seg, i) => (
-          <div key={i} className="flex-1 rounded-full bg-[#e5eeff] overflow-hidden">
+          <div key={i} className={`flex-1 rounded-full overflow-hidden ${bgClass}`}>
             <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${seg.value}%`, backgroundColor: '#2557E8' }}
+              className={`h-full rounded-full transition-all duration-700 ${fillClass}`}
+              style={{ width: `${seg.value}%` }}
             />
           </div>
         ))}
@@ -400,10 +409,18 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
     { label: 'Delete',     icon: Trash2,  action: onDelete,     danger: true  },
   ]
 
+  const isPurple = plan.themeColor === 'purple'
+  const accentClass = isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
+  const iconBgClass = isPurple ? 'bg-indigo-50' : 'bg-[#e8eeff]'
+  const iconTextClass = isPurple ? 'text-indigo-600' : 'text-[#2557E8]'
+  const buttonClass = isPurple 
+    ? 'bg-indigo-600 hover:bg-indigo-700' 
+    : 'bg-[#2557E8] hover:bg-[#1d4ed8]'
+
   return (
     <Card className="flex overflow-hidden border border-[#e5eeff] shadow-sm hover:shadow-md transition-shadow duration-200 rounded-xl">
-      {/* Left blue accent bar */}
-      <div className="w-1.5 shrink-0 bg-[#2557E8] rounded-l-xl" />
+      {/* Left accent bar */}
+      <div className={`w-1.5 shrink-0 rounded-l-xl ${accentClass}`} />
 
       {/* Inner layout: left body + right panel */}
       <div className="flex flex-1 min-w-0 flex-col sm:flex-row">
@@ -411,8 +428,8 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
         <div className="flex flex-1 min-w-0 p-5 gap-4">
           {/* Flask icon */}
           <div className="shrink-0 pt-0.5">
-            <div className="w-10 h-10 rounded-lg bg-[#e8eeff] flex items-center justify-center">
-              <FlaskConical className="size-5 text-[#2557E8]" strokeWidth={1.75} />
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBgClass}`}>
+              <FlaskConical className={`size-5 ${iconTextClass}`} strokeWidth={1.75} />
             </div>
           </div>
 
@@ -465,12 +482,12 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
 
             {/* Info pills */}
             <div className="flex flex-wrap gap-2 mt-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5eeff] bg-[#f5f8ff] px-3 py-1 text-xs font-medium text-[#2557E8]">
-                <Link2 className="size-3.5" />
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                <Link2 className="size-3.5 text-slate-400" />
                 {plan.documents} Documents
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5eeff] bg-[#f5f8ff] px-3 py-1 text-xs font-medium text-[#2557E8]">
-                <Clock className="size-3.5" />
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                <Clock className="size-3.5 text-slate-400" />
                 {plan.hoursEst} Hours Est.
               </span>
               <DifficultyPill level={plan.difficulty} />
@@ -482,11 +499,11 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                   Overall Progress
                 </span>
-                <span className="text-xs font-bold text-[#2557E8]">
+                <span className={`text-xs font-bold ${iconTextClass}`}>
                   {plan.overallProgress}%
                 </span>
               </div>
-              <SegmentedProgress segments={plan.segments} />
+              <SegmentedProgress segments={plan.segments} themeColor={plan.themeColor} />
             </div>
           </div>
         </div>
@@ -500,11 +517,11 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
             </p>
             <div className="flex items-start gap-3">
               {/* Date block */}
-              <div className="flex flex-col items-center justify-center w-11 h-12 rounded-lg bg-[#2557E8] text-white shrink-0">
-                <span className="text-[9px] font-bold uppercase tracking-widest leading-none">
+              <div className="flex flex-col items-center justify-center w-11 shrink-0 pt-0.5">
+                <span className="text-[10px] font-bold uppercase tracking-widest leading-none text-red-500 mb-0.5">
                   {plan.milestone.month}
                 </span>
-                <span className="text-[22px] font-extrabold leading-tight">
+                <span className="text-2xl font-black leading-none text-slate-900">
                   {plan.milestone.day}
                 </span>
               </div>
@@ -529,7 +546,7 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
               variant="primary"
               size="sm"
               onClick={onContinue}
-              className="w-full justify-center bg-[#2557E8] hover:bg-[#1d4ed8] text-white font-semibold text-[13px] py-2.5 rounded-lg"
+              className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg ${buttonClass}`}
             >
               {plan.status === 'Completed' ? 'View Results' : 'Continue Learning'}
             </Button>
