@@ -6,6 +6,7 @@ import {
   Grid,
   List,
   MoreVertical,
+  Plus,
   MessageSquare,
   ExternalLink,
   Download,
