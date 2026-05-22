@@ -130,10 +130,6 @@ export function CloudStoragePage() {
     setUploads(prev => prev.filter(u => u.id !== id));
   }
 
-  const handleCleanUp = () => {
-    setUploads([]);
-  }
-
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   }
