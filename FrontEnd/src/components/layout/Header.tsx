@@ -94,6 +94,8 @@ export function Header() {
           placeholder={
             pathname.startsWith('/dashboard/shared-files/research-materials')
               ? 'Search in this folder...'
+              : pathname.startsWith('/dashboard/study-plans')
+              ? 'Search study plans...'
               : 'Search documents, chats, plans...'
           }
           className="max-w-[400px] bg-[#f0f4ff]/70 border border-[#e2e8f0]/40 rounded-xl dark:bg-slate-900 dark:border-slate-800"
