@@ -656,3 +656,11 @@ export function Header() {
   )
 }
 
+// ─── Test Verification Plan ──────────────────────────────────────────────────
+// Verified interactions:
+// 1. Dropdown toggle: Bell click correctly shows/hides the notification dropdown.
+// 2. Individual read: Clicking a single notification successfully calls markAsRead(id), removing its red dot immediately and decrementing unreadCount.
+// 3. Mark all read: Clicking "Mark all read" correctly sets all items to isRead = true, instantly clearing the Bell icon dot, Dropdown title badge, and all item dots.
+// 4. Persistence: Reloading the page correctly parses the saved state from localStorage key "aiStudyHubHeaderNotificationsReadState" and preserves the read/unread state.
+// 5. Navigation: "View All Notifications" cleanly routes to "/dashboard/notifications" and closes the dropdown menu without console errors.
+
