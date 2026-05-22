@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { toast } from 'sonner'
+import { useToastStore } from '@/stores/toastStore'
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -80,6 +80,7 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
   const [highlightedModule, setHighlightedModule] = useState<string | null>(null)
   const activeModuleRef = useRef<HTMLDivElement | null>(null)
   const activeLesonRef = useRef<HTMLDivElement | null>(null)
+  const addToast = useToastStore((s) => s.addToast)
 
   // Reset expanded module whenever a different plan is opened
   useEffect(() => {
@@ -110,16 +111,16 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
   // "Start Module" / "Review" button: mock navigating to the active lesson
   const handleStart = () => {
     if (!firstActiveModule) return
-    toast.success(`Starting module: ${firstActiveModule.title}`)
+    addToast(`Starting module: ${firstActiveModule.title}`, 'success')
     onClose()
   }
 
   const handleLessonCLick = (lesson: CurriculumLesson) => {
     if (lesson.status === 'locked') {
-      toast.info('This lesson is locked. Complete previous lessons first.')
+      addToast('This lesson is locked. Complete previous lessons first.', 'info')
       return
     }
-    toast.success(`Opening lesson: ${lesson.title}`)
+    addToast(`Opening lesson: ${lesson.title}`, 'success')
     onClose()
   }
 
