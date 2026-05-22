@@ -94,7 +94,23 @@ export function ShareModal({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [openDropdownId])
 
+  // Escape key support to close dropdowns or modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (openDropdownId) {
+          setOpenDropdownId(null)
+        } else {
+          onClose()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [openDropdownId, onClose])
+
   if (!isOpen) return null
+
 
   const handleAddUser = () => {
     setErrorMessage('')
