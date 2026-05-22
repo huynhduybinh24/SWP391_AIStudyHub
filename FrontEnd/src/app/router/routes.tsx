@@ -13,6 +13,7 @@ import { UploadPage } from '@/features/documents/pages/UploadPage'
 import { ChatPage } from '@/features/ai-chatbot/pages/ChatPage'
 import { QuizzesPage } from '@/features/quizzes/pages/QuizzesPage'
 import { AdminDashboardPage } from '@/features/admin/pages/AdminDashboardPage'
+import { StudyPlansPage } from '@/features/study-plans/pages/StudyPlansPage'
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
 import { CloudStoragePage } from '@/features/storage/pages/CloudStoragePage'
 import { StorageExplorerPage } from '@/features/storage/pages/StorageExplorerPage'
@@ -89,7 +90,7 @@ export const router = createBrowserRouter([
           { path: 'storage/analytics', element: <StorageAnalyticsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'notifications/summary', element: <SummaryDetailPage /> },
-          { path: 'study-plans', element: <PlaceholderPage title="Study Plans" /> },
+          { path: 'study-plans', element: <StudyPlansPage /> },
           { path: 'profile', element: <ProfileDashboard /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'upgrade', element: <PricingPage /> },

@@ -287,8 +287,10 @@ export function Header() {
         <form onSubmit={handleSearchSubmit} className="flex flex-1 items-center">
           <Input
             placeholder={
-              pathname === '/dashboard/shared-files/research-materials' ||
-              pathname === '/dashboard/shared-files/research-materials/'
+              pathname.startsWith('/dashboard/study-plans')
+                ? 'Search study plans...'
+                : pathname === '/dashboard/shared-files/research-materials' ||
+                  pathname === '/dashboard/shared-files/research-materials/'
                 ? 'Search in this folder...'
                 : 'Search documents, chats, plans...'
             }

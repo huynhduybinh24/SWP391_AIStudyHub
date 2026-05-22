@@ -1,4 +1,3 @@
-
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -36,7 +35,6 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
     register,
     handleSubmit,
     control,
-
     formState: { errors },
   } = useForm<StudyPlanFormValues>({
     resolver: zodResolver(studyPlanSchema),
@@ -56,7 +54,6 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
     // Handle form submission logic here
     onClose()
   }
-
 
 
   return (
