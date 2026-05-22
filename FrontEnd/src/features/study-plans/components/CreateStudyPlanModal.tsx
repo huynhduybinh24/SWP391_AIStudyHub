@@ -1,4 +1,4 @@
-import { useState } from 'react'
+
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -36,7 +36,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
     register,
     handleSubmit,
     control,
-    watch,
+
     formState: { errors },
   } = useForm<StudyPlanFormValues>({
     resolver: zodResolver(studyPlanSchema),
@@ -57,7 +57,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
     onClose()
   }
 
-  const selectedSchedule = watch('schedule')
+
 
   return (
     <Modal

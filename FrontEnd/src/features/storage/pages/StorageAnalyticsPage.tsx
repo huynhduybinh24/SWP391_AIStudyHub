@@ -174,7 +174,7 @@ export function StorageAnalyticsPage() {
                       radius={[4, 4, 0, 0]} 
                       barSize={40}
                     >
-                      {barChartData.map((entry, index) => (
+                      {barChartData.map((_, index) => (
                         <Cell 
                           key={`cell-${index}`} 
                           fill={index === barChartData.length - 1 ? '#2563eb' : '#93c5fd'} 
