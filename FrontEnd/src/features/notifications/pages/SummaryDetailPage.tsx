@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -17,6 +17,8 @@ import {
   Mail,
   CheckCircle,
   AlertTriangle,
+  Check,
+  ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
@@ -32,14 +34,32 @@ export function SummaryDetailPage() {
   const [shareEmail, setShareEmail] = useState('')
   const [permission, setPermission] = useState('Can View')
   const [sharedUsers, setSharedUsers] = useState([
-    { email: 'Sarah Jenkins', permission: 'Can View' },
-    { email: 'Alex Chen', permission: 'Can Edit' },
+    { id: 'sarah', name: 'Sarah Jenkins', permission: 'Can View' },
+    { id: 'alex', name: 'Alex Chen', permission: 'Can Edit' },
   ])
+  const [openPermissionUserId, setOpenPermissionUserId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
   // Delete Document Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+
+  const togglePermissionDropdown = (userId: string) => {
+    setOpenPermissionUserId(openPermissionUserId === userId ? null : userId)
+  }
+
+  const updateUserPermission = (userId: string, newPermission: string) => {
+    setSharedUsers(
+      sharedUsers.map((user) =>
+        user.id === userId ? { ...user, permission: newPermission } : user
+      )
+    )
+    setOpenPermissionUserId(null)
+  }
+
+  const closePermissionDropdown = () => {
+    setOpenPermissionUserId(null)
+  }
 
   const handleDownloadPDF = () => {
     const fileName = 'Advanced-Neuroscience-Syllabus-2024.pdf'
@@ -68,8 +88,10 @@ export function SummaryDetailPage() {
       return
     }
 
+    const emailStr = shareEmail.trim()
     const newSharedUser = {
-      email: shareEmail.trim(),
+      id: emailStr.toLowerCase(),
+      name: emailStr,
       permission: permission,
     }
     setSharedUsers([...sharedUsers, newSharedUser])
@@ -174,7 +196,10 @@ export function SummaryDetailPage() {
 
       <ShareAccessModal
         isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
+        onClose={() => {
+          setIsShareModalOpen(false)
+          closePermissionDropdown()
+        }}
         email={shareEmail}
         setEmail={setShareEmail}
         permission={permission}
@@ -184,6 +209,10 @@ export function SummaryDetailPage() {
         onCopyLink={handleCopyLink}
         errorMessage={errorMessage}
         successMessage={successMessage}
+        openPermissionUserId={openPermissionUserId}
+        togglePermissionDropdown={togglePermissionDropdown}
+        updateUserPermission={updateUserPermission}
+        closePermissionDropdown={closePermissionDropdown}
       />
 
       <DeleteConfirmModal
@@ -475,11 +504,15 @@ interface ShareAccessModalProps {
   setEmail: (val: string) => void
   permission: string
   setPermission: (val: string) => void
-  sharedUsers: Array<{ email: string; permission: string }>
+  sharedUsers: Array<{ id: string; name: string; permission: string }>
   onShare: () => void
   onCopyLink: () => void
   errorMessage?: string
   successMessage?: string
+  openPermissionUserId: string | null
+  togglePermissionDropdown: (userId: string) => void
+  updateUserPermission: (userId: string, permission: string) => void
+  closePermissionDropdown: () => void
 }
 
 function ShareAccessModal({
@@ -494,7 +527,35 @@ function ShareAccessModal({
   onCopyLink,
   errorMessage,
   successMessage,
+  openPermissionUserId,
+  togglePermissionDropdown,
+  updateUserPermission,
+  closePermissionDropdown,
 }: ShareAccessModalProps) {
+  useEffect(() => {
+    if (!openPermissionUserId) return
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('.permission-badge-btn') && !target.closest('.permission-dropdown-container')) {
+        closePermissionDropdown()
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [openPermissionUserId, closePermissionDropdown])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closePermissionDropdown()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [closePermissionDropdown])
+
   if (!isOpen) return null
 
   return (
@@ -582,15 +643,48 @@ function ShareAccessModal({
           <h4 className="text-xs font-bold text-[#737686] uppercase tracking-wider mb-3">
             Shared Users
           </h4>
-          <div className="max-h-[120px] overflow-y-auto space-y-2.5 pr-1 border border-[rgba(195,198,215,0.2)] rounded-xl p-3 bg-slate-50">
-            {sharedUsers.map((user, idx) => (
-              <div key={idx} className="flex justify-between items-center text-xs">
-                <span className="font-semibold text-[#0b1c30] truncate max-w-[240px]">
-                  {user.email}
+          <div className={cn(
+            "max-h-[160px] pr-1 border border-[rgba(195,198,215,0.2)] rounded-xl p-3 bg-slate-50 space-y-2.5",
+            openPermissionUserId ? "overflow-visible" : "overflow-y-auto"
+          )}>
+            {sharedUsers.map((user) => (
+              <div key={user.id} className="flex justify-between items-center text-xs relative">
+                <span className="font-semibold text-[#0b1c30] truncate max-w-[200px]">
+                  {user.name}
                 </span>
-                <span className="text-[#3155F6] font-bold bg-[#E8EEFF] px-2.5 py-1 rounded-full text-[10px] uppercase">
-                  {user.permission}
-                </span>
+                
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => togglePermissionDropdown(user.id)}
+                    className="permission-badge-btn text-[#3155F6] font-bold bg-[#E8EEFF] hover:bg-[#D4E5FF] px-2.5 py-1 rounded-full text-[10px] uppercase transition-all duration-150 cursor-pointer focus-visible:outline-none flex items-center gap-1.5"
+                  >
+                    <span>{user.permission}</span>
+                    <ChevronDown className="w-3 h-3 text-[#3155F6]" />
+                  </button>
+
+                  {/* Permission Dropdown */}
+                  {openPermissionUserId === user.id && (
+                    <div className="permission-dropdown-container absolute right-0 mt-1.5 w-[140px] bg-white border border-[rgba(195,198,215,0.4)] rounded-xl shadow-xl z-[9999] py-1.5 animate-in fade-in zoom-in-95 duration-150">
+                      {(['Can View', 'Can Comment', 'Can Edit'] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => updateUserPermission(user.id, opt)}
+                          className={cn(
+                            "w-full text-left px-3 py-2 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer focus-visible:outline-none",
+                            user.permission === opt
+                              ? "bg-[#E8EEFF]/60 text-[#3155F6]"
+                              : "text-[#434655] hover:bg-slate-50 hover:text-[#0b1c30]"
+                          )}
+                        >
+                          <span>{opt}</span>
+                          {user.permission === opt && <Check className="w-3.5 h-3.5 text-[#3155F6]" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
