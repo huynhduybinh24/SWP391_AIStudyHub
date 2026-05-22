@@ -10,6 +10,7 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Check,
   Loader2,
   X,
@@ -300,30 +301,33 @@ export function FilePreviewPage() {
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Avatar src="/avatar.svg" name="Me" className="size-8" />
+                <Avatar src="/avatar.svg" name="Me" className="size-10" />
                 <div>
-                  <p className="text-sm font-semibold text-foreground">You</p>
-                  <p className="text-[11px] text-muted">alex.rivera@example.com</p>
+                  <p className="text-[15px] font-bold text-slate-900">You</p>
+                  <p className="text-sm text-slate-500">alex.rivera@example.com</p>
                 </div>
               </div>
-              <span className="text-sm text-muted">Owner</span>
+              <span className="text-sm font-medium text-slate-500 pr-2">Owner</span>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="size-8 rounded-full bg-blue-100 text-[#3155F6] flex items-center justify-center text-xs font-bold">
+                <div className="size-10 rounded-full bg-[#eff6ff] text-[#3155F6] flex items-center justify-center text-sm font-bold shadow-sm border border-[#dbeafe]">
                   SG
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Study Group Alpha</p>
-                  <p className="text-[11px] text-muted">3 members</p>
+                  <p className="text-[15px] font-bold text-slate-900">Study Group Alpha</p>
+                  <p className="text-sm text-slate-500">3 members</p>
                 </div>
               </div>
-              <Select className="w-[100px] h-8 text-xs py-0">
-                <option>Viewer</option>
-                <option>Editor</option>
-                <option>Remove</option>
-              </Select>
+              <div className="relative group">
+                <select className="appearance-none w-24 h-[34px] pl-3 pr-8 bg-[#f8fafc] hover:bg-slate-100 border border-slate-200 text-slate-700 text-[13px] font-medium rounded-lg focus:outline-none focus:border-[#3155F6] focus:ring-1 focus:ring-[#3155F6] cursor-pointer transition-colors">
+                  <option>Viewer</option>
+                  <option selected>Editor</option>
+                  <option>Remove</option>
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-slate-500 pointer-events-none group-hover:text-slate-700 transition-colors" />
+              </div>
             </div>
           </div>
         </div>
