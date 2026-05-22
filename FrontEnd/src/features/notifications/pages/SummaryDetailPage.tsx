@@ -14,11 +14,30 @@ import {
   ThumbsDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ui/Toast'
 
 export function SummaryDetailPage() {
   const navigate = useNavigate()
+  const toast = useToast()
   const [liked, setLiked] = useState(false)
   const [disliked, setDisliked] = useState(false)
+
+  const handleDownloadPDF = () => {
+    const fileName = 'Advanced-Neuroscience-Syllabus-2024.pdf'
+    // Create a mock PDF content Blob
+    const mockPdfContent = '%PDF-1.4\n%...\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n...'
+    const blob = new Blob([mockPdfContent], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    toast.success('PDF downloaded successfully.')
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -61,7 +80,11 @@ export function SummaryDetailPage() {
       {/* Right Column: Document Info Panel */}
       <div className="w-full lg:w-[320px] shrink-0 border-l border-[rgba(195,198,215,0.3)] pl-0 lg:pl-8 pt-6 lg:pt-0">
         <DocumentInfoPanel />
-        <QuickActions />
+        <QuickActions
+          onDownload={handleDownloadPDF}
+          onShare={() => {}}
+          onDelete={() => {}}
+        />
         <FeedbackCard
           liked={liked}
           disliked={disliked}
@@ -239,7 +262,13 @@ function DocumentInfoPanel() {
   )
 }
 
-function QuickActions() {
+interface QuickActionsProps {
+  onDownload: () => void
+  onShare: () => void
+  onDelete: () => void
+}
+
+function QuickActions({ onDownload, onShare, onDelete }: QuickActionsProps) {
   return (
     <div className="mb-6 pt-4 border-t border-[rgba(195,198,215,0.3)]">
       <h3 className="text-xs font-bold uppercase tracking-wider text-[#737686] mb-4">
@@ -248,6 +277,7 @@ function QuickActions() {
       <div className="space-y-3">
         <button
           type="button"
+          onClick={onDownload}
           className="w-full flex items-center justify-center gap-2 bg-[#3155F6] hover:bg-[#2563eb] text-white py-3 px-4 rounded-xl text-sm font-semibold transition-colors cursor-pointer shadow-sm focus-visible:outline-none"
         >
           <Download className="w-4 h-4" />
@@ -256,6 +286,7 @@ function QuickActions() {
 
         <button
           type="button"
+          onClick={onShare}
           className="w-full flex items-center justify-center gap-2 bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] py-3 px-4 rounded-xl text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-none"
         >
           <Share2 className="w-4 h-4" />
@@ -264,6 +295,7 @@ function QuickActions() {
 
         <button
           type="button"
+          onClick={onDelete}
           className="w-full flex items-center justify-center gap-2 bg-white border border-[rgba(195,198,215,0.5)] hover:bg-red-50 hover:border-red-200 text-[#EF4444] py-3 px-4 rounded-xl text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-none"
         >
           <Trash2 className="w-4 h-4 text-[#EF4444]" />
