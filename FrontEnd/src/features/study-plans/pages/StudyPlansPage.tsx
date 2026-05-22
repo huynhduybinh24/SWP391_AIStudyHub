@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Clock,
   MoreVertical,
@@ -639,8 +640,19 @@ export function StudyPlansPage() {
   const [learningPlan, setLearningPlan] = useState<LearningProgressPlan | null>(null)
   const [curriculumPlan, setCurriculumPlan] = useState<CurriculumPlan | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<StudyPlan | null>(null)
+  
+  const [searchParams] = useSearchParams()
+  const keyword = searchParams.get('keyword') || ''
 
   const filteredPlans = plans.filter((plan) => {
+    // Search filter
+    if (keyword) {
+      const q = keyword.toLowerCase()
+      const match = plan.title.toLowerCase().includes(q) || plan.description.toLowerCase().includes(q)
+      if (!match) return false
+    }
+
+    // Tab filter
     if (activeTab === 'All') return true
     if (activeTab === 'AI Generated') return plan.isAiGenerated
     return plan.status === activeTab
