@@ -50,7 +50,7 @@ function SidebarLink({
 }
 
 export function Sidebar() {
-  const { pathname } = useLocation()
+
 
   return (
     <aside className="flex h-screen w-[256px] shrink-0 flex-col justify-between border-r border-[#EAECF0] bg-white py-6 px-4 sticky top-0 left-0 z-30 select-none">

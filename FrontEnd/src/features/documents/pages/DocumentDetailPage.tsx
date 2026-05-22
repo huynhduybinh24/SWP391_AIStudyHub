@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate, useOutletContext, Link } from 'react-router-dom'
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
 import {
   ZoomIn,
   ZoomOut,
@@ -14,13 +14,7 @@ import {
   Download,
   Share2,
   GraduationCap,
-  Clock,
   ArrowLeft,
-  AlertCircle,
-  FileText,
-  CheckCircle,
-  BrainCircuit,
-  MessageSquare,
   Sparkle
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'

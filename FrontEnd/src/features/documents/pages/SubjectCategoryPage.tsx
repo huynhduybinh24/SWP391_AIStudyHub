@@ -10,17 +10,8 @@ import {
   ExternalLink,
   Download,
   Trash2,
-  CloudUpload,
   SlidersHorizontal,
-  ArrowLeft,
-  Sparkles,
-  CheckCircle2,
-  BookOpen,
-  FileText,
-  Bot,
-  TrendingUp,
-  Award,
-  BrainCircuit
+  Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -72,7 +63,6 @@ export default function SubjectCategoryPage() {
 
   const {
     documents,
-    openUploadModal,
     openChatDrawer,
     openPreviewModal,
     openQuizModal,

@@ -12,7 +12,6 @@ import {
   FileCode,
   Folder
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 
 interface DocumentItem {

@@ -26,7 +26,7 @@ interface DocumentItem {
 interface DocumentsLayoutContext {
   documents: DocumentItem[]
   handleOpenPreview: (doc: DocumentItem) => void
-  renderFileIcon: (type: string) => JSX.Element
+  renderFileIcon: (type: string) => React.ReactNode
   showToast: (msg: string) => void
 }
 
@@ -131,7 +131,7 @@ const PresentationsIcon = () => (
 export function SearchResultsPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { documents, handleOpenPreview, showToast } = useOutletContext<DocumentsLayoutContext>()
+  const { documents, showToast } = useOutletContext<DocumentsLayoutContext>()
   const keyword = searchParams.get('keyword') || ''
 
   // Filter local states

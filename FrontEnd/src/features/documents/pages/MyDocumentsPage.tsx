@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import {
   Search,
-  ChevronDown,
   Grid,
   List,
   MoreVertical,
@@ -51,7 +50,6 @@ export default function MyDocumentsPage() {
     documents,
     openUploadModal,
     openChatDrawer,
-    openPreviewModal,
     handleDownloadFile,
     handleDeleteDocument,
     renderFileIcon,
