@@ -91,7 +91,7 @@ export function FilePreviewPage() {
           <div className="flex gap-3">
             <Button 
               onClick={handleShare}
-              variant="outline" 
+              variant="secondary" 
               className={`gap-2 h-10 px-4 transition-colors ${
                 isShared 
                   ? 'text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-50 hover:text-emerald-700' 
