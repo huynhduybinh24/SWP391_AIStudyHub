@@ -1022,23 +1022,17 @@ export function DocumentsPage() {
             setShowQuizResults(false)
             setIsQuizModalOpen(true)
           },
-          
-          // DocumentsLayoutContext (for MyDocumentsPage)
-          searchQuery,
-          setSearchQuery,
-          subjectFilter,
-          setSubjectFilter,
-          typeFilter,
-          setTypeFilter,
-          viewMode,
-          setViewMode,
+
+          // Utilities passed down to child pages
+          showToast,
+          handleDownloadFile,
+          handleDeleteDocument,
+          renderFileIcon,
+          renderStatusBadge,
+
           setIsUploadModalOpen,
           setIsInsightsModalOpen,
           handleOpenChat,
-          handleOpenPreview,
-          activeMenuId,
-          setActiveMenuId,
-          menuRef
         }}
       />
 
