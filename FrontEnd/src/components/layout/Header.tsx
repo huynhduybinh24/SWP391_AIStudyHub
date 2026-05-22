@@ -15,6 +15,29 @@ import { ConfirmLogoutModal } from '@/components/layout/ConfirmLogoutModal'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 
+// ─── Search Constants ────────────────────────────────────────────────────────
+interface SearchSuggestion {
+  id: string
+  title: string
+  category: string
+}
+
+const SEARCH_SUGGESTION_TOPICS: SearchSuggestion[] = [
+  { id: '1', title: 'React 19 Hooks and Context Guide', category: 'Documentation' },
+  { id: '2', title: 'TypeScript Strict Mode Best Practices', category: 'Programming' },
+  { id: '3', title: 'CS101 Computer Architecture Chapter 4', category: 'Syllabus' },
+  { id: '4', title: 'AI Chatbot Integration Architecture', category: 'Design Pattern' },
+  { id: '5', title: 'Tailwind CSS V4 Utility Classes', category: 'Styling' },
+  { id: '6', title: 'Data Structures and Algorithms Summary', category: 'Study Guide' },
+]
+
+const TRENDING_TOPICS: string[] = [
+  'AI Quiz Generator',
+  'Midterm Exam Study Plan',
+  'CS101 Networking Notes',
+  'Flashcards Quick Review',
+]
+
 // ─── Header ───────────────────────────────────────────────────────────────────
 export function Header() {
   const navigate = useNavigate()
@@ -22,6 +45,45 @@ export function Header() {
   const [searchParams] = useSearchParams()
   const urlKeyword = searchParams.get('keyword') || ''
   const [searchVal, setSearchVal] = useState(urlKeyword)
+
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [history, setHistory] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('search_history')
+      return saved ? JSON.parse(saved) : ['React', 'TypeScript', 'Tailwind', 'AI Summary']
+    } catch (err) {
+      return ['React', 'TypeScript', 'Tailwind', 'AI Summary']
+    }
+  })
+
+  const saveSearchToHistory = (term: string) => {
+    const cleanTerm = term.trim()
+    if (!cleanTerm) return
+    setHistory((prev) => {
+      const filtered = prev.filter((item) => item.toLowerCase() !== cleanTerm.toLowerCase())
+      const newHistory = [cleanTerm, ...filtered].slice(0, 5)
+      try {
+        localStorage.setItem('search_history', JSON.stringify(newHistory))
+      } catch (err) {
+        console.error('Failed to save search history:', err)
+      }
+      return newHistory
+    })
+  }
+
+  const deleteHistoryItem = (e: React.MouseEvent, term: string) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setHistory((prev) => {
+      const newHistory = prev.filter((item) => item !== term)
+      try {
+        localStorage.setItem('search_history', JSON.stringify(newHistory))
+      } catch (err) {
+        console.error('Failed to delete search history item:', err)
+      }
+      return newHistory
+    })
+  }
 
   const { pathname } = useLocation()
   const { userMenuOpen, setUserMenuOpen, toggleUserMenu, setSidebarOpen } = useUiStore()
