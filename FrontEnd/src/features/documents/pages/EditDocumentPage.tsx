@@ -177,12 +177,12 @@ export default function EditDocumentPage() {
       setAiDrawerChatLog([
         {
           sender: 'ai',
-          text: `Chào bạn! Tôi là Trợ lý học tập AI. Tôi đã sẵn sàng phân tích tài liệu **${title}** này. 
+          text: `Chào bạn! Tôi là Trợ lý học tập AI. Tôi đã sẵn sàng phân tích tài liệu ${title} này. 
 
 Bạn muốn tôi làm gì?
-- **Tự động điền mô tả & tag** chuẩn hóa
-- **Trích xuất các ý chính** học thuật
-- **Tạo câu hỏi trắc nghiệm ôn tập**`,
+- Tự động điền mô tả & tag chuẩn hóa
+- Trích xuất các ý chính học thuật
+- Tạo câu hỏi trắc nghiệm ôn tập`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ])
@@ -360,12 +360,12 @@ Bạn muốn tôi làm gì?
       
       const generatedMsg = {
         sender: 'ai' as const,
-        text: `✨ **Tôi đã phân tích thành công và đề xuất thông tin chuẩn hóa cho tài liệu này!**
+        text: `✨ Tôi đã phân tích thành công và đề xuất thông tin chuẩn hóa cho tài liệu này!
 
-📝 **Mô tả đề xuất:**
+📝 Mô tả đề xuất:
 *"${aiDesc}"*
 
-🏷️ **Các thẻ tag đề xuất:**
+🏷️ Các thẻ tag đề xuất:
 ${aiTags.map(t => `• \`#${t}\``).join('\n')}
 
 Bạn có muốn áp dụng trực tiếp các thông tin này vào form chỉnh sửa tài liệu hiện tại không?`,
@@ -511,25 +511,25 @@ Bạn có muốn áp dụng trực tiếp các thông tin này vào form chỉnh
       const lower = prompt.toLowerCase()
 
       if (lower.includes('summary') || lower.includes('tóm tắt') || lower.includes('overview') || lower.includes('khái quát')) {
-        responseText = `Tài liệu **${title}** là nguồn tài liệu hữu ích cho môn **${selectedSubjectLabel}**. 
+        responseText = `Tài liệu ${title} là nguồn tài liệu hữu ích cho môn ${selectedSubjectLabel}. 
 
 Dưới đây là tóm tắt nhanh từ trợ lý AI:
-- **Trọng tâm chính**: Tổng hợp các kiến thức cốt lõi, bài tập thực tế và bộ câu hỏi trắc nghiệm nâng cao.
-- **Ý chính trích xuất**: Bạn có thể xem danh sách ý chính đầy đủ trong tab **Ý chính** để có cái nhìn toàn diện hơn.
-- **Lời khuyên**: Hãy thực hành bộ câu hỏi ôn thi trong tab **Practice Quiz** để tự đánh giá năng lực của mình.`
+- Trọng tâm chính: Tổng hợp các kiến thức cốt lõi, bài tập thực tế và bộ câu hỏi trắc nghiệm nâng cao.
+- Ý chính trích xuất: Bạn có thể xem danh sách ý chính đầy đủ trong tab Ý chính để có cái nhìn toàn diện hơn.
+- Lời khuyên: Hãy thực hành bộ câu hỏi ôn thi trong tab Practice Quiz để tự đánh giá năng lực của mình.`
       } else if (lower.includes('quiz') || lower.includes('câu hỏi') || lower.includes('thi') || lower.includes('ôn tập')) {
-        responseText = `Tôi đã thiết lập sẵn một bộ câu hỏi ôn tập trắc nghiệm tiêu chuẩn hóa dựa trên tài liệu **${title}** môn **${selectedSubjectLabel}** của bạn. 
+        responseText = `Tôi đã thiết lập sẵn một bộ câu hỏi ôn tập trắc nghiệm tiêu chuẩn hóa dựa trên tài liệu ${title} môn ${selectedSubjectLabel} của bạn. 
 
-Bạn hãy chuyển sang tab **Practice Quiz** phía trên để làm bài thi thử trực quan, nhận phản hồi đáp án đúng/sai ngay lập tức nhé!`
+Bạn hãy chuyển sang tab Practice Quiz phía trên để làm bài thi thử trực quan, nhận phản hồi đáp án đúng/sai ngay lập tức nhé!`
       } else if (lower.includes('tag') || lower.includes('mô tả') || lower.includes('auto-generate') || lower.includes('điền')) {
-        responseText = `Để tự động cập nhật tag và viết mô tả tóm tắt cho tài liệu này, bạn hãy click vào nút **"Tự động điền Mô tả & Tags"** ở danh sách Quick Actions phía trên của tab Chat này. Tôi sẽ phân tích tiêu đề và đề xuất nội dung chuẩn chỉ nhất cho bạn!`
+        responseText = `Để tự động cập nhật tag và viết mô tả tóm tắt cho tài liệu này, bạn hãy click vào nút "Tự động điền Mô tả & Tags" ở danh sách Quick Actions phía trên của tab Chat này. Tôi sẽ phân tích tiêu đề và đề xuất nội dung chuẩn chỉ nhất cho bạn!`
       } else {
-        responseText = `Cảm ơn bạn đã trò chuyện! Tài liệu **${title}** của bạn chứa các kiến thức quan trọng của môn **${selectedSubjectLabel}**. 
+        responseText = `Cảm ơn bạn đã trò chuyện! Tài liệu ${title} của bạn chứa các kiến thức quan trọng của môn ${selectedSubjectLabel}. 
 
 Tôi có thể giúp gì cho bạn?
-- **Tự động điền Mô tả & Tags** để cập nhật nhanh form chỉnh sửa.
-- Xem danh sách **Ý chính** để trích xuất cấu trúc bài học.
-- Làm **Practice Quiz** để luyện đề ôn thi.`
+- Tự động điền Mô tả & Tags để cập nhật nhanh form chỉnh sửa.
+- Xem danh sách Ý chính để trích xuất cấu trúc bài học.
+- Làm Practice Quiz để luyện đề ôn thi.`
       }
 
       let charIdx = 0
