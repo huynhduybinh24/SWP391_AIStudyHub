@@ -416,6 +416,13 @@ export default function DocumentDetailPage() {
   const [isNewRoleDropdownOpen, setIsNewRoleDropdownOpen] = useState<boolean>(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  // Timer reference stores to handle async lifecycle events safely
+  const typingIntervalRef = useRef<any>(null)
+  const aiTimeoutRef = useRef<any>(null)
+  const scanIntervalRef = useRef<any>(null)
+  const scanTimeoutRef = useRef<any>(null)
+  const printTimeoutRef = useRef<any>(null)
+
   // Escape key handler to close the modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -430,6 +437,58 @@ export default function DocumentDetailPage() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  // Cleanup all active timers on component unmount to prevent state mutations on unmounted components
+  useEffect(() => {
+    return () => {
+      if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current)
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
+      if (scanIntervalRef.current) clearInterval(scanIntervalRef.current)
+      if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current)
+      if (printTimeoutRef.current) clearTimeout(printTimeoutRef.current)
+    }
+  }, [])
+
+  // Safely reset active AI chat state and clear active timers when switching documents
+  useEffect(() => {
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current)
+      aiTimeoutRef.current = null
+    }
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current)
+      typingIntervalRef.current = null
+    }
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current)
+      scanIntervalRef.current = null
+    }
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current)
+      scanTimeoutRef.current = null
+    }
+    if (printTimeoutRef.current) {
+      clearTimeout(printTimeoutRef.current)
+      printTimeoutRef.current = null
+    }
+
+    setAiTypingText('')
+    setIsAiResponding(false)
+    setChatInput('')
+    setIsScanning(false)
+    setScanProgress(0)
+    setScanStep('')
+    setCurrentPage(1)
+    setPageInputStr('1')
+
+    setChatLog([
+      {
+        sender: 'ai',
+        text: `Chào bạn! Tôi là Trợ lý học tập AI. Bạn cần tôi phân tích hay giải đáp câu hỏi nào về tài liệu ${activeDoc?.title || mockDetails.courseTitle} này không?`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ])
+  }, [documentId])
 
   // Click outside to close custom role dropdowns
   useEffect(() => {
@@ -458,9 +517,13 @@ export default function DocumentDetailPage() {
 
   const chatEndRef = useRef<HTMLDivElement>(null)
 
-  // Scroll chat to bottom when messages update
+  // Scroll chat to bottom when messages update with error boundary layout guard
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    try {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    } catch (error) {
+      console.warn('Chat scrollIntoView failed silently:', error)
+    }
   }, [chatLog, aiTypingText])
 
   // Zoom handlers
@@ -554,13 +617,15 @@ export default function DocumentDetailPage() {
       return
     }
     showToast('Preparing document layout structure for printing...')
-    setTimeout(() => {
+    if (printTimeoutRef.current) clearTimeout(printTimeoutRef.current)
+    printTimeoutRef.current = setTimeout(() => {
       window.print()
     }, 800)
   }
 
-  // Click prompt chip trigger
+  // Click prompt chip trigger with debounce guard
   const handleChipClick = (prompt: string) => {
+    if (isAiResponding || isScanning) return
     setChatInput(prompt)
     triggerAiResponse(prompt)
   }
@@ -568,7 +633,7 @@ export default function DocumentDetailPage() {
   // Submit search / chat message
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    if (!chatInput.trim() || isAiResponding) return
+    if (!chatInput.trim() || isAiResponding || isScanning) return
     const prompt = chatInput.trim()
     setChatInput('')
     triggerAiResponse(prompt)
@@ -585,8 +650,12 @@ export default function DocumentDetailPage() {
     setChatLog(prev => [...prev, userMsg])
     setIsAiResponding(true)
 
+    // Reset any previous typing/simulating intervals to prevent overlap race conditions
+    if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current)
+    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
+
     // Simulating deep semantic response based on prompt matching
-    setTimeout(() => {
+    aiTimeoutRef.current = setTimeout(() => {
       let fullResponse = ''
       const lower = prompt.toLowerCase()
 
@@ -595,19 +664,23 @@ export default function DocumentDetailPage() {
       } else if (lower.includes('summary') || lower.includes('tóm tắt') || lower.includes('overview')) {
         fullResponse = `Dưới đây là tóm tắt nhanh AI phục vụ ôn tập:\n\n• Chủ đề chính: ${mockDetails.courseTitle} (${mockDetails.courseCode})\n• Nội dung cốt lõi: Phân tích sâu các khái niệm quan trọng, hệ thống hóa mục tiêu thực nghiệm thực tiễn và liên kết liên môn.\n• Ứng dụng ôn tập: Phù hợp cho việc ôn tập chuẩn bị thi học kỳ nhờ cấu trúc mục tiêu rõ ràng và sơ đồ hệ thống hóa tối ưu.`
       } else {
-        fullResponse = `Cảm ơn bạn đã hỏi về nội dung tài liệu ${activeDoc?.title || mockDetails.courseTitle}.\n\nHệ thống AI của AI Study Hub nhận định đây là phần kiến thức quan trọng nằm trong chương trình học ${mockDetails.courseCode}. Bạn nên tập trung ôn tập 3 mục tiêu cốt lõi sau:\n\n1. ${mockDetails.objectives[0]}\n2. ${mockDetails.objectives[1]}\n3. ${mockDetails.objectives[2]}\n\nNếu bạn muốn tôi tạo một bộ quiz nhanh hoặc giải thích chi tiết hơn về bất kỳ ý nào trên đây, hãy yêu cầu ngay nhé!`
+        const obj0 = mockDetails.objectives?.[0] || 'Hiểu các khái niệm cốt lõi.'
+        const obj1 = mockDetails.objectives?.[1] || 'Phân tích các bài tập thực tiễn.'
+        const obj2 = mockDetails.objectives?.[2] || 'Vận dụng lý thuyết vào thực hành.'
+        fullResponse = `Cảm ơn bạn đã hỏi về nội dung tài liệu ${activeDoc?.title || mockDetails.courseTitle}.\n\nHệ thống AI của AI Study Hub nhận định đây là phần kiến thức quan trọng nằm trong chương trình học ${mockDetails.courseCode}. Bạn nên tập trung ôn tập 3 mục tiêu cốt lõi sau:\n\n1. ${obj0}\n2. ${obj1}\n3. ${obj2}\n\nNếu bạn muốn tôi tạo một bộ quiz nhanh hoặc giải thích chi tiết hơn về bất kỳ ý nào trên đây, hãy yêu cầu ngay nhé!`
       }
 
       // Typing effect loop
       let index = 0
       setAiTypingText('')
       
-      const interval = setInterval(() => {
+      typingIntervalRef.current = setInterval(() => {
         if (index < fullResponse.length) {
           setAiTypingText(fullResponse.substring(0, index + 1))
           index++
         } else {
-          clearInterval(interval)
+          if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
+          typingIntervalRef.current = null
           setChatLog(prev => [...prev, {
             sender: 'ai',
             text: fullResponse,
@@ -620,7 +693,7 @@ export default function DocumentDetailPage() {
     }, 1200)
   }
 
-  // Deep AI Analysis scan simulator
+  // Deep AI Analysis scan simulator with unmount and route-switch guards
   const handleDeepAnalysis = () => {
     if (isScanning) return
     setIsScanning(true)
@@ -634,15 +707,20 @@ export default function DocumentDetailPage() {
       { p: 100, msg: 'Deep scan completed. AI Brain Knowledge base synced!' }
     ]
 
+    // Clear previous scan timers if any are running
+    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current)
+    if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current)
+
     let stepIndex = 0
-    const scanTimer = setInterval(() => {
+    scanIntervalRef.current = setInterval(() => {
       if (stepIndex < intervals.length) {
         setScanProgress(intervals[stepIndex].p)
         setScanStep(intervals[stepIndex].msg)
         stepIndex++
       } else {
-        clearInterval(scanTimer)
-        setTimeout(() => {
+        if (scanIntervalRef.current) clearInterval(scanIntervalRef.current)
+        scanIntervalRef.current = null
+        scanTimeoutRef.current = setTimeout(() => {
           setIsScanning(false)
           showToast('⚡ Deep AI Document Analysis completed successfully! AI Assistant is fully synchronized.')
           
@@ -1010,7 +1088,8 @@ export default function DocumentDetailPage() {
               <div className="space-y-2">
                 <button
                   onClick={() => handleChipClick('Explain the functional connectivity map and network hubs in this syllabus.')}
-                  className="w-full text-left bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/40 p-3.5 rounded-2xl text-xs font-medium text-slate-600 hover:text-blue-700 transition-all duration-200 shadow-sm leading-normal flex items-start gap-2.5"
+                  disabled={isAiResponding || isScanning}
+                  className="w-full text-left bg-slate-50 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/40 p-3.5 rounded-2xl text-xs font-medium text-slate-600 hover:text-blue-700 transition-all duration-200 shadow-sm leading-normal flex items-start gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-slate-50 disabled:hover:border-slate-100 disabled:hover:text-slate-600"
                 >
                   <Sparkles className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
                   <span>Explain the connectivity map...</span>
