@@ -74,7 +74,13 @@ export function ShareModal({
       if (openDropdownId) {
         if (openDropdownId === 'invite' && inviteDropdownRef.current && !inviteDropdownRef.current.contains(target)) {
           setOpenDropdownId(null)
-        } else if (openDropdownId !== 'invite') {
+        } else if (openDropdownId === 'general') {
+          const container = document.getElementById('general-dropdown-container')
+          const trigger = document.getElementById('general-dropdown-trigger')
+          if (container && !container.contains(target) && trigger && !trigger.contains(target)) {
+            setOpenDropdownId(null)
+          }
+        } else {
           // If clicking outside the active user's dropdown container
           const container = document.getElementById(`dropdown-container-${openDropdownId}`)
           const trigger = document.getElementById(`dropdown-trigger-${openDropdownId}`)
@@ -149,6 +155,33 @@ export function ShareModal({
       if (onPermissionChange) onPermissionChange(userId, newPerm)
     }
     setOpenDropdownId(null)
+  }
+
+  const handleCopyLink = () => {
+    setErrorMessage('')
+    setSuccessMessage('')
+    
+    const finalUrl = shareUrl || window.location.href
+    
+    navigator.clipboard.writeText(finalUrl)
+      .then(() => {
+        setSuccessMessage('Đã sao chép đường liên kết.')
+        setTimeout(() => setSuccessMessage(''), 3000)
+      })
+      .catch(() => {
+        const textArea = document.createElement('textarea')
+        textArea.value = finalUrl
+        document.body.appendChild(textArea)
+        textArea.select()
+        try {
+          document.execCommand('copy')
+          setSuccessMessage('Đã sao chép đường liên kết.')
+          setTimeout(() => setSuccessMessage(''), 3000)
+        } catch (err) {
+          setErrorMessage('Không thể sao chép liên kết.')
+        }
+        document.body.removeChild(textArea)
+      })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -286,7 +319,7 @@ export function ShareModal({
           <h3 className="text-xs font-bold text-slate-400 tracking-wider mb-4 uppercase">
             Người có quyền truy cập
           </h3>
-          <div className="space-y-4 max-h-[220px] overflow-y-auto pr-1">
+          <div className="space-y-4 max-h-[180px] overflow-y-auto pr-1">
             {sharedUsers.map((user) => {
               const isOwner = user.permission === 'Chủ sở hữu'
               return (
@@ -363,13 +396,117 @@ export function ShareModal({
           </div>
         </div>
 
-        {/* Content Placeholder */}
-        <div className="min-h-[50px] flex items-center justify-center text-sm text-[#737686]">
-          Quyền truy cập chung...
+        {/* Section 2: General Access */}
+        <div className="border-t border-slate-100 pt-6 mb-8">
+          <h3 className="text-xs font-bold text-slate-400 tracking-wider mb-4 uppercase">
+            Quyền truy cập chung
+          </h3>
+          <GeneralAccessControl openDropdownId={openDropdownId} setOpenDropdownId={setOpenDropdownId} />
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="inline-flex items-center gap-2 bg-white hover:bg-[#F4F7FE] border border-slate-200 text-[#3155F6] px-5 py-3 rounded-full text-sm font-bold transition-all shadow-sm cursor-pointer"
+          >
+            <Copy className="w-4 h-4" />
+            <span>Sao chép đường liên kết</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-8 py-3 rounded-full text-sm font-bold transition-all shadow-md cursor-pointer hover:shadow-lg"
+          >
+            Xong
+          </button>
         </div>
       </div>
     </div>
   )
 }
+
+/* Sub-component for General Access to keep file organized */
+interface GeneralAccessControlProps {
+  openDropdownId: string | null
+  setOpenDropdownId: (val: string | null) => void
+}
+
+function GeneralAccessControl({ openDropdownId, setOpenDropdownId }: GeneralAccessControlProps) {
+  const [generalAccess, setGeneralAccess] = useState<'restricted' | 'anyone'>('restricted')
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openDropdownId === 'general' && dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdownId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [openDropdownId, setOpenDropdownId])
+
+  const isRestricted = generalAccess === 'restricted'
+
+  return (
+    <div className="flex items-start gap-4">
+      {/* Icon Circle */}
+      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-600">
+        {isRestricted ? <Lock className="w-5 h-5" /> : <Globe className="w-5 h-5 text-emerald-600" />}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 relative z-40" ref={dropdownRef}>
+          <button
+            type="button"
+            id="general-dropdown-trigger"
+            onClick={() => setOpenDropdownId(openDropdownId === 'general' ? null : 'general')}
+            className="inline-flex items-center gap-1 font-bold text-slate-800 text-sm hover:bg-slate-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+          >
+            <span>{isRestricted ? 'Bị hạn chế' : 'Bất kỳ ai có đường liên kết'}</span>
+            <ChevronDown className="w-4 h-4 text-slate-500" />
+          </button>
+
+          {openDropdownId === 'general' && (
+            <div
+              id="general-dropdown-container"
+              className="absolute left-2 top-full mt-1 w-[240px] bg-white border border-slate-100 rounded-[12px] shadow-lg py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+            >
+              {[
+                { value: 'restricted', label: 'Bị hạn chế' },
+                { value: 'anyone', label: 'Bất kỳ ai có đường liên kết' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    setGeneralAccess(opt.value as 'restricted' | 'anyone')
+                    setOpenDropdownId(null)
+                  }}
+                  className={cn(
+                    "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between font-semibold",
+                    generalAccess === opt.value
+                      ? "bg-[#E8EEFF]/60 text-[#3155F6]"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  )}
+                >
+                  <span>{opt.label}</span>
+                  {generalAccess === opt.value && <Check className="w-4 h-4 text-[#3155F6]" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        <p className="text-xs text-slate-500 mt-1 leading-normal font-normal">
+          {isRestricted
+            ? 'Chỉ những người được thêm mới có thể mở bằng đường liên kết này'
+            : 'Bất kỳ ai trên Internet có đường liên kết đều có thể xem'}
+        </p>
+      </div>
+    </div>
+  )
 }
 
