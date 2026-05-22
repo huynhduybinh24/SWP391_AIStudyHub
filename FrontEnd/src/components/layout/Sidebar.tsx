@@ -94,7 +94,7 @@ export function Sidebar() {
         >
           <Zap className="size-4 text-white" strokeWidth={2} />
           Upgrade to Pro
-        </Link>
+        </button>
       </div>
     </aside>
   )
