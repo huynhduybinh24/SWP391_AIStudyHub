@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ShareModal, ShareModalUser } from '@/components/common/ShareModal'
 
 interface FileItem {
   name: string
@@ -30,6 +31,13 @@ interface FileItem {
 export function SharedFolderPage() {
   const navigate = useNavigate()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+
+  const defaultUsers: ShareModalUser[] = [
+    { id: 'sarah', name: 'Sarah Jenkins', email: 'sarah@example.com', permission: 'Chủ sở hữu' },
+    { id: 'marcus', name: 'Marcus Knight', email: 'marcus@example.com', permission: 'Người chỉnh sửa' },
+    { id: 'alex-chen', name: 'Alex Chen', email: 'alex.chen@example.com', permission: 'Người xem' }
+  ]
 
   const files: FileItem[] = [
     {
@@ -102,6 +110,7 @@ export function SharedFolderPage() {
 
         <button
           type="button"
+          onClick={() => setIsShareModalOpen(true)}
           className="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-[#434655] hover:text-[#3155F6] border border-[#C3C6D7]/40 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm shrink-0 cursor-pointer active:scale-[0.98]"
         >
           <Share2 className="w-4 h-4" />
@@ -113,7 +122,7 @@ export function SharedFolderPage() {
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Left Column: Collaborators & AI Insight */}
         <div className="w-full lg:w-[300px] shrink-0 space-y-6">
-          <CollaboratorsCard />
+          <CollaboratorsCard onInvite={() => setIsShareModalOpen(true)} />
           <AIInsightCard />
         </div>
 
@@ -189,13 +198,21 @@ export function SharedFolderPage() {
           </div>
         </div>
       </div>
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        fileName="Group Project: Research Materials"
+        shareUrl="http://localhost:5173/dashboard/shared-files/research-materials"
+        initialUsers={defaultUsers}
+      />
     </div>
   )
 }
 
 /* Sub-Components */
 
-function CollaboratorsCard() {
+function CollaboratorsCard({ onInvite }: { onInvite: () => void }) {
   return (
     <div className="bg-white border border-[#C3C6D7]/30 rounded-2xl p-6 shadow-sm">
       <h3 className="text-base font-black text-[#0b1c30] mb-4">Collaborators</h3>
@@ -255,6 +272,7 @@ function CollaboratorsCard() {
 
       <button
         type="button"
+        onClick={onInvite}
         className="w-full mt-5 py-2.5 border border-[#3155F6]/20 hover:border-[#3155F6] hover:bg-[#E8EEFF]/30 text-[#3155F6] font-bold rounded-xl text-sm transition-colors cursor-pointer"
       >
         Invite Members
