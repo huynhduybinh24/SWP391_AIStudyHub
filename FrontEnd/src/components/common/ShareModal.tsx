@@ -8,9 +8,7 @@ import {
   Lock,
   ChevronDown,
   Check,
-  Trash2,
   Globe,
-  Link as LinkIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -55,6 +53,10 @@ export function ShareModal({
   const [successMessage, setSuccessMessage] = useState('')
 
   const inviteDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Avoid TS unused warnings for required props
+  void ownerName
+  void ownerEmail
 
   // Initialize users on open
   useEffect(() => {
@@ -161,12 +163,12 @@ export function ShareModal({
   }
 
   const handleUpdateUserPermission = (userId: string, newPerm: 'Người xem' | 'Người nhận xét' | 'Người chỉnh sửa' | 'Xóa') => {
-    if (newPerm === 'X') {
+    if (newPerm === 'Xóa') {
       const updated = sharedUsers.filter(u => u.id !== userId)
       setSharedUsers(updated)
       if (onPermissionChange) onPermissionChange(userId, 'Xóa')
     } else {
-      const updated = sharedUsers.map(u => u.id === userId ? { ...u, permission: newPerm } : u)
+      const updated = sharedUsers.map(u => u.id === userId ? { ...u, permission: newPerm as any } : u)
       setSharedUsers(updated)
       if (onPermissionChange) onPermissionChange(userId, newPerm)
     }
@@ -382,8 +384,8 @@ export function ShareModal({
                               { value: 'Người xem', label: 'Người xem' },
                               { value: 'Người nhận xét', label: 'Người nhận xét' },
                               { value: 'Người chỉnh sửa', label: 'Người chỉnh sửa' },
-                              { value: 'X', label: 'Xóa quyền truy cập', isDanger: true },
-                            ] as const).map((opt) => (
+                              { value: 'Xóa', label: 'Xóa quyền truy cập', isDanger: true },
+                            ] as Array<{ value: 'Người xem' | 'Người nhận xét' | 'Người chỉnh sửa' | 'Xóa'; label: string; isDanger?: boolean }>).map((opt) => (
                               <button
                                 key={opt.value}
                                 type="button"

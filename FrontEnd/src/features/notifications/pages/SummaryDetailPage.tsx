@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -13,12 +13,6 @@ import {
   ThumbsUp,
   ThumbsDown,
   X,
-  Copy,
-  Mail,
-  CheckCircle,
-  AlertTriangle,
-  Check,
-  ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
@@ -59,48 +53,7 @@ export function SummaryDetailPage() {
     toast.success('PDF downloaded successfully.')
   }
 
-  const handleShareAccess = () => {
-    setErrorMessage('')
-    setSuccessMessage('')
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!shareEmail || !emailRegex.test(shareEmail.trim())) {
-      setErrorMessage('Please enter a valid email address.')
-      return
-    }
 
-    const emailStr = shareEmail.trim()
-    const newSharedUser = {
-      id: emailStr.toLowerCase(),
-      name: emailStr,
-      permission: permission,
-    }
-    setSharedUsers([...sharedUsers, newSharedUser])
-    setShareEmail('')
-    setSuccessMessage('Access shared successfully.')
-    toast.success('Access shared successfully.')
-  }
-
-  const handleCopyLink = () => {
-    const shareLink = window.location.origin + '/dashboard/notifications/summary'
-    navigator.clipboard.writeText(shareLink)
-      .then(() => {
-        toast.success('Share link copied.')
-      })
-      .catch(() => {
-        const textArea = document.createElement('textarea')
-        textArea.value = shareLink
-        document.body.appendChild(textArea)
-        textArea.select()
-        try {
-          document.execCommand('copy')
-          toast.success('Share link copied.')
-        } catch (err) {
-          toast.error('Failed to copy link.')
-        }
-        document.body.removeChild(textArea)
-      })
-  }
 
   const handleDeleteDocument = () => {
     setIsDeleteModalOpen(false)
