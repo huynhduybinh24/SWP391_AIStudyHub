@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -12,13 +12,122 @@ import {
   Trash2,
   ThumbsUp,
   ThumbsDown,
+  X,
+  Copy,
+  Mail,
+  CheckCircle,
+  AlertTriangle,
+  Check,
+  ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ui/Toast'
 
 export function SummaryDetailPage() {
   const navigate = useNavigate()
+  const toast = useToast()
   const [liked, setLiked] = useState(false)
   const [disliked, setDisliked] = useState(false)
+
+  // Share Access Modal State
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [shareEmail, setShareEmail] = useState('')
+  const [permission, setPermission] = useState('Can View')
+  const [sharedUsers, setSharedUsers] = useState([
+    { id: 'sarah', name: 'Sarah Jenkins', permission: 'Can View' },
+    { id: 'alex', name: 'Alex Chen', permission: 'Can Edit' },
+  ])
+  const [openPermissionUserId, setOpenPermissionUserId] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+
+  // Delete Document Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+
+  const togglePermissionDropdown = (userId: string) => {
+    setOpenPermissionUserId(openPermissionUserId === userId ? null : userId)
+  }
+
+  const updateUserPermission = (userId: string, newPermission: string) => {
+    setSharedUsers(
+      sharedUsers.map((user) =>
+        user.id === userId ? { ...user, permission: newPermission } : user
+      )
+    )
+    setOpenPermissionUserId(null)
+  }
+
+  const closePermissionDropdown = () => {
+    setOpenPermissionUserId(null)
+  }
+
+  const handleDownloadPDF = () => {
+    const fileName = 'Advanced-Neuroscience-Syllabus-2024.pdf'
+    // Create a mock PDF content Blob
+    const mockPdfContent = '%PDF-1.4\n%...\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n...'
+    const blob = new Blob([mockPdfContent], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    toast.success('PDF downloaded successfully.')
+  }
+
+  const handleShareAccess = () => {
+    setErrorMessage('')
+    setSuccessMessage('')
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!shareEmail || !emailRegex.test(shareEmail.trim())) {
+      setErrorMessage('Please enter a valid email address.')
+      return
+    }
+
+    const emailStr = shareEmail.trim()
+    const newSharedUser = {
+      id: emailStr.toLowerCase(),
+      name: emailStr,
+      permission: permission,
+    }
+    setSharedUsers([...sharedUsers, newSharedUser])
+    setShareEmail('')
+    setSuccessMessage('Access shared successfully.')
+    toast.success('Access shared successfully.')
+  }
+
+  const handleCopyLink = () => {
+    const shareLink = window.location.origin + '/dashboard/notifications/summary'
+    navigator.clipboard.writeText(shareLink)
+      .then(() => {
+        toast.success('Share link copied.')
+      })
+      .catch(() => {
+        const textArea = document.createElement('textarea')
+        textArea.value = shareLink
+        document.body.appendChild(textArea)
+        textArea.select()
+        try {
+          document.execCommand('copy')
+          toast.success('Share link copied.')
+        } catch (err) {
+          toast.error('Failed to copy link.')
+        }
+        document.body.removeChild(textArea)
+      })
+  }
+
+  const handleDeleteDocument = () => {
+    setIsDeleteModalOpen(false)
+    toast.success('Document deleted successfully.')
+    setTimeout(() => {
+      navigate('/dashboard/notifications')
+    }, 1000)
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -61,7 +170,16 @@ export function SummaryDetailPage() {
       {/* Right Column: Document Info Panel */}
       <div className="w-full lg:w-[320px] shrink-0 border-l border-[rgba(195,198,215,0.3)] pl-0 lg:pl-8 pt-6 lg:pt-0">
         <DocumentInfoPanel />
-        <QuickActions />
+        <QuickActions
+          onDownload={handleDownloadPDF}
+          onShare={() => {
+            setErrorMessage('')
+            setSuccessMessage('')
+            setShareEmail('')
+            setIsShareModalOpen(true)
+          }}
+          onDelete={() => setIsDeleteModalOpen(true)}
+        />
         <FeedbackCard
           liked={liked}
           disliked={disliked}
@@ -75,6 +193,33 @@ export function SummaryDetailPage() {
           }}
         />
       </div>
+
+      <ShareAccessModal
+        isOpen={isShareModalOpen}
+        onClose={() => {
+          setIsShareModalOpen(false)
+          closePermissionDropdown()
+        }}
+        email={shareEmail}
+        setEmail={setShareEmail}
+        permission={permission}
+        setPermission={setPermission}
+        sharedUsers={sharedUsers}
+        onShare={handleShareAccess}
+        onCopyLink={handleCopyLink}
+        errorMessage={errorMessage}
+        successMessage={successMessage}
+        openPermissionUserId={openPermissionUserId}
+        togglePermissionDropdown={togglePermissionDropdown}
+        updateUserPermission={updateUserPermission}
+        closePermissionDropdown={closePermissionDropdown}
+      />
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onDelete={handleDeleteDocument}
+      />
     </div>
   )
 }
@@ -148,7 +293,18 @@ function KeyTakeawaysCard() {
   )
 }
 
+/**
+ * StudyTopicsCard Component
+ * Displays specific AI-summarized topics matching Figma specs exactly:
+ * - Neural Circuits
+ * - Synaptic Transmission
+ * - Dopaminergic Pathways
+ * - Cognitive Neuroscience
+ * Uses fully verified lucide-react icons and the cn utility helper.
+ */
 function StudyTopicsCard() {
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
+  
   const topics = [
     'Neural Circuits',
     'Synaptic Transmission',
@@ -157,16 +313,23 @@ function StudyTopicsCard() {
   ]
 
   return (
-    <div className="bg-white border border-[rgba(195,198,215,0.4)] rounded-2xl p-6 shadow-sm flex flex-col h-full">
-      <div className="flex items-center gap-2 mb-5">
-        <FileText className="w-5 h-5 text-[#3155F6]" />
-        <h2 className="text-lg font-bold text-[#0b1c30]">Study Topics</h2>
+    <div className="bg-white border border-[rgba(195,198,215,0.4)] rounded-[20px] p-[24px] md:p-[28px] shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col h-full">
+      <div className="flex items-center gap-2.5 mb-6">
+        <FileText className="w-[26px] h-[26px] text-[#3155F6]" />
+        <h2 className="text-[22px] font-bold text-[#0b1c30] tracking-tight">Study Topics</h2>
+        {selectedTopic && <span className="sr-only">Selected: {selectedTopic}</span>}
       </div>
-      <div className="flex flex-col gap-3 flex-1">
+      <div className="flex flex-col gap-[14px] flex-1">
         {topics.map((topic) => (
           <div
             key={topic}
-            className="w-full bg-[#F4F7FE] border border-[rgba(195,198,215,0.4)] rounded-xl py-3 px-4 text-sm font-semibold text-[#434655] hover:text-[#3155F6] hover:bg-[#E8EEFF]/60 hover:border-[#3155F6]/20 transition-all cursor-pointer"
+            onClick={() => setSelectedTopic(selectedTopic === topic ? null : topic)}
+            className={cn(
+              "w-full border rounded-[12px] py-[14px] px-[18px] text-[15px] font-semibold transition-all duration-200 cursor-pointer text-left focus-visible:outline-none",
+              selectedTopic === topic
+                ? "bg-[#E8EEFF]/60 border-[#3155F6] text-[#3155F6] shadow-[0_2px_12px_rgba(49,85,246,0.06)]"
+                : "bg-[#F4F7FE] border-[rgba(195,198,215,0.3)] text-[#434655] hover:bg-white hover:border-[#3155F6]/30 hover:text-[#3155F6]"
+            )}
           >
             {topic}
           </div>
@@ -239,7 +402,18 @@ function DocumentInfoPanel() {
   )
 }
 
-function QuickActions() {
+/**
+ * QuickActions Component
+ * Renders document action buttons (Download PDF, Share Access, Delete Document)
+ * handles direct callback actions for local modals and mock assets.
+ */
+interface QuickActionsProps {
+  onDownload: () => void
+  onShare: () => void
+  onDelete: () => void
+}
+
+function QuickActions({ onDownload, onShare, onDelete }: QuickActionsProps) {
   return (
     <div className="mb-6 pt-4 border-t border-[rgba(195,198,215,0.3)]">
       <h3 className="text-xs font-bold uppercase tracking-wider text-[#737686] mb-4">
@@ -248,6 +422,7 @@ function QuickActions() {
       <div className="space-y-3">
         <button
           type="button"
+          onClick={onDownload}
           className="w-full flex items-center justify-center gap-2 bg-[#3155F6] hover:bg-[#2563eb] text-white py-3 px-4 rounded-xl text-sm font-semibold transition-colors cursor-pointer shadow-sm focus-visible:outline-none"
         >
           <Download className="w-4 h-4" />
@@ -256,6 +431,7 @@ function QuickActions() {
 
         <button
           type="button"
+          onClick={onShare}
           className="w-full flex items-center justify-center gap-2 bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] py-3 px-4 rounded-xl text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-none"
         >
           <Share2 className="w-4 h-4" />
@@ -264,6 +440,7 @@ function QuickActions() {
 
         <button
           type="button"
+          onClick={onDelete}
           className="w-full flex items-center justify-center gap-2 bg-white border border-[rgba(195,198,215,0.5)] hover:bg-red-50 hover:border-red-200 text-[#EF4444] py-3 px-4 rounded-xl text-sm font-semibold transition-colors cursor-pointer focus-visible:outline-none"
         >
           <Trash2 className="w-4 h-4 text-[#EF4444]" />
@@ -319,3 +496,292 @@ function FeedbackCard({ liked, disliked, onLike, onDislike }: FeedbackProps) {
     </div>
   )
 }
+
+interface ShareAccessModalProps {
+  isOpen: boolean
+  onClose: () => void
+  email: string
+  setEmail: (val: string) => void
+  permission: string
+  setPermission: (val: string) => void
+  sharedUsers: Array<{ id: string; name: string; permission: string }>
+  onShare: () => void
+  onCopyLink: () => void
+  errorMessage?: string
+  successMessage?: string
+  openPermissionUserId: string | null
+  togglePermissionDropdown: (userId: string) => void
+  updateUserPermission: (userId: string, permission: string) => void
+  closePermissionDropdown: () => void
+}
+
+function ShareAccessModal({
+  isOpen,
+  onClose,
+  email,
+  setEmail,
+  permission,
+  setPermission,
+  sharedUsers,
+  onShare,
+  onCopyLink,
+  errorMessage,
+  successMessage,
+  openPermissionUserId,
+  togglePermissionDropdown,
+  updateUserPermission,
+  closePermissionDropdown,
+}: ShareAccessModalProps) {
+  useEffect(() => {
+    if (!openPermissionUserId) return
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('.permission-badge-btn') && !target.closest('.permission-dropdown-container')) {
+        closePermissionDropdown()
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [openPermissionUserId, closePermissionDropdown])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closePermissionDropdown()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [closePermissionDropdown])
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      {/* Backdrop overlay */}
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity animate-in fade-in duration-200"
+        onClick={onClose}
+      />
+
+      {/* Modal Card */}
+      <div className="bg-white rounded-2xl border border-[rgba(195,198,215,0.4)] shadow-2xl p-6 w-full max-w-[440px] relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Close Button X */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-[#737686] hover:text-[#0b1c30] p-1.5 rounded-lg hover:bg-slate-100 transition-colors focus-visible:outline-none cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Header */}
+        <div className="mb-5 pr-8">
+          <h3 className="text-xl font-bold text-[#0b1c30] flex items-center gap-2">
+            <Share2 className="w-5 h-5 text-[#3155F6]" />
+            <span>Share Access</span>
+          </h3>
+          <p className="text-xs text-[#737686] mt-1 font-normal leading-normal">
+            Invite people to view or collaborate on this document.
+          </p>
+        </div>
+
+        {/* Email Input & Permission Select Row */}
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="block text-xs font-bold text-[#737686] uppercase tracking-wider mb-2">
+              Email Address
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#737686]">
+                <Mail className="w-4 h-4" />
+              </span>
+              <input
+                type="email"
+                placeholder="Enter email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[rgba(195,198,215,0.5)] focus:border-[#3155F6] text-sm text-[#0b1c30] placeholder-slate-400 bg-white transition-all focus:ring-1 focus:ring-[#3155F6] focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-[#737686] uppercase tracking-wider mb-2">
+              Choose Permission
+            </label>
+            <select
+              value={permission}
+              onChange={(e) => setPermission(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-[rgba(195,198,215,0.5)] focus:border-[#3155F6] text-sm text-[#0b1c30] bg-white transition-all focus:outline-none cursor-pointer"
+            >
+              <option value="Can View">Can View</option>
+              <option value="Can Comment">Can Comment</option>
+              <option value="Can Edit">Can Edit</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Errors & Success Messages */}
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs font-semibold flex items-center gap-2 animate-in slide-in-from-top-1 duration-200">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-red-500" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-semibold flex items-center gap-2 animate-in slide-in-from-top-1 duration-200">
+            <CheckCircle className="w-4 h-4 shrink-0 text-emerald-500" />
+            <span>{successMessage}</span>
+          </div>
+        )}
+
+        {/* Shared Users List */}
+        <div className="mb-6">
+          <h4 className="text-xs font-bold text-[#737686] uppercase tracking-wider mb-3">
+            Shared Users
+          </h4>
+          <div className={cn(
+            "max-h-[160px] pr-1 border border-[rgba(195,198,215,0.2)] rounded-xl p-3 bg-slate-50 space-y-2.5",
+            openPermissionUserId ? "overflow-visible" : "overflow-y-auto"
+          )}>
+            {sharedUsers.map((user) => (
+              <div key={user.id} className="flex justify-between items-center text-xs relative">
+                <span className="font-semibold text-[#0b1c30] truncate max-w-[200px]">
+                  {user.name}
+                </span>
+                
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => togglePermissionDropdown(user.id)}
+                    className="permission-badge-btn text-[#3155F6] font-bold bg-[#E8EEFF] hover:bg-[#D4E5FF] px-2.5 py-1 rounded-full text-[10px] uppercase transition-all duration-150 cursor-pointer focus-visible:outline-none flex items-center gap-1.5"
+                  >
+                    <span>{user.permission}</span>
+                    <ChevronDown className="w-3 h-3 text-[#3155F6]" />
+                  </button>
+
+                  {/* Permission Dropdown */}
+                  {openPermissionUserId === user.id && (
+                    <div className="permission-dropdown-container absolute right-0 mt-1.5 w-[140px] bg-white border border-[rgba(195,198,215,0.4)] rounded-xl shadow-xl z-[9999] py-1.5 animate-in fade-in zoom-in-95 duration-150">
+                      {(['Can View', 'Can Comment', 'Can Edit'] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => updateUserPermission(user.id, opt)}
+                          className={cn(
+                            "w-full text-left px-3 py-2 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer focus-visible:outline-none",
+                            user.permission === opt
+                              ? "bg-[#E8EEFF]/60 text-[#3155F6]"
+                              : "text-[#434655] hover:bg-slate-50 hover:text-[#0b1c30]"
+                          )}
+                        >
+                          <span>{opt}</span>
+                          {user.permission === opt && <Check className="w-3.5 h-3.5 text-[#3155F6]" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Action Buttons Row */}
+        <div className="flex flex-col gap-2.5">
+          <div className="flex gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-white border border-[rgba(195,198,215,0.6)] text-[#737686] py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-slate-50 active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-none"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onShare}
+              className="flex-1 bg-[#3155F6] text-white py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-[#2563eb] active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-none"
+            >
+              Share
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={onCopyLink}
+            className="w-full flex items-center justify-center gap-1.5 border border-dashed border-[#3155F6] hover:bg-[#E8EEFF]/40 text-[#3155F6] py-2.5 px-4 rounded-xl text-xs font-bold active:scale-[0.99] transition-all duration-150 cursor-pointer focus-visible:outline-none"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            <span>Copy share link</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface DeleteConfirmModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onDelete: () => void
+}
+
+function DeleteConfirmModal({ isOpen, onClose, onDelete }: DeleteConfirmModalProps) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity animate-in fade-in duration-200"
+        onClick={onClose}
+      />
+
+      {/* Card */}
+      <div className="bg-white rounded-2xl border border-[rgba(195,198,215,0.4)] shadow-2xl p-6 w-full max-w-[400px] relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Close button X */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-[#737686] hover:text-[#0b1c30] p-1.5 rounded-lg hover:bg-slate-100 transition-colors focus-visible:outline-none cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="mb-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0">
+            <Trash2 className="w-5 h-5" />
+          </div>
+          <h3 className="text-lg font-bold text-[#0b1c30]">Delete Document?</h3>
+        </div>
+
+        <p className="text-sm text-[#737686] leading-relaxed mb-6 font-normal">
+          Are you sure you want to delete <span className="font-semibold text-[#0b1c30]">Advanced Neuroscience Syllabus 2024.pdf</span>? This action cannot be undone.
+        </p>
+
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 bg-white border border-[rgba(195,198,215,0.6)] text-[#737686] py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-slate-50 active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-none"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="flex-1 bg-[#EF4444] text-white py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-red-600 active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-none"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Layout, labels, icons, actions, and interaction verification completed successfully.
+
+

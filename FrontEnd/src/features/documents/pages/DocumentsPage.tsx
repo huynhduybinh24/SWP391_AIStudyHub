@@ -692,7 +692,25 @@ const QUIZ_QUESTIONS = [
 ]
 
 export function DocumentsPage() {
-  const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS)
+  const [documents, setDocuments] = useState<DocumentItem[]>(() => {
+    const saved = localStorage.getItem('ai_study_hub_documents')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as DocumentItem[]
+        return parsed.map(doc => ({
+          ...doc,
+          uploadedDateObj: new Date(doc.uploadedDateObj)
+        }))
+      } catch (e) {
+        return INITIAL_DOCUMENTS
+      }
+    }
+    return INITIAL_DOCUMENTS
+  })
+
+  useEffect(() => {
+    localStorage.setItem('ai_study_hub_documents', JSON.stringify(documents))
+  }, [documents])
 
   // Quiz Modal States
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false)

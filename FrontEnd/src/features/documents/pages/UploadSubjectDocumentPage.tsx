@@ -488,13 +488,22 @@ export function UploadSubjectDocumentPage() {
                       checked={visibility === 'private'}
                       onChange={() => setVisibility('private')}
                       disabled={isProcessing}
-                      className="peer sr-only"
+                      className="sr-only"
                     />
                     <div className="relative flex items-center justify-center">
-                      <div className="h-4.5 w-4.5 rounded-full border border-slate-300 bg-white transition-colors peer-checked:border-[#2563eb] peer-checked:bg-white" />
-                      <div className="absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] opacity-0 peer-checked:opacity-100 transition-opacity" />
+                      <div className={cn(
+                        "h-4.5 w-4.5 rounded-full border bg-white transition-all duration-200",
+                        visibility === 'private' ? "border-[#2563eb] ring-2 ring-blue-50" : "border-slate-300"
+                      )} />
+                      <div className={cn(
+                        "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
+                        visibility === 'private' && "scale-100"
+                      )} />
                     </div>
-                    <span className="text-sm font-bold text-slate-700">
+                    <span className={cn(
+                      "text-sm font-bold transition-colors duration-200",
+                      visibility === 'private' ? "text-[#2563eb]" : "text-slate-700"
+                    )}>
                       Private
                     </span>
                   </label>
@@ -508,13 +517,22 @@ export function UploadSubjectDocumentPage() {
                       checked={visibility === 'shared'}
                       onChange={() => setVisibility('shared')}
                       disabled={isProcessing}
-                      className="peer sr-only"
+                      className="sr-only"
                     />
                     <div className="relative flex items-center justify-center">
-                      <div className="h-4.5 w-4.5 rounded-full border border-slate-300 bg-white transition-colors peer-checked:border-[#2563eb] peer-checked:bg-white" />
-                      <div className="absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] opacity-0 peer-checked:opacity-100 transition-opacity" />
+                      <div className={cn(
+                        "h-4.5 w-4.5 rounded-full border bg-white transition-all duration-200",
+                        visibility === 'shared' ? "border-[#2563eb] ring-2 ring-blue-50" : "border-slate-300"
+                      )} />
+                      <div className={cn(
+                        "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
+                        visibility === 'shared' && "scale-100"
+                      )} />
                     </div>
-                    <span className="text-sm font-bold text-slate-700">
+                    <span className={cn(
+                      "text-sm font-bold transition-colors duration-200",
+                      visibility === 'shared' ? "text-[#2563eb]" : "text-slate-700"
+                    )}>
                       Shared
                     </span>
                   </label>
@@ -528,13 +546,22 @@ export function UploadSubjectDocumentPage() {
                       checked={visibility === 'public'}
                       onChange={() => setVisibility('public')}
                       disabled={isProcessing}
-                      className="peer sr-only"
+                      className="sr-only"
                     />
                     <div className="relative flex items-center justify-center">
-                      <div className="h-4.5 w-4.5 rounded-full border border-slate-300 bg-white transition-colors peer-checked:border-[#2563eb] peer-checked:bg-white" />
-                      <div className="absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] opacity-0 peer-checked:opacity-100 transition-opacity" />
+                      <div className={cn(
+                        "h-4.5 w-4.5 rounded-full border bg-white transition-all duration-200",
+                        visibility === 'public' ? "border-[#2563eb] ring-2 ring-blue-50" : "border-slate-300"
+                      )} />
+                      <div className={cn(
+                        "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
+                        visibility === 'public' && "scale-100"
+                      )} />
                     </div>
-                    <span className="text-sm font-bold text-slate-700">
+                    <span className={cn(
+                      "text-sm font-bold transition-colors duration-200",
+                      visibility === 'public' ? "text-[#2563eb]" : "text-slate-700"
+                    )}>
                       Public
                     </span>
                   </label>

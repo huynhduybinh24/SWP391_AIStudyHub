@@ -69,7 +69,8 @@ export default function SubjectCategoryPage() {
     handleDownloadFile,
     handleDeleteDocument,
     renderFileIcon,
-    renderStatusBadge
+    renderStatusBadge,
+    showToast
   } = useOutletContext<DocumentsContextType>()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -79,6 +80,19 @@ export default function SubjectCategoryPage() {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
 
   const menuRef = useRef<HTMLDivElement>(null)
+  const filterContainerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-reset filters on collapse, and smooth scroll to filter panel on open
+  useEffect(() => {
+    if (!showFilters) {
+      setSearchQuery('')
+      setTypeFilter('All')
+    } else {
+      setTimeout(() => {
+        filterContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 100)
+    }
+  }, [showFilters])
 
   // Dynamic AI study recommendation advice tailored to each subject
   const getAIRecommendation = () => {
@@ -97,6 +111,28 @@ export default function SubjectCategoryPage() {
         return 'Review marginal revenue calculations and game theory payoff matrices. Pay attention to Nash equilibrium concepts.'
       default:
         return 'Review your uploaded study materials regularly and generate interactive AI quizzes to strengthen memory retention.'
+    }
+  }
+
+  const handleRecommendationClick = () => {
+    // Find a relevant document for the active subject to preview/chat
+    const relevantDoc = subjectDocuments.find(d => {
+      if (activeSubjectId === 'COMPSCI') return d.id === 'doc-design-patterns'
+      if (activeSubjectId === 'BIOLOGY') return d.id === 'doc-2' || d.id === 'doc-6'
+      return d.subject === activeSubjectId
+    }) || subjectDocuments[0]
+
+    if (relevantDoc) {
+      // Open the preview modal or AI chat for this document
+      openPreviewModal(relevantDoc)
+      if (showToast) {
+        showToast(`Opening "${relevantDoc.title || relevantDoc.fileName}" to review recommended concepts!`)
+      }
+    } else {
+      openQuizModal()
+      if (showToast) {
+        showToast("Launching AI practice quiz for this subject!")
+      }
     }
   }
 
@@ -231,12 +267,15 @@ export default function SubjectCategoryPage() {
           </div>
 
           {/* Card 3: AI Recommendation */}
-          <div className={cn(
-            "rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[148px] relative overflow-hidden border",
-            activeSubjectId === 'COMPSCI'
-              ? "border-indigo-100 bg-[#EEF2FF]/60"
-              : "border-blue-100 bg-blue-50/20"
-          )}>
+          <div 
+            onClick={handleRecommendationClick}
+            className={cn(
+              "rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[148px] relative overflow-hidden border cursor-pointer select-none transition-all duration-300 hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+              activeSubjectId === 'COMPSCI'
+                ? "border-indigo-100 bg-[#EEF2FF]/60 hover:border-indigo-300"
+                : "border-blue-100 bg-blue-50/20 hover:border-blue-300"
+            )}
+          >
             {/* Sparkles backdrop */}
             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-indigo-500/10 pointer-events-none select-none">
               <Sparkles className="h-16 w-16 stroke-[1.2]" />
@@ -257,12 +296,18 @@ export default function SubjectCategoryPage() {
               </p>
             </div>
             
-            <div className="mt-4 z-10">
+            <div className="mt-4 z-10 flex items-center justify-between">
               <span className={cn(
                 "text-[10px] font-bold uppercase tracking-wider block",
                 activeSubjectId === 'COMPSCI' ? "text-indigo-400" : "text-primary/70"
               )}>
                 Instant intelligence active
+              </span>
+              <span className={cn(
+                "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-white/90 shadow-3xs transition-transform duration-200 group-hover:translate-x-0.5",
+                activeSubjectId === 'COMPSCI' ? "text-[#4F46E5]" : "text-primary"
+              )}>
+                Review Now &rarr;
               </span>
             </div>
           </div>
@@ -426,8 +471,8 @@ export default function SubjectCategoryPage() {
 
 
       {/* Filter / Search workspace (toggled by Filter button) */}
-      {(showFilters || searchQuery || typeFilter !== 'All') && (
-        <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs md:flex-row md:items-center md:justify-between animate-fade-in">
+      {showFilters && (
+        <div ref={filterContainerRef} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs md:flex-row md:items-center md:justify-between animate-fade-in">
           {/* Search field */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
