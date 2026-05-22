@@ -33,6 +33,7 @@ import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { PricingPage } from '@/features/upgrade/pages/PricingPage'
 import { CheckoutPage } from '@/features/upgrade/pages/CheckoutPage'
+import { StudyPlansPage } from '@/features/study-plans/pages/StudyPlansPage'
 
 export const router = createBrowserRouter([
   {
@@ -93,7 +94,7 @@ export const router = createBrowserRouter([
           { path: 'storage/analytics', element: <StorageAnalyticsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'notifications/summary', element: <SummaryDetailPage /> },
-          { path: 'study-plans', element: <PlaceholderPage title="Study Plans" /> },
+          { path: 'study-plans', element: <StudyPlansPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'upgrade', element: <PricingPage /> },
