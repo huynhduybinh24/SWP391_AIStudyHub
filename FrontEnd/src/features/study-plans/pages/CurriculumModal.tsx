@@ -80,7 +80,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
   const [expandedModule, setExpandedModule] = useState<string | null>(null)
   const [highlightedModule, setHighlightedModule] = useState<string | null>(null)
   const activeModuleRef = useRef<HTMLDivElement | null>(null)
-  const activeLessonRef = useRef<HTMLDivElement | null>(null)
+  const activeLessonRef = useRef<HTMLButtonElement | null>(null)
   const addToast = useToastStore((s) => s.addToast)
 
   // Reset expanded module whenever a different plan is opened
@@ -217,6 +217,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
                     const attachRef = lesson.id === firstActiveLessonId
                     return (
                       <button
+                        type="button"
                         key={lesson.id}
                         ref={attachRef ? activeLessonRef : undefined}
                         onClick={() => handleLessonClick(lesson)}
