@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { toast } from 'sonner'
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -106,28 +107,21 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
 
   // ── Handlers ─────────────────────────────────────────────
 
-  // "Start Module" / "Review" button: expand + highlight + scroll to first active lesson
+  // "Start Module" / "Review" button: mock navigating to the active lesson
   const handleStart = () => {
     if (!firstActiveModule) return
-
-    // 1. Expand the module
-    setExpandedModule(firstActiveModule.id)
-
-    // 2. Flash-highlight the module border
-    setHighlightedModule(firstActiveModule.id)
-    setTimeout(() => setHighlightedModule(null), 1500)
-
-    // 3. Scroll to the first in-progress/not-completed lesson inside the module
-    setTimeout(() => {
-      if (activeLesonRef.current) {
-        activeLesonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      } else {
-        activeModuleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    }, 120)
+    toast.success(`Starting module: ${firstActiveModule.title}`)
+    onClose()
   }
 
-  // ─────────────────────────────────────────────────────────
+  const handleLessonCLick = (lesson: CurriculumLesson) => {
+    if (lesson.status === 'locked') {
+      toast.info('This lesson is locked. Complete previous lessons first.')
+      return
+    }
+    toast.success(`Opening lesson: ${lesson.title}`)
+    onClose()
+  }
 
   return (
     <Modal
@@ -218,12 +212,13 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
                     // Attach ref to first non-completed lesson in the active module
                     const attachRef = lesson.id === firstActiveLessonId
                     return (
-                      <div
+                      <button
                         key={lesson.id}
                         ref={attachRef ? activeLesonRef : undefined}
-                        className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${isLocked
+                        onClick={() => handleLessonCLick(lesson)}
+                        className={`w-full flex items-center text-left gap-3 px-4 py-2.5 transition-colors ${isLocked
                           ? 'opacity-40 cursor-not-allowed bg-slate-50/50'
-                          : 'hover:bg-slate-50/70 cursor-default'
+                          : 'hover:bg-slate-50/70 cursor-pointer'
                           }`}
                       >
                         <StatusIcon status={lesson.status} />
@@ -238,7 +233,7 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
                           <Clock className="size-3 text-slate-400" />
                           <span className="text-xs text-slate-400">{lesson.duration}</span>
                         </div>
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
