@@ -579,14 +579,14 @@ function ShareAccessModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-white border border-[rgba(195,198,215,0.6)] text-[#737686] py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-none"
+              className="flex-1 bg-white border border-[rgba(195,198,215,0.6)] text-[#737686] py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-slate-50 active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-none"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={onShare}
-              className="flex-1 bg-[#3155F6] text-white py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-[#2563eb] transition-colors cursor-pointer focus-visible:outline-none"
+              className="flex-1 bg-[#3155F6] text-white py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-[#2563eb] active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-none"
             >
               Share
             </button>
@@ -595,7 +595,7 @@ function ShareAccessModal({
           <button
             type="button"
             onClick={onCopyLink}
-            className="w-full flex items-center justify-center gap-1.5 border border-dashed border-[#3155F6] hover:bg-[#E8EEFF]/40 text-[#3155F6] py-2 px-4 rounded-xl text-xs font-bold transition-colors cursor-pointer focus-visible:outline-none"
+            className="w-full flex items-center justify-center gap-1.5 border border-dashed border-[#3155F6] hover:bg-[#E8EEFF]/40 text-[#3155F6] py-2.5 px-4 rounded-xl text-xs font-bold active:scale-[0.99] transition-all duration-150 cursor-pointer focus-visible:outline-none"
           >
             <Copy className="w-3.5 h-3.5" />
             <span>Copy share link</span>
@@ -648,14 +648,14 @@ function DeleteConfirmModal({ isOpen, onClose, onDelete }: DeleteConfirmModalPro
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 bg-white border border-[rgba(195,198,215,0.6)] text-[#737686] py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-none"
+            className="flex-1 bg-white border border-[rgba(195,198,215,0.6)] text-[#737686] py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-slate-50 active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-none"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onDelete}
-            className="flex-1 bg-[#EF4444] text-white py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors cursor-pointer focus-visible:outline-none"
+            className="flex-1 bg-[#EF4444] text-white py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-red-600 active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-none"
           >
             Delete
           </button>
