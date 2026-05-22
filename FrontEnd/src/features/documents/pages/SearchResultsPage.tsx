@@ -137,7 +137,7 @@ export function SearchResultsPage() {
   // Filter local states
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(['NEUROSCIENCE'])
   const [selectedFileTypes, setSelectedFileTypes] = useState<string[]>(['pdf'])
-  const [dateFilter, setDateFilter] = useState('Last 7 Days')
+  const [dateFilter, setDateFilter] = useState('All Time')
   
   // Persistent Bookmarks State via LocalStorage
   const [bookmarkedDocs, setBookmarkedDocs] = useState<Record<string, boolean>>(() => {
@@ -257,12 +257,13 @@ export function SearchResultsPage() {
 
     // Date Added filter (relative to today, bypass signature doc 'neuro-1' to preserve Figma high-fidelity preview)
     let dateMatch = true
+    const docDate = new Date(doc.uploadedDateObj)
     if (dateFilter === 'Last 7 Days') {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      dateMatch = doc.uploadedDateObj >= sevenDaysAgo || doc.id === 'neuro-1'
+      dateMatch = docDate >= sevenDaysAgo || doc.id === 'neuro-1'
     } else if (dateFilter === 'Last 30 Days') {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      dateMatch = doc.uploadedDateObj >= thirtyDaysAgo || doc.id === 'neuro-1'
+      dateMatch = docDate >= thirtyDaysAgo || doc.id === 'neuro-1'
     }
 
     return subjectMatch && typeMatch && dateMatch
