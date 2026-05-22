@@ -892,6 +892,12 @@ export function StudyPlansPage() {
         isOpen={curriculumPlan !== null}
         onClose={() => setCurriculumPlan(null)}
         plan={curriculumPlan}
+        onStart={() => {
+          if (curriculumPlan) {
+            setLearningPlan(LEARNING_DATA[curriculumPlan.id] ?? null)
+            setCurriculumPlan(null)
+          }
+        }}
       />
 
       {/* ── Delete Confirmation ── */}
