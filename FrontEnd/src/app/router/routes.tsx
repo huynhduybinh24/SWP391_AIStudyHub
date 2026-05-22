@@ -23,6 +23,7 @@ import { StorageAnalyticsPage } from '@/features/storage/pages/StorageAnalyticsP
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
 import { SummaryDetailPage } from '@/features/notifications/pages/SummaryDetailPage'
 import { SharedFolderPage } from '@/features/shared-files/pages/SharedFolderPage'
+import { SharedFilesPage } from '@/features/shared-files/pages/SharedFilesPage'
 import { DEV_SKIP_AUTH } from '@/config/dev'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
@@ -87,7 +88,7 @@ export const router = createBrowserRouter([
           },
           { path: 'upload', element: <UploadPage /> },
           { path: 'chat', element: <ChatPage /> },
-          { path: 'shared', element: <PlaceholderPage title="Shared Files" /> },
+          { path: 'shared', element: <SharedFilesPage /> },
           { path: 'shared-files/research-materials', element: <SharedFolderPage /> },
           { path: 'storage', element: <CloudStoragePage /> },
           { path: 'storage/explorer', element: <StorageExplorerPage /> },
