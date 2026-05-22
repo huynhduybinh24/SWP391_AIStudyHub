@@ -30,9 +30,9 @@ const pieChartData = [
 
 export function StorageAnalyticsPage() {
   const navigate = useNavigate()
-  const [activeIndex, setActiveIndex] = useState<number | undefined>(pieChartData.length - 1)
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
 
-  const onPieEnter = (_: any, index: number) => {
+  const onPieEnter = (_: unknown, index: number) => {
     setActiveIndex(index)
   }
 
@@ -128,17 +128,17 @@ export function StorageAnalyticsPage() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Storage Usage Over Time */}
-        <Card className="lg:col-span-2 border-border flex flex-col">
+        <Card className="lg:col-span-2 border-border flex flex-col min-h-[350px]">
           <CardHeader className="p-6 pb-2 flex flex-row items-center justify-between border-b-0 space-y-0">
             <CardTitle className="text-base font-bold">Storage Usage Over Time</CardTitle>
             <button className="text-muted hover:text-foreground">
               <MoreVertical className="size-5" />
             </button>
           </CardHeader>
-          <CardContent className="p-6 pt-4 flex-1 flex flex-col">
-            <div className="w-full h-[240px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <CardContent className="p-6 pt-4 flex-1 flex flex-col min-h-0">
+            <div className="w-full h-full min-h-[240px] [&_.recharts-wrapper]:outline-none [&_.recharts-surface]:outline-none">
+              <ResponsiveContainer width="99%" height="100%" minHeight={240}>
+                <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} style={{ outline: 'none' }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis 
                     dataKey="name" 
@@ -170,7 +170,7 @@ export function StorageAnalyticsPage() {
                       <Cell 
                         key={`cell-${index}`} 
                         fill={index === barChartData.length - 1 ? '#2563eb' : '#93c5fd'} 
-                        className="transition-all duration-300 hover:opacity-80 cursor-pointer"
+                        className="cursor-pointer outline-none focus:outline-none hover:opacity-80"
                       />
                     ))}
                   </Bar>
@@ -181,14 +181,14 @@ export function StorageAnalyticsPage() {
         </Card>
 
         {/* File Type Distribution */}
-        <Card className="border-border flex flex-col">
+        <Card className="border-border flex flex-col min-h-[350px]">
           <CardHeader className="p-6 pb-2 border-b-0 space-y-0">
             <CardTitle className="text-base font-bold">File Type Distribution</CardTitle>
           </CardHeader>
-          <CardContent className="p-6 pt-4 flex-1 flex flex-col">
-            <div className="w-[180px] h-[180px] relative mx-auto mb-8">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+          <CardContent className="p-6 pt-4 flex-1 flex flex-col min-h-0">
+            <div className="w-[180px] h-[180px] min-h-[180px] relative mx-auto mb-8 [&_.recharts-wrapper]:outline-none [&_.recharts-surface]:outline-none">
+              <ResponsiveContainer width="99%" height="100%" minHeight={180}>
+                <PieChart style={{ outline: 'none' }}>
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: number) => [`${value} GB`, 'Size']}
@@ -207,11 +207,10 @@ export function StorageAnalyticsPage() {
                       <Cell 
                         key={`cell-${index}`} 
                         fill={entry.color} 
-                        className="transition-all duration-300 cursor-pointer"
+                        className="cursor-pointer outline-none focus:outline-none transition-opacity duration-300"
                         style={{
                           opacity: activeIndex === undefined || activeIndex === index ? 1 : 0.5,
-                          transform: activeIndex === index ? 'scale(1.05)' : 'scale(1)',
-                          transformOrigin: 'center'
+                          outline: 'none'
                         }}
                       />
                     ))}
@@ -263,7 +262,7 @@ export function StorageAnalyticsPage() {
             <div>
               <h3 className="font-bold text-foreground text-[15px]">AI Storage Insights</h3>
               <p className="text-muted text-[13px] mt-1 leading-relaxed max-w-3xl">
-                We noticed you have 4.2 GB of duplicate study guides from last semester and several large video files that haven't been opened in 6 months.
+                We noticed you have 4.2 GB of duplicate study guides from last semester and several large video files that haven&apos;t been opened in 6 months.
               </p>
             </div>
           </div>

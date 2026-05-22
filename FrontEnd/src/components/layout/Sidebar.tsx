@@ -3,8 +3,8 @@ import { Zap } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 
 function isNavActive(pathname: string, path: string) {
-  if (pathname === '/dashboard/shared-files/research-materials' || pathname === '/dashboard/shared-files/research-materials/') {
-    return path === '/dashboard/notifications'
+  if (pathname.startsWith('/dashboard/shared-files')) {
+    return path === '/dashboard/shared'
   }
   if (path === '/dashboard') {
     return pathname === '/dashboard' || pathname === '/dashboard/'
