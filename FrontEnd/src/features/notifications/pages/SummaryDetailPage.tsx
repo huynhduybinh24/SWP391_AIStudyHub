@@ -355,6 +355,11 @@ function DocumentInfoPanel() {
   )
 }
 
+/**
+ * QuickActions Component
+ * Renders document action buttons (Download PDF, Share Access, Delete Document)
+ * handles direct callback actions for local modals and mock assets.
+ */
 interface QuickActionsProps {
   onDownload: () => void
   onShare: () => void
