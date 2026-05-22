@@ -70,8 +70,18 @@ export function ShareModal({
   // Handle click outside dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (openDropdownId === 'invite' && inviteDropdownRef.current && !inviteDropdownRef.current.contains(event.target as Node)) {
-        setOpenDropdownId(null)
+      const target = event.target as HTMLElement
+      if (openDropdownId) {
+        if (openDropdownId === 'invite' && inviteDropdownRef.current && !inviteDropdownRef.current.contains(target)) {
+          setOpenDropdownId(null)
+        } else if (openDropdownId !== 'invite') {
+          // If clicking outside the active user's dropdown container
+          const container = document.getElementById(`dropdown-container-${openDropdownId}`)
+          const trigger = document.getElementById(`dropdown-trigger-${openDropdownId}`)
+          if (container && !container.contains(target) && trigger && !trigger.contains(target)) {
+            setOpenDropdownId(null)
+          }
+        }
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -91,13 +101,22 @@ export function ShareModal({
       return
     }
 
+    // Check if user already exists
+    if (sharedUsers.some(u => u.email.toLowerCase() === trimmedEmail.toLowerCase())) {
+      setErrorMessage('Người dùng này đã có quyền truy cập.')
+      return
+    }
+
     // Extract name from email as fallback
     const extractedName = trimmedEmail.split('@')[0]
     const formattedName = extractedName.charAt(0).toUpperCase() + extractedName.slice(1)
 
-    // Generate random avatar bg
-    const bgColors = ['bg-emerald-500', 'bg-purple-500', 'bg-orange-500', 'bg-blue-500', 'bg-rose-500']
-    const randomBg = bgColors[Math.floor(Math.random() * bgColors.length)]
+    // Generate random avatar bg based on initial letter
+    let randomBg = 'bg-blue-500'
+    const firstLetter = formattedName.charAt(0).toUpperCase()
+    if (firstLetter === 'A') randomBg = 'bg-[#0F9D58]' // Green
+    else if (firstLetter === 'H' || firstLetter === 'S') randomBg = 'bg-[#673AB7]' // Purple
+    else if (firstLetter === 'N' || firstLetter === 'M') randomBg = 'bg-[#FF9800]' // Orange
 
     const newUser: ShareModalUser = {
       id: trimmedEmail.toLowerCase(),
@@ -107,7 +126,8 @@ export function ShareModal({
       avatarBg: randomBg,
     }
 
-    setSharedUsers([...sharedUsers, newUser])
+    const updated = [...sharedUsers, newUser]
+    setSharedUsers(updated)
     setInviteEmail('')
     setSuccessMessage('Đã thêm người dùng thành công.')
     if (onShare) onShare(newUser)
@@ -118,10 +138,40 @@ export function ShareModal({
     }, 3000)
   }
 
+  const handleUpdateUserPermission = (userId: string, newPerm: 'Người xem' | 'Người nhận xét' | 'Người chỉnh sửa' | 'Xóa') => {
+    if (newPerm === 'X') {
+      const updated = sharedUsers.filter(u => u.id !== userId)
+      setSharedUsers(updated)
+      if (onPermissionChange) onPermissionChange(userId, 'Xóa')
+    } else {
+      const updated = sharedUsers.map(u => u.id === userId ? { ...u, permission: newPerm } : u)
+      setSharedUsers(updated)
+      if (onPermissionChange) onPermissionChange(userId, newPerm)
+    }
+    setOpenDropdownId(null)
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleAddUser()
     }
+  }
+
+  // Helper to render user avatars
+  const renderAvatar = (user: ShareModalUser) => {
+    const firstLetter = user.name ? user.name.charAt(0).toUpperCase() : 'U'
+    let colorClass = user.avatarBg
+    if (!colorClass) {
+      if (firstLetter === 'A') colorClass = 'bg-[#0F9D58]'
+      else if (firstLetter === 'H' || firstLetter === 'S') colorClass = 'bg-[#673AB7]'
+      else if (firstLetter === 'N' || firstLetter === 'M') colorClass = 'bg-[#FF9800]'
+      else colorClass = 'bg-blue-500'
+    }
+    return (
+      <div className={cn("w-10 h-10 rounded-full text-white flex items-center justify-center font-bold text-sm shrink-0", colorClass)}>
+        {firstLetter}
+      </div>
+    )
   }
 
   const displayTitle = title || (fileName ? `Chia sẻ "${fileName}"` : 'Share Access')
@@ -231,12 +281,95 @@ export function ShareModal({
           </div>
         )}
 
+        {/* Section 1: Shared Users */}
+        <div className="mb-6">
+          <h3 className="text-xs font-bold text-slate-400 tracking-wider mb-4 uppercase">
+            Người có quyền truy cập
+          </h3>
+          <div className="space-y-4 max-h-[220px] overflow-y-auto pr-1">
+            {sharedUsers.map((user) => {
+              const isOwner = user.permission === 'Chủ sở hữu'
+              return (
+                <div key={user.id} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {renderAvatar(user)}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-[#0b1c30]">{user.name}</span>
+                        {isOwner && (
+                          <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-[4px] tracking-wide uppercase shrink-0">
+                            CHỦ SỞ HỮU
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-500 block truncate">{user.email}</span>
+                    </div>
+                  </div>
+
+                  {/* Permission Dropdown/Label */}
+                  <div className="shrink-0">
+                    {isOwner ? (
+                      <span className="text-sm text-slate-500 font-semibold pr-2">
+                        Chủ sở hữu
+                      </span>
+                    ) : (
+                      <div className="relative">
+                        <button
+                          type="button"
+                          id={`dropdown-trigger-${user.id}`}
+                          onClick={() => setOpenDropdownId(openDropdownId === user.id ? null : user.id)}
+                          className="inline-flex items-center justify-between gap-1 bg-white hover:bg-slate-50 border border-slate-200 text-[#434655] px-3.5 py-2 rounded-[20px] text-sm font-semibold transition-all cursor-pointer min-w-[130px]"
+                        >
+                          <span>{user.permission}</span>
+                          <ChevronDown className="w-4 h-4 text-slate-500" />
+                        </button>
+
+                        {openDropdownId === user.id && (
+                          <div
+                            id={`dropdown-container-${user.id}`}
+                            className="absolute right-0 mt-2 w-[180px] bg-white border border-slate-100 rounded-[12px] shadow-lg py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+                          >
+                            {([
+                              { value: 'Người xem', label: 'Người xem' },
+                              { value: 'Người nhận xét', label: 'Người nhận xét' },
+                              { value: 'Người chỉnh sửa', label: 'Người chỉnh sửa' },
+                              { value: 'X', label: 'Xóa quyền truy cập', isDanger: true },
+                            ] as const).map((opt) => (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => handleUpdateUserPermission(user.id, opt.value)}
+                                className={cn(
+                                  "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between font-semibold",
+                                  opt.isDanger
+                                    ? "text-red-500 hover:bg-red-50"
+                                    : user.permission === opt.value
+                                    ? "bg-[#E8EEFF]/60 text-[#3155F6]"
+                                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                )}
+                              >
+                                <span>{opt.label}</span>
+                                {user.permission === opt.value && <Check className="w-4 h-4 text-[#3155F6]" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         {/* Content Placeholder */}
-        <div className="min-h-[100px] flex items-center justify-center text-sm text-[#737686]">
-          Danh sách người có quyền truy cập...
+        <div className="min-h-[50px] flex items-center justify-center text-sm text-[#737686]">
+          Quyền truy cập chung...
         </div>
       </div>
     </div>
   )
+}
 }
 
