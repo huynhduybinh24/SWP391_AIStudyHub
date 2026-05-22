@@ -900,7 +900,7 @@ export default function DocumentDetailPage() {
           {/* 3. Action Buttons Column */}
           <div className="space-y-3">
             <Button
-              onClick={handleDownload}
+              onClick={() => navigate(`/dashboard/documents/document/${activeDoc?.id || 'neuroscience'}/download`)}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-98"
             >
               <Download className="h-4.5 w-4.5" />
