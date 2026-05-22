@@ -102,6 +102,8 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
     m.lessons.some((l) => l.status !== 'completed')
   )
 
+  const firstActiveLessonId = firstActiveModule?.lessons.find(l => l.status !== 'completed')?.id
+
   // ── Handlers ─────────────────────────────────────────────
 
   // "Start Module" / "Review" button: expand + highlight + scroll to first active lesson
@@ -217,14 +219,11 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
                   {mod.lessons.map((lesson) => {
                     const isLocked = lesson.status === 'locked'
                     // Attach ref to first non-completed lesson in the active module
-                    const isFirstActive =
-                      mod.id === firstActiveModule?.id && lesson.status !== 'completed'
-                    const alreadyAssigned = activeLesonRef.current !== null
-                    const attachRef = isFirstActive && !alreadyAssigned
+                    const attachRef = lesson.id === firstActiveLessonId
                     return (
                       <div
                         key={lesson.id}
-                        ref={attachRef ? (el) => { activeLesonRef.current = el } : undefined}
+                        ref={attachRef ? activeLesonRef : undefined}
                         className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
                           isLocked
                             ? 'opacity-40 cursor-not-allowed bg-slate-50/50'
