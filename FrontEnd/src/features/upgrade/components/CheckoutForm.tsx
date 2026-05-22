@@ -208,7 +208,7 @@ export function CheckoutForm({
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShowCvvHelp(!showCvvHelp)}
-                className="text-slate-400 hover:text-slate-650 dark:hover:text-slate-350 transition-colors focus:outline-none cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors focus:outline-none cursor-pointer"
               >
                 <HelpCircle className="size-4" />
               </button>
@@ -223,9 +223,9 @@ export function CheckoutForm({
                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute right-0 bottom-full mb-2.5 z-20 w-64 bg-slate-900 dark:bg-white text-white dark:text-slate-900 border border-slate-800 dark:border-slate-200 rounded-xl p-3 text-[11px] font-semibold shadow-xl leading-relaxed text-left"
+                className="absolute right-0 bottom-full mb-2.5 z-20 w-64 bg-slate-900 dark:bg-slate-800 text-white dark:text-white border border-slate-800 dark:border-slate-700 rounded-xl p-3 text-[11px] font-semibold shadow-xl leading-relaxed text-left"
               >
-                <div className="absolute right-3.5 top-full w-2.5 h-2.5 bg-slate-900 dark:bg-white border-r border-b border-slate-800 dark:border-slate-200 rotate-45 -mt-1.5" />
+                <div className="absolute right-3.5 top-full w-2.5 h-2.5 bg-slate-900 dark:bg-slate-800 border-r border-b border-slate-800 dark:border-slate-700 rotate-45 -mt-1.5" />
                 The 3 or 4 digit security code is typically located on the back of your card (e.g., VISA, Mastercard) or on the front of your AMEX card.
               </motion.div>
             )}

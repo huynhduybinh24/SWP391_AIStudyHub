@@ -154,7 +154,7 @@ export function ExpressCheckoutModal({
             <button
               onClick={onClose}
               disabled={isConfirming}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
               aria-label="Close modal"
             >
               <X className="size-4" />
@@ -174,17 +174,17 @@ export function ExpressCheckoutModal({
             </div>
 
             {/* Billing details info box */}
-            <div className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-850 rounded-2xl p-4 mb-6 space-y-3.5">
+            <div className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-6 space-y-3.5">
               <div className="flex justify-between items-center text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <span>Plan Selected</span>
-                <span className="text-slate-850 dark:text-slate-200 font-bold">Pro Plan (Annual)</span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold">Pro Plan (Annual)</span>
               </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-850" />
+              <div className="h-px bg-slate-100 dark:bg-slate-800" />
               <div className="flex justify-between items-center text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <span>{config.infoLabel}</span>
-                <span className="text-slate-850 dark:text-slate-200 font-bold">{config.infoValue}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold">{config.infoValue}</span>
               </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-850" />
+              <div className="h-px bg-slate-100 dark:bg-slate-800" />
               <div className="flex justify-between items-center text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <span>Total Amount</span>
                 <span className="text-[#2563eb] dark:text-blue-400 font-extrabold text-base">
@@ -212,7 +212,7 @@ export function ExpressCheckoutModal({
               <button
                 onClick={onClose}
                 disabled={isConfirming}
-                className="w-full h-12 border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-400 font-bold rounded-xl flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-850 transition-all cursor-pointer select-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                className="w-full h-12 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold rounded-xl flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer select-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
               >
                 Cancel
               </button>

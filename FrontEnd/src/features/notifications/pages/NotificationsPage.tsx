@@ -105,14 +105,19 @@ function NotificationCard({
   }
 
   return (
-    <div className="bg-white border border-[rgba(195,198,215,0.4)] rounded-2xl p-6 shadow-sm flex gap-5 transition-all duration-200 hover:shadow-md">
+    <div className={cn(
+      "border rounded-2xl p-6 shadow-sm flex gap-5 transition-all duration-200 hover:shadow-md",
+      isUnread 
+        ? "bg-blue-50/20 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/50" 
+        : "bg-white dark:bg-slate-900 border-[rgba(195,198,215,0.4)] dark:border-slate-800"
+    )}>
       {/* Icon/Avatar Container */}
       <div className="flex-shrink-0">
         {avatar ? (
           <img
             src={avatar}
             alt={title}
-            className="w-12 h-12 rounded-full object-cover border border-slate-100"
+            className="w-12 h-12 rounded-full object-cover border border-slate-100 dark:border-slate-800"
             onError={(e) => {
               e.currentTarget.src = '/avatar.svg'
             }}
@@ -120,15 +125,15 @@ function NotificationCard({
         ) : (
           <div className={cn(
             "w-12 h-12 rounded-full flex items-center justify-center",
-            type === 'security' ? "bg-[#FFF0F0]" : "bg-[#E8EEFF]"
+            type === 'security' ? "bg-[#FFF0F0] dark:bg-red-950/40" : "bg-[#E8EEFF] dark:bg-blue-950/40"
           )}>
-            {type === 'ai' && <Bot className="w-6 h-6 text-[#3155F6]" />}
-            {type === 'folder' && <Folder className="w-6 h-6 text-[#3155F6]" />}
-            {type === 'mention' && <AtSign className="w-6 h-6 text-[#3155F6]" />}
-            {type === 'security' && <Shield className="w-6 h-6 text-[#EF4444]" />}
-            {type === 'document' && <FileText className="w-6 h-6 text-[#3155F6]" />}
-            {type === 'calendar' && <Calendar className="w-6 h-6 text-[#3155F6]" />}
-            {type === 'flashcard' && <Layers className="w-6 h-6 text-[#3155F6]" />}
+            {type === 'ai' && <Bot className="w-6 h-6 text-[#3155F6] dark:text-blue-400" />}
+            {type === 'folder' && <Folder className="w-6 h-6 text-[#3155F6] dark:text-blue-400" />}
+            {type === 'mention' && <AtSign className="w-6 h-6 text-[#3155F6] dark:text-blue-400" />}
+            {type === 'security' && <Shield className="w-6 h-6 text-[#EF4444] dark:text-red-400" />}
+            {type === 'document' && <FileText className="w-6 h-6 text-[#3155F6] dark:text-blue-400" />}
+            {type === 'calendar' && <Calendar className="w-6 h-6 text-[#3155F6] dark:text-blue-400" />}
+            {type === 'flashcard' && <Layers className="w-6 h-6 text-[#3155F6] dark:text-blue-400" />}
           </div>
         )}
       </div>
@@ -136,20 +141,20 @@ function NotificationCard({
       {/* Main Content Area */}
       <div className="flex-grow min-w-0">
         <div className="flex items-center justify-between mb-1.5">
-          <h2 className="text-lg font-bold text-[#0b1c30]">{title}</h2>
-          <div className="flex items-center gap-1.5 text-xs text-[#737686] font-medium">
+          <h2 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100">{title}</h2>
+          <div className="flex items-center gap-1.5 text-xs text-[#737686] dark:text-slate-400 font-medium">
             <span>{time}</span>
-            {isUnread && <span className="w-2 h-2 rounded-full bg-[#3155F6]" />}
+            {isUnread && <span className="w-2 h-2 rounded-full bg-[#3155F6] dark:bg-blue-500" />}
           </div>
         </div>
 
-        <div className="text-sm text-[#434655] leading-relaxed">
+        <div className="text-sm text-[#434655] dark:text-slate-300 leading-relaxed">
           {description}
         </div>
 
         {/* Optional Quote Block */}
         {quote && (
-          <div className="bg-[#F4F7FE] border border-[#E8EEFF] p-3.5 rounded-xl mt-3.5 text-sm italic text-[#434655] leading-relaxed">
+          <div className="bg-[#F4F7FE] dark:bg-slate-950 border border-[#E8EEFF] dark:border-slate-800 p-3.5 rounded-xl mt-3.5 text-sm italic text-[#434655] dark:text-slate-400 leading-relaxed">
             {quote}
           </div>
         )}
@@ -169,10 +174,10 @@ function NotificationCard({
                 }}
                 className={cn(
                   "px-5 py-2.5 text-sm font-semibold rounded-xl transition-colors cursor-pointer border flex items-center gap-1.5",
-                  btn.variant === 'primary' && "bg-[#3155F6] hover:bg-[#2563eb] text-white border-[#3155F6] shadow-sm shadow-[#3155F6]/10",
-                  btn.variant === 'secondary' && "bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] border-[#E8EEFF]",
-                  btn.variant === 'light' && "bg-[#F4F7FE] hover:bg-slate-100 text-[#0b1c30] border-[rgba(195,198,215,0.4)]",
-                  btn.variant === 'shared-btn' && "bg-[#F0F4FF] hover:bg-[#E5EEFF] text-[#3155F6] border-none px-4 py-2 text-xs font-semibold rounded-lg shadow-none"
+                  btn.variant === 'primary' && "bg-[#3155F6] hover:bg-[#2563eb] text-white border-[#3155F6] shadow-sm shadow-[#3155F6]/10 dark:bg-blue-600 dark:hover:bg-blue-500 dark:border-blue-600",
+                  btn.variant === 'secondary' && "bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] border-[#E8EEFF] dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-400 dark:border-blue-950/40",
+                  btn.variant === 'light' && "bg-[#F4F7FE] hover:bg-slate-100 text-[#0b1c30] border-[rgba(195,198,215,0.4)] dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 dark:border-slate-700",
+                  btn.variant === 'shared-btn' && "bg-[#F0F4FF] hover:bg-[#E5EEFF] text-[#3155F6] border-none px-4 py-2 text-xs font-semibold rounded-lg shadow-none dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-400"
                 )}
               >
                 <span>{btn.text}</span>
@@ -185,7 +190,7 @@ function NotificationCard({
             <button
               type="button"
               onClick={handleActionClick}
-              className="inline-flex items-center gap-1.5 bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] px-5 py-2.5 rounded-xl text-sm font-semibold mt-4 transition-colors cursor-pointer border border-[#E8EEFF]"
+              className="inline-flex items-center gap-1.5 bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] px-5 py-2.5 rounded-xl text-sm font-semibold mt-4 transition-colors cursor-pointer border border-[#E8EEFF] dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-400 dark:border-blue-950/40"
             >
               <span>{actionText}</span>
               {actionText === 'Reply' ? (
@@ -204,20 +209,20 @@ function NotificationCard({
               placeholder="Type your reply here..."
               value={replyText || ''}
               onChange={(e) => onReplyTextChange?.(e.target.value)}
-              className="w-full bg-[#F4F7FE]/70 border border-[#E8EEFF] rounded-2xl p-4 text-sm text-[#0b1c30] placeholder-[#737686] focus:outline-none focus:ring-2 focus:ring-[#3155F6]/15 resize-none h-[100px]"
+              className="w-full bg-[#F4F7FE]/70 dark:bg-slate-950/70 border border-[#E8EEFF] dark:border-slate-800 rounded-2xl p-4 text-sm text-[#0b1c30] dark:text-slate-100 placeholder-[#737686] dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3155F6]/15 resize-none h-[100px]"
             />
             <div className="flex items-center justify-end gap-3 w-full">
               <button
                 type="button"
                 onClick={onCancelClick}
-                className="bg-transparent hover:bg-slate-50 text-[#434655] hover:text-[#0b1c30] px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+                className="bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800 text-[#434655] dark:text-slate-400 hover:text-[#0b1c30] dark:hover:text-slate-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => onSendReplyClick?.(replyText || '')}
-                className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[#3155F6] shadow-sm shadow-[#3155F6]/10"
+                className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[#3155F6] shadow-sm shadow-[#3155F6]/10 dark:bg-blue-600 dark:hover:bg-blue-500 dark:border-blue-600"
               >
                 <span>Send Reply</span>
                 <Send className="w-3.5 h-3.5" />
@@ -239,13 +244,13 @@ function NotificationCard({
                   handleReplySubmit()
                 }
               }}
-              className="w-full border border-[rgba(195,198,215,0.6)] rounded-xl p-3.5 pr-20 text-sm placeholder-[#737686] focus:outline-none focus:ring-2 focus:ring-[#3155F6]/30 resize-none h-18 bg-white"
+              className="w-full border border-[rgba(195,198,215,0.6)] dark:border-slate-800 rounded-xl p-3.5 pr-20 text-sm text-foreground placeholder-[#737686] dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3155F6]/30 resize-none h-18 bg-white dark:bg-slate-950"
             />
             <button
               type="button"
               onClick={handleReplySubmit}
               disabled={!commentText.trim()}
-              className="absolute bottom-3 right-3 bg-[#3155F6] hover:bg-[#2563eb] text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+              className="absolute bottom-3 right-3 bg-[#3155F6] hover:bg-[#2563eb] dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
             >
               Reply
             </button>
@@ -258,7 +263,7 @@ function NotificationCard({
             <div className="w-8 h-8 rounded-full bg-[#3155F6] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
               Me
             </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-xl rounded-tl-none p-3.5 text-sm text-[#434655]">
+            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl rounded-tl-none p-3.5 text-sm text-[#434655] dark:text-slate-300">
               {replyContent}
             </div>
           </div>
@@ -311,7 +316,7 @@ export function NotificationsPage() {
       description: (
         <>
           The comprehensive summary for your document{' '}
-          <strong className="font-semibold text-[#0b1c30]">
+          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
             "Advanced Neuroscience Syllabus 2024.pdf"
           </strong>{' '}
           is now complete and ready for review.
@@ -331,7 +336,7 @@ export function NotificationsPage() {
           Sarah Jenkins shared a folder with you:{' '}
           <span
             onClick={() => navigate('/dashboard/shared-files/research-materials')}
-            className="text-[#3155F6] hover:underline cursor-pointer font-semibold"
+            className="text-[#3155F6] dark:text-blue-400 hover:underline cursor-pointer font-semibold"
           >
             Group Project Research Materials.
           </span>
@@ -350,7 +355,7 @@ export function NotificationsPage() {
       description: (
         <>
           Emily R. mentioned you in a comment on{' '}
-          <span className="text-[#3155F6] hover:underline cursor-pointer font-semibold">
+          <span className="text-[#3155F6] dark:text-blue-400 hover:underline cursor-pointer font-semibold">
             Lecture Notes Week 4.
           </span>
         </>
@@ -370,7 +375,7 @@ export function NotificationsPage() {
       isUnread: true,
       description: (
         <>
-          <span className="text-[#3155F6] font-semibold">@User</span>, what do you think about the methodology section on page 4 of the 'Cognitive Science' paper?
+          <span className="text-[#3155F6] dark:text-blue-400 font-semibold">@User</span>, what do you think about the methodology section on page 4 of the 'Cognitive Science' paper?
         </>
       ),
       actionText: 'Reply',
@@ -384,7 +389,7 @@ export function NotificationsPage() {
       description: (
         <>
           Sarah Mitchell mentioned you in a comment on{' '}
-          <strong className="font-semibold text-[#0b1c30]">
+          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
             'Neuroscience_Ch4_Syn...'
           </strong>
           : "@Sarah Mitchell, check the synaptic plasticity diagram on page 12."
@@ -406,7 +411,7 @@ export function NotificationsPage() {
       description: (
         <>
           The comprehensive summary for your document{' '}
-          <strong className="font-semibold text-[#0b1c30]">
+          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
             "Advanced Neuroscience Syllabus 2024.pdf"
           </strong>{' '}
           is now complete and ready for review.
@@ -443,14 +448,14 @@ export function NotificationsPage() {
       isUnread: true,
       description: (
         <>
-          Folder: <span className="font-semibold text-[#0b1c30]">Group Project Research Materials</span>
+          Folder: <span className="font-semibold text-[#0b1c30] dark:text-slate-100">Group Project Research Materials</span>
         </>
       ),
       buttons: [
         {
           text: 'Open Folder',
           variant: 'shared-btn',
-          icon: <Folder className="w-3.5 h-3.5 text-[#3155F6]" />,
+          icon: <Folder className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
           url: '/dashboard/shared-files/research-materials',
         },
       ],
@@ -463,14 +468,14 @@ export function NotificationsPage() {
       isUnread: false,
       description: (
         <>
-          Document: <span className="font-semibold text-[#0b1c30]">Advanced Neuroscience Syllabus 2024.pdf</span>
+          Document: <span className="font-semibold text-[#0b1c30] dark:text-slate-100">Advanced Neuroscience Syllabus 2024.pdf</span>
         </>
       ),
       buttons: [
         {
           text: 'View Document',
           variant: 'shared-btn',
-          icon: <Eye className="w-3.5 h-3.5 text-[#3155F6]" />,
+          icon: <Eye className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
           url: '/dashboard/notifications/summary',
         },
       ],
@@ -489,7 +494,7 @@ export function NotificationsPage() {
       description: (
         <>
           The comprehensive summary for your document{' '}
-          <strong className="font-semibold text-[#0b1c30]">
+          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
             "Advanced Neuroscience Syllabus 2024.pdf"
           </strong>{' '}
           is now complete and ready for review.
@@ -507,7 +512,7 @@ export function NotificationsPage() {
       description: (
         <>
           AI has created a personalized 4-week study plan for{' '}
-          <strong className="font-semibold text-[#0b1c30]">
+          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
             "Organic Chemistry"
           </strong>{' '}
           based on your recent uploads.
@@ -517,7 +522,7 @@ export function NotificationsPage() {
         {
           text: 'Open Plan',
           variant: 'secondary',
-          icon: <Calendar className="w-3.5 h-3.5 text-[#3155F6]" />,
+          icon: <Calendar className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
           url: '/dashboard/study-plans',
         },
       ],
@@ -531,7 +536,7 @@ export function NotificationsPage() {
       description: (
         <>
           25 new flashcards have been automatically generated for{' '}
-          <strong className="font-semibold text-[#0b1c30]">
+          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
             "Cell Biology - Week 4"
           </strong>.
         </>
@@ -540,7 +545,7 @@ export function NotificationsPage() {
         {
           text: 'Practice Now',
           variant: 'secondary',
-          icon: <ExternalLink className="w-3.5 h-3.5 text-[#3155F6]" />,
+          icon: <ExternalLink className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
           url: '/dashboard/quizzes',
         },
       ],
@@ -571,8 +576,8 @@ export function NotificationsPage() {
     <div className="mx-auto max-w-[800px] py-8 px-4 md:px-6">
       {/* Title Section */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-[#0b1c30]">Notifications</h1>
-        <p className="text-base text-[#737686] mt-2">
+        <h1 className="text-3xl font-bold tracking-tight text-[#0b1c30] dark:text-slate-100">Notifications</h1>
+        <p className="text-base text-[#737686] dark:text-slate-400 mt-2">
           Stay updated on your study materials and collaborations.
         </p>
       </div>
@@ -589,8 +594,8 @@ export function NotificationsPage() {
               className={cn(
                 "px-6 py-2.5 rounded-full text-sm font-medium transition-colors cursor-pointer border",
                 isActive
-                  ? "bg-[#3155F6] text-white border-[#3155F6] shadow-sm"
-                  : "bg-white text-[#434655] border-[rgba(195,198,215,0.4)] hover:bg-slate-50"
+                  ? "bg-[#3155F6] text-white border-[#3155F6] shadow-sm dark:bg-blue-600 dark:border-blue-600"
+                  : "bg-white dark:bg-slate-900 text-[#434655] dark:text-slate-300 border-[rgba(195,198,215,0.4)] dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
               )}
             >
               {tab}

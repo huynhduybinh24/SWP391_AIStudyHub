@@ -25,10 +25,10 @@ export function CustomSwitch({
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
       onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 flex items-center ${
+      className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 flex items-center ${
         checked
-          ? 'bg-[#2563eb] justify-end'
-          : 'bg-[#e5e7eb] justify-start border border-slate-350 dark:border-slate-700'
+          ? 'bg-blue-600 justify-end'
+          : 'bg-slate-200 dark:bg-slate-700 justify-start'
       }`}
     >
       <motion.div
@@ -37,7 +37,7 @@ export function CustomSwitch({
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       >
         {checked && (
-          <Check className="h-3 w-3 text-[#2563eb]" strokeWidth={3.5} />
+          <Check className="h-3 w-3 text-blue-600" strokeWidth={3.5} />
         )}
       </motion.div>
     </button>

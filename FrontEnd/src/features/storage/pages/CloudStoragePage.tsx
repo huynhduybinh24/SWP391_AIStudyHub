@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { useState, useRef, useMemo } from 'react'
+import { useTheme } from '@/features/settings/components/ThemeProvider'
 
 const INITIAL_UPLOADS = [
   {
@@ -31,7 +32,7 @@ const INITIAL_UPLOADS = [
     type: 'pdf',
     icon: FileText,
     iconColor: 'text-[#ef4444]',
-    bgColor: 'bg-[#fee2e2]',
+    bgColor: 'bg-[#fee2e2] dark:bg-[#fee2e2]/10',
   },
   {
     id: '2',
@@ -41,7 +42,7 @@ const INITIAL_UPLOADS = [
     type: 'doc',
     icon: FileText,
     iconColor: 'text-[#3b82f6]',
-    bgColor: 'bg-[#dbeafe]',
+    bgColor: 'bg-[#dbeafe] dark:bg-[#dbeafe]/10',
   },
   {
     id: '3',
@@ -51,7 +52,7 @@ const INITIAL_UPLOADS = [
     type: 'xls',
     icon: FileSpreadsheet,
     iconColor: 'text-[#22c55e]',
-    bgColor: 'bg-[#dcfce7]',
+    bgColor: 'bg-[#dcfce7] dark:bg-[#dcfce7]/10',
   },
 ]
 
@@ -60,10 +61,10 @@ const SHARED_FILES_GB = 1.2;
 
 const getFileExtensionInfo = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase();
-  if (['pdf'].includes(ext || '')) return { icon: FileText, iconColor: 'text-[#ef4444]', bgColor: 'bg-[#fee2e2]' };
-  if (['doc', 'docx'].includes(ext || '')) return { icon: FileText, iconColor: 'text-[#3b82f6]', bgColor: 'bg-[#dbeafe]' };
-  if (['xls', 'xlsx', 'csv'].includes(ext || '')) return { icon: FileSpreadsheet, iconColor: 'text-[#22c55e]', bgColor: 'bg-[#dcfce7]' };
-  return { icon: FileIcon, iconColor: 'text-[#64748b]', bgColor: 'bg-[#f1f5f9]' };
+  if (['pdf'].includes(ext || '')) return { icon: FileText, iconColor: 'text-[#ef4444]', bgColor: 'bg-[#fee2e2] dark:bg-[#fee2e2]/10' };
+  if (['doc', 'docx'].includes(ext || '')) return { icon: FileText, iconColor: 'text-[#3b82f6]', bgColor: 'bg-[#dbeafe] dark:bg-[#dbeafe]/10' };
+  if (['xls', 'xlsx', 'csv'].includes(ext || '')) return { icon: FileSpreadsheet, iconColor: 'text-[#22c55e]', bgColor: 'bg-[#dcfce7] dark:bg-[#dcfce7]/10' };
+  return { icon: FileIcon, iconColor: 'text-[#64748b]', bgColor: 'bg-[#f1f5f9] dark:bg-slate-800' };
 }
 
 const formatSize = (bytes: number) => {
@@ -75,6 +76,8 @@ const formatSize = (bytes: number) => {
 }
 
 export function CloudStoragePage() {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
   const [uploads, setUploads] = useState(INITIAL_UPLOADS)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [baseUsedStorage, setBaseUsedStorage] = useState(74.992)
@@ -93,7 +96,7 @@ export function CloudStoragePage() {
 
   const chartData = [
     { name: 'Used', value: usedPercentage, color: '#2563eb' },
-    { name: 'Remaining', value: 100 - usedPercentage, color: '#e5eeff' },
+    { name: 'Remaining', value: 100 - usedPercentage, color: isDark ? '#1e293b' : '#e5eeff' },
   ]
 
   const subjects = [
@@ -307,7 +310,7 @@ export function CloudStoragePage() {
               You're approaching your limit.
             </p>
             
-            <Button onClick={() => setIsManageModalOpen(true)} variant="secondary" className="w-full text-[#2563eb] bg-[#f0f4ff] border-none hover:bg-[#e0e8ff]">
+            <Button onClick={() => setIsManageModalOpen(true)} variant="secondary" className="w-full text-[#2563eb] bg-[#f0f4ff] border-none hover:bg-[#e0e8ff] dark:bg-blue-950/30 dark:hover:bg-blue-950/50 dark:text-blue-400">
               Manage Storage
             </Button>
           </Card>
@@ -324,7 +327,7 @@ export function CloudStoragePage() {
                     <span className="font-semibold text-body">{subject.name}</span>
                     <span className="text-muted">{subject.size}</span>
                   </div>
-                  <div className="w-full bg-[#f1f3f5] h-1.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-[#f1f3f5] dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500 ease-in-out"
                       style={{
@@ -348,25 +351,25 @@ export function CloudStoragePage() {
       >
         <div className="flex flex-col gap-4 mt-2">
           {trashSize === 0 && tempSize === 0 ? (
-            <div className="bg-emerald-50 text-emerald-600 p-4 rounded-lg flex items-center justify-center font-medium border border-emerald-100 shadow-sm">
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center justify-center font-medium border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
               Your storage is optimized!
             </div>
           ) : (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-amber-700 font-bold mb-1">
+            <div className="bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/30 rounded-lg p-4 shadow-sm text-amber-700 dark:text-amber-400">
+              <div className="flex items-center gap-2 font-bold mb-1">
                 <AlertTriangle className="size-4" />
                 Recommendations
               </div>
-              <p className="text-sm text-amber-600/80 mb-4">
+              <p className="text-sm text-amber-600/80 dark:text-amber-400/80 mb-4">
                 You can free up to {(trashSize + tempSize).toFixed(1)} GB of space by clearing these items.
               </p>
               
               <div className="flex flex-col gap-3">
                 {trashSize > 0 && (
-                  <div className="flex items-center justify-between bg-white p-3 rounded-md border border-amber-100 shadow-sm">
+                  <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-md border border-amber-100 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="bg-amber-100 p-2 rounded-lg">
-                        <Trash className="size-4 text-amber-700" />
+                      <div className="bg-amber-100 dark:bg-amber-950/40 p-2 rounded-lg">
+                        <Trash className="size-4 text-amber-700 dark:text-amber-400" />
                       </div>
                       <div>
                         <h4 className="font-semibold text-[14px] text-foreground">Empty Trash</h4>
@@ -387,10 +390,10 @@ export function CloudStoragePage() {
                 )}
 
                 {tempSize > 0 && (
-                  <div className="flex items-center justify-between bg-white p-3 rounded-md border border-amber-100 shadow-sm">
+                  <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-md border border-amber-100 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="bg-amber-100 p-2 rounded-lg">
-                        <Archive className="size-4 text-amber-700" />
+                      <div className="bg-amber-100 dark:bg-amber-950/40 p-2 rounded-lg">
+                        <Archive className="size-4 text-amber-700 dark:text-amber-400" />
                       </div>
                       <div>
                         <h4 className="font-semibold text-[14px] text-foreground">Clear Temp Files</h4>
@@ -413,7 +416,7 @@ export function CloudStoragePage() {
             </div>
           )}
 
-          <div className="bg-[#f8fafc] rounded-lg p-4 border border-slate-100 flex items-center justify-between mt-2 shadow-sm">
+          <div className="bg-[#f8fafc] dark:bg-slate-900 rounded-lg p-4 border border-slate-100 dark:border-slate-800 flex items-center justify-between mt-2 shadow-sm">
             <div>
               <h4 className="font-bold text-[14px] text-foreground">Need more space?</h4>
               <p className="text-[12px] text-muted mt-0.5">Upgrade to Pro for 1TB of storage.</p>

@@ -12,6 +12,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useState, useEffect } from 'react'
+import { useTheme } from '@/features/settings/components/ThemeProvider'
 
 const barChartData = [
   { name: 'Jan', value: 12 },
@@ -30,6 +31,8 @@ const pieChartData = [
 
 export function StorageAnalyticsPage() {
   const navigate = useNavigate()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
   const [isMounted, setIsMounted] = useState(false)
 
@@ -72,13 +75,13 @@ export function StorageAnalyticsPage() {
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
               <span className="text-[13px] font-semibold text-muted-foreground">Total Used</span>
-              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                <PieChartIcon className="size-4 text-blue-600" />
+              <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
+                <PieChartIcon className="size-4 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
             <div>
               <div className="text-[28px] font-bold text-foreground leading-none">45.2 GB</div>
-              <div className="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div className="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-600 rounded-full transition-all duration-1000" style={{ width: '45.2%' }}></div>
               </div>
               <p className="text-[11px] text-muted mt-2 font-medium">of 100 GB Total</p>
@@ -90,13 +93,13 @@ export function StorageAnalyticsPage() {
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
               <span className="text-[13px] font-semibold text-muted-foreground">Free Space</span>
-              <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
-                <CheckCircle2 className="size-4 text-emerald-600" />
+              <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center">
+                <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
             <div>
               <div className="text-[28px] font-bold text-foreground leading-none">54.8 GB</div>
-              <p className="text-[11px] text-emerald-600 mt-3 font-medium">Available for new uploads</p>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-3 font-medium">Available for new uploads</p>
             </div>
           </CardContent>
         </Card>
@@ -105,8 +108,8 @@ export function StorageAnalyticsPage() {
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
               <span className="text-[13px] font-semibold text-muted-foreground">Total Files</span>
-              <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center">
-                <Folder className="size-4 text-indigo-600" />
+              <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
+                <Folder className="size-4 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
             <div>
@@ -120,8 +123,8 @@ export function StorageAnalyticsPage() {
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
               <span className="text-[13px] font-semibold text-muted-foreground">Shared Items</span>
-              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                <Users className="size-4 text-blue-600" />
+              <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
+                <Users className="size-4 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
             <div>
@@ -147,25 +150,31 @@ export function StorageAnalyticsPage() {
               {isMounted && (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} style={{ outline: 'none' }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
                     <XAxis 
                       dataKey="name" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fontSize: 11, fill: '#64748b' }} 
+                      tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b' }} 
                       dy={10}
                     />
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fontSize: 11, fill: '#64748b' }}
+                      tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b' }}
                       tickFormatter={(value) => `${value}G`}
                       domain={[0, 50]}
                       ticks={[0, 10, 20, 30, 40, 50]}
                     />
                     <Tooltip 
-                      cursor={{ fill: '#f8fafc' }}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      cursor={{ fill: isDark ? '#0f172a' : '#f8fafc' }}
+                      contentStyle={{ 
+                        borderRadius: '8px', 
+                        border: 'none', 
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                        backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                        color: isDark ? '#f8fafc' : '#0f172a'
+                      }}
                       formatter={(value: any) => [`${value} GB`, 'Storage Used']}
                     />
                     <Bar 
@@ -177,7 +186,7 @@ export function StorageAnalyticsPage() {
                       {barChartData.map((_, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          fill={index === barChartData.length - 1 ? '#2563eb' : '#93c5fd'} 
+                          fill={index === barChartData.length - 1 ? '#2563eb' : (isDark ? '#1e3a8a' : '#93c5fd')} 
                           className="cursor-pointer outline-none focus:outline-none hover:opacity-80"
                         />
                       ))}
@@ -200,7 +209,13 @@ export function StorageAnalyticsPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart style={{ outline: 'none' }}>
                     <Tooltip 
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      contentStyle={{ 
+                        borderRadius: '8px', 
+                        border: 'none', 
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                        backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                        color: isDark ? '#f8fafc' : '#0f172a'
+                      }}
                       formatter={(value: any) => [`${value} GB`, 'Size']}
                     />
                     <Pie
@@ -267,8 +282,8 @@ export function StorageAnalyticsPage() {
       <Card className="border-border overflow-hidden">
         <CardContent className="p-0 flex flex-col sm:flex-row items-center">
           <div className="p-6 flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-              <Sparkles className="size-6 text-blue-600" />
+            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+              <Sparkles className="size-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <h3 className="font-bold text-foreground text-[15px]">AI Storage Insights</h3>
@@ -280,7 +295,7 @@ export function StorageAnalyticsPage() {
           <div className="p-6 pt-0 sm:pt-6 shrink-0 w-full sm:w-auto">
             <Button 
               variant="primary" 
-              className="w-full sm:w-auto bg-[#2563eb] hover:bg-[#1d4ed8] text-white transition-colors"
+              className="w-full sm:w-auto bg-[#2563eb] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors"
               onClick={() => navigate('/dashboard/storage/cleanup')}
             >
               Review Files

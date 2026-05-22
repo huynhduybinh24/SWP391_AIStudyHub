@@ -25,7 +25,7 @@ function CopyLinkButton({ docId }: { docId: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-slate-100 hover:text-foreground"
+      className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
       title="Copy Link"
     >
       {copied ? <Check className="size-4 text-green-500" /> : <LinkIcon className="size-4" />}
@@ -48,7 +48,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
           View All
         </Link>
       </div>
-      <Card className="divide-y divide-border/50">
+      <Card className="divide-y divide-slate-200 dark:divide-slate-800">
         {documents.map((doc) => {
           const meta = iconMap[doc.type]
           const Icon = meta.icon
