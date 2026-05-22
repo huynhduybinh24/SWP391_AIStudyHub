@@ -469,6 +469,7 @@ export function NotificationsPage() {
 
   // 5. "AI Updates" Filter Data
   const aiUpdatesNotifications: NotificationCardProps[] = [
+    // AI Summary Ready - Commit 2
     {
       id: 'ai-summary',
       type: 'ai',
