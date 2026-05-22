@@ -2,17 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import {
   X,
-  Bot,
   Send,
   Sparkles,
   CheckCircle2,
   BrainCircuit,
   CloudUpload,
-  MoreVertical,
-  MessageSquare,
-  ExternalLink,
-  Download,
-  Trash2,
   FileText,
   FileCode,
   BookOpen,
@@ -35,7 +29,7 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'
+  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
   essential?: boolean
@@ -49,6 +43,7 @@ interface SubjectContent {
 
 // Initial Mock Data
 const INITIAL_DOCUMENTS: DocumentItem[] = [
+  // Existing files
   {
     id: 'doc-design-patterns',
     title: 'Design Patterns',
@@ -87,18 +82,6 @@ const INITIAL_DOCUMENTS: DocumentItem[] = [
     type: 'pdf',
   },
   {
-    id: 'doc-2',
-    title: 'Molecular Biology Lect',
-    fileName: 'Molecular_Biology_Lecture_Notes.docx',
-    uploadedAt: 'Uploaded Oct 14, 2024',
-    uploadedDateObj: new Date('2024-10-14'),
-    size: '1.1 MB',
-    sizeKb: 1126,
-    subject: 'BIOLOGY',
-    status: 'PENDING',
-    type: 'word',
-  },
-  {
     id: 'doc-3',
     title: 'Introduction to Quantum',
     fileName: 'Intro_to_Quantum_Mechanics.txt',
@@ -135,18 +118,6 @@ const INITIAL_DOCUMENTS: DocumentItem[] = [
     type: 'pdf',
   },
   {
-    id: 'doc-6',
-    title: 'Genetics Lab Report Dr',
-    fileName: 'Genetics_Lab_Report_Draft.docx',
-    uploadedAt: 'Uploaded 3 days ago',
-    uploadedDateObj: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    size: '1.8 MB',
-    sizeKb: 1843,
-    subject: 'BIOLOGY',
-    status: 'ANALYZED',
-    type: 'word',
-  },
-  {
     id: 'doc-7',
     title: 'Macroeconomics Data',
     fileName: 'Macroeconomics_Q3_Dataset.xlsx',
@@ -157,6 +128,300 @@ const INITIAL_DOCUMENTS: DocumentItem[] = [
     subject: 'ECONOMICS',
     status: 'QUEUED',
     type: 'slides',
+  },
+
+  // === 12 NEUROSCIENCE DOCUMENTS ===
+  {
+    id: 'neuro-1',
+    title: 'Neuroscience 101: Brain Structures Summary',
+    fileName: 'Neuroscience_101_Brain_Structures_Summary.pdf',
+    uploadedAt: 'Uploaded Oct 15, 2024',
+    uploadedDateObj: new Date('2024-10-15'),
+    size: '3.6 MB',
+    sizeKb: 3686,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'neuro-2',
+    title: 'Cognitive Neuroscience Notes',
+    fileName: 'Cognitive_Neuroscience_Lecture_Notes.docx',
+    uploadedAt: 'Uploaded Oct 16, 2024',
+    uploadedDateObj: new Date('2024-10-16'),
+    size: '1.8 MB',
+    sizeKb: 1843,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'word',
+  },
+  {
+    id: 'neuro-3',
+    title: 'Neurotransmitters Study Guide',
+    fileName: 'Neurotransmitters_Study_Guide.pdf',
+    uploadedAt: 'Uploaded Oct 11, 2024',
+    uploadedDateObj: new Date('2024-10-11'),
+    size: '2.1 MB',
+    sizeKb: 2150,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'neuro-4',
+    title: 'Introduction to Synapses',
+    fileName: 'Intro_to_Synaptic_Transmission.pdf',
+    uploadedAt: 'Uploaded Oct 09, 2024',
+    uploadedDateObj: new Date('2024-10-09'),
+    size: '1.4 MB',
+    sizeKb: 1433,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'neuro-5',
+    title: 'Neuroplasticity Research Paper',
+    fileName: 'Neuroplasticity_Mechanisms_Paper.docx',
+    uploadedAt: 'Uploaded Oct 14, 2024',
+    uploadedDateObj: new Date('2024-10-14'),
+    size: '4.2 MB',
+    sizeKb: 4300,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'word',
+  },
+  {
+    id: 'neuro-6',
+    title: 'Sensory Systems Overview',
+    fileName: 'Sensory_Systems_Overview.docx',
+    uploadedAt: 'Uploaded Oct 07, 2024',
+    uploadedDateObj: new Date('2024-10-07'),
+    size: '2.8 MB',
+    sizeKb: 2867,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'word',
+  },
+  {
+    id: 'neuro-7',
+    title: 'Motor Pathways Guide',
+    fileName: 'Motor_Pathways_Guide.pdf',
+    uploadedAt: 'Uploaded Oct 05, 2024',
+    uploadedDateObj: new Date('2024-10-05'),
+    size: '3.1 MB',
+    sizeKb: 3174,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'neuro-8',
+    title: 'Limbic System Structures',
+    fileName: 'Limbic_System_Structures.pdf',
+    uploadedAt: 'Uploaded Oct 03, 2024',
+    uploadedDateObj: new Date('2024-10-03'),
+    size: '1.9 MB',
+    sizeKb: 1945,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'neuro-9',
+    title: 'Brain Development Slides',
+    fileName: 'Brain_Development_Slides.pptx',
+    uploadedAt: 'Uploaded Oct 12, 2024',
+    uploadedDateObj: new Date('2024-10-12'),
+    size: '8.4 MB',
+    sizeKb: 8601,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'slides',
+  },
+  {
+    id: 'neuro-10',
+    title: 'Neurodegenerative Diseases Notes',
+    fileName: 'Neurodegenerative_Diseases_Notes.pdf',
+    uploadedAt: 'Uploaded Oct 10, 2024',
+    uploadedDateObj: new Date('2024-10-10'),
+    size: '2.5 MB',
+    sizeKb: 2560,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'neuro-11',
+    title: 'Neuroimaging Technologies',
+    fileName: 'Neuroimaging_Technologies.txt',
+    uploadedAt: 'Uploaded Oct 06, 2024',
+    uploadedDateObj: new Date('2024-10-06'),
+    size: '950 KB',
+    sizeKb: 950,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'text',
+  },
+  {
+    id: 'neuro-12',
+    title: 'Nervous System Anatomy Whiteboard',
+    fileName: 'Nervous_System_Anatomy_Whiteboard.png',
+    uploadedAt: 'Uploaded Yesterday',
+    uploadedDateObj: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    size: '5.2 MB',
+    sizeKb: 5324,
+    subject: 'NEUROSCIENCE',
+    status: 'ANALYZED',
+    type: 'image',
+  },
+
+  // === 8 BIOLOGY DOCUMENTS ===
+  {
+    id: 'doc-2',
+    title: 'Molecular Biology Lect',
+    fileName: 'Molecular_Biology_Lecture_Notes_Neuroscience.docx',
+    uploadedAt: 'Uploaded Oct 14, 2024',
+    uploadedDateObj: new Date('2024-10-14'),
+    size: '1.1 MB',
+    sizeKb: 1126,
+    subject: 'BIOLOGY',
+    status: 'PENDING',
+    type: 'word',
+  },
+  {
+    id: 'doc-6',
+    title: 'Genetics Lab Report Dr',
+    fileName: 'Genetics_Lab_Report_Draft_Neuroscience.docx',
+    uploadedAt: 'Uploaded 3 days ago',
+    uploadedDateObj: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+    size: '1.8 MB',
+    sizeKb: 1843,
+    subject: 'BIOLOGY',
+    status: 'ANALYZED',
+    type: 'word',
+  },
+  {
+    id: 'bio-3',
+    title: 'Cellular Respiration in Brain Cells',
+    fileName: 'Cellular_Respiration_in_Neurons.pdf',
+    uploadedAt: 'Uploaded Oct 15, 2024',
+    uploadedDateObj: new Date('2024-10-15'),
+    size: '2.2 MB',
+    sizeKb: 2252,
+    subject: 'BIOLOGY',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'bio-4',
+    title: 'Photosynthesis and Plant Biology (Neuroscience Context)',
+    fileName: 'Plant_Biology_and_Neuro_Signaling.pdf',
+    uploadedAt: 'Uploaded Oct 13, 2024',
+    uploadedDateObj: new Date('2024-10-13'),
+    size: '3.1 MB',
+    sizeKb: 3174,
+    subject: 'BIOLOGY',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'bio-5',
+    title: 'Plant Neurobiology Anatomy Overview',
+    fileName: 'Plant_Neurobiology_Overview.docx',
+    uploadedAt: 'Uploaded Oct 12, 2024',
+    uploadedDateObj: new Date('2024-10-12'),
+    size: '2.5 MB',
+    sizeKb: 2560,
+    subject: 'BIOLOGY',
+    status: 'ANALYZED',
+    type: 'word',
+  },
+  {
+    id: 'bio-6',
+    title: 'Mendelian Genetics in Neuro-developmental Disorders',
+    fileName: 'Mendelian_Genetics_Neuro_Disorders.pdf',
+    uploadedAt: 'Uploaded Oct 11, 2024',
+    uploadedDateObj: new Date('2024-10-11'),
+    size: '1.7 MB',
+    sizeKb: 1740,
+    subject: 'BIOLOGY',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'bio-7',
+    title: 'Ecology, Ecosystems and Evolutionary Neuroscience',
+    fileName: 'Ecosystems_and_Evolutionary_Neuroscience.docx',
+    uploadedAt: 'Uploaded Oct 10, 2024',
+    uploadedDateObj: new Date('2024-10-10'),
+    size: '3.4 MB',
+    sizeKb: 3481,
+    subject: 'BIOLOGY',
+    status: 'ANALYZED',
+    type: 'word',
+  },
+  {
+    id: 'bio-8',
+    title: 'Evolutionary Biology: Nervous System Evolution',
+    fileName: 'Evolution_of_Nervous_Systems.txt',
+    uploadedAt: 'Uploaded Oct 09, 2024',
+    uploadedDateObj: new Date('2024-10-09'),
+    size: '890 KB',
+    sizeKb: 890,
+    subject: 'BIOLOGY',
+    status: 'ANALYZED',
+    type: 'text',
+  },
+
+  // === 4 PSYCHOLOGY DOCUMENTS ===
+  {
+    id: 'psych-1',
+    title: 'Introduction to Neuropsychology',
+    fileName: 'Introduction_to_Neuropsychology.docx',
+    uploadedAt: 'Uploaded Oct 15, 2024',
+    uploadedDateObj: new Date('2024-10-15'),
+    size: '1.9 MB',
+    sizeKb: 1945,
+    subject: 'PSYCHOLOGY',
+    status: 'ANALYZED',
+    type: 'word',
+  },
+  {
+    id: 'psych-2',
+    title: 'Behavioral Psychology and Neuroscience Basics',
+    fileName: 'Behavioral_Psychology_Neuroscience.pdf',
+    uploadedAt: 'Uploaded Oct 14, 2024',
+    uploadedDateObj: new Date('2024-10-14'),
+    size: '2.7 MB',
+    sizeKb: 2764,
+    subject: 'PSYCHOLOGY',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'psych-3',
+    title: 'Cognitive Development and Brain Plasticity',
+    fileName: 'Cognitive_Development_Brain.pdf',
+    uploadedAt: 'Uploaded Oct 13, 2024',
+    uploadedDateObj: new Date('2024-10-13'),
+    size: '3.2 MB',
+    sizeKb: 3276,
+    subject: 'PSYCHOLOGY',
+    status: 'ANALYZED',
+    type: 'pdf',
+  },
+  {
+    id: 'psych-4',
+    title: 'Social Psychology: Neuro-social Interactions',
+    fileName: 'Social_Psychology_Neuro_Social.docx',
+    uploadedAt: 'Uploaded Oct 12, 2024',
+    uploadedDateObj: new Date('2024-10-12'),
+    size: '2.1 MB',
+    sizeKb: 2150,
+    subject: 'PSYCHOLOGY',
+    status: 'ANALYZED',
+    type: 'word',
   },
 ]
 
@@ -358,6 +623,50 @@ const SUBJECTS_CONTENT_DB: Record<string, SubjectContent> = {
       { q: 'Kỹ thuật Feynman hoạt động thế nào?', a: 'Giải thích lại một khái niệm phức tạp bằng ngôn từ đơn giản nhất như thể đang giảng cho một đứa trẻ.' },
       { q: 'Lặp lại ngắt quãng (Spaced Repetition) dựa trên hiện tượng nào?', a: 'Đường cong quên lãng (Forgetting Curve) của Ebbinghaus.' },
     ]
+  },
+  NEUROSCIENCE: {
+    previewText: `SECTION 1: INTRODUCTION TO NEUROANATOMY & BRAIN STRUCTURES
+1.1 Cerebral Cortex:
+  - Divided into four main lobes: Frontal, Parietal, Occipital, and Temporal.
+  - Frontal Lobe: Responsible for executive functions, decision-making, planning, and motor control.
+  - Temporal Lobe: Plays a key role in auditory processing, memory encoding, and language comprehension.
+1.2 Limbic System:
+  - Amygdala: Coordinates emotional responses, particularly fear and threat detection.
+  - Hippocampus: Essential for the consolidation of short-term memory into long-term memory.
+1.3 Synaptic Transmission:
+  - Action potential triggers release of neurotransmitters across the synaptic cleft.`,
+    summaryBullets: [
+      'Cung cấp bản đồ giải phẫu vỏ não với chức năng chi tiết của 4 thùy chính.',
+      'Phân tích chức năng lưu trữ ký ức dài hạn của Hồi hải mã (Hippocampus) thuộc hệ viền.',
+      'Mô tả chi tiết cơ chế truyền dẫn qua khe synap dưới tác động của điện thế hoạt động.',
+      'Giải thích vai trò điều khiển cảm xúc sợ hãi của Hạch hạnh nhân (Amygdala).'
+    ],
+    flashcards: [
+      { q: 'Thùy trán (Frontal Lobe) chịu trách nhiệm chính về chức năng nào?', a: 'Các chức năng điều hành (executive functions) như lập kế hoạch, ra quyết định và kiểm soát vận động.' },
+      { q: 'Hồi hải mã (Hippocampus) đóng vai trò gì trong hệ thống trí nhớ?', a: 'Chuyển đổi ký ức ngắn hạn thành ký ức dài hạn (memory consolidation).' },
+      { q: 'Khe synap (Synaptic Cleft) là gì?', a: 'Khoảng trống nhỏ giữa hai tế bào thần kinh nơi diễn ra quá trình truyền dẫn hóa học.' },
+    ]
+  },
+  PSYCHOLOGY: {
+    previewText: `CHAPTER 1: BEHAVIORAL AND COGNITIVE PSYCHOLOGY
+1.1 Classical Conditioning vs. Operant Conditioning:
+  - Ivan Pavlov: Classical conditioning (association of stimuli).
+  - B.F. Skinner: Operant conditioning (reinforcement and punishment).
+1.2 Brain Plasticity & Behavior:
+  - Environmental enrichment promotes neurogenesis and dendritic branching.
+1.3 Social Psychology:
+  - Conformity, obedience, and the neural substrates of social interactions.`,
+    summaryBullets: [
+      'So sánh triệt để thuyết điều kiện hóa cổ điển và thuyết điều kiện hóa hành vi.',
+      'Giải thích tác động của môi trường giàu kích thích đối với tính mềm dẻo của não bộ.',
+      'Phân tích cơ chế thần kinh đằng sau các hành vi xã hội như sự phục tùng và đồng điệu.',
+      'Tóm tắt các thí nghiệm kinh điển của Pavlov và Skinner về hành vi động vật.'
+    ],
+    flashcards: [
+      { q: 'Thuyết điều kiện hóa cổ điển gắn liền với tên tuổi nhà tâm lý học nào?', a: 'Ivan Pavlov.' },
+      { q: 'Tính mềm dẻo của não bộ (Brain Plasticity) là gì?', a: 'Khả năng tự tái cấu trúc và thích nghi của não bộ dưới tác động của học tập và môi trường.' },
+      { q: 'Sự khác biệt chính giữa củng cố tích cực và tiêu cực trong Operant Conditioning?', a: 'Củng cố tích cực thêm kích thích mong muốn; củng cố tiêu cực loại bỏ kích thích không mong muốn.' },
+    ]
   }
 }
 
@@ -417,6 +726,14 @@ export function DocumentsPage() {
   // Toast Notification States
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isToastVisible, setIsToastVisible] = useState(false)
+
+  // AI Workspace Analytics Insights Modal States & Variables
+  const [isInsightsModalOpen, setIsInsightsModalOpen] = useState(false)
+  
+  // Dynamic Storage calculations for AI Workspace Analytics Insights Modal
+  const totalStorageMb = documents.reduce((acc, doc) => acc + (doc.sizeKb || 0), 0) / 1024
+  const totalStorageFormatted = totalStorageMb.toFixed(1)
+  const storagePercentage = Math.min(100, Math.round((totalStorageMb / 100) * 100))
 
   // Helper trigger notification toast
   const showToast = (message: string) => {
@@ -691,11 +1008,13 @@ export function DocumentsPage() {
       {/* Renders MyDocumentsPage or SubjectCategoryPage */}
       <Outlet
         context={{
+          // Shared Context
           documents,
           setDocuments,
           openUploadModal: () => setIsUploadModalOpen(true),
           openChatDrawer: handleOpenChat,
           openPreviewModal: handleOpenPreview,
+          handleOpenPreview,
           openQuizModal: () => {
             setCurrentQuizQuestion(0)
             setSelectedQuizAnswer(null)
@@ -703,11 +1022,23 @@ export function DocumentsPage() {
             setShowQuizResults(false)
             setIsQuizModalOpen(true)
           },
-          showToast,
-          handleDownloadFile,
-          handleDeleteDocument,
-          renderFileIcon,
-          renderStatusBadge
+          
+          // DocumentsLayoutContext (for MyDocumentsPage)
+          searchQuery,
+          setSearchQuery,
+          subjectFilter,
+          setSubjectFilter,
+          typeFilter,
+          setTypeFilter,
+          viewMode,
+          setViewMode,
+          setIsUploadModalOpen,
+          setIsInsightsModalOpen,
+          handleOpenChat,
+          handleOpenPreview,
+          activeMenuId,
+          setActiveMenuId,
+          menuRef
         }}
       />
 
@@ -1336,6 +1667,93 @@ export function DocumentsPage() {
           </div>
         </Modal>
       )}
+
+      {/* 9. ENHANCED Interactive AI Workspace Analytics / Insights Modal */}
+      {isInsightsModalOpen && (
+        <Modal
+          isOpen={isInsightsModalOpen}
+          onClose={() => setIsInsightsModalOpen(false)}
+          title="AI Workspace Insights"
+          description="Detailed intelligence telemetry and statistics regarding your uploaded documents."
+          className="max-w-xl"
+        >
+          <div className="space-y-6 py-2">
+            
+            {/* Grid metrics blocks */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-2xl border border-border p-4 bg-white flex flex-col justify-between">
+                <span className="text-xs text-muted font-bold uppercase tracking-wider">Total Files</span>
+                <span className="text-3xl font-black text-foreground mt-2">{documents.length}</span>
+                <span className="text-[10px] text-emerald-600 font-bold mt-1 flex items-center gap-0.5">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  +100% active study
+                </span>
+              </div>
+
+              <div className="rounded-2xl border border-border p-4 bg-white flex flex-col justify-between">
+                <span className="text-xs text-muted font-bold uppercase tracking-wider">Cloud Storage</span>
+                <span className="text-3xl font-black text-foreground mt-2">{totalStorageFormatted} <span className="text-sm font-semibold">MB</span></span>
+                <span className="text-[10px] text-muted font-semibold mt-1">of 100 MB maximum capacity</span>
+              </div>
+            </div>
+
+            {/* Storage Progress bar */}
+            <div className="rounded-2xl border border-border p-5 bg-surface space-y-2">
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-body flex items-center gap-1">
+                  <HardDrive className="h-4 w-4 text-muted" />
+                  Allocated Storage
+                </span>
+                <span className="text-foreground">{storagePercentage}% Used</span>
+              </div>
+              <div className="w-full bg-border/80 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${storagePercentage}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Subject Distribution mini graph bar */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-foreground uppercase tracking-wider">Subject Analytics</h4>
+              <div className="space-y-2.5">
+                {['MATHEMATICS', 'BIOLOGY', 'PHYSICS', 'COMPSCI', 'PHILOSOPHY', 'ECONOMICS', 'NEUROSCIENCE', 'PSYCHOLOGY'].map((subj) => {
+                  const count = documents.filter(d => d.subject === subj).length
+                  const maxCount = Math.max(...['MATHEMATICS', 'BIOLOGY', 'PHYSICS', 'COMPSCI', 'PHILOSOPHY', 'ECONOMICS', 'NEUROSCIENCE', 'PSYCHOLOGY'].map(s => documents.filter(d => d.subject === s).length))
+                  const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0
+                  
+                  return (
+                    <div key={subj} className="flex items-center gap-4 text-xs">
+                      <span className="w-24 truncate font-bold text-body">{subj}</span>
+                      <div className="flex-1 bg-border/40 h-6 rounded-md overflow-hidden relative flex items-center px-2">
+                        <div
+                          className="bg-blue-100 border-r-2 border-primary absolute left-0 top-0 bottom-0 transition-all duration-500"
+                          style={{ width: `${barWidth}%` }}
+                        />
+                        <span className="z-10 font-bold text-primary ml-auto">{count} file{count !== 1 ? 's' : ''}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Footer close */}
+            <div className="flex justify-end border-t border-border pt-4 mt-8">
+              <Button
+                variant="secondary"
+                onClick={() => setIsInsightsModalOpen(false)}
+                className="rounded-xl font-bold"
+              >
+                Close Metrics
+              </Button>
+            </div>
+
+          </div>
+        </Modal>
+      )}
+
     </div>
   )
 }

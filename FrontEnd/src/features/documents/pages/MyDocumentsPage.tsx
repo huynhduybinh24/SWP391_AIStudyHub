@@ -12,8 +12,6 @@ import {
   Trash2,
   CloudUpload,
   FolderPlus,
-  SlidersHorizontal,
-  Plus,
   FileText
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -27,10 +25,9 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'
+  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
-  essential?: boolean
 }
 
 interface DocumentsContextType {
@@ -93,6 +90,7 @@ export default function MyDocumentsPage() {
     return queryMatch && subjectMatch && typeMatch
   })
 
+
   // Dynamic counts for top folder cards
   const compsCount = documents.filter(d => d.subject === 'COMPSCI').length
   const mathCount = documents.filter(d => d.subject === 'MATHEMATICS').length
@@ -102,13 +100,6 @@ export default function MyDocumentsPage() {
     <div className="space-y-8">
       {/* Figma Header Block for general Documents Page */}
       <div className="space-y-4 pt-2">
-        <button 
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-primary transition-colors focus:outline-none w-fit"
-        >
-          &larr; Back to Dashboard
-        </button>
-
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
           <div className="flex items-center gap-4">
             {/* Folder layout icon */}
@@ -249,6 +240,8 @@ export default function MyDocumentsPage() {
                 <option value="Compsci">CompSci</option>
                 <option value="Philosophy">Philosophy</option>
                 <option value="Economics">Economics</option>
+                <option value="Neuroscience">Neuroscience</option>
+                <option value="Psychology">Psychology</option>
               </select>
             </div>
 
@@ -303,6 +296,7 @@ export default function MyDocumentsPage() {
           </div>
         </div>
 
+
         {/* Empty state or list render */}
         {filteredDocuments.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white py-16 px-4 text-center shadow-xs">
@@ -332,7 +326,7 @@ export default function MyDocumentsPage() {
               <div
                 key={doc.id}
                 className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-[#2563eb]/20 cursor-pointer"
-                onClick={() => openPreviewModal(doc)}
+                onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
               >
                 {/* File Top Icon & Menu */}
                 <div className="flex items-start justify-between" onClick={(e) => e.stopPropagation()}>
@@ -361,7 +355,7 @@ export default function MyDocumentsPage() {
                           Chat with AI
                         </button>
                         <button
-                          onClick={() => openPreviewModal(doc)}
+                          onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                         >
                           <ExternalLink className="h-4 w-4" />
@@ -445,7 +439,7 @@ export default function MyDocumentsPage() {
                     <tr
                       key={doc.id}
                       className="group hover:bg-slate-50/30 transition-colors cursor-pointer"
-                      onClick={() => openPreviewModal(doc)}
+                      onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
