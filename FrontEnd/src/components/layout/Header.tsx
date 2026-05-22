@@ -118,6 +118,7 @@ export function Header() {
     return defaultNotifications
   })
 
+  // Single source of truth for all unread indicators (Bell red dot, Dropdown title badge, Item dots)
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
   const markAsRead = (id: string) => {
