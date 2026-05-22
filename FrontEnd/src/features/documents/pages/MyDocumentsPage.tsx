@@ -12,7 +12,8 @@ import {
   Trash2,
   CloudUpload,
   FolderPlus,
-  FileText
+  FileText,
+  SlidersHorizontal
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -60,9 +61,24 @@ export default function MyDocumentsPage() {
   const [subjectFilter, setSubjectFilter] = useState('All')
   const [typeFilter, setTypeFilter] = useState('All')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [showFilters, setShowFilters] = useState(false)
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
 
   const menuRef = useRef<HTMLDivElement>(null)
+  const filterContainerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-reset filters on collapse, and smooth scroll to filter panel on open
+  useEffect(() => {
+    if (!showFilters) {
+      setSearchQuery('')
+      setSubjectFilter('All')
+      setTypeFilter('All')
+    } else {
+      setTimeout(() => {
+        filterContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 100)
+    }
+  }, [showFilters])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -121,6 +137,21 @@ export default function MyDocumentsPage() {
           </div>
 
           <div className="flex items-center gap-3 self-end md:self-auto">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowFilters(prev => !prev)}
+              className={cn(
+                "flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
+                showFilters 
+                  ? "border-[#2563eb]/40 bg-blue-50 text-[#2563eb]" 
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              )}
+            >
+              <SlidersHorizontal className="h-4.5 w-4.5" />
+              Filter
+            </Button>
+
             <Button
               onClick={openUploadModal}
               className="group flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
@@ -201,7 +232,8 @@ export default function MyDocumentsPage() {
         </div>
 
         {/* Filter bar controls */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs md:flex-row md:items-center md:justify-between">
+        {showFilters && (
+          <div ref={filterContainerRef} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs md:flex-row md:items-center md:justify-between animate-fade-in">
           {/* Search field */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -241,6 +273,7 @@ export default function MyDocumentsPage() {
                 <option value="Economics">Economics</option>
                 <option value="Neuroscience">Neuroscience</option>
                 <option value="Psychology">Psychology</option>
+                <option value="General">General Studies</option>
               </select>
             </div>
 
@@ -294,6 +327,7 @@ export default function MyDocumentsPage() {
             </div>
           </div>
         </div>
+      )}
 
 
         {/* Empty state or list render */}
