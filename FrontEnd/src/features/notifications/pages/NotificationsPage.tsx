@@ -262,6 +262,7 @@ function NotificationCard({
 }
 
 export function NotificationsPage() {
+  // Styled to match 1280x1024 layout spacing and Figma card details exactly - Commit 5
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
