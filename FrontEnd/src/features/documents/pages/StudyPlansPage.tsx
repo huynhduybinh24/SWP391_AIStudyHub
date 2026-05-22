@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { CreateStudyPlanModal } from '@/features/study-plans/components/CreateStudyPlanModal'
+import { CreateStudyPlanModal } from '@/features/study-plans/pages/CreateStudyPlanModal'
 
 // ─────────────────────────────────────────────
 // Types
