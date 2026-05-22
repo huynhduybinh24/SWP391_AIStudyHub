@@ -1,4 +1,4 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Bot } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
@@ -8,7 +8,7 @@ import { ChatPopup } from '@/features/ai-chatbot/components/ChatPopup'
 import { useUiStore } from '@/stores/uiStore'
 
 export function DashboardLayout() {
-  const navigate = useNavigate()
+
   const location = useLocation()
   const isChatPage = location.pathname === '/dashboard/chat' || location.pathname === '/dashboard/chat/'
   const isChatPopupOpen = useUiStore((s) => s.isChatPopupOpen)
