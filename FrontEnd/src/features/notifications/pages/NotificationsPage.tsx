@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Eye } from 'lucide-react'
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Eye, Calendar, Layers, ExternalLink } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
  * - AI Updates (Corrected from "AI pdates")
  * - View Summary (Corrected from "View r ummary")
  * - Settings (Corrected from "êettings")
- * - Terms of Service (Corrected from "Terms of êervice")
+ * - Terms of Service (Corrected from "Terms of @Service")
  */
 
 /**
@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils'
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
   id: string
-  type: 'ai' | 'folder' | 'mention' | 'security' | 'document'
+  type: 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard'
   title: string
   time: string
   isUnread: boolean
@@ -120,6 +120,8 @@ function NotificationCard({
             {type === 'mention' && <AtSign className="w-6 h-6 text-[#3155F6]" />}
             {type === 'security' && <Shield className="w-6 h-6 text-[#EF4444]" />}
             {type === 'document' && <FileText className="w-6 h-6 text-[#3155F6]" />}
+            {type === 'calendar' && <Calendar className="w-6 h-6 text-[#3155F6]" />}
+            {type === 'flashcard' && <Layers className="w-6 h-6 text-[#3155F6]" />}
           </div>
         )}
       </div>
@@ -472,7 +474,7 @@ export function NotificationsPage() {
     // AI Summary Ready - Commit 2
     {
       id: 'ai-summary',
-      type: 'ai',
+      type: 'document',
       title: 'AI Summary Ready',
       time: '10m ago',
       isUnread: true,
@@ -490,7 +492,7 @@ export function NotificationsPage() {
     },
     {
       id: 'study-plan',
-      type: 'ai',
+      type: 'calendar',
       title: 'Study Plan Generated',
       time: '4h ago',
       isUnread: false,
@@ -503,8 +505,14 @@ export function NotificationsPage() {
           based on your recent uploads.
         </>
       ),
-      actionText: 'Open Plan',
-      actionUrl: '/dashboard/study-plans',
+      buttons: [
+        {
+          text: 'Open Plan',
+          variant: 'secondary',
+          icon: <Calendar className="w-3.5 h-3.5 text-[#3155F6]" />,
+          url: '/dashboard/study-plans',
+        },
+      ],
     },
     {
       id: 'flashcards',
