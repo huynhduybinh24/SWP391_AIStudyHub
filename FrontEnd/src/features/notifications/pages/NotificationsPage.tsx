@@ -53,7 +53,6 @@ interface NotificationCardProps {
 }
 
 function NotificationCard({
-  id,
   type,
   title,
   time,
