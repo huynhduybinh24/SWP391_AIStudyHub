@@ -75,8 +75,10 @@ function StatusIcon({ status }: { status: LessonStatus }) {
 
 export function CurriculumModal({ isOpen, onClose, plan }: Props) {
   // ── All hooks before any conditional return ──────────────
-  const [expandedModule, setExpandedModule] = useState<string | null>(null)
+  const [expandedModule, setExpandedModule]     = useState<string | null>(null)
+  const [highlightedModule, setHighlightedModule] = useState<string | null>(null)
   const activeModuleRef = useRef<HTMLDivElement | null>(null)
+  const activeLesonRef  = useRef<HTMLDivElement | null>(null)
 
   // Reset expanded module whenever a different plan is opened
   useEffect(() => {
@@ -102,15 +104,25 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
 
   // ── Handlers ─────────────────────────────────────────────
 
-  // "Start Module" / "Review" button: expand + scroll to target module
+  // "Start Module" / "Review" button: expand + highlight + scroll to first active lesson
   const handleStart = () => {
     if (!firstActiveModule) return
-    // Expand the module (in case it's collapsed)
+
+    // 1. Expand the module
     setExpandedModule(firstActiveModule.id)
-    // Scroll to it — works even when already expanded
+
+    // 2. Flash-highlight the module border
+    setHighlightedModule(firstActiveModule.id)
+    setTimeout(() => setHighlightedModule(null), 1500)
+
+    // 3. Scroll to the first in-progress/not-completed lesson inside the module
     setTimeout(() => {
-      activeModuleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }, 80)
+      if (activeLesonRef.current) {
+        activeLesonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } else {
+        activeModuleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 120)
   }
 
   // ─────────────────────────────────────────────────────────
@@ -156,7 +168,11 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
             <div
               key={mod.id}
               ref={mod.id === firstActiveModule?.id ? activeModuleRef : null}
-              className="rounded-xl border border-slate-200 overflow-hidden">
+              className={`rounded-xl border overflow-hidden transition-all duration-300 ${
+                highlightedModule === mod.id
+                  ? 'border-[#2557E8] ring-2 ring-[#2557E8]/30 shadow-md'
+                  : 'border-slate-200'
+              }`}>
               {/* Module header */}
               <button
                 type="button"
@@ -200,9 +216,15 @@ export function CurriculumModal({ isOpen, onClose, plan }: Props) {
                 <div className="border-t border-slate-100 divide-y divide-slate-100">
                   {mod.lessons.map((lesson) => {
                     const isLocked = lesson.status === 'locked'
+                    // Attach ref to first non-completed lesson in the active module
+                    const isFirstActive =
+                      mod.id === firstActiveModule?.id && lesson.status !== 'completed'
+                    const alreadyAssigned = activeLesonRef.current !== null
+                    const attachRef = isFirstActive && !alreadyAssigned
                     return (
                       <div
                         key={lesson.id}
+                        ref={attachRef ? (el) => { activeLesonRef.current = el } : undefined}
                         className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
                           isLocked
                             ? 'opacity-40 cursor-not-allowed bg-slate-50/50'
