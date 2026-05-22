@@ -15,10 +15,22 @@ import {
   Share2,
   GraduationCap,
   ArrowLeft,
-  Sparkle
+  Sparkle,
+  Globe,
+  Lock,
+  UserPlus,
+  Trash2,
+  Settings,
+  Check,
+  ChevronDown,
+  Copy,
+  X,
+  Mail,
+  User
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface DocumentItem {
   id: string
@@ -180,6 +192,84 @@ export default function DocumentDetailPage() {
   const [scanProgress, setScanProgress] = useState<number>(0)
   const [scanStep, setScanStep] = useState<string>('')
 
+  // Collaborator interface for Google-style sharing
+  interface Collaborator {
+    id: string
+    name: string
+    email: string
+    role: 'owner' | 'editor' | 'commenter' | 'viewer'
+    avatarBg: string
+  }
+
+  // Google Drive Share states
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false)
+  const [isSettingsViewOpen, setIsSettingsViewOpen] = useState<boolean>(false)
+  const [editorsCanShare, setEditorsCanShare] = useState<boolean>(true)
+  const [viewersCanDownload, setViewersCanDownload] = useState<boolean>(true)
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([
+    {
+      id: 'owner-1',
+      name: 'Alex Rivera',
+      email: 'alex@example.com',
+      role: 'owner',
+      avatarBg: 'bg-emerald-500/90 text-white font-bold'
+    },
+    {
+      id: 'collab-1',
+      name: 'Huynh Duy Binh',
+      email: 'binh@example.com',
+      role: 'editor',
+      avatarBg: 'bg-indigo-500/90 text-white font-bold'
+    },
+    {
+      id: 'collab-2',
+      name: 'Ngoc Tan',
+      email: 'tan@example.com',
+      role: 'commenter',
+      avatarBg: 'bg-amber-500/90 text-white font-bold'
+    }
+  ])
+  const [newEmail, setNewEmail] = useState<string>('')
+  const [newRole, setNewRole] = useState<'editor' | 'commenter' | 'viewer'>('viewer')
+  const [generalAccess, setGeneralAccess] = useState<'restricted' | 'public'>('restricted')
+  const [publicRole, setPublicRole] = useState<'editor' | 'commenter' | 'viewer'>('viewer')
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null)
+  const [isGeneralDropdownOpen, setIsGeneralDropdownOpen] = useState<boolean>(false)
+  const [isPublicRoleDropdownOpen, setIsPublicRoleDropdownOpen] = useState<boolean>(false)
+  const [isNewRoleDropdownOpen, setIsNewRoleDropdownOpen] = useState<boolean>(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Escape key handler to close the modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsShareModalOpen(false)
+        setActiveDropdownId(null)
+        setIsGeneralDropdownOpen(false)
+        setIsPublicRoleDropdownOpen(false)
+        setIsNewRoleDropdownOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // Click outside to close custom role dropdowns
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setActiveDropdownId(null)
+        setIsGeneralDropdownOpen(false)
+        setIsPublicRoleDropdownOpen(false)
+        setIsNewRoleDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   // Chat message log state
   const [chatLog, setChatLog] = useState<Array<{ sender: 'user' | 'ai'; text: string; timestamp: string }>>([
     {
@@ -226,8 +316,59 @@ export default function DocumentDetailPage() {
     setIsFullscreen(!isFullscreen)
   }
 
+  // Check if active user is restricted from downloading/printing
+  const isDownloadRestricted = () => {
+    // If viewersCanDownload is false, viewers and commenters are restricted.
+    // In our live preview, we simulate that since Ngoc Tan is the current user (tan@example.com),
+    // we find Ngoc Tan's role in the collaborator list.
+    const ngocTan = collaborators.find(c => c.email === 'tan@example.com')
+    if (!viewersCanDownload && ngocTan && (ngocTan.role === 'viewer' || ngocTan.role === 'commenter')) {
+      return true
+    }
+    return false
+  }
+
+  // Get current user role
+  const getCurrentUserRole = () => {
+    const currentUser = collaborators.find(c => c.email === 'tan@example.com')
+    return currentUser ? currentUser.role : 'viewer'
+  }
+
+  // Can current user access settings
+  const canCurrentUserAccessSettings = () => {
+    const role = getCurrentUserRole()
+    if (role === 'owner') return true
+    if (role === 'editor' && editorsCanShare) return true
+    return false
+  }
+
+  // Click handler for settings gear
+  const handleGearClick = () => {
+    if (!canCurrentUserAccessSettings()) {
+      showToast('🔒 Chỉ chủ sở hữu và người chỉnh sửa mới có quyền truy cập cài đặt!')
+      return
+    }
+    setIsSettingsViewOpen(true)
+  }
+
+  // Add Copy protection listener
+  useEffect(() => {
+    const handleCopy = (e: ClipboardEvent) => {
+      if (isDownloadRestricted()) {
+        e.preventDefault()
+        showToast('🔒 Chủ sở hữu tài liệu đã chặn quyền sao chép nội dung!')
+      }
+    }
+    document.addEventListener('copy', handleCopy)
+    return () => document.removeEventListener('copy', handleCopy)
+  }, [collaborators, viewersCanDownload])
+
   // Print simulation trigger
   const handlePrint = () => {
+    if (isDownloadRestricted()) {
+      showToast('🔒 Chủ sở hữu tài liệu đã chặn quyền in ấn của người xem/nhận xét!')
+      return
+    }
     showToast('Preparing document layout structure for printing...')
     setTimeout(() => {
       window.print()
@@ -333,11 +474,85 @@ export default function DocumentDetailPage() {
   }
 
   const handleDownload = () => {
+    if (isDownloadRestricted()) {
+      showToast('🔒 Chủ sở hữu tài liệu đã chặn quyền tải xuống của người xem/nhận xét!')
+      return
+    }
     if (activeDoc) {
       handleDownloadFile(activeDoc)
     } else {
       showToast(`Simulating download for: ${mockDetails.courseTitle}.pdf`)
     }
+  }
+
+  // Google Drive sharing helper actions
+  const handleAddCollaborator = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newEmail.trim()) return
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(newEmail.trim())) {
+      showToast('❌ Vui lòng nhập địa chỉ email hợp lệ!')
+      return
+    }
+
+    if (collaborators.some(c => c.email.toLowerCase() === newEmail.trim().toLowerCase())) {
+      showToast('⚠️ Email này đã có quyền truy cập!')
+      return
+    }
+
+    const newCollabName = newEmail.split('@')[0]
+    const formattedName = newCollabName.charAt(0).toUpperCase() + newCollabName.slice(1)
+
+    const backgrounds = [
+      'bg-blue-500/90 text-white',
+      'bg-purple-500/90 text-white',
+      'bg-pink-500/90 text-white',
+      'bg-rose-500/90 text-white',
+      'bg-teal-500/90 text-white',
+      'bg-sky-500/90 text-white'
+    ]
+    const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)]
+
+    const newCollab: Collaborator = {
+      id: `collab-${Date.now()}`,
+      name: formattedName,
+      email: newEmail.trim().toLowerCase(),
+      role: newRole,
+      avatarBg: randomBg + ' font-bold'
+    }
+
+    setCollaborators(prev => [...prev, newCollab])
+    setNewEmail('')
+    setIsNewRoleDropdownOpen(false)
+    showToast(`✉️ Đã gửi lời mời truy cập tới ${newEmail.trim()} với vai trò ${newRole === 'editor' ? 'Người chỉnh sửa' : newRole === 'commenter' ? 'Người nhận xét' : 'Người xem'}!`)
+  }
+
+  const handleRemoveCollaborator = (id: string, name: string) => {
+    setCollaborators(prev => prev.filter(c => c.id !== id))
+    showToast(`🗑️ Đã xóa quyền truy cập của ${name}`)
+    setActiveDropdownId(null)
+  }
+
+  const handleChangeRole = (id: string, name: string, role: 'editor' | 'commenter' | 'viewer') => {
+    setCollaborators(prev => prev.map(c => c.id === id ? { ...c, role } : c))
+    showToast(`✏️ Đã cập nhật quyền của ${name} thành ${role === 'editor' ? 'Người chỉnh sửa' : role === 'commenter' ? 'Người nhận xét' : 'Người xem'}`)
+    setActiveDropdownId(null)
+  }
+
+  const handleGeneralAccessChange = (type: 'restricted' | 'public') => {
+    setGeneralAccess(type)
+    setIsGeneralDropdownOpen(false)
+    if (type === 'restricted') {
+      showToast('🔒 Đã hạn chế quyền truy cập liên kết (chỉ những người được thêm mới có thể xem).')
+    } else {
+      showToast('🌐 Bất kỳ ai có đường liên kết này đều có thể truy cập tài liệu.')
+    }
+  }
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href)
+    showToast('🔗 Đã sao chép đường liên kết tài liệu vào bộ nhớ tạm!')
   }
 
   return (
@@ -445,7 +660,10 @@ export default function DocumentDetailPage() {
           {/* Document Sheet Display body */}
           <div className="flex-1 overflow-auto bg-slate-700/10 dark:bg-slate-950/20 p-8 flex items-center justify-center min-h-[620px] max-h-[820px]">
             <div
-              className="bg-white text-slate-900 shadow-2xl rounded-2xl p-10 max-w-[690px] w-full border border-slate-100 origin-top transition-all duration-300 relative overflow-hidden"
+              className={cn(
+                "bg-white text-slate-900 shadow-2xl rounded-2xl p-10 max-w-[690px] w-full border border-slate-100 origin-top transition-all duration-300 relative overflow-hidden",
+                isDownloadRestricted() && "select-none"
+              )}
               style={{ transform: `scale(${zoomScale / 100})` }}
             >
               
@@ -690,10 +908,16 @@ export default function DocumentDetailPage() {
 
             <Button
               variant="secondary"
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href)
-                showToast('🔗 Document detail page link copied to clipboard!')
-              }}
+              onClick={() => navigate(`/dashboard/documents/document/${activeDoc?.id}/edit`)}
+              className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98"
+            >
+              <Settings className="h-4.5 w-4.5" />
+              Edit Details
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={() => setIsShareModalOpen(true)}
               className="w-full bg-blue-50 hover:bg-blue-100/80 text-blue-600 border border-blue-100 font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98"
             >
               <Share2 className="h-4.5 w-4.5" />
@@ -705,6 +929,459 @@ export default function DocumentDetailPage() {
 
       </div>
 
+      {/* Google Drive-like Document Sharing Modal Overlay */}
+      <AnimatePresence>
+        {isShareModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
+            {/* Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setIsShareModalOpen(false)
+                setActiveDropdownId(null)
+                setIsGeneralDropdownOpen(false)
+                setIsPublicRoleDropdownOpen(false)
+                setIsNewRoleDropdownOpen(false)
+              }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              transition={{ type: 'spring', duration: 0.35, bounce: 0.15 }}
+              className="bg-white text-slate-800 rounded-[28px] shadow-2xl border border-slate-200/80 w-full max-w-lg mx-4 overflow-hidden z-10 font-sans flex flex-col relative animate-fade-in"
+              ref={dropdownRef}
+            >
+              {isSettingsViewOpen ? (
+                /* Sharing Settings View */
+                <div className="flex flex-col h-full animate-fade-in">
+                  {/* Header */}
+                  <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-slate-100 select-none shrink-0">
+                    <button
+                      onClick={() => setIsSettingsViewOpen(false)}
+                      className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 p-2 rounded-full transition-colors flex items-center justify-center"
+                      title="Quay lại"
+                    >
+                      <ArrowLeft className="h-5 w-5" />
+                    </button>
+                    <h2 className="text-lg font-bold text-slate-900 tracking-tight select-none">
+                      Cài đặt chia sẻ
+                    </h2>
+                  </div>
+
+                  {/* Options Content */}
+                  <div className="px-6 py-6 flex-1 space-y-6">
+                    {/* Option 1: Editors share privilege */}
+                    <label className="flex items-start gap-4 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={editorsCanShare}
+                        onChange={(e) => {
+                          setEditorsCanShare(e.target.checked)
+                          showToast(e.target.checked ? '✅ Người chỉnh sửa hiện có thể thay đổi quyền và chia sẻ.' : '🔒 Người chỉnh sửa không thể thay đổi quyền chia sẻ nữa.')
+                        }}
+                        className="w-4.5 h-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 mt-1 cursor-pointer"
+                      />
+                      <div className="flex flex-col text-left">
+                        <span className="text-xs font-bold text-slate-800 leading-normal">
+                          Người chỉnh sửa có thể thay đổi quyền và chia sẻ
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-semibold leading-relaxed mt-0.5">
+                          Nếu tắt, chỉ chủ sở hữu tài liệu mới có quyền thay đổi cài đặt chia sẻ
+                        </span>
+                      </div>
+                    </label>
+
+                    {/* Option 2: Viewers/Commenters download protection */}
+                    <label className="flex items-start gap-4 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={viewersCanDownload}
+                        onChange={(e) => {
+                          setViewersCanDownload(e.target.checked)
+                          showToast(e.target.checked ? '✅ Người xem/nhận xét có thể tải xuống, in và sao chép.' : '🔒 Đã khóa tính năng tải xuống, in và sao chép đối với người xem/nhận xét.')
+                        }}
+                        className="w-4.5 h-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 mt-1 cursor-pointer"
+                      />
+                      <div className="flex flex-col text-left">
+                        <span className="text-xs font-bold text-slate-800 leading-normal">
+                          Người xem và người nhận xét có thể thấy tùy chọn tải xuống, in và sao chép
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-semibold leading-relaxed mt-0.5">
+                          Nếu tắt, các nút tải xuống PDF và in tài liệu sẽ bị vô hiệu hóa đối với các tài khoản không phải Người chỉnh sửa
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-6 py-4 bg-slate-50 flex justify-end shrink-0 border-t border-slate-100 select-none">
+                    <Button
+                      onClick={() => setIsSettingsViewOpen(false)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-6 py-3.5 rounded-full shadow-md transition-all hover:scale-[1.03] active:scale-[0.98]"
+                    >
+                      Quay lại
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                /* Standard Share Access View */
+                <>
+                  {/* Header */}
+                  <div className="flex justify-between items-center px-6 pt-6 pb-2 shrink-0 select-none">
+                    <h2 className="text-xl font-semibold text-slate-900 tracking-tight leading-normal">
+                      Chia sẻ "{activeDoc?.title || mockDetails.courseTitle}"
+                    </h2>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={handleGearClick}
+                        className={cn(
+                          "p-2 rounded-full transition-colors flex items-center justify-center",
+                          canCurrentUserAccessSettings()
+                            ? "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                            : "text-slate-300 cursor-not-allowed opacity-40"
+                        )}
+                        title="Cài đặt chia sẻ"
+                      >
+                        <Settings className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsShareModalOpen(false)
+                          setActiveDropdownId(null)
+                          setIsGeneralDropdownOpen(false)
+                          setIsPublicRoleDropdownOpen(false)
+                          setIsNewRoleDropdownOpen(false)
+                        }}
+                        className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 p-2 rounded-full transition-colors flex items-center justify-center"
+                        title="Đóng"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Add People Form */}
+                  <div className="px-6 py-4 border-b border-slate-100 shrink-0">
+                    <form onSubmit={handleAddCollaborator} className="flex gap-2 items-center">
+                      <div className="relative flex-1">
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Thêm người, nhóm hoặc địa chỉ email"
+                          value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)}
+                          className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 hover:border-slate-355 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 rounded-2xl text-xs font-semibold placeholder-slate-400 transition-all focus:outline-none"
+                        />
+                      </div>
+
+                      {/* New user role switcher dropdown */}
+                      <div className="relative shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setIsNewRoleDropdownOpen(!isNewRoleDropdownOpen)}
+                          className="flex items-center gap-1 px-3.5 py-3 border border-slate-200 hover:border-slate-300 bg-white rounded-2xl text-xs font-extrabold text-slate-700 hover:bg-slate-50 transition-all select-none"
+                        >
+                          <span className="capitalize">
+                            {newRole === 'editor' ? 'Người chỉnh sửa' : newRole === 'commenter' ? 'Người nhận xét' : 'Người xem'}
+                          </span>
+                          <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
+                        </button>
+
+                        <AnimatePresence>
+                          {isNewRoleDropdownOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 5 }}
+                              className="absolute right-0 mt-1.5 bg-white border border-slate-250/90 shadow-xl rounded-2xl w-40 overflow-hidden z-30 py-1"
+                            >
+                              {(['viewer', 'commenter', 'editor'] as const).map((r) => (
+                                <button
+                                  key={r}
+                                  type="button"
+                                  onClick={() => {
+                                    setNewRole(r)
+                                    setIsNewRoleDropdownOpen(false)
+                                  }}
+                                  className={cn(
+                                    "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between",
+                                    newRole === r ? "text-blue-600 bg-blue-50/40" : "text-slate-700"
+                                  )}
+                                >
+                                  <span>{r === 'editor' ? 'Người chỉnh sửa' : r === 'commenter' ? 'Người nhận xét' : 'Người xem'}</span>
+                                  {newRole === r && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+
+                      {/* Submit Add button */}
+                      <button
+                        type="submit"
+                        disabled={!newEmail.trim()}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-400 text-white p-3 rounded-2xl shadow-sm transition-all hover:scale-105 active:scale-95 disabled:scale-100 font-bold shrink-0 flex items-center justify-center"
+                        title="Mời cộng tác viên"
+                      >
+                        <UserPlus className="h-4.5 w-4.5" />
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* People with Access List */}
+                  <div className="px-6 py-4 flex-1 overflow-y-auto max-h-[220px] min-h-[140px] space-y-4 border-b border-slate-100">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 select-none">
+                      Người có quyền truy cập
+                    </h3>
+                    <div className="space-y-3.5">
+                      <AnimatePresence initial={false}>
+                        {collaborators.map((c) => (
+                          <motion.div
+                            key={c.id}
+                            initial={{ opacity: 0, height: 0, y: -10 }}
+                            animate={{ opacity: 1, height: 'auto', y: 0 }}
+                            exit={{ opacity: 0, height: 0, y: -10 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            className="flex items-center justify-between overflow-hidden py-0.5"
+                          >
+                            <div className="flex items-center gap-3">
+                              {/* Colored Initials Avatar */}
+                              <div className={cn("w-9.5 h-9.5 rounded-full flex items-center justify-center text-xs shadow-inner shrink-0 select-none", c.avatarBg)}>
+                                {c.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex flex-col text-left">
+                                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5 leading-normal">
+                                  {c.name}
+                                  {c.role === 'owner' && (
+                                    <span className="bg-slate-100 text-slate-600 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider scale-90 border border-slate-200/50">
+                                      Chủ sở hữu
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {c.email}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Role selection dropdown */}
+                            {c.role === 'owner' ? (
+                              <span className="text-xs font-bold text-slate-400 select-none mr-3">
+                                Chủ sở hữu
+                              </span>
+                            ) : (
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveDropdownId(activeDropdownId === c.id ? null : c.id)}
+                                  className="flex items-center gap-1 px-3 py-1.5 border border-slate-100 hover:border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 transition-all select-none"
+                                >
+                                  <span>{c.role === 'editor' ? 'Người chỉnh sửa' : c.role === 'commenter' ? 'Người nhận xét' : 'Người xem'}</span>
+                                  <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
+                                </button>
+
+                                <AnimatePresence>
+                                  {activeDropdownId === c.id && (
+                                    <motion.div
+                                      initial={{ opacity: 0, y: 5 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, y: 5 }}
+                                      className="absolute right-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl w-44 overflow-hidden z-40 py-1"
+                                    >
+                                      {(['viewer', 'commenter', 'editor'] as const).map((r) => (
+                                        <button
+                                          key={r}
+                                          type="button"
+                                          onClick={() => handleChangeRole(c.id, c.name, r)}
+                                          className={cn(
+                                            "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between",
+                                            c.role === r ? "text-blue-600 bg-blue-50/40" : "text-slate-700"
+                                          )}
+                                        >
+                                          <span>{r === 'editor' ? 'Người chỉnh sửa' : r === 'commenter' ? 'Người nhận xét' : 'Người xem'}</span>
+                                          {c.role === r && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                                        </button>
+                                      ))}
+                                      <div className="border-t border-slate-100 my-1" />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveCollaborator(c.id, c.name)}
+                                        className="w-full text-left px-4 py-2.5 text-xs font-extrabold text-rose-600 hover:bg-rose-50/50 flex items-center gap-2"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                                        <span>Xóa quyền truy cập</span>
+                                      </button>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            )}
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  {/* General Access Rules */}
+                  <div className="px-6 py-4.5 space-y-3.5 border-b border-slate-100 shrink-0">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 select-none">
+                      Quyền truy cập chung
+                    </h3>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-start gap-3.5 text-left">
+                        {/* Access Icon Badge */}
+                        <div className={cn(
+                          "w-9.5 h-9.5 rounded-full flex items-center justify-center shrink-0 border select-none transition-all duration-305 shadow-inner",
+                          generalAccess === 'restricted'
+                            ? "bg-slate-50 border-slate-200 text-slate-500"
+                            : "bg-blue-50 border-blue-100 text-blue-600"
+                        )}>
+                          {generalAccess === 'restricted' ? (
+                            <Lock className="h-4.5 w-4.5" />
+                          ) : (
+                            <Globe className="h-4.5 w-4.5" />
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          {/* Access Scope Dropdown */}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setIsGeneralDropdownOpen(!isGeneralDropdownOpen)}
+                              className="flex items-center gap-1 px-1.5 py-0.5 text-xs font-extrabold text-slate-800 hover:bg-slate-50 rounded-lg select-none text-left"
+                            >
+                              <span>{generalAccess === 'restricted' ? 'Bị hạn chế' : 'Bất kỳ ai có đường liên kết'}</span>
+                              <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
+                            </button>
+
+                            <AnimatePresence>
+                              {isGeneralDropdownOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 5 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: 5 }}
+                                  className="absolute left-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl w-52 overflow-hidden z-30 py-1"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleGeneralAccessChange('restricted')}
+                                    className={cn(
+                                      "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between",
+                                      generalAccess === 'restricted' ? "text-blue-600 bg-blue-50/40" : "text-slate-700"
+                                    )}
+                                  >
+                                    <span>Bị hạn chế</span>
+                                    {generalAccess === 'restricted' && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleGeneralAccessChange('public')}
+                                    className={cn(
+                                      "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between",
+                                      generalAccess === 'public' ? "text-blue-600 bg-blue-50/40" : "text-slate-700"
+                                    )}
+                                  >
+                                    <span>Bất kỳ ai có đường liên kết</span>
+                                    {generalAccess === 'public' && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                                  </button>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          <p className="text-[10px] text-slate-450 font-medium pl-1.5 mt-0.5 select-none leading-relaxed">
+                            {generalAccess === 'restricted'
+                              ? 'Chỉ những người được thêm mới có thể mở bằng đường liên kết này'
+                              : 'Bất kỳ ai trên Internet có đường liên kết này đều có thể truy cập'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Public role selector (Viewer, Commenter, Editor) */}
+                      {generalAccess === 'public' && (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setIsPublicRoleDropdownOpen(!isPublicRoleDropdownOpen)}
+                            className="flex items-center gap-1 px-3 py-1.5 border border-slate-100 hover:border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 transition-all select-none"
+                          >
+                            <span>
+                              {publicRole === 'editor' ? 'Người chỉnh sửa' : publicRole === 'commenter' ? 'Người nhận xét' : 'Người xem'}
+                            </span>
+                            <ChevronDown className="h-3.5 w-3.5 opacity-60 ml-0.5" />
+                          </button>
+
+                          <AnimatePresence>
+                            {isPublicRoleDropdownOpen && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 5 }}
+                                className="absolute right-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl w-40 overflow-hidden z-30 py-1"
+                              >
+                                {(['viewer', 'commenter', 'editor'] as const).map((r) => (
+                                  <button
+                                    key={r}
+                                    type="button"
+                                    onClick={() => {
+                                      setPublicRole(r)
+                                      setIsPublicRoleDropdownOpen(false)
+                                      showToast(`✏️ Đã cập quyền truy cập chung thành ${r === 'editor' ? 'Người chỉnh sửa' : r === 'commenter' ? 'Người nhận xét' : 'Người xem'}`)
+                                    }}
+                                    className={cn(
+                                      "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between",
+                                      publicRole === r ? "text-blue-600 bg-blue-50/40" : "text-slate-700"
+                                    )}
+                                  >
+                                    <span>{r === 'editor' ? 'Người chỉnh sửa' : r === 'commenter' ? 'Người nhận xét' : 'Người xem'}</span>
+                                    {publicRole === r && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Footer */}
+                  <div className="px-6 py-4 bg-slate-50 flex justify-between items-center shrink-0 gap-3 select-none">
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className="flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-100 text-blue-600 font-extrabold text-xs px-4.5 py-3 rounded-full shadow-sm transition-all hover:scale-[1.03] active:scale-[0.98] outline-none"
+                    >
+                      <Copy className="h-4 w-4 text-blue-600" />
+                      <span>Sao chép đường liên kết</span>
+                    </button>
+
+                    <Button
+                      onClick={() => {
+                        setIsShareModalOpen(false)
+                        setActiveDropdownId(null)
+                        setIsGeneralDropdownOpen(false)
+                        setIsPublicRoleDropdownOpen(false)
+                        setIsNewRoleDropdownOpen(false)
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-6 py-3.5 rounded-full shadow-md transition-all hover:scale-[1.03] active:scale-[0.98]"
+                    >
+                      Xong
+                    </Button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
