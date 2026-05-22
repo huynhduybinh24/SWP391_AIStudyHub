@@ -11,7 +11,6 @@ export function ExpressCheckout({
   onSelectProvider,
   disabled = false,
 }: ExpressCheckoutProps) {
-  // Configuration array for Express Checkout providers
   const providers = [
     {
       id: 'apple' as const,

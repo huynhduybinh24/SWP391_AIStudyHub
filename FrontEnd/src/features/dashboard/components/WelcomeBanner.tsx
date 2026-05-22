@@ -1,7 +1,7 @@
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { useAuthStore } from '@/stores/authStore'
+import { useProfileStore } from '@/features/profile/stores/profileStore'
 
 interface WelcomeBannerProps {
   pendingPlans: number
@@ -10,8 +10,8 @@ interface WelcomeBannerProps {
 }
 
 export function WelcomeBanner({ pendingPlans, newSharedDocuments, onNewPlanClick }: WelcomeBannerProps) {
-  const user = useAuthStore((s) => s.user)
-  const firstName = user?.name.split(' ')[0] ?? 'there'
+  const { profile } = useProfileStore()
+  const firstName = profile?.name?.split(' ')[0] || 'there'
 
   return (
     <Card className="flex flex-wrap items-center justify-between gap-4 p-6">
