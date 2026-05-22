@@ -13,7 +13,8 @@ import {
   CloudUpload,
   FolderPlus,
   FileText,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Pencil
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -395,6 +396,13 @@ export default function MyDocumentsPage() {
                           Open & View
                         </button>
                         <button
+                          onClick={() => navigate(`/dashboard/documents/document/${doc.id}/edit`)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Edit Details
+                        </button>
+                        <button
                           onClick={() => handleDownloadFile(doc)}
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                         >
@@ -509,6 +517,15 @@ export default function MyDocumentsPage() {
                             title="Chat with AI"
                           >
                             <MessageSquare className="h-4.5 w-4.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate(`/dashboard/documents/document/${doc.id}/edit`)}
+                            className="rounded-lg text-slate-500 hover:bg-slate-100/50"
+                            title="Edit Details"
+                          >
+                            <Pencil className="h-4.5 w-4.5" />
                           </Button>
                           <Button
                             variant="ghost"
