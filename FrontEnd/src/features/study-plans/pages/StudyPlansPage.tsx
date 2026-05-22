@@ -244,23 +244,39 @@ const LEARNING_DATA: Record<string, LearningProgressPlan> = {
     ],
   },
   '3': {
-    id: '3', title: 'Data Structures & Algorithms',
-    description: 'From arrays to graphs — crack competitive programming interviews.',
-    isAiGenerated: true, overallProgress: 0,
+    id: '3', title: 'Final Exam Prep: Advanced Robotics',
+    description: 'Advanced kinematics and autonomous navigation systems.',
+    isAiGenerated: false, overallProgress: 0,
     sections: [
-      { label: 'Arrays & Strings', value: 0, lessons: [
-        { id: 'l1', title: 'Array Fundamentals',          duration: '20 min', type: 'video',    completed: false },
-        { id: 'l2', title: 'Two Pointer Technique',       duration: '25 min', type: 'practice', completed: false },
+      { label: 'Kinematics', value: 0, lessons: [
+        { id: 'l1', title: 'Forward Kinematics', duration: '20 min', type: 'video', completed: false },
+        { id: 'l2', title: 'Inverse Kinematics', duration: '25 min', type: 'practice', completed: false },
       ]},
-      { label: 'Trees & Graphs', value: 0, lessons: [
-        { id: 'l3', title: 'Binary Trees',                duration: '30 min', type: 'video',    completed: false },
-        { id: 'l4', title: 'Graph Traversal (BFS/DFS)',   duration: '40 min', type: 'practice', completed: false },
-      ]},
-      { label: 'Dynamic Prog.', value: 0, lessons: [
-        { id: 'l5', title: 'DP Fundamentals',             duration: '45 min', type: 'video',    completed: false },
-        { id: 'l6', title: 'Classic DP Problems',         duration: '60 min', type: 'quiz',     completed: false },
+      { label: 'Navigation', value: 0, lessons: [
+        { id: 'l3', title: 'Path Planning', duration: '30 min', type: 'video', completed: false },
+        { id: 'l4', title: 'Obstacle Avoidance', duration: '40 min', type: 'practice', completed: false },
       ]},
     ],
+  },
+  '6': {
+    id: '6', title: 'Winter Session: Deep Learning Fundamentals',
+    description: 'Foundations of neural networks and gradient descent optimization.',
+    isAiGenerated: false, overallProgress: 0,
+    sections: [
+      { label: 'Neural Networks Basics', value: 0, lessons: [
+        { id: 'l1', title: 'Introduction to NNs', duration: '20 min', type: 'video', completed: false },
+      ]}
+    ]
+  },
+  '7': {
+    id: '7', title: 'GRE Vocabulary & Logic Track',
+    description: 'Intensive verbal reasoning and analytical writing preparation.',
+    isAiGenerated: false, overallProgress: 0,
+    sections: [
+      { label: 'Verbal Reasoning', value: 0, lessons: [
+        { id: 'l1', title: 'Vocabulary Basics', duration: '20 min', type: 'reading', completed: false },
+      ]}
+    ]
   },
   '4': {
     id: '4', title: 'World History: Modern Era',
