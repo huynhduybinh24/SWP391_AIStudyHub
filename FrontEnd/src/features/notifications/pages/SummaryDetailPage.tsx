@@ -38,6 +38,9 @@ export function SummaryDetailPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
+  // Delete Document Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+
   const handleDownloadPDF = () => {
     const fileName = 'Advanced-Neuroscience-Syllabus-2024.pdf'
     // Create a mock PDF content Blob
@@ -145,7 +148,7 @@ export function SummaryDetailPage() {
             setShareEmail('')
             setIsShareModalOpen(true)
           }}
-          onDelete={() => {}}
+          onDelete={() => setIsDeleteModalOpen(true)}
         />
         <FeedbackCard
           liked={liked}
@@ -173,6 +176,12 @@ export function SummaryDetailPage() {
         onCopyLink={handleCopyLink}
         errorMessage={errorMessage}
         successMessage={successMessage}
+      />
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onDelete={() => {}}
       />
     </div>
   )
@@ -582,6 +591,65 @@ function ShareAccessModal({
           >
             <Copy className="w-3.5 h-3.5" />
             <span>Copy share link</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface DeleteConfirmModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onDelete: () => void
+}
+
+function DeleteConfirmModal({ isOpen, onClose, onDelete }: DeleteConfirmModalProps) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity animate-in fade-in duration-200"
+        onClick={onClose}
+      />
+
+      {/* Card */}
+      <div className="bg-white rounded-2xl border border-[rgba(195,198,215,0.4)] shadow-2xl p-6 w-full max-w-[400px] relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Close button X */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-[#737686] hover:text-[#0b1c30] p-1.5 rounded-lg hover:bg-slate-100 transition-colors focus-visible:outline-none cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="mb-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0">
+            <Trash2 className="w-5 h-5" />
+          </div>
+          <h3 className="text-lg font-bold text-[#0b1c30]">Delete Document?</h3>
+        </div>
+
+        <p className="text-sm text-[#737686] leading-relaxed mb-6 font-normal">
+          Are you sure you want to delete <span className="font-semibold text-[#0b1c30]">Advanced Neuroscience Syllabus 2024.pdf</span>? This action cannot be undone.
+        </p>
+
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 bg-white border border-[rgba(195,198,215,0.6)] text-[#737686] py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-none"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="flex-1 bg-[#EF4444] text-white py-2.5 px-4 rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors cursor-pointer focus-visible:outline-none"
+          >
+            Delete
           </button>
         </div>
       </div>
