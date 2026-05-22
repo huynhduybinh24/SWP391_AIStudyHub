@@ -495,9 +495,13 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
 
   const isPurple = plan.themeColor === 'purple'
   const isTeal = plan.themeColor === 'teal'
-  const accentClass = isTeal ? 'bg-teal-700' : isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
-  const iconBgClass = isAiTab ? 'bg-[#e5eeff]' : isTeal ? 'bg-teal-50' : isPurple ? 'bg-indigo-50' : 'bg-[#e8eeff]'
-  const iconTextClass = isAiTab ? 'text-[#2557E8]' : isTeal ? 'text-teal-700' : isPurple ? 'text-indigo-600' : 'text-[#2557E8]'
+  
+  const isCompleted = plan.status === 'Completed'
+  const isUpcoming = plan.status === 'Upcoming'
+
+  const accentClass = isAiTab ? 'bg-[#2557E8]' : isCompleted ? 'bg-[#00897B]' : isTeal ? 'bg-teal-700' : isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
+  const iconBgClass = isAiTab ? 'bg-[#e5eeff]' : isCompleted ? 'bg-[#e6f4f1]' : isTeal ? 'bg-teal-50' : isPurple ? 'bg-indigo-50' : 'bg-[#e8eeff]'
+  const iconTextClass = isAiTab ? 'text-[#2557E8]' : isCompleted ? 'text-[#00897B]' : isTeal ? 'text-teal-700' : isPurple ? 'text-indigo-600' : 'text-[#2557E8]'
   const buttonClass = isPurple 
     ? 'bg-indigo-600 hover:bg-indigo-700' 
     : 'bg-[#0055d4] hover:bg-[#004bbd]'
@@ -507,9 +511,6 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
     : plan.iconType === 'cpu' ? Cpu 
     : plan.iconType === 'languages' ? Languages 
     : FlaskConical
-
-  const isCompleted = plan.status === 'Completed'
-  const isUpcoming = plan.status === 'Upcoming'
 
   return (
     <Card className="flex overflow-hidden border border-[#e5eeff] shadow-sm hover:shadow-md transition-shadow duration-200 rounded-xl">
@@ -536,9 +537,9 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                   {plan.title}
                 </h3>
                 {isCompleted ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#ccfbf1] text-teal-700 text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
-                    <CheckCircle2 className="size-3" strokeWidth={2} />
-                    Completed
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#ccfbf1] text-[#00897B] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
+                    <CheckCircle2 className="size-3" strokeWidth={2.5} />
+                    COMPLETED
                   </span>
                 ) : isUpcoming ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#e5eeff] text-[#2557E8] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
@@ -650,10 +651,10 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                     {plan.overallProgress}%
                   </span>
                 </div>
-                {isAiTab ? (
-                  <div className="h-[6px] w-full rounded-full overflow-hidden bg-[#e5eeff]">
+                {isAiTab || isCompleted ? (
+                  <div className={`h-[6px] w-full rounded-full overflow-hidden ${isCompleted ? 'bg-[#ccfbf1]' : 'bg-[#e5eeff]'}`}>
                     <div
-                      className="h-full rounded-full transition-all duration-700 bg-[#2557E8]"
+                      className={`h-full rounded-full transition-all duration-700 ${isCompleted ? 'bg-[#00897B]' : 'bg-[#2557E8]'}`}
                       style={{ width: `${plan.overallProgress}%` }}
                     />
                   </div>
@@ -705,7 +706,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
               variant="primary"
               size="sm"
               onClick={onContinue}
-              className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg shadow-sm ${isUpcoming ? 'bg-[#0055d4] hover:bg-[#004bbd]' : buttonClass}`}
+              className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg shadow-sm ${isUpcoming ? 'bg-[#0055d4] hover:bg-[#004bbd]' : isCompleted ? 'bg-[#0055d4] hover:bg-[#004bbd]' : buttonClass}`}
             >
               {isCompleted ? 'View Review' : isUpcoming ? 'View Details' : isAiTab ? 'Continue' : 'Continue Learning'}
             </Button>
