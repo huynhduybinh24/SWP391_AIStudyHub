@@ -24,12 +24,48 @@ export const Modal = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll(
+          'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex]:not([tabindex="-1"]), [contenteditable]'
+        )
+        if (focusableElements.length === 0) return
+
+        const firstElement = focusableElements[0] as HTMLElement
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement
+
+        if (!e.shiftKey && document.activeElement === lastElement) {
+          firstElement.focus()
+          e.preventDefault()
+        } else if (e.shiftKey && document.activeElement === firstElement) {
+          lastElement.focus()
+          e.preventDefault()
+        }
+      }
     }
+
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown)
       document.body.style.overflow = 'hidden'
+      
+      // Focus the modal or the first focusable element inside it
+      setTimeout(() => {
+        if (modalRef.current) {
+          const focusable = modalRef.current.querySelectorAll(
+            'a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+          if (focusable.length > 0) {
+            ;(focusable[0] as HTMLElement).focus()
+          } else {
+            modalRef.current.focus()
+          }
+        }
+      }, 50)
     }
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = 'unset'
@@ -39,27 +75,50 @@ export const Modal = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      aria-label="Modal backdrop"
+    >
       <div
         ref={modalRef}
+        tabIndex={-1}
         className={cn(
-          'relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl',
+          'relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-border dark:border-slate-800 shadow-xl focus:outline-none',
           className
         )}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
+        aria-describedby={description ? 'modal-desc' : undefined}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-border bg-white p-6 pb-4">
+        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-border dark:border-slate-800 bg-white dark:bg-slate-900 p-6 pb-4">
           <div>
-            {title && <h2 className="text-xl font-semibold text-foreground">{title}</h2>}
-            {description && <p className="mt-1 text-sm text-muted">{description}</p>}
+            {title && (
+              <h2 id="modal-title" className="text-xl font-bold text-foreground dark:text-white">
+                {title}
+              </h2>
+            )}
+            {description && (
+              <p id="modal-desc" className="mt-1 text-sm text-muted dark:text-slate-400">
+                {description}
+              </p>
+            )}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0 -mt-2 -mr-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="shrink-0 -mt-2 -mr-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            aria-label="Close modal"
+          >
             <X className="h-5 w-5" />
-            <span className="sr-only">Close</span>
           </Button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-6 text-foreground dark:text-slate-200">{children}</div>
       </div>
     </div>
   )
 }
+

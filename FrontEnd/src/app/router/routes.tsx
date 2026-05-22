@@ -30,7 +30,7 @@ import { LandingPage } from '@/features/landing/pages/LandingPage'
 import { HelpCenterPage } from '@/features/landing/pages/HelpCenterPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { SetNewPasswordPage } from '@/features/auth/pages/SetNewPasswordPage'
-import { ProfileDashboard } from '@/features/profile/pages/Dashboard'
+import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { PricingPage } from '@/features/upgrade/pages/PricingPage'
 import { CheckoutPage } from '@/features/upgrade/pages/CheckoutPage'
@@ -90,8 +90,8 @@ export const router = createBrowserRouter([
           { path: 'storage/analytics', element: <StorageAnalyticsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'notifications/summary', element: <SummaryDetailPage /> },
-          { path: 'study-plans', element: <StudyPlansPage /> },
-          { path: 'profile', element: <ProfileDashboard /> },
+          { path: 'study-plans', element: <PlaceholderPage title="Study Plans" /> },
+          { path: 'profile', element: <ProfilePage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'upgrade', element: <PricingPage /> },
           { path: 'checkout', element: <CheckoutPage /> },

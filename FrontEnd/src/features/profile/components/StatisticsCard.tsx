@@ -2,7 +2,7 @@ import { CalendarDays, Sparkles, BookOpen, Clock } from 'lucide-react'
 import { useProfileStore } from '../stores/profileStore'
 import { motion } from 'framer-motion'
 
-export function StatsCard() {
+export function StatisticsCard() {
   const { statistics } = useProfileStore()
 
   const items = [
@@ -19,10 +19,10 @@ export function StatsCard() {
       label: 'AI SUMMARIES',
       value: statistics.aiSummaries,
       icon: Sparkles,
-      bg: 'bg-[#3155F6] text-white shadow-md shadow-blue-500/20',
+      bg: 'bg-[#3155F6] text-white shadow-md shadow-blue-500/20 border border-transparent',
       iconBg: 'bg-white/15 text-white',
       textColor: 'text-white',
-      labelColor: 'text-white/70',
+      labelColor: 'text-white/80',
     },
     {
       label: 'STUDY HOURS',
@@ -53,7 +53,7 @@ export function StatsCard() {
             key={item.label}
             whileHover={{ y: -4 }}
             transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-            className={`rounded-2xl p-4 flex flex-col justify-between min-h-[120px] transition-colors ${item.bg}`}
+            className={`rounded-2xl p-4 flex flex-col justify-between min-h-[120px] transition-colors select-none ${item.bg}`}
           >
             <div className="flex items-center justify-between">
               <div className={`p-2.5 rounded-xl ${item.iconBg}`}>
@@ -62,7 +62,7 @@ export function StatsCard() {
             </div>
             <div className="mt-4">
               <p className={`text-2xl font-bold tracking-tight ${item.textColor}`}>{item.value}</p>
-              <p className={`text-[10px] font-bold tracking-wider mt-1 uppercase ${item.labelColor}`}>
+              <p className={`text-[10px] font-bold tracking-wider mt-1 uppercase leading-none ${item.labelColor}`}>
                 {item.label}
               </p>
             </div>
