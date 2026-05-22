@@ -79,6 +79,19 @@ export default function SubjectCategoryPage() {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
 
   const menuRef = useRef<HTMLDivElement>(null)
+  const filterContainerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-reset filters on collapse, and smooth scroll to filter panel on open
+  useEffect(() => {
+    if (!showFilters) {
+      setSearchQuery('')
+      setTypeFilter('All')
+    } else {
+      setTimeout(() => {
+        filterContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 100)
+    }
+  }, [showFilters])
 
   // Dynamic AI study recommendation advice tailored to each subject
   const getAIRecommendation = () => {
@@ -426,8 +439,8 @@ export default function SubjectCategoryPage() {
 
 
       {/* Filter / Search workspace (toggled by Filter button) */}
-      {(showFilters || searchQuery || typeFilter !== 'All') && (
-        <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs md:flex-row md:items-center md:justify-between animate-fade-in">
+      {showFilters && (
+        <div ref={filterContainerRef} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs md:flex-row md:items-center md:justify-between animate-fade-in">
           {/* Search field */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
