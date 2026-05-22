@@ -37,6 +37,10 @@ export const router = createBrowserRouter([
     element: <LandingPage />,
   },
   {
+    path: '/pricing',
+    element: <Navigate to="/dashboard/upgrade" replace />,
+  },
+  {
     path: '/help',
     element: <HelpCenterPage />,
   },

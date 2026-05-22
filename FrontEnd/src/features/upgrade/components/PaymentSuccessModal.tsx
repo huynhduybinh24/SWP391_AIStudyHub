@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Download } from 'lucide-react'
+import { Check, Download, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '@/components/ui/Toast'
 
 interface PaymentSuccessModalProps {
   isOpen: boolean
@@ -9,6 +10,7 @@ interface PaymentSuccessModalProps {
   planName?: string
   transactionId?: string
   amount?: string
+  paymentMethod?: string
 }
 
 export function PaymentSuccessModal({
@@ -17,8 +19,10 @@ export function PaymentSuccessModal({
   planName = 'Pro Plan (Annual)',
   transactionId = '#ASH-9284751',
   amount = '$132.00',
+  paymentMethod = 'Credit Card',
 }: PaymentSuccessModalProps) {
   const navigate = useNavigate()
+  const toast = useToast()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -44,6 +48,7 @@ export function PaymentSuccessModal({
   const handleDownloadReceipt = (e: React.MouseEvent) => {
     e.preventDefault()
     // Simulated receipt generation / download
+    toast.success('Receipt downloaded')
     const filename = `receipt_${transactionId.replace('#', '')}.txt`
     const receiptText = `
 ========================================
@@ -52,6 +57,7 @@ export function PaymentSuccessModal({
 Transaction ID: ${transactionId}
 Date: ${new Date().toLocaleDateString()}
 Plan upgraded: ${planName}
+Payment Method: ${paymentMethod}
 Total Paid: ${amount}
 Status: SUCCESSFUL
 ========================================
@@ -93,6 +99,15 @@ Thank you for your purchase!
             aria-modal="true"
             aria-labelledby="success-modal-title"
           >
+            {/* Close button */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="size-4" />
+            </button>
+
             {/* Green Circular Badge */}
             <motion.div
               initial={{ scale: 0 }}
@@ -132,8 +147,15 @@ Thank you for your purchase!
               <div className="h-px bg-slate-100 dark:bg-slate-850 w-full" />
               <div className="flex justify-between items-center text-xs font-semibold text-slate-650 dark:text-slate-400">
                 <span>Amount</span>
-                <span className="text-[#3155F6] dark:text-blue-450 font-extrabold text-sm">
+                <span className="text-[#2563eb] dark:text-blue-400 font-extrabold text-sm">
                   {amount}
+                </span>
+              </div>
+              <div className="h-px bg-slate-100 dark:bg-slate-850 w-full" />
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-650 dark:text-slate-400">
+                <span>Payment Method</span>
+                <span className="text-slate-850 dark:text-slate-200 font-bold">
+                  {paymentMethod}
                 </span>
               </div>
             </div>
@@ -141,7 +163,7 @@ Thank you for your purchase!
             {/* CTA Buttons */}
             <button
               onClick={handleGoToDashboard}
-              className="w-full bg-[#3155F6] hover:bg-[#2563eb] text-white py-3.5 px-4 rounded-xl font-bold flex items-center justify-center transition-all cursor-pointer shadow-md shadow-[#3155F6]/15 hover:shadow-lg hover:shadow-[#3155F6]/20 active:scale-[0.98]"
+              className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white py-3.5 px-4 rounded-xl font-bold flex items-center justify-center transition-all cursor-pointer shadow-md shadow-[#2563eb]/15 hover:shadow-lg hover:shadow-[#2563eb]/20 active:scale-[0.98]"
             >
               Go to Dashboard
             </button>

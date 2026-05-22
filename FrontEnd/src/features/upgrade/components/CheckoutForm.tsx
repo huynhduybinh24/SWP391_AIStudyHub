@@ -5,7 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { CreditCard, HelpCircle, Lock, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PaymentInput } from './PaymentInput'
+import { useToast } from '@/components/ui/Toast'
 
+// Form validation schema with Zod
 const checkoutSchema = z.object({
   cardholderName: z.string().min(1, 'Cardholder name is required'),
   cardNumber: z
@@ -27,10 +29,17 @@ const checkoutSchema = z.object({
 type CheckoutFormValues = z.infer<typeof checkoutSchema>
 
 interface CheckoutFormProps {
-  onSuccess: () => void
+  selectedProvider: 'apple' | 'google' | 'paypal' | null
+  onFocusCard: () => void
+  onSuccess: (method: 'Credit Card' | 'Apple Pay' | 'Google Pay' | 'PayPal') => void
 }
 
-export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
+export function CheckoutForm({
+  selectedProvider,
+  onFocusCard,
+  onSuccess,
+}: CheckoutFormProps) {
+  const toast = useToast()
   const [isPaying, setIsPaying] = useState(false)
   const [showCvvHelp, setShowCvvHelp] = useState(false)
   const helpRef = useRef<HTMLDivElement>(null)
@@ -38,8 +47,8 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
+    reset,
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -49,6 +58,13 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       cvv: '',
     },
   })
+
+  // Format card number (xxxx xxxx xxxx xxxx)
+  const formatCardNumber = (value: string) => {
+    const clean = value.replace(/\D/g, '')
+    const sliced = clean.slice(0, 16)
+    return sliced.replace(/(\d{4})(?=\d)/g, '$1 ')
+  }
 
   // Format expiry date (MM/YY)
   const formatExpiryDate = (value: string) => {
@@ -60,21 +76,23 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
     return sliced
   }
 
-  // Format card number (xxxx xxxx xxxx xxxx)
-  const formatCardNumber = (value: string) => {
-    const clean = value.replace(/\D/g, '')
-    const sliced = clean.slice(0, 16)
-    return sliced.replace(/(\d{4})(?=\d)/g, '$1 ')
-  }
-
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCardNumber(e.target.value)
-    setValue('cardNumber', formatted, { shouldValidate: true })
+    e.target.value = formatCardNumber(e.target.value)
   }
 
   const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatExpiryDate(e.target.value)
-    setValue('expiryDate', formatted, { shouldValidate: true })
+    e.target.value = formatExpiryDate(e.target.value)
+  }
+
+  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4)
+  }
+
+  // Clear express provider selection when user focuses or edits card details
+  const handleFocus = () => {
+    if (selectedProvider !== null) {
+      onFocusCard()
+    }
   }
 
   // Close CVV help box on click outside
@@ -90,14 +108,16 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
     }
   }, [])
 
-  const onSubmit = async (data: CheckoutFormValues) => {
+  // Submission handler for Card Payment (with Zod validation)
+  const onSubmitCard = async (data: CheckoutFormValues) => {
     setIsPaying(true)
-    console.log('Payment simulated processing with data: ', data)
+    console.log('Payment simulated processing with Card data: ', data)
 
     try {
-      // Simulate payment network delay
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      onSuccess()
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      toast.success('Payment completed successfully')
+      onSuccess('Credit Card')
+      reset()
     } catch (err) {
       console.error(err)
     } finally {
@@ -105,8 +125,38 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
     }
   }
 
+  // Submission handler for Express Checkout (bypassing validation)
+  const onSubmitExpress = async () => {
+    setIsPaying(true)
+    const providerNames = {
+      apple: 'Apple Pay',
+      google: 'Google Pay',
+      paypal: 'PayPal',
+    }
+    const methodName = selectedProvider ? providerNames[selectedProvider] : 'PayPal'
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      toast.success('Payment completed successfully')
+      onSuccess(methodName as any)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsPaying(false)
+    }
+  }
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (selectedProvider !== null) {
+      onSubmitExpress()
+    } else {
+      handleSubmit(onSubmitCard)(e)
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={handleFormSubmit} className="space-y-5">
       {/* Cardholder Name */}
       <PaymentInput
         label="Cardholder Name"
@@ -115,6 +165,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
         disabled={isPaying}
         error={errors.cardholderName?.message}
         {...register('cardholderName')}
+        onFocus={handleFocus}
       />
 
       {/* Card Number */}
@@ -127,6 +178,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
         leftIcon={<CreditCard className="size-4 text-slate-400" />}
         error={errors.cardNumber?.message}
         {...register('cardNumber', { onChange: handleCardNumberChange })}
+        onFocus={handleFocus}
       />
 
       {/* Row: Expiry + CVV */}
@@ -140,6 +192,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
           disabled={isPaying}
           error={errors.expiryDate?.message}
           {...register('expiryDate', { onChange: handleExpiryChange })}
+          onFocus={handleFocus}
         />
 
         {/* CVV Input & Interactive Help Popover */}
@@ -155,13 +208,14 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShowCvvHelp(!showCvvHelp)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350 transition-colors focus:outline-none cursor-pointer"
+                className="text-slate-400 hover:text-slate-650 dark:hover:text-slate-350 transition-colors focus:outline-none cursor-pointer"
               >
                 <HelpCircle className="size-4" />
               </button>
             }
             error={errors.cvv?.message}
-            {...register('cvv')}
+            {...register('cvv', { onChange: handleCvvChange })}
+            onFocus={handleFocus}
           />
           <AnimatePresence>
             {showCvvHelp && (
@@ -183,7 +237,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       <button
         type="submit"
         disabled={isPaying}
-        className="w-full bg-[#3155F6] hover:bg-[#2563eb] text-white py-3.5 px-4 rounded-lg font-bold flex items-center justify-center gap-2 select-none active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-[#3155F6]/15 hover:shadow-lg hover:shadow-[#3155F6]/20 disabled:pointer-events-none disabled:opacity-75 mt-6"
+        className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white py-3.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 select-none active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-[#2563eb]/15 hover:shadow-lg hover:shadow-[#2563eb]/20 disabled:pointer-events-none disabled:opacity-75 mt-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563eb]"
       >
         {isPaying ? (
           <>
