@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { CreateStudyPlanModal } from '@/features/study-plans/components/CreateStudyPlanModal'
+import { CreateStudyPlanModal } from '@/features/documents/pages/CreateStudyPlanModal'
 
 // ─────────────────────────────────────────────
 // Types
@@ -151,9 +151,9 @@ const STUDY_PLANS: StudyPlan[] = [
 
 function DifficultyBadge({ level }: { level: StudyPlan['difficulty'] }) {
   const map = {
-    Easy:   { icon: '↗', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+    Easy: { icon: '↗', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
     Medium: { icon: '↗', color: 'text-amber-700 bg-amber-50 border-amber-200' },
-    Hard:   { icon: '↗', color: 'text-rose-700 bg-rose-50 border-rose-200' },
+    Hard: { icon: '↗', color: 'text-rose-700 bg-rose-50 border-rose-200' },
   }
   const { icon, color } = map[level]
   return (
@@ -363,11 +363,10 @@ function FilterTabs({
           <button
             key={tab}
             onClick={() => onChange(tab)}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-              isActive
-                ? 'bg-[#2557E8] border-[#2557E8] text-white shadow-sm'
-                : 'border-[#d1d5db] text-body bg-white hover:bg-surface hover:border-[#a5b4fc]'
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${isActive
+              ? 'bg-[#2557E8] border-[#2557E8] text-white shadow-sm'
+              : 'border-[#d1d5db] text-body bg-white hover:bg-surface hover:border-[#a5b4fc]'
+              }`}
           >
             {tab === 'AI Generated' && (
               <Sparkles className="size-3.5" strokeWidth={2} />
@@ -385,18 +384,18 @@ function FilterTabs({
 // ─────────────────────────────────────────────
 
 function StatsStrip({ plans }: { plans: StudyPlan[] }) {
-  const active    = plans.filter((p) => p.status === 'Active').length
+  const active = plans.filter((p) => p.status === 'Active').length
   const completed = plans.filter((p) => p.status === 'Completed').length
-  const aiCount   = plans.filter((p) => p.isAiGenerated).length
-  const avgProg   = plans.length
+  const aiCount = plans.filter((p) => p.isAiGenerated).length
+  const avgProg = plans.length
     ? Math.round(plans.reduce((s, p) => s + p.overallProgress, 0) / plans.length)
     : 0
 
   const stats = [
-    { label: 'Active Plans',    value: active,    icon: BookOpen,    color: 'text-[#2557E8] bg-[#e5eeff]' },
-    { label: 'Completed',       value: completed, icon: ChevronRight, color: 'text-emerald-700 bg-emerald-50' },
-    { label: 'AI Generated',    value: aiCount,   icon: Sparkles,    color: 'text-violet-700 bg-violet-50' },
-    { label: 'Avg. Progress',   value: `${avgProg}%`, icon: TrendingUp, color: 'text-amber-700 bg-amber-50' },
+    { label: 'Active Plans', value: active, icon: BookOpen, color: 'text-[#2557E8] bg-[#e5eeff]' },
+    { label: 'Completed', value: completed, icon: ChevronRight, color: 'text-emerald-700 bg-emerald-50' },
+    { label: 'AI Generated', value: aiCount, icon: Sparkles, color: 'text-violet-700 bg-violet-50' },
+    { label: 'Avg. Progress', value: `${avgProg}%`, icon: TrendingUp, color: 'text-amber-700 bg-amber-50' },
   ]
 
   return (
