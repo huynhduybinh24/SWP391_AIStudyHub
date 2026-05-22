@@ -9,16 +9,12 @@ interface NotificationDropdownProps {
   notifications: MockNotification[]
   setNotifications: React.Dispatch<React.SetStateAction<MockNotification[]>>
   markAsRead: (id: string) => void
+  markAllAsRead: () => void
 }
 
-export function NotificationDropdown({ onClose, notifications, setNotifications, markAsRead }: NotificationDropdownProps) {
+export function NotificationDropdown({ onClose, notifications, setNotifications, markAsRead, markAllAsRead }: NotificationDropdownProps) {
   const navigate = useNavigate()
   const toast = useToast()
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
-    toast.success('All notifications marked as read')
-  }
 
   const handleNotificationClick = (item: MockNotification) => {
     markAsRead(item.id)
@@ -73,7 +69,7 @@ export function NotificationDropdown({ onClose, notifications, setNotifications,
         </div>
         <button
           type="button"
-          onClick={markAllRead}
+          onClick={markAllAsRead}
           className="flex items-center gap-1 text-[11px] font-semibold text-[#3155F6] hover:text-[#2563eb] cursor-pointer"
         >
           <Check className="size-3" />

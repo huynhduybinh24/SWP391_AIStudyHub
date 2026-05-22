@@ -110,6 +110,11 @@ export function Header() {
     )
   }
 
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+    toast.success('All notifications marked as read')
+  }
+
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [history, setHistory] = useState<string[]>(() => {
     try {
@@ -572,6 +577,7 @@ export function Header() {
                 notifications={notifications}
                 setNotifications={setNotifications}
                 markAsRead={markAsRead}
+                markAllAsRead={markAllAsRead}
               />
             )}
           </AnimatePresence>
