@@ -50,7 +50,7 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-foreground dark:text-slate-200 truncate leading-snug">{profile.name}</p>
-          <p className="text-xs text-muted dark:text-slate-500 truncate leading-snug">{user?.email ?? 'alex.rivera@fpt.edu.vn'}</p>
+          <p className="text-xs text-muted dark:text-slate-500 truncate leading-snug">{user?.email ?? 'alex@example.com'}</p>
         </div>
       </div>
       
@@ -61,7 +61,7 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
         role="menuitem"
       >
         <User className="size-4 text-muted dark:text-slate-500" />
-        View Profile
+        My Profile
       </button>
       
       <button
