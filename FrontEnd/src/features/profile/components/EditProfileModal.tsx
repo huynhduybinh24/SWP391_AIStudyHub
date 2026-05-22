@@ -21,7 +21,7 @@ const profileSchema = z.object({
   university: z.string().min(1, 'University is required'),
   major: z.string().min(1, 'Major is required'),
   degree: z.enum(['Bachelor', 'Master', 'PhD', 'Associate'], {
-    errorMap: () => ({ message: 'Degree is required' }),
+    message: 'Degree is required',
   }),
 })
 
