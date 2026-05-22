@@ -14,6 +14,9 @@ import {
   Trash2,
   Pencil,
   AlertTriangle,
+  CheckCircle2,
+  Rocket,
+  Calendar,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -50,8 +53,10 @@ type StudyPlan = {
   difficulty: 'Easy' | 'Medium' | 'Hard'
   overallProgress: number
   segments: ProgressSegment[]
-  milestone: Milestone
-  themeColor: 'blue' | 'purple'
+  milestone?: Milestone
+  themeColor: 'blue' | 'purple' | 'teal'
+  completedAt?: string
+  iconType?: 'flask' | 'rocket'
 }
 
 // ─────────────────────────────────────────────
@@ -133,26 +138,33 @@ const STUDY_PLANS: StudyPlan[] = [
   },
   {
     id: '4',
-    title: 'World History: Modern Era',
-    description: 'Explore major events shaping the 20th and 21st centuries.',
+    title: 'Advanced Organic Chemistry',
+    description: 'Mastery of advanced reaction mechanisms and synthesis.',
     isAiGenerated: false,
     status: 'Completed',
-    documents: 6,
-    hoursEst: 20,
-    difficulty: 'Easy',
+    documents: 15,
+    hoursEst: 0,
+    difficulty: 'Hard',
     overallProgress: 100,
-    themeColor: 'blue',
-    segments: [
-      { label: 'WWI & WWII', value: 100 },
-      { label: 'Cold War', value: 100 },
-      { label: 'Modern Era', value: 100 },
-    ],
-    milestone: {
-      month: 'SEP',
-      day: 15,
-      title: 'Final Comprehensive Exam',
-      time: 'Completed',
-    },
+    themeColor: 'teal',
+    segments: [],
+    completedAt: 'Oct 15, 2024',
+    iconType: 'flask',
+  },
+  {
+    id: '5',
+    title: 'Introduction to Astrophysics',
+    description: 'Foundational principles of stellar evolution and cosmology.',
+    isAiGenerated: false,
+    status: 'Completed',
+    documents: 10,
+    hoursEst: 0,
+    difficulty: 'Medium',
+    overallProgress: 100,
+    themeColor: 'teal',
+    segments: [],
+    completedAt: 'Sep 28, 2024',
+    iconType: 'rocket',
   },
 ]
 
@@ -356,33 +368,45 @@ function DifficultyPill({ level }: { level: StudyPlan['difficulty'] }) {
 
 function SegmentedProgress({ segments, themeColor }: { segments: ProgressSegment[], themeColor: string }) {
   const isPurple = themeColor === 'purple'
-  const fillClass = isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
-  const bgClass = isPurple ? 'bg-indigo-100' : 'bg-[#e5eeff]'
+  const isTeal = themeColor === 'teal'
+  const fillClass = isTeal ? 'bg-teal-700' : isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
+  const bgClass = isTeal ? 'bg-teal-50' : isPurple ? 'bg-indigo-100' : 'bg-[#e5eeff]'
 
   return (
     <div className="flex flex-col gap-1.5 mt-2">
       {/* Track */}
       <div className="flex gap-1 h-[6px] w-full">
-        {segments.map((seg, i) => (
-          <div key={i} className={`flex-1 rounded-full overflow-hidden ${bgClass}`}>
+        {segments.length > 0 ? (
+          segments.map((seg, i) => (
+            <div key={i} className={`flex-1 rounded-full overflow-hidden ${bgClass}`}>
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${fillClass}`}
+                style={{ width: `${seg.value}%` }}
+              />
+            </div>
+          ))
+        ) : (
+          <div className={`flex-1 rounded-full overflow-hidden ${bgClass}`}>
             <div
               className={`h-full rounded-full transition-all duration-700 ${fillClass}`}
-              style={{ width: `${seg.value}%` }}
+              style={{ width: '100%' }}
             />
           </div>
-        ))}
+        )}
       </div>
       {/* Labels */}
-      <div className="flex">
-        {segments.map((seg, i) => (
-          <span
-            key={i}
-            className="flex-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate"
-          >
-            {seg.label}
-          </span>
-        ))}
-      </div>
+      {segments.length > 0 && (
+        <div className="flex">
+          {segments.map((seg, i) => (
+            <span
+              key={i}
+              className="flex-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate"
+            >
+              {seg.label}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -411,12 +435,17 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
   ]
 
   const isPurple = plan.themeColor === 'purple'
-  const accentClass = isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
-  const iconBgClass = isPurple ? 'bg-indigo-50' : 'bg-[#e8eeff]'
-  const iconTextClass = isPurple ? 'text-indigo-600' : 'text-[#2557E8]'
+  const isTeal = plan.themeColor === 'teal'
+  const accentClass = isTeal ? 'bg-teal-700' : isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
+  const iconBgClass = isTeal ? 'bg-teal-50' : isPurple ? 'bg-indigo-50' : 'bg-[#e8eeff]'
+  const iconTextClass = isTeal ? 'text-teal-700' : isPurple ? 'text-indigo-600' : 'text-[#2557E8]'
   const buttonClass = isPurple 
     ? 'bg-indigo-600 hover:bg-indigo-700' 
-    : 'bg-[#2557E8] hover:bg-[#1d4ed8]'
+    : 'bg-[#0055d4] hover:bg-[#004bbd]'
+
+  const IconComponent = plan.iconType === 'rocket' ? Rocket : FlaskConical
+
+  const isCompleted = plan.status === 'Completed'
 
   return (
     <Card className="flex overflow-hidden border border-[#e5eeff] shadow-sm hover:shadow-md transition-shadow duration-200 rounded-xl">
@@ -427,10 +456,10 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
       <div className="flex flex-1 min-w-0 flex-col sm:flex-row">
         {/* ── LEFT BODY ── */}
         <div className="flex flex-1 min-w-0 p-5 gap-4">
-          {/* Flask icon */}
+          {/* Icon */}
           <div className="shrink-0 pt-0.5">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBgClass}`}>
-              <FlaskConical className={`size-5 ${iconTextClass}`} strokeWidth={1.75} />
+              <IconComponent className={`size-5 ${iconTextClass}`} strokeWidth={1.75} />
             </div>
           </div>
 
@@ -442,12 +471,17 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
                 <h3 className="font-bold text-slate-900 text-[15px] leading-snug">
                   {plan.title}
                 </h3>
-                {plan.isAiGenerated && (
+                {isCompleted ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#ccfbf1] text-teal-700 text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
+                    <CheckCircle2 className="size-3" strokeWidth={2} />
+                    Completed
+                  </span>
+                ) : plan.isAiGenerated ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#00897B] text-white text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
                     <Sparkles className="size-3" strokeWidth={2} />
                     AI Generated
                   </span>
-                )}
+                ) : null}
               </div>
               {/* More menu */}
               <div className="relative shrink-0">
@@ -483,22 +517,32 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
 
             {/* Info pills */}
             <div className="flex flex-wrap gap-2 mt-3">
+              {isCompleted && plan.completedAt && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                  <Calendar className="size-3.5 text-slate-400" />
+                  Completed {plan.completedAt}
+                </span>
+              )}
               <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                 <Link2 className="size-3.5 text-slate-400" />
                 {plan.documents} Documents
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-                <Clock className="size-3.5 text-slate-400" />
-                {plan.hoursEst} Hours Est.
-              </span>
-              <DifficultyPill level={plan.difficulty} />
+              {!isCompleted && (
+                <>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                    <Clock className="size-3.5 text-slate-400" />
+                    {plan.hoursEst} Hours Est.
+                  </span>
+                  <DifficultyPill level={plan.difficulty} />
+                </>
+              )}
             </div>
 
             {/* Progress */}
             <div className="mt-4">
               <div className="flex justify-between items-center mb-1.5">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Overall Progress
+                  {isCompleted ? 'Final Grade' : 'Overall Progress'}
                 </span>
                 <span className={`text-xs font-bold ${iconTextClass}`}>
                   {plan.overallProgress}%
@@ -510,36 +554,38 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
         </div>
 
         {/* ── RIGHT PANEL ── */}
-        <div className="shrink-0 sm:w-[220px] border-t sm:border-t-0 sm:border-l border-[#e5eeff] flex flex-col justify-between p-5 gap-4 bg-[#fafbff]">
+        <div className={`shrink-0 sm:w-[220px] border-t sm:border-t-0 sm:border-l border-[#e5eeff] flex flex-col p-5 gap-4 bg-[#fafbff] ${isCompleted ? 'justify-center' : 'justify-between'}`}>
           {/* Milestone */}
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-              Next Milestone
-            </p>
-            <div className="flex items-start gap-3">
-              {/* Date block */}
-              <div className="flex flex-col items-center justify-center w-11 shrink-0 pt-0.5">
-                <span className="text-[10px] font-bold uppercase tracking-widest leading-none text-red-500 mb-0.5">
-                  {plan.milestone.month}
-                </span>
-                <span className="text-2xl font-black leading-none text-slate-900">
-                  {plan.milestone.day}
-                </span>
-              </div>
-              {/* Text */}
-              <div>
-                <p className="font-semibold text-slate-800 text-[13px] leading-snug">
-                  {plan.milestone.title}
-                </p>
-                <div className="flex items-center gap-1 mt-1">
-                  <Clock3 className="size-3 text-slate-400" />
-                  <span className="text-[11px] text-slate-400">
-                    {plan.milestone.time}
+          {!isCompleted && plan.milestone && (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                Next Milestone
+              </p>
+              <div className="flex items-start gap-3">
+                {/* Date block */}
+                <div className="flex flex-col items-center justify-center w-11 shrink-0 pt-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest leading-none text-red-500 mb-0.5">
+                    {plan.milestone.month}
                   </span>
+                  <span className="text-2xl font-black leading-none text-slate-900">
+                    {plan.milestone.day}
+                  </span>
+                </div>
+                {/* Text */}
+                <div>
+                  <p className="font-semibold text-slate-800 text-[13px] leading-snug">
+                    {plan.milestone.title}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Clock3 className="size-3 text-slate-400" />
+                    <span className="text-[11px] text-slate-400">
+                      {plan.milestone.time}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Action buttons */}
           <div className="flex flex-col gap-2">
@@ -547,9 +593,9 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
               variant="primary"
               size="sm"
               onClick={onContinue}
-              className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg ${buttonClass}`}
+              className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg shadow-sm ${buttonClass}`}
             >
-              {plan.status === 'Completed' ? 'View Results' : 'Continue Learning'}
+              {isCompleted ? 'View Review' : 'Continue Learning'}
             </Button>
             <Button
               variant="secondary"
@@ -557,7 +603,7 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
               onClick={onCurriculum}
               className="w-full justify-center font-semibold text-[13px] py-2.5 rounded-lg border-slate-200 text-slate-700 hover:bg-slate-50"
             >
-              View Curriculum
+              {isCompleted ? 'View Summary' : 'View Curriculum'}
             </Button>
           </div>
         </div>
