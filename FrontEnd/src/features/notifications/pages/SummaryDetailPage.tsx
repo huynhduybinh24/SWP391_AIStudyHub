@@ -285,8 +285,13 @@ function StudyTopicsCard() {
         {topics.map((topic) => (
           <div
             key={topic}
-            onClick={() => setSelectedTopic(topic)}
-            className="w-full bg-[#F4F7FE] border border-[rgba(195,198,215,0.3)] rounded-[12px] py-[14px] px-[18px] text-[15px] font-semibold text-[#434655] cursor-pointer text-left"
+            onClick={() => setSelectedTopic(selectedTopic === topic ? null : topic)}
+            className={cn(
+              "w-full border rounded-[12px] py-[14px] px-[18px] text-[15px] font-semibold transition-all duration-200 cursor-pointer text-left focus-visible:outline-none",
+              selectedTopic === topic
+                ? "bg-[#E8EEFF]/60 border-[#3155F6] text-[#3155F6] shadow-[0_2px_12px_rgba(49,85,246,0.06)]"
+                : "bg-[#F4F7FE] border-[rgba(195,198,215,0.3)] text-[#434655] hover:bg-white hover:border-[#3155F6]/30 hover:text-[#3155F6]"
+            )}
           >
             {topic}
           </div>
