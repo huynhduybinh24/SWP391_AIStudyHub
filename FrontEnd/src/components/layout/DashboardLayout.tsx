@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { Sparkles } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -50,7 +50,7 @@ export function DashboardLayout() {
               aria-label="Open AI Chatbot"
               onClick={() => setChatPopupOpen(!isChatPopupOpen)}
             >
-              <Sparkles className="size-6 text-white" />
+              <Bot className="size-6 text-white" />
             </Button>
             {isChatPopupOpen && <ChatPopup onClose={() => setChatPopupOpen(false)} />}
           </>
