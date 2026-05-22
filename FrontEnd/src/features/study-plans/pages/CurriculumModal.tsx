@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   CheckCircle2,
-  Circle,
   PlayCircle,
   FileText,
   HelpCircle,
@@ -78,7 +77,7 @@ function StatusIcon({ status }: { status: LessonStatus }) {
 export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
   // ── All hooks before any conditional return ──────────────
   const [expandedModule, setExpandedModule] = useState<string | null>(null)
-  const [highlightedModule, setHighlightedModule] = useState<string | null>(null)
+  const [highlightedModule] = useState<string | null>(null)
   const activeModuleRef = useRef<HTMLDivElement | null>(null)
   const activeLessonRef = useRef<HTMLButtonElement | null>(null)
   const addToast = useToastStore((s) => s.addToast)
