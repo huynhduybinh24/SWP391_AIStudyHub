@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, CircleHelp, LogOut, Settings, User, Sun, Moon } from 'lucide-react'
+import { Bell, CircleHelp, LogOut, Settings, User } from 'lucide-react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
 import { Input } from '@/components/ui/Input'

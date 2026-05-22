@@ -63,8 +63,8 @@ export function Sidebar() {
             className="w-9 h-9 shrink-0 object-contain" 
           />
           <div className="flex flex-col justify-center">
-            <h1 className="text-[18px] font-bold leading-tight text-[#3155F6] tracking-tight">AI Study Hub</h1>
-            <p className="text-[11px] font-medium leading-tight text-[#737686] mt-0.5">Focused Intelligence</p>
+            <h1 className="text-[19px] font-bold leading-tight text-[#2557E8] tracking-tight">AI Study Hub</h1>
+            <p className="text-[11px] font-medium leading-none text-[#737686] mt-0.5">Focused Intelligence</p>
           </div>
         </div>
 
@@ -88,13 +88,9 @@ export function Sidebar() {
         </nav>
 
         {/* Upgrade to Pro button */}
-        <Link
-          to="/dashboard/upgrade"
-          className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-all duration-200 cursor-pointer shadow-sm shrink-0 no-underline ${
-            pathname === '/dashboard/upgrade'
-              ? 'bg-[#1e40af] hover:bg-[#1d4ed8] shadow-[#1e40af]/20'
-              : 'bg-[#3155F6] hover:bg-[#2563eb] shadow-[#3155F6]/10'
-          }`}
+        <button
+          type="button"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2557E8] py-3 text-sm font-semibold text-white hover:bg-[#1a45cb] transition-all duration-200 cursor-pointer shadow-sm shadow-[#2557E8]/10 shrink-0"
         >
           <Zap className="size-4 text-white" strokeWidth={2} />
           Upgrade to Pro

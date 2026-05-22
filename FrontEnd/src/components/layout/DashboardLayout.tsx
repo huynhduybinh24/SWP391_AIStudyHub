@@ -19,19 +19,23 @@ export function DashboardLayout() {
       <Sidebar />
       <div className="relative flex min-w-0 flex-1 flex-col bg-surface h-full">
         <Header />
-        <main className="flex-1 flex flex-col overflow-auto">
-          <div className="flex-1 w-full mx-auto max-w-[1000px] px-8 pb-20 pt-8">
-            <Outlet />
-          </div>
-          <div className="mt-auto">
-            <Footer />
-          </div>
-        </main>
+        
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto flex flex-col justify-between">
+          <main className="px-8 pb-10 pt-6 flex-1">
+            <div className="mx-auto max-w-[1000px]">
+              <Outlet />
+            </div>
+          </main>
+          <Footer />
+        </div>
+
+        {/* Interactive Floating Chatbot */}
         {!isChatPage && (
           <>
             <Button
               size="icon"
-              className="fixed bottom-[20px] right-[20px] z-20 size-14 rounded-full bg-[#3155F6] shadow-lg hover:bg-[#2563eb]"
+              className="fixed bottom-[20px] right-[20px] z-20 size-14 rounded-full bg-[#3155F6] shadow-lg hover:bg-[#2563eb] transition-all duration-300 hover:scale-105"
               aria-label="Open AI Chatbot"
               onClick={() => setChatPopupOpen(!isChatPopupOpen)}
             >

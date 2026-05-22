@@ -1,22 +1,18 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
 import {
   ArrowLeft,
   CloudUpload,
-  Sparkles,
-  FileCode,
   FileText,
+  X,
+  Sparkles,
+  FileCheck,
   Image as ImageIcon,
   BookOpen,
-  FolderDown,
-  CheckCircle,
-  Eye,
-  Lock,
-  Users
+  FileCode,
+  Folder
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Textarea } from '@/components/ui/Textarea'
 import { cn } from '@/lib/utils'
 
 interface DocumentItem {
@@ -30,6 +26,7 @@ interface DocumentItem {
   subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
+  essential?: boolean
 }
 
 interface DocumentsLayoutContext {
@@ -37,45 +34,66 @@ interface DocumentsLayoutContext {
   showToast: (msg: string) => void
 }
 
-const COURSE_NAMES: Record<string, string> = {
-  COMPSCI: 'Software Engineering',
-  MATHEMATICS: 'Mathematics',
-  BIOLOGY: 'Biology',
-  PHYSICS: 'Physics',
-  PHILOSOPHY: 'Philosophy',
-  ECONOMICS: 'Economics',
-  GENERAL: 'General Education'
+const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
+  COMPSCI: { title: 'Software Engineering', courseCode: 'CS-402' },
+  MATHEMATICS: { title: 'Mathematics', courseCode: 'Calculus II' },
+  BIOLOGY: { title: 'Biology', courseCode: 'Genetics Lab' },
+  PHYSICS: { title: 'Physics', courseCode: 'PHY-301' },
+  PHILOSOPHY: { title: 'Philosophy', courseCode: 'PHIL-101' },
+  ECONOMICS: { title: 'Economics', courseCode: 'ECON-201' },
+  GENERAL: { title: 'General Studies', courseCode: 'GEN-101' }
 }
+
+const AVAILABLE_TAGS = ['Notes', 'Assignment', 'Lecture', 'Midterm', 'Final Exam']
 
 export function UploadSubjectDocumentPage() {
   const { subjectId } = useParams<{ subjectId: string }>()
   const navigate = useNavigate()
   const { setDocuments, showToast } = useOutletContext<DocumentsLayoutContext>()
 
-  const activeSubjectKey = (subjectId?.toUpperCase() || 'GENERAL') as keyof typeof COURSE_NAMES
-  const subjectName = COURSE_NAMES[activeSubjectKey] || COURSE_NAMES.GENERAL
+  const activeSubjectId = (subjectId || 'GENERAL').toUpperCase()
+  const subjectInfo = SUBJECT_MAP[activeSubjectId] || SUBJECT_MAP.GENERAL
 
   // Form states
   const [docTitle, setDocTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [tags, setTags] = useState('')
+  const [selectedTags, setSelectedTags] = useState<string[]>(['Notes']) // default Notes selected per Figma
   const [fileType, setFileType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
-  const [visibility, setVisibility] = useState<'public' | 'private' | 'group'>('public')
-
-  // AI checkboxes
-  const [aiSummary, setAiSummary] = useState(true)
-  const [aiFlashcards, setAiFlashcards] = useState(true)
-  const [aiQuiz, setAiQuiz] = useState(true)
-  const [aiFormulas, setAiFormulas] = useState(false)
+  const [visibility, setVisibility] = useState<'private' | 'shared' | 'public'>('private')
+  const [generateSummary, setGenerateSummary] = useState(true)
+  const [createFlashcards, setCreateFlashcards] = useState(true)
 
   // File Upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [isDragOver, setIsDragOver] = useState(false)
+  const [fileAttached, setFileAttached] = useState(true) // Start with default mockup pdf file attached
+  const [uploadProgress, setUploadProgress] = useState(65) // Start at 65% per Figma
+  const [uploadComplete, setUploadComplete] = useState(false)
+  const [fileName, setFileName] = useState('Software_Patterns_Notes.pdf')
+  const [fileSize, setFileSize] = useState('4.2 MB')
 
-  // Progress states
+  const [isDragOver, setIsDragOver] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [progressMsg, setProgressMsg] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Smoothly animate simulated progress bar from 65% to 100% on mount
+  useEffect(() => {
+    if (!fileAttached || uploadComplete) return
+
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval)
+          setUploadComplete(true)
+          return 100
+        }
+        // Increment progress randomly
+        const next = prev + Math.floor(Math.random() * 8) + 2
+        return next > 100 ? 100 : next
+      })
+    }, 450)
+
+    return () => clearInterval(interval)
+  }, [fileAttached, uploadComplete])
 
   // Drag and drop handlers
   const handleDragOver = (e: React.DragEvent) => {
@@ -105,520 +123,557 @@ export function UploadSubjectDocumentPage() {
 
   const processSelectedFile = (file: File) => {
     setSelectedFile(file)
-    if (!docTitle) {
-      const cleanName = file.name.split('.')[0].replace(/[_-]/g, ' ')
-      setDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
-    }
+    setFileName(file.name)
+    setFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB`)
 
     // Auto-detect type
     const ext = file.name.split('.').pop()?.toLowerCase()
-    if (ext === 'pdf') setFileType('pdf')
-    else if (ext === 'docx' || ext === 'doc') setFileType('word')
-    else if (ext === 'txt') setFileType('text')
-    else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') setFileType('image')
-    else if (ext === 'pptx' || ext === 'ppt') setFileType('slides')
+    let detectedType: 'pdf' | 'word' | 'image' | 'text' | 'slides' = 'pdf'
+    if (ext === 'pdf') detectedType = 'pdf'
+    else if (ext === 'docx' || ext === 'doc') detectedType = 'word'
+    else if (ext === 'txt') detectedType = 'text'
+    else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') detectedType = 'image'
+    else if (ext === 'pptx' || ext === 'ppt') detectedType = 'slides'
+
+    setFileType(detectedType)
+    setFileAttached(true)
+    setUploadProgress(0)
+    setUploadComplete(false)
+
+    // Pre-fill Title field with formatted file name if empty
+    if (!docTitle.trim()) {
+      const cleanName = file.name.split('.')[0].replace(/[_-]/g, ' ')
+      setDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
+    }
   }
 
-  // Trigger file dialog
-  const triggerFileSelect = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.onchange = (e) => handleFileChange(e as any)
-    input.click()
+  const handleBrowseFilesClick = () => {
+    fileInputRef.current?.click()
   }
 
-  // Upload submission
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    )
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedFile && !docTitle) return
 
+    if (!fileAttached) {
+      showToast('Please attach a study document first!')
+      return
+    }
+
+    const finalTitle = docTitle.trim() || fileName.split('.')[0].replace(/_/g, ' ')
     setIsProcessing(true)
-    setProgress(5)
-    setProgressMsg('Establishing secure upload connection...')
 
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev < 30) {
-          setProgressMsg('Uploading document bytes...')
-          return prev + Math.floor(Math.random() * 8) + 4
-        } else if (prev < 60) {
-          setProgressMsg('AI is extracting key phrases & raw text...')
-          return prev + Math.floor(Math.random() * 6) + 4
-        } else if (prev < 85) {
-          setProgressMsg('Running machine intelligence semantic indexing...')
-          return prev + Math.floor(Math.random() * 5) + 3
-        } else if (prev < 98) {
-          setProgressMsg('Generating summaries & active recall flashcards...')
-          return prev + 2
-        } else {
-          clearInterval(interval)
-          setProgressMsg('Success! Saving to secure course repository...')
-          
-          setTimeout(() => {
-            const finalTitle = docTitle || selectedFile?.name.split('.')[0] || 'Untitled Material'
-            const finalFileName = selectedFile?.name || `${finalTitle.toLowerCase().replace(/\s+/g, '_')}.${fileType}`
-            const finalSize = selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB` : '1.8 MB'
-            const finalSizeKb = selectedFile ? Math.round(selectedFile.size / 1024) : 1843
+    // Premium short AI processing duration simulation for amazing feedback
+    setTimeout(() => {
+      const finalFileName = selectedFile?.name || fileName
+      const finalSize = selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB` : fileSize
+      const finalSizeKb = selectedFile ? Math.round(selectedFile.size / 1024) : 4300
 
-            const newDoc: DocumentItem = {
-              id: `doc-${Date.now()}`,
-              title: finalTitle,
-              fileName: finalFileName,
-              uploadedAt: 'Uploaded Just Now',
-              uploadedDateObj: new Date(),
-              size: finalSize,
-              sizeKb: finalSizeKb,
-              subject: activeSubjectKey,
-              status: 'ANALYZED',
-              type: fileType
-            }
+      const newDoc: DocumentItem = {
+        id: `doc-${Date.now()}`,
+        title: finalTitle,
+        fileName: finalFileName,
+        uploadedAt: 'Uploaded Just Now',
+        uploadedDateObj: new Date(),
+        size: finalSize,
+        sizeKb: finalSizeKb,
+        subject: activeSubjectId as any,
+        status: 'ANALYZED',
+        type: fileType,
+        essential: selectedTags.includes('Lecture') || selectedTags.includes('Midterm')
+      }
 
-            setDocuments((prev) => [newDoc, ...prev])
-            setIsProcessing(false)
-            setProgress(0)
-            showToast(`Tài liệu "${finalTitle}" đã được tải lên và phân tích AI thành công!`)
-            navigate(`/dashboard/documents/subject/${activeSubjectKey}`)
-          }, 1000)
+      // Save to global state
+      setDocuments((prev) => [newDoc, ...prev])
 
-          return 100
-        }
-      })
-    }, 200)
+      // Toast Success Alert
+      showToast(`Tài liệu "${finalTitle}" được tải lên và xử lý AI thành công!`)
+
+      setIsProcessing(false)
+
+      // Navigate back to Folder View
+      navigate(`/dashboard/documents/subject/${subjectId}`)
+    }, 1200)
   }
 
-  // File icon mapper for preview
+  // Dynamically compute the document icon for card display
   const renderPreviewFileIcon = () => {
     switch (fileType) {
       case 'pdf':
-        return <FileText className="h-8 w-8 text-rose-500" />
+        return <FileText className="h-6 w-6 stroke-[1.8] text-rose-500" />
       case 'word':
-        return <FileCode className="h-8 w-8 text-blue-500" />
+        return <FileCode className="h-6 w-6 stroke-[1.8] text-blue-500" />
       case 'text':
-        return <BookOpen className="h-8 w-8 text-emerald-500" />
+        return <BookOpen className="h-6 w-6 stroke-[1.8] text-emerald-500" />
       case 'image':
-        return <ImageIcon className="h-8 w-8 text-sky-500" />
+        return <ImageIcon className="h-6 w-6 stroke-[1.8] text-sky-500" />
       case 'slides':
       default:
-        return <FolderDown className="h-8 w-8 text-amber-500" />
+        return <FileText className="h-6 w-6 stroke-[1.8] text-amber-500" />
+    }
+  }
+
+  const getFileTypeStyle = () => {
+    switch (fileType) {
+      case 'pdf':
+        return 'bg-rose-50 border border-rose-100'
+      case 'word':
+        return 'bg-blue-50 border border-blue-100'
+      case 'text':
+        return 'bg-emerald-50 border border-emerald-100'
+      case 'image':
+        return 'bg-sky-50 border border-sky-100'
+      case 'slides':
+      default:
+        return 'bg-amber-50 border border-amber-100'
     }
   }
 
   return (
-    <div className="space-y-5 animate-fade-in pb-16 max-w-5xl mx-auto pt-2">
-      
-      {/* Back link breadcrumb */}
-      <div className="-mb-2">
+    <div className="space-y-6 pb-12 animate-fade-in max-w-6xl mx-auto pt-2 px-4 md:px-6">
+      {/* Hidden native file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.pptx,.ppt"
+      />
+
+      {/* Back Link Breadcrumb */}
+      <div>
         <button
-          onClick={() => navigate(`/dashboard/documents/subject/${activeSubjectKey}`)}
-          className="group inline-flex items-center gap-2 text-sm font-semibold text-muted hover:text-primary transition-colors focus:outline-none cursor-pointer"
+          type="button"
+          onClick={() => navigate(`/dashboard/documents/subject/${subjectId}`)}
+          className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-[#2563eb] transition-colors focus:outline-none w-fit cursor-pointer"
         >
-          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
+          <ArrowLeft className="h-4 w-4" />
           Back to Subject
         </button>
       </div>
 
-      {/* Main Container */}
-      <form onSubmit={handleSubmit} className="rounded-3xl border border-[rgba(195,198,215,0.65)] bg-white p-6 shadow-xl shadow-[rgba(37,99,235,0.03)] md:p-10 space-y-8 relative overflow-hidden">
+      {/* Header Title with premium badge */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          Upload New Document
+        </h1>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF1FF] px-3.5 py-1 text-xs font-bold text-[#3155F6] border border-blue-100/50">
+          <Folder className="h-3.5 w-3.5 fill-[#3155F6]/10" />
+          {subjectInfo.title}
+        </span>
+      </div>
+      <p className="text-sm font-medium text-slate-500 -mt-2">
+        Add new study materials directly to {subjectInfo.title}.
+      </p>
+
+      {/* Main Grid Content */}
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6">
         
-        {/* Header Title */}
-        <div className="border-b border-border pb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-foreground sm:text-3xl tracking-tight">
-              Upload New Document
-            </h1>
-            <p className="mt-2 text-sm text-muted font-medium">
-              Add study resources to this subject. AI will build flashcards, summaries, and quizzes.
-            </p>
-          </div>
-          <span className="rounded-full bg-blue-50/70 border border-blue-100 px-4 py-2 text-xs font-extrabold text-primary tracking-wide">
-            🏫 Subject: {subjectName}
-          </span>
-        </div>
-
-        {/* 2-Column Grid */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        {/* Left Side: Upload Zone & Progress Card (Width ~42%) */}
+        <div className="lg:col-span-5 space-y-6">
           
-          {/* LEFT COLUMN: Drag & Drop upload area, Browse Files button, Upload progress card, File preview */}
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-extrabold uppercase tracking-wider text-muted select-none">
-                File Attachment
-              </label>
-              
-              {isProcessing ? (
-                /* Simulated active AI Processing inside Left Column */
-                <div className="rounded-2xl border border-blue-100 bg-blue-50/10 p-6 space-y-6 shadow-xs animate-fade-in flex flex-col items-center">
-                  {/* Glowing Circular Progress */}
-                  <div className="relative flex h-32 w-32 items-center justify-center shrink-0">
-                    <svg className="absolute inset-0 size-full transform -rotate-90">
-                      <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
-                        className="stroke-slate-100 fill-none"
-                        strokeWidth="7"
-                      />
-                      <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
-                        className="stroke-primary fill-none transition-all duration-300 ease-out"
-                        strokeWidth="7"
-                        strokeDasharray={2 * Math.PI * 56}
-                        strokeDashoffset={2 * Math.PI * 56 * (1 - progress / 100)}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <div className="flex flex-col items-center justify-center z-10">
-                      <span className="text-2xl font-black text-primary tracking-tight">{progress}%</span>
-                      <span className="text-[9px] uppercase font-extrabold tracking-widest text-muted mt-0.5">Progress</span>
-                    </div>
-                    <div className="absolute inset-3 rounded-full bg-primary/5 blur-lg -z-10" />
-                  </div>
+          {/* Drag & Drop Area */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleBrowseFilesClick}
+            className={cn(
+              "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center min-h-[300px] transition-all duration-300 cursor-pointer",
+              isDragOver
+                ? "border-[#2563eb] bg-blue-50/20 shadow-inner"
+                : "border-[#C3D2FF] bg-[#F4F7FF]/55 hover:bg-[#F4F7FF]/80"
+            )}
+          >
+            {/* White Cloud Circle */}
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#2563eb] shadow-sm mb-5 border border-slate-100/60">
+              <CloudUpload className="h-6 w-6 stroke-[1.8] text-[#2563eb]" />
+            </div>
+            
+            <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+              Drag and drop your files here
+            </h3>
+            
+            <p className="text-xs font-semibold text-slate-400 mt-2 max-w-[240px] leading-relaxed">
+              Support PDF, DOCX, PPTX, XLSX, PNG,<br />JPG
+            </p>
+            
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleBrowseFilesClick()
+              }}
+              className="mt-6 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[#2563eb] font-bold text-xs px-6 py-2.5 shadow-sm transition-all cursor-pointer hover:border-blue-200"
+            >
+              Browse Files
+            </button>
+          </div>
+
+          {/* Active Upload Progress Card */}
+          {fileAttached && (
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm animate-fade-in select-none flex items-start gap-4">
+              {/* File Icon container */}
+              <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl", getFileTypeStyle())}>
+                {renderPreviewFileIcon()}
+              </div>
+
+              {/* Stack containing metadata, progress and cancel actions */}
+              <div className="flex-1 min-w-0 space-y-2.5">
+                {/* Row 1: Title and Size */}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-bold text-slate-800 truncate pr-4" title={fileName}>
+                    {fileName}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400 shrink-0">
+                    {fileSize}
+                  </span>
+                </div>
+
+                {/* Row 2: Progress Bar */}
+                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all duration-300",
+                      uploadComplete ? "bg-emerald-500" : "bg-[#2563eb]"
+                    )}
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+
+                {/* Row 3: Progress label and Close trigger */}
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className={cn(
+                    uploadComplete ? "text-emerald-600 flex items-center gap-1" : "text-[#2563eb]"
+                  )}>
+                    {uploadComplete ? (
+                      <span className="flex items-center gap-1">
+                        <FileCheck className="h-3.5 w-3.5 text-emerald-500" />
+                        Upload Complete
+                      </span>
+                    ) : (
+                      `Uploading... ${uploadProgress}%`
+                    )}
+                  </span>
                   
-                  {/* Status Tracker */}
-                  <div className="w-full space-y-4">
-                    <div className="text-center">
-                      <h3 className="text-sm font-extrabold text-foreground tracking-tight">
-                        AI Academic Processing
-                      </h3>
-                      <p className="text-[11px] text-muted leading-relaxed mt-1 h-8 px-2">
-                        {progressMsg}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-[rgba(195,198,215,0.4)] bg-slate-50/50 p-4 space-y-3 shadow-inner">
-                      {/* Step 1 */}
-                      <div className="flex items-center justify-between text-xs font-semibold">
-                        <div className="flex items-center gap-2">
-                          {progress >= 15 ? (
-                            <CheckCircle className="size-3.5 text-emerald-500 fill-emerald-50 shrink-0" />
-                          ) : (
-                            <div className={cn("size-3.5 rounded-full border-2 shrink-0", progress >= 5 ? "border-primary animate-pulse" : "border-slate-300")} />
-                          )}
-                          <span className={cn(progress >= 15 ? "text-muted line-through" : "text-foreground")}>
-                            1. Establishing secure connection
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Step 2 */}
-                      <div className="flex items-center justify-between text-xs font-semibold">
-                        <div className="flex items-center gap-2">
-                          {progress >= 40 ? (
-                            <CheckCircle className="size-3.5 text-emerald-500 fill-emerald-50 shrink-0" />
-                          ) : (
-                            <div className={cn("size-3.5 rounded-full border-2 shrink-0", progress >= 15 ? "border-primary animate-pulse" : "border-slate-300")} />
-                          )}
-                          <span className={cn(progress >= 40 ? "text-muted line-through" : "text-foreground")}>
-                            2. Uploading document chunks
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Step 3 */}
-                      <div className="flex items-center justify-between text-xs font-semibold">
-                        <div className="flex items-center gap-2">
-                          {progress >= 70 ? (
-                            <CheckCircle className="size-3.5 text-emerald-500 fill-emerald-50 shrink-0" />
-                          ) : (
-                            <div className={cn("size-3.5 rounded-full border-2 shrink-0", progress >= 40 ? "border-primary animate-pulse" : "border-slate-300")} />
-                          )}
-                          <span className={cn(progress >= 70 ? "text-muted line-through" : "text-foreground")}>
-                            3. Semantic text extraction
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Step 4 */}
-                      <div className="flex items-center justify-between text-xs font-semibold">
-                        <div className="flex items-center gap-2">
-                          {progress >= 90 ? (
-                            <CheckCircle className="size-3.5 text-emerald-500 fill-emerald-50 shrink-0" />
-                          ) : (
-                            <div className={cn("size-3.5 rounded-full border-2 shrink-0", progress >= 70 ? "border-primary animate-pulse" : "border-slate-300")} />
-                          )}
-                          <span className={cn(progress >= 90 ? "text-muted line-through" : "text-foreground")}>
-                            4. Generating summaries & flashcards
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : !selectedFile ? (
-                /* Active Drag & Drop Box with Browse Files button */
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={triggerFileSelect}
-                  className={cn(
-                    "group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center cursor-pointer transition-all duration-300 min-h-[220px]",
-                    isDragOver
-                      ? "border-primary bg-primary/5 shadow-inner"
-                      : "border-slate-300 hover:border-primary hover:bg-blue-50/20"
-                  )}
-                >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/5 text-primary transition-transform duration-300 group-hover:scale-110">
-                    <CloudUpload className="h-7 w-7 animate-pulse" />
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-sm font-bold text-foreground transition-colors group-hover:text-primary">
-                      Drag and drop your study file here
-                    </p>
-                    <p className="text-xs text-muted mt-2 leading-relaxed font-medium">
-                      or click to <span className="text-primary font-extrabold hover:underline">Browse Files</span>
-                    </p>
-                    <p className="text-[10px] text-muted/80 mt-2 font-medium">
-                      PDF, DOCX, TXT, PNG, PPTX up to 50MB
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                /* Selected File Preview Container with remove × action */
-                <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-blue-50/10 p-5 shadow-xs select-none animate-fade-in">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-100 shadow-sm">
-                      {renderPreviewFileIcon()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground truncate" title={selectedFile.name}>
-                        {selectedFile.name}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="text-xs text-muted font-bold bg-slate-100/70 border border-slate-200/50 px-2 py-0.5 rounded-md">
-                          {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                        </span>
-                        <span className="inline-block size-1 bg-slate-300 rounded-full" />
-                        <span className="rounded-full bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider flex items-center gap-1 shadow-2xs">
-                          <CheckCircle className="size-3" /> Ready
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Cancel / Remove Button */}
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
+                    onClick={() => {
+                      setFileAttached(false)
                       setSelectedFile(null)
                     }}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-muted hover:text-danger hover:border-danger/30 hover:bg-rose-50/30 transition-all shadow-xs cursor-pointer"
-                    title="Remove file"
+                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
+                    aria-label="Cancel upload"
                   >
-                    <span className="text-lg font-black leading-none">×</span>
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT COLUMN: Form fields (Document Title, pre-filled Subject, Description, Tags, Format, Visibility) */}
-          <div className="space-y-5">
-            
-            {/* Title */}
-            <div className="space-y-2">
-              <label htmlFor="upload-title" className="text-xs font-extrabold uppercase tracking-wider text-muted select-none">
-                Document Title
-              </label>
-              <Input
-                id="upload-title"
-                placeholder="e.g. Design Patterns Lecture Notes, Calculus Cheat Sheet"
-                value={docTitle}
-                onChange={(e) => setDocTitle(e.target.value)}
-                required
-                disabled={isProcessing}
-                className="rounded-xl border-border py-3 focus-visible:ring-primary/20 bg-white disabled:bg-slate-50"
-              />
-            </div>
-
-            {/* Pre-filled Subject */}
-            <div className="space-y-2">
-              <label htmlFor="upload-subject" className="text-xs font-extrabold uppercase tracking-wider text-muted select-none">
-                Subject
-              </label>
-              <Input
-                id="upload-subject"
-                value={subjectName}
-                disabled
-                className="rounded-xl border-border py-3 bg-slate-50 text-muted/80 font-bold cursor-not-allowed border-dashed"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <label htmlFor="upload-desc" className="text-xs font-extrabold uppercase tracking-wider text-muted select-none">
-                Description (Optional)
-              </label>
-              <Textarea
-                id="upload-desc"
-                placeholder="Enter details to help AI contextualize summaries..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={isProcessing}
-                className="rounded-xl border-border min-h-[90px] focus-visible:ring-primary/20 bg-white disabled:bg-slate-50"
-              />
-            </div>
-
-            {/* Tags */}
-            <div className="space-y-2">
-              <label htmlFor="upload-tags" className="text-xs font-extrabold uppercase tracking-wider text-muted select-none">
-                Tags (Comma-separated)
-              </label>
-              <Input
-                id="upload-tags"
-                placeholder="e.g. creational, patterns, mid-term"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                disabled={isProcessing}
-                className="rounded-xl border-border py-3 focus-visible:ring-primary/20 bg-white disabled:bg-slate-50"
-              />
-            </div>
-
-            {/* Format dropdown */}
-            <div className="space-y-2">
-              <label htmlFor="upload-type" className="text-xs font-extrabold uppercase tracking-wider text-muted select-none">
-                File Type
-              </label>
-              <div className="relative">
-                <select
-                  id="upload-type"
-                  value={fileType}
-                  onChange={(e) => setFileType(e.target.value as any)}
-                  disabled={isProcessing}
-                  className="w-full appearance-none rounded-xl border border-border bg-white px-4.5 py-3 pr-10 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 cursor-pointer font-semibold disabled:bg-slate-50"
-                >
-                  <option value="pdf">PDF File (.pdf)</option>
-                  <option value="word">Word Document (.docx)</option>
-                  <option value="text">Text File (.txt)</option>
-                  <option value="image">Image Note (.png, .jpg)</option>
-                  <option value="slides">Presentation Slides (.pptx)</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-muted">
-                  <svg className="size-4 fill-current" viewBox="0 0 20 20">
-                    <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                  </svg>
-                </div>
               </div>
             </div>
-
-            {/* Visibility options selector cards: Private, Shared, Public */}
-            <div className="space-y-2">
-              <label className="text-xs font-extrabold uppercase tracking-wider text-muted select-none">
-                Visibility
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setVisibility('private')}
-                  disabled={isProcessing}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer",
-                    visibility === 'private'
-                      ? "border-primary bg-primary/5 text-primary shadow-xs"
-                      : "border-border hover:bg-slate-50 text-muted disabled:opacity-50"
-                  )}
-                >
-                  <Lock className="h-4.5 w-4.5 mb-1.5" />
-                  <span className="text-[10px] font-bold">Private</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setVisibility('group')}
-                  disabled={isProcessing}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer",
-                    visibility === 'group'
-                      ? "border-primary bg-primary/5 text-primary shadow-xs"
-                      : "border-border hover:bg-slate-50 text-muted disabled:opacity-50"
-                  )}
-                >
-                  <Users className="h-4.5 w-4.5 mb-1.5" />
-                  <span className="text-[10px] font-bold">Shared</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setVisibility('public')}
-                  disabled={isProcessing}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer",
-                    visibility === 'public'
-                      ? "border-primary bg-primary/5 text-primary shadow-xs"
-                      : "border-border hover:bg-slate-50 text-muted disabled:opacity-50"
-                  )}
-                >
-                  <Eye className="h-4.5 w-4.5 mb-1.5" />
-                  <span className="text-[10px] font-bold">Public</span>
-                </button>
-              </div>
-            </div>
-
-          </div>
-
+          )}
         </div>
 
-        {/* BOTTOM SECTION: AI Processing selection card & action buttons */}
-        <div className="border-t border-border pt-6 space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-extrabold uppercase tracking-wider text-muted select-none">
-              AI Processing
-            </label>
+        {/* Right Side: Form Fields & AI Processing Card (Width ~58%) */}
+        <div className="lg:col-span-7 space-y-6">
+          
+          {/* Main Card Form */}
+          <div className="rounded-2xl border border-slate-200/60 bg-white p-6 shadow-sm space-y-5">
             
-            {/* AI Processing Card containing Generate Summary and Create Flashcards checkboxes */}
-            <div className="rounded-2xl border border-border bg-slate-50/50 p-5 shadow-inner">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <label className="flex items-center gap-3 cursor-pointer text-sm font-semibold text-body select-none">
-                  <input
-                    type="checkbox"
-                    checked={aiSummary}
-                    onChange={(e) => setAiSummary(e.target.checked)}
-                    disabled={isProcessing}
-                    className="h-4.5 w-4.5 rounded border-slate-300 text-primary focus:ring-primary/20 accent-primary cursor-pointer disabled:opacity-50"
-                  />
-                  Generate summary
-                </label>
-                
-                <label className="flex items-center gap-3 cursor-pointer text-sm font-semibold text-body select-none">
-                  <input
-                    type="checkbox"
-                    checked={aiFlashcards}
-                    onChange={(e) => setAiFlashcards(e.target.checked)}
-                    disabled={isProcessing}
-                    className="h-4.5 w-4.5 rounded border-slate-300 text-primary focus:ring-primary/20 accent-primary cursor-pointer disabled:opacity-50"
-                  />
-                  Create flashcards
-                </label>
+            {/* Title Input */}
+            <div className="space-y-2">
+              <label htmlFor="upload-title" className="block text-sm font-bold text-slate-700 select-none">
+                Document Title
+              </label>
+              <input
+                id="upload-title"
+                type="text"
+                value={docTitle}
+                onChange={(e) => setDocTitle(e.target.value)}
+                placeholder="Enter document title"
+                disabled={isProcessing}
+                required
+                className="w-full rounded-xl border border-slate-200 bg-[#F0F4FF]/25 px-4 py-3 text-sm focus:border-[#2563eb] focus:bg-white focus:outline-none transition-all placeholder:text-slate-400 font-semibold text-slate-800"
+              />
+            </div>
+
+            {/* Subject (Disabled - Auto-filled) */}
+            <div className="space-y-2">
+              <label htmlFor="upload-subject" className="block text-sm font-bold text-slate-700 select-none">
+                Subject
+              </label>
+              <input
+                id="upload-subject"
+                type="text"
+                value={subjectInfo.title}
+                disabled
+                className="w-full rounded-xl border border-slate-200 bg-[#F0F4FF]/25 px-4 py-3 text-sm font-semibold text-slate-500 cursor-not-allowed select-none"
+              />
+            </div>
+
+            {/* Description Textarea */}
+            <div className="space-y-2">
+              <label htmlFor="upload-desc" className="block text-sm font-bold text-slate-700 select-none">
+                Description
+              </label>
+              <textarea
+                id="upload-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe this study document..."
+                disabled={isProcessing}
+                className="w-full rounded-xl border border-slate-200 bg-[#F0F4FF]/25 px-4 py-3 text-sm focus:border-[#2563eb] focus:bg-white focus:outline-none transition-all placeholder:text-slate-400 min-h-[100px] resize-none font-semibold text-slate-800"
+              />
+            </div>
+
+            {/* Tags Pills Selection */}
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-slate-700 select-none">
+                Tags
+              </label>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {AVAILABLE_TAGS.map((tag) => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      disabled={isProcessing}
+                      className={cn(
+                        "rounded-full px-4 py-1.5 text-xs font-bold border transition-all duration-200 focus:outline-none cursor-pointer disabled:opacity-50",
+                        isSelected
+                          ? "bg-[#2563eb] border-[#2563eb] text-white shadow-sm shadow-blue-500/10"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                      )}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
               </div>
+            </div>
+
+            {/* File Type & Visibility Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+              
+              {/* File Type Display */}
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700 select-none">
+                  File Type
+                </label>
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-[#F0F4FF]/25 px-4 py-3 text-sm text-slate-700 font-semibold select-none">
+                  <FileText className="h-4.5 w-4.5 text-slate-400" />
+                  <span>Auto-detected: {fileType.toUpperCase()}</span>
+                </div>
+              </div>
+
+              {/* Visibility Choices */}
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700 select-none">
+                  Visibility
+                </label>
+                <div className="flex items-center gap-4 h-[46px]">
+                  
+                  {/* Private Radio */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="private"
+                      checked={visibility === 'private'}
+                      onChange={() => setVisibility('private')}
+                      disabled={isProcessing}
+                      className="peer sr-only"
+                    />
+                    <div className="relative flex items-center justify-center">
+                      <div className="h-4.5 w-4.5 rounded-full border border-slate-300 bg-white transition-colors peer-checked:border-[#2563eb] peer-checked:bg-white" />
+                      <div className="absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] opacity-0 peer-checked:opacity-100 transition-opacity" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-700">
+                      Private
+                    </span>
+                  </label>
+
+                  {/* Shared Radio */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="shared"
+                      checked={visibility === 'shared'}
+                      onChange={() => setVisibility('shared')}
+                      disabled={isProcessing}
+                      className="peer sr-only"
+                    />
+                    <div className="relative flex items-center justify-center">
+                      <div className="h-4.5 w-4.5 rounded-full border border-slate-300 bg-white transition-colors peer-checked:border-[#2563eb] peer-checked:bg-white" />
+                      <div className="absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] opacity-0 peer-checked:opacity-100 transition-opacity" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-700">
+                      Shared
+                    </span>
+                  </label>
+
+                  {/* Public Radio */}
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="public"
+                      checked={visibility === 'public'}
+                      onChange={() => setVisibility('public')}
+                      disabled={isProcessing}
+                      className="peer sr-only"
+                    />
+                    <div className="relative flex items-center justify-center">
+                      <div className="h-4.5 w-4.5 rounded-full border border-slate-300 bg-white transition-colors peer-checked:border-[#2563eb] peer-checked:bg-white" />
+                      <div className="absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] opacity-0 peer-checked:opacity-100 transition-opacity" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-700">
+                      Public
+                    </span>
+                  </label>
+
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* AI Processing Configuration Card */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm overflow-hidden relative">
+            {/* Elegant Indigo-accent top border as seen in Figma */}
+            <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-blue-500 via-[#3155F6] to-indigo-500" />
+            
+            <div className="flex items-center gap-2 mb-4 pt-1">
+              <Sparkles className="h-5 w-5 text-[#2563eb] animate-pulse" />
+              <h3 className="text-base font-extrabold text-slate-900 tracking-tight select-none">
+                AI Processing
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Generate Summary Checkbox Card */}
+              <label
+                className={cn(
+                  "flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white",
+                  generateSummary
+                    ? "border-blue-100 shadow-xs"
+                    : "border-slate-200 hover:bg-slate-50/50"
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
+                    generateSummary
+                      ? "border-[#2563eb] bg-[#2563eb] text-white"
+                      : "border-slate-300 bg-white"
+                  )}
+                >
+                  {generateSummary && (
+                    <svg
+                      className="h-3.5 w-3.5 stroke-[3] stroke-current"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-sm font-bold text-slate-800">
+                  Generate summary
+                </span>
+                <input
+                  type="checkbox"
+                  checked={generateSummary}
+                  onChange={(e) => setGenerateSummary(e.target.checked)}
+                  className="sr-only"
+                  disabled={isProcessing}
+                />
+              </label>
+
+              {/* Create Flashcards Checkbox Card */}
+              <label
+                className={cn(
+                  "flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white",
+                  createFlashcards
+                    ? "border-blue-100 shadow-xs"
+                    : "border-slate-200 hover:bg-slate-50/50"
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
+                    createFlashcards
+                      ? "border-[#2563eb] bg-[#2563eb] text-white"
+                      : "border-slate-300 bg-white"
+                  )}
+                >
+                  {createFlashcards && (
+                    <svg
+                      className="h-3.5 w-3.5 stroke-[3] stroke-current"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-sm font-bold text-slate-800">
+                  Create flashcards
+                </span>
+                <input
+                  type="checkbox"
+                  checked={createFlashcards}
+                  onChange={(e) => setCreateFlashcards(e.target.checked)}
+                  className="sr-only"
+                  disabled={isProcessing}
+                />
+              </label>
             </div>
           </div>
 
-          {/* Cancel and Process with AI action buttons */}
+          {/* Action buttons Cancel & Process */}
           <div className="flex items-center justify-end gap-3 pt-2">
-            <Button
+            <button
               type="button"
-              variant="secondary"
-              onClick={() => navigate(`/dashboard/documents/subject/${activeSubjectKey}`)}
+              onClick={() => navigate(`/dashboard/documents/subject/${subjectId}`)}
               disabled={isProcessing}
-              className="rounded-xl font-bold border-slate-200 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
+              className="rounded-xl font-bold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-xs px-6 h-[44px] cursor-pointer transition-all disabled:opacity-50 text-sm"
             >
               Cancel
-            </Button>
+            </button>
             
-            <Button
+            <button
               type="submit"
-              disabled={isProcessing || (!selectedFile && !docTitle)}
-              className="group flex items-center gap-2 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/15 px-6 hover:bg-primary-dark cursor-pointer transition-all duration-200"
+              disabled={isProcessing || !fileAttached}
+              className="group flex items-center gap-2 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/10 px-6 h-[44px] cursor-pointer transition-all duration-200 disabled:opacity-50 text-sm"
             >
-              <Sparkles className="h-4.5 w-4.5" />
-              Process with AI
-            </Button>
+              {isProcessing ? (
+                <>
+                  <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Process with AI
+                </>
+              )}
+            </button>
           </div>
+
         </div>
 
       </form>
-      
     </div>
   )
 }
+
