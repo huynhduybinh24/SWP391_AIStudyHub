@@ -167,7 +167,7 @@ export function SharedFilesTable({
               <td className="py-4 px-6 text-right relative">
                 <button
                   type="button"
-                  ref={(el) => (buttonRefs.current[file.id] = el)}
+                  ref={(el) => { buttonRefs.current[file.id] = el }}
                   onClick={() => setActiveDropdownId(activeDropdownId === file.id ? null : file.id)}
                   className="p-2 rounded-xl text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors inline-flex cursor-pointer"
                   aria-label="File action menu"

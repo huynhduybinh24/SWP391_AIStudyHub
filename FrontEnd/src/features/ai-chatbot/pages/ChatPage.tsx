@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Bot, FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send, Loader2, User, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface Message {
   id: string
@@ -11,13 +12,8 @@ interface Message {
 }
 
 export function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      sender: 'bot',
-      text: "Hello! I'm your AI Study Assistant. How can I help you with your studies today?",
-    },
-  ])
+  const { language, t } = useTranslation()
+  const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -35,6 +31,22 @@ export function ChatPage() {
   // --- New Chat & Confirm Modal States ---
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [currentChatId, setCurrentChatId] = useState(() => Date.now().toString())
+
+  // Initialize and update welcome message reactively on language change
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 0 || (prev.length === 1 && prev[0].id === '1' && prev[0].sender === 'bot')) {
+        return [
+          {
+            id: '1',
+            sender: 'bot',
+            text: t.aiChatbot.welcome,
+          },
+        ]
+      }
+      return prev
+    })
+  }, [t.aiChatbot.welcome])
 
   // Auto-clear file errors after 3 seconds
   useEffect(() => {
@@ -70,7 +82,7 @@ export function ChatPage() {
     setVoiceError(null)
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
-      setVoiceError("Voice input is not supported in this browser.")
+      setVoiceError(t.aiChatbot.voiceNotSupported)
       return
     }
 
@@ -78,7 +90,7 @@ export function ChatPage() {
       const recognition = new SpeechRecognition()
       recognition.continuous = false
       recognition.interimResults = false
-      recognition.lang = 'en-US'
+      recognition.lang = language === 'vi' ? 'vi-VN' : (language === 'ja' ? 'ja-JP' : (language === 'ko' ? 'ko-KR' : 'en-US'))
 
       recognition.onstart = () => {
         setIsListening(true)
@@ -131,7 +143,7 @@ export function ChatPage() {
     setFileError(null)
 
     if (selectedFiles.length + filesArray.length > 3) {
-      setFileError("You can attach up to 3 files.")
+      setFileError(t.aiChatbot.maxFilesLimit)
       return
     }
 
@@ -141,11 +153,11 @@ export function ChatPage() {
     for (const file of filesArray) {
       const extension = '.' + file.name.split('.').pop()?.toLowerCase()
       if (!allowedExtensions.includes(extension)) {
-        setFileError("Unsupported file type.")
+        setFileError(t.aiChatbot.unsupportedFileType)
         return
       }
       if (file.size > maxSizeBytes) {
-        setFileError("File size must be less than 10MB.")
+        setFileError(t.aiChatbot.maxFileSizeLimit)
         return
       }
     }
@@ -188,15 +200,15 @@ export function ChatPage() {
     setIsTyping(true)
     setTimeout(() => {
       setIsTyping(false)
-      let botResponse = "I've analyzed your query. Let's break this down together to master the concept!"
+      let botResponse = t.aiChatbot.botResponseDefault
       
       const lowerText = text.toLowerCase()
-      if (lowerText.includes('summarize') || lowerText.includes('notes')) {
-        botResponse = "Here is a structured summary of your recent notes:\n\nTopic: Quantum Physics Foundations\n\n1. Wave-Particle Duality: Matter and light exhibit both wave-like and particle-like properties (e.g., photo-electric effect).\n2. Quantization of Energy: Energy is emitted or absorbed in discrete packets called quanta ($E = hf$).\n3. Schrödinger Equation: Describes how the quantum state of a physical system changes with time.\n\n*Would you like me to generate a quick practice quiz based on these points?*"
-      } else if (lowerText.includes('quantum') || lowerText.includes('mechanics')) {
-        botResponse = "Quantum Mechanics is the branch of physics dealing with the behavior of matter and light on the atomic and subatomic scale. It attempts to describe and account for the properties of molecules and atoms and their constituents—electrons, protons, neutrons, and other more esoteric particles.\n\nKey Postulates:\n- Superposition: A system can exist in multiple states simultaneously until it is measured.\n- Entanglement: Particles can become correlated such that the state of one instantaneously influences the other, regardless of distance.\n- Heisenberg Uncertainty Principle: It is impossible to simultaneously know both the precise position and momentum of a particle."
-      } else if (lowerText.includes('quiz') || lowerText.includes('generate')) {
-        botResponse = "Here is a quick quiz to test your understanding:\n\nQuestion: Which principle states that it is impossible to simultaneously know both the exact position and momentum of a particle?\n\n- A) Wave-particle duality\n- B) Heisenberg Uncertainty Principle\n- C) Quantum Superposition\n- D) Quantum Entanglement\n\n*Reply with A, B, C, or D to check your answer!*"
+      if (lowerText.includes('summarize') || lowerText.includes('notes') || lowerText.includes('tóm tắt') || lowerText.includes('요약') || lowerText.includes('要約')) {
+        botResponse = t.aiChatbot.botResponseNotes
+      } else if (lowerText.includes('quantum') || lowerText.includes('mechanics') || lowerText.includes('lượng tử') || lowerText.includes('양자') || lowerText.includes('量子')) {
+        botResponse = t.aiChatbot.botResponseQuantum
+      } else if (lowerText.includes('quiz') || lowerText.includes('generate') || lowerText.includes('kiểm tra') || lowerText.includes('퀴즈') || lowerText.includes('クイズ')) {
+        botResponse = t.aiChatbot.botResponseQuiz
       }
 
       setMessages((prev) => [
@@ -228,7 +240,7 @@ export function ChatPage() {
       {
         id: '1',
         sender: 'bot',
-        text: "Hello! I'm your AI Study Assistant. How can I help you with your studies today?",
+        text: t.aiChatbot.welcome,
       },
     ])
     setInputText('')
@@ -247,15 +259,16 @@ export function ChatPage() {
     setIsConfirmOpen(false)
   }
 
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-220px)] justify-between select-none">
       {/* Top Header section */}
       <div>
         <h1 className="text-[26px] font-bold text-[#0b1c30] dark:text-white tracking-tight mb-1">
-          AI Study Assistant
+          {t.aiChatbot.aiAssistant}
         </h1>
         <p className="text-[15px] font-medium text-[#737686] dark:text-slate-400">
-          Select a suggestion or type your question below.
+          {t.aiChatbot.selectSuggestion}
         </p>
 
         {/* Chat Workspace */}
@@ -263,7 +276,7 @@ export function ChatPage() {
           {/* New Chat Started Badge */}
           <div className="flex justify-center">
             <span className="rounded-full bg-[#e5eeff] dark:bg-blue-950/40 px-4 py-1.5 text-xs font-semibold text-[#3155F6] dark:text-blue-400 tracking-wide shadow-[0_1px_2px_rgba(49,85,246,0.05)]">
-              New Chat Started
+              {t.aiChatbot.newChatStarted}
             </span>
           </div>
 
@@ -329,7 +342,7 @@ export function ChatPage() {
                 </div>
                 <div className="max-w-[75%] rounded-2xl rounded-tl-none p-4 text-[14.5px] leading-relaxed shadow-[0_2px_8px_rgba(0,0,0,0.02)] border bg-white dark:bg-slate-900 text-[#737686] dark:text-slate-400 border-border/60 dark:border-slate-800 flex items-center gap-2">
                   <Loader2 className="size-4 animate-spin text-[#3155F6] dark:text-blue-400" />
-                  <span>Thinking...</span>
+                  <span>{t.aiChatbot.thinking}</span>
                 </div>
               </div>
             )}
@@ -344,27 +357,27 @@ export function ChatPage() {
         <div className="mb-5 flex flex-wrap gap-3 justify-center">
           <button
             type="button"
-            onClick={() => handleSend("Summarize recent notes")}
+            onClick={() => handleSend(t.aiChatbot.summarizeRecentNotes)}
             className="flex items-center gap-2 rounded-full border border-border/70 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-[#434655] dark:text-slate-350 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/30 dark:hover:border-blue-500/30 hover:shadow-sm cursor-pointer"
           >
             <FileText className="size-4 text-[#737686] dark:text-slate-400" />
-            Summarize recent notes
+            {t.aiChatbot.summarizeRecentNotes}
           </button>
           <button
             type="button"
-            onClick={() => handleSend("Explain Quantum Mechanics")}
+            onClick={() => handleSend(t.aiChatbot.explainQuantum)}
             className="flex items-center gap-2 rounded-full border border-border/70 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-[#434655] dark:text-slate-350 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/30 dark:hover:border-blue-500/30 hover:shadow-sm cursor-pointer"
           >
             <FlaskConical className="size-4 text-[#737686] dark:text-slate-400" />
-            Explain Quantum Mechanics
+            {t.aiChatbot.explainQuantum}
           </button>
           <button
             type="button"
-            onClick={() => handleSend("Generate Quiz")}
+            onClick={() => handleSend(t.aiChatbot.generateQuiz)}
             className="flex items-center gap-2 rounded-full border border-border/70 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-[#434655] dark:text-slate-350 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/30 dark:hover:border-blue-500/30 hover:shadow-sm cursor-pointer"
           >
             <FileQuestion className="size-4 text-[#737686] dark:text-slate-400" />
-            Generate Quiz
+            {t.aiChatbot.generateQuiz}
           </button>
         </div>
 
@@ -375,7 +388,7 @@ export function ChatPage() {
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             className="min-h-[48px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-[#0b1c30] dark:text-white outline-none placeholder:text-[#737686]/60 dark:placeholder:text-slate-500"
-            placeholder="Ask your study assistant anything..."
+            placeholder={t.aiChatbot.placeholderPage}
           />
           <div className="mt-2.5 flex items-center justify-between border-t border-slate-100/50 dark:border-slate-800/50 pt-2.5">
             {/* Attachment and Mic Controls */}
@@ -383,17 +396,17 @@ export function ChatPage() {
               <button
                 type="button"
                 className="text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                title="Attach Files"
+                title={t.aiChatbot.attachFiles}
               >
                 <Paperclip className="size-5" />
               </button>
               <button
                 type="button"
                 className="text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                title="Voice Input"
+                title={t.aiChatbot.voiceInput}
               >
                 <Mic className={cn("size-5", isListening && "animate-pulse")} />
-                {isListening && <span className="text-xs font-semibold">Listening...</span>}
+                {isListening && <span className="text-xs font-semibold">{t.aiChatbot.listening}</span>}
               </button>
             </div>
 
@@ -403,7 +416,7 @@ export function ChatPage() {
               onClick={() => handleSend()}
               className="flex size-10 items-center justify-center rounded-xl bg-[#3155F6] dark:bg-blue-600 text-white shadow-sm transition-all hover:bg-[#2563eb] dark:hover:bg-blue-500 hover:scale-105 active:scale-95 cursor-pointer disabled:pointer-events-none disabled:opacity-50"
               disabled={!inputText.trim()}
-              title="Send Message"
+              title={t.aiChatbot.sendMessage}
             >
               <Send className="size-4.5" />
             </button>
@@ -416,10 +429,10 @@ export function ChatPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px] transition-opacity animate-in fade-in duration-200">
           <div className="w-full max-w-[380px] rounded-2xl bg-white p-6 shadow-xl border border-slate-100 animate-in zoom-in-95 duration-150">
             <h3 className="text-lg font-bold text-[#0b1c30] mb-2 text-left animate-none">
-              Start a new chat?
+              {t.aiChatbot.startNewChatTitle}
             </h3>
             <p className="text-[14.5px] leading-relaxed text-[#737686] mb-6 text-left animate-none">
-              Your current conversation will be cleared.
+              {t.aiChatbot.startNewChatDesc}
             </p>
             <div className="flex items-center justify-end gap-3">
               <button
@@ -427,14 +440,14 @@ export function ChatPage() {
                 onClick={() => setIsConfirmOpen(false)}
                 className="px-4 py-2 rounded-xl text-sm font-semibold text-[#737686] hover:bg-slate-50 border border-slate-200/60 transition-colors cursor-pointer outline-none"
               >
-                Cancel
+                {t.common.cancel}
               </button>
               <button
                 type="button"
                 onClick={resetNewChat}
                 className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#EF4444] hover:bg-red-600 transition-colors cursor-pointer outline-none border-none"
               >
-                Start New Chat
+                {t.aiChatbot.startNewChatBtn}
               </button>
             </div>
           </div>

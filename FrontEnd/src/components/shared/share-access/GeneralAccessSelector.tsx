@@ -29,7 +29,7 @@ export function GeneralAccessSelector({
     {
       value: 'restricted',
       label: 'Bị hạn chế',
-      desc: 'Chỉ những người được thêm mới có thể mở bằng đường liên kết',
+      desc: 'Chỉ những người được thêm mới có thể mở bằng đường liên kết này',
       icon: Lock
     },
     {
@@ -58,11 +58,7 @@ export function GeneralAccessSelector({
   const handleSelect = (type: GeneralAccessType) => {
     onChange(type)
     setIsOpen(false)
-    if (type === 'restricted') {
-      showToast('General access updated')
-    } else {
-      showToast('General access updated')
-    }
+    showToast('General access updated')
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -103,33 +99,39 @@ export function GeneralAccessSelector({
   const selectedOption = options.find((o) => o.value === value) || options[0]
 
   return (
-    <div className="space-y-3.5 shrink-0 select-none text-left">
-      <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+    <div className="space-y-2.5 shrink-0 select-none text-left">
+      <h3 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
         QUYỀN TRUY CẬP CHUNG
       </h3>
 
-      <div className="flex items-center justify-between gap-3" ref={dropdownRef}>
-        <div className="flex items-start gap-3.5 min-w-0">
+      <div 
+        className={cn(
+          "rounded-2xl border p-4 flex items-center justify-between gap-3",
+          "bg-slate-50/60 dark:bg-slate-850/40 border-slate-200 dark:border-slate-800"
+        )} 
+        ref={dropdownRef}
+      >
+        <div className="flex items-center gap-3.5 min-w-0 flex-1">
           {/* Status Badge */}
           <div className={cn(
-            "w-[38px] h-[38px] rounded-full flex items-center justify-center shrink-0 border select-none transition-all duration-300 shadow-inner",
+            "w-9 h-9 rounded-full flex items-center justify-center shrink-0 border select-none transition-all duration-300 shadow-xs",
             value === 'public'
-              ? "bg-blue-950/30 border-blue-900/50 text-blue-400"
-              : "bg-slate-800 border-slate-700 text-slate-400"
+              ? "bg-blue-50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/40 text-blue-600 dark:text-blue-400"
+              : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
           )}>
             <selectedOption.icon className="h-4.5 w-4.5" />
           </div>
 
-          <div className="min-w-0 flex flex-col">
+          <div className="min-w-0 flex flex-col flex-1 relative">
             <div className="relative inline-block text-left">
               <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 onKeyDown={handleKeyDown}
-                className="flex items-center gap-1 px-1.5 py-0.5 text-xs font-extrabold text-slate-200 hover:bg-slate-800 rounded-lg select-none text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                className="flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80 px-1 py-0.5 rounded-lg select-none text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/50"
               >
                 <span>{selectedOption.label}</span>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-450 shrink-0" />
+                <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0" />
               </button>
 
               <AnimatePresence>
@@ -139,7 +141,11 @@ export function GeneralAccessSelector({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute left-0 mt-1 bg-slate-900 border border-slate-800 shadow-xl rounded-2xl z-50 py-1.5 w-56 focus:outline-none"
+                    className={cn(
+                      "absolute left-0 mt-1 shadow-xl rounded-2xl z-50 py-1.5 w-64 focus:outline-none border",
+                      "bg-white text-slate-900 border-slate-200",
+                      "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-800"
+                    )}
                   >
                     {options.map((opt) => (
                       <button
@@ -147,15 +153,17 @@ export function GeneralAccessSelector({
                         type="button"
                         onClick={() => handleSelect(opt.value)}
                         className={cn(
-                          "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-800 flex items-center justify-between transition-colors cursor-pointer",
-                          value === opt.value ? "text-blue-400 bg-blue-950/20" : "text-slate-300"
+                          "w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between transition-colors cursor-pointer border-none bg-transparent focus:outline-none",
+                          value === opt.value 
+                            ? "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20" 
+                            : "text-slate-700 dark:text-slate-350"
                         )}
                       >
                         <span className="flex items-center gap-2">
                           <opt.icon className="h-4 w-4 text-slate-400 shrink-0" />
                           <span>{opt.label}</span>
                         </span>
-                        {value === opt.value && <Check className="h-4 w-4 text-blue-400" />}
+                        {value === opt.value && <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
                       </button>
                     ))}
                   </motion.div>
@@ -163,10 +171,10 @@ export function GeneralAccessSelector({
               </AnimatePresence>
             </div>
 
-            <p className="text-[10px] text-slate-500 font-medium pl-1.5 mt-0.5 leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium pl-1 mt-0.5 leading-relaxed">
               {value === 'public'
                 ? 'Bất kỳ ai có đường liên kết đều có thể xem'
-                : 'Chỉ những người được thêm mới có thể mở bằng đường liên kết'}
+                : 'Chỉ những người được thêm mới có thể mở bằng đường liên kết này'}
             </p>
           </div>
         </div>
@@ -180,6 +188,7 @@ export function GeneralAccessSelector({
                 onPublicRoleChange(role)
                 showToast(`Permission updated`)
               }}
+              className="h-[36px] px-3 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-bold"
               ariaLabel="Public link permission level"
             />
           </div>
@@ -188,3 +197,4 @@ export function GeneralAccessSelector({
     </div>
   )
 }
+

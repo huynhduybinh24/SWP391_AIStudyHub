@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface DocumentItem {
   id: string
@@ -48,6 +49,7 @@ interface DocumentsContextType {
 
 export default function MyDocumentsPage() {
   const navigate = useNavigate()
+  const { language, t } = useTranslation()
   const {
     documents,
     openUploadModal,
@@ -64,6 +66,27 @@ export default function MyDocumentsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(false)
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
+
+  const handleOpenDocument = (docId: string) => {
+    setActiveMenuId(null)
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual'
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      })
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      scrollableContainers.forEach((container) => {
+        container.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'instant'
+        })
+      })
+    }
+    navigate(`/dashboard/documents/document/${docId}`)
+  }
 
   const menuRef = useRef<HTMLDivElement>(null)
   const filterContainerRef = useRef<HTMLDivElement>(null)
@@ -106,11 +129,57 @@ export default function MyDocumentsPage() {
     return queryMatch && subjectMatch && typeMatch
   })
 
-
   // Dynamic counts for top folder cards
   const compsCount = documents.filter(d => d.subject === 'COMPSCI').length
   const mathCount = documents.filter(d => d.subject === 'MATHEMATICS').length
   const bioCount = documents.filter(d => d.subject === 'BIOLOGY').length
+
+  const getDocumentsCountLabel = (count: number) => {
+    if (language === 'en') {
+      return `${count} ${count === 1 ? 'Document' : 'Documents'}`
+    }
+    if (language === 'vi') {
+      return `${count} Tài liệu`
+    }
+    if (language === 'ja') {
+      return `${count} 件のドキュメント`
+    }
+    if (language === 'ko') {
+      return `${count}개의 문서`
+    }
+    return `${count} Documents`
+  }
+
+  const getSubjectName = (subject: string) => {
+    const s = subject.toLowerCase()
+    if (s === 'all') return language === 'en' ? 'All Subjects' : (language === 'vi' ? 'Tất cả môn học' : (language === 'ja' ? 'すべての科目' : '모든 과목'))
+    if (s === 'mathematics' || s === 'math') return t.myDocuments.math
+    if (s === 'biology' || s === 'bio') return t.myDocuments.bio
+    if (s === 'compsci') return t.myDocuments.compsci
+
+    const subjectMap: Record<string, Record<string, string>> = {
+      physics: { en: 'Physics', vi: 'Vật lý', ja: '物理学', ko: '물리학' },
+      philosophy: { en: 'Philosophy', vi: 'Triết học', ja: '哲学', ko: '철학' },
+      economics: { en: 'Economics', vi: 'Kinh tế học', ja: '経済学', ko: '経済学' },
+      neuroscience: { en: 'Neuroscience', vi: 'Thần kinh học', ja: '神経科学', ko: '신경과학' },
+      psychology: { en: 'Psychology', vi: 'Tâm lý học', ja: '心理学', ko: '심리학' },
+      general: { en: 'General Studies', vi: 'Đại cương', ja: '一般教養', ko: '교양' }
+    }
+    return subjectMap[s]?.[language] || subject
+  }
+
+  const getTypeName = (type: string) => {
+    const tLower = type.toLowerCase()
+    if (tLower === 'all') return language === 'en' ? 'All Types' : (language === 'vi' ? 'Tất cả loại tệp' : (language === 'ja' ? 'すべてのタイプ' : '모든 유형'))
+    const typeMap: Record<string, Record<string, string>> = {
+      pdf: { en: 'PDF', vi: 'PDF', ja: 'PDF', ko: 'PDF' },
+      word: { en: 'Word', vi: 'Word', ja: 'Word', ko: 'Word' },
+      text: { en: 'Text', vi: 'Văn bản', ja: 'テキスト', ko: '텍스트' },
+      image: { en: 'Image', vi: 'Hình ảnh', ja: '画像', ko: '이미지' },
+      slides: { en: 'Slides', vi: 'Trình chiếu', ja: 'スライド', ko: '슬라이드' }
+    }
+    return typeMap[tLower]?.[language] || type
+  }
 
   return (
     <div className="space-y-8">
@@ -119,16 +188,16 @@ export default function MyDocumentsPage() {
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
           <div className="flex items-center gap-4">
             {/* Folder layout icon */}
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EBF1FF] text-[#2563eb] border border-blue-100/50 shadow-xs dark:bg-blue-950/40 dark:border-blue-900/50 dark:text-blue-450">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EBF1FF] text-[#2563eb] border border-blue-100/50 shadow-xs dark:bg-blue-955/40 dark:border-blue-900/50 dark:text-blue-450">
               <FileText className="h-7 w-7 text-[#2563eb] dark:text-blue-400 stroke-[1.8]" />
             </div>
 
             <div className="flex flex-col gap-1">
-              <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
-                My Documents
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight dark:text-slate-100">
+                {t.myDocuments.title}
               </h1>
-              <p className="text-[13px] md:text-sm font-medium text-slate-500 leading-relaxed max-w-2xl">
-                Manage and organize your study materials with AI. Generate summaries, flashcards, and deep-dives instantly.
+              <p className="text-[13px] md:text-sm font-medium text-slate-500 leading-relaxed max-w-2xl dark:text-slate-400">
+                {t.myDocuments.subtitle}
               </p>
             </div>
           </div>
@@ -141,12 +210,12 @@ export default function MyDocumentsPage() {
               className={cn(
                 "flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
                 showFilters 
-                  ? "border-[#2563eb]/40 bg-blue-50 text-[#2563eb] dark:bg-blue-950/30 dark:border-blue-500/50 dark:text-blue-400" 
+                  ? "border-[#2563eb]/40 bg-blue-50 text-[#2563eb] dark:bg-blue-955/30 dark:border-blue-500/50 dark:text-blue-450" 
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               )}
             >
               <SlidersHorizontal className="h-4.5 w-4.5" />
-              Filter
+              {language === 'en' ? 'Filter' : (language === 'vi' ? 'Bộ lọc' : (language === 'ja' ? 'フィルター' : '필터'))}
             </Button>
 
             <Button
@@ -154,15 +223,16 @@ export default function MyDocumentsPage() {
               className="group flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
             >
               <Plus className="h-4.5 w-4.5" />
-              Upload New
+              {language === 'en' ? 'Upload New' : (language === 'vi' ? 'Tải lên mới' : (language === 'ja' ? '新規アップロード' : '새로 업로드'))}
             </Button>
           </div>
         </div>
       </div>
 
+
       {/* Folders List Grid Section */}
       <div className="space-y-3.5">
-        <h3 className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">FOLDERS / SUBJECTS</h3>
+        <h3 className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">{t.myDocuments.folders}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
           {/* Software Engineering Folder Card */}
           <div 
@@ -174,10 +244,10 @@ export default function MyDocumentsPage() {
             </div>
             <div className="min-w-0">
               <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors truncate">
-                Software Engineering
+                {t.myDocuments.compsci}
               </h4>
               <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
-                CS-402 &bull; {compsCount} Document{compsCount !== 1 ? 's' : ''}
+                CS-402 &bull; {getDocumentsCountLabel(compsCount)}
               </p>
             </div>
           </div>
@@ -192,10 +262,10 @@ export default function MyDocumentsPage() {
             </div>
             <div className="min-w-0">
               <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors truncate">
-                Mathematics
+                {t.myDocuments.math}
               </h4>
               <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
-                Calculus II &bull; {mathCount} Document{mathCount !== 1 ? 's' : ''}
+                Calculus II &bull; {getDocumentsCountLabel(mathCount)}
               </p>
             </div>
           </div>
@@ -210,10 +280,10 @@ export default function MyDocumentsPage() {
             </div>
             <div className="min-w-0">
               <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors truncate">
-                Biology
+                {t.myDocuments.bio}
               </h4>
               <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
-                Genetics Lab &bull; {bioCount} Document{bioCount !== 1 ? 's' : ''}
+                Genetics Lab &bull; {getDocumentsCountLabel(bioCount)}
               </p>
             </div>
           </div>
@@ -224,7 +294,7 @@ export default function MyDocumentsPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-3">
           <h2 className="text-[11px] font-extrabold tracking-wider text-slate-400 uppercase dark:text-slate-500">
-            ALL MATERIALS WORKSPACE
+            {t.myDocuments.workspace}
           </h2>
         </div>
 
@@ -236,7 +306,7 @@ export default function MyDocumentsPage() {
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
-              placeholder="Filter by name..."
+              placeholder={language === 'en' ? 'Filter by name...' : (language === 'vi' ? 'Lọc theo tên...' : (language === 'ja' ? '名前でフィルター...' : '이름으로 필터링...'))}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:border-[#2563eb]/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb]/10 transition-all dark:border-slate-800 dark:bg-slate-850 dark:text-white dark:placeholder:text-slate-500 dark:focus:bg-slate-950"
@@ -246,7 +316,7 @@ export default function MyDocumentsPage() {
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350"
               >
-                Clear
+                {language === 'en' ? 'Clear' : (language === 'vi' ? 'Xóa' : (language === 'ja' ? 'クリア' : '지우기'))}
               </button>
             )}
           </div>
@@ -255,39 +325,39 @@ export default function MyDocumentsPage() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Subject Filter */}
             <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
-              <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Subject:</span>
+              <span className="text-xs font-medium text-slate-400 dark:text-slate-500">{language === 'en' ? 'Subject:' : (language === 'vi' ? 'Môn học:' : (language === 'ja' ? '科目:' : '과목:'))}</span>
               <select
                 value={subjectFilter}
                 onChange={(e) => setSubjectFilter(e.target.value)}
                 className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
               >
-                <option value="All" className="dark:bg-slate-900 dark:text-slate-100">All Subjects</option>
-                <option value="Mathematics" className="dark:bg-slate-900 dark:text-slate-100">Mathematics</option>
-                <option value="Biology" className="dark:bg-slate-900 dark:text-slate-100">Biology</option>
-                <option value="Physics" className="dark:bg-slate-900 dark:text-slate-100">Physics</option>
-                <option value="Compsci" className="dark:bg-slate-900 dark:text-slate-100">CompSci</option>
-                <option value="Philosophy" className="dark:bg-slate-900 dark:text-slate-100">Philosophy</option>
-                <option value="Economics" className="dark:bg-slate-900 dark:text-slate-100">Economics</option>
-                <option value="Neuroscience" className="dark:bg-slate-900 dark:text-slate-100">Neuroscience</option>
-                <option value="Psychology" className="dark:bg-slate-900 dark:text-slate-100">Psychology</option>
-                <option value="General" className="dark:bg-slate-900 dark:text-slate-100">General Studies</option>
+                <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('All')}</option>
+                <option value="Mathematics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Mathematics')}</option>
+                <option value="Biology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Biology')}</option>
+                <option value="Physics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Physics')}</option>
+                <option value="Compsci" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Compsci')}</option>
+                <option value="Philosophy" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Philosophy')}</option>
+                <option value="Economics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Economics')}</option>
+                <option value="Neuroscience" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Neuroscience')}</option>
+                <option value="Psychology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Psychology')}</option>
+                <option value="General" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('General')}</option>
               </select>
             </div>
 
             {/* Type Filter */}
             <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
-              <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Type:</span>
+              <span className="text-xs font-medium text-slate-400 dark:text-slate-500">{language === 'en' ? 'Type:' : (language === 'vi' ? 'Loại tệp:' : (language === 'ja' ? 'タイプ:' : '유형:'))}</span>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
               >
-                <option value="All" className="dark:bg-slate-900 dark:text-slate-100">All Types</option>
-                <option value="Pdf" className="dark:bg-slate-900 dark:text-slate-100">PDF</option>
-                <option value="Word" className="dark:bg-slate-900 dark:text-slate-100">Word</option>
-                <option value="Text" className="dark:bg-slate-900 dark:text-slate-100">Text</option>
-                <option value="Image" className="dark:bg-slate-900 dark:text-slate-100">Image</option>
-                <option value="Slides" className="dark:bg-slate-900 dark:text-slate-100">Slides</option>
+                <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('All')}</option>
+                <option value="Pdf" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Pdf')}</option>
+                <option value="Word" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Word')}</option>
+                <option value="Text" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Text')}</option>
+                <option value="Image" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Image')}</option>
+                <option value="Slides" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Slides')}</option>
               </select>
             </div>
 
@@ -303,8 +373,8 @@ export default function MyDocumentsPage() {
                     ? 'bg-white text-[#2563eb] shadow-xs dark:bg-slate-900 dark:text-blue-400'
                     : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350'
                 )}
-                title="Grid View"
-                aria-label="Grid View"
+                title={language === 'en' ? 'Grid View' : (language === 'vi' ? 'Chế độ lưới' : (language === 'ja' ? 'グリッド表示' : '그リッド 뷰'))}
+                aria-label={language === 'en' ? 'Grid View' : (language === 'vi' ? 'Chế độ lưới' : (language === 'ja' ? 'グリッド表示' : '그リッド 뷰'))}
               >
                 <Grid className="h-4 w-4" />
               </button>
@@ -316,8 +386,8 @@ export default function MyDocumentsPage() {
                     ? 'bg-white text-[#2563eb] shadow-xs dark:bg-slate-900 dark:text-blue-400'
                     : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350'
                 )}
-                title="List View"
-                aria-label="List View"
+                title={language === 'en' ? 'List View' : (language === 'vi' ? 'Chế độ danh sách' : (language === 'ja' ? 'リスト表示' : '리스트 뷰'))}
+                aria-label={language === 'en' ? 'List View' : (language === 'vi' ? 'Chế độ danh sách' : (language === 'ja' ? 'リスト表示' : '리스트 뷰'))}
               >
                 <List className="h-4 w-4" />
               </button>
@@ -333,9 +403,9 @@ export default function MyDocumentsPage() {
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-[#2563eb] dark:bg-blue-955/50 dark:text-blue-400">
               <Search className="h-6 w-6" />
             </div>
-            <h3 className="mt-4 text-lg font-bold text-slate-800 dark:text-slate-200">No documents found</h3>
+            <h3 className="mt-4 text-lg font-bold text-slate-800 dark:text-slate-200">{t.myDocuments.noDocs}</h3>
             <p className="mt-2 text-sm text-slate-400 max-w-sm dark:text-slate-500">
-              We couldn't find any documents matching your filters. Try adjusting your query or filters.
+              {t.myDocuments.noDocsSub}
             </p>
             <Button
               variant="secondary"
@@ -346,7 +416,7 @@ export default function MyDocumentsPage() {
                 setTypeFilter('All')
               }}
             >
-              Reset Filters
+              {t.myDocuments.resetFilters}
             </Button>
           </div>
         ) : viewMode === 'grid' ? (
@@ -356,7 +426,7 @@ export default function MyDocumentsPage() {
               <div
                 key={doc.id}
                 className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-[#2563eb]/20 cursor-pointer dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/30"
-                onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
+                onClick={() => handleOpenDocument(doc.id)}
               >
                 {/* File Top Icon & Menu */}
                 <div className="flex items-start justify-between" onClick={(e) => e.stopPropagation()}>
@@ -382,28 +452,28 @@ export default function MyDocumentsPage() {
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-[#2563eb] transition-colors dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-400 cursor-pointer"
                         >
                           <MessageSquare className="h-4 w-4" />
-                          Chat with AI
+                          {t.actionMenu.chatAI}
                         </button>
                         <button
-                          onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
+                          onClick={() => handleOpenDocument(doc.id)}
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
                         >
                           <ExternalLink className="h-4 w-4" />
-                          Open & View
+                          {t.actionMenu.open}
                         </button>
                         <button
                           onClick={() => navigate(`/dashboard/documents/document/${doc.id}/edit`)}
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
                         >
                           <Pencil className="h-4 w-4" />
-                          Edit Details
+                          {t.actionMenu.editDetails}
                         </button>
                         <button
                           onClick={() => handleDownloadFile(doc)}
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
                         >
                           <Download className="h-4 w-4" />
-                          Download File
+                          {t.actionMenu.download}
                         </button>
                         <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
                         <button
@@ -411,7 +481,7 @@ export default function MyDocumentsPage() {
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 transition-colors dark:text-rose-400 dark:hover:bg-rose-950/30 cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4" />
-                          Delete Document
+                          {t.actionMenu.deleteDoc}
                         </button>
                       </div>
                     )}
@@ -428,7 +498,7 @@ export default function MyDocumentsPage() {
                     <span className="text-[10px] text-slate-200 dark:text-slate-800">&bull;</span>
                     <span>{doc.size}</span>
                   </p>
-                </div>
+                                </div>
 
                 {/* Footer Subject & Status */}
                 <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
@@ -449,10 +519,10 @@ export default function MyDocumentsPage() {
                 <CloudUpload className="h-5 w-5" />
               </div>
               <h4 className="mt-4 text-sm font-bold text-slate-800 group-hover:text-[#2563eb] transition-colors dark:text-slate-200 dark:group-hover:text-blue-400">
-                Add New File
+                {t.myDocuments.addNewFile}
               </h4>
               <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                Max size 50MB
+                {t.myDocuments.maxSize}
               </p>
             </button>
           </div>
@@ -463,12 +533,12 @@ export default function MyDocumentsPage() {
               <table className="w-full border-collapse text-left">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/50 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-800 dark:bg-slate-850 dark:text-slate-550">
-                    <th className="px-6 py-4">Name</th>
-                    <th className="px-6 py-4">Subject</th>
-                    <th className="px-6 py-4">File Size</th>
-                    <th className="px-6 py-4">Upload Date</th>
-                    <th className="px-6 py-4">AI Status</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
+                    <th className="px-6 py-4">{language === 'en' ? 'Name' : (language === 'vi' ? 'Tên tài liệu' : (language === 'ja' ? '名前' : '이름'))}</th>
+                    <th className="px-6 py-4">{t.myDocuments.subject}</th>
+                    <th className="px-6 py-4">{t.myDocuments.fileSize}</th>
+                    <th className="px-6 py-4">{t.myDocuments.uploadDate}</th>
+                    <th className="px-6 py-4">{t.myDocuments.aiStatus}</th>
+                    <th className="px-6 py-4 text-right">{t.myDocuments.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -476,7 +546,7 @@ export default function MyDocumentsPage() {
                     <tr
                       key={doc.id}
                       className="group hover:bg-slate-50/30 transition-colors cursor-pointer dark:hover:bg-slate-850/30"
-                      onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
+                      onClick={() => handleOpenDocument(doc.id)}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -498,7 +568,7 @@ export default function MyDocumentsPage() {
                         {doc.size}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-400 dark:text-slate-500">
-                        {doc.uploadedAt.replace('Uploaded ', '')}
+                        {doc.uploadedAt.replace('Uploaded ', '').replace('đã tải lên ', '').replace('Tải lên ', '')}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex">{renderStatusBadge(doc.status)}</div>
@@ -509,8 +579,8 @@ export default function MyDocumentsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => openChatDrawer(doc)}
-                            className="rounded-lg text-[#2563eb] hover:bg-blue-50/50 dark:text-blue-400 dark:hover:bg-blue-950/50"
-                            title="Chat with AI"
+                            className="rounded-lg text-[#2563eb] hover:bg-blue-50/50 dark:text-blue-400 dark:hover:bg-blue-955/50"
+                            title={t.actionMenu.chatAI}
                           >
                             <MessageSquare className="h-4.5 w-4.5" />
                           </Button>
@@ -519,7 +589,7 @@ export default function MyDocumentsPage() {
                             size="icon"
                             onClick={() => navigate(`/dashboard/documents/document/${doc.id}/edit`)}
                             className="rounded-lg text-slate-500 hover:bg-slate-100/50 dark:text-slate-400 dark:hover:bg-slate-800/50"
-                            title="Edit Details"
+                            title={t.actionMenu.editDetails}
                           >
                             <Pencil className="h-4.5 w-4.5" />
                           </Button>
@@ -528,7 +598,7 @@ export default function MyDocumentsPage() {
                             size="icon"
                             onClick={() => handleDownloadFile(doc)}
                             className="rounded-lg text-slate-500 hover:bg-slate-100/50 dark:text-slate-400 dark:hover:bg-slate-800/50"
-                            title="Download"
+                            title={t.actionMenu.download}
                           >
                             <Download className="h-4.5 w-4.5" />
                           </Button>
@@ -537,7 +607,7 @@ export default function MyDocumentsPage() {
                             size="icon"
                             onClick={() => handleDeleteDocument(doc.id)}
                             className="rounded-lg text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30"
-                            title="Delete"
+                            title={t.actionMenu.deleteDoc}
                           >
                             <Trash2 className="h-4.5 w-4.5" />
                           </Button>
@@ -554,3 +624,4 @@ export default function MyDocumentsPage() {
     </div>
   )
 }
+

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Card, CardTitle } from '@/components/ui/Card'
 import type { DocumentItem } from '@/features/dashboard/types'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 const iconMap = {
   pdf: { icon: FileText, badge: 'pdf' as const, color: 'text-red-500' },
@@ -13,6 +14,7 @@ const iconMap = {
 }
 
 function CopyLinkButton({ docId }: { docId: string }) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
@@ -26,7 +28,7 @@ function CopyLinkButton({ docId }: { docId: string }) {
       type="button"
       onClick={handleCopy}
       className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
-      title="Copy Link"
+      title={t.common.copyLink}
     >
       {copied ? <Check className="size-4 text-green-500" /> : <LinkIcon className="size-4" />}
     </button>
@@ -38,14 +40,16 @@ interface RecentDocumentsProps {
 }
 
 export function RecentDocuments({ documents }: RecentDocumentsProps) {
+  const { t } = useTranslation()
+
   return (
     <section className="col-span-5 space-y-4">
       <div className="flex items-center justify-between">
         <CardTitle className="normal-case tracking-normal text-base font-bold text-foreground">
-          Recent Documents
+          {t.dashboard.recentDocuments}
         </CardTitle>
         <Link to="/dashboard/documents" className="text-sm text-primary hover:underline">
-          View All
+          {t.dashboard.viewAll}
         </Link>
       </div>
       <Card className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -70,3 +74,4 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
     </section>
   )
 }
+

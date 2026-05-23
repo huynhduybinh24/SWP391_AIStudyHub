@@ -1,38 +1,42 @@
+import { useState, useEffect, useRef } from 'react'
 import {
   Bar,
   BarChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
+  Tooltip,
 } from 'recharts'
 import { Card, CardTitle } from '@/components/ui/Card'
 import type { WeeklyActivityDay } from '@/features/dashboard/types'
+import { useTranslation } from '@/context/LanguageContext'
 
-interface WeeklyActivityChartProps {
-  data: WeeklyActivityDay[]
-  totalHours: number
-  trend: string
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900 dark:bg-slate-800 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-lg border border-slate-700/50">
+        <span className="font-bold">{payload[0].value.toFixed(2)}</span> hrs studied
+      </div>
+    )
+  }
+  return null
 }
 
 export function WeeklyActivityChart({ data, totalHours, trend }: WeeklyActivityChartProps) {
+  const { t } = useTranslation()
+
   return (
     <section className="col-span-4 space-y-4">
       <CardTitle className="normal-case tracking-normal text-base font-bold text-foreground">
-        Weekly Activity
+        {t.dashboard.weeklyActivity}
       </CardTitle>
       <Card className="p-5">
         <div className="mb-4 flex items-baseline justify-between">
-          <p className="text-2xl font-bold text-foreground">{totalHours} hrs studied</p>
+          <p className="text-2xl font-bold text-foreground">{t.dashboard.hoursStudied(totalHours)}</p>
           <span className="text-sm font-medium text-green-600">{trend}</span>
         </div>
-        <ResponsiveContainer width="100%" height={160}>
-          <BarChart data={data} barCategoryGap="20%">
-            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#737686', fontSize: 12 }} />
-            <YAxis hide />
-            <Bar dataKey="hours" fill="#2563eb" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
       </Card>
     </section>
   )
 }
+

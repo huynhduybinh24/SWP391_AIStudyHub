@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { User, Check } from 'lucide-react'
+import { User, Check, HelpCircle, X } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/Input'
@@ -10,6 +10,8 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
+import { Language } from '@/locales'
 
 const accountSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -21,11 +23,20 @@ const accountSchema = z.object({
 type AccountFormValues = z.infer<typeof accountSchema>
 
 export function AccountSettingsCard() {
+  const { t, setLanguage } = useTranslation()
   const { account, updateAccount } = useSettingsStore()
   const currentUser = useAuthStore((state) => state.user)
   const currentEmail = currentUser?.email ?? 'student@university.edu'
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pendingData, setPendingData] = useState<AccountFormValues | null>(null)
   const toast = useToast()
+
+  let initialLanguage = account.language
+  if (initialLanguage === 'English (US)') initialLanguage = 'en'
+  else if (initialLanguage === 'Vietnamese') initialLanguage = 'vi'
+  else if (initialLanguage === 'Japanese') initialLanguage = 'ja'
+  else if (initialLanguage === 'Korean') initialLanguage = 'ko'
 
   const {
     register,
@@ -37,7 +48,7 @@ export function AccountSettingsCard() {
     defaultValues: {
       email: currentEmail,
       name: account.name,
-      language: account.language,
+      language: initialLanguage,
       timezone: account.timezone,
     },
   })
@@ -48,13 +59,23 @@ export function AccountSettingsCard() {
   }, [currentEmail, setValue])
 
   const onSubmit = (data: AccountFormValues) => {
+    setPendingData(data)
+    setShowConfirmModal(true)
+  }
+
+  const handleConfirmSave = () => {
+    if (!pendingData) return
+    const lang = pendingData.language as Language
+    setLanguage(lang)
     updateAccount({
-      name: data.name,
-      language: data.language,
-      timezone: data.timezone,
+      name: pendingData.name,
+      language: lang,
+      timezone: pendingData.timezone,
     })
-    toast.success('Account settings saved successfully')
+    toast.success(t.toasts.saved)
     setSaveSuccess(true)
+    setShowConfirmModal(false)
+    setPendingData(null)
     setTimeout(() => {
       setSaveSuccess(false)
     }, 3000)
@@ -66,14 +87,14 @@ export function AccountSettingsCard() {
         <div className="flex size-8 items-center justify-center rounded-lg bg-[#E5EEFF] dark:bg-blue-950/50 text-[#2563EB]">
           <User className="size-5" />
         </div>
-        <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">Account Settings</h2>
+        <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">{t.settings.accountSettings}</h2>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Email Address & Display Name (Row 1) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-foreground dark:text-slate-200">Email Address</label>
+            <label className="text-sm font-semibold text-foreground dark:text-slate-200">{t.settings.emailAddress}</label>
             <Input
               type="email"
               readOnly
@@ -81,12 +102,12 @@ export function AccountSettingsCard() {
               {...register('email')}
               className="bg-slate-50 dark:bg-slate-950 text-muted cursor-not-allowed border-border dark:border-slate-800"
             />
-            <p className="text-xs text-muted dark:text-slate-400 mt-1">Contact support to change your primary email.</p>
+            <p className="text-xs text-muted dark:text-slate-400 mt-1">{t.settings.emailNotificationsSub}</p>
           </div>
 
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-foreground dark:text-slate-200">Display Name</label>
+            <label className="text-sm font-semibold text-foreground dark:text-slate-200">{t.settings.displayName}</label>
             <Input
               type="text"
               error={errors.name?.message}
@@ -99,21 +120,21 @@ export function AccountSettingsCard() {
         {/* Language & Timezone (Row 2) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-foreground dark:text-slate-200">Language</label>
+            <label className="text-sm font-semibold text-foreground dark:text-slate-200">{t.settings.language}</label>
             <Select
               error={errors.language?.message}
               {...register('language')}
               className="bg-transparent dark:text-white border-border dark:border-slate-800"
             >
-              <option value="English (US)">English (US)</option>
-              <option value="Vietnamese">Vietnamese</option>
-              <option value="Japanese">Japanese</option>
-              <option value="Korean">Korean</option>
+              <option value="en">English</option>
+              <option value="vi">Tiếng Việt</option>
+              <option value="ja">日本語</option>
+              <option value="ko">한국어</option>
             </Select>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-foreground dark:text-slate-200">Timezone</label>
+            <label className="text-sm font-semibold text-foreground dark:text-slate-200">{t.settings.timezone}</label>
             <Select
               error={errors.timezone?.message}
               {...register('timezone')}
@@ -138,7 +159,7 @@ export function AccountSettingsCard() {
                 className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400"
               >
                 <Check className="size-4" />
-                Changes saved successfully
+                {t.settings.changesSaved}
               </motion.div>
             )}
           </AnimatePresence>
@@ -147,10 +168,88 @@ export function AccountSettingsCard() {
             disabled={isSubmitting}
             className="bg-[#2563eb] text-white hover:bg-[#2563eb]/90 px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200"
           >
-            {isSubmitting ? 'Saving...' : 'Save Changes'}
+            {isSubmitting ? t.settings.saving : t.settings.saveChanges}
           </Button>
         </div>
       </form>
+
+      {/* ── Confirmation Modal on Save ── */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowConfirmModal(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-[3px]"
+            />
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', duration: 0.4 }}
+              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl z-10 p-6"
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg p-1.5 transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+
+              {/* Modal Content */}
+              <div className="flex gap-4 items-start">
+                <div className="flex-none flex size-10 items-center justify-center rounded-full bg-[#E5EEFF] dark:bg-blue-950/50 text-[#2563EB]">
+                  <HelpCircle className="size-5" />
+                </div>
+                <div className="space-y-2 flex-1">
+                  <h3 className="text-base font-bold text-foreground dark:text-white">
+                    {t.common.areYouSure}
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-normal">
+                    {pendingData?.language !== initialLanguage
+                      ? (pendingData?.language === 'vi'
+                        ? 'Bạn có chắc muốn cập nhật thông tin và đổi ngôn ngữ hiển thị sang Tiếng Việt không?'
+                        : pendingData?.language === 'ja'
+                        ? '日本語に変更し,設定を保存してもよろしいですか？'
+                        : pendingData?.language === 'ko'
+                        ? '한국어로 변경하고 설정을 저장하시겠습니까?'
+                        : 'Are you sure you want to save changes and switch your display language to English?')
+                      : (pendingData?.language === 'vi'
+                        ? 'Bạn có chắc chắn muốn lưu lại các thay đổi thiết lập tài khoản này không?'
+                        : 'Are you sure you want to save your updated account settings?')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-6 border-t border-border/40 dark:border-slate-800/40 mt-6">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-foreground dark:text-slate-400 dark:hover:text-white transition-colors"
+                >
+                  {t.common.cancel}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleConfirmSave}
+                  className="bg-[#2563eb] hover:bg-[#2563eb]/90 text-white px-5 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-colors duration-200"
+                >
+                  {t.common.confirm}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

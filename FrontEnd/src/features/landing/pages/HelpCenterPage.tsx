@@ -132,8 +132,8 @@ export function HelpCenterPage() {
       {/* ── Header ── */}
       <header className="w-full bg-white border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="AI Study Hub Logo" className="h-8 w-auto object-contain" />
+          <Link to="/" className="flex items-center gap-3.5">
+            <img src="/logo.png" alt="AI Study Hub Logo" className="w-[68px] h-[68px] object-contain" />
             <span className="text-2xl font-bold text-primary tracking-tight">AI Study Hub</span>
           </Link>
           <Link
@@ -146,47 +146,56 @@ export function HelpCenterPage() {
       </header>
 
       {/* ── Hero ── */}
-      <section className="w-full bg-gradient-to-br from-[#0B57D0] to-[#1a73e8] py-16 px-6 text-center text-white">
-        <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">How can we help you?</h2>
-        <p className="text-lg text-blue-100 mb-10 max-w-xl mx-auto">
-          Search our knowledge base or browse guides and FAQs below.
-        </p>
-        {/* Search bar */}
-        <div className="max-w-[560px] mx-auto relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            id="help-search"
-            type="text"
-            placeholder="Search for answers…"
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setActiveTab('faq') }}
-            className="w-full h-14 pl-12 pr-12 rounded-2xl text-[#0B1C30] text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-white/50"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
+      <section className="w-full bg-[#0F172A] relative py-20 px-6 text-center text-white overflow-hidden border-b border-slate-800">
+        {/* Dynamic mesh gradients for glowing effect */}
+        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-[#3155F6]/20 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-indigo-500/25 rounded-full blur-[120px] pointer-events-none"></div>
+        
+        <div className="relative z-10 max-w-[800px] mx-auto">
+          <h2 className="text-4xl md:text-[52px] font-serif font-bold mb-5 tracking-tight text-white drop-shadow-sm">
+            How can we help you?
+          </h2>
+          <p className="text-base md:text-lg text-slate-300 mb-10 max-w-xl mx-auto leading-relaxed font-medium">
+            Search our knowledge base or browse guides and FAQs below.
+          </p>
+          
+          {/* Glassmorphism Search Bar */}
+          <div className="max-w-[600px] mx-auto relative">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-[22px] h-[22px] text-slate-400" />
+            <input
+              id="help-search"
+              type="text"
+              placeholder="Search for answers…"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setActiveTab('faq') }}
+              className="w-full h-15 pl-14 pr-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-white placeholder-slate-400 text-base shadow-[0_8px_32px_0_rgba(15,23,42,0.3)] focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
       {/* ── Tabs ── */}
-      <section className="w-full bg-white border-b border-border/50">
+      <section className="w-full bg-[#F8FAFC] border-b border-border/50">
         <div className="max-w-[1000px] mx-auto px-6 flex gap-2 pt-6 pb-0">
           {(['faq', 'guides', 'contact'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 rounded-t-xl font-semibold text-sm transition-colors capitalize border border-b-0 ${
+              className={`px-6 py-3.5 rounded-t-xl font-bold text-sm transition-all duration-200 capitalize border border-b-0 cursor-pointer ${
                 activeTab === tab
-                  ? 'bg-[#F8FAFC] text-primary border-border/60'
-                  : 'bg-transparent text-[#434655] border-transparent hover:text-primary'
+                  ? 'bg-white text-primary border-border/60 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.05)]'
+                  : 'bg-transparent text-slate-500 border-transparent hover:text-[#3155F6] hover:bg-slate-100/50'
               }`}
             >
-              {tab === 'faq' ? 'FAQs' : tab === 'guides' ? 'Guides' : 'Contact Support'}
+              {tab === 'faq' ? '🔍 FAQs' : tab === 'guides' ? '📖 Guides' : '✉️ Contact Support'}
             </button>
           ))}
         </div>
@@ -380,8 +389,100 @@ export function HelpCenterPage() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="w-full bg-white border-t border-border/50 py-8 px-6 text-center">
-        <p className="text-sm text-[#434655]">© 2024 AI Study Hub. All rights reserved.</p>
+      <footer className="w-full bg-[#0B132B] text-slate-300 pt-16 pb-8 px-6 mt-auto border-t border-slate-800">
+        <div className="max-w-[1000px] mx-auto">
+          {/* Main Footer Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+            
+            {/* Column 1: Brand Info */}
+            <div className="flex flex-col gap-4 text-left">
+              <div className="flex items-center gap-2.5">
+                <img src="/logo.png" alt="AI Study Hub Logo" className="w-[44px] h-[44px] object-contain animate-pulse" />
+                <span className="text-xl font-bold text-white tracking-tight">AI Study Hub</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed font-semibold">
+                Khơi mở tiềm năng - Dẫn đầu công nghệ. Nền tảng học tập thông minh tích hợp trí tuệ nhân tạo toàn diện cho sinh viên đại học.
+              </p>
+            </div>
+
+            {/* Column 2: Về AI Study Hub */}
+            <div className="flex flex-col gap-3 text-left">
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-1.5">
+                Về AI Study Hub
+              </h4>
+              <ul className="flex flex-col gap-2 text-xs font-semibold list-none pl-0">
+                <li>
+                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
+                    Giới thiệu dự án
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
+                    Bảng giá nâng cấp (Pro)
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
+                    Điều khoản & Bảo mật
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
+                    Trung tâm hỗ trợ (FAQ)
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Giải pháp học tập */}
+            <div className="flex flex-col gap-3 text-left">
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-1.5">
+                Giải pháp học tập
+              </h4>
+              <ul className="flex flex-col gap-2 text-xs font-semibold list-none pl-0">
+                <li>
+                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
+                    Trợ lý học tập AI
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
+                    Tóm tắt tài liệu tự động
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
+                    Lưu trữ đám mây an toàn
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 4: Đơn vị phát triển */}
+            <div className="flex flex-col gap-3 text-left">
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-1.5">
+                Đơn vị phát triển
+              </h4>
+              <div className="flex flex-col gap-2 text-[10px] leading-relaxed text-slate-400 font-semibold">
+                <p className="text-xs font-bold text-white leading-snug uppercase">
+                  AI Study Hub Team
+                </p>
+                <p>Email: <span className="text-slate-300 font-bold">contact@aistudyhub.com</span></p>
+                <p>Sản phẩm: Hệ sinh thái học tập AI Study Hub.</p>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Footer Section */}
+          <div className="border-t border-slate-800/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] font-semibold text-slate-500">
+            <p>© 2026 AI Study Hub Team. All rights reserved.</p>
+            <div className="flex items-center gap-4">
+              <Link to="/" className="text-slate-500 hover:text-blue-400 no-underline transition-colors">Trang chủ</Link>
+              <a href="#" className="text-slate-500 hover:text-blue-400 no-underline transition-colors">Liên hệ</a>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   )
