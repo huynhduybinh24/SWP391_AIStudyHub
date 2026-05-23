@@ -21,11 +21,11 @@ interface SidebarLinkProps {
   to: string
   icon: React.ComponentType<{ className?: string; strokeWidth?: number; style?: React.CSSProperties }>
   label: string
+  pathname: string
   onClick?: () => void
 }
 
-function SidebarLink({ to, icon: Icon, label, onClick }: SidebarLinkProps) {
-  const { pathname } = useLocation()
+function SidebarLink({ to, icon: Icon, label, pathname, onClick }: SidebarLinkProps) {
   const active = isNavActive(pathname, to)
 
   return (
@@ -109,6 +109,7 @@ export function Sidebar() {
                 to={item.path}
                 icon={item.icon}
                 label={item.label}
+                pathname={pathname}
                 onClick={handleLinkClick}
               />
             ))}
@@ -127,6 +128,7 @@ export function Sidebar() {
                 to={item.path}
                 icon={item.icon}
                 label={item.label}
+                pathname={pathname}
                 onClick={handleLinkClick}
               />
             ))}

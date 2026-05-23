@@ -37,7 +37,19 @@ export function DashboardLayout() {
         </div>
 
         {/* Interactive Floating Chatbot */}
-        {!isChatPage && <FloatingAssistantButton />}
+        {!isChatPage && (
+          <>
+            <Button
+              size="icon"
+              className="fixed bottom-[20px] right-[20px] z-20 size-14 rounded-full bg-[#0055d4] shadow-lg hover:bg-[#004bbd] transition-all duration-300 hover:scale-105"
+              aria-label="Open AI Chatbot"
+              onClick={() => setChatPopupOpen(!isChatPopupOpen)}
+            >
+              <Bot className="size-6 text-white" />
+            </Button>
+            {isChatPopupOpen && <ChatPopup onClose={() => setChatPopupOpen(false)} />}
+          </>
+        )}
       </div>
     </div>
   )

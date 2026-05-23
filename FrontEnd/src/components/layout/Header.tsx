@@ -257,9 +257,15 @@ export function Header() {
     }
 
     if (searchVal.trim()) {
-      toast.success(`Searching for: ${searchVal.trim()}`)
-      navigate(`/dashboard/documents/search?keyword=${encodeURIComponent(searchVal.trim())}`)
-      setShowSuggestions(false)
+      toast.success(`Searching results for: "${searchVal.trim()}"`)
+      const kw = encodeURIComponent(searchVal.trim())
+      if (pathname.startsWith('/dashboard/study-plans')) {
+        navigate(`/dashboard/study-plans?keyword=${kw}`)
+      } else if (pathname.startsWith('/dashboard/shared-files/research-materials')) {
+        navigate(`/dashboard/shared-files/research-materials?keyword=${kw}`)
+      } else {
+        navigate(`/dashboard/documents/search?keyword=${kw}`)
+      }
     }
   }
 

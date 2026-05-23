@@ -3,13 +3,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { BrainCircuit } from 'lucide-react'
 
-import { Modal } from '../../../components/ui/Modal'
-import { Input } from '../../../components/ui/Input'
-import { Textarea } from '../../../components/ui/Textarea'
-import { Select } from '../../../components/ui/Select'
-import { Radio } from '../../../components/ui/Radio'
-import { Button } from '../../../components/ui/Button'
-import { cn } from '../../../lib/utils'
+import { Modal } from '@/components/ui/Modal'
+import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
+import { Select } from '@/components/ui/Select'
+import { Radio } from '@/components/ui/Radio'
+import { Button } from '@/components/ui/Button'
+import { cn } from '@/lib/utils'
 
 const studyPlanSchema = z.object({
   title: z.string().min(1, 'Title is required'),

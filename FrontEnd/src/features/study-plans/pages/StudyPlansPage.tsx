@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Clock,
   MoreVertical,
@@ -13,6 +14,13 @@ import {
   Trash2,
   Pencil,
   AlertTriangle,
+  CheckCircle2,
+  Rocket,
+  Calendar,
+  Bot,
+  Cpu,
+  Languages,
+  ClipboardList,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -49,7 +57,12 @@ type StudyPlan = {
   difficulty: 'Easy' | 'Medium' | 'Hard'
   overallProgress: number
   segments: ProgressSegment[]
-  milestone: Milestone
+  milestone?: Milestone
+  themeColor: 'blue' | 'purple' | 'teal'
+  completedAt?: string
+  startsAt?: string
+  tasks?: number
+  iconType?: 'flask' | 'rocket' | 'bot' | 'cpu' | 'languages'
 }
 
 // ─────────────────────────────────────────────
@@ -68,6 +81,7 @@ const STUDY_PLANS: StudyPlan[] = [
     hoursEst: 48,
     difficulty: 'Hard',
     overallProgress: 65,
+    themeColor: 'blue',
     segments: [
       { label: 'Core Concepts', value: 100 },
       { label: 'Advanced Theory', value: 65 },
@@ -82,71 +96,118 @@ const STUDY_PLANS: StudyPlan[] = [
   },
   {
     id: '2',
-    title: 'Organic Chemistry Fundamentals',
+    title: 'Organic Chemistry Deep Dive',
     description:
-      'Master reaction mechanisms, functional groups, and synthesis pathways.',
-    isAiGenerated: false,
+      'Exploring carbon compounds and metabolic pathways.',
+    isAiGenerated: true,
     status: 'Active',
     documents: 8,
-    hoursEst: 32,
+    hoursEst: 30,
     difficulty: 'Medium',
-    overallProgress: 40,
+    overallProgress: 20,
+    themeColor: 'purple',
     segments: [
-      { label: 'Basics', value: 100 },
-      { label: 'Reactions', value: 40 },
-      { label: 'Synthesis', value: 0 },
+      { label: 'Nomenclature', value: 100 },
+      { label: 'Substitution', value: 20 },
+      { label: 'Elimination', value: 0 },
     ],
     milestone: {
-      month: 'NOV',
-      day: 3,
-      title: 'Reaction Mechanisms Test',
-      time: '2:00 PM, Next Week',
+      month: 'OCT',
+      day: 26,
+      title: 'Alkanes & Cycloalkanes',
+      time: '2:00 PM Wednesday',
     },
   },
   {
     id: '3',
-    title: 'Data Structures & Algorithms',
-    description:
-      'From arrays to graphs — crack competitive programming interviews.',
-    isAiGenerated: true,
+    title: 'Final Exam Prep: Advanced Robotics',
+    description: 'Advanced kinematics and autonomous navigation systems.',
+    isAiGenerated: false,
     status: 'Upcoming',
-    documents: 15,
-    hoursEst: 60,
+    documents: 12,
+    hoursEst: 0,
     difficulty: 'Hard',
     overallProgress: 0,
-    segments: [
-      { label: 'Arrays & Strings', value: 0 },
-      { label: 'Trees & Graphs', value: 0 },
-      { label: 'Dynamic Prog.', value: 0 },
-    ],
-    milestone: {
-      month: 'NOV',
-      day: 10,
-      title: 'Arrays & Sorting Quiz',
-      time: '9:00 AM, Nov 10',
-    },
+    themeColor: 'blue',
+    segments: [],
+    startsAt: 'Nov 15, 2024',
+    tasks: 24,
+    iconType: 'bot',
+  },
+  {
+    id: '6',
+    title: 'Winter Session: Deep Learning Fundamentals',
+    description: 'Foundations of neural networks and gradient descent optimization.',
+    isAiGenerated: false,
+    status: 'Upcoming',
+    documents: 8,
+    hoursEst: 0,
+    difficulty: 'Hard',
+    overallProgress: 0,
+    themeColor: 'blue',
+    segments: [],
+    startsAt: 'Dec 10, 2024',
+    tasks: 45,
+    iconType: 'cpu',
+  },
+  {
+    id: '7',
+    title: 'GRE Vocabulary & Logic Track',
+    description: 'Intensive verbal reasoning and analytical writing preparation.',
+    isAiGenerated: false,
+    status: 'Upcoming',
+    documents: 30,
+    hoursEst: 0,
+    difficulty: 'Hard',
+    overallProgress: 0,
+    themeColor: 'blue',
+    segments: [],
+    startsAt: 'Jan 05, 2025',
+    tasks: 90,
+    iconType: 'languages',
+  },
+  {
+    id: '8',
+    title: 'Advanced Robotics',
+    description: 'Kinematics, control systems, and machine learning integration.',
+    isAiGenerated: true,
+    status: 'Active',
+    documents: 15,
+    hoursEst: 55,
+    difficulty: 'Hard',
+    overallProgress: 0,
+    themeColor: 'blue',
+    segments: [],
   },
   {
     id: '4',
-    title: 'World History: Modern Era',
-    description: 'Explore major events shaping the 20th and 21st centuries.',
+    title: 'Advanced Organic Chemistry',
+    description: 'Mastery of advanced reaction mechanisms and synthesis.',
     isAiGenerated: false,
     status: 'Completed',
-    documents: 6,
-    hoursEst: 20,
-    difficulty: 'Easy',
+    documents: 15,
+    hoursEst: 0,
+    difficulty: 'Hard',
     overallProgress: 100,
-    segments: [
-      { label: 'WWI & WWII', value: 100 },
-      { label: 'Cold War', value: 100 },
-      { label: 'Modern Era', value: 100 },
-    ],
-    milestone: {
-      month: 'SEP',
-      day: 15,
-      title: 'Final Comprehensive Exam',
-      time: 'Completed',
-    },
+    themeColor: 'teal',
+    segments: [],
+    completedAt: 'Oct 15, 2024',
+    iconType: 'flask',
+  },
+  {
+    id: '5',
+    title: 'Introduction to Astrophysics',
+    description: 'Foundational principles of stellar evolution and cosmology.',
+    isAiGenerated: false,
+    status: 'Completed',
+    documents: 10,
+    hoursEst: 0,
+    difficulty: 'Medium',
+    overallProgress: 100,
+    themeColor: 'teal',
+    segments: [],
+    completedAt: 'Sep 28, 2024',
+    iconType: 'rocket',
   },
 ]
 
@@ -196,23 +257,53 @@ const LEARNING_DATA: Record<string, LearningProgressPlan> = {
     ],
   },
   '3': {
-    id: '3', title: 'Data Structures & Algorithms',
-    description: 'From arrays to graphs — crack competitive programming interviews.',
-    isAiGenerated: true, overallProgress: 0,
+    id: '3', title: 'Final Exam Prep: Advanced Robotics',
+    description: 'Advanced kinematics and autonomous navigation systems.',
+    isAiGenerated: false, overallProgress: 0,
     sections: [
-      { label: 'Arrays & Strings', value: 0, lessons: [
-        { id: 'l1', title: 'Array Fundamentals',          duration: '20 min', type: 'video',    completed: false },
-        { id: 'l2', title: 'Two Pointer Technique',       duration: '25 min', type: 'practice', completed: false },
+      { label: 'Kinematics', value: 0, lessons: [
+        { id: 'l1', title: 'Forward Kinematics', duration: '20 min', type: 'video', completed: false },
+        { id: 'l2', title: 'Inverse Kinematics', duration: '25 min', type: 'practice', completed: false },
       ]},
-      { label: 'Trees & Graphs', value: 0, lessons: [
-        { id: 'l3', title: 'Binary Trees',                duration: '30 min', type: 'video',    completed: false },
-        { id: 'l4', title: 'Graph Traversal (BFS/DFS)',   duration: '40 min', type: 'practice', completed: false },
-      ]},
-      { label: 'Dynamic Prog.', value: 0, lessons: [
-        { id: 'l5', title: 'DP Fundamentals',             duration: '45 min', type: 'video',    completed: false },
-        { id: 'l6', title: 'Classic DP Problems',         duration: '60 min', type: 'quiz',     completed: false },
+      { label: 'Navigation', value: 0, lessons: [
+        { id: 'l3', title: 'Path Planning', duration: '30 min', type: 'video', completed: false },
+        { id: 'l4', title: 'Obstacle Avoidance', duration: '40 min', type: 'practice', completed: false },
       ]},
     ],
+  },
+  '6': {
+    id: '6', title: 'Winter Session: Deep Learning Fundamentals',
+    description: 'Foundations of neural networks and gradient descent optimization.',
+    isAiGenerated: false, overallProgress: 0,
+    sections: [
+      { label: 'Neural Networks Basics', value: 0, lessons: [
+        { id: 'l1', title: 'Introduction to NNs', duration: '20 min', type: 'video', completed: false },
+      ]}
+    ]
+  },
+  '7': {
+    id: '7', title: 'GRE Vocabulary & Logic Track',
+    description: 'Intensive verbal reasoning and analytical writing preparation.',
+    isAiGenerated: false, overallProgress: 0,
+    sections: [
+      { label: 'Verbal Reasoning', value: 0, lessons: [
+        { id: 'l1', title: 'Vocabulary Basics', duration: '20 min', type: 'reading', completed: false },
+      ]}
+    ]
+  },
+  '8': {
+    id: '8', title: 'Advanced Robotics',
+    description: 'Kinematics, control systems, and machine learning integration.',
+    isAiGenerated: true, overallProgress: 0,
+    sections: [
+      { label: 'Kinematics', value: 0, lessons: [
+        { id: 'l1', title: 'Forward Kinematics', duration: '20 min', type: 'video', completed: false },
+        { id: 'l2', title: 'Inverse Kinematics', duration: '25 min', type: 'practice', completed: false },
+      ]},
+      { label: 'Control Systems', value: 0, lessons: [
+        { id: 'l3', title: 'PID Controllers', duration: '30 min', type: 'video', completed: false },
+      ]}
+    ]
   },
   '4': {
     id: '4', title: 'World History: Modern Era',
@@ -322,6 +413,20 @@ const CURRICULUM_DATA: Record<string, CurriculumPlan> = {
         ]},
     ],
   },
+  '8': {
+    id: '8', title: 'Advanced Robotics', documents: 15, hoursEst: 55, difficulty: 'Hard',
+    modules: [
+      { id: 'm1', title: 'Kinematics', description: 'Robot motion and control',
+        lessons: [
+          { id: 'c1', title: 'Forward Kinematics',        duration: '20 min', type: 'video',    status: 'locked' },
+          { id: 'c2', title: 'Inverse Kinematics',        duration: '25 min', type: 'practice', status: 'locked' },
+        ]},
+      { id: 'm2', title: 'Control Systems', description: 'Feedback and automation',
+        lessons: [
+          { id: 'c3', title: 'PID Controllers',           duration: '30 min', type: 'video',    status: 'locked' },
+        ]},
+    ],
+  },
 }
 
 // ─────────────────────────────────────────────
@@ -348,31 +453,47 @@ function DifficultyPill({ level }: { level: StudyPlan['difficulty'] }) {
 // Segmented progress bar
 // ─────────────────────────────────────────────
 
-function SegmentedProgress({ segments }: { segments: ProgressSegment[] }) {
+function SegmentedProgress({ segments, themeColor }: { segments: ProgressSegment[], themeColor: string }) {
+  const isPurple = themeColor === 'purple'
+  const isTeal = themeColor === 'teal'
+  const fillClass = isTeal ? 'bg-teal-700' : isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
+  const bgClass = isTeal ? 'bg-teal-50' : isPurple ? 'bg-indigo-100' : 'bg-[#e5eeff]'
+
   return (
     <div className="flex flex-col gap-1.5 mt-2">
       {/* Track */}
       <div className="flex gap-1 h-[6px] w-full">
-        {segments.map((seg, i) => (
-          <div key={i} className="flex-1 rounded-full bg-[#e5eeff] dark:bg-slate-800 overflow-hidden">
+        {segments.length > 0 ? (
+          segments.map((seg, i) => (
+            <div key={i} className={`flex-1 rounded-full overflow-hidden ${bgClass}`}>
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${fillClass}`}
+                style={{ width: `${seg.value}%` }}
+              />
+            </div>
+          ))
+        ) : (
+          <div className={`flex-1 rounded-full overflow-hidden ${bgClass}`}>
             <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${seg.value}%`, backgroundColor: '#2557E8' }}
+              className={`h-full rounded-full transition-all duration-700 ${fillClass}`}
+              style={{ width: '100%' }}
             />
           </div>
-        ))}
+        )}
       </div>
       {/* Labels */}
-      <div className="flex">
-        {segments.map((seg, i) => (
-          <span
-            key={i}
-            className="flex-1 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest truncate"
-          >
-            {seg.label}
-          </span>
-        ))}
-      </div>
+      {segments.length > 0 && (
+        <div className="flex">
+          {segments.map((seg, i) => (
+            <span
+              key={i}
+              className="flex-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate"
+            >
+              {seg.label}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -390,7 +511,7 @@ interface CardCallbacks {
   onDelete: () => void
 }
 
-function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, onArchive, onDelete }: { plan: StudyPlan } & CardCallbacks) {
+function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDuplicate, onArchive, onDelete }: { plan: StudyPlan, isAiTab?: boolean } & CardCallbacks) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const menuItems = [
@@ -400,19 +521,38 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
     { label: 'Delete',     icon: Trash2,  action: onDelete,     danger: true  },
   ]
 
+  const isPurple = plan.themeColor === 'purple'
+  const isTeal = plan.themeColor === 'teal'
+  
+  const isCompleted = plan.status === 'Completed'
+  const isUpcoming = plan.status === 'Upcoming'
+
+  const accentClass = isAiTab ? 'bg-[#2557E8]' : isCompleted ? 'bg-[#00897B]' : isTeal ? 'bg-teal-700' : isPurple ? 'bg-indigo-600' : 'bg-[#2557E8]'
+  const iconBgClass = isAiTab ? 'bg-[#e5eeff]' : isCompleted ? 'bg-[#e6f4f1]' : isTeal ? 'bg-teal-50' : isPurple ? 'bg-indigo-50' : 'bg-[#e8eeff]'
+  const iconTextClass = isAiTab ? 'text-[#2557E8]' : isCompleted ? 'text-[#00897B]' : isTeal ? 'text-teal-700' : isPurple ? 'text-indigo-600' : 'text-[#2557E8]'
+  const buttonClass = isPurple 
+    ? 'bg-indigo-600 hover:bg-indigo-700' 
+    : 'bg-[#0055d4] hover:bg-[#004bbd]'
+
+  const IconComponent = isAiTab ? Sparkles : plan.iconType === 'rocket' ? Rocket 
+    : plan.iconType === 'bot' ? Bot 
+    : plan.iconType === 'cpu' ? Cpu 
+    : plan.iconType === 'languages' ? Languages 
+    : FlaskConical
+
   return (
-    <Card className="flex overflow-hidden border border-[#e5eeff] dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-xl">
-      {/* Left blue accent bar */}
-      <div className="w-1.5 shrink-0 bg-[#2557E8] dark:bg-blue-600 rounded-l-xl" />
+    <Card className="flex overflow-hidden border border-[#e5eeff] shadow-sm hover:shadow-md transition-shadow duration-200 rounded-xl">
+      {/* Left accent bar */}
+      <div className={`w-1.5 shrink-0 rounded-l-xl ${accentClass}`} />
 
       {/* Inner layout: left body + right panel */}
       <div className="flex flex-1 min-w-0 flex-col sm:flex-row">
         {/* ── LEFT BODY ── */}
         <div className="flex flex-1 min-w-0 p-5 gap-4">
-          {/* Flask icon */}
+          {/* Icon */}
           <div className="shrink-0 pt-0.5">
-            <div className="w-10 h-10 rounded-lg bg-[#e8eeff] dark:bg-slate-800 flex items-center justify-center">
-              <FlaskConical className="size-5 text-[#2557E8] dark:text-blue-400" strokeWidth={1.75} />
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBgClass}`}>
+              <IconComponent className={`size-5 ${iconTextClass}`} strokeWidth={1.75} />
             </div>
           </div>
 
@@ -424,12 +564,42 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
                 <h3 className="font-bold text-slate-900 dark:text-slate-100 text-[15px] leading-snug">
                   {plan.title}
                 </h3>
-                {plan.isAiGenerated && (
+                {isCompleted ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#ccfbf1] text-[#00897B] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
+                    <CheckCircle2 className="size-3" strokeWidth={2.5} />
+                    COMPLETED
+                  </span>
+                ) : isUpcoming ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#e5eeff] text-[#2557E8] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
+                    Upcoming
+                  </span>
+                ) : isAiTab ? (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#2557E8] text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
+                      AI Generated
+                    </span>
+                    {plan.difficulty === 'Hard' && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
+                        Hard
+                      </span>
+                    )}
+                    {plan.difficulty === 'Medium' && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
+                        Medium
+                      </span>
+                    )}
+                    {plan.difficulty === 'Easy' && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
+                        Easy
+                      </span>
+                    )}
+                  </div>
+                ) : plan.isAiGenerated ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#00897B] text-white text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
                     <Sparkles className="size-3" strokeWidth={2} />
                     AI Generated
                   </span>
-                )}
+                ) : null}
               </div>
               {/* More menu */}
               <div className="relative shrink-0">
@@ -465,63 +635,98 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
 
             {/* Info pills */}
             <div className="flex flex-wrap gap-2 mt-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5eeff] dark:border-slate-800 bg-[#f5f8ff] dark:bg-slate-800/50 px-3 py-1 text-xs font-medium text-[#2557E8] dark:text-blue-400">
-                <Link2 className="size-3.5" />
+              {isCompleted && plan.completedAt && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                  <Calendar className="size-3.5 text-slate-400" />
+                  Completed {plan.completedAt}
+                </span>
+              )}
+              {isUpcoming && plan.startsAt && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                  <Calendar className="size-3.5 text-slate-400" />
+                  Starts {plan.startsAt}
+                </span>
+              )}
+              {isUpcoming && plan.tasks && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                  <ClipboardList className="size-3.5 text-slate-400" />
+                  {plan.tasks} Tasks
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                <Link2 className="size-3.5 text-slate-400" />
                 {plan.documents} Documents
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e5eeff] dark:border-slate-800 bg-[#f5f8ff] dark:bg-slate-800/50 px-3 py-1 text-xs font-medium text-[#2557E8] dark:text-blue-400">
-                <Clock className="size-3.5" />
-                {plan.hoursEst} Hours Est.
-              </span>
-              <DifficultyPill level={plan.difficulty} />
+              {!isCompleted && !isUpcoming && (
+                <>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                    <Clock className="size-3.5 text-slate-400" />
+                    {plan.hoursEst} Hours Est.
+                  </span>
+                  {!isAiTab && <DifficultyPill level={plan.difficulty} />}
+                </>
+              )}
             </div>
 
             {/* Progress */}
-            <div className="mt-4">
-              <div className="flex justify-between items-center mb-1.5">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                  Overall Progress
-                </span>
-                <span className="text-xs font-bold text-[#2557E8] dark:text-blue-400">
-                  {plan.overallProgress}%
-                </span>
+            {!isUpcoming && (
+              <div className="mt-4">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    {isCompleted ? 'Final Grade' : isAiTab ? 'Progress' : 'Overall Progress'}
+                  </span>
+                  <span className={`text-xs font-bold ${iconTextClass}`}>
+                    {plan.overallProgress}%
+                  </span>
+                </div>
+                {isAiTab || isCompleted ? (
+                  <div className={`h-[6px] w-full rounded-full overflow-hidden ${isCompleted ? 'bg-[#ccfbf1]' : 'bg-[#e5eeff]'}`}>
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ${isCompleted ? 'bg-[#00897B]' : 'bg-[#2557E8]'}`}
+                      style={{ width: `${plan.overallProgress}%` }}
+                    />
+                  </div>
+                ) : (
+                  <SegmentedProgress segments={plan.segments} themeColor={plan.themeColor} />
+                )}
               </div>
-              <SegmentedProgress segments={plan.segments} />
-            </div>
+            )}
           </div>
         </div>
 
         {/* ── RIGHT PANEL ── */}
-        <div className="shrink-0 sm:w-[220px] border-t sm:border-t-0 sm:border-l border-[#e5eeff] dark:border-slate-800 flex flex-col justify-between p-5 gap-4 bg-[#fafbff] dark:bg-slate-900/40">
+        <div className={`shrink-0 sm:w-[220px] border-t sm:border-t-0 sm:border-l border-[#e5eeff] flex flex-col p-5 gap-4 bg-[#fafbff] ${(isCompleted || isUpcoming || isAiTab) ? 'justify-center' : 'justify-between'}`}>
           {/* Milestone */}
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">
-              Next Milestone
-            </p>
-            <div className="flex items-start gap-3">
-              {/* Date block */}
-              <div className="flex flex-col items-center justify-center w-11 h-12 rounded-lg bg-[#2557E8] dark:bg-blue-600 text-white shrink-0">
-                <span className="text-[9px] font-bold uppercase tracking-widest leading-none">
-                  {plan.milestone.month}
-                </span>
-                <span className="text-[22px] font-extrabold leading-tight">
-                  {plan.milestone.day}
-                </span>
-              </div>
-              {/* Text */}
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-[13px] leading-snug">
-                  {plan.milestone.title}
-                </p>
-                <div className="flex items-center gap-1 mt-1">
-                  <Clock3 className="size-3 text-slate-400 dark:text-slate-500" />
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                    {plan.milestone.time}
+          {!isCompleted && !isUpcoming && !isAiTab && plan.milestone && (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                Next Milestone
+              </p>
+              <div className="flex items-start gap-3">
+                {/* Date block */}
+                <div className="flex flex-col items-center justify-center w-11 shrink-0 pt-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest leading-none text-red-500 mb-0.5">
+                    {plan.milestone.month}
                   </span>
+                  <span className="text-2xl font-black leading-none text-slate-900">
+                    {plan.milestone.day}
+                  </span>
+                </div>
+                {/* Text */}
+                <div>
+                  <p className="font-semibold text-slate-800 text-[13px] leading-snug">
+                    {plan.milestone.title}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Clock3 className="size-3 text-slate-400" />
+                    <span className="text-[11px] text-slate-400">
+                      {plan.milestone.time}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Action buttons */}
           <div className="flex flex-col gap-2">
@@ -529,18 +734,20 @@ function StudyPlanCard({ plan, onContinue, onCurriculum, onEdit, onDuplicate, on
               variant="primary"
               size="sm"
               onClick={onContinue}
-              className="w-full justify-center bg-[#2557E8] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-[13px] py-2.5 rounded-lg"
+              className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg shadow-sm ${isUpcoming ? 'bg-[#0055d4] hover:bg-[#004bbd]' : isCompleted ? 'bg-[#0055d4] hover:bg-[#004bbd]' : buttonClass}`}
             >
-              {plan.status === 'Completed' ? 'View Results' : 'Continue Learning'}
+              {isCompleted ? 'View Review' : isUpcoming ? 'View Details' : 'Continue Learning'}
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onCurriculum}
-              className="w-full justify-center font-semibold text-[13px] py-2.5 rounded-lg border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-            >
-              View Curriculum
-            </Button>
+            {!isUpcoming && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onCurriculum}
+                className="w-full justify-center font-semibold text-[13px] py-2.5 rounded-lg border-slate-200 text-slate-700 hover:bg-slate-50"
+              >
+                {isCompleted ? 'View Summary' : 'View Curriculum'}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -622,8 +829,19 @@ export function StudyPlansPage() {
   const [learningPlan, setLearningPlan] = useState<LearningProgressPlan | null>(null)
   const [curriculumPlan, setCurriculumPlan] = useState<CurriculumPlan | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<StudyPlan | null>(null)
+  
+  const [searchParams] = useSearchParams()
+  const keyword = searchParams.get('keyword') || ''
 
   const filteredPlans = plans.filter((plan) => {
+    // Search filter
+    if (keyword) {
+      const q = keyword.toLowerCase()
+      const match = plan.title.toLowerCase().includes(q) || plan.description.toLowerCase().includes(q)
+      if (!match) return false
+    }
+
+    // Tab filter
     if (activeTab === 'All') return true
     if (activeTab === 'AI Generated') return plan.isAiGenerated
     return plan.status === activeTab
@@ -675,6 +893,7 @@ export function StudyPlansPage() {
               <StudyPlanCard
                 key={plan.id}
                 plan={plan}
+                isAiTab={activeTab === 'AI Generated'}
                 onContinue={() => setLearningPlan(LEARNING_DATA[plan.id] ?? null)}
                 onCurriculum={() => setCurriculumPlan(CURRICULUM_DATA[plan.id] ?? null)}
                 onEdit={() => setCreateOpen(true)}
@@ -702,6 +921,12 @@ export function StudyPlansPage() {
         isOpen={curriculumPlan !== null}
         onClose={() => setCurriculumPlan(null)}
         plan={curriculumPlan}
+        onStart={() => {
+          if (curriculumPlan) {
+            setLearningPlan(LEARNING_DATA[curriculumPlan.id] ?? null)
+            setCurriculumPlan(null)
+          }
+        }}
       />
 
       {/* ── Delete Confirmation ── */}
