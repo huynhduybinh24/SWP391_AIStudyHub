@@ -7,13 +7,15 @@ interface RenameFileModalProps {
   onClose: () => void
   onRename: (newName: string) => void
   initialName: string
+  files?: { name: string }[]
 }
 
 export function RenameFileModal({
   isOpen,
   onClose,
   onRename,
-  initialName
+  initialName,
+  files
 }: RenameFileModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   const [name, setName] = useState(initialName)
@@ -73,10 +75,23 @@ export function RenameFileModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = name.trim()
+    
     if (!trimmed) {
       setError('File name cannot be empty')
       return
     }
+
+    const invalidChars = /[\/:*?"<>|]/
+    if (invalidChars.test(trimmed)) {
+      setError('File name cannot contain invalid characters: \\ / : * ? " < > |')
+      return
+    }
+
+    if (files && files.some(f => f.name.toLowerCase() === trimmed.toLowerCase() && f.name.toLowerCase() !== initialName.toLowerCase())) {
+      setError('A file with this name already exists')
+      return
+    }
+
     onRename(trimmed)
     onClose()
   }
@@ -99,20 +114,20 @@ export function RenameFileModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: 'spring', duration: 0.5, bounce: 0.15 }}
-            className="relative z-10 w-full max-w-[440px] overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl"
+            className="relative z-10 w-full max-w-[440px] overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl text-slate-900 dark:text-slate-100"
             role="dialog"
             aria-modal="true"
             aria-labelledby="rename-title"
           >
             <button
               onClick={onClose}
-              className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+              className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer focus:outline-none"
               aria-label="Close dialog"
             >
               <X className="size-5" />
             </button>
 
-            <div className="flex gap-3.5 items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+            <div className="flex gap-3.5 items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-800/80 text-left">
               <div className="flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
                 <Edit3 className="size-5.5" />
               </div>
@@ -120,14 +135,14 @@ export function RenameFileModal({
                 <h3 id="rename-title" className="text-base font-bold text-slate-900 dark:text-white">
                   Rename Resource
                 </h3>
-                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                <p className="text-xs text-slate-455 dark:text-slate-500 font-medium">
                   Enter a new name for the selected shared item
                 </p>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
+              <div className="text-left">
                 <label htmlFor="rename-input" className="block text-xs font-bold text-slate-655 dark:text-slate-400 uppercase tracking-wider mb-2">
                   New Name
                 </label>
@@ -156,13 +171,13 @@ export function RenameFileModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                  className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98] focus:outline-none"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98]"
+                  className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98] focus:outline-none border-none"
                 >
                   Save Changes
                 </button>
@@ -176,3 +191,4 @@ export function RenameFileModal({
 }
 
 export default RenameFileModal
+

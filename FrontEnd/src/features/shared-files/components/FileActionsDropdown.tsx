@@ -28,8 +28,9 @@ export function FileActionsDropdown({
 }: FileActionsDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [openUpward, setOpenUpward] = useState(false)
+  const [focusedIndex, setFocusedIndex] = useState(-1)
 
-  // ESC and Click Outside Listeners
+  // ESC and Click Outside Listeners + Keyboard arrow navigation
   useEffect(() => {
     if (!isOpen) return
 
@@ -46,6 +47,27 @@ export function FileActionsDropdown({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose()
+        buttonRef.current?.focus()
+        return
+      }
+
+      const items = dropdownRef.current?.querySelectorAll('[role="menuitem"]')
+      if (!items || items.length === 0) return
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setFocusedIndex((prev) => {
+          const next = (prev + 1) % items.length
+          ;(items[next] as HTMLElement).focus()
+          return next
+        })
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setFocusedIndex((prev) => {
+          const next = prev <= 0 ? items.length - 1 : prev - 1
+          ;(items[next] as HTMLElement).focus()
+          return next
+        })
       }
     }
 
@@ -56,6 +78,13 @@ export function FileActionsDropdown({
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, onClose, buttonRef])
+
+  // Reset focus index when menu opens
+  useEffect(() => {
+    if (isOpen) {
+      setFocusedIndex(-1)
+    }
+  }, [isOpen])
 
   // Detect bottom boundaries to flip upward if near screen bottom
   useEffect(() => {
@@ -80,6 +109,8 @@ export function FileActionsDropdown({
     }
   }, [isOpen, buttonRef])
 
+  const itemClass = "flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:bg-slate-100 dark:focus-visible:bg-slate-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -90,7 +121,9 @@ export function FileActionsDropdown({
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.15 }}
           className={cn(
-            "absolute right-0 w-[240px] rounded-2xl bg-white p-1.5 shadow-xl border border-slate-200/60 dark:bg-slate-900 dark:border-slate-800 z-[9999] text-left",
+            "absolute right-0 w-[240px] rounded-2xl p-1.5 shadow-xl border z-[9999] text-left",
+            "bg-white text-slate-900 border-slate-200",
+            "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-800",
             openUpward ? "bottom-full mb-2" : "top-full mt-2"
           )}
           role="menu"
@@ -103,7 +136,7 @@ export function FileActionsDropdown({
               onOpen()
               onClose()
             }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-750 dark:text-slate-200 hover:bg-[#F4F7FE] dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+            className={itemClass}
             role="menuitem"
           >
             <ExternalLink className="size-4 text-slate-400 dark:text-slate-500" />
@@ -117,7 +150,7 @@ export function FileActionsDropdown({
               onDownload()
               onClose()
             }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-750 dark:text-slate-200 hover:bg-[#F4F7FE] dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+            className={itemClass}
             role="menuitem"
           >
             <Download className="size-4 text-slate-400 dark:text-slate-500" />
@@ -131,7 +164,7 @@ export function FileActionsDropdown({
               onShareAccess()
               onClose()
             }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-750 dark:text-slate-200 hover:bg-[#F4F7FE] dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+            className={itemClass}
             role="menuitem"
           >
             <Share2 className="size-4 text-slate-400 dark:text-slate-500" />
@@ -145,7 +178,7 @@ export function FileActionsDropdown({
               onRename()
               onClose()
             }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-750 dark:text-slate-200 hover:bg-[#F4F7FE] dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+            className={itemClass}
             role="menuitem"
           >
             <Edit2 className="size-4 text-slate-400 dark:text-slate-500" />
@@ -159,10 +192,10 @@ export function FileActionsDropdown({
               onChangePermission()
               onClose()
             }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-750 dark:text-slate-200 hover:bg-[#F4F7FE] dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+            className={itemClass}
             role="menuitem"
           >
-            <Shield className="size-4 text-slate-455 dark:text-slate-500" />
+            <Shield className="size-4 text-slate-400 dark:text-slate-500" />
             <span>Change Permission</span>
           </button>
           
@@ -175,7 +208,7 @@ export function FileActionsDropdown({
               onRemoveAccess()
               onClose()
             }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-red-600 dark:text-red-405 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
+            className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 focus-visible:bg-red-50 dark:focus-visible:bg-red-950/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
             role="menuitem"
           >
             <Trash2 className="size-4 text-red-500 dark:text-red-400" />
@@ -188,3 +221,4 @@ export function FileActionsDropdown({
 }
 
 export default FileActionsDropdown
+

@@ -18,8 +18,8 @@ import SummaryModal from '../components/SummaryModal'
 import QuizModal from '../components/QuizModal'
 import ShareAccessModal, { Collaborator } from '../components/ShareAccessModal'
 import RenameFileModal from '../components/RenameFileModal'
-import PermissionModal from '../components/PermissionModal'
-import ConfirmModal from '../components/ConfirmModal'
+import ChangePermissionModal from '../components/ChangePermissionModal'
+import ConfirmRemoveAccessModal from '../components/ConfirmRemoveAccessModal'
 import CollaboratorsModal from '../components/CollaboratorsModal'
 import AIInsightsModal from '../components/AIInsightsModal'
 import { SharedFile } from '../components/SharedFilesTable'
@@ -324,6 +324,41 @@ export function SharedFilesPage() {
     }, 1000)
   }
 
+  const handleOpenFile = (file: SharedFile) => {
+    setViewingFile(file)
+    toast.success(`Opening ${file.name}`)
+  }
+
+  const handleDownload = (file: SharedFile) => {
+    toast.success(`Downloading ${file.name}`)
+    try {
+      if (file.url) {
+        const link = document.createElement('a')
+        link.href = file.url
+        link.download = file.name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } else {
+        const content = file.previewContent || `Mock content for ${file.name}`
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = file.name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      }
+      setTimeout(() => {
+        toast.success('Download completed')
+      }, 1000)
+    } catch (err) {
+      toast.error('Download failed')
+    }
+  }
+
   const handleRenameConfirm = (newName: string) => {
     if (!selectedFile) return
     setFiles(prev =>
@@ -334,21 +369,20 @@ export function SharedFilesPage() {
     setModals(prev => ({ ...prev, rename: false }))
   }
 
-  const handlePermissionConfirm = (newPermission: 'Editor' | 'View Only') => {
+  const handlePermissionConfirm = (newPermission: 'Editor' | 'Commenter' | 'Viewer') => {
     if (!selectedFile) return
-    const resolvedPermission = newPermission === 'View Only' ? 'Viewer' : newPermission
     setFiles(prev =>
-      prev.map(f => (f.id === selectedFile.id ? { ...f, permission: resolvedPermission } : f))
+      prev.map(f => (f.id === selectedFile.id ? { ...f, permission: newPermission } : f))
     )
-    setSelectedFile(prev => (prev ? { ...prev, permission: resolvedPermission } : null))
-    toast.success(`Permission updated to ${newPermission}`)
+    setSelectedFile(prev => (prev ? { ...prev, permission: newPermission } : null))
+    toast.success('Permission updated successfully')
     setModals(prev => ({ ...prev, permission: false }))
   }
 
   const handleDeleteConfirm = () => {
     if (!selectedFile) return
     setFiles(prev => prev.filter(f => f.id !== selectedFile.id))
-    toast.success('File deleted successfully')
+    toast.success('Access removed successfully')
     setSelectedFile(null)
     setViewingFile(null)
     setModals(prev => ({ ...prev, confirmDelete: false }))
@@ -440,7 +474,7 @@ export function SharedFilesPage() {
         file={viewingFile}
         onBack={() => setViewingFile(null)}
         showToast={showToastWrapper}
-        onDownload={(file) => toast.success(`Downloading ${file.name}`)}
+        onDownload={handleDownload}
       />
     )
   }
@@ -555,7 +589,7 @@ export function SharedFilesPage() {
             viewMode={viewMode}
             favorites={favorites}
             onSelectFile={setSelectedFile}
-            onOpenFile={setViewingFile}
+            onOpenFile={handleOpenFile}
             onStarToggle={handleStarToggle}
             onRename={(file) => {
               setSelectedFile(file)
@@ -569,10 +603,11 @@ export function SharedFilesPage() {
               setSelectedFile(file)
               setModals(prev => ({ ...prev, confirmDelete: true }))
             }}
-            onDownload={(file) => toast.success(`Downloading ${file.name}`)}
+            onDownload={handleDownload}
             onShareAccess={(file) => {
               setSelectedFile(file)
               setModals(prev => ({ ...prev, share: true }))
+              toast.success(`Sharing ${file.name}`)
             }}
           />
         </div>
@@ -686,25 +721,22 @@ export function SharedFilesPage() {
         onClose={() => setModals(prev => ({ ...prev, rename: false }))}
         onRename={handleRenameConfirm}
         initialName={selectedFile?.name || ''}
+        files={files}
       />
 
-      <PermissionModal
+      <ChangePermissionModal
         isOpen={modals.permission}
         onClose={() => setModals(prev => ({ ...prev, permission: false }))}
         onUpdatePermission={handlePermissionConfirm}
         fileName={selectedFile?.name || ''}
-        initialPermission={selectedFile?.permission || 'View Only'}
+        initialPermission={selectedFile?.permission || 'Viewer'}
       />
 
-      <ConfirmModal
+      <ConfirmRemoveAccessModal
         isOpen={modals.confirmDelete}
         onClose={() => setModals(prev => ({ ...prev, confirmDelete: false }))}
         onConfirm={handleDeleteConfirm}
-        title="Remove File Access"
-        message={`Are you sure you want to remove your access to "${selectedFile?.name || ''}"? This action cannot be undone.`}
-        confirmText="Remove Access"
-        cancelText="Cancel"
-        type="danger"
+        fileName={selectedFile?.name || ''}
       />
     </motion.div>
   )
