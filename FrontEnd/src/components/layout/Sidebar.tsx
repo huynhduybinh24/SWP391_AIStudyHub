@@ -94,7 +94,7 @@ export function Sidebar() {
             {/* Close button on Mobile */}
             <button
               onClick={() => setSidebarOpen(false)}
-              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer"
+              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               aria-label="Close sidebar"
             >
               <X className="size-5" />
@@ -134,7 +134,7 @@ export function Sidebar() {
 
           {/* Upgrade to Pro button */}
           <Link
-            to="/pricing"
+            to="/dashboard/upgrade"
             onClick={handleLinkClick}
             className={cn(
               "mt-4 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-all duration-200 cursor-pointer shadow-sm shrink-0 no-underline bg-blue-600 hover:bg-blue-500 active:bg-blue-700",

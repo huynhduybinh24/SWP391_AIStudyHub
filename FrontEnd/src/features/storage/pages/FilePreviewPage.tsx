@@ -124,9 +124,9 @@ export function FilePreviewPage() {
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Left PDF Viewer */}
-        <div className={isFullscreen ? "fixed inset-0 z-50 bg-[#f8fafc] flex flex-col w-full h-full" : "flex-1 flex flex-col w-full"}>
+        <div className={isFullscreen ? "fixed inset-0 z-50 bg-[#f8fafc] dark:bg-slate-950 flex flex-col w-full h-full" : "flex-1 flex flex-col w-full"}>
           {/* Viewer Toolbar */}
-          <div className={`h-12 bg-white border-border flex items-center justify-between px-4 ${isFullscreen ? 'border-b' : 'border rounded-t-xl'}`}>
+          <div className={`h-12 bg-white dark:bg-slate-900 border-border dark:border-slate-800 flex items-center justify-between px-4 ${isFullscreen ? 'border-b' : 'border rounded-t-xl'}`}>
             <div className="flex items-center gap-2">
               <FileText className="size-4 text-[#ef4444]" />
               <span className="text-sm font-semibold text-foreground truncate max-w-[150px] sm:max-w-none">Neuroscience_Ch4_Synap...</span>
@@ -137,7 +137,7 @@ export function FilePreviewPage() {
                 <span className="w-12 text-center select-none">{zoom}%</span>
                 <button onClick={handleZoomIn} className="hover:text-foreground transition-colors p-1" title="Zoom In"><ZoomIn className="size-4" /></button>
               </div>
-              <div className="hidden sm:block w-px h-4 bg-border"></div>
+              <div className="hidden sm:block w-px h-4 bg-border dark:bg-slate-800"></div>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={handlePrevPage} 
@@ -155,7 +155,7 @@ export function FilePreviewPage() {
                   <ChevronRight className="size-4" />
                 </button>
               </div>
-              <div className="hidden sm:block w-px h-4 bg-border"></div>
+              <div className="hidden sm:block w-px h-4 bg-border dark:bg-slate-800"></div>
               <button onClick={() => setIsFullscreen(!isFullscreen)} className="hover:text-foreground transition-colors p-1 hidden sm:block" title="Toggle Fullscreen">
                 {isFullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
               </button>
@@ -163,26 +163,26 @@ export function FilePreviewPage() {
           </div>
           
           {/* Document Content */}
-          <div className={`bg-[#f8fafc] border-border p-4 sm:p-8 flex justify-center overflow-auto ${isFullscreen ? 'flex-1' : 'border border-t-0 rounded-b-xl min-h-[600px]'}`}>
+          <div className={`bg-[#f8fafc] dark:bg-slate-950 border-border dark:border-slate-800 p-4 sm:p-8 flex justify-center overflow-auto ${isFullscreen ? 'flex-1' : 'border border-t-0 rounded-b-xl min-h-[600px]'}`}>
             <div 
-              className="bg-white w-full max-w-[600px] shadow-sm border border-border p-6 sm:p-10 flex flex-col h-fit transition-all duration-200"
+              className="bg-white dark:bg-slate-900 w-full max-w-[600px] shadow-sm border border-border dark:border-slate-800 p-6 sm:p-10 flex flex-col h-fit transition-all duration-200"
               style={{ zoom: `${zoom}%` } as React.CSSProperties}
             >
-              <h2 className="text-2xl sm:text-[28px] font-bold leading-tight text-[#1e293b] mb-1">
+              <h2 className="text-2xl sm:text-[28px] font-bold leading-tight text-[#1e293b] dark:text-slate-100 mb-1">
                 Advanced Neuroscience: Neural Connectivity & Synaptic Plasticity
               </h2>
               <div className="flex justify-between items-center mb-6 mt-2">
                 <p className="text-[#3b82f6] text-[11px] font-bold tracking-widest uppercase">NEURO-402 SYLLABUS 2024</p>
-                <span className="text-[11px] text-muted font-bold bg-slate-100 px-2 py-1 rounded">PAGE {currentPage}</span>
+                <span className="text-[11px] text-muted font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">PAGE {currentPage}</span>
               </div>
               
-              <div className="w-full aspect-[2/1] bg-black rounded-lg mb-8 overflow-hidden relative border border-border">
+              <div className="w-full aspect-[2/1] bg-black rounded-lg mb-8 overflow-hidden relative border border-border dark:border-slate-800">
                 <img src="/brain-network.png" alt="Brain network" className="w-full h-full object-cover opacity-90 mix-blend-screen" />
               </div>
               
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-1 h-4 bg-[#3b82f6]"></div>
-                <h3 className="text-[13px] font-bold tracking-widest text-[#1e293b] uppercase">COURSE OVERVIEW</h3>
+                <h3 className="text-[13px] font-bold tracking-widest text-[#1e293b] dark:text-slate-100 uppercase">COURSE OVERVIEW</h3>
               </div>
               <p className="text-[13px] text-muted leading-relaxed mb-6">
                 This course explores the fundamental mechanisms of neuronal communication and the dynamic processes of synaptic plasticity. We examine how molecular signaling pathways translate environmental stimuli into long-term changes in neural circuit architecture and behavior.
@@ -192,14 +192,14 @@ export function FilePreviewPage() {
         </div>
 
         {/* Right Details Panel */}
-        <Card className="w-full lg:w-[320px] shrink-0 border-border bg-white shadow-sm lg:sticky lg:top-6">
+        <Card className="w-full lg:w-[320px] shrink-0 border-border dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm lg:sticky lg:top-6">
           <CardContent className="p-6">
             <h3 className="font-bold text-foreground text-lg mb-6">File Details</h3>
             
             <div className="flex flex-col gap-5 mb-8">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">Type</span>
-                <span className="text-[10px] font-bold bg-[#e5eeff] text-[#2563eb] px-2 py-1 rounded">PDF DOCUMENT</span>
+                <span className="text-[10px] font-bold bg-[#e5eeff] dark:bg-blue-950/40 text-[#2563eb] dark:text-blue-400 px-2 py-1 rounded">PDF DOCUMENT</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">Size</span>
@@ -212,7 +212,7 @@ export function FilePreviewPage() {
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">Owner</span>
                 <div className="flex items-center gap-2">
-                  <Avatar src="/avatar.svg" name="Me" className="size-6 border border-border" />
+                  <Avatar src="/avatar.svg" name="Me" className="size-6 border border-border dark:border-slate-800" />
                   <span className="font-semibold text-foreground">Me</span>
                 </div>
               </div>
@@ -222,9 +222,9 @@ export function FilePreviewPage() {
               <h4 className="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">TAGS</h4>
               <div className="flex flex-wrap gap-2">
                 {tags.map(tag => (
-                  <span key={tag} className="group px-3 py-1 bg-[#e5eeff] hover:bg-blue-100 text-[#2563eb] text-xs font-medium rounded-full flex items-center gap-1.5 cursor-default transition-colors">
+                  <span key={tag} className="group px-3 py-1 bg-[#e5eeff] dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-[#2563eb] dark:text-blue-400 text-xs font-medium rounded-full flex items-center gap-1.5 cursor-default transition-colors">
                     {tag}
-                    <button onClick={() => handleRemoveTag(tag)} className="opacity-0 group-hover:opacity-100 hover:text-blue-800 transition-opacity focus:opacity-100 outline-none">
+                    <button onClick={() => handleRemoveTag(tag)} className="opacity-0 group-hover:opacity-100 hover:text-blue-800 dark:hover:text-blue-200 transition-opacity focus:opacity-100 outline-none">
                       <X className="size-3" />
                     </button>
                   </span>
@@ -240,13 +240,13 @@ export function FilePreviewPage() {
                       setIsAddingTag(false)
                     }}
                     autoFocus
-                    className="px-3 py-1 text-xs border border-blue-200 rounded-full focus:outline-none focus:border-[#2563eb] w-24 bg-white text-foreground"
+                    className="px-3 py-1 text-xs border border-blue-200 dark:border-blue-900/50 rounded-full focus:outline-none focus:border-[#2563eb] dark:focus:border-blue-500 w-24 bg-white dark:bg-slate-800 text-foreground"
                     placeholder="New tag..."
                   />
                 ) : (
                   <button 
                     onClick={() => setIsAddingTag(true)}
-                    className="px-3 py-1 border border-dashed border-slate-300 hover:border-[#2563eb] text-muted hover:text-[#2563eb] text-xs font-medium rounded-full flex items-center gap-1 transition-colors outline-none"
+                    className="px-3 py-1 border border-dashed border-slate-300 dark:border-slate-700 hover:border-[#2563eb] dark:hover:border-blue-500 text-muted hover:text-[#2563eb] dark:hover:text-blue-400 text-xs font-medium rounded-full flex items-center gap-1 transition-colors outline-none"
                   >
                     <Plus className="size-3" /> Add
                   </button>

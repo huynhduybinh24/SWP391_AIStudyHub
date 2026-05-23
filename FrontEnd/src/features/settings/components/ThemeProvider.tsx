@@ -6,6 +6,7 @@ export type Theme = 'light' | 'dark' | 'system'
 interface ThemeContextType {
   theme: Theme
   setTheme: (theme: Theme, skipToast?: boolean) => void
+  resolvedTheme: 'light' | 'dark'
   applyTheme: (theme: Theme) => void
   toggleTheme: () => void
 }
@@ -19,6 +20,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     return 'light'
   })
+  
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = (localStorage.getItem('ai-study-hub-theme') as Theme) || 'light'
+      if (saved === 'system') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      }
+      return saved === 'dark' ? 'dark' : 'light'
+    }
+    return 'light'
+  })
+
   const toast = useToast()
 
   const applyTheme = (targetTheme: Theme) => {
@@ -29,14 +42,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       if (prefersDark) {
         root.classList.add('dark')
+        setResolvedTheme('dark')
       } else {
         root.classList.remove('dark')
+        setResolvedTheme('light')
       }
     } else {
       if (targetTheme === 'dark') {
         root.classList.add('dark')
+        setResolvedTheme('dark')
       } else {
         root.classList.remove('dark')
+        setResolvedTheme('light')
       }
     }
   }
@@ -77,8 +94,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const root = window.document.documentElement
         if (e.matches) {
           root.classList.add('dark')
+          setResolvedTheme('dark')
         } else {
           root.classList.remove('dark')
+          setResolvedTheme('light')
         }
       }
 
@@ -90,7 +109,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme])
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, applyTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme, applyTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   )

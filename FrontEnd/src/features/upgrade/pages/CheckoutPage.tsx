@@ -93,7 +93,7 @@ export function CheckoutPage() {
               {/* Styled Section Divider */}
               <div className="relative flex py-2 items-center">
                 <div className="flex-grow border-t border-slate-200/50 dark:border-slate-800/60" />
-                <span className="flex-shrink mx-4 text-[9px] font-black text-slate-400 dark:text-slate-550 tracking-widest uppercase">
+                <span className="flex-shrink mx-4 text-[9px] font-black text-slate-400 dark:text-slate-400 tracking-widest uppercase">
                   Or Pay With Card
                 </span>
                 <div className="flex-grow border-t border-slate-200/50 dark:border-slate-800/60" />
