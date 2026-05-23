@@ -11,6 +11,8 @@ interface WorkspaceFileListProps {
   selectedFile: SharedFile | null
   viewMode: 'list' | 'grid'
   favorites: string[]
+  sortOrder: string
+  onSortOrderChange: (order: string) => void
   onSelectFile: (file: SharedFile) => void
   onOpenFile: (file: SharedFile) => void
   onStarToggle: (file: SharedFile) => void
@@ -26,6 +28,8 @@ export function WorkspaceFileList({
   selectedFile,
   viewMode,
   favorites,
+  sortOrder,
+  onSortOrderChange,
   onSelectFile,
   onOpenFile,
   onStarToggle,
@@ -55,6 +59,8 @@ export function WorkspaceFileList({
           files={files}
           selectedFile={selectedFile}
           favorites={favorites}
+          sortOrder={sortOrder}
+          onSortOrderChange={onSortOrderChange}
           onSelectFile={onSelectFile}
           onOpenFile={onOpenFile}
           onStarToggle={onStarToggle}
