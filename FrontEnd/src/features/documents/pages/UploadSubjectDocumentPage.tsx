@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
 import {
-  ArrowLeft,
   CloudUpload,
   FileText,
   X,
@@ -244,17 +243,7 @@ export function UploadSubjectDocumentPage() {
         accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.pptx,.ppt"
       />
 
-      {/* Back Link Breadcrumb */}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => navigate(`/dashboard/documents/subject/${subjectId}`)}
-          className="flex items-center gap-1.5 text-sm font-semibold text-[#5F6E80] hover:text-[#2563eb] transition-colors focus:outline-none w-fit cursor-pointer"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Cloud Storage
-        </button>
-      </div>
+
 
       {/* Header Title and Description */}
       <div className="space-y-1">
