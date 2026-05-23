@@ -279,7 +279,16 @@ export const en = {
     viewerDesc: "Collaborator can only view and download this file.",
     removeAccessDesc: "Are you sure you want to remove access for this file?",
     removeAccessWarning: "Teammates will lose editing and viewing permissions for this item.",
-    removeBtn: "Remove Access"
+    removeBtn: "Remove Access",
+    people: "People",
+    lastModified: "Last modified",
+    source: "Source",
+    name: "Name",
+    sharedBy: "Shared by",
+    dateShared: "Date shared",
+    thisWeek: "This week",
+    lastWeek: "Last week",
+    earlierThisYear: "Earlier this year"
   },
   shareModal: {
     title: "Share Access",

@@ -229,6 +229,10 @@ export function SharedFilesPage() {
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
 
+  const [peopleFilter, setPeopleFilter] = useState('All')
+  const [lastModifiedFilter, setLastModifiedFilter] = useState('All')
+  const [sourceFilter, setSourceFilter] = useState('All')
+
   // Viewport tracking & select stability checks
   const [isLargeScreen, setIsLargeScreen] = useState(false)
   const shouldReduceMotion = useReducedMotion()
@@ -484,6 +488,10 @@ export function SharedFilesPage() {
     if (dStr.includes('ago') || dStr.includes('now') || dStr.includes('Just')) {
       return Date.now()
     }
+    // Handle mock dates like "May 18" or "Mar 28" (assume current year 2026)
+    if (dStr.includes('May') || dStr.includes('Mar') || dStr.includes('Oct')) {
+      return new Date(`${dStr}, 2026`).getTime()
+    }
     return new Date(dStr).getTime()
   }
 
@@ -497,11 +505,46 @@ export function SharedFilesPage() {
       const filterLower = fileTypeFilter.toLowerCase()
       if (filterLower === 'folder') {
         matchesType = file.type === 'folder'
+      } else if (filterLower === 'doc') {
+        matchesType = file.type === 'doc' || file.type === 'docx' || file.type === 'pdf'
+      } else if (filterLower === 'spreadsheet') {
+        matchesType = file.type === 'spreadsheet' || file.type === 'xlsx'
       } else {
         matchesType = file.type === filterLower
       }
     }
-    return matchesSearch && matchesType
+
+    let matchesPeople = true
+    if (peopleFilter !== 'All') {
+      matchesPeople = file.owner?.toLowerCase().includes(peopleFilter.toLowerCase()) || false
+    }
+
+    let matchesLastModified = true
+    if (lastModifiedFilter !== 'All') {
+      const fileTime = parseDate(file.dateShared)
+      const now = Date.now()
+      const oneWeek = 7 * 24 * 60 * 60 * 1000
+      const thirtyDays = 30 * 24 * 60 * 60 * 1000
+
+      if (lastModifiedFilter === 'today') {
+        matchesLastModified = (now - fileTime) < (24 * 60 * 60 * 1000)
+      } else if (lastModifiedFilter === 'last7days') {
+        matchesLastModified = (now - fileTime) < oneWeek
+      } else if (lastModifiedFilter === 'last30days') {
+        matchesLastModified = (now - fileTime) < thirtyDays
+      }
+    }
+
+    let matchesSource = true
+    if (sourceFilter !== 'All') {
+      if (sourceFilter === 'sharedWithMe') {
+        matchesSource = file.owner !== 'me'
+      } else if (sourceFilter === 'ownedByMe') {
+        matchesSource = file.owner === 'me'
+      }
+    }
+
+    return matchesSearch && matchesType && matchesPeople && matchesLastModified && matchesSource
   }).sort((a, b) => {
     const timeA = parseDate(a.dateShared)
     const timeB = parseDate(b.dateShared)
@@ -631,6 +674,12 @@ export function SharedFilesPage() {
             onSortOrderChange={setSortOrder}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
+            peopleFilter={peopleFilter}
+            onPeopleFilterChange={setPeopleFilter}
+            lastModifiedFilter={lastModifiedFilter}
+            onLastModifiedFilterChange={setLastModifiedFilter}
+            sourceFilter={sourceFilter}
+            onSourceFilterChange={setSourceFilter}
           />
 
           <WorkspaceFileList
