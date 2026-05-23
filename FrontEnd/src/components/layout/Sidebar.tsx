@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Zap, X } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
+import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 
@@ -55,30 +56,7 @@ export function Sidebar() {
   const { pathname } = useLocation()
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
-  const { t } = useTranslation()
-
-  const getSidebarLabel = (label: string) => {
-    switch (label.toLowerCase()) {
-      case 'dashboard':
-        return t.sidebar.dashboard
-      case 'my documents':
-        return t.sidebar.myDocuments
-      case 'shared files':
-        return t.sidebar.sharedFiles
-      case 'study plans':
-        return t.sidebar.studyPlans
-      case 'ai chatbot':
-        return t.sidebar.aiChatbot
-      case 'settings':
-        return t.sidebar.settings
-      case 'upgrade to pro':
-        return t.sidebar.upgradePro
-      case 'log out':
-        return t.sidebar.logout
-      default:
-        return label
-    }
-  }
+  const user = useAuthStore((s) => s.user)
 
   const handleLinkClick = () => {
     // Close sidebar drawer on mobile after clicking a link
@@ -162,15 +140,20 @@ export function Sidebar() {
 
           {/* Upgrade to Pro button */}
           <Link
-            to="/dashboard/upgrade"
-            onClick={handleLinkClick}
+            to={user?.plan === 'pro' ? '#' : '/dashboard/upgrade'}
+            onClick={user?.plan === 'pro' ? undefined : handleLinkClick}
             className={cn(
-              "mt-4 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-all duration-200 cursor-pointer shadow-sm shrink-0 no-underline bg-blue-600 hover:bg-blue-500 active:bg-blue-700",
+              "mt-4 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all duration-200 shadow-sm shrink-0 no-underline",
+              user?.plan === 'pro' 
+                ? "bg-slate-100 text-slate-500 cursor-default dark:bg-slate-800 dark:text-slate-400" 
+                : "text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 cursor-pointer",
               "md:max-lg:px-2 md:max-lg:py-3"
             )}
           >
-            <Zap className="size-4 text-white shrink-0" strokeWidth={2.25} />
-            <span className="md:max-lg:hidden block">{t.sidebar.upgradePro}</span>
+            <Zap className={cn("size-4 shrink-0", user?.plan === 'pro' ? "text-slate-500 dark:text-slate-400" : "text-white")} strokeWidth={2.25} />
+            <span className="md:max-lg:hidden block">
+              {user?.plan === 'pro' ? 'Pro Plan Active' : 'Upgrade to Pro'}
+            </span>
           </Link>
         </div>
       </aside>
