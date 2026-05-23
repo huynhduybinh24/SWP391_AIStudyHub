@@ -36,17 +36,14 @@ export function AskAIAssistantPanel({
   suggestedPrompt = 'Explain the key summary and objectives of this document.'
 }: AskAIAssistantPanelProps) {
   const [chatInput, setChatInput] = React.useState('')
-  const chatEndRef = useRef<HTMLDivElement>(null)
-  const isFirstRender = useRef(true)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation()
 
   // Scroll chat to bottom when logs update
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
     }
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatLog, aiTypingText])
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -115,7 +112,7 @@ export function AskAIAssistantPanel({
       )}
 
       {/* Chat Response Area container */}
-      <div className="border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl p-4 h-[210px] overflow-y-auto space-y-3.5 scrollbar-thin">
+      <div ref={chatContainerRef} className="border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl p-4 h-[210px] overflow-y-auto space-y-3.5 scrollbar-thin">
         {chatLog.map((chat, idx) => (
           <div
             key={idx}
@@ -144,7 +141,6 @@ export function AskAIAssistantPanel({
           </div>
         )}
 
-        <div ref={chatEndRef} />
       </div>
 
       {/* Chat message form input */}
