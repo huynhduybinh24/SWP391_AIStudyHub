@@ -31,7 +31,7 @@ export function PricingPage() {
     },
     {
       name: language === 'vi' ? 'Gói Pro' : language === 'ja' ? 'プロプラン' : language === 'ko' ? '프로 요금제' : 'Pro Plan',
-      price: '$120.00',
+      price: '$12.00',
       billing: language === 'vi' ? '/tháng' : language === 'ja' ? '/月' : language === 'ko' ? '/월' : '/month',
       yearlySavingText: language === 'vi' ? 'Hoặc $120/năm (Tiết kiệm 16%)' : language === 'ja' ? 'または $120/年 (16%お得)' : language === 'ko' ? '또는 $120/연 (16% 절약)' : 'Or $120/year (Save 16%)',
       description: language === 'vi' ? 'Dành cho sinh viên tận tâm cần các công cụ chuyên sâu.' : language === 'ja' ? '高度なツールを必要とする熱心な学生向け。' : language === 'ko' ? '심층적인 도구가 필요한 열정적인 학생용.' : 'For dedicated students requiring intensive tools.',
