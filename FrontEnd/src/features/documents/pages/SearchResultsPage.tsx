@@ -134,6 +134,26 @@ export function SearchResultsPage() {
   const { documents, showToast } = useOutletContext<DocumentsLayoutContext>()
   const keyword = searchParams.get('keyword') || ''
 
+  const handleOpenDocument = (docId: string) => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual'
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      })
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      scrollableContainers.forEach((container) => {
+        container.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'instant'
+        })
+      })
+    }
+    navigate(`/dashboard/documents/document/${docId}`)
+  }
+
   // Filter local states
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(['NEUROSCIENCE'])
   const [selectedFileTypes, setSelectedFileTypes] = useState<string[]>(['pdf'])
@@ -451,7 +471,7 @@ export function SearchResultsPage() {
               return (
                 <div
                   key={doc.id}
-                  onClick={() => navigate(`/dashboard/documents/document/${doc.id}`)}
+                  onClick={() => handleOpenDocument(doc.id)}
                   className="group relative flex flex-col justify-between rounded-3xl border border-slate-100 bg-white p-8 shadow-[0_4px_25px_rgba(0,0,0,0.02)] hover:border-[#3155F6]/10 hover:shadow-[0_8px_30px_rgba(49,85,246,0.04)] hover:-translate-y-0.5 cursor-pointer transition-all duration-300"
                 >
                   

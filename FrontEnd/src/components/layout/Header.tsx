@@ -14,6 +14,7 @@ import { HelpModal } from '@/components/layout/HelpModal'
 import { ConfirmLogoutModal } from '@/components/layout/ConfirmLogoutModal'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
 
 // ─── Search Constants ────────────────────────────────────────────────────────
 interface SearchSuggestion {
@@ -56,6 +57,7 @@ export interface MockNotification {
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 export function Header() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
   const [searchParams] = useSearchParams()
@@ -149,9 +151,8 @@ export function Header() {
       } catch (err) {
         console.error('Failed to save notifications read state:', err)
       }
-      return updated
     })
-    toast.success('All notifications marked as read')
+    toast.success(t.header.toastAllMarkedRead)
   }
 
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -258,13 +259,13 @@ export function Header() {
 
     if (pathname.startsWith('/dashboard/shared')) {
       if (searchVal.trim()) {
-        toast.success(`Searching workspace: ${searchVal.trim()}`)
+        toast.success(t.header.toastSearchingWorkspace(searchVal.trim()))
       }
       return
     }
 
     if (searchVal.trim()) {
-      toast.success(`Searching results for: "${searchVal.trim()}"`)
+      toast.success(t.header.toastSearchingResults(searchVal.trim()))
       const kw = encodeURIComponent(searchVal.trim())
       if (pathname.startsWith('/dashboard/study-plans')) {
         navigate(`/dashboard/study-plans?keyword=${kw}`)
@@ -279,7 +280,7 @@ export function Header() {
   const handleSuggestionClick = (term: string) => {
     setSearchVal(term)
     saveSearchToHistory(term)
-    toast.success(`Searching results for: "${term}"`)
+    toast.success(t.header.toastSearchingResults(term))
     navigate(`/dashboard/documents/search?keyword=${encodeURIComponent(term)}`)
     setShowSuggestions(false)
   }
@@ -308,12 +309,12 @@ export function Header() {
         <Input
           placeholder={
             pathname.startsWith('/dashboard/shared')
-              ? 'Search workspace...'
+              ? t.header.searchWorkspace
               : pathname.startsWith('/dashboard/shared-files/research-materials')
-              ? 'Search in this folder...'
+              ? t.header.searchFolder
               : pathname.startsWith('/dashboard/study-plans')
-              ? 'Search study plans...'
-              : 'Search documents, chats, plans...'
+              ? t.header.searchStudyPlans
+              : t.header.searchPlaceholderAll
           }
           className="w-full bg-slate-100 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
           aria-label="Search"
@@ -385,7 +386,7 @@ export function Header() {
               >
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
-                    Search Results
+                    {t.header.searchResults}
                   </span>
                   <div className="space-y-0.5 mt-1">
                     {searchResults.length > 0 ? (
@@ -422,7 +423,7 @@ export function Header() {
                       })
                     ) : (
                       <div className="flex items-center px-3 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 text-left">
-                        No results found.
+                        {t.header.noResults}
                       </div>
                     )}
                   </div>
@@ -444,7 +445,7 @@ export function Header() {
                     {history.length > 0 && (
                       <div>
                         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
-                          Recent Searches
+                          {t.header.recentSearches}
                         </span>
                         <div className="space-y-0.5 mt-1">
                           {history.map((item) => (
@@ -480,7 +481,7 @@ export function Header() {
 
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
-                        Trending Searches
+                        {t.header.trendingSearches}
                       </span>
                       <div className="space-y-0.5 mt-1">
                         {TRENDING_TOPICS.map((item) => (
@@ -504,7 +505,7 @@ export function Header() {
                   <div className="space-y-3.5">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
-                        Suggested Topics & Docs
+                        {t.header.suggestedTopics}
                       </span>
                       <div className="space-y-0.5 mt-1">
                         {filteredTopics.length > 0 ? (
@@ -531,7 +532,7 @@ export function Header() {
                         ) : (
                           <div className="flex items-center px-3 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 text-left">
                             <Sparkles className="size-3.5 mr-2 text-indigo-400 shrink-0" />
-                            No exact matching documents found. Press Enter to search.
+                            {t.header.noExactMatch}
                           </div>
                         )}
                       </div>
@@ -539,7 +540,7 @@ export function Header() {
 
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
-                        Other Searches
+                        {t.header.otherSearches}
                       </span>
                       <div className="space-y-0.5 mt-1">
                         <div
@@ -550,7 +551,7 @@ export function Header() {
                           className="flex items-center px-3 py-2 rounded-xl text-sm font-semibold text-[#3155F6] hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
                         >
                           <Search className="size-4 text-[#3155F6] mr-2.5 shrink-0" />
-                          <span className="text-left">Search for "{searchVal}"</span>
+                          <span className="text-left">{t.header.searchFor(searchVal)}</span>
                         </div>
                       </div>
                     </div>

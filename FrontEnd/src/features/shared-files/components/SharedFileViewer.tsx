@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { FileViewer } from '@/components/shared/file-viewer/FileViewer'
 import { SharedFile } from './SharedFilesTable'
@@ -15,6 +16,25 @@ export function SharedFileViewer({
   showToast,
   onDownload
 }: SharedFileViewerProps) {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual'
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      })
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      scrollableContainers.forEach((container) => {
+        container.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'instant'
+        })
+      })
+    }
+  }, [])
+
   const backLink = (
     <button
       type="button"
@@ -58,3 +78,4 @@ export function SharedFileViewer({
 }
 
 export default SharedFileViewer
+

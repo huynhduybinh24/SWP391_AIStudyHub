@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { authService } from '@/features/auth/services/authService'
 import { useToast } from '@/components/ui/Toast'
 import { LogOut } from 'lucide-react'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface ConfirmLogoutModalProps {
   isOpen: boolean
@@ -15,6 +16,7 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
   const toast = useToast()
+  const { t } = useTranslation()
 
   async function handleConfirmLogout() {
     try {
@@ -23,7 +25,7 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
       console.error('Logout error:', e)
     }
     logout()
-    toast.success('Logged out successfully')
+    toast.success(t.toasts.logoutSuccess || 'Logged out successfully')
     onClose()
     navigate('/')
   }
@@ -32,8 +34,8 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Confirm Log Out"
-      description="Are you sure you want to sign out of your AI Study Hub account?"
+      title={t.sidebar.logoutConfirmTitle || "Confirm Log Out"}
+      description={t.sidebar.logoutConfirmDesc || "Are you sure you want to sign out of your AI Study Hub account?"}
       className="max-w-md"
     >
       <div className="space-y-6">
@@ -42,20 +44,20 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
             <LogOut className="size-5" />
           </div>
           <p className="text-xs text-rose-800 dark:text-rose-350 leading-relaxed font-medium">
-            You will need to sign in again to access your saved summaries, cloud documents, and custom study plans.
+            {t.sidebar.logoutWarning || "You will need to sign in again to access your saved summaries, cloud documents, and custom study plans."}
           </p>
         </div>
 
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose} className="rounded-xl border border-border dark:border-slate-800">
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button
             variant="danger"
             onClick={handleConfirmLogout}
             className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-semibold"
           >
-            Confirm Log Out
+            {t.sidebar.logoutConfirmTitle || "Confirm Log Out"}
           </Button>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { Zap, X } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 function isNavActive(pathname: string, path: string) {
   if (pathname.startsWith('/dashboard/shared-files')) {
@@ -54,6 +55,30 @@ export function Sidebar() {
   const { pathname } = useLocation()
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
+  const { t } = useTranslation()
+
+  const getSidebarLabel = (label: string) => {
+    switch (label.toLowerCase()) {
+      case 'dashboard':
+        return t.sidebar.dashboard
+      case 'my documents':
+        return t.sidebar.myDocuments
+      case 'shared files':
+        return t.sidebar.sharedFiles
+      case 'study plans':
+        return t.sidebar.studyPlans
+      case 'ai chatbot':
+        return t.sidebar.aiChatbot
+      case 'settings':
+        return t.sidebar.settings
+      case 'upgrade to pro':
+        return t.sidebar.upgradePro
+      case 'log out':
+        return t.sidebar.logout
+      default:
+        return label
+    }
+  }
 
   const handleLinkClick = () => {
     // Close sidebar drawer on mobile after clicking a link
@@ -109,7 +134,7 @@ export function Sidebar() {
                 key={item.path}
                 to={item.path}
                 icon={item.icon}
-                label={item.label}
+                label={getSidebarLabel(item.label)}
                 pathname={pathname}
                 onClick={handleLinkClick}
               />
@@ -128,7 +153,7 @@ export function Sidebar() {
                 key={item.path}
                 to={item.path}
                 icon={item.icon}
-                label={item.label}
+                label={getSidebarLabel(item.label)}
                 pathname={pathname}
                 onClick={handleLinkClick}
               />
@@ -145,7 +170,7 @@ export function Sidebar() {
             )}
           >
             <Zap className="size-4 text-white shrink-0" strokeWidth={2.25} />
-            <span className="md:max-lg:hidden block">Upgrade to Pro</span>
+            <span className="md:max-lg:hidden block">{t.sidebar.upgradePro}</span>
           </Link>
         </div>
       </aside>

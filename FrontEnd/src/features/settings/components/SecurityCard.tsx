@@ -6,8 +6,10 @@ import { ChangePasswordModal } from './ChangePasswordModal'
 import { TwoFactorModal } from './TwoFactorModal'
 import { ConfirmModal } from './ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function SecurityCard() {
+  const { t, language } = useTranslation()
   const { security, toggleTwoFactor } = useSettingsStore()
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [is2faModalOpen, setIs2faModalOpen] = useState(false)
@@ -16,7 +18,7 @@ export function SecurityCard() {
 
   const handleConfirmDisable = () => {
     toggleTwoFactor()
-    toast.success('Two-factor authentication disabled')
+    toast.success(language === 'vi' ? 'Đã tắt xác thực hai yếu tố' : 'Two-factor authentication disabled')
   }
 
   return (
@@ -26,15 +28,15 @@ export function SecurityCard() {
           <div className="flex size-8 items-center justify-center rounded-lg bg-[#E5EEFF] dark:bg-blue-950/50 text-[#2563EB]">
             <Shield className="size-5" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">Security</h2>
+          <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">{t.settings.security}</h2>
         </div>
 
         <div className="space-y-6">
           {/* Password Row */}
           <div className="space-y-3 pb-6 border-b border-border/40 dark:border-slate-800/40">
             <div>
-              <h3 className="text-sm font-semibold text-foreground dark:text-slate-200">Password</h3>
-              <p className="text-xs text-muted dark:text-slate-400">Last changed {security.lastPasswordChanged}</p>
+              <h3 className="text-sm font-semibold text-foreground dark:text-slate-200">{t.settings.password}</h3>
+              <p className="text-xs text-muted dark:text-slate-400">{t.settings.lastChanged} {security.lastPasswordChanged}</p>
             </div>
             <Button
               type="button"
@@ -43,14 +45,14 @@ export function SecurityCard() {
               onClick={() => setIsPasswordModalOpen(true)}
             >
               <Key className="size-3.5" />
-              Change Password
+              {t.settings.changePassword}
             </Button>
           </div>
 
           {/* 2FA Row */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-foreground dark:text-slate-200">Two-Factor Auth</h3>
+              <h3 className="text-sm font-semibold text-foreground dark:text-slate-200">{t.settings.twoFactor}</h3>
               <span
                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   security.isTwoFactorEnabled
@@ -58,11 +60,11 @@ export function SecurityCard() {
                     : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400'
                 }`}
               >
-                {security.isTwoFactorEnabled ? 'Enabled' : 'Disabled'}
+                {security.isTwoFactorEnabled ? t.settings.enabled : t.settings.disabled}
               </span>
             </div>
             <p className="text-xs text-muted dark:text-slate-400 leading-normal">
-              Add an extra layer of security to your account.
+              {t.settings.securityDesc}
             </p>
             <Button
               type="button"
@@ -79,7 +81,7 @@ export function SecurityCard() {
                 }
               }}
             >
-              {security.isTwoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+              {security.isTwoFactorEnabled ? t.settings.disable2FA : t.settings.enable2FA}
             </Button>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Bell, BookOpen, Bot, Calendar, Share2, Check } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/components/ui/Toast'
 import { MockNotification } from './Header'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface NotificationDropdownProps {
   onClose: () => void
@@ -15,10 +16,27 @@ interface NotificationDropdownProps {
 export function NotificationDropdown({ onClose, notifications, setNotifications, markAsRead, markAllAsRead }: NotificationDropdownProps) {
   const navigate = useNavigate()
   const toast = useToast()
+  const { t } = useTranslation()
+
+  const getNotificationTitle = (title: string) => {
+    if (title === 'Syllabus analyzed') return t.header.notifSyllabusTitle
+    if (title === 'Study plan starting') return t.header.notifPlanTitle
+    if (title === 'New shared folder') return t.header.notifShareTitle
+    if (title === 'AI Summary generated') return t.header.notifSummaryTitle
+    return title
+  }
+
+  const getNotificationDesc = (desc: string) => {
+    if (desc.includes('parsed successfully')) return t.header.notifSyllabusDesc
+    if (desc.includes('midterm exam study plan')) return t.header.notifPlanDesc
+    if (desc.includes('shared "SWE Lab materials"')) return t.header.notifShareDesc
+    if (desc.includes('Summary is ready')) return t.header.notifSummaryDesc
+    return desc
+  }
 
   const handleNotificationClick = (item: MockNotification) => {
     markAsRead(item.id)
-    toast.success(`Opening: ${item.title}`)
+    toast.success(`${t.common.loading}`)
     onClose()
     if (item.type === 'doc') {
       navigate('/dashboard/documents')
@@ -60,7 +78,7 @@ export function NotificationDropdown({ onClose, notifications, setNotifications,
       <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <Bell className="size-4 text-slate-900 dark:text-white" />
-          <span className="text-sm font-bold text-slate-900 dark:text-slate-200">Notifications</span>
+          <span className="text-sm font-bold text-slate-900 dark:text-slate-200">{t.header.notifications}</span>
           {unreadCount > 0 && (
             <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-bold">
               {unreadCount}
@@ -73,7 +91,7 @@ export function NotificationDropdown({ onClose, notifications, setNotifications,
           className="flex items-center gap-1 text-[11px] font-semibold text-[#3155F6] hover:text-[#2563eb] cursor-pointer"
         >
           <Check className="size-3" />
-          Mark all read
+          {t.header.markAllRead}
         </button>
       </div>
 
@@ -85,7 +103,7 @@ export function NotificationDropdown({ onClose, notifications, setNotifications,
             type="button"
             onClick={() => handleNotificationClick(item)}
             className={`w-full flex gap-3 px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative items-start ${
-              !item.read ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''
+              !item.isRead ? 'bg-blue-50/40 dark:bg-blue-955/20' : ''
             }`}
           >
             <div className="mt-0.5 size-7 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
@@ -94,15 +112,15 @@ export function NotificationDropdown({ onClose, notifications, setNotifications,
             
             <div className="flex-1 min-w-0 pr-2">
               <div className="flex items-center justify-between gap-2">
-                <p className={`text-xs truncate ${!item.read ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300'}`}>
-                  {item.title}
+                <p className={`text-xs truncate ${!item.isRead ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300'}`}>
+                  {getNotificationTitle(item.title)}
                 </p>
                 <span className="text-[10px] text-slate-550 dark:text-slate-500 shrink-0 font-medium">
                   {item.time}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug line-clamp-2">
-                {item.description}
+                {getNotificationDesc(item.description)}
               </p>
             </div>
 
@@ -123,7 +141,7 @@ export function NotificationDropdown({ onClose, notifications, setNotifications,
           }}
           className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 inline-block py-1 cursor-pointer transition-colors w-full"
         >
-          View All Notifications
+          {t.header.viewAllNotifications}
         </button>
       </div>
     </motion.div>

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { FileViewer } from '@/components/shared/file-viewer/FileViewer'
@@ -92,6 +93,25 @@ export default function DocumentDetailPage() {
     showToast,
     handleDownloadFile
   } = useOutletContext<DocumentsContextType>()
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual'
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      })
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      scrollableContainers.forEach((container) => {
+        container.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'instant'
+        })
+      })
+    }
+  }, [documentId])
 
   const activeDoc = documents.find(d => d.id === documentId)
   
