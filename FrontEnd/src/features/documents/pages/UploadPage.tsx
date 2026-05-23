@@ -25,6 +25,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
+import { motion } from 'framer-motion'
 
 interface DocumentItem {
   id: string
@@ -105,24 +106,25 @@ export function UploadPage() {
   const [activeTab, setActiveTab] = useState<UploadType>("document")
 
   // Form states
-  const [docTitle, setDocTitle] = useState('Lecture_Notes_Week4')
+  const [docTitle, setDocTitle] = useState('')
   const [selectedSubjectKey, setSelectedSubjectKey] = useState<'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'>('BIOLOGY')
-  const [description, setDescription] = useState('Week 4 lecture covering cellular respiration and metabolic pathways.')
-  const [selectedTags, setSelectedTags] = useState<string[]>(['Notes'])
+  const [description, setDescription] = useState('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [fileType, setFileType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
   const [visibility, setVisibility] = useState<'private' | 'shared' | 'public'>('private')
   const [generateSummary, setGenerateSummary] = useState(true)
   const [createFlashcards, setCreateFlashcards] = useState(true)
 
-  // File Upload states
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [fileAttached, setFileAttached] = useState(true) // Start with default mockup pdf file attached for Document mode
-  const [uploadProgress, setUploadProgress] = useState(75) // Start at 75% per Figma mockup
-  const [uploadComplete, setUploadComplete] = useState(false)
-  const [fileName, setFileName] = useState('Lecture_Notes_Week4.pdf')
-  const [fileSize, setFileSize] = useState('1.8 MB')
+  // Document tab file state
+  const [uploadedDocument, setUploadedDocument] = useState<File | null>(null)
 
-  // Drag and drop / file states for Video & Audio
+  // File stats
+  const [fileName, setFileName] = useState('')
+  const [fileSize, setFileSize] = useState('')
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadComplete, setUploadComplete] = useState(false)
+
+  // Video & Audio tab states
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
@@ -168,10 +170,17 @@ export function UploadPage() {
     }
   }, [])
 
-  // Smoothly animate simulated progress bar from 75% to 100% on mount for Document mode
-  useEffect(() => {
-    if (activeTab !== 'document' || !fileAttached || uploadComplete) return
+  const resetForm = () => {
+    setDocTitle('')
+    setDescription('')
+    setSelectedTags([])
+  }
 
+  // Progress Bar Simulation for Document upload
+  useEffect(() => {
+    if (activeTab !== 'document' || !uploadedDocument || uploadComplete) return
+
+    setUploadProgress(0)
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
         if (prev >= 100) {
@@ -179,13 +188,13 @@ export function UploadPage() {
           setUploadComplete(true)
           return 100
         }
-        const next = prev + Math.floor(Math.random() * 8) + 2
+        const next = prev + Math.floor(Math.random() * 15) + 5
         return next > 100 ? 100 : next
       })
-    }, 450)
+    }, 150)
 
     return () => clearInterval(interval)
-  }, [fileAttached, uploadComplete, activeTab])
+  }, [uploadedDocument, uploadComplete, activeTab])
 
   // Progress Bar Simulation for Audio and Video uploads
   useEffect(() => {
@@ -321,9 +330,7 @@ export function UploadPage() {
     setRecordingTimer(0)
     setIsTimerRunning(false)
     setRecordingStatus('idle')
-    setDocTitle('')
-    setDescription('')
-    setSelectedTags([])
+    resetForm()
     toast.success(t.upload.recordingDeleted || 'Recording deleted')
   }
 
@@ -359,7 +366,7 @@ export function UploadPage() {
         toast.error(language === 'en' ? 'Document size exceeds 50MB' : 'Dung lượng tài liệu học tập vượt quá 50MB!')
         return
       }
-      setSelectedFile(file)
+      setUploadedDocument(file)
       setFileName(file.name)
       setFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB`)
 
@@ -373,14 +380,13 @@ export function UploadPage() {
       else if (ext === 'pptx' || ext === 'ppt') detectedType = 'slides'
 
       setFileType(detectedType)
-      setFileAttached(true)
       setUploadProgress(0)
       setUploadComplete(false)
 
-      if (!docTitle.trim() || docTitle === 'Lecture_Notes_Week4') {
-        const cleanName = file.name.split('.')[0].replace(/[_-]/g, ' ')
-        setDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
-      }
+      const cleanName = file.name.split('.')[0].replace(/[_-]/g, ' ')
+      setDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
+      setDescription('')
+      setSelectedTags(['Notes'])
     } else if (activeTab === 'video') {
       const ext = file.name.split('.').pop()?.toLowerCase()
       const allowed = ['mp4', 'mov', 'webm']
@@ -470,18 +476,23 @@ export function UploadPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!fileAttached) {
+    if (!uploadedDocument) {
       toast.error(language === 'en' ? 'Please attach a study document first!' : 'Vui lòng đính kèm tài liệu học tập trước!')
       return
     }
 
-    const finalTitle = docTitle.trim() || fileName.split('.')[0].replace(/_/g, ' ')
+    const finalTitle = docTitle.trim()
+    if (!finalTitle) {
+      toast.error('Document title is required')
+      return
+    }
+
     setIsProcessing(true)
 
     setTimeout(() => {
-      const finalFileName = selectedFile?.name || fileName
-      const finalSize = selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB` : fileSize
-      const finalSizeKb = selectedFile ? Math.round(selectedFile.size / 1024) : 4300
+      const finalFileName = uploadedDocument.name
+      const finalSize = `${(uploadedDocument.size / (1024 * 1024)).toFixed(1)} MB`
+      const finalSizeKb = Math.round(uploadedDocument.size / 1024)
 
       const newDoc: DocumentItem = {
         id: `doc-${Date.now()}`,
@@ -503,7 +514,7 @@ export function UploadPage() {
       const updatedDocs = [newDoc, ...currentDocs]
 
       localStorage.setItem('ai_study_hub_documents', JSON.stringify(updatedDocs))
-      toast.success(t.toasts.uploadSuccess)
+      toast.success('Document uploaded successfully')
       setIsProcessing(false)
       navigate(`/dashboard/documents/subject/${selectedSubjectKey}`)
     }, 1200)
@@ -550,9 +561,7 @@ export function UploadPage() {
     setPreviewUrl(null)
     setUploadProgress(0)
     setUploadComplete(false)
-    setDocTitle('')
-    setDescription('')
-    setSelectedTags([])
+    resetForm()
     if (activeTab === 'recording') {
       setRecordingStatus('idle')
     }
@@ -566,15 +575,21 @@ export function UploadPage() {
     setPreviewUrl(null)
     setUploadProgress(0)
     setUploadComplete(false)
-    setDocTitle('')
-    setDescription('')
-    setSelectedTags([])
+    resetForm()
     if (activeTab === 'recording') {
       setRecordingStatus('idle')
       setRecordingTimer(0)
       setIsTimerRunning(false)
     }
     toast.success('Upload discarded')
+  }
+
+  const handleCancelDocument = () => {
+    setUploadedDocument(null)
+    setUploadProgress(0)
+    setUploadComplete(false)
+    resetForm()
+    toast.success('Document upload canceled')
   }
 
   // Media Library Actions
@@ -697,13 +712,14 @@ export function UploadPage() {
                 }
                 setPreviewUrl(null)
                 setUploadedFile(null)
-                setFileAttached(false)
+                setUploadedDocument(null)
                 setRecordingStatus('idle')
                 setRecordingTimer(0)
                 setIsTimerRunning(false)
                 if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                   mediaRecorderRef.current.stop()
                 }
+                resetForm()
                 setActiveTab(tab.key)
               }}
               className={cn(
@@ -724,8 +740,8 @@ export function UploadPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="bg-white dark:bg-slate-900 rounded-[22px] border border-[#EAF1FB] dark:border-slate-800 p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.012)] space-y-6">
           
-          {/* 1. DOCUMENT TAB CONTENT */}
-          {activeTab === 'document' && !fileAttached && (
+          {/* 1. DOCUMENT TAB CONTENT (Upload Document Drag & Drop zone) */}
+          {activeTab === 'document' && !uploadedDocument && (
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -867,7 +883,7 @@ export function UploadPage() {
 
               {(recordingStatus === 'recording' || recordingStatus === 'paused') && (
                 <div className="flex flex-col items-center justify-center py-8 text-center bg-[#F4F7FF]/35 dark:bg-slate-950/20 border border-[#EAF1FB] dark:border-slate-800 rounded-2xl p-6 min-h-[190px] select-none">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 mb-3.5 animate-ping">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-955/30 dark:text-rose-400 mb-3.5 animate-ping">
                     <Mic className="h-6 w-6" />
                   </div>
                   <h3 className="text-2xl font-black text-[#0B1A30] dark:text-slate-100" aria-live="polite">
@@ -928,9 +944,12 @@ export function UploadPage() {
             </div>
           )}
 
-          {/* Active Upload Card for Document/Video/Audio */}
-          {activeTab !== 'recording' && (fileAttached || uploadedFile) && (
-            <div className="rounded-xl bg-[#F0F4F9]/60 dark:bg-slate-800/40 p-5 shadow-none animate-fade-in select-none relative overflow-hidden">
+          {/* Active Upload Card for Document/Video/Audio (Document preview/info) */}
+          {activeTab !== 'recording' && (
+            (activeTab === 'document' && uploadedDocument) || 
+            (activeTab !== 'document' && uploadedFile)
+          ) && (
+            <div className="rounded-xl bg-[#F0F4F9]/60 dark:bg-slate-855/20 p-5 shadow-none animate-fade-in select-none relative overflow-hidden">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-slate-900 shadow-sm">
@@ -942,7 +961,7 @@ export function UploadPage() {
                       renderPreviewFileIcon()
                     )}
                   </div>
-                  <span className="font-bold text-[#0B1A30] dark:text-slate-200 text-sm truncate pr-4" title={fileName}>
+                  <span className="font-bold text-[#0B1A30] dark:text-slate-205 text-sm truncate pr-8" title={fileName}>
                     {fileName}
                   </span>
                 </div>
@@ -961,24 +980,22 @@ export function UploadPage() {
                 />
               </div>
 
-              {/* Reset Upload Cancel Trigger */}
-              {!uploadComplete && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (activeTab === 'document') {
-                      setFileAttached(false)
-                      setSelectedFile(null)
-                    } else {
-                      handleCancelMedia()
-                    }
-                  }}
-                  className="absolute top-3 right-3 rounded-full p-1 text-slate-400 hover:bg-slate-200/55 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
-                  aria-label="Cancel upload"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
+              {/* Cancel / Remove File button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeTab === 'document') {
+                    handleCancelDocument()
+                  } else {
+                    handleCancelMedia()
+                  }
+                }}
+                className="absolute top-3.5 right-3.5 rounded-full p-1 text-slate-400 hover:bg-slate-200/55 dark:hover:bg-slate-800 hover:text-[#0B1A30] dark:hover:text-white transition-colors focus:outline-none cursor-pointer"
+                aria-label="Remove file"
+                title="Remove file"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
 
@@ -1035,9 +1052,15 @@ export function UploadPage() {
             </div>
           )}
 
-          {/* Form Fields Stack: Visible for Document if attached, OR for Video/Audio/Record if upload is complete */}
-          {((activeTab === 'document' && fileAttached) || (activeTab !== 'document' && (uploadedFile && uploadComplete))) && (
-            <div className="space-y-6 pt-4 animate-fade-in">
+          {/* Form Fields Stack: ONLY shown after document/file upload is complete */}
+          {((activeTab === 'document' && uploadedDocument && uploadComplete) || 
+            (activeTab !== 'document' && uploadedFile && uploadComplete)) && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6 pt-4"
+            >
               {/* Type Read-only */}
               {activeTab !== 'document' && (
                 <div className="space-y-2">
@@ -1340,7 +1363,7 @@ export function UploadPage() {
                   type="button"
                   onClick={() => {
                     if (activeTab === 'document') {
-                      navigate('/dashboard/documents')
+                      handleCancelDocument()
                     } else {
                       handleCancelMedia()
                     }
@@ -1354,7 +1377,7 @@ export function UploadPage() {
                 {activeTab === 'document' ? (
                   <button
                     type="submit"
-                    disabled={isProcessing || !fileAttached}
+                    disabled={isProcessing || !uploadedDocument}
                     className="group flex items-center gap-2 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/10 px-6 h-[44px] cursor-pointer transition-all duration-200 disabled:opacity-50 text-sm"
                   >
                     {isProcessing ? (
@@ -1365,7 +1388,7 @@ export function UploadPage() {
                     ) : (
                       <>
                         <Sparkles className="h-4 w-4" />
-                        {t.upload.processAI}
+                        Save Document
                       </>
                     )}
                   </button>
@@ -1380,7 +1403,7 @@ export function UploadPage() {
                   </button>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
 
         </div>
@@ -1411,7 +1434,7 @@ export function UploadPage() {
               </thead>
               <tbody className="divide-y divide-[#EAF1FB] dark:divide-slate-800">
                 {recentUploads.map((item) => (
-                  <tr key={item.id} className="text-[#0B1A30] dark:text-slate-200">
+                  <tr key={item.id} className="text-[#0B1A30] dark:text-slate-205">
                     <td className="py-4 pr-4 font-bold max-w-[200px] truncate" title={item.title}>
                       <div className="flex items-center gap-2">
                         {item.type === 'video' ? (
