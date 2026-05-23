@@ -716,14 +716,14 @@ export function SharedFilesPage() {
         </motion.div>
 
         {/* Right side panel */}
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {selectedFile && (
             <motion.aside
-              key={selectedFile.id}
+              key="workspace-right-sidebar"
               initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 32 : 0, y: isLargeScreen ? 0 : 24, scale: 0.98 }}
               animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
               exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 32 : 0, y: isLargeScreen ? 0 : 24, scale: 0.98 }}
-              transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
+              transition={shouldReduceMotion ? { duration: 0.25 } : { type: "spring", stiffness: 220, damping: 26, mass: 0.8 }}
               className="w-full lg:w-[360px] shrink-0"
             >
               <WorkspaceRightPanel
