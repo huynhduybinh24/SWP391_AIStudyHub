@@ -1,4 +1,5 @@
 import type { DashboardData } from '@/features/dashboard/types'
+import { getCurrentWeekDays, getTrackedSeconds, addTrackedSeconds, formatDateLocal } from '../utils/studyTime'
 
 const MOCK_DASHBOARD: DashboardData = {
   pendingPlans: 3,
@@ -32,6 +33,47 @@ const MOCK_DASHBOARD: DashboardData = {
 export const dashboardService = {
   async getDashboard(): Promise<DashboardData> {
     await new Promise((r) => setTimeout(r, 300))
-    return MOCK_DASHBOARD
+
+    const weekDays = getCurrentWeekDays()
+    const todayStr = formatDateLocal(new Date())
+
+    const dynamicActivity = weekDays.map((day) => {
+      // Find default mock hours for this day of the week
+      const mockDay = MOCK_DASHBOARD.weeklyActivity[day.index]
+      const mockHours = mockDay ? mockDay.hours : 0
+
+      // Read current tracked seconds from localStorage
+      let seconds = getTrackedSeconds(day.dateStr)
+
+      // If no tracked time exists yet
+      if (seconds === 0) {
+        // Only initialize past days or today to make the dashboard look populated and natural
+        if (day.dateStr <= todayStr) {
+          seconds = addTrackedSeconds(day.dateStr, mockHours * 3600)
+        }
+      }
+
+      const hours = seconds / 3600
+      return {
+        day: day.label,
+        hours: Number(hours.toFixed(2)),
+      }
+    })
+
+    // Calculate total hours for this week
+    const totalWeeklyHours = dynamicActivity.reduce((acc, curr) => acc + curr.hours, 0)
+    const formattedTotalWeeklyHours = Number(totalWeeklyHours.toFixed(1))
+
+    // Calculate dynamic trend (compared to baseline of 12 hours)
+    const diff = formattedTotalWeeklyHours - 12
+    const weeklyTrend = diff >= 0 ? `+${diff.toFixed(1)} hrs` : `-${Math.abs(diff).toFixed(1)} hrs`
+
+    return {
+      ...MOCK_DASHBOARD,
+      weeklyHours: formattedTotalWeeklyHours,
+      weeklyTrend,
+      weeklyActivity: dynamicActivity,
+    }
   },
 }
+
