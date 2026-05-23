@@ -2,8 +2,10 @@ import { Bell } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useToast } from '@/components/ui/Toast'
 import { CustomSwitch } from './CustomSwitch'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function NotificationCard() {
+  const { t } = useTranslation()
   const { notifications, updateNotifications } = useSettingsStore()
   const toast = useToast()
 
@@ -13,12 +15,11 @@ export function NotificationCard() {
       [key]: nextVal,
     })
 
-    const title = key === 'emailNotifications' ? 'Email notifications' : 'Push notifications'
-    if (nextVal) {
-      toast.success(`${title} enabled`)
-    } else {
-      toast.success(`${title} disabled`)
-    }
+    const title = key === 'emailNotifications' ? t.settings.emailNotifications : t.settings.pushNotifications
+    const status = nextVal
+      ? (t.common.success === 'Thành công' ? 'đã bật' : 'enabled')
+      : (t.common.success === 'Thành công' ? 'đã tắt' : 'disabled')
+    toast.success(`${title} ${status}`)
   }
 
   return (
@@ -27,7 +28,7 @@ export function NotificationCard() {
         <div className="flex size-8 items-center justify-center rounded-lg bg-[#E5EEFF] dark:bg-blue-950/50 text-[#2563EB]">
           <Bell className="size-5" />
         </div>
-        <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">Notifications</h2>
+        <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">{t.settings.notifications}</h2>
       </div>
 
       <div className="space-y-6">
@@ -35,9 +36,9 @@ export function NotificationCard() {
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h3 id="email-notif-label" className="text-sm font-semibold text-foreground dark:text-slate-200">
-              Email Notifications
+              {t.settings.emailNotifications}
             </h3>
-            <p className="text-xs text-muted dark:text-slate-400">Receive weekly summaries and important alerts.</p>
+            <p className="text-xs text-muted dark:text-slate-400">{t.settings.emailNotificationsSub}</p>
           </div>
           <CustomSwitch
             checked={notifications.emailNotifications}
@@ -50,9 +51,9 @@ export function NotificationCard() {
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h3 id="push-notif-label" className="text-sm font-semibold text-foreground dark:text-slate-200">
-              Push Notifications
+              {t.settings.pushNotifications}
             </h3>
-            <p className="text-xs text-muted dark:text-slate-400">Get immediate pings for AI assistance completion.</p>
+            <p className="text-xs text-muted dark:text-slate-400">{t.settings.pushNotificationsSub}</p>
           </div>
           <CustomSwitch
             checked={notifications.pushNotifications}

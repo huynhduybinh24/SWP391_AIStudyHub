@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Sun, Moon, Palette } from 'lucide-react'
 import { useTheme, type Theme } from './ThemeProvider'
+import { useTranslation } from '@/context/LanguageContext'
 
 // Custom CircleHalf icon for the System theme preference
 function CircleHalfIcon({ className }: { className?: string }) {
@@ -28,14 +29,15 @@ interface InterfaceCardProps {
 }
 
 export function InterfaceCard({ currentTheme, onThemeChange }: InterfaceCardProps) {
+  const { t } = useTranslation()
   const { theme: contextTheme, setTheme: contextSetTheme } = useTheme()
 
   const activeTheme = currentTheme ?? contextTheme
 
   const options: { value: Theme; label: string; icon: React.ComponentType<any> }[] = [
-    { value: 'light', label: 'Light', icon: Sun },
-    { value: 'dark', label: 'Dark', icon: Moon },
-    { value: 'system', label: 'System', icon: CircleHalfIcon },
+    { value: 'light', label: t.settings.light, icon: Sun },
+    { value: 'dark', label: t.settings.dark, icon: Moon },
+    { value: 'system', label: t.settings.system, icon: CircleHalfIcon },
   ]
 
   const handleThemeChange = (value: Theme) => {
@@ -52,12 +54,12 @@ export function InterfaceCard({ currentTheme, onThemeChange }: InterfaceCardProp
         <div className="flex size-8 items-center justify-center rounded-lg bg-[#E5EEFF] dark:bg-blue-950/50 text-[#2563EB]">
           <Palette className="size-5" />
         </div>
-        <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">Interface</h2>
+        <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">{t.settings.interface}</h2>
       </div>
 
       <div className="space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-muted dark:text-slate-400 mb-3">Theme Preference</h3>
+          <h3 className="text-sm font-medium text-muted dark:text-slate-400 mb-3">{t.settings.themePref}</h3>
           <div className="grid grid-cols-3 gap-4">
             {options.map((opt) => {
               const Icon = opt.icon

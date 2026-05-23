@@ -2,15 +2,17 @@ import { AccountSettingsCard } from '../components/AccountSettingsCard'
 import { SecurityCard } from '../components/SecurityCard'
 import { InterfaceCard } from '../components/InterfaceCard'
 import { NotificationCard } from '../components/NotificationCard'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function SettingsPage() {
+  const { t } = useTranslation()
   return (
     <div className="space-y-6">
       {/* Title & Subtitle */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">{t.settings.title}</h1>
         <p className="mt-1.5 text-sm text-muted dark:text-slate-400">
-          Manage your account preferences and workspace configurations.
+          {t.settings.subtitle}
         </p>
       </div>
 

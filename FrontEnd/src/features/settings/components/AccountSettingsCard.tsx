@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
 
 const accountSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -21,6 +22,7 @@ const accountSchema = z.object({
 type AccountFormValues = z.infer<typeof accountSchema>
 
 export function AccountSettingsCard() {
+  const { t } = useTranslation()
   const { account, updateAccount } = useSettingsStore()
   const currentUser = useAuthStore((state) => state.user)
   const currentEmail = currentUser?.email ?? 'student@university.edu'
@@ -53,7 +55,7 @@ export function AccountSettingsCard() {
       language: data.language,
       timezone: data.timezone,
     })
-    toast.success('Account settings saved successfully')
+    toast.success(t.toasts.saved)
     setSaveSuccess(true)
     setTimeout(() => {
       setSaveSuccess(false)
@@ -66,14 +68,14 @@ export function AccountSettingsCard() {
         <div className="flex size-8 items-center justify-center rounded-lg bg-[#E5EEFF] dark:bg-blue-950/50 text-[#2563EB]">
           <User className="size-5" />
         </div>
-        <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">Account Settings</h2>
+        <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">{t.settings.accountSettings}</h2>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Email Address & Display Name (Row 1) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-foreground dark:text-slate-200">Email Address</label>
+            <label className="text-sm font-semibold text-foreground dark:text-slate-200">{t.settings.emailAddress}</label>
             <Input
               type="email"
               readOnly
@@ -81,12 +83,12 @@ export function AccountSettingsCard() {
               {...register('email')}
               className="bg-slate-50 dark:bg-slate-950 text-muted cursor-not-allowed border-border dark:border-slate-800"
             />
-            <p className="text-xs text-muted dark:text-slate-400 mt-1">Contact support to change your primary email.</p>
+            <p className="text-xs text-muted dark:text-slate-400 mt-1">{t.settings.emailNotificationsSub}</p>
           </div>
 
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-foreground dark:text-slate-200">Display Name</label>
+            <label className="text-sm font-semibold text-foreground dark:text-slate-200">{t.settings.displayName}</label>
             <Input
               type="text"
               error={errors.name?.message}
@@ -99,7 +101,7 @@ export function AccountSettingsCard() {
         {/* Language & Timezone (Row 2) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-foreground dark:text-slate-200">Language</label>
+            <label className="text-sm font-semibold text-foreground dark:text-slate-200">{t.settings.language}</label>
             <Select
               error={errors.language?.message}
               {...register('language')}
@@ -113,7 +115,7 @@ export function AccountSettingsCard() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-foreground dark:text-slate-200">Timezone</label>
+            <label className="text-sm font-semibold text-foreground dark:text-slate-200">{t.settings.timezone}</label>
             <Select
               error={errors.timezone?.message}
               {...register('timezone')}
@@ -138,7 +140,7 @@ export function AccountSettingsCard() {
                 className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400"
               >
                 <Check className="size-4" />
-                Changes saved successfully
+                {t.settings.changesSaved}
               </motion.div>
             )}
           </AnimatePresence>
@@ -147,7 +149,7 @@ export function AccountSettingsCard() {
             disabled={isSubmitting}
             className="bg-[#2563eb] text-white hover:bg-[#2563eb]/90 px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-200"
           >
-            {isSubmitting ? 'Saving...' : 'Save Changes'}
+            {isSubmitting ? t.settings.saving : t.settings.saveChanges}
           </Button>
         </div>
       </form>
