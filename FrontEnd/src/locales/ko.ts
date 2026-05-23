@@ -281,7 +281,16 @@ export const ko: typeof en = {
     viewerDesc: "공동 작업자는 이 파일만 보고 다운로드할 수 있습니다.",
     removeAccessDesc: "이 파일에 대한 액세스 권한을 제거하시겠습니까?",
     removeAccessWarning: "팀원들이 이 항목에 대한 편집 및 보기 권한을 잃게 됩니다.",
-    removeBtn: "액세스 권한 제거"
+    removeBtn: "액세스 권한 제거",
+    people: "사용자",
+    lastModified: "최근 수정",
+    source: "소스",
+    name: "이름",
+    sharedBy: "공유자",
+    dateShared: "공유일",
+    thisWeek: "이번 주",
+    lastWeek: "지난주",
+    earlierThisYear: "올해 이전"
   },
   shareModal: {
     title: "액세스 공유",

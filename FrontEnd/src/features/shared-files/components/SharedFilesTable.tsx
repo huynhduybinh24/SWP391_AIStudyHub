@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 export interface SharedFile {
   id: string
   name: string
-  type: 'pdf' | 'docx' | 'xlsx' | 'txt' | 'image' | 'folder'
+  type: 'pdf' | 'docx' | 'xlsx' | 'txt' | 'image' | 'folder' | 'doc' | 'spreadsheet' | 'video' | string
   owner?: string
   sharedWith?: string
   permission: 'View Only' | 'Viewer' | 'Editor' | 'Owner'
@@ -17,6 +17,8 @@ export interface SharedFile {
   tags: string[]
   previewContent?: string
   summary?: string
+  timeGroup?: 'thisWeek' | 'lastWeek' | 'earlierThisYear'
+  collaborators?: boolean
 }
 
 interface SharedFilesTableProps {

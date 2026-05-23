@@ -281,7 +281,16 @@ export const ja: typeof en = {
     viewerDesc: "共同編集者はこのファイルの閲覧とダウンロードのみが可能です。",
     removeAccessDesc: "このファイルへのアクセス権を本当に削除しますか？",
     removeAccessWarning: "チームメンバーはこのアイテムの編集および閲覧権限を失います。",
-    removeBtn: "アクセス権を削除"
+    removeBtn: "アクセス権を削除",
+    people: "ユーザー",
+    lastModified: "最終更新",
+    source: "ソース",
+    name: "名前",
+    sharedBy: "共有者",
+    dateShared: "共有日",
+    thisWeek: "今週",
+    lastWeek: "先週",
+    earlierThisYear: "今年以前"
   },
   shareModal: {
     title: "アクセス権を共有",

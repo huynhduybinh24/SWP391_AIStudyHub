@@ -281,7 +281,16 @@ export const vi: typeof en = {
     viewerDesc: "Cộng tác viên chỉ có thể xem và tải xuống tệp này.",
     removeAccessDesc: "Bạn có chắc chắn muốn xóa quyền truy cập cho tệp này không?",
     removeAccessWarning: "Thành viên nhóm sẽ mất quyền chỉnh sửa và xem đối với mục này.",
-    removeBtn: "Xóa quyền truy cập"
+    removeBtn: "Xóa quyền truy cập",
+    people: "Người",
+    lastModified: "Lần sửa đổi gần nhất",
+    source: "Nguồn",
+    name: "Tên",
+    sharedBy: "Người chia sẻ",
+    dateShared: "Ngày chia sẻ",
+    thisWeek: "Đầu tuần này",
+    lastWeek: "Tuần trước",
+    earlierThisYear: "Đầu năm nay"
   },
   shareModal: {
     title: "Chia sẻ quyền truy cập",

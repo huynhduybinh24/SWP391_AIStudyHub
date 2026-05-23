@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Folder } from 'lucide-react'
 import { WorkspaceFileCard } from './WorkspaceFileCard'
+import { WorkspaceFileTable } from './WorkspaceFileTable'
 import { SharedFile } from './SharedFilesTable'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
@@ -49,42 +50,51 @@ export function WorkspaceFileList({
 
   return (
     <div className="relative overflow-visible">
-      <div
-        className={cn(
-          "transition-all duration-300 overflow-visible",
-          viewMode === 'grid' 
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" 
-            : "space-y-4"
-        )}
-      >
-        {files.map((file) => (
-          <WorkspaceFileCard
-            key={file.id}
-            file={file}
-            viewMode={viewMode}
-            isSelected={selectedFile?.id === file.id}
-            isFavorite={favorites.includes(file.id)}
-            onSelect={() => onSelectFile(file)}
-            onDoubleClick={() => onOpenFile(file)}
-            onStarToggle={(e) => {
-              e.stopPropagation()
-              onStarToggle(file)
-            }}
-            isMenuOpen={activeMenuId === file.id}
-            onMenuToggle={(e) => {
-              e.stopPropagation()
-              setActiveMenuId(activeMenuId === file.id ? null : file.id)
-            }}
-            onMenuClose={() => setActiveMenuId(null)}
-            onOpenFile={() => onOpenFile(file)}
-            onDownload={() => onDownload(file)}
-            onShareAccess={() => onShareAccess(file)}
-            onRename={() => onRename(file)}
-            onChangePermission={() => onChangePermission(file)}
-            onRemoveAccess={() => onRemoveAccess(file)}
-          />
-        ))}
-      </div>
+      {viewMode === 'list' ? (
+        <WorkspaceFileTable
+          files={files}
+          selectedFile={selectedFile}
+          favorites={favorites}
+          onSelectFile={onSelectFile}
+          onOpenFile={onOpenFile}
+          onStarToggle={onStarToggle}
+          onRename={onRename}
+          onChangePermission={onChangePermission}
+          onRemoveAccess={onRemoveAccess}
+          onDownload={onDownload}
+          onShareAccess={onShareAccess}
+        />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 transition-all duration-300 overflow-visible">
+          {files.map((file) => (
+            <WorkspaceFileCard
+              key={file.id}
+              file={file}
+              viewMode="grid"
+              isSelected={selectedFile?.id === file.id}
+              isFavorite={favorites.includes(file.id)}
+              onSelect={() => onSelectFile(file)}
+              onDoubleClick={() => onOpenFile(file)}
+              onStarToggle={(e) => {
+                e.stopPropagation()
+                onStarToggle(file)
+              }}
+              isMenuOpen={activeMenuId === file.id}
+              onMenuToggle={(e) => {
+                e.stopPropagation()
+                setActiveMenuId(activeMenuId === file.id ? null : file.id)
+              }}
+              onMenuClose={() => setActiveMenuId(null)}
+              onOpenFile={() => onOpenFile(file)}
+              onDownload={() => onDownload(file)}
+              onShareAccess={() => onShareAccess(file)}
+              onRename={() => onRename(file)}
+              onChangePermission={() => onChangePermission(file)}
+              onRemoveAccess={() => onRemoveAccess(file)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
