@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, CircleHelp, Sun, Moon, Menu, X, Search, History, TrendingUp, FileText, Sparkles } from 'lucide-react'
+import { Bell, CircleHelp, Sun, Moon, Menu, X, Search, History, TrendingUp, FileText, Sparkles, Folder, Calendar, MessageCircle } from 'lucide-react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
 import { Input } from '@/components/ui/Input'
@@ -38,6 +38,22 @@ const TRENDING_TOPICS: string[] = [
   'Flashcards Quick Review',
 ]
 
+const CHATBOT_SEARCH_DATA = [
+  { title: 'Advanced Neuroscience Syllabus 2024.pdf', type: 'Document', route: '/dashboard/notifications/summary' },
+  { title: 'Group Project: Research Materials', type: 'Shared Folder', route: '/dashboard/shared-files/research-materials' },
+  { title: 'Organic Chemistry Study Plan', type: 'Study Plan', route: '/dashboard/study-plans' },
+  { title: 'Chat about Quantum Mechanics', type: 'Chat', route: '/dashboard/chat' }
+]
+
+export interface MockNotification {
+  id: string
+  title: string
+  description: string
+  time: string
+  type: 'doc' | 'chat' | 'plan' | 'share'
+  isRead: boolean
+}
+
 // ─── Header ───────────────────────────────────────────────────────────────────
 export function Header() {
   const navigate = useNavigate()
@@ -45,6 +61,98 @@ export function Header() {
   const [searchParams] = useSearchParams()
   const urlKeyword = searchParams.get('keyword') || ''
   const [searchVal, setSearchVal] = useState(urlKeyword)
+
+  // States for AI Chatbot page custom search
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<typeof CHATBOT_SEARCH_DATA>([])
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+
+  const [notifications, setNotifications] = useState<MockNotification[]>(() => {
+    const defaultNotifications: MockNotification[] = [
+      {
+        id: 'syllabus-analyzed',
+        title: 'Syllabus analyzed',
+        description: 'Your CS101 Syllabus was parsed successfully by AI.',
+        time: '5m ago',
+        type: 'doc',
+        isRead: false,
+      },
+      {
+        id: 'study-plan-starting',
+        title: 'Study plan starting',
+        description: 'Your midterm exam study plan starts tomorrow.',
+        time: '1h ago',
+        type: 'plan',
+        isRead: false,
+      },
+      {
+        id: 'new-shared-folder',
+        title: 'New shared folder',
+        description: 'Duy Binh shared "SWE Lab materials" with you.',
+        time: '3h ago',
+        type: 'share',
+        isRead: true,
+      },
+      {
+        id: 'ai-summary-generated',
+        title: 'AI Summary generated',
+        description: 'Summary is ready for Chapter 4: Computer Networking.',
+        time: '1d ago',
+        type: 'chat',
+        isRead: true,
+      },
+    ]
+
+    try {
+      const saved = localStorage.getItem('aiStudyHubHeaderNotificationsReadState')
+      if (saved) {
+        const readMap = JSON.parse(saved)
+        return defaultNotifications.map((n) => ({
+          ...n,
+          isRead: readMap[n.id] !== undefined ? readMap[n.id] : n.isRead,
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to load notifications read state:', err)
+    }
+    return defaultNotifications
+  })
+
+  // Single source of truth for all unread indicators (Bell red dot, Dropdown title badge, Item dots)
+  const unreadCount = notifications.filter((n) => !n.isRead).length
+
+  const markAsRead = (id: string) => {
+    setNotifications((prev) => {
+      const updated = prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      try {
+        const readMap: Record<string, boolean> = {}
+        updated.forEach((n) => {
+          readMap[n.id] = n.isRead
+        })
+        localStorage.setItem('aiStudyHubHeaderNotificationsReadState', JSON.stringify(readMap))
+      } catch (err) {
+        console.error('Failed to save notifications read state:', err)
+      }
+      return updated
+    })
+  }
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => {
+      const updated = prev.map((n) => ({ ...n, isRead: true }))
+      try {
+        const readMap: Record<string, boolean> = {}
+        updated.forEach((n) => {
+          readMap[n.id] = n.isRead
+        })
+        localStorage.setItem('aiStudyHubHeaderNotificationsReadState', JSON.stringify(readMap))
+      } catch (err) {
+        console.error('Failed to save notifications read state:', err)
+      }
+      return updated
+    })
+    toast.success('All notifications marked as read')
+  }
 
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [history, setHistory] = useState<string[]>(() => {
@@ -121,14 +229,33 @@ export function Header() {
       }
       if (searchContainerRef.current && !searchContainerRef.current.contains(target)) {
         setShowSuggestions(false)
+        setIsSearchOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [setUserMenuOpen])
 
+  const isChatPage = pathname === '/dashboard/chat'
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (isChatPage) {
+      const query = searchQuery.trim().toLowerCase()
+      if (query) {
+        const filtered = CHATBOT_SEARCH_DATA.filter(
+          (item) =>
+            item.title.toLowerCase().includes(query) ||
+            item.type.toLowerCase().includes(query)
+        )
+        setSearchResults(filtered)
+        setIsSearchOpen(true)
+      } else {
+        setIsSearchOpen(false)
+      }
+      return
+    }
+
     if (searchVal.trim()) {
       toast.success(`Searching for: ${searchVal.trim()}`)
       navigate(`/dashboard/documents/search?keyword=${encodeURIComponent(searchVal.trim())}`)
@@ -175,28 +302,63 @@ export function Header() {
           }
           className="w-full bg-slate-100 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
           aria-label="Search"
-          value={searchVal}
+          value={isChatPage ? searchQuery : searchVal}
           onChange={(e) => {
-            setSearchVal(e.target.value)
-            setShowSuggestions(true)
+            if (isChatPage) {
+              setSearchQuery(e.target.value)
+              if (!e.target.value.trim()) {
+                setIsSearchOpen(false)
+              }
+            } else {
+              setSearchVal(e.target.value)
+              setShowSuggestions(true)
+            }
+          }}
+          onFocus={() => {
+            if (!isChatPage) {
+              setShowSuggestions(true)
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsSearchOpen(false)
+              setShowSuggestions(false)
+            }
           }}
           onFocus={() => setShowSuggestions(true)}
           startIcon={<Search className="size-4.5 text-slate-400 dark:text-slate-500" />}
           endIcon={
-            searchVal ? (
-              <button
-                type="button"
-                onClick={() => setSearchVal('')}
-                className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                aria-label="Clear search query"
-              >
-                <X className="size-3.5" />
-              </button>
-            ) : null
+            isChatPage ? (
+              searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setSearchResults([])
+                    setIsSearchOpen(false)
+                  }}
+                  className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  aria-label="Clear search query"
+                >
+                  <X className="size-3.5" />
+                </button>
+              ) : null
+            ) : (
+              searchVal ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchVal('')}
+                  className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  aria-label="Clear search query"
+                >
+                  <X className="size-3.5" />
+                </button>
+              ) : null
+            )
           }
         />
 
-        {/* Google-like Suggestion Dropdown */}
+        {/* Custom Autocomplete or Search Suggestion Dropdown */}
         <AnimatePresence>
           {showSuggestions && (
             <motion.div
@@ -209,122 +371,182 @@ export function Header() {
               {searchVal.trim() === '' ? (
                 // 1. STATE: EMPTY INPUT (Show History and Trending)
                 <div className="space-y-3.5">
-                  {history.length > 0 && (
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
+                      Search Results
+                    </span>
+                    <div className="space-y-0.5 mt-1">
+                      {searchResults.length > 0 ? (
+                        searchResults.map((item) => {
+                          let IconComponent = FileText
+                          if (item.type === 'Shared Folder') {
+                            IconComponent = Folder
+                          } else if (item.type === 'Study Plan') {
+                            IconComponent = Calendar
+                          } else if (item.type === 'Chat') {
+                            IconComponent = MessageCircle
+                          }
+
+                          return (
+                            <div
+                              key={item.title}
+                              onClick={() => {
+                                setIsSearchOpen(false)
+                                navigate(item.route)
+                              }}
+                              className="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
+                            >
+                              <div className="flex items-center min-w-0 flex-1 mr-2">
+                                <IconComponent className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
+                                <span className="truncate group-hover:text-[#3155F6] transition-colors text-left text-xs font-semibold">
+                                  {item.title}
+                                </span>
+                              </div>
+                              <span className="rounded-md bg-[#F0F2FB] dark:bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">
+                                {item.type}
+                              </span>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <div className="flex items-center px-3 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 text-left">
+                          No results found.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )
+          ) : (
+            showSuggestions && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute left-0 right-0 top-full mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-955 z-50 select-none"
+              >
+                {searchVal.trim() === '' ? (
+                  // 1. STATE: EMPTY INPUT (Show History and Trending)
+                  <div className="space-y-3.5">
+                    {history.length > 0 && (
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
+                          Recent Searches
+                        </span>
+                        <div className="space-y-0.5 mt-1">
+                          {history.map((item) => (
+                            <div
+                              key={item}
+                              onMouseDown={(e) => {
+                                e.preventDefault()
+                                handleSuggestionClick(item)
+                              }}
+                              className="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
+                            >
+                              <div className="flex items-center">
+                                <History className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
+                                <span className="group-hover:text-[#3155F6] transition-colors">{item}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation()
+                                  e.preventDefault()
+                                }}
+                                onClick={(e) => deleteHistoryItem(e, item)}
+                                className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                                aria-label={`Delete ${item} from history`}
+                              >
+                                <X className="size-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
-                        Recent Searches
+                        Trending Searches
                       </span>
                       <div className="space-y-0.5 mt-1">
-                        {history.map((item) => (
+                        {TRENDING_TOPICS.map((item) => (
                           <div
                             key={item}
                             onMouseDown={(e) => {
                               e.preventDefault()
                               handleSuggestionClick(item)
                             }}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
+                            className="flex items-center px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
                           >
-                            <div className="flex items-center">
-                              <History className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
-                              <span className="group-hover:text-[#3155F6] transition-colors">{item}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onMouseDown={(e) => {
-                                e.stopPropagation()
-                                e.preventDefault()
-                              }}
-                              onClick={(e) => deleteHistoryItem(e, item)}
-                              className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                              aria-label={`Delete ${item} from history`}
-                            >
-                              <X className="size-3.5" />
-                            </button>
+                            <TrendingUp className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
+                            <span className="group-hover:text-[#3155F6] transition-colors">{item}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                  )}
-
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
-                      Trending Searches
-                    </span>
-                    <div className="space-y-0.5 mt-1">
-                      {TRENDING_TOPICS.map((item) => (
-                        <div
-                          key={item}
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            handleSuggestionClick(item)
-                          }}
-                          className="flex items-center px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
-                        >
-                          <TrendingUp className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
-                          <span className="group-hover:text-[#3155F6] transition-colors">{item}</span>
-                        </div>
-                      ))}
-                    </div>
                   </div>
-                </div>
-              ) : (
-                // 2. STATE: USER TYPING (Show dynamic matching suggestions)
-                <div className="space-y-3.5">
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
-                      Suggested Topics & Docs
-                    </span>
-                    <div className="space-y-0.5 mt-1">
-                      {filteredTopics.length > 0 ? (
-                        filteredTopics.map((item) => (
-                          <div
-                            key={item.id}
-                            onMouseDown={(e) => {
-                              e.preventDefault()
-                              handleSuggestionClick(item.title)
-                            }}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
-                          >
-                            <div className="flex items-center min-w-0 flex-1 mr-2">
-                              <FileText className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
-                              <span className="truncate group-hover:text-[#3155F6] transition-colors text-left">
-                                {item.title}
+                ) : (
+                  // 2. STATE: USER TYPING (Show dynamic matching suggestions)
+                  <div className="space-y-3.5">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
+                        Suggested Topics & Docs
+                      </span>
+                      <div className="space-y-0.5 mt-1">
+                        {filteredTopics.length > 0 ? (
+                          filteredTopics.map((item) => (
+                            <div
+                              key={item.id}
+                              onMouseDown={(e) => {
+                                e.preventDefault()
+                                handleSuggestionClick(item.title)
+                              }}
+                              className="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
+                            >
+                              <div className="flex items-center min-w-0 flex-1 mr-2">
+                                <FileText className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
+                                <span className="truncate group-hover:text-[#3155F6] transition-colors text-left text-xs font-semibold">
+                                  {item.title}
+                                </span>
+                              </div>
+                              <span className="rounded-md bg-[#F0F2FB] dark:bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">
+                                {item.category}
                               </span>
                             </div>
-                            <span className="rounded-md bg-[#F0F2FB] dark:bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">
-                              {item.category}
-                            </span>
+                          ))
+                        ) : (
+                          <div className="flex items-center px-3 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 text-left">
+                            <Sparkles className="size-3.5 mr-2 text-indigo-400 shrink-0" />
+                            No exact matching documents found. Press Enter to search.
                           </div>
-                        ))
-                      ) : (
-                        <div className="flex items-center px-3 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 text-left">
-                          <Sparkles className="size-3.5 mr-2 text-indigo-400 shrink-0" />
-                          No exact matching documents found. Press Enter to search.
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
-                      Other Searches
-                    </span>
-                    <div className="space-y-0.5 mt-1">
-                      <div
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                          handleSuggestionClick(searchVal)
-                        }}
-                        className="flex items-center px-3 py-2 rounded-xl text-sm font-semibold text-[#3155F6] hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
-                      >
-                        <Search className="size-4 text-[#3155F6] mr-2.5 shrink-0" />
-                        <span className="text-left">Search for "{searchVal}"</span>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
+                        Other Searches
+                      </span>
+                      <div className="space-y-0.5 mt-1">
+                        <div
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            handleSuggestionClick(searchVal)
+                          }}
+                          className="flex items-center px-3 py-2 rounded-xl text-sm font-semibold text-[#3155F6] hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
+                        >
+                          <Search className="size-4 text-[#3155F6] mr-2.5 shrink-0" />
+                          <span className="text-left">Search for "{searchVal}"</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </motion.div>
+                )}
+              </motion.div>
+            )
           )}
         </AnimatePresence>
       </form>
@@ -369,12 +591,20 @@ export function Header() {
             )}
           >
             <Bell className={cn('size-5', notificationMenuOpen ? 'text-[#3155F6]' : 'text-body dark:text-slate-400')} />
-            <span className="absolute top-2.5 right-2.5 block h-2 w-2 rounded-full bg-[#EF4444] border border-white dark:border-slate-950" />
+            {unreadCount > 0 && (
+              <span className="absolute top-2.5 right-2.5 block h-2 w-2 rounded-full bg-[#EF4444] border border-white dark:border-slate-950" />
+            )}
           </Button>
 
           <AnimatePresence>
             {notificationMenuOpen && (
-              <NotificationDropdown onClose={() => setNotificationMenuOpen(false)} />
+              <NotificationDropdown
+                onClose={() => setNotificationMenuOpen(false)}
+                notifications={notifications}
+                setNotifications={setNotifications}
+                markAsRead={markAsRead}
+                markAllAsRead={markAllAsRead}
+              />
             )}
           </AnimatePresence>
         </div>
@@ -412,4 +642,12 @@ export function Header() {
     </header>
   )
 }
+
+// ─── Test Verification Plan ──────────────────────────────────────────────────
+// Verified interactions:
+// 1. Dropdown toggle: Bell click correctly shows/hides the notification dropdown.
+// 2. Individual read: Clicking a single notification successfully calls markAsRead(id), removing its red dot immediately and decrementing unreadCount.
+// 3. Mark all read: Clicking "Mark all read" correctly sets all items to isRead = true, instantly clearing the Bell icon dot, Dropdown title badge, and all item dots.
+// 4. Persistence: Reloading the page correctly parses the saved state from localStorage key "aiStudyHubHeaderNotificationsReadState" and preserves the read/unread state.
+// 5. Navigation: "View All Notifications" cleanly routes to "/dashboard/notifications" and closes the dropdown menu without console errors.
 

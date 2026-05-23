@@ -2,69 +2,22 @@ import { motion } from 'framer-motion'
 import { Bell, BookOpen, Bot, Calendar, Share2, Check } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/components/ui/Toast'
-import { useState } from 'react'
+import { MockNotification } from './Header'
 
 interface NotificationDropdownProps {
   onClose: () => void
+  notifications: MockNotification[]
+  setNotifications: React.Dispatch<React.SetStateAction<MockNotification[]>>
+  markAsRead: (id: string) => void
+  markAllAsRead: () => void
 }
 
-interface MockNotification {
-  id: string
-  title: string
-  description: string
-  time: string
-  type: 'doc' | 'chat' | 'plan' | 'share'
-  read: boolean
-}
-
-export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
+export function NotificationDropdown({ onClose, notifications, setNotifications, markAsRead, markAllAsRead }: NotificationDropdownProps) {
   const navigate = useNavigate()
   const toast = useToast()
-  
-  const [notifications, setNotifications] = useState<MockNotification[]>([
-    {
-      id: '1',
-      title: 'Syllabus analyzed',
-      description: 'Your CS101 Syllabus was parsed successfully by AI.',
-      time: '5m ago',
-      type: 'doc',
-      read: false,
-    },
-    {
-      id: '2',
-      title: 'Study plan starting',
-      description: 'Your midterm exam study plan starts tomorrow.',
-      time: '1h ago',
-      type: 'plan',
-      read: false,
-    },
-    {
-      id: '3',
-      title: 'New shared folder',
-      description: 'Duy Binh shared "SWE Lab materials" with you.',
-      time: '3h ago',
-      type: 'share',
-      read: true,
-    },
-    {
-      id: '4',
-      title: 'AI Summary generated',
-      description: 'Summary is ready for Chapter 4: Computer Networking.',
-      time: '1d ago',
-      type: 'chat',
-      read: true,
-    },
-  ])
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-    toast.success('All notifications marked as read')
-  }
 
   const handleNotificationClick = (item: MockNotification) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
-    )
+    markAsRead(item.id)
     toast.success(`Opening: ${item.title}`)
     onClose()
     if (item.type === 'doc') {
@@ -92,7 +45,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
     }
   }
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const unreadCount = notifications.filter((n) => !n.isRead).length
 
   return (
     <motion.div
@@ -116,7 +69,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
         </div>
         <button
           type="button"
-          onClick={markAllRead}
+          onClick={markAllAsRead}
           className="flex items-center gap-1 text-[11px] font-semibold text-[#3155F6] hover:text-[#2563eb] cursor-pointer"
         >
           <Check className="size-3" />
@@ -153,7 +106,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
               </p>
             </div>
 
-            {!item.read && (
+            {!item.isRead && (
               <span className="absolute top-4 right-3 block h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
             )}
           </button>
