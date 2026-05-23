@@ -1,5 +1,4 @@
 import { Upload, UserPlus, Sparkles } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
 
 interface SharedWorkspaceHeaderProps {
   onUploadClick: () => void
@@ -15,49 +14,50 @@ export function SharedWorkspaceHeader({
   isAnalyzing
 }: SharedWorkspaceHeaderProps) {
   return (
-    <div className="space-y-4 pt-2 text-left">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1">
+    <div className="pt-2 text-left select-none">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2">
+        {/* Left Side: Title & Subtitle */}
+        <div className="space-y-1.5 max-w-xl">
           <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
             Shared Workspace
           </h1>
-          <p className="text-sm font-semibold text-slate-500 dark:text-slate-450">
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-455">
             Collaborate with teammates and AI assistants in real time.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Upload File Button */}
-          <Button
+        {/* Right Side: Action buttons container */}
+        <div className="flex items-center gap-3 flex-wrap md:flex-nowrap shrink-0">
+          {/* 1. Upload File Button */}
+          <button
             type="button"
             onClick={onUploadClick}
-            className="group flex items-center gap-2 rounded-2xl bg-[#3155F6] hover:bg-blue-700 text-white font-bold px-5 py-2.5 text-xs shadow-md shadow-blue-500/10 transition-all duration-200 h-[42px] cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-full bg-[#3155F6] hover:bg-blue-700 text-white font-black px-6 h-11 text-xs shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer hover:scale-[1.02] shrink-0"
           >
-            <Upload className="size-4 shrink-0 transition-transform group-hover:-translate-y-0.5" />
+            <Upload className="size-4 transition-transform group-hover:-translate-y-0.5" />
             <span>Upload File</span>
-          </Button>
+          </button>
 
-          {/* Invite Button */}
-          <Button
+          {/* 2. Invite Button */}
+          <button
             type="button"
-            variant="secondary"
             onClick={onInviteClick}
-            className="group flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold px-5 py-2.5 text-xs shadow-xs transition-all duration-200 h-[42px] cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-full bg-slate-900 hover:bg-slate-805 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black px-6 h-11 text-xs shadow-md hover:shadow-lg active:scale-[0.98] transition-all duration-200 cursor-pointer hover:scale-[1.02] shrink-0"
           >
-            <UserPlus className="size-4 shrink-0 text-slate-450 dark:text-slate-400" />
+            <UserPlus className="size-4" />
             <span>Invite</span>
-          </Button>
+          </button>
 
-          {/* AI Analyze Button */}
-          <Button
+          {/* 3. AI Analyze Button */}
+          <button
             type="button"
             onClick={onAIAnalyzeClick}
             disabled={isAnalyzing}
-            className="group flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 text-xs shadow-md shadow-indigo-500/10 transition-all duration-200 h-[42px] cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#3155F6] to-[#7C3AED] hover:from-[#2563eb] hover:to-[#6d28d9] text-white font-black px-6 h-11 text-xs shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer hover:scale-[1.02] disabled:opacity-50 shrink-0"
           >
-            <Sparkles className="size-4 shrink-0 animate-pulse text-indigo-200" />
+            <Sparkles className="size-4 animate-pulse text-indigo-200" />
             <span>{isAnalyzing ? 'Analyzing...' : 'AI Analyze'}</span>
-          </Button>
+          </button>
         </div>
       </div>
     </div>
