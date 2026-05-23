@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { HardDrive, Users, Sparkles, X, Activity } from 'lucide-react'
+import { HardDrive, Users, Sparkles, X } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { SummaryCard } from '../components/SummaryCard'
 import { CollaboratorsModal, Collaborator } from '../components/CollaboratorsModal'
@@ -11,8 +11,7 @@ import { RenameFileModal } from '../components/RenameFileModal'
 import { PermissionModal } from '../components/PermissionModal'
 import { ShareFileModal } from '../components/ShareFileModal'
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
-import { FilePreviewModal } from '../components/FilePreviewModal'
-
+import { SharedFileViewer } from '../components/SharedFileViewer'
 
 // Quota Breakdown Modal
 interface QuotaDetailsModalProps {
@@ -56,6 +55,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
             aria-labelledby="quota-title"
           >
             <button
+              type="button"
               onClick={onClose}
               className="absolute right-6 top-6 text-slate-400 hover:text-slate-655 dark:hover:text-slate-205 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               aria-label="Close dialog"
@@ -71,7 +71,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
                 <h3 id="quota-title" className="text-base font-bold text-slate-900 dark:text-white">
                   Shared Storage Quota
                 </h3>
-                <p className="text-xs text-slate-450 dark:text-slate-500 font-medium">
+                <p className="text-xs text-slate-450 dark:text-slate-550 font-medium">
                   Detailed analysis of shared cloud volume
                 </p>
               </div>
@@ -91,7 +91,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
                   initial={{ width: 0 }}
                   animate={{ width: `${percentage}%` }}
                   transition={{ duration: 0.8, ease: 'easeOut' }}
-                  className="h-full bg-gradient-to-r from-blue-550 to-[#3155F6] rounded-full"
+                  className="h-full bg-gradient-to-r from-blue-555 to-[#3155F6] rounded-full"
                 />
               </div>
 
@@ -148,7 +148,6 @@ export function SharedFilesPage() {
   const [isCollaboratorsOpen, setIsCollaboratorsOpen] = useState(false)
   const [isAIInsightsOpen, setIsAIInsightsOpen] = useState(false)
 
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [isRenameOpen, setIsRenameOpen] = useState(false)
   const [isPermissionOpen, setIsPermissionOpen] = useState(false)
@@ -157,36 +156,48 @@ export function SharedFilesPage() {
   // Current action file context
   const [selectedFile, setSelectedFile] = useState<SharedFile | null>(null)
 
+  // Active full viewer state
+  const [viewingFile, setViewingFile] = useState<SharedFile | null>(null)
+
   // State for files
   const [sharedWithMeFiles, setSharedWithMeFiles] = useState<SharedFile[]>([
     {
       id: 'with-me-1',
       name: 'Biology 101 Midterm Notes.pdf',
       owner: 'Sarah Jenkins',
-      permissions: 'View Only',
+      permission: 'View Only',
       dateShared: '2023-10-24',
       type: 'pdf',
       size: '2.4 MB',
+      totalPages: 42,
+      description: 'Comprehensive study guide and midterm summary for General Biology 101, containing cellular respiration diagrams, metabolic pathway notes, and mitosis stages.',
+      tags: ['Biology', 'Notes', 'Midterm'],
       previewContent: 'Biology 101 Midterm Notes preview content.'
     },
     {
       id: 'with-me-2',
-      name: 'Group Project Assets',
+      name: 'Group Project Specifications.docx',
       owner: 'David Kim',
-      permissions: 'Editor',
+      permission: 'Editor',
       dateShared: '2023-10-22',
-      type: 'folder',
+      type: 'docx',
       size: '15.8 MB',
-      previewContent: 'Group Project Assets directory structure preview.'
+      totalPages: 15,
+      description: 'Draft guidelines and technical specifications for the term team software engineering projects, detailing coding standards and API endpoint requirements.',
+      tags: ['Project', 'Specs', 'Group'],
+      previewContent: 'Group Project Specifications draft. Outlines project requirements and timelines.'
     },
     {
       id: 'with-me-3',
       name: 'Physics Lab Data.xlsx',
       owner: 'Emily Chen',
-      permissions: 'View Only',
+      permission: 'View Only',
       dateShared: '2023-10-18',
       type: 'xlsx',
       size: '1.2 MB',
+      totalPages: 10,
+      description: 'Tabulated values of raw experimental logs, voltage sweeps, and resistance indexes from the electromagnetism laboratory session.',
+      tags: ['Physics', 'Lab', 'Data'],
       previewContent: 'Physics Lab Data table values.'
     }
   ])
@@ -197,36 +208,58 @@ export function SharedFilesPage() {
       name: 'Software Design Patterns.pdf',
       owner: 'Alex Rivera',
       sharedWith: 'Alex Rivera, +2 others',
-      permissions: 'Editor',
+      permission: 'Editor',
       dateShared: 'Nov 02, 2023',
       type: 'pdf',
       size: '4.8 MB',
-      previewContent: 'Software Design Patterns study guide. Covers Creational, Structural, and Behavioral patterns.'
+      totalPages: 28,
+      description: 'Detailed study notes covering Creational, Structural, and Behavioral patterns with sample class diagrams.',
+      tags: ['SoftwareEng', 'DesignPatterns', 'StudyNotes'],
+      previewContent: 'Software Design Patterns study guide.'
     },
     {
       id: 'by-me-2',
       name: 'Calculus_Summary_Final.docx',
       owner: 'Alex Rivera',
       sharedWith: 'Study Group A',
-      permissions: 'Viewer',
+      permission: 'Viewer',
       dateShared: 'Oct 30, 2023',
       type: 'docx',
       size: '2.5 MB',
-      previewContent: 'Calculus Summary Final draft. Notes on limits, derivatives, integrals, and series.'
+      totalPages: 12,
+      description: 'Brief overview of core multivariable calculus calculations: gradient descent, Jacobian matrices, and double integrals.',
+      tags: ['Calculus', 'Math', 'Final'],
+      previewContent: 'Calculus Summary Final draft.'
     },
     {
       id: 'by-me-3',
       name: 'Research_Project_Data.xlsx',
       owner: 'Alex Rivera',
       sharedWith: 'Dr. Sarah',
-      permissions: 'Editor',
+      permission: 'Editor',
       dateShared: 'Oct 25, 2023',
       type: 'xlsx',
       size: '1.8 MB',
-      previewContent: 'Research Project Data table with all experimental results and analysis.'
+      totalPages: 8,
+      description: 'Experimental telemetry tables containing data and statistical runs for the final research project.',
+      tags: ['Research', 'Data', 'Spreadsheet'],
+      previewContent: 'Research Project Data table with all experimental results.'
     }
   ])
 
+  // Update viewingFile reference when modifications are made to the list in memory
+  useEffect(() => {
+    if (viewingFile) {
+      const activeList = activeTab === 'with-me' ? sharedWithMeFiles : sharedByMeFiles
+      const current = activeList.find(f => f.id === viewingFile.id)
+      if (current) {
+        setViewingFile(current)
+      } else {
+        // If file was deleted, exit viewer
+        setViewingFile(null)
+      }
+    }
+  }, [sharedWithMeFiles, sharedByMeFiles, activeTab, viewingFile])
 
   // Collaborators list
   const collaborators: Collaborator[] = [
@@ -285,8 +318,7 @@ export function SharedFilesPage() {
 
   // Action handlers
   const handleOpenFile = (file: SharedFile) => {
-    setSelectedFile(file)
-    setIsPreviewOpen(true)
+    setViewingFile(file)
   }
 
   const handleDownload = (file: SharedFile) => {
@@ -332,7 +364,7 @@ export function SharedFilesPage() {
     if (!selectedFile) return
     const resolvedPermission = newPermission === 'View Only' && activeTab === 'by-me' ? 'Viewer' : newPermission
     const updateList = (list: SharedFile[]) =>
-      list.map((f) => (f.id === selectedFile.id ? { ...f, permissions: resolvedPermission } : f))
+      list.map((f) => (f.id === selectedFile.id ? { ...f, permission: resolvedPermission } : f))
 
     if (activeTab === 'with-me') {
       setSharedWithMeFiles(updateList(sharedWithMeFiles))
@@ -340,7 +372,7 @@ export function SharedFilesPage() {
       setSharedByMeFiles(updateList(sharedByMeFiles))
     }
 
-    setSelectedFile((prev) => (prev ? { ...prev, permissions: resolvedPermission } : null))
+    setSelectedFile((prev) => (prev ? { ...prev, permission: resolvedPermission } : null))
 
     toast.success(`Permission updated to ${newPermission}`)
   }
@@ -361,24 +393,42 @@ export function SharedFilesPage() {
 
     toast.success('File deleted successfully')
     setIsConfirmDeleteOpen(false)
-    setIsPreviewOpen(false) // Auto-close preview if open
+    setViewingFile(null) // Exit viewer if open
   }
 
   const currentFiles = activeTab === 'with-me' ? sharedWithMeFiles : sharedByMeFiles
+
+  // Switch to full layout file viewer if active
+  if (viewingFile) {
+    const showToastWrapper = (msg: string) => {
+      if (msg.startsWith('❌')) toast.error(msg)
+      else if (msg.startsWith('⚠️')) toast.warning(msg)
+      else toast.success(msg)
+    }
+
+    return (
+      <SharedFileViewer
+        file={viewingFile}
+        onBack={() => setViewingFile(null)}
+        showToast={showToastWrapper}
+        onDownload={handleDownload}
+      />
+    )
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="space-y-6"
+      className="space-y-6 text-slate-900 dark:text-slate-100"
     >
       {/* Title Header */}
       <div>
         <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
           Shared Files
         </h1>
-        <p className="text-sm font-semibold text-slate-500 dark:text-slate-450 mt-1.5">
+        <p className="text-sm font-semibold text-slate-550 dark:text-slate-450 mt-1.5">
           Manage files shared with you and by you.
         </p>
       </div>
@@ -442,8 +492,9 @@ export function SharedFilesPage() {
               Most activity is on <strong className="text-slate-800 dark:text-slate-150">Biology 101 Notes</strong>. 'Alex M.' recently requested edit access to your <strong className="text-slate-800 dark:text-slate-150">Lab Report Draft</strong>.
             </p>
             <button
+              type="button"
               onClick={() => setIsAIInsightsOpen(true)}
-              className="text-[#3155F6] dark:text-blue-450 hover:text-blue-650 dark:hover:text-blue-300 font-extrabold flex items-center gap-1 transition-all cursor-pointer w-fit text-left focus:outline-none hover:underline"
+              className="text-[#3155F6] dark:text-blue-450 hover:text-blue-650 dark:hover:text-blue-300 font-extrabold flex items-center gap-1 transition-all cursor-pointer w-fit text-left focus:outline-none hover:underline bg-transparent border-none"
             >
               View Full Summary
             </button>
@@ -463,7 +514,6 @@ export function SharedFilesPage() {
             onRemoveAccess={handleDeleteClick}
             isSharedByMe={activeTab === 'by-me'}
           />
-
         </div>
       </div>
 
@@ -486,16 +536,6 @@ export function SharedFilesPage() {
         onClose={() => setIsAIInsightsOpen(false)}
       />
 
-      <FilePreviewModal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        file={selectedFile}
-        onDownload={handleDownload}
-        onShare={handleShareClick}
-        onRename={handleRenameClick}
-        onDelete={handleDeleteClick}
-      />
-
       <ShareFileModal
         isOpen={isShareOpen}
         onClose={() => setIsShareOpen(false)}
@@ -515,7 +555,7 @@ export function SharedFilesPage() {
         onClose={() => setIsPermissionOpen(false)}
         onUpdatePermission={handlePermissionConfirm}
         fileName={selectedFile?.name || ''}
-        initialPermission={selectedFile?.permissions || 'View Only'}
+        initialPermission={selectedFile?.permission || 'View Only'}
       />
 
       <ConfirmDeleteModal
