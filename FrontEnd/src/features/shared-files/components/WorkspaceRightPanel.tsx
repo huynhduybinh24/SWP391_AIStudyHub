@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Sparkles, FileText, Send, MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SharedFile } from './SharedFilesTable'
+import { motion } from 'framer-motion'
 
 export interface CommentItem {
   id: string
@@ -63,7 +64,14 @@ export function WorkspaceRightPanel({
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-[28px] p-6 shadow-sm space-y-6 text-left select-none">
+    <motion.div
+      key={file.id}
+      initial={{ opacity: 0, y: 8, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.99 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-[28px] p-6 shadow-sm space-y-6 text-left select-none"
+    >
       
       {/* 1. Preview Container Box */}
       <div className="w-full aspect-[4/3] rounded-2xl bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-4 text-slate-400 dark:text-slate-600 border border-slate-200/40 dark:border-slate-850 shadow-inner">
@@ -221,7 +229,7 @@ export function WorkspaceRightPanel({
         </button>
       </form>
 
-    </div>
+    </motion.div>
   )
 }
 
