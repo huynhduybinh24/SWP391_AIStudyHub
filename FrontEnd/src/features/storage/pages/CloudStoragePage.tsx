@@ -81,7 +81,7 @@ const formatSize = (bytes: number) => {
 }
 
 export function CloudStoragePage() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const user = useAuthStore((s) => s.user)
@@ -95,10 +95,10 @@ export function CloudStoragePage() {
 
   const [uploads, setUploads] = useState(INITIAL_UPLOADS)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [baseUsedStorage, setBaseUsedStorage] = useState(!user || user.plan === 'free' ? 7.0 : 25.0)
+  const [baseUsedStorage, setBaseUsedStorage] = useState(!user || user.plan === 'free' ? 2.4 : 12.4)
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
-  const [trashSize, setTrashSize] = useState(!user || user.plan === 'free' ? 0.5 : 2.5)
-  const [tempSize, setTempSize] = useState(!user || user.plan === 'free' ? 0.3 : 1.2)
+  const [trashSize, setTrashSize] = useState(!user || user.plan === 'free' ? 0.3 : 1.2)
+  const [tempSize, setTempSize] = useState(!user || user.plan === 'free' ? 0.1 : 0.6)
 
   const recentUploadsSizeGB = useMemo(() => {
     const totalBytes = uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0)
@@ -178,6 +178,33 @@ export function CloudStoragePage() {
           <p className="text-muted mt-2 text-sm">
             {t.cloudStorage.subtitle}
           </p>
+          {/* Active Plan Badge */}
+          <div className="mt-3.5 flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {language === 'vi' ? 'Gói tài khoản hiện tại:' : 'Current account package:'}
+            </span>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold leading-none shadow-xs border ${
+              user?.plan === 'pro' 
+                ? 'bg-blue-50 text-blue-600 border-blue-200/50 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/30' 
+                : user?.plan === 'institutional'
+                  ? 'bg-purple-50 text-purple-600 border-purple-200/50 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-900/30'
+                  : 'bg-slate-105 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-350 dark:border-slate-700'
+            }`}>
+              <span className={`size-1.5 rounded-full ${
+                user?.plan === 'pro' 
+                  ? 'bg-blue-500' 
+                  : user?.plan === 'institutional'
+                    ? 'bg-purple-500'
+                    : 'bg-slate-400'
+              }`} />
+              {user?.plan === 'pro' 
+                ? (language === 'vi' ? 'Gói Pro' : 'Pro Plan') 
+                : user?.plan === 'institutional'
+                  ? (language === 'vi' ? 'Gói Tổ chức' : 'Institutional')
+                  : (language === 'vi' ? 'Gói Miễn phí' : 'Free Plan')
+              }
+            </span>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Link to="/dashboard/storage/cleanup" className="block">
