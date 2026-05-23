@@ -6,7 +6,7 @@ import { PreviewToolbar } from './PreviewToolbar'
 import { DocumentPreview } from './DocumentPreview'
 import { FileMetadataPanel } from './FileMetadataPanel'
 import { AskAIAssistantPanel } from './AskAIAssistantPanel'
-import { ShareAccessModal } from '../modals/ShareAccessModal'
+import { ShareAccessModal } from '../share-access/ShareAccessModal'
 
 interface ChatMessage {
   sender: 'user' | 'ai'

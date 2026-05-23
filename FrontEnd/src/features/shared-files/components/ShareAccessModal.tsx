@@ -1,3 +1,2 @@
-import { ShareFileModal } from './ShareFileModal'
-export { ShareFileModal as ShareAccessModal } from './ShareFileModal'
-export default ShareFileModal
+export * from '@/components/shared/share-access/ShareAccessModal'
+export { default } from '@/components/shared/share-access/ShareAccessModal'
