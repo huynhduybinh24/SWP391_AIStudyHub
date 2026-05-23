@@ -325,6 +325,22 @@ export function SharedFilesPage() {
   }
 
   const handleOpenFile = (file: SharedFile) => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual'
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      })
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      scrollableContainers.forEach((container) => {
+        container.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'instant'
+        })
+      })
+    }
     setViewingFile(file)
     toast.success(`Opening ${file.name}`)
   }
