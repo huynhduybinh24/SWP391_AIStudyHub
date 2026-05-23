@@ -57,6 +57,30 @@ export function Sidebar() {
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
   const user = useAuthStore((s) => s.user)
+  const { t } = useTranslation()
+
+  const getSidebarLabel = (label: string) => {
+    switch (label.toLowerCase()) {
+      case 'dashboard':
+        return t.sidebar.dashboard
+      case 'my documents':
+        return t.sidebar.myDocuments
+      case 'shared files':
+        return t.sidebar.sharedFiles
+      case 'study plans':
+        return t.sidebar.studyPlans
+      case 'ai chatbot':
+        return t.sidebar.aiChatbot
+      case 'settings':
+        return t.sidebar.settings
+      case 'upgrade to pro':
+        return t.sidebar.upgradePro
+      case 'log out':
+        return t.sidebar.logout
+      default:
+        return label
+    }
+  }
 
   const handleLinkClick = () => {
     // Close sidebar drawer on mobile after clicking a link
