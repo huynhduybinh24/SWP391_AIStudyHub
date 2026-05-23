@@ -152,7 +152,7 @@ export function HelpCenterPage() {
         <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-indigo-500/25 rounded-full blur-[120px] pointer-events-none"></div>
         
         <div className="relative z-10 max-w-[800px] mx-auto">
-          <h2 className="text-4xl md:text-[52px] font-serif font-bold mb-5 tracking-tight text-white drop-shadow-sm">
+          <h2 className="text-4xl md:text-[52px] font-heading font-bold mb-5 tracking-tight text-white drop-shadow-sm">
             How can we help you?
           </h2>
           <p className="text-base md:text-lg text-slate-300 mb-10 max-w-xl mx-auto leading-relaxed font-medium">

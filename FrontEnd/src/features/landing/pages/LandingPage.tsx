@@ -128,7 +128,7 @@ export function LandingPage() {
 
       {/* Hero Section */}
       <section className="w-full pt-20 pb-16 px-6 text-center max-w-[800px] mx-auto">
-        <h2 className="text-5xl md:text-[54px] leading-[1.15] font-serif font-bold text-[#0B1C30] mb-6">
+        <h2 className="text-5xl md:text-[54px] leading-[1.15] font-heading font-bold text-[#0B1C30] mb-6">
           Revolutionize Your Study Game with AI.
         </h2>
         <p className="text-lg md:text-xl text-[#434655] mb-10 leading-relaxed max-w-[680px] mx-auto">
@@ -165,7 +165,7 @@ export function LandingPage() {
 
         {/* Right Side: Features Grid */}
         <div className="w-full lg:w-1/2 flex flex-col pt-4">
-          <h3 className="text-[28px] font-serif font-bold text-[#0B1C30] mb-8">
+          <h3 className="text-[28px] font-heading font-bold text-[#0B1C30] mb-8">
             Supercharge Your Workflow
           </h3>
           
@@ -233,7 +233,7 @@ export function LandingPage() {
       {/* About Section */}
       <section id="about" className="w-full bg-white py-20 px-6">
         <div className="max-w-[800px] mx-auto text-center">
-          <h3 className="text-3xl font-serif font-bold text-[#0B1C30] mb-6">
+          <h3 className="text-3xl font-heading font-bold text-[#0B1C30] mb-6">
             About AI Study Hub
           </h3>
           <p className="text-lg text-[#434655] leading-relaxed mb-6">

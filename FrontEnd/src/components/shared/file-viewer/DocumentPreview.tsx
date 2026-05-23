@@ -275,7 +275,7 @@ export function DocumentPreview({
 
         {/* Title & metadata heading header */}
         <div className="space-y-2 border-b border-slate-100 dark:border-slate-800 pb-6 mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white font-serif leading-tight">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white font-heading leading-tight">
             {pageContent.title}
           </h1>
           <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 font-mono tracking-wider">
