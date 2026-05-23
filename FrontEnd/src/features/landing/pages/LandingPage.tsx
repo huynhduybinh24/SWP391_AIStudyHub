@@ -76,7 +76,7 @@ export function LandingPage() {
             className="flex items-center gap-3.5 cursor-pointer"
             onClick={scrollToHome}
           >
-            <img src="/logo.png" alt="AI Study Hub Logo" className="w-[54px] h-[54px] object-contain" />
+            <img src="/logo.png" alt="AI Study Hub Logo" className="w-[68px] h-[68px] object-contain" />
             <h1 className="text-2xl font-bold text-primary tracking-tight">AI Study Hub</h1>
           </div>
           
