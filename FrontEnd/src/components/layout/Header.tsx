@@ -151,6 +151,7 @@ export function Header() {
       } catch (err) {
         console.error('Failed to save notifications read state:', err)
       }
+      return updated
     })
     toast.success(t.header.toastAllMarkedRead)
   }
