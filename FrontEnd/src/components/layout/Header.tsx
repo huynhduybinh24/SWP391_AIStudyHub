@@ -331,7 +331,6 @@ export function Header() {
               setShowSuggestions(false)
             }
           }}
-          onFocus={() => setShowSuggestions(true)}
           startIcon={<Search className="size-4.5 text-slate-400 dark:text-slate-500" />}
           endIcon={
             isChatPage ? (
@@ -366,60 +365,57 @@ export function Header() {
 
         {/* Custom Autocomplete or Search Suggestion Dropdown */}
         <AnimatePresence>
-          {showSuggestions && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="absolute left-0 right-0 top-full mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900 z-50 select-none"
-            >
-              {searchVal.trim() === '' ? (
-                // 1. STATE: EMPTY INPUT (Show History and Trending)
-                <div className="space-y-3.5">
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
-                      Search Results
-                    </span>
-                    <div className="space-y-0.5 mt-1">
-                      {searchResults.length > 0 ? (
-                        searchResults.map((item) => {
-                          let IconComponent = FileText
-                          if (item.type === 'Shared Folder') {
-                            IconComponent = Folder
-                          } else if (item.type === 'Study Plan') {
-                            IconComponent = Calendar
-                          } else if (item.type === 'Chat') {
-                            IconComponent = MessageCircle
-                          }
+          {isChatPage ? (
+            isSearchOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute left-0 right-0 top-full mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900 z-50 select-none"
+              >
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">
+                    Search Results
+                  </span>
+                  <div className="space-y-0.5 mt-1">
+                    {searchResults.length > 0 ? (
+                      searchResults.map((item) => {
+                        let IconComponent = FileText
+                        if (item.type === 'Shared Folder') {
+                          IconComponent = Folder
+                        } else if (item.type === 'Study Plan') {
+                          IconComponent = Calendar
+                        } else if (item.type === 'Chat') {
+                          IconComponent = MessageCircle
+                        }
 
-                          return (
-                            <div
-                              key={item.title}
-                              onClick={() => {
-                                setIsSearchOpen(false)
-                                navigate(item.route)
-                              }}
-                              className="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
-                            >
-                              <div className="flex items-center min-w-0 flex-1 mr-2">
-                                <IconComponent className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
-                                <span className="truncate group-hover:text-[#3155F6] transition-colors text-left text-xs font-semibold">
-                                  {item.title}
-                                </span>
-                              </div>
-                              <span className="rounded-md bg-[#F0F2FB] dark:bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">
-                                {item.type}
+                        return (
+                          <div
+                            key={item.title}
+                            onClick={() => {
+                              setIsSearchOpen(false)
+                              navigate(item.route)
+                            }}
+                            className="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
+                          >
+                            <div className="flex items-center min-w-0 flex-1 mr-2">
+                              <IconComponent className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
+                              <span className="truncate group-hover:text-[#3155F6] transition-colors text-left text-xs font-semibold">
+                                {item.title}
                               </span>
                             </div>
-                          )
-                        })
-                      ) : (
-                        <div className="flex items-center px-3 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 text-left">
-                          No results found.
-                        </div>
-                      )}
-                    </div>
+                            <span className="rounded-md bg-[#F0F2FB] dark:bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">
+                              {item.type}
+                            </span>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="flex items-center px-3 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 text-left">
+                        No results found.
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -431,7 +427,7 @@ export function Header() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="absolute left-0 right-0 top-full mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-955 z-50 select-none"
+                className="absolute left-0 right-0 top-full mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900 z-50 select-none"
               >
                 {searchVal.trim() === '' ? (
                   // 1. STATE: EMPTY INPUT (Show History and Trending)
