@@ -20,7 +20,7 @@ interface ShareAccessModalProps {
   isOpen: boolean
   onClose: () => void
   fileId?: string
-  fileName: string
+  fileName?: string
   collaborators?: Collaborator[]
   onCollaboratorsChange?: (collaborators: Collaborator[]) => void
   generalAccess?: 'restricted' | 'public'
@@ -28,6 +28,11 @@ interface ShareAccessModalProps {
   showToast?: (msg: string) => void // optional callback
   initialCollaborators?: Collaborator[] // backward compatibility
   onShareSubmit?: (email: string, permission: 'Viewer' | 'Editor') => void // backward compatibility
+  folderId?: string
+  folderName?: string
+  owner?: string
+  type?: 'file' | 'folder'
+  permission?: string
 }
 
 const defaultCollaborators: Collaborator[] = [
@@ -57,7 +62,7 @@ const defaultCollaborators: Collaborator[] = [
 export function ShareAccessModal({
   isOpen,
   onClose,
-  fileId = 'default-file',
+  fileId,
   fileName,
   collaborators,
   onCollaboratorsChange,
@@ -65,10 +70,18 @@ export function ShareAccessModal({
   onGeneralAccessChange,
   showToast: customShowToast,
   initialCollaborators,
-  onShareSubmit
+  onShareSubmit,
+  folderId,
+  folderName,
+  owner,
+  type = 'file',
+  permission
 }: ShareAccessModalProps) {
   const toast = useToast()
   const { t } = useTranslation()
+
+  const activeFileId = fileId || folderId || 'default-file'
+  const activeFileName = fileName || folderName || ''
 
   // Advanced settings and inner modal navigation states
   const [isSettingsViewOpen, setIsSettingsViewOpen] = useState(false)
@@ -244,7 +257,7 @@ export function ShareAccessModal({
   }
 
   const handleCopyLink = () => {
-    const link = `https://aistudyhub.app/shared/${fileId}`
+    const link = `https://aistudyhub.app/shared/${activeFileId}`
     navigator.clipboard.writeText(link)
     triggerToast(t.shareModal.copiedLink)
   }
@@ -357,7 +370,7 @@ export function ShareAccessModal({
                 {/* Modal Header */}
                 <div className="flex justify-between items-center pb-2 shrink-0 text-left">
                   <h2 id="share-modal-title" className="text-xl font-bold tracking-tight truncate pr-4 text-slate-900 dark:text-slate-100">
-                    {t.shareModal.title} "{fileName}"
+                    {t.shareModal.title} "{activeFileName}"
                   </h2>
                   <div className="flex items-center gap-2">
                     <button
