@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { useState } from 'react'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
 
 const INITIAL_DUPLICATES = [
   {
@@ -69,8 +71,11 @@ export function StorageCleanupPage() {
     }, 2000)
   }
 
-  const usedGB = 8.5
-  const totalGB = 15
+  const user = useAuthStore((s) => s.user)
+  const isPro = user?.plan === 'pro'
+  
+  const usedGB = isPro ? 8.5 : 2.4
+  const totalGB = isPro ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
   const percentage = (usedGB / totalGB) * 100
 
   return (
@@ -193,7 +198,7 @@ export function StorageCleanupPage() {
             </div>
 
             <p className="text-sm text-muted mb-6 leading-relaxed">
-              You can free up to <span className="font-bold text-foreground">1.2 GB</span> by removing recommended files.
+              You can free up to <span className="font-bold text-foreground">{isPro ? '1.2 GB' : '0.4 GB'}</span> by removing recommended files.
             </p>
 
             <Button 
