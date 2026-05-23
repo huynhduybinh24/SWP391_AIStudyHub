@@ -60,7 +60,7 @@ export function PricingPage() {
   ], [language, t])
 
   const handleCurrentPlanClick = () => {
-    toast.info(language === 'vi' ? 'Bạn hiện đang sử dụng Gói Miễn phí' : language === 'ja' ? '現在フリープランを利用しています' : language === 'ko' ? '현재 무료 요금제를 사용 중입니다' : 'You are currently on the Free Plan')
+    toast.info(`You are currently on the ${user?.plan === 'pro' ? 'Pro' : 'Free'} Plan`)
   }
 
   const handleUpgradeClick = () => {
@@ -85,16 +85,31 @@ export function PricingPage() {
 
       {/* Pricing Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch w-full max-w-5xl mt-6 px-4">
-        {localizedPricingPlans.map((plan, index) => (
-          <PricingCard
-            key={plan.name}
-            plan={plan}
-            index={index}
-            onCurrentPlanClick={handleCurrentPlanClick}
-            onUpgradeClick={handleUpgradeClick}
-            onContactSalesClick={handleContactSalesClick}
-          />
-        ))}
+        {pricingPlans.map((plan, index) => {
+          let dynamicPlan = { ...plan }
+          if (plan.name === 'Free Plan') {
+            const isFree = !user || user.plan === 'free'
+            dynamicPlan.isCurrent = isFree
+            dynamicPlan.buttonText = isFree ? 'Current Plan' : 'Downgrade'
+          }
+          if (plan.name === 'Pro Plan') {
+            const isPro = user?.plan === 'pro'
+            dynamicPlan.isCurrent = isPro
+            dynamicPlan.buttonText = isPro ? 'Current Plan' : 'Upgrade to Pro'
+            dynamicPlan.buttonVariant = isPro ? 'outline' : 'primary'
+          }
+
+          return (
+            <PricingCard
+              key={dynamicPlan.name}
+              plan={dynamicPlan}
+              index={index}
+              onCurrentPlanClick={handleCurrentPlanClick}
+              onUpgradeClick={handleUpgradeClick}
+              onContactSalesClick={handleContactSalesClick}
+            />
+          )
+        })}
       </div>
 
       {/* Contact Sales Form Modal */}

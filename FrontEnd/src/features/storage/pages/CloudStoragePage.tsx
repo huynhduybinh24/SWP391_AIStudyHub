@@ -22,7 +22,9 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { useState, useRef, useMemo } from 'react'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
-import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
+import { useToast } from '@/components/ui/Toast'
 
 const INITIAL_UPLOADS = [
   {
@@ -57,7 +59,6 @@ const INITIAL_UPLOADS = [
   },
 ]
 
-const TOTAL_STORAGE_GB = 100;
 const SHARED_FILES_GB = 1.2;
 
 const getFileExtensionInfo = (filename: string) => {
@@ -80,12 +81,21 @@ export function CloudStoragePage() {
   const { t } = useTranslation()
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
+  const user = useAuthStore((s) => s.user)
+  const toast = useToast()
+  
+  const TOTAL_STORAGE_GB = user?.plan === 'pro' 
+    ? env.PRO_STORAGE_LIMIT 
+    : user?.plan === 'institutional' 
+      ? 1000 
+      : env.FREE_STORAGE_LIMIT;
+
   const [uploads, setUploads] = useState(INITIAL_UPLOADS)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [baseUsedStorage, setBaseUsedStorage] = useState(74.992)
+  const [baseUsedStorage, setBaseUsedStorage] = useState(!user || user.plan === 'free' ? 7.0 : 25.0)
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
-  const [trashSize, setTrashSize] = useState(2.5)
-  const [tempSize, setTempSize] = useState(1.2)
+  const [trashSize, setTrashSize] = useState(!user || user.plan === 'free' ? 0.5 : 2.5)
+  const [tempSize, setTempSize] = useState(!user || user.plan === 'free' ? 0.3 : 1.2)
 
   const recentUploadsSizeGB = useMemo(() => {
     const totalBytes = uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0)
@@ -101,23 +111,25 @@ export function CloudStoragePage() {
     { name: 'Remaining', value: 100 - usedPercentage, color: isDark ? '#1e293b' : '#e5eeff' },
   ]
 
-  const subjects = useMemo(() => [
-    { name: t.myDocuments.compsci, size: `${(45 + recentUploadsSizeGB).toFixed(1)} GB`, progress: 45 + Math.round(recentUploadsSizeGB), color: '#2563eb' },
-    { name: t.myDocuments.math, size: '15 GB', progress: 15, color: '#8b5cf6' },
-    { name: t.myDocuments.literature || 'Literature', size: '8 GB', progress: 8, color: '#0f766e' },
-  ], [t, recentUploadsSizeGB])
-
-  const formatFileTime = (time: string) => {
-    if (time === 'Just now') return t.common.justNow;
-    if (time === '2 hours ago') return t.common.twoHoursAgo;
-    if (time === 'Yesterday') return t.common.yesterday;
-    return time;
-  }
+  const subjects = [
+    { name: 'Computer Science', size: `${(baseUsedStorage * 0.6 + recentUploadsSizeGB).toFixed(1)} GB`, progress: (baseUsedStorage * 0.6 / TOTAL_STORAGE_GB) * 100 + Math.round(recentUploadsSizeGB), color: '#2563eb' },
+    { name: 'Mathematics', size: `${(baseUsedStorage * 0.3).toFixed(1)} GB`, progress: (baseUsedStorage * 0.3 / TOTAL_STORAGE_GB) * 100, color: '#8b5cf6' },
+    { name: 'Literature', size: `${(baseUsedStorage * 0.1).toFixed(1)} GB`, progress: (baseUsedStorage * 0.1 / TOTAL_STORAGE_GB) * 100, color: '#0f766e' },
+  ]
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
+      const newUploadSizeGB = file.size / (1024 * 1024 * 1024);
+      
+      if (parseFloat(totalUsedGB) + newUploadSizeGB > TOTAL_STORAGE_GB) {
+        toast.error(`Storage limit exceeded. Upgrade to Pro for ${env.PRO_STORAGE_LIMIT}GB storage.`);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
       const { icon, iconColor, bgColor } = getFileExtensionInfo(file.name);
       
       const newUpload = {

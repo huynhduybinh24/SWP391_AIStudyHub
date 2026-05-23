@@ -8,6 +8,7 @@ export const DEV_DEFAULT_USER: AuthUser = {
   name: 'Alex Rivera',
   email: 'alex@example.com',
   role: 'student',
+  plan: 'free',
 }
 
 export const DEV_DEFAULT_TOKENS: AuthTokens = {
