@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string
   role: UserRole
   avatarUrl?: string
+  plan: 'free' | 'pro' | 'institutional'
 }
 
 export interface AuthTokens {
