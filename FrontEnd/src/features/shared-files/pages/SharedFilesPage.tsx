@@ -9,6 +9,7 @@ import WorkspaceFilterBar from '../components/WorkspaceFilterBar'
 import WorkspaceFileList from '../components/WorkspaceFileList'
 import WorkspaceRightPanel, { CommentItem } from '../components/WorkspaceRightPanel'
 import SharedFileViewer from '../components/SharedFileViewer'
+import UploadFilesSection from '../components/UploadFilesSection'
 
 // Modals & Overlays
 import InviteModal from '../components/InviteModal'
@@ -212,6 +213,7 @@ export function SharedFilesPage() {
   const [viewingFile, setViewingFile] = useState<SharedFile | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   // Comments mapping by file ID
   const [commentsMap, setCommentsMap] = useState<Record<string, CommentItem[]>>({
@@ -249,36 +251,6 @@ export function SharedFilesPage() {
   }, [files, viewingFile])
 
   // Action handlers
-  const handleUploadFile = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.onchange = (e) => {
-      const target = e.target as HTMLInputElement
-      if (target.files && target.files.length > 0) {
-        const nativeFile = target.files[0]
-        const ext = nativeFile.name.split('.').pop()?.toLowerCase() || ''
-        const typeMapped = ext === 'pdf' ? 'pdf' : ext === 'xlsx' ? 'xlsx' : ext === 'docx' ? 'docx' : 'txt'
-        
-        const newFile: SharedFile = {
-          id: `file-${Date.now()}`,
-          name: nativeFile.name,
-          owner: 'Alex Rivera',
-          permission: 'Owner',
-          dateShared: 'Just now',
-          type: typeMapped as any,
-          size: `${(nativeFile.size / (1024 * 1024)).toFixed(1)} MB`,
-          description: 'Uploaded study resource.',
-          tags: ['Uploaded', 'Resource'],
-          previewContent: 'Content preview is currently being processed by AI...'
-        }
-        setFiles(prev => [newFile, ...prev])
-        setSelectedFile(newFile)
-        toast.success('File uploaded successfully')
-      }
-    }
-    input.click()
-  }
-
   const handleAIAnalyze = () => {
     setIsAnalyzing(true)
     setTimeout(() => {
@@ -408,6 +380,21 @@ export function SharedFilesPage() {
     )
   }
 
+  // Upload Files Flow
+  if (isUploading) {
+    return (
+      <UploadFilesSection
+        onBack={() => setIsUploading(false)}
+        onSave={(newFile) => {
+          setFiles(prev => [newFile, ...prev])
+          setSelectedFile(newFile)
+          setIsUploading(false)
+          toast.success('File saved successfully')
+        }}
+      />
+    )
+  }
+
   const collaboratorsCountList = [
     {
       id: '1',
@@ -474,7 +461,7 @@ export function SharedFilesPage() {
         {/* Middle main content workspace area */}
         <div className="lg:col-span-8 space-y-6">
           <SharedWorkspaceHeader
-            onUploadClick={handleUploadFile}
+            onUploadClick={() => setIsUploading(true)}
             onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
             onAIAnalyzeClick={handleAIAnalyze}
             isAnalyzing={isAnalyzing}
