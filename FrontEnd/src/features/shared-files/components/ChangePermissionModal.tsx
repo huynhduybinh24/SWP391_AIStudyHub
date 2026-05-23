@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ShieldAlert, Eye, Edit2, MessageSquare } from 'lucide-react'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface ChangePermissionModalProps {
   isOpen: boolean
@@ -17,6 +18,7 @@ export function ChangePermissionModal({
   fileName,
   initialPermission
 }: ChangePermissionModalProps) {
+  const { t } = useTranslation()
   const modalRef = useRef<HTMLDivElement>(null)
   const [permission, setPermission] = useState<'Editor' | 'Commenter' | 'Viewer'>('Viewer')
 
@@ -110,22 +112,22 @@ export function ChangePermissionModal({
             </button>
 
             <div className="flex gap-3.5 items-center mb-5 pb-4 border-b border-slate-100 dark:border-slate-800/80">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 shrink-0">
                 <ShieldAlert className="size-5.5" />
               </div>
               <div className="text-left">
                 <h3 id="permission-title" className="text-base font-bold text-slate-900 dark:text-white">
-                  Change Permission
+                  {t.sharedFiles.changePermission}
                 </h3>
-                <p className="text-xs text-slate-450 dark:text-slate-500 font-medium">
-                  Update sharing rules and access privileges
+                <p className="text-xs text-slate-455 dark:text-slate-550 font-medium text-left">
+                  {t.sharedFiles.changePermissionDesc}
                 </p>
               </div>
             </div>
 
             <div className="mb-5 p-3.5 bg-slate-55/60 dark:bg-slate-800/20 border border-slate-150 dark:border-slate-800/50 rounded-2xl text-left">
-              <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-450 dark:text-slate-500 block mb-1">
-                Resource Name
+              <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-455 dark:text-slate-550 block mb-1">
+                {t.sharedFiles.resourceNameLabel}
               </span>
               <p className="text-sm font-bold text-slate-850 dark:text-slate-200 truncate" title={fileName}>
                 {fileName}
@@ -137,8 +139,8 @@ export function ChangePermissionModal({
                 {/* Editor Option */}
                 <label className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-200 text-left ${
                   permission === 'Editor'
-                    ? 'border-[#3155F6] bg-blue-50/20 dark:border-blue-500/80 dark:bg-blue-950/10'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                    ? 'border-[#3155F6] bg-blue-50/20 dark:border-blue-500/80 dark:bg-blue-955/10'
+                    : 'border-slate-200 dark:border-slate-805 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
                 }`}>
                   <input
                     type="radio"
@@ -150,17 +152,17 @@ export function ChangePermissionModal({
                   />
                   <div className={`flex size-10 items-center justify-center rounded-xl shrink-0 ${
                     permission === 'Editor'
-                      ? 'bg-blue-100 dark:bg-blue-950/40 text-[#3155F6] dark:text-blue-400'
+                      ? 'bg-blue-100 dark:bg-blue-955/40 text-[#3155F6] dark:text-blue-400'
                       : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
                   }`}>
                     <Edit2 className="size-4.5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                      Editor
+                      {t.sharedFiles.editorLabel}
                     </p>
-                    <p className="text-xs text-slate-450 dark:text-slate-500 mt-0.5 leading-snug">
-                      Collaborator can view, download, edit, and comment on this file.
+                    <p className="text-xs text-slate-455 dark:text-slate-500 mt-0.5 leading-snug">
+                      {t.sharedFiles.editorDesc}
                     </p>
                   </div>
                   <div className={`size-5 rounded-full border flex items-center justify-center shrink-0 ${
@@ -177,8 +179,8 @@ export function ChangePermissionModal({
                 {/* Commenter Option */}
                 <label className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-200 text-left ${
                   permission === 'Commenter'
-                    ? 'border-[#3155F6] bg-blue-50/20 dark:border-blue-500/80 dark:bg-blue-950/10'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                    ? 'border-[#3155F6] bg-blue-50/20 dark:border-blue-500/80 dark:bg-blue-955/10'
+                    : 'border-slate-200 dark:border-slate-805 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
                 }`}>
                   <input
                     type="radio"
@@ -190,17 +192,17 @@ export function ChangePermissionModal({
                   />
                   <div className={`flex size-10 items-center justify-center rounded-xl shrink-0 ${
                     permission === 'Commenter'
-                      ? 'bg-blue-100 dark:bg-blue-950/40 text-[#3155F6] dark:text-blue-400'
+                      ? 'bg-blue-100 dark:bg-blue-955/40 text-[#3155F6] dark:text-blue-400'
                       : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
                   }`}>
                     <MessageSquare className="size-4.5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                      Commenter
+                      {t.sharedFiles.commenterLabel}
                     </p>
-                    <p className="text-xs text-slate-450 dark:text-slate-500 mt-0.5 leading-snug">
-                      Collaborator can view and add comments, but cannot edit this file.
+                    <p className="text-xs text-slate-455 dark:text-slate-500 mt-0.5 leading-snug">
+                      {t.sharedFiles.commenterDesc}
                     </p>
                   </div>
                   <div className={`size-5 rounded-full border flex items-center justify-center shrink-0 ${
@@ -217,8 +219,8 @@ export function ChangePermissionModal({
                 {/* Viewer Option */}
                 <label className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-200 text-left ${
                   permission === 'Viewer'
-                    ? 'border-[#3155F6] bg-blue-50/20 dark:border-blue-500/80 dark:bg-blue-950/10'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                    ? 'border-[#3155F6] bg-blue-50/20 dark:border-blue-500/80 dark:bg-blue-955/10'
+                    : 'border-slate-200 dark:border-slate-805 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
                 }`}>
                   <input
                     type="radio"
@@ -230,17 +232,17 @@ export function ChangePermissionModal({
                   />
                   <div className={`flex size-10 items-center justify-center rounded-xl shrink-0 ${
                     permission === 'Viewer'
-                      ? 'bg-blue-100 dark:bg-blue-950/40 text-[#3155F6] dark:text-blue-400'
+                      ? 'bg-blue-100 dark:bg-blue-955/40 text-[#3155F6] dark:text-blue-400'
                       : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
                   }`}>
                     <Eye className="size-4.5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                      Viewer
+                      {t.sharedFiles.viewerLabel}
                     </p>
-                    <p className="text-xs text-slate-450 dark:text-slate-500 mt-0.5 leading-snug">
-                      Collaborator can only view and download this file.
+                    <p className="text-xs text-slate-455 dark:text-slate-500 mt-0.5 leading-snug">
+                      {t.sharedFiles.viewerDesc}
                     </p>
                   </div>
                   <div className={`size-5 rounded-full border flex items-center justify-center shrink-0 ${
@@ -261,13 +263,13 @@ export function ChangePermissionModal({
                   onClick={onClose}
                   className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98] focus:outline-none"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98] focus:outline-none"
                 >
-                  Save Changes
+                  {t.common.save}
                 </button>
               </div>
             </form>

@@ -2,12 +2,13 @@ import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CalendarDays, Sparkles, Share2, Cloud } from 'lucide-react'
 import { StatisticItem } from './StatisticsCard'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface StatisticsDetailModalProps {
   isOpen: boolean
   onClose: () => void
   item: StatisticItem | null
-  onNavigate: (route: string, label: string) => void
+  onNavigate: (route: string, id: string, label: string) => void
 }
 
 export function StatisticsDetailModal({
@@ -17,6 +18,7 @@ export function StatisticsDetailModal({
   onNavigate,
 }: StatisticsDetailModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation()
 
   // Focus trap & ESC key handler
   useEffect(() => {
@@ -65,15 +67,15 @@ export function StatisticsDetailModal({
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm py-2.5 border-b border-slate-100 dark:border-slate-800">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Total Plans</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.totalPlansLabel}</span>
               <span className="font-bold text-slate-900 dark:text-white">12</span>
             </div>
             <div className="flex items-center justify-between text-sm py-2.5 border-b border-slate-100 dark:border-slate-800">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Active Plans</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.activePlansLabel}</span>
               <span className="font-bold text-green-600 dark:text-green-400">8</span>
             </div>
             <div className="flex items-center justify-between text-sm py-2.5">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Completed Plans</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.completedPlansLabel}</span>
               <span className="font-bold text-blue-600 dark:text-blue-400">4</span>
             </div>
           </div>
@@ -82,15 +84,15 @@ export function StatisticsDetailModal({
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm py-2.5 border-b border-slate-100 dark:border-slate-800">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Total Summaries</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.totalSummariesLabel}</span>
               <span className="font-bold text-slate-900 dark:text-white">86</span>
             </div>
             <div className="flex items-center justify-between text-sm py-2.5 border-b border-slate-100 dark:border-slate-800">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Generated This Month</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.generatedThisMonthLabel}</span>
               <span className="font-bold text-blue-600 dark:text-blue-400">14</span>
             </div>
             <div className="flex items-center justify-between text-sm py-2.5">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Average Per Week</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.averagePerWeekLabel}</span>
               <span className="font-bold text-slate-900 dark:text-slate-100">3.5</span>
             </div>
           </div>
@@ -99,15 +101,15 @@ export function StatisticsDetailModal({
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm py-2.5 border-b border-slate-100 dark:border-slate-800">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Total Shared Files</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.totalSharedFilesLabel}</span>
               <span className="font-bold text-slate-900 dark:text-white">24</span>
             </div>
             <div className="flex items-center justify-between text-sm py-2.5 border-b border-slate-100 dark:border-slate-800">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Shared With Me</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.sharedWithMeLabel}</span>
               <span className="font-bold text-amber-600 dark:text-amber-400">15</span>
             </div>
             <div className="flex items-center justify-between text-sm py-2.5">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Shared By Me</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.sharedByMeLabel}</span>
               <span className="font-bold text-blue-600 dark:text-blue-400">9</span>
             </div>
           </div>
@@ -116,15 +118,15 @@ export function StatisticsDetailModal({
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm py-2 border-b border-slate-100 dark:border-slate-800">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Used Storage</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.usedStorageLabel}</span>
               <span className="font-bold text-slate-900 dark:text-white">18 GB</span>
             </div>
             <div className="flex items-center justify-between text-sm py-2 border-b border-slate-100 dark:border-slate-800">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Total Limit</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.totalLimitLabel}</span>
               <span className="font-bold text-slate-900 dark:text-white">50 GB</span>
             </div>
             <div className="flex items-center justify-between text-sm py-2">
-              <span className="font-semibold text-slate-500 dark:text-slate-400">Usage Ratio</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">{t.profile.usageRatioLabel}</span>
               <span className="font-bold text-blue-600 dark:text-blue-400">36%</span>
             </div>
             <div className="w-full pt-1">
@@ -142,15 +144,15 @@ export function StatisticsDetailModal({
   const getActionBtnLabel = () => {
     switch (item.id) {
       case 'studyPlans':
-        return 'Go to Study Plans'
+        return t.profile.goToStudyPlans
       case 'aiSummaries':
-        return 'Go to AI Summaries'
+        return t.profile.goToAISummaries
       case 'sharedFiles':
-        return 'Go to Shared Files'
+        return t.profile.goToSharedFiles
       case 'storageUsed':
-        return 'Go to Cloud Storage'
+        return t.profile.goToCloudStorage
       default:
-        return 'Go to Feature'
+        return t.profile.goToFeatureText
     }
   }
 
@@ -211,10 +213,10 @@ export function StatisticsDetailModal({
               </div>
               <div>
                 <h3 id="detail-modal-title" className="text-base font-bold text-slate-900 dark:text-white">
-                  {item.label} Details
+                  {t.profile.detailsSuffix(item.label)}
                 </h3>
                 <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                  Detailed usage statistics & metrics
+                  {t.profile.detailsSub}
                 </p>
               </div>
             </div>
@@ -231,11 +233,11 @@ export function StatisticsDetailModal({
                 onClick={onClose}
                 className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
               >
-                Close
+                {t.common.close}
               </button>
               <button
                 type="button"
-                onClick={() => onNavigate(item.route, item.label)}
+                onClick={() => onNavigate(item.route, item.id, item.label)}
                 className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98]"
               >
                 {getActionBtnLabel()}

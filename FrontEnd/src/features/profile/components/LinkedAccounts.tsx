@@ -4,6 +4,7 @@ import { LinkedAccountCard, LinkedAccount } from './LinkedAccountCard'
 import { LinkedAccountLoginModal } from './LinkedAccountLoginModal'
 import { LinkedAccountManageModal } from './LinkedAccountManageModal'
 import { ConfirmModal } from './ConfirmModal'
+import { useTranslation } from '@/context/LanguageContext'
 
 const defaultLinkedAccounts: LinkedAccount[] = [
   {
@@ -27,6 +28,7 @@ const defaultLinkedAccounts: LinkedAccount[] = [
 ]
 
 export function LinkedAccounts() {
+  const { t, language } = useTranslation()
   const toast = useToast()
 
   // State Management according to specification
@@ -62,7 +64,7 @@ export function LinkedAccounts() {
       )
     )
 
-    toast.success(`${selectedAccount.provider} account connected successfully`)
+    toast.success(t.profile.toastAccountConnected(selectedAccount.provider))
     setLoginModalOpen(false)
     setSelectedAccount(null)
   }
@@ -96,7 +98,7 @@ export function LinkedAccounts() {
     // Update selectedAccount to display the new sync time in current modal open session
     setSelectedAccount((prev) => (prev ? { ...prev, lastSync: nowStr } : null))
 
-    toast.success(`${selectedAccount.provider} account synced successfully`)
+    toast.success(t.profile.toastAccountSynced(selectedAccount.provider))
   }
 
   // Handle click disconnect from manage modal
@@ -122,7 +124,7 @@ export function LinkedAccounts() {
       )
     )
 
-    toast.success(`${selectedAccount.provider} account disconnected`)
+    toast.success(t.profile.toastAccountDisconnected(selectedAccount.provider))
     setDisconnectConfirmOpen(false)
     setManageModalOpen(false)
     setSelectedAccount(null)
@@ -130,7 +132,9 @@ export function LinkedAccounts() {
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 p-6">
-      <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">Linked Accounts</h3>
+      <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">
+        {t.profile.linkedAccountsTitle}
+      </h3>
       <div className="space-y-4">
         {linkedAccounts.map((account) => (
           <LinkedAccountCard
@@ -170,10 +174,10 @@ export function LinkedAccounts() {
         isOpen={disconnectConfirmOpen}
         onClose={() => setDisconnectConfirmOpen(false)}
         onConfirm={handleConfirmDisconnect}
-        title="Disconnect Account"
-        description={`Are you sure you want to disconnect your ${selectedAccount?.provider || ''} account?`}
-        confirmText="Disconnect"
-        cancelText="Cancel"
+        title={t.profile.disconnectTitle}
+        description={t.profile.disconnectConfirm(selectedAccount?.provider || '')}
+        confirmText={t.profile.disconnectBtn}
+        cancelText={t.common.cancel}
       />
     </div>
   )

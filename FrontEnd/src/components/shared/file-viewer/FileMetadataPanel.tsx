@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface FileMetadataPanelProps {
   fileName: string
@@ -19,6 +20,8 @@ export function FileMetadataPanel({
   uploadedAt,
   className
 }: FileMetadataPanelProps) {
+  const { t } = useTranslation()
+
   return (
     <div 
       className={cn(
@@ -61,14 +64,14 @@ export function FileMetadataPanel({
       {/* File telemetry grid */}
       <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800/80 pt-4">
         <div className="space-y-1">
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider">File Size</span>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider">{t.myDocuments.fileSize}</span>
           <p className="text-sm font-bold text-slate-700 dark:text-slate-350 select-all">
             {fileSize}
           </p>
         </div>
 
         <div className="space-y-1">
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider">Uploaded</span>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider">{t.myDocuments.uploadDate}</span>
           <p className="text-sm font-bold text-slate-700 dark:text-slate-350 select-none">
             {uploadedAt.replace('Uploaded ', '')}
           </p>

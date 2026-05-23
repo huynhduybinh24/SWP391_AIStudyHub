@@ -78,6 +78,7 @@ const formatSize = (bytes: number) => {
 }
 
 export function CloudStoragePage() {
+  const { t } = useTranslation()
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const user = useAuthStore((s) => s.user)
@@ -170,9 +171,9 @@ export function CloudStoragePage() {
       {/* Header Area */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Cloud Storage</h1>
+          <h1 className="text-3xl font-bold text-foreground">{t.cloudStorage.title}</h1>
           <p className="text-muted mt-2 text-sm">
-            Manage your study files and storage space in one place.
+            {t.cloudStorage.subtitle}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -180,7 +181,7 @@ export function CloudStoragePage() {
             <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground w-full">
               <Eraser className="size-4 text-muted-foreground mr-1" />
               <div className="leading-tight">
-                Clean Up<br />Storage
+                {t.cloudStorage.cleanUp}
               </div>
             </Button>
           </Link>
@@ -188,7 +189,7 @@ export function CloudStoragePage() {
             <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground w-full">
               <FolderSearch className="size-4 text-muted-foreground mr-1" />
               <div className="leading-tight">
-                Storage<br />Explorer
+                {t.cloudStorage.explorer}
               </div>
             </Button>
           </Link>
@@ -196,14 +197,14 @@ export function CloudStoragePage() {
             <Button variant="secondary" className="h-[52px] px-4 justify-start text-left font-medium text-sm text-foreground w-full">
               <BarChart2 className="size-4 text-muted-foreground mr-1" />
               <div className="leading-tight">
-                Storage<br />Analytics
+                {t.cloudStorage.analytics}
               </div>
             </Button>
           </Link>
           <Button onClick={handleUploadClick} variant="primary" className="h-[52px] px-4 justify-start text-left font-medium text-sm bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-none shadow-sm">
             <Upload className="size-4 mr-1" />
             <div className="leading-tight">
-              Upload<br />File
+              {t.cloudStorage.uploadFile}
             </div>
           </Button>
         </div>
@@ -215,7 +216,7 @@ export function CloudStoragePage() {
           <CardContent className="p-4 flex flex-col gap-1">
             <div className="flex items-center gap-2 text-muted text-xs font-semibold">
               <HardDrive className="size-4 text-primary" />
-              Total Storage
+              {t.cloudStorage.totalStorage}
             </div>
             <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{TOTAL_STORAGE_GB} GB</div>
           </CardContent>
@@ -224,7 +225,7 @@ export function CloudStoragePage() {
           <CardContent className="p-4 flex flex-col gap-1">
             <div className="flex items-center gap-2 text-muted text-xs font-semibold">
               <FileText className="size-4 text-[#8b5cf6]" />
-              Used Storage
+              {t.cloudStorage.usedStorage}
             </div>
             <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{totalUsedGB} GB</div>
           </CardContent>
@@ -233,7 +234,7 @@ export function CloudStoragePage() {
           <CardContent className="p-4 flex flex-col gap-1">
             <div className="flex items-center gap-2 text-muted text-xs font-semibold">
               <Cloud className="size-4 text-[#0ea5e9]" />
-              Remaining
+              {t.cloudStorage.remaining}
             </div>
             <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{remainingGB} GB</div>
           </CardContent>
@@ -242,7 +243,7 @@ export function CloudStoragePage() {
           <CardContent className="p-4 flex flex-col gap-1">
             <div className="flex items-center gap-2 text-muted text-xs font-semibold">
               <FolderOpen className="size-4 text-[#2563eb]" />
-              Shared Files
+              {t.cloudStorage.sharedFiles}
             </div>
             <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{SHARED_FILES_GB} GB</div>
           </CardContent>
@@ -254,15 +255,15 @@ export function CloudStoragePage() {
         {/* Left Column - Recent Uploads */}
         <Card className="lg:col-span-2 flex flex-col">
           <div className="flex items-center justify-between p-5 border-b border-border">
-            <h2 className="font-bold text-foreground text-[15px]">Recent Uploads</h2>
+            <h2 className="font-bold text-foreground text-[15px]">{t.cloudStorage.recentUploads}</h2>
             <Link to="/dashboard/storage/explorer" className="text-primary text-sm font-medium hover:underline">
-              View All
+              {t.dashboard.viewAll}
             </Link>
           </div>
           <div className="flex flex-col">
             {uploads.length === 0 ? (
               <div className="p-8 text-center text-muted text-sm">
-                No recent uploads.
+                {t.cloudStorage.noRecentUploads}
               </div>
             ) : (
               uploads.map((file, i) => (
@@ -280,13 +281,13 @@ export function CloudStoragePage() {
                       {file.name}
                     </span>
                     <span className="text-muted text-xs mt-0.5">
-                      {formatSize(file.sizeBytes)} • {file.time}
+                      {formatSize(file.sizeBytes)} • {formatFileTime(file.time)}
                     </span>
                   </div>
                   <button 
                     onClick={() => handleDelete(file.id)}
                     className="p-2 text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Delete file"
+                    title={t.common.deleteDoc || t.common.delete}
                   >
                     <Trash2 className="size-4" />
                   </button>
@@ -324,21 +325,21 @@ export function CloudStoragePage() {
             </div>
             
             <h3 className="font-bold text-foreground text-[15px] mt-4">
-              {totalUsedGB} GB of {TOTAL_STORAGE_GB} GB used
+              {t.cloudStorage.usedOfText(totalUsedGB, TOTAL_STORAGE_GB)}
             </h3>
             <p className="text-muted text-xs mt-1.5 mb-6 max-w-[200px]">
-              You're approaching your limit.
+              {t.cloudStorage.approachingLimit}
             </p>
             
             <Button onClick={() => setIsManageModalOpen(true)} variant="secondary" className="w-full text-[#2563eb] bg-[#f0f4ff] border-none hover:bg-[#e0e8ff] dark:bg-blue-950/30 dark:hover:bg-blue-950/50 dark:text-blue-400">
-              Manage Storage
+              {t.cloudStorage.manageStorage}
             </Button>
           </Card>
 
           {/* Storage by Subject Card */}
           <Card>
             <div className="p-5 border-b border-border">
-              <h2 className="font-bold text-foreground text-[15px]">Storage by Subject</h2>
+              <h2 className="font-bold text-foreground text-[15px]">{t.cloudStorage.storageBySubject}</h2>
             </div>
             <div className="p-5 flex flex-col gap-5">
               {subjects.map((subject) => (
@@ -366,22 +367,22 @@ export function CloudStoragePage() {
       <Modal
         isOpen={isManageModalOpen}
         onClose={() => setIsManageModalOpen(false)}
-        title="Manage Storage"
-        description="Review your storage usage and clean up space."
+        title={t.cloudStorage.manageStorage}
+        description={t.cloudStorage.manageStorageDesc}
       >
         <div className="flex flex-col gap-4 mt-2">
           {trashSize === 0 && tempSize === 0 ? (
             <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center justify-center font-medium border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
-              Your storage is optimized!
+              {t.cloudStorage.optimized}
             </div>
           ) : (
             <div className="bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/30 rounded-lg p-4 shadow-sm text-amber-700 dark:text-amber-400">
               <div className="flex items-center gap-2 font-bold mb-1">
                 <AlertTriangle className="size-4" />
-                Recommendations
+                {t.cloudStorage.recommendations}
               </div>
               <p className="text-sm text-amber-600/80 dark:text-amber-400/80 mb-4">
-                You can free up to {(trashSize + tempSize).toFixed(1)} GB of space by clearing these items.
+                {t.cloudStorage.freeUpText((trashSize + tempSize).toFixed(1))}
               </p>
               
               <div className="flex flex-col gap-3">
@@ -392,8 +393,8 @@ export function CloudStoragePage() {
                         <Trash className="size-4 text-amber-700 dark:text-amber-400" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-[14px] text-foreground">Empty Trash</h4>
-                        <p className="text-xs text-muted">Free up {trashSize.toFixed(1)} GB</p>
+                        <h4 className="font-semibold text-[14px] text-foreground">{t.cloudStorage.emptyTrash}</h4>
+                        <p className="text-xs text-muted">{t.cloudStorage.freeUpAmount(trashSize.toFixed(1))}</p>
                       </div>
                     </div>
                     <Button 
@@ -404,7 +405,7 @@ export function CloudStoragePage() {
                       variant="secondary" 
                       className="text-danger hover:bg-danger/10 h-8 text-xs font-semibold px-3"
                     >
-                      Empty
+                      {t.cloudStorage.emptyBtn}
                     </Button>
                   </div>
                 )}
@@ -416,8 +417,8 @@ export function CloudStoragePage() {
                         <Archive className="size-4 text-amber-700 dark:text-amber-400" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-[14px] text-foreground">Clear Temp Files</h4>
-                        <p className="text-xs text-muted">Free up {tempSize.toFixed(1)} GB</p>
+                        <h4 className="font-semibold text-[14px] text-foreground">{t.cloudStorage.clearTemp}</h4>
+                        <p className="text-xs text-muted">{t.cloudStorage.freeUpAmount(tempSize.toFixed(1))}</p>
                       </div>
                     </div>
                     <Button 
@@ -428,7 +429,7 @@ export function CloudStoragePage() {
                       variant="secondary" 
                       className="text-primary hover:bg-primary/10 h-8 text-xs font-semibold px-3"
                     >
-                      Clear
+                      {t.cloudStorage.clearBtn}
                     </Button>
                   </div>
                 )}
@@ -438,13 +439,13 @@ export function CloudStoragePage() {
 
           <div className="bg-[#f8fafc] dark:bg-slate-900 rounded-lg p-4 border border-slate-100 dark:border-slate-800 flex items-center justify-between mt-2 shadow-sm">
             <div>
-              <h4 className="font-bold text-[14px] text-foreground">Need more space?</h4>
-              <p className="text-[12px] text-muted mt-0.5">Upgrade to Pro for 1TB of storage.</p>
+              <h4 className="font-bold text-[14px] text-foreground">{t.cloudStorage.needMoreSpace}</h4>
+              <p className="text-[12px] text-muted mt-0.5">{t.cloudStorage.upgradeProDesc}</p>
             </div>
             <Link to="/dashboard/upgrade" onClick={() => setIsManageModalOpen(false)}>
               <Button className="bg-[#3155F6] hover:bg-[#2563eb] text-white gap-1.5 h-9 text-sm px-4">
                 <Zap className="size-3.5" fill="currentColor" />
-                Upgrade
+                {t.cloudStorage.upgradeBtn}
               </Button>
             </Link>
           </div>

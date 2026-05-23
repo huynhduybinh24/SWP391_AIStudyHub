@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Loader2 } from 'lucide-react'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { LinkedAccount } from './LinkedAccountCard'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface LinkedAccountLoginModalProps {
   isOpen: boolean
@@ -16,15 +17,11 @@ interface LinkedAccountLoginModalProps {
   onConnectSuccess: (email: string) => void
 }
 
-const loginSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Invalid email address'),
-  password: z.string().min(1, 'Password is required').min(6, 'Password must be at least 6 characters'),
-  allowAccess: z.boolean().refine((val) => val === true, {
-    message: 'You must allow permissions to connect this account.',
-  }),
-})
-
-type LoginFormInput = z.infer<typeof loginSchema>
+interface LoginFormInput {
+  email: string
+  password: string
+  allowAccess: boolean
+}
 
 export function LinkedAccountLoginModal({
   isOpen,
@@ -33,6 +30,24 @@ export function LinkedAccountLoginModal({
   onConnectSuccess,
 }: LinkedAccountLoginModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+  const { t, language } = useTranslation()
+
+  const loginSchema = useMemo(() => {
+    return z.object({
+      email: z.string().min(1, t.validation.emailRequired).email(t.validation.invalidEmail),
+      password: z.string().min(1, t.validation.passwordRequired).min(6, language === 'vi' ? 'Mật khẩu phải dài ít nhất 6 ký tự' : language === 'ja' ? 'パスワードは6文字以上である必要があります' : language === 'ko' ? '비밀번호는 최소 6자 이상이어야 합니다' : 'Password must be at least 6 characters'),
+      allowAccess: z.boolean().refine((val) => val === true, {
+        message:
+          language === 'vi'
+            ? 'Bạn phải cấp quyền để kết nối tài khoản này.'
+            : language === 'ja'
+            ? 'このアカウントを接続するには権限を許可する必要があります。'
+            : language === 'ko'
+            ? '이 계정을 연결하려면 권한을 허용해야 합니다.'
+            : 'You must allow permissions to connect this account.',
+      }),
+    })
+  }, [t, language])
 
   const {
     register,
@@ -177,7 +192,7 @@ export function LinkedAccountLoginModal({
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute right-6 top-6 text-slate-450 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+              className="absolute right-6 top-6 text-slate-450 hover:text-slate-655 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               aria-label="Close dialog"
             >
               <X className="size-5" />
@@ -189,10 +204,10 @@ export function LinkedAccountLoginModal({
                 {getProviderIcon(account.id)}
               </div>
               <h2 id="login-modal-title" className="text-xl font-bold text-slate-900 dark:text-white">
-                Connect {account.provider} Account
+                {t.profile.connectModalTitle(account.provider)}
               </h2>
               <p className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-1">
-                Log in to link your {account.provider} account with AI Study Hub
+                {t.profile.connectModalSub(account.provider)}
               </p>
             </div>
 
@@ -200,7 +215,7 @@ export function LinkedAccountLoginModal({
               {/* Email Input */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
-                  Email Address
+                  {t.profile.emailLabel}
                 </label>
                 <Input
                   {...register('email')}
@@ -215,7 +230,7 @@ export function LinkedAccountLoginModal({
               {/* Password Input */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
-                  Password
+                  {t.profile.passwordLabel}
                 </label>
                 <Input
                   {...register('password')}
@@ -223,7 +238,7 @@ export function LinkedAccountLoginModal({
                   error={errors.password?.message}
                   aria-describedby={errors.password ? "password-error" : undefined}
                   className="bg-[#f0f4ff]/50 border border-slate-200/50 hover:border-slate-300 dark:bg-slate-800/40 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:ring-offset-0 focus:ring-2 focus:ring-[#3155F6]/20 transition-all font-medium py-3 px-4 rounded-xl"
-                  placeholder="Enter your password"
+                  placeholder="••••••••"
                 />
               </div>
 
@@ -235,7 +250,7 @@ export function LinkedAccountLoginModal({
                   id="allow-access-checkbox"
                   label={
                     <span className="text-xs text-slate-505 dark:text-slate-400 font-medium leading-relaxed">
-                      Allow AI Study Hub to access my profile, files, and sync data
+                      {t.profile.allowAccessLabel}
                     </span>
                   }
                 />
@@ -248,7 +263,7 @@ export function LinkedAccountLoginModal({
                   onClick={onClose}
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all cursor-pointer"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
                 <Button
                   type="submit"
@@ -258,10 +273,10 @@ export function LinkedAccountLoginModal({
                   {isSubmitting ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      Connecting...
+                      {t.profile.connectingBtn}
                     </>
                   ) : (
-                    'Login & Connect'
+                    t.profile.loginConnectBtn
                   )}
                 </Button>
               </div>

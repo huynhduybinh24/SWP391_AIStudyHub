@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { LinkedAccount } from './LinkedAccountCard'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface LinkedAccountManageModalProps {
   isOpen: boolean
@@ -21,6 +22,7 @@ export function LinkedAccountManageModal({
 }: LinkedAccountManageModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   const [isSyncing, setIsSyncing] = useState(false)
+  const { t } = useTranslation()
 
   // Focus trap & ESC key handler
   useEffect(() => {
@@ -109,6 +111,19 @@ export function LinkedAccountManageModal({
     }
   }
 
+  const translatePermission = (perm: string) => {
+    switch (perm) {
+      case 'Read profile':
+        return t.profile.readProfilePerm
+      case 'Access files':
+        return t.profile.accessFilesPerm
+      case 'Sync data':
+        return t.profile.syncDataPerm
+      default:
+        return perm
+    }
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -137,7 +152,7 @@ export function LinkedAccountManageModal({
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute right-6 top-6 text-slate-450 hover:text-slate-650 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+              className="absolute right-6 top-6 text-slate-450 hover:text-slate-655 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               aria-label="Close dialog"
             >
               <X className="size-5" />
@@ -149,11 +164,11 @@ export function LinkedAccountManageModal({
                 {getProviderIcon(account.id)}
               </div>
               <h2 id="manage-modal-title" className="text-xl font-bold text-slate-900 dark:text-white">
-                Manage {account.provider} Connection
+                {t.profile.manageModalTitle(account.provider)}
               </h2>
               <div className="mt-2 flex items-center gap-2">
                 <span className="rounded-full bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 px-2.5 py-0.5 text-xs font-bold">
-                  Connected
+                  {t.profile.connectedStatus}
                 </span>
               </div>
             </div>
@@ -161,28 +176,34 @@ export function LinkedAccountManageModal({
             {/* Details Section */}
             <div className="space-y-4 mb-6">
               <div className="flex items-center justify-between text-sm text-slate-900 dark:text-white">
-                <span className="font-semibold text-slate-400 dark:text-slate-500">Connected Email</span>
+                <span className="font-semibold text-slate-400 dark:text-slate-500">
+                  {t.profile.connectedEmailLabel}
+                </span>
                 <span className="font-bold text-slate-800 dark:text-slate-200 select-all">{account.email}</span>
               </div>
 
               <div className="flex items-center justify-between text-sm text-slate-900 dark:text-white">
-                <span className="font-semibold text-slate-400 dark:text-slate-500">Connection Date</span>
+                <span className="font-semibold text-slate-400 dark:text-slate-500">
+                  {t.profile.connectionDateLabel}
+                </span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {account.connectedAt || 'Not Available'}
+                  {account.connectedAt || t.profile.notAvailable}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-sm text-slate-900 dark:text-white">
-                <span className="font-semibold text-slate-400 dark:text-slate-500">Last Synced</span>
+                <span className="font-semibold text-slate-400 dark:text-slate-500">
+                  {t.profile.lastSyncedLabel}
+                </span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {account.lastSync || 'Never Synced'}
+                  {account.lastSync || t.profile.neverSynced}
                 </span>
               </div>
 
               {/* Permissions */}
               <div className="pt-2">
                 <span className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase block mb-2">
-                  Permissions Granted
+                  {t.profile.permissionsGrantedLabel}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {account.permissions.map((perm) => (
@@ -190,7 +211,7 @@ export function LinkedAccountManageModal({
                       key={perm}
                       className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350"
                     >
-                      {perm}
+                      {translatePermission(perm)}
                     </span>
                   ))}
                 </div>
@@ -202,9 +223,9 @@ export function LinkedAccountManageModal({
               <button
                 type="button"
                 onClick={onDisconnectClick}
-                className="bg-red-50 hover:bg-red-100 text-red-650 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-400 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98]"
+                className="bg-red-55 hover:bg-red-100 text-red-650 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-400 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98]"
               >
-                Disconnect
+                {t.profile.disconnectBtn}
               </button>
               
               <div className="flex items-center gap-3">
@@ -213,7 +234,7 @@ export function LinkedAccountManageModal({
                   onClick={onClose}
                   className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-505 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all cursor-pointer"
                 >
-                  Close
+                  {t.common.close}
                 </button>
                 <Button
                   type="button"
@@ -224,12 +245,12 @@ export function LinkedAccountManageModal({
                   {isSyncing ? (
                     <>
                       <Loader2 className="size-3.5 animate-spin" />
-                      Syncing...
+                      {t.profile.syncingBtn}
                     </>
                   ) : (
                     <>
                       <RefreshCw className="size-3.5" />
-                      Sync Now
+                      {t.profile.syncNowBtn}
                     </>
                   )}
                 </Button>

@@ -3,6 +3,7 @@ import { FileText, FileSpreadsheet, Folder, MoreVertical, Eye, Edit2, Star, Imag
 import { cn } from '@/lib/utils'
 import { SharedFile } from './SharedFilesTable'
 import { FileActionsDropdown } from './FileActionsDropdown'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface WorkspaceFileCardProps {
   file: SharedFile
@@ -19,8 +20,8 @@ interface WorkspaceFileCardProps {
   onDownload: () => void
   onShareAccess: () => void
   onRename: () => void
-  onChangePermission: () => void
-  onRemoveAccess: () => void
+  onChangePermission: (file: SharedFile) => void
+  onRemoveAccess: (file: SharedFile) => void
 }
 
 export function WorkspaceFileCard({
@@ -41,6 +42,7 @@ export function WorkspaceFileCard({
   onChangePermission,
   onRemoveAccess
 }: WorkspaceFileCardProps) {
+  const { t, language } = useTranslation()
   const buttonRef = useRef<HTMLButtonElement>(null)
   
   const getFileIcon = (type: SharedFile['type']) => {
@@ -82,18 +84,22 @@ export function WorkspaceFileCard({
   }
 
   const getPermissionBadge = (perm: SharedFile['permission']) => {
+    const ownerText = language === 'vi' ? 'Chủ sở hữu' : (language === 'ja' ? '所有者' : (language === 'ko' ? '소유자' : 'Owner'))
+    const editorText = t.sharedFiles.editorLabel || 'Editor'
+    const viewerText = t.sharedFiles.viewerLabel || 'Viewer'
+
     switch (perm) {
       case 'Owner':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-            Owner
+            {ownerText}
           </span>
         )
       case 'Editor':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-100/30 dark:border-emerald-900/20">
             <Edit2 className="size-2.5" />
-            Editor
+            {editorText}
           </span>
         )
       case 'View Only':
@@ -101,10 +107,22 @@ export function WorkspaceFileCard({
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#3155F6] dark:bg-blue-955/30 dark:text-blue-400 border border-blue-100/30 dark:border-blue-900/20">
             <Eye className="size-2.5" />
-            Viewer
+            {viewerText}
           </span>
         )
+      default:
+        return null
     }
+  }
+
+  const formatSharedDate = (dateStr: string) => {
+    if (dateStr === '2h ago') {
+      return language === 'vi' ? '2 giờ trước' : (language === 'ja' ? '2時間前' : (language === 'ko' ? '2시간 전' : '2h ago'))
+    }
+    if (dateStr.includes('Oct')) {
+      return language === 'vi' ? `Được chia sẻ ${dateStr}` : (language === 'ja' ? `共有日時 ${dateStr}` : (language === 'ko' ? `공유됨 ${dateStr}` : `Shared ${dateStr}`))
+    }
+    return dateStr
   }
 
   const handleDoubleClick = (e: React.MouseEvent) => {
@@ -119,9 +137,9 @@ export function WorkspaceFileCard({
         onClick={onSelect}
         onDoubleClick={handleDoubleClick}
         className={cn(
-          "group relative flex items-center justify-between rounded-3xl border p-4 transition-all duration-200 cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 overflow-visible",
+          "group relative flex items-center justify-between rounded-3xl border p-4 transition-all duration-300 ease-out cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 overflow-visible",
           isSelected 
-            ? "bg-blue-50/20 dark:bg-blue-950/10 border-blue-600 dark:border-blue-500 ring-1 ring-blue-500" 
+            ? "bg-blue-50/20 dark:bg-blue-955/10 border-blue-600 dark:border-blue-500 ring-1 ring-blue-500" 
             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
         )}
       >
@@ -133,7 +151,7 @@ export function WorkspaceFileCard({
           
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="truncate text-sm font-extrabold text-slate-850 dark:text-slate-100">
+              <h3 className="truncate text-sm font-extrabold text-slate-855 dark:text-slate-100">
                 {file.name}
               </h3>
               
@@ -151,13 +169,13 @@ export function WorkspaceFileCard({
             {/* Sub description details */}
             <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 mt-1 text-[11px] font-semibold text-slate-450 dark:text-slate-400 leading-none">
               <span className="flex items-center gap-1.5">
-                <span className="size-4.5 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center font-bold text-[9px] text-slate-600 dark:text-slate-300">
+                <span className="size-4.5 rounded-full bg-slate-100 dark:bg-slate-855 flex items-center justify-center font-bold text-[9px] text-slate-600 dark:text-slate-300">
                   {file.owner ? file.owner.charAt(0) : 'A'}
                 </span>
                 <span>{file.owner || 'Alex Chen'}</span>
               </span>
               <span className="text-slate-300 dark:text-slate-755 font-black">&bull;</span>
-              <span>{file.dateShared.includes('ago') ? file.dateShared : `Shared ${file.dateShared}`}</span>
+              <span>{formatSharedDate(file.dateShared)}</span>
               <span className="text-slate-300 dark:text-slate-755 font-black">&bull;</span>
               <div>{getPermissionBadge(file.permission)}</div>
             </div>
@@ -179,7 +197,7 @@ export function WorkspaceFileCard({
 
           {file.name.includes('Notes') && (
             <span className="rounded-md bg-blue-50/70 dark:bg-blue-955 border border-blue-100/50 dark:border-blue-900/50 px-2.5 py-0.5 text-[9px] font-black tracking-wider text-[#3155F6] dark:text-blue-400">
-              SUMMARY
+              {t.fileViewer.summary.toUpperCase()}
             </span>
           )}
 
@@ -218,9 +236,9 @@ export function WorkspaceFileCard({
       onClick={onSelect}
       onDoubleClick={handleDoubleClick}
       className={cn(
-        "group relative flex flex-col justify-between rounded-3xl border p-5 transition-all duration-200 cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 min-h-[160px] overflow-visible",
+        "group relative flex flex-col justify-between rounded-3xl border p-5 transition-all duration-300 ease-out cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 min-h-[160px] overflow-visible",
         isSelected 
-          ? "bg-blue-50/20 dark:bg-blue-950/10 border-blue-600 dark:border-blue-500 ring-1 ring-blue-500" 
+          ? "bg-blue-50/20 dark:bg-blue-955/10 border-blue-600 dark:border-blue-500 ring-1 ring-blue-500" 
           : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
       )}
     >
@@ -270,11 +288,11 @@ export function WorkspaceFileCard({
         </h3>
         
         <div className="flex items-center justify-between mt-2.5">
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold truncate max-w-[120px]">
+          <span className="text-[10px] text-slate-400 dark:text-slate-550 font-bold truncate max-w-[120px]">
             {file.owner || 'Alex Rivera'}
           </span>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold shrink-0">
-            {file.dateShared.includes('ago') ? file.dateShared : file.dateShared}
+          <span className="text-[10px] text-slate-400 dark:text-slate-550 font-bold shrink-0">
+            {formatSharedDate(file.dateShared)}
           </span>
         </div>
       </div>
@@ -283,7 +301,7 @@ export function WorkspaceFileCard({
         <div>{getPermissionBadge(file.permission)}</div>
         {file.name.includes('Notes') && (
           <span className="rounded-md bg-blue-50/70 dark:bg-blue-955 border border-blue-100/50 dark:border-blue-900/50 px-2 py-0.5 text-[8px] font-black tracking-wider text-[#3155F6] dark:text-blue-400">
-            SUMMARY
+            {t.fileViewer.summary.toUpperCase()}
           </span>
         )}
       </div>

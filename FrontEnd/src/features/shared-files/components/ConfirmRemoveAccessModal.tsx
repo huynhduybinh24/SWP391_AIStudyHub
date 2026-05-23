@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, AlertTriangle } from 'lucide-react'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface ConfirmRemoveAccessModalProps {
   isOpen: boolean
@@ -15,6 +16,7 @@ export function ConfirmRemoveAccessModal({
   onConfirm,
   fileName
 }: ConfirmRemoveAccessModalProps) {
+  const { t, language } = useTranslation()
   const modalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -90,15 +92,15 @@ export function ConfirmRemoveAccessModal({
             </button>
 
             <div className="flex gap-4 items-start mb-5 text-left">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 shrink-0">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-red-50 dark:bg-red-955/40 text-red-600 dark:text-red-400 shrink-0">
                 <AlertTriangle className="size-5.5" />
               </div>
               <div className="space-y-1.5 flex-1 min-w-0">
                 <h3 id="confirm-remove-title" className="text-base font-bold text-slate-900 dark:text-white">
-                  Remove access?
+                  {t.sharedFiles.removeAccess}?
                 </h3>
                 <p className="text-sm text-slate-550 dark:text-slate-400 font-semibold leading-relaxed">
-                  Are you sure you want to remove access to &ldquo;{fileName}&rdquo;? This action cannot be undone.
+                  {language === 'vi' ? `Bạn có chắc chắn muốn xóa quyền truy cập của "${fileName}"? Hành động này không thể hoàn tác.` : (language === 'ja' ? `「${fileName}」へのアクセス権を本当に削除しますか？この操作は取り消せません。` : (language === 'ko' ? `"${fileName}"에 대한 액세스 권한을 제거하시겠습니까? 이 작업은 되돌릴 수 없습니다.` : `Are you sure you want to remove access to "${fileName}"? This action cannot be undone.`))}
                 </p>
               </div>
             </div>
@@ -107,16 +109,16 @@ export function ConfirmRemoveAccessModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98] focus:outline-none"
+                className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-805 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98] focus:outline-none"
               >
-                Cancel
+                {t.common.cancel}
               </button>
               <button
                 type="button"
                 onClick={onConfirm}
                 className="bg-red-650 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-red-600/10 active:scale-[0.98] focus:outline-none border-none"
               >
-                Remove Access
+                {t.sharedFiles.removeBtn}
               </button>
             </div>
           </motion.div>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { Sparkles, FileText, Send, MessageSquare } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { SharedFile } from './SharedFilesTable'
 

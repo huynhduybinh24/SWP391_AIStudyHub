@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -6,32 +6,19 @@ import { CreditCard, HelpCircle, Lock, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PaymentInput } from './PaymentInput'
 import { useToast } from '@/components/ui/Toast'
-
-// Form validation schema with Zod
-const checkoutSchema = z.object({
-  cardholderName: z.string().min(1, 'Cardholder name is required'),
-  cardNumber: z
-    .string()
-    .min(1, 'Card number is required')
-    .refine((val) => val.replace(/\s/g, '').length === 16, {
-      message: 'Card number must be 16 digits',
-    }),
-  expiryDate: z
-    .string()
-    .min(1, 'Expiry date is required')
-    .regex(/^(0[1-9]|1[0-2])\/([0-9]{2})$/, 'Expiry must be MM/YY'),
-  cvv: z
-    .string()
-    .min(1, 'CVV is required')
-    .regex(/^\d{3,4}$/, 'CVV must be 3 or 4 digits'),
-})
-
-type CheckoutFormValues = z.infer<typeof checkoutSchema>
+import { useTranslation } from '@/context/LanguageContext'
 
 interface CheckoutFormProps {
   selectedProvider: 'apple' | 'google' | 'paypal' | null
   onFocusCard: () => void
   onSuccess: (method: 'Credit Card' | 'Apple Pay' | 'Google Pay' | 'PayPal') => void
+}
+
+type CheckoutFormValues = {
+  cardholderName: string
+  cardNumber: string
+  expiryDate: string
+  cvv: string
 }
 
 export function CheckoutForm({
@@ -40,9 +27,31 @@ export function CheckoutForm({
   onSuccess,
 }: CheckoutFormProps) {
   const toast = useToast()
+  const { t } = useTranslation()
   const [isPaying, setIsPaying] = useState(false)
   const [showCvvHelp, setShowCvvHelp] = useState(false)
   const helpRef = useRef<HTMLDivElement>(null)
+
+  // Dynamically localized validation schema
+  const checkoutSchema = useMemo(() => {
+    return z.object({
+      cardholderName: z.string().min(1, t.upgrade.cardholderNameRequired),
+      cardNumber: z
+        .string()
+        .min(1, t.upgrade.cardNumberRequired)
+        .refine((val) => val.replace(/\s/g, '').length === 16, {
+          message: t.upgrade.cardNumberDigits,
+        }),
+      expiryDate: z
+        .string()
+        .min(1, t.upgrade.expiryDateRequired)
+        .regex(/^(0[1-9]|1[0-2])\/([0-9]{2})$/, t.upgrade.expiryDateFormat),
+      cvv: z
+        .string()
+        .min(1, t.upgrade.cvvRequired)
+        .regex(/^\d{3,4}$/, t.upgrade.cvvDigits),
+    })
+  }, [t])
 
   const {
     register,
@@ -88,7 +97,6 @@ export function CheckoutForm({
     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4)
   }
 
-  // Clear express provider selection when user focuses or edits card details
   const handleFocus = () => {
     if (selectedProvider !== null) {
       onFocusCard()
@@ -115,7 +123,7 @@ export function CheckoutForm({
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      toast.success('Payment completed successfully')
+      toast.success(t.upgrade.paymentSuccessToast)
       onSuccess('Credit Card')
       reset()
     } catch (err) {
@@ -137,7 +145,7 @@ export function CheckoutForm({
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      toast.success('Payment completed successfully')
+      toast.success(t.upgrade.paymentSuccessToast)
       onSuccess(methodName as any)
     } catch (err) {
       console.error(err)
@@ -159,9 +167,9 @@ export function CheckoutForm({
     <form onSubmit={handleFormSubmit} className="space-y-5">
       {/* Cardholder Name */}
       <PaymentInput
-        label="Cardholder Name"
+        label={t.upgrade.cardholderNameLabel}
         type="text"
-        placeholder="Name on card"
+        placeholder={t.upgrade.cardholderNamePlaceholder}
         disabled={isPaying}
         error={errors.cardholderName?.message}
         {...register('cardholderName')}
@@ -170,7 +178,7 @@ export function CheckoutForm({
 
       {/* Card Number */}
       <PaymentInput
-        label="Card Number"
+        label={t.upgrade.cardNumberLabel}
         type="text"
         placeholder="0000 0000 0000 0000"
         maxLength={19} // 16 digits + 3 spaces
@@ -185,7 +193,7 @@ export function CheckoutForm({
       <div className="grid grid-cols-2 gap-4">
         {/* Expiry Date */}
         <PaymentInput
-          label="Expiry Date"
+          label={t.upgrade.expiryDateLabel}
           type="text"
           placeholder="MM/YY"
           maxLength={5} // MM/YY
@@ -226,7 +234,7 @@ export function CheckoutForm({
                 className="absolute right-0 bottom-full mb-2.5 z-20 w-64 bg-slate-900 dark:bg-slate-800 text-white dark:text-white border border-slate-800 dark:border-slate-700 rounded-xl p-3 text-[11px] font-semibold shadow-xl leading-relaxed text-left"
               >
                 <div className="absolute right-3.5 top-full w-2.5 h-2.5 bg-slate-900 dark:bg-slate-800 border-r border-b border-slate-800 dark:border-slate-700 rotate-45 -mt-1.5" />
-                The 3 or 4 digit security code is typically located on the back of your card (e.g., VISA, Mastercard) or on the front of your AMEX card.
+                {t.upgrade.cvvHelpLabel}
               </motion.div>
             )}
           </AnimatePresence>
@@ -242,12 +250,12 @@ export function CheckoutForm({
         {isPaying ? (
           <>
             <Loader2 className="size-4 animate-spin" />
-            Processing...
+            {t.upgrade.processing}
           </>
         ) : (
           <>
             <Lock className="size-4" />
-            Pay $132.00
+            {t.upgrade.payAmountBtn('$132.00')}
           </>
         )}
       </button>

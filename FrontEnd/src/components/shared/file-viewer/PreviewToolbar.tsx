@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface PreviewToolbarProps {
   zoomScale: number
@@ -35,6 +36,7 @@ export function PreviewToolbar({
   fileName
 }: PreviewToolbarProps) {
   const [pageInputStr, setPageInputStr] = useState(currentPage.toString())
+  const { t } = useTranslation()
 
   useEffect(() => {
     setPageInputStr(currentPage.toString())
@@ -69,7 +71,7 @@ export function PreviewToolbar({
   return (
     <div 
       className="flex flex-wrap items-center justify-between gap-4 border-b bg-blue-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 px-6 py-4"
-      aria-label="Document Viewer Toolbar"
+      aria-label={t.fileViewer.documentToolbar || "Document Viewer Toolbar"}
     >
       {/* Zoom Controls block */}
       <div className="flex items-center gap-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 px-3.5 py-1.5 rounded-2xl">
@@ -78,12 +80,12 @@ export function PreviewToolbar({
           onClick={onZoomOut}
           disabled={zoomScale <= 50}
           className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 p-1.5 rounded-lg disabled:opacity-40 transition-colors cursor-pointer"
-          title="Zoom Out"
-          aria-label="Zoom Out"
+          title={t.fileViewer.zoomOut || "Zoom Out"}
+          aria-label={t.fileViewer.zoomOut || "Zoom Out"}
         >
           <ZoomOut className="h-4 w-4" />
         </button>
-        <span className="text-xs font-bold text-slate-600 dark:text-slate-350 select-none min-w-[36px] text-center">
+        <span className="text-xs font-bold text-slate-600 dark:text-slate-355 select-none min-w-[36px] text-center">
           {zoomScale}%
         </span>
         <button
@@ -91,8 +93,8 @@ export function PreviewToolbar({
           onClick={onZoomIn}
           disabled={zoomScale >= 200}
           className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 p-1.5 rounded-lg disabled:opacity-40 transition-colors cursor-pointer"
-          title="Zoom In"
-          aria-label="Zoom In"
+          title={t.fileViewer.zoomIn || "Zoom In"}
+          aria-label={t.fileViewer.zoomIn || "Zoom In"}
         >
           <ZoomIn className="h-4 w-4" />
         </button>
@@ -105,7 +107,7 @@ export function PreviewToolbar({
           onClick={handlePrevPage}
           disabled={currentPage === 1}
           className="text-slate-655 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 p-2 rounded-xl border border-slate-200/60 dark:border-slate-700 bg-white dark:bg-slate-900 transition-all shadow-sm cursor-pointer"
-          aria-label="Previous Page"
+          aria-label={t.fileViewer.previousPage || "Previous Page"}
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -120,7 +122,7 @@ export function PreviewToolbar({
             className="w-12 text-center font-bold text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 py-1 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold select-none">
-            of {totalPages}
+            {t.fileViewer.of} {totalPages}
           </span>
         </div>
 
@@ -129,7 +131,7 @@ export function PreviewToolbar({
           onClick={handleNextPage}
           disabled={currentPage === totalPages}
           className="text-slate-655 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 p-2 rounded-xl border border-slate-200/60 dark:border-slate-700 bg-white dark:bg-slate-900 transition-all shadow-sm cursor-pointer"
-          aria-label="Next Page"
+          aria-label={t.fileViewer.nextPage || "Next Page"}
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -141,8 +143,8 @@ export function PreviewToolbar({
           type="button"
           onClick={onPrint}
           className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 p-2.5 rounded-xl border border-slate-250/40 dark:border-slate-700 transition-colors cursor-pointer"
-          title={`Print ${fileName}`}
-          aria-label="Print Document"
+          title={t.fileViewer.printDoc(fileName)}
+          aria-label={t.fileViewer.print}
         >
           <Printer className="h-4 w-4" />
         </button>
@@ -150,8 +152,8 @@ export function PreviewToolbar({
           type="button"
           onClick={onToggleFullscreen}
           className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 p-2.5 rounded-xl border border-slate-250/40 dark:border-slate-700 transition-colors cursor-pointer"
-          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Viewer"}
-          aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen Viewer"}
+          title={isFullscreen ? (t.fileViewer.exitFullscreen || "Exit Fullscreen") : (t.fileViewer.fullscreenViewer || "Fullscreen Viewer")}
+          aria-label={isFullscreen ? (t.fileViewer.exitFullscreen || "Exit Fullscreen") : (t.fileViewer.fullscreenViewer || "Fullscreen Viewer")}
         >
           {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </button>
