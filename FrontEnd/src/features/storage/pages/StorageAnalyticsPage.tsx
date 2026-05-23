@@ -13,21 +13,9 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
-
-const barChartData = [
-  { name: 'Jan', value: 12 },
-  { name: 'Feb', value: 18 },
-  { name: 'Mar', value: 25 },
-  { name: 'Apr', value: 32 },
-  { name: 'May', value: 38 },
-  { name: 'Jun', value: 45.2 },
-]
-
-const pieChartData = [
-  { name: 'Documents', value: 22.1, color: '#2563eb' },
-  { name: 'Media', value: 15.5, color: '#0d9488' },
-  { name: 'Other', value: 7.6, color: '#8b5cf6' },
-]
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
+import { useMemo } from 'react'
 
 export function StorageAnalyticsPage() {
   const navigate = useNavigate()
@@ -35,6 +23,33 @@ export function StorageAnalyticsPage() {
   const isDark = resolvedTheme === 'dark'
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
   const [isMounted, setIsMounted] = useState(false)
+  
+  const user = useAuthStore((s) => s.user)
+  const isPro = user?.plan === 'pro'
+  
+  const totalGb = isPro ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
+  const usedGb = isPro ? 45.2 : 2.4
+  const freeGb = Number((totalGb - usedGb).toFixed(1))
+  const usedPercentage = Math.round((usedGb / totalGb) * 100)
+
+  const barChartData = useMemo(() => {
+    return [
+      { name: 'Jan', value: isPro ? 12 : 1.2 },
+      { name: 'Feb', value: isPro ? 18 : 1.5 },
+      { name: 'Mar', value: isPro ? 25 : 1.8 },
+      { name: 'Apr', value: isPro ? 32 : 2.0 },
+      { name: 'May', value: isPro ? 38 : 2.2 },
+      { name: 'Jun', value: isPro ? 45.2 : 2.4 },
+    ]
+  }, [isPro])
+
+  const pieChartData = useMemo(() => {
+    return [
+      { name: 'Documents', value: isPro ? 22.1 : 1.2, color: '#2563eb' },
+      { name: 'Media', value: isPro ? 15.5 : 0.8, color: '#0d9488' },
+      { name: 'Other', value: isPro ? 7.6 : 0.4, color: '#8b5cf6' },
+    ]
+  }, [isPro])
 
   useEffect(() => {
     setIsMounted(true)
@@ -80,11 +95,11 @@ export function StorageAnalyticsPage() {
               </div>
             </div>
             <div>
-              <div className="text-[28px] font-bold text-foreground leading-none">45.2 GB</div>
+              <div className="text-[28px] font-bold text-foreground leading-none">{usedGb} GB</div>
               <div className="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full transition-all duration-1000" style={{ width: '45.2%' }}></div>
+                <div className="h-full bg-blue-600 rounded-full transition-all duration-1000" style={{ width: `${usedPercentage}%` }}></div>
               </div>
-              <p className="text-[11px] text-muted mt-2 font-medium">of 100 GB Total</p>
+              <p className="text-[11px] text-muted mt-2 font-medium">of {totalGb} GB Total</p>
             </div>
           </CardContent>
         </Card>
@@ -98,7 +113,7 @@ export function StorageAnalyticsPage() {
               </div>
             </div>
             <div>
-              <div className="text-[28px] font-bold text-foreground leading-none">54.8 GB</div>
+              <div className="text-[28px] font-bold text-foreground leading-none">{freeGb} GB</div>
               <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-3 font-medium">Available for new uploads</p>
             </div>
           </CardContent>
@@ -163,8 +178,8 @@ export function StorageAnalyticsPage() {
                       tickLine={false} 
                       tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b' }}
                       tickFormatter={(value) => `${value}G`}
-                      domain={[0, 50]}
-                      ticks={[0, 10, 20, 30, 40, 50]}
+                      domain={[0, totalGb]}
+                      ticks={isPro ? [0, 10, 20, 30, 40, 50] : [0, 2, 4, 6, 8, 10]}
                     />
                     <Tooltip 
                       cursor={{ fill: isDark ? '#0f172a' : '#f8fafc' }}
@@ -245,7 +260,7 @@ export function StorageAnalyticsPage() {
               )}
               <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
                 <span className="text-2xl font-bold text-foreground">
-                  {activeIndex !== undefined && pieChartData[activeIndex] ? pieChartData[activeIndex].value : '45.2'}
+                  {activeIndex !== undefined && pieChartData[activeIndex] ? pieChartData[activeIndex].value : usedGb}
                 </span>
                 <span className="text-[10px] text-muted font-medium mt-0.5">
                   {activeIndex !== undefined ? 'GB Used' : 'GB Total'}
@@ -288,7 +303,7 @@ export function StorageAnalyticsPage() {
             <div>
               <h3 className="font-bold text-foreground text-[15px]">AI Storage Insights</h3>
               <p className="text-muted text-[13px] mt-1 leading-relaxed max-w-3xl">
-                We noticed you have 4.2 GB of duplicate study guides from last semester and several large video files that haven&apos;t been opened in 6 months.
+                We noticed you have {isPro ? '4.2 GB' : '0.4 GB'} of duplicate study guides from last semester and several large video files that haven&apos;t been opened in 6 months.
               </p>
             </div>
           </div>
