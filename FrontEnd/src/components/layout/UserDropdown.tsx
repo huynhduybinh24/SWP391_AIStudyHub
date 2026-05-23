@@ -49,8 +49,8 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
           <img src={profile.avatarUrl} alt="Avatar" className="w-8 h-8 object-cover rounded-full" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-slate-900 dark:text-slate-200 truncate leading-snug">{profile.name}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-snug">{user?.email ?? 'alex.rivera@fpt.edu.vn'}</p>
+          <p className="text-sm font-bold text-foreground dark:text-slate-200 truncate leading-snug">{profile.name}</p>
+          <p className="text-xs text-muted dark:text-slate-500 truncate leading-snug">{user?.email ?? 'alex@example.com'}</p>
         </div>
       </div>
       
@@ -60,8 +60,8 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
         onClick={() => handleNavigate('/dashboard/profile')}
         role="menuitem"
       >
-        <User className="size-4 text-slate-400 dark:text-slate-500" />
-        View Profile
+        <User className="size-4 text-muted dark:text-slate-500" />
+        My Profile
       </button>
       
       <button

@@ -32,7 +32,7 @@ interface DocumentItem {
 const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
   COMPSCI: { title: 'Software Engineering', courseCode: 'CS-402' },
   MATHEMATICS: { title: 'Mathematics', courseCode: 'Calculus II' },
-  BIOLOGY: { title: 'Biology', courseCode: 'Genetics Lab' },
+  BIOLOGY: { title: 'Molecular Biology', courseCode: 'BIO-201' },
   PHYSICS: { title: 'Physics', courseCode: 'PHY-301' },
   PHILOSOPHY: { title: 'Philosophy', courseCode: 'PHIL-101' },
   ECONOMICS: { title: 'Economics', courseCode: 'ECON-201' },
@@ -74,9 +74,9 @@ export function UploadPage() {
   const toast = useToast()
 
   // Form states
-  const [docTitle, setDocTitle] = useState('')
-  const [selectedSubjectKey, setSelectedSubjectKey] = useState<'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'>('COMPSCI') // Default Software Engineering
-  const [description, setDescription] = useState('')
+  const [docTitle, setDocTitle] = useState('Lecture_Notes_Week4')
+  const [selectedSubjectKey, setSelectedSubjectKey] = useState<'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'>('BIOLOGY') // Default Biology / Molecular Biology per Figma
+  const [description, setDescription] = useState('Week 4 lecture covering cellular respiration and metabolic pathways.')
   const [selectedTags, setSelectedTags] = useState<string[]>(['Notes']) // Default 'Notes' selected per Figma
   const [fileType, setFileType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
   const [visibility, setVisibility] = useState<'private' | 'shared' | 'public'>('private')
@@ -86,10 +86,10 @@ export function UploadPage() {
   // File Upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileAttached, setFileAttached] = useState(true) // Start with default mockup pdf file attached
-  const [uploadProgress, setUploadProgress] = useState(65) // Start at 65% per Figma
+  const [uploadProgress, setUploadProgress] = useState(75) // Start at 75% per Figma mockup
   const [uploadComplete, setUploadComplete] = useState(false)
-  const [fileName, setFileName] = useState('Software_Patterns_Notes.pdf')
-  const [fileSize, setFileSize] = useState('4.2 MB')
+  const [fileName, setFileName] = useState('Lecture_Notes_Week4.pdf')
+  const [fileSize, setFileSize] = useState('1.8 MB')
 
   const [isDragOver, setIsDragOver] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -227,7 +227,7 @@ export function UploadPage() {
       setIsProcessing(false)
 
       // Navigate back to Folder View
-      navigate(`/dashboard/documents/subject/${selectedSubjectKey.toLowerCase()}`)
+      navigate(`/dashboard/documents/subject/${selectedSubjectKey}`)
     }, 1200)
   }
 
@@ -265,7 +265,7 @@ export function UploadPage() {
   }
 
   return (
-    <div className="space-y-6 pb-12 animate-fade-in max-w-6xl mx-auto pt-2 px-4 md:px-6">
+    <div className="space-y-6 pb-12 animate-fade-in max-w-[860px] mx-auto pt-2 px-4 md:px-6">
       {/* Hidden native file input */}
       <input
         type="file"
@@ -276,36 +276,30 @@ export function UploadPage() {
       />
 
       {/* Back Link Breadcrumb */}
-      <div>
+      <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={() => navigate('/dashboard/documents')}
-          className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors focus:outline-none w-fit cursor-pointer"
+          className="flex items-center gap-1.5 text-sm font-semibold text-[#5F6E80] hover:text-[#2563eb] transition-colors focus:outline-none w-fit cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Documents
         </button>
       </div>
 
-      {/* Header Title with dynamic badge */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
-          Upload New Document
+      {/* Header Title and Description */}
+      <div className="space-y-1">
+        <h1 className="text-[32px] font-extrabold text-[#0B1A30] tracking-tight">
+          Upload Document
         </h1>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF1FF] dark:bg-blue-950/40 px-3.5 py-1 text-xs font-bold text-[#3155F6] dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/50 transition-all duration-300">
-          <Folder className="h-3.5 w-3.5 fill-[#3155F6]/10" />
-          {subjectInfo.title}
-        </span>
+        <p className="text-sm font-medium text-[#5F6E80]">
+          Add new study materials to your library. AI will automatically generate summaries and flashcards
+        </p>
       </div>
-      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 -mt-2">
-        Add new study materials directly to {subjectInfo.title}.
-      </p>
 
-      {/* Main Grid Content */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6">
-        
-        {/* Left Side: Upload Zone & Progress Card (Width ~42%) */}
-        <div className="lg:col-span-5 space-y-6">
+      {/* Main Single Column Content Card */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white rounded-[24px] border border-[#EAF1FB] p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.015)] space-y-8">
           
           {/* Drag & Drop Area */}
           <div
@@ -314,23 +308,23 @@ export function UploadPage() {
             onDrop={handleDrop}
             onClick={handleBrowseFilesClick}
             className={cn(
-              "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center min-h-[300px] transition-all duration-300 cursor-pointer",
+              "flex flex-col items-center justify-center rounded-[20px] border-2 border-dashed p-10 text-center min-h-[220px] transition-all duration-300 cursor-pointer",
               isDragOver
                 ? "border-[#2563eb] bg-blue-50/20 shadow-inner"
-                : "border-[#C3D2FF] dark:border-slate-800 bg-[#F4F7FF]/55 dark:bg-slate-900/40 hover:bg-[#F4F7FF]/80 dark:hover:bg-slate-900/80"
+                : "border-[#C3D2FF] bg-[#F4F7FF]/35 hover:bg-[#F4F7FF]/55"
             )}
           >
             {/* White Cloud Circle */}
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white dark:bg-slate-800 text-[#2563eb] dark:text-blue-400 shadow-sm mb-5 border border-slate-100/60 dark:border-slate-700">
-              <CloudUpload className="h-6 w-6 stroke-[1.8] text-[#2563eb] dark:text-blue-400" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#EAF1FB] text-[#2563eb] mb-4">
+              <CloudUpload className="h-7 w-7 stroke-[1.8] text-[#2563eb]" />
             </div>
             
-            <h3 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h3 className="text-xl font-extrabold text-[#0B1A30] tracking-tight">
               Drag and drop your files here
             </h3>
             
-            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-2 max-w-[240px] leading-relaxed">
-              Support PDF, DOCX, PPTX, XLSX, PNG,<br />JPG
+            <p className="text-sm font-semibold text-[#8B98A5] mt-1">
+              Support for PDF, DOCX, and PPTX files (Max 50MB)
             </p>
             
             <button
@@ -339,7 +333,7 @@ export function UploadPage() {
                 e.stopPropagation()
                 handleBrowseFilesClick()
               }}
-              className="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-[#2563eb] dark:text-blue-400 font-bold text-xs px-6 py-2.5 shadow-sm transition-all cursor-pointer hover:border-blue-200 dark:hover:border-blue-900"
+              className="mt-5 rounded-xl border border-[#D5E1F2] bg-white hover:bg-slate-50 text-[#2563eb] font-bold text-xs px-6 py-2.5 shadow-sm transition-all cursor-pointer hover:border-blue-200"
             >
               Browse Files
             </button>
@@ -347,77 +341,56 @@ export function UploadPage() {
 
           {/* Active Upload Progress Card */}
           {fileAttached && (
-            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm animate-fade-in select-none flex items-start gap-4">
-              {/* File Icon container */}
-              <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl", getFileTypeStyle())}>
-                {renderPreviewFileIcon()}
-              </div>
-
-              {/* Stack containing metadata, progress and cancel actions */}
-              <div className="flex-1 min-w-0 space-y-2.5">
-                {/* Row 1: Title and Size */}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-bold text-slate-800 dark:text-slate-200 truncate pr-4" title={fileName}>
+            <div className="rounded-xl bg-[#F0F4F9]/60 p-5 shadow-none animate-fade-in select-none relative overflow-hidden">
+              {/* Row: Icon, Filename, Percentage */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* Styled Document Icon */}
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm">
+                    {renderPreviewFileIcon()}
+                  </div>
+                  <span className="font-bold text-[#0B1A30] text-sm truncate pr-4" title={fileName}>
                     {fileName}
                   </span>
-                  <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 shrink-0">
-                    {fileSize}
-                  </span>
                 </div>
-
-                {/* Row 2: Progress Bar */}
-                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className={cn(
-                       "h-full rounded-full transition-all duration-300",
-                      uploadComplete ? "bg-emerald-500" : "bg-[#2563eb]"
-                    )}
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-
-                {/* Row 3: Progress label and Close trigger */}
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className={cn(
-                    uploadComplete ? "text-emerald-600 flex items-center gap-1" : "text-[#2563eb] dark:text-blue-400"
-                  )}>
-                    {uploadComplete ? (
-                      <span className="flex items-center gap-1">
-                        <FileCheck className="h-3.5 w-3.5 text-emerald-500" />
-                        Upload Complete
-                      </span>
-                    ) : (
-                      `Uploading... ${uploadProgress}%`
-                    )}
-                  </span>
-                  
-                  {/* Cancel / Remove Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFileAttached(false)
-                      setSelectedFile(null)
-                    }}
-                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-slate-600 dark:hover:text-slate-350 transition-colors focus:outline-none cursor-pointer"
-                    aria-label="Cancel upload"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                
+                {/* Percentage on Right */}
+                <span className="text-sm font-extrabold text-[#2563eb] shrink-0">
+                  {uploadProgress}%
+                </span>
               </div>
+
+              {/* Progress Bar Row - Spans full width of card */}
+              <div className="w-full bg-[#EAF1FB] rounded-full h-1.5 overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-300",
+                    uploadComplete ? "bg-emerald-500" : "bg-[#2563eb]"
+                  )}
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+
+              {/* Cancel Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setFileAttached(false)
+                  setSelectedFile(null)
+                }}
+                className="absolute top-3 right-3 rounded-full p-1 text-slate-400 hover:bg-slate-200/55 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
+                aria-label="Cancel upload"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             </div>
           )}
-        </div>
 
-        {/* Right Side: Form Fields & AI Processing Card (Width ~58%) */}
-        <div className="lg:col-span-7 space-y-6">
-          
-          {/* Main Card Form */}
-          <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5">
-            
+          {/* Form Fields Stack */}
+          <div className="space-y-6">
             {/* Title Input */}
             <div className="space-y-2">
-              <label htmlFor="upload-title" className="block text-sm font-bold text-slate-700 dark:text-slate-300 select-none">
+              <label htmlFor="upload-title" className="block text-sm font-bold text-[#5F6E80] select-none">
                 Document Title
               </label>
               <input
@@ -428,13 +401,13 @@ export function UploadPage() {
                 placeholder="Enter document title"
                 disabled={isProcessing}
                 required
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F0F4FF]/25 dark:bg-slate-800/50 px-4 py-3 text-sm focus:border-[#2563eb] focus:bg-white dark:focus:bg-slate-850 focus:outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 font-semibold text-slate-800 dark:text-white"
+                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400"
               />
             </div>
 
             {/* Subject Dropdown Select */}
             <div className="space-y-2">
-              <label htmlFor="upload-subject" className="block text-sm font-bold text-slate-700 dark:text-slate-300 select-none">
+              <label htmlFor="upload-subject" className="block text-sm font-bold text-[#5F6E80] select-none">
                 Subject
               </label>
               <div className="relative">
@@ -443,17 +416,17 @@ export function UploadPage() {
                   value={selectedSubjectKey}
                   onChange={(e) => setSelectedSubjectKey(e.target.value as any)}
                   disabled={isProcessing}
-                  className="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F0F4FF]/25 dark:bg-slate-800/50 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-white focus:border-[#2563eb] focus:bg-white dark:focus:bg-slate-850 focus:outline-none transition-all cursor-pointer"
+                  className="w-full appearance-none rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] cursor-pointer"
                 >
-                  <option value="COMPSCI" className="dark:bg-slate-900">Software Engineering</option>
-                  <option value="MATHEMATICS" className="dark:bg-slate-900">Mathematics</option>
-                  <option value="BIOLOGY" className="dark:bg-slate-900">Biology</option>
-                  <option value="PHYSICS" className="dark:bg-slate-900">Physics</option>
-                  <option value="PHILOSOPHY" className="dark:bg-slate-900">Philosophy</option>
-                  <option value="ECONOMICS" className="dark:bg-slate-900">Economics</option>
-                  <option value="GENERAL" className="dark:bg-slate-900">General Studies</option>
+                  <option value="COMPSCI">Software Engineering</option>
+                  <option value="MATHEMATICS">Mathematics</option>
+                  <option value="BIOLOGY">Molecular Biology</option>
+                  <option value="PHYSICS">Physics</option>
+                  <option value="PHILOSOPHY">Philosophy</option>
+                  <option value="ECONOMICS">Economics</option>
+                  <option value="GENERAL">General Studies</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500 dark:text-slate-400">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#5F6E80]">
                   <svg className="fill-current h-4 w-4" viewBox="0 0 20 20">
                     <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                   </svg>
@@ -463,7 +436,7 @@ export function UploadPage() {
 
             {/* Description Textarea */}
             <div className="space-y-2">
-              <label htmlFor="upload-desc" className="block text-sm font-bold text-slate-700 dark:text-slate-300 select-none">
+              <label htmlFor="upload-desc" className="block text-sm font-bold text-[#5F6E80] select-none">
                 Description
               </label>
               <textarea
@@ -472,13 +445,13 @@ export function UploadPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe this study document..."
                 disabled={isProcessing}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F0F4FF]/25 dark:bg-slate-800/50 px-4 py-3 text-sm focus:border-[#2563eb] focus:bg-white dark:focus:bg-slate-850 focus:outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 min-h-[100px] resize-none font-semibold text-slate-800 dark:text-white"
+                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400 min-h-[100px] resize-none"
               />
             </div>
 
             {/* Tags Pills Selection */}
             <div className="space-y-2">
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 select-none">
+              <label className="block text-sm font-bold text-[#5F6E80] select-none">
                 Tags
               </label>
               <div className="flex flex-wrap gap-2 pt-1">
@@ -503,130 +476,125 @@ export function UploadPage() {
                 })}
               </div>
             </div>
+          </div>
 
-            {/* File Type & Visibility Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-              
-              {/* File Type Display */}
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 select-none">
-                  File Type
-                </label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F0F4FF]/25 dark:bg-slate-800/50 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 font-semibold select-none">
-                  <FileText className="h-4.5 w-4.5 text-slate-400 dark:text-slate-500" />
-                  <span>Auto-detected: {fileType.toUpperCase()}</span>
-                </div>
+          {/* File Type & Visibility Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+            
+            {/* File Type Display */}
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-[#5F6E80] select-none">
+                File Type
+              </label>
+              <div className="flex items-center gap-2 rounded-xl border border-[#EAF1FB] bg-white px-4 py-3 text-sm text-slate-700 font-semibold select-none">
+                <FileText className="h-4.5 w-4.5 text-[#5F6E80]" />
+                <span>Auto-detected: {fileType.toUpperCase()}</span>
               </div>
+            </div>
 
-              {/* Visibility Choices */}
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 select-none">
-                  Visibility
+            {/* Visibility Choices */}
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-[#5F6E80] select-none">
+                Visibility
+              </label>
+              <div className="flex items-center gap-4 h-[46px]">
+                   {/* Private Radio */}
+                <label className="relative flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="private"
+                    checked={visibility === 'private'}
+                    onChange={() => setVisibility('private')}
+                    disabled={isProcessing}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                  />
+                  <div className="relative flex items-center justify-center">
+                    <div className={cn(
+                      "h-4.5 w-4.5 rounded-full border bg-white transition-all duration-200",
+                      visibility === 'private' ? "border-[#2563eb] ring-2 ring-blue-50" : "border-slate-300"
+                    )} />
+                    <div className={cn(
+                      "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
+                      visibility === 'private' && "scale-100"
+                    )} />
+                  </div>
+                  <span className={cn(
+                    "text-sm font-bold transition-colors duration-200",
+                    visibility === 'private' ? "text-[#2563eb]" : "text-[#5F6E80]"
+                  )}>
+                    Private
+                  </span>
                 </label>
-                <div className="flex items-center gap-4 h-[46px]">
-                  
-                  {/* Private Radio */}
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      value="private"
-                      checked={visibility === 'private'}
-                      onChange={() => setVisibility('private')}
-                      disabled={isProcessing}
-                      className="sr-only"
-                    />
-                    <div className="relative flex items-center justify-center">
-                      <div className={cn(
-                        "h-4.5 w-4.5 rounded-full border dark:border-slate-600 bg-white dark:bg-slate-800 transition-all duration-200",
-                        visibility === 'private' ? "border-[#2563eb] ring-2 ring-blue-50/20" : "border-slate-300"
-                      )} />
-                      <div className={cn(
-                        "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
-                        visibility === 'private' && "scale-100"
-                      )} />
-                    </div>
-                    <span className={cn(
-                      "text-sm font-bold transition-colors duration-200",
-                      visibility === 'private' ? "text-[#2563eb] dark:text-blue-400" : "text-slate-700 dark:text-slate-300"
-                    )}>
-                      Private
-                    </span>
-                  </label>
 
-                  {/* Shared Radio */}
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      value="shared"
-                      checked={visibility === 'shared'}
-                      onChange={() => setVisibility('shared')}
-                      disabled={isProcessing}
-                      className="sr-only"
-                    />
-                    <div className="relative flex items-center justify-center">
-                      <div className={cn(
-                        "h-4.5 w-4.5 rounded-full border dark:border-slate-600 bg-white dark:bg-slate-800 transition-all duration-200",
-                        visibility === 'shared' ? "border-[#2563eb] ring-2 ring-blue-50/20" : "border-slate-300"
-                      )} />
-                      <div className={cn(
-                        "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
-                        visibility === 'shared' && "scale-100"
-                      )} />
-                    </div>
-                    <span className={cn(
-                      "text-sm font-bold transition-colors duration-200",
-                      visibility === 'shared' ? "text-[#2563eb] dark:text-blue-400" : "text-slate-700 dark:text-slate-300"
-                    )}>
-                      Shared
-                    </span>
-                  </label>
+                {/* Shared Radio */}
+                <label className="relative flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="shared"
+                    checked={visibility === 'shared'}
+                    onChange={() => setVisibility('shared')}
+                    disabled={isProcessing}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                  />
+                  <div className="relative flex items-center justify-center">
+                    <div className={cn(
+                      "h-4.5 w-4.5 rounded-full border bg-white transition-all duration-200",
+                      visibility === 'shared' ? "border-[#2563eb] ring-2 ring-blue-50" : "border-slate-300"
+                    )} />
+                    <div className={cn(
+                      "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
+                      visibility === 'shared' && "scale-100"
+                    )} />
+                  </div>
+                  <span className={cn(
+                    "text-sm font-bold transition-colors duration-200",
+                    visibility === 'shared' ? "text-[#2563eb]" : "text-[#5F6E80]"
+                  )}>
+                    Shared
+                  </span>
+                </label>
 
-                  {/* Public Radio */}
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      value="public"
-                      checked={visibility === 'public'}
-                      onChange={() => setVisibility('public')}
-                      disabled={isProcessing}
-                      className="sr-only"
-                    />
-                    <div className="relative flex items-center justify-center">
-                      <div className={cn(
-                        "h-4.5 w-4.5 rounded-full border dark:border-slate-600 bg-white dark:bg-slate-800 transition-all duration-200",
-                        visibility === 'public' ? "border-[#2563eb] ring-2 ring-blue-50/20" : "border-slate-300"
-                      )} />
-                      <div className={cn(
-                        "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
-                        visibility === 'public' && "scale-100"
-                      )} />
-                    </div>
-                    <span className={cn(
-                      "text-sm font-bold transition-colors duration-200",
-                      visibility === 'public' ? "text-[#2563eb] dark:text-blue-400" : "text-slate-700 dark:text-slate-300"
-                    )}>
-                      Public
-                    </span>
-                  </label>
+                {/* Public Radio */}
+                <label className="relative flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="public"
+                    checked={visibility === 'public'}
+                    onChange={() => setVisibility('public')}
+                    disabled={isProcessing}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                  />
+                  <div className="relative flex items-center justify-center">
+                    <div className={cn(
+                      "h-4.5 w-4.5 rounded-full border bg-white transition-all duration-200",
+                      visibility === 'public' ? "border-[#2563eb] ring-2 ring-blue-50" : "border-slate-300"
+                    )} />
+                    <div className={cn(
+                      "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
+                      visibility === 'public' && "scale-100"
+                    )} />
+                  </div>
+                  <span className={cn(
+                    "text-sm font-bold transition-colors duration-200",
+                    visibility === 'public' ? "text-[#2563eb]" : "text-[#5F6E80]"
+                  )}>
+                    Public
+                  </span>
+                </label>
 
-                </div>
               </div>
-
             </div>
 
           </div>
 
           {/* AI Processing Configuration Card */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-hidden relative">
-            {/* Elegant Indigo-accent top border as seen in Figma */}
-            <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-blue-500 via-[#3155F6] to-indigo-500" />
-            
-            <div className="flex items-center gap-2 mb-4 pt-1">
-              <Sparkles className="h-5 w-5 text-[#2563eb] dark:text-blue-400 animate-pulse" />
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight select-none">
+          <div className="space-y-4 pt-4 border-t border-slate-100">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-[#2563eb] animate-pulse" />
+              <h3 className="text-base font-extrabold text-[#0B1A30] tracking-tight select-none">
                 AI Processing
               </h3>
             </div>
@@ -635,12 +603,19 @@ export function UploadPage() {
               {/* Generate Summary Checkbox Card */}
               <label
                 className={cn(
-                  "flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white dark:bg-slate-900",
+                  "relative flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white",
                   generateSummary
-                    ? "border-blue-100 dark:border-blue-900/50 shadow-xs"
-                    : "border-slate-200 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-805"
+                    ? "border-blue-100 bg-[#F4F7FF]/30 shadow-xs"
+                    : "border-slate-200 hover:bg-slate-50/50"
                 )}
               >
+                <input
+                  type="checkbox"
+                  checked={generateSummary}
+                  onChange={(e) => setGenerateSummary(e.target.checked)}
+                  className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                  disabled={isProcessing}
+                />
                 <div
                   className={cn(
                     "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
@@ -659,27 +634,27 @@ export function UploadPage() {
                     </svg>
                   )}
                 </div>
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                <span className="text-sm font-bold text-[#0B1A30]">
                   Generate summary
                 </span>
-                <input
-                  type="checkbox"
-                  checked={generateSummary}
-                  onChange={(e) => setGenerateSummary(e.target.checked)}
-                  className="sr-only"
-                  disabled={isProcessing}
-                />
               </label>
 
               {/* Create Flashcards Checkbox Card */}
               <label
                 className={cn(
-                  "flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white dark:bg-slate-900",
+                  "relative flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white",
                   createFlashcards
-                    ? "border-blue-100 dark:border-blue-900/50 shadow-xs"
-                    : "border-slate-200 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-805"
+                    ? "border-blue-100 bg-[#F4F7FF]/30 shadow-xs"
+                    : "border-slate-200 hover:bg-slate-50/50"
                 )}
               >
+                <input
+                  type="checkbox"
+                  checked={createFlashcards}
+                  onChange={(e) => setCreateFlashcards(e.target.checked)}
+                  className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                  disabled={isProcessing}
+                />
                 <div
                   className={cn(
                     "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
@@ -698,22 +673,15 @@ export function UploadPage() {
                     </svg>
                   )}
                 </div>
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                <span className="text-sm font-bold text-[#0B1A30]">
                   Create flashcards
                 </span>
-                <input
-                  type="checkbox"
-                  checked={createFlashcards}
-                  onChange={(e) => setCreateFlashcards(e.target.checked)}
-                  className="sr-only"
-                  disabled={isProcessing}
-                />
               </label>
             </div>
           </div>
 
           {/* Action buttons Cancel & Process */}
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
             <button
               type="button"
               onClick={() => navigate('/dashboard/documents')}
@@ -743,8 +711,17 @@ export function UploadPage() {
           </div>
 
         </div>
-
       </form>
+
+      {/* Page Footer */}
+      <div className="flex flex-col sm:flex-row items-center justify-between text-xs font-semibold text-[#8B98A5] pt-12 border-t border-slate-100">
+        <div>© 2024 AI Study Hub. Empowering Deep Learning.</div>
+        <div className="flex items-center gap-6 mt-4 sm:mt-0">
+          <a href="#" className="hover:text-[#2563eb] transition-colors">Privacy Policy</a>
+          <a href="#" className="hover:text-[#2563eb] transition-colors">Terms of Service</a>
+          <a href="#" className="hover:text-[#2563eb] transition-colors">Help Center</a>
+        </div>
+      </div>
     </div>
   )
 }

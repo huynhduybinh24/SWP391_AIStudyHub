@@ -123,17 +123,13 @@ export default function MyDocumentsPage() {
               <FileText className="h-7 w-7 text-[#2563eb] dark:text-blue-400 stroke-[1.8]" />
             </div>
 
-            <div className="flex flex-col">
-              <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+            <div className="flex flex-col gap-1">
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
                 My Documents
               </h1>
-              <div className="flex items-center gap-2 mt-1 flex-wrap text-slate-400">
-                <span className="inline-flex items-center rounded-full bg-[#EBF1FF] px-2.5 py-0.5 text-[10px] font-bold text-[#2563eb] border border-blue-100/50 uppercase tracking-wider dark:bg-blue-955/40 dark:border-blue-900/50 dark:text-blue-400">
-                  {documents.length} FILES
-                </span>
-                <span className="text-slate-350">•</span>
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Personal Study Workspace</span>
-              </div>
+              <p className="text-[13px] md:text-sm font-medium text-slate-500 leading-relaxed max-w-2xl">
+                Manage and organize your study materials with AI. Generate summaries, flashcards, and deep-dives instantly.
+              </p>
             </div>
           </div>
 

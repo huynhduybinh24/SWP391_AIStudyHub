@@ -23,10 +23,48 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
 
+const getFilePreviewPageContent = (pageNum: number) => {
+  if (pageNum === 1) {
+    return {
+      title: "Advanced Neuroscience: Neural Connectivity & Synaptic Plasticity",
+      subtitle: "NEURO-402 SYLLABUS 2024",
+      sectionTitle: "COURSE OVERVIEW",
+      body: "This course explores the fundamental mechanisms of neuronal communication and the dynamic processes of synaptic plasticity. We examine how molecular signaling pathways translate environmental stimuli into long-term changes in neural circuit architecture and behavior.",
+      showBrainImage: true
+    }
+  }
+  if (pageNum === 2) {
+    return {
+      title: "Chapter 1: Neuronal Foundations & Cable Theory",
+      subtitle: "NEURO-402 SYLLABUS 2024",
+      sectionTitle: "1.1 BIOPHYSICAL PROPERTIES",
+      body: "Analyzing passive electrical properties of dendrites and axons. We cover the mathematical formulation of cable equations, input resistance, length constants, and time constants governing electrical attenuation.",
+      showBrainImage: false
+    }
+  }
+  if (pageNum === 3) {
+    return {
+      title: "Chapter 2: Synaptic Transmission Mechanics",
+      subtitle: "NEURO-402 SYLLABUS 2024",
+      sectionTitle: "2.1 CHEMICAL NEUROTRANSMISSION",
+      body: "Detailed exploration of neurotransmitter synthesis, vesicle docking via SNARE complexes, and receptor activation. We contrast ionotropic ligand-gated channels with metabotropic G-protein coupled receptors.",
+      showBrainImage: false
+    }
+  }
+  return {
+    title: `Section ${Math.floor(pageNum / 3) + 1}: Appendix & Advanced Topics`,
+    subtitle: "NEURO-402 SYLLABUS 2024",
+    sectionTitle: `APPENDIX CHECKLIST — PAGE ${pageNum}`,
+    body: "Comprehensive summary of weekly lab assignments, scientific literature discussions, and core diagnostic parameters required for computational neuroscience modeling simulations.",
+    showBrainImage: false
+  }
+}
+
 export function FilePreviewPage() {
   const [zoom, setZoom] = useState(100)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const pageContent = getFilePreviewPageContent(currentPage)
   const [isDownloading, setIsDownloading] = useState(false)
   const [isDownloaded, setIsDownloaded] = useState(false)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
@@ -168,24 +206,26 @@ export function FilePreviewPage() {
               className="bg-white dark:bg-slate-900 w-full max-w-[600px] shadow-sm border border-border dark:border-slate-800 p-6 sm:p-10 flex flex-col h-fit transition-all duration-200"
               style={{ zoom: `${zoom}%` } as React.CSSProperties}
             >
-              <h2 className="text-2xl sm:text-[28px] font-bold leading-tight text-[#1e293b] dark:text-slate-100 mb-1">
-                Advanced Neuroscience: Neural Connectivity & Synaptic Plasticity
+              <h2 className="text-2xl sm:text-[28px] font-bold leading-tight text-[#1e293b] mb-1">
+                {pageContent.title}
               </h2>
               <div className="flex justify-between items-center mb-6 mt-2">
-                <p className="text-[#3b82f6] text-[11px] font-bold tracking-widest uppercase">NEURO-402 SYLLABUS 2024</p>
-                <span className="text-[11px] text-muted font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">PAGE {currentPage}</span>
+                <p className="text-[#3b82f6] text-[11px] font-bold tracking-widest uppercase">{pageContent.subtitle}</p>
+                <span className="text-[11px] text-muted font-bold bg-slate-100 px-2 py-1 rounded">PAGE {currentPage}</span>
               </div>
               
-              <div className="w-full aspect-[2/1] bg-black rounded-lg mb-8 overflow-hidden relative border border-border dark:border-slate-800">
-                <img src="/brain-network.png" alt="Brain network" className="w-full h-full object-cover opacity-90 mix-blend-screen" />
-              </div>
+              {pageContent.showBrainImage && (
+                <div className="w-full aspect-[2/1] bg-black rounded-lg mb-8 overflow-hidden relative border border-border">
+                  <img src="/brain-network.png" alt="Brain network" className="w-full h-full object-cover opacity-90 mix-blend-screen" />
+                </div>
+              )}
               
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-1 h-4 bg-[#3b82f6]"></div>
-                <h3 className="text-[13px] font-bold tracking-widest text-[#1e293b] dark:text-slate-100 uppercase">COURSE OVERVIEW</h3>
+                <h3 className="text-[13px] font-bold tracking-widest text-[#1e293b] uppercase">{pageContent.sectionTitle}</h3>
               </div>
               <p className="text-[13px] text-muted leading-relaxed mb-6">
-                This course explores the fundamental mechanisms of neuronal communication and the dynamic processes of synaptic plasticity. We examine how molecular signaling pathways translate environmental stimuli into long-term changes in neural circuit architecture and behavior.
+                {pageContent.body}
               </p>
             </div>
           </div>
