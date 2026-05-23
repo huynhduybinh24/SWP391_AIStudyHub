@@ -87,7 +87,7 @@ export function PricingPage() {
 
       {/* Pricing Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch w-full max-w-5xl mt-6 px-4">
-        {pricingPlans.map((plan, index) => {
+        {localizedPricingPlans.map((plan, index) => {
           let dynamicPlan = { ...plan }
           if (plan.name === 'Free Plan') {
             const isFree = !user || user.plan === 'free'
