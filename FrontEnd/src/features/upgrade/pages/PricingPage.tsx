@@ -4,11 +4,13 @@ import { PricingCard, type PricingPlan } from '../components/PricingCard'
 import { ContactSalesModal } from '../components/ContactSalesModal'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
 
 export function PricingPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const { t, language } = useTranslation()
+  const user = useAuthStore((state) => state.user)
   const [isContactSalesOpen, setIsContactSalesOpen] = useState(false)
 
   // Localized pricing plans recalculated on language change
