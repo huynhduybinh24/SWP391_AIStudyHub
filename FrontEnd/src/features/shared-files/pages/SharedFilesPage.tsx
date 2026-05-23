@@ -16,7 +16,7 @@ import InviteModal from '../components/InviteModal'
 import AIReportModal from '../components/AIReportModal'
 import SummaryModal from '../components/SummaryModal'
 import QuizModal from '../components/QuizModal'
-import ShareAccessModal from '../components/ShareAccessModal'
+import ShareAccessModal, { Collaborator } from '../components/ShareAccessModal'
 import RenameFileModal from '../components/RenameFileModal'
 import PermissionModal from '../components/PermissionModal'
 import ConfirmModal from '../components/ConfirmModal'
@@ -228,6 +228,71 @@ export function SharedFilesPage() {
     ],
     'file-2': [],
     'file-3': []
+  })
+
+  // Share Access State Management
+  const [fileCollaborators, setFileCollaborators] = useState<Record<string, Collaborator[]>>({
+    'file-1': [
+      {
+        id: 'owner',
+        name: 'Sarah Jenkins',
+        email: 'sarah@example.com',
+        role: 'owner',
+        avatarBg: 'bg-[#0fbf7c]'
+      },
+      {
+        id: '1',
+        name: 'Huynh Duy Binh',
+        email: 'binh@example.com',
+        role: 'editor',
+        avatarBg: 'bg-[#5f6ffc]'
+      },
+      {
+        id: '2',
+        name: 'Ngoc Tan',
+        email: 'tan@example.com',
+        role: 'viewer',
+        avatarBg: 'bg-[#fc9d1c]'
+      }
+    ],
+    'file-2': [
+      {
+        id: 'owner',
+        name: 'David Kim',
+        email: 'david@example.com',
+        role: 'owner',
+        avatarBg: 'bg-[#0fbf7c]'
+      },
+      {
+        id: '1',
+        name: 'Huynh Duy Binh',
+        email: 'binh@example.com',
+        role: 'editor',
+        avatarBg: 'bg-[#5f6ffc]'
+      }
+    ],
+    'file-3': [
+      {
+        id: 'owner',
+        name: 'Emily Chen',
+        email: 'emily@example.com',
+        role: 'owner',
+        avatarBg: 'bg-[#0fbf7c]'
+      },
+      {
+        id: '2',
+        name: 'Ngoc Tan',
+        email: 'tan@example.com',
+        role: 'viewer',
+        avatarBg: 'bg-[#fc9d1c]'
+      }
+    ]
+  })
+
+  const [fileGeneralAccess, setFileGeneralAccess] = useState<Record<string, 'restricted' | 'public'>>({
+    'file-1': 'restricted',
+    'file-2': 'public',
+    'file-3': 'restricted'
   })
 
   // Select Default Biology Notes file on mount
@@ -586,11 +651,34 @@ export function SharedFilesPage() {
       <ShareAccessModal
         isOpen={modals.share}
         onClose={() => setModals(prev => ({ ...prev, share: false }))}
-        onShare={(email, permission) => {
-          toast.success(`Access shared successfully with ${email} as ${permission}`)
-          setModals(prev => ({ ...prev, share: false }))
-        }}
+        fileId={selectedFile?.id}
         fileName={selectedFile?.name || ''}
+        collaborators={selectedFile?.id ? (fileCollaborators[selectedFile.id] || [
+          {
+            id: 'owner',
+            name: selectedFile.owner || 'Alex Rivera',
+            email: `${(selectedFile.owner || 'alex').toLowerCase().replace(' ', '')}@example.com`,
+            role: 'owner',
+            avatarBg: 'bg-[#0fbf7c]'
+          }
+        ]) : []}
+        onCollaboratorsChange={(newCollabs) => {
+          if (selectedFile?.id) {
+            setFileCollaborators(prev => ({
+              ...prev,
+              [selectedFile.id]: newCollabs
+            }))
+          }
+        }}
+        generalAccess={selectedFile?.id ? (fileGeneralAccess[selectedFile.id] || 'restricted') : 'restricted'}
+        onGeneralAccessChange={(type) => {
+          if (selectedFile?.id) {
+            setFileGeneralAccess(prev => ({
+              ...prev,
+              [selectedFile.id]: type
+            }))
+          }
+        }}
       />
 
       <RenameFileModal
