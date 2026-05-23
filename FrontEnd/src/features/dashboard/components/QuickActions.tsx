@@ -2,19 +2,22 @@ import { Link } from 'react-router-dom'
 import { Bot, CalendarDays, Search, Share2, Upload } from 'lucide-react'
 import { CardTitle } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
-
-const actions = [
-  { label: 'Upload', icon: Upload, to: '/dashboard/upload' },
-  { label: 'Search', icon: Search, to: '/dashboard/documents/search' },
-  { label: 'AI Chat', icon: Bot, to: '/dashboard/chat' },
-  { label: 'Shared', icon: Share2, to: '/dashboard/shared' },
-  { label: 'Study Plans', icon: CalendarDays, to: '/dashboard/study-plans' },
-] as const
+import { useTranslation } from '@/context/LanguageContext'
 
 export function QuickActions() {
+  const { t } = useTranslation()
+
+  const actions = [
+    { label: t.dashboard.actionUpload, icon: Upload, to: '/dashboard/upload' },
+    { label: t.dashboard.actionSearch, icon: Search, to: '/dashboard/documents/search' },
+    { label: t.dashboard.actionAIChat, icon: Bot, to: '/dashboard/chat' },
+    { label: t.dashboard.actionShared, icon: Share2, to: '/dashboard/shared' },
+    { label: t.dashboard.actionStudyPlans, icon: CalendarDays, to: '/dashboard/study-plans' },
+  ]
+
   return (
     <section className="col-span-8 space-y-4">
-      <CardTitle>Quick Actions</CardTitle>
+      <CardTitle>{t.dashboard.quickActions}</CardTitle>
       <div className="grid grid-cols-5 gap-3">
         {actions.map(({ label, icon: Icon, to }) => (
           <Link
@@ -35,3 +38,4 @@ export function QuickActions() {
     </section>
   )
 }
+

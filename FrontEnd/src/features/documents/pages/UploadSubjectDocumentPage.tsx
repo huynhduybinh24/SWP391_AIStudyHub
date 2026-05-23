@@ -44,10 +44,13 @@ const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
 
 const AVAILABLE_TAGS = ['Notes', 'Assignment', 'Lecture', 'Midterm', 'Final Exam']
 
+import { useTranslation } from '@/context/LanguageContext'
+
 export function UploadSubjectDocumentPage() {
   const { subjectId } = useParams<{ subjectId: string }>()
   const navigate = useNavigate()
   const { setDocuments, showToast } = useOutletContext<DocumentsLayoutContext>()
+  const { language, t } = useTranslation()
 
   const activeSubjectId = (subjectId || 'GENERAL').toUpperCase()
   const subjectInfo = SUBJECT_MAP[activeSubjectId] || SUBJECT_MAP.GENERAL
@@ -155,11 +158,35 @@ export function UploadSubjectDocumentPage() {
     )
   }
 
+  const getSubjectName = (key: string) => {
+    if (key === 'COMPSCI') return t.myDocuments.compsci
+    if (key === 'MATHEMATICS') return t.myDocuments.math
+    if (key === 'BIOLOGY') return language === 'en' ? 'Molecular Biology' : (language === 'vi' ? 'Sinh học phân tử' : (language === 'ja' ? '分子生物学' : '분자생물학'))
+    const subjectMap: Record<string, Record<string, string>> = {
+      PHYSICS: { en: 'Physics', vi: 'Vật lý', ja: '物理学', ko: '물리학' },
+      PHILOSOPHY: { en: 'Philosophy', vi: 'Triết học', ja: '哲学', ko: '철학' },
+      ECONOMICS: { en: 'Economics', vi: 'Kinh tế học', ja: '経済学', ko: '경제학' },
+      GENERAL: { en: 'General Studies', vi: 'Đại cương', ja: '一般教養', ko: '교양' }
+    }
+    return subjectMap[key]?.[language] || key
+  }
+
+  const getTagName = (tag: string) => {
+    const tagMap: Record<string, Record<string, string>> = {
+      'Notes': { en: 'Notes', vi: 'Ghi chú', ja: 'ノート', ko: '노트' },
+      'Assignment': { en: 'Assignment', vi: 'Bài tập', ja: '課題', ko: '과제' },
+      'Lecture': { en: 'Lecture', vi: 'Bài giảng', ja: '講義', ko: '강의' },
+      'Midterm': { en: 'Midterm', vi: 'Giữa kỳ', ja: '中間試験', ko: '중간고사' },
+      'Final Exam': { en: 'Final Exam', vi: 'Cuối kỳ', ja: '期末試験', ko: '기말고사' }
+    }
+    return tagMap[tag]?.[language] || tag
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!fileAttached) {
-      showToast('Please attach a study document first!')
+      showToast(language === 'en' ? 'Please attach a study document first!' : (language === 'vi' ? 'Vui lòng đính kèm tài liệu học tập trước!' : (language === 'ja' ? '最初に学習ドキュメントを添付してください！' : '먼저 학습 문서를 첨부해 주세요!')))
       return
     }
 
@@ -190,7 +217,7 @@ export function UploadSubjectDocumentPage() {
       setDocuments((prev) => [newDoc, ...prev])
 
       // Toast Success Alert
-      showToast(`Tài liệu "${finalTitle}" được tải lên và xử lý AI thành công!`)
+      showToast(t.toasts.uploadSuccess)
 
       setIsProcessing(false)
 
@@ -243,21 +270,20 @@ export function UploadSubjectDocumentPage() {
         accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.pptx,.ppt"
       />
 
-
-
       {/* Header Title and Description */}
       <div className="space-y-1">
-        <h1 className="text-[32px] font-extrabold text-[#0B1A30] tracking-tight">
-          Upload New Files
+        <h1 className="text-[32px] font-extrabold text-[#0B1A30] tracking-tight dark:text-slate-100">
+          {t.upload.titleFiles}
         </h1>
-        <p className="text-sm font-medium text-[#5F6E80]">
-          Upload and organize your study materials in the cloud for AI analysis.
+        <p className="text-sm font-medium text-[#5F6E80] dark:text-slate-400">
+          {t.upload.subtitleSubject}
         </p>
       </div>
 
       {/* Main Single Column Content Card */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white rounded-[24px] border border-[#EAF1FB] p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.015)] space-y-8">
+
           
           {/* Drag & Drop Area */}
           <div
@@ -293,25 +319,25 @@ export function UploadSubjectDocumentPage() {
               }}
               className="mt-2 rounded-lg bg-[#2563eb] hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 shadow-sm transition-all cursor-pointer"
             >
-              Browse Files
+              {t.upload.browse}
             </button>
 
             <p className="text-xs font-semibold text-[#8B98A5] mt-4">
-              Supported formats: PDF, DOCX, PPTX, TXT (Max 50MB per file)
+              {t.upload.supportFormatSubject}
             </p>
           </div>
 
           {/* Ready to Upload (2) Card */}
           {fileAttached && (
-            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm space-y-4 select-none">
+            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm space-y-4 select-none dark:bg-slate-900 dark:border-slate-800">
               
               {/* Header Title with totals */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="font-extrabold text-[#0B1A30] text-sm">
-                  Ready to Upload (2)
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+                <span className="font-extrabold text-[#0B1A30] text-sm dark:text-slate-200">
+                  {t.upload.readyUpload} (2)
                 </span>
-                <span className="text-xs font-semibold text-[#8B98A5]">
-                  14.2 MB total
+                <span className="text-xs font-semibold text-[#8B98A5] dark:text-slate-500">
+                  14.2 MB {t.upload.total}
                 </span>
               </div>
 
@@ -319,24 +345,24 @@ export function UploadSubjectDocumentPage() {
               <div className="space-y-3">
                 
                 {/* File Item 1: Mocked/Static PDF from Figma mockup */}
-                <div className="relative rounded-xl border border-slate-100 bg-white p-4 flex items-center justify-between shadow-xs">
+                <div className="relative rounded-xl border border-slate-100 bg-white p-4 flex items-center justify-between shadow-xs dark:bg-slate-900 dark:border-slate-800">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-50 border border-rose-100">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-50 border border-rose-100 dark:bg-rose-950/20 dark:border-rose-900/30">
                       <FileText className="h-5 w-5 text-rose-500" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-[#0B1A30] text-sm truncate">
+                      <p className="font-bold text-[#0B1A30] text-sm truncate dark:text-slate-200">
                         Advanced_Calculus_Ch4.pdf
                       </p>
-                      <p className="text-xs font-semibold text-[#8B98A5] mt-0.5">
-                        12.5 MB • Ready
+                      <p className="text-xs font-semibold text-[#8B98A5] mt-0.5 dark:text-slate-500">
+                        12.5 MB &bull; {t.upload.ready}
                       </p>
                     </div>
                   </div>
                   
                   <button
                     type="button"
-                    className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors focus:outline-none"
+                    className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
                     aria-label="Remove file"
                   >
                     <X className="h-4 w-4" />
@@ -344,17 +370,17 @@ export function UploadSubjectDocumentPage() {
                 </div>
 
                 {/* File Item 2: Dynamic Uploading DOCX from Figma mockup */}
-                <div className="relative rounded-xl border border-slate-100 bg-white p-4 flex items-center justify-between shadow-xs overflow-hidden">
+                <div className="relative rounded-xl border border-slate-100 bg-white p-4 flex items-center justify-between shadow-xs overflow-hidden dark:bg-slate-900 dark:border-slate-800">
                   <div className="flex items-center gap-3 min-w-0 pb-1">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 border border-blue-100">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 border border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/30">
                       <FileCode className="h-5 w-5 text-blue-500" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-[#0B1A30] text-sm truncate">
+                      <p className="font-bold text-[#0B1A30] text-sm truncate dark:text-slate-200">
                         {fileName}
                       </p>
-                      <p className="text-xs font-semibold text-[#8B98A5] mt-0.5">
-                        {fileSize} • {uploadComplete ? 'Ready' : 'Uploading...'}
+                      <p className="text-xs font-semibold text-[#8B98A5] mt-0.5 dark:text-slate-500">
+                        {fileSize} &bull; {uploadComplete ? t.upload.ready : t.upload.uploading}
                       </p>
                     </div>
                   </div>
@@ -371,7 +397,7 @@ export function UploadSubjectDocumentPage() {
                         setFileAttached(false)
                         setSelectedFile(null)
                       }}
-                      className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors focus:outline-none"
+                      className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
                       aria-label="Cancel upload"
                     >
                       <X className="h-4 w-4" />
@@ -396,54 +422,54 @@ export function UploadSubjectDocumentPage() {
           <div className="space-y-6">
             {/* Title Input */}
             <div className="space-y-2">
-              <label htmlFor="upload-title" className="block text-sm font-bold text-[#5F6E80] select-none">
-                Document Title
+              <label htmlFor="upload-title" className="block text-sm font-bold text-[#5F6E80] select-none dark:text-slate-400">
+                {t.upload.docTitle}
               </label>
               <input
                 id="upload-title"
                 type="text"
                 value={docTitle}
                 onChange={(e) => setDocTitle(e.target.value)}
-                placeholder="Enter document title"
+                placeholder={t.upload.placeholderTitle}
                 disabled={isProcessing}
                 required
-                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400"
+                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
               />
             </div>
 
             {/* Subject (Disabled - Auto-filled) */}
             <div className="space-y-2">
-              <label htmlFor="upload-subject" className="block text-sm font-bold text-[#5F6E80] select-none">
-                Subject
+              <label htmlFor="upload-subject" className="block text-sm font-bold text-[#5F6E80] select-none dark:text-slate-400">
+                {t.myDocuments.subject}
               </label>
               <input
                 id="upload-subject"
                 type="text"
-                value={subjectInfo.title}
+                value={getSubjectName(activeSubjectId)}
                 disabled
-                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 px-4 py-3 text-sm font-semibold text-slate-500 cursor-not-allowed select-none"
+                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 px-4 py-3 text-sm font-semibold text-slate-500 cursor-not-allowed select-none dark:bg-slate-800 dark:text-slate-400"
               />
             </div>
 
             {/* Description Textarea */}
             <div className="space-y-2">
-              <label htmlFor="upload-desc" className="block text-sm font-bold text-[#5F6E80] select-none">
-                Description
+              <label htmlFor="upload-desc" className="block text-sm font-bold text-[#5F6E80] select-none dark:text-slate-400">
+                {t.upload.description}
               </label>
               <textarea
                 id="upload-desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe this study document..."
+                placeholder={t.upload.placeholderDesc}
                 disabled={isProcessing}
-                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400 min-h-[100px] resize-none"
+                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400 min-h-[100px] resize-none dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
               />
             </div>
 
             {/* Tags Pills Selection */}
             <div className="space-y-2">
-              <label className="block text-sm font-bold text-[#5F6E80] select-none">
-                Tags
+              <label className="block text-sm font-bold text-[#5F6E80] select-none dark:text-slate-400">
+                {t.upload.tags}
               </label>
               <div className="flex flex-wrap gap-2 pt-1">
                 {AVAILABLE_TAGS.map((tag) => {
@@ -461,7 +487,7 @@ export function UploadSubjectDocumentPage() {
                           : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                       )}
                     >
-                      {tag}
+                      {getTagName(tag)}
                     </button>
                   );
                 })}
@@ -470,25 +496,26 @@ export function UploadSubjectDocumentPage() {
           </div>
 
           {/* File Type & Visibility Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-800">
             
             {/* File Type Display */}
             <div className="space-y-2">
-              <label className="block text-sm font-bold text-[#5F6E80] select-none">
-                File Type
+              <label className="block text-sm font-bold text-[#5F6E80] select-none dark:text-slate-400">
+                {t.upload.fileType}
               </label>
-              <div className="flex items-center gap-2 rounded-xl border border-[#EAF1FB] bg-white px-4 py-3 text-sm text-slate-700 font-semibold select-none">
-                <FileText className="h-4.5 w-4.5 text-[#5F6E80]" />
-                <span>Auto-detected: {fileType.toUpperCase()}</span>
+              <div className="flex items-center gap-2 rounded-xl border border-[#EAF1FB] bg-white px-4 py-3 text-sm text-slate-700 font-semibold select-none dark:bg-slate-800 dark:border-slate-800 dark:text-slate-200">
+                <FileText className="h-4.5 w-4.5 text-[#5F6E80] dark:text-slate-400" />
+                <span>{t.upload.autoDetected}: {fileType.toUpperCase()}</span>
               </div>
             </div>
 
             {/* Visibility Choices */}
             <div className="space-y-2">
-              <label className="block text-sm font-bold text-[#5F6E80] select-none">
-                Visibility
+              <label className="block text-sm font-bold text-[#5F6E80] select-none dark:text-slate-400">
+                {t.upload.visibility}
               </label>
-              <div className="flex items-center gap-4 h-[46px]">                 {/* Private Radio */}
+              <div className="flex items-center gap-4 h-[46px]">
+                   {/* Private Radio */}
                 <label className="relative flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="radio"
@@ -513,7 +540,7 @@ export function UploadSubjectDocumentPage() {
                     "text-sm font-bold transition-colors duration-200",
                     visibility === 'private' ? "text-[#2563eb]" : "text-[#5F6E80]"
                   )}>
-                    Private
+                    {t.upload.private}
                   </span>
                 </label>
 
@@ -542,7 +569,7 @@ export function UploadSubjectDocumentPage() {
                     "text-sm font-bold transition-colors duration-200",
                     visibility === 'shared' ? "text-[#2563eb]" : "text-[#5F6E80]"
                   )}>
-                    Shared
+                    {t.upload.shared}
                   </span>
                 </label>
 
@@ -571,7 +598,7 @@ export function UploadSubjectDocumentPage() {
                     "text-sm font-bold transition-colors duration-200",
                     visibility === 'public' ? "text-[#2563eb]" : "text-[#5F6E80]"
                   )}>
-                    Public
+                    {t.upload.public}
                   </span>
                 </label>
 
@@ -581,11 +608,11 @@ export function UploadSubjectDocumentPage() {
           </div>
 
           {/* AI Processing Configuration Card */}
-          <div className="space-y-4 pt-4 border-t border-slate-100">
+          <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-[#2563eb] animate-pulse" />
-              <h3 className="text-base font-extrabold text-[#0B1A30] tracking-tight select-none">
-                AI Processing
+              <h3 className="text-base font-extrabold text-[#0B1A30] tracking-tight select-none dark:text-slate-100">
+                {t.upload.aiProcessing}
               </h3>
             </div>
 
@@ -593,10 +620,10 @@ export function UploadSubjectDocumentPage() {
               {/* Generate Summary Checkbox Card */}
               <label
                 className={cn(
-                  "relative flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white",
+                  "relative flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white dark:bg-slate-900",
                   generateSummary
-                    ? "border-blue-100 bg-[#F4F7FF]/30 shadow-xs"
-                    : "border-slate-200 hover:bg-slate-50/50"
+                    ? "border-blue-100 bg-[#F4F7FF]/30 shadow-xs dark:border-blue-900/30"
+                    : "border-slate-200 hover:bg-slate-50/50 dark:border-slate-800"
                 )}
               >
                 <input
@@ -624,18 +651,18 @@ export function UploadSubjectDocumentPage() {
                     </svg>
                   )}
                 </div>
-                <span className="text-sm font-bold text-[#0B1A30]">
-                  Generate summary
+                <span className="text-sm font-bold text-[#0B1A30] dark:text-slate-200">
+                  {t.upload.genSummary}
                 </span>
               </label>
 
               {/* Create Flashcards Checkbox Card */}
               <label
                 className={cn(
-                  "relative flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white",
+                  "relative flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white dark:bg-slate-900",
                   createFlashcards
-                    ? "border-blue-100 bg-[#F4F7FF]/30 shadow-xs"
-                    : "border-slate-200 hover:bg-slate-50/50"
+                    ? "border-blue-100 bg-[#F4F7FF]/30 shadow-xs dark:border-blue-900/30"
+                    : "border-slate-200 hover:bg-slate-50/50 dark:border-slate-800"
                 )}
               >
                 <input
@@ -663,22 +690,22 @@ export function UploadSubjectDocumentPage() {
                     </svg>
                   )}
                 </div>
-                <span className="text-sm font-bold text-[#0B1A30]">
-                  Create flashcards
+                <span className="text-sm font-bold text-[#0B1A30] dark:text-slate-200">
+                  {t.upload.createFlashcards}
                 </span>
               </label>
             </div>
           </div>
 
           {/* Action buttons Cancel & Process */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => navigate(`/dashboard/documents/subject/${subjectId}`)}
               disabled={isProcessing}
               className="rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 shadow-xs px-6 h-[44px] cursor-pointer transition-all disabled:opacity-50 text-sm"
             >
-              Cancel
+              {t.upload.cancel}
             </button>
             
             <button
@@ -689,12 +716,12 @@ export function UploadSubjectDocumentPage() {
               {isProcessing ? (
                 <>
                   <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Processing...
+                  {t.upload.processing}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4" />
-                  Process with AI
+                  {t.upload.processAI}
                 </>
               )}
             </button>
@@ -704,15 +731,16 @@ export function UploadSubjectDocumentPage() {
       </form>
 
       {/* Page Footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between text-xs font-semibold text-[#8B98A5] pt-12 border-t border-slate-100">
+      <div className="flex flex-col sm:flex-row items-center justify-between text-xs font-semibold text-[#8B98A5] pt-12 border-t border-slate-100 dark:border-slate-800 dark:text-slate-500">
         <div>© 2024 AI Study Hub. Empowering Deep Learning.</div>
         <div className="flex items-center gap-6 mt-4 sm:mt-0">
-          <a href="#" className="hover:text-[#2563eb] transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-[#2563eb] transition-colors">Terms of Service</a>
-          <a href="#" className="hover:text-[#2563eb] transition-colors">Help Center</a>
+          <a href="#" className="hover:text-[#2563eb] transition-colors">{language === 'en' ? 'Privacy Policy' : (language === 'vi' ? 'Chính sách bảo mật' : (language === 'ja' ? 'プライバシーポリシー' : '개인정보처리방침'))}</a>
+          <a href="#" className="hover:text-[#2563eb] transition-colors">{language === 'en' ? 'Terms of Service' : (language === 'vi' ? 'Điều khoản dịch vụ' : (language === 'ja' ? '利用規約' : '서비스 약관'))}</a>
+          <a href="#" className="hover:text-[#2563eb] transition-colors">{language === 'en' ? 'Help Center' : (language === 'vi' ? 'Trung tâm trợ giúp' : (language === 'ja' ? 'ヘルプセンター' : '고객센터'))}</a>
         </div>
       </div>
     </div>
   )
 }
+
 

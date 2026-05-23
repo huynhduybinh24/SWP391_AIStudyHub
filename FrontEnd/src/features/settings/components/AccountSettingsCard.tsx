@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
+import { Language } from '@/locales'
 
 const accountSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -22,12 +23,18 @@ const accountSchema = z.object({
 type AccountFormValues = z.infer<typeof accountSchema>
 
 export function AccountSettingsCard() {
-  const { t } = useTranslation()
+  const { t, setLanguage } = useTranslation()
   const { account, updateAccount } = useSettingsStore()
   const currentUser = useAuthStore((state) => state.user)
   const currentEmail = currentUser?.email ?? 'student@university.edu'
   const [saveSuccess, setSaveSuccess] = useState(false)
   const toast = useToast()
+
+  let initialLanguage = account.language
+  if (initialLanguage === 'English (US)') initialLanguage = 'en'
+  else if (initialLanguage === 'Vietnamese') initialLanguage = 'vi'
+  else if (initialLanguage === 'Japanese') initialLanguage = 'ja'
+  else if (initialLanguage === 'Korean') initialLanguage = 'ko'
 
   const {
     register,
@@ -39,7 +46,7 @@ export function AccountSettingsCard() {
     defaultValues: {
       email: currentEmail,
       name: account.name,
-      language: account.language,
+      language: initialLanguage,
       timezone: account.timezone,
     },
   })
@@ -50,9 +57,11 @@ export function AccountSettingsCard() {
   }, [currentEmail, setValue])
 
   const onSubmit = (data: AccountFormValues) => {
+    const lang = data.language as Language
+    setLanguage(lang)
     updateAccount({
       name: data.name,
-      language: data.language,
+      language: lang,
       timezone: data.timezone,
     })
     toast.success(t.toasts.saved)
@@ -107,10 +116,10 @@ export function AccountSettingsCard() {
               {...register('language')}
               className="bg-transparent dark:text-white border-border dark:border-slate-800"
             >
-              <option value="English (US)">English (US)</option>
-              <option value="Vietnamese">Vietnamese</option>
-              <option value="Japanese">Japanese</option>
-              <option value="Korean">Korean</option>
+              <option value="en">English</option>
+              <option value="vi">Tiếng Việt</option>
+              <option value="ja">日本語</option>
+              <option value="ko">한국어</option>
             </Select>
           </div>
 

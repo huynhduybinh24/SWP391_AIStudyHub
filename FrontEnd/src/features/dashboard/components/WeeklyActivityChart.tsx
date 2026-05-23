@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import { Card, CardTitle } from '@/components/ui/Card'
 import type { WeeklyActivityDay } from '@/features/dashboard/types'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface WeeklyActivityChartProps {
   data: WeeklyActivityDay[]
@@ -15,14 +16,16 @@ interface WeeklyActivityChartProps {
 }
 
 export function WeeklyActivityChart({ data, totalHours, trend }: WeeklyActivityChartProps) {
+  const { t } = useTranslation()
+
   return (
     <section className="col-span-4 space-y-4">
       <CardTitle className="normal-case tracking-normal text-base font-bold text-foreground">
-        Weekly Activity
+        {t.dashboard.weeklyActivity}
       </CardTitle>
       <Card className="p-5">
         <div className="mb-4 flex items-baseline justify-between">
-          <p className="text-2xl font-bold text-foreground">{totalHours} hrs studied</p>
+          <p className="text-2xl font-bold text-foreground">{t.dashboard.hoursStudied(totalHours)}</p>
           <span className="text-sm font-medium text-green-600">{trend}</span>
         </div>
         <ResponsiveContainer width="100%" height={160}>
@@ -36,3 +39,4 @@ export function WeeklyActivityChart({ data, totalHours, trend }: WeeklyActivityC
     </section>
   )
 }
+
