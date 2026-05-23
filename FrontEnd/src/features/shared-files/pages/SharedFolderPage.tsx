@@ -36,11 +36,10 @@ export type SharedFolderFile = {
   id: string
   name: string
   type: 'pdf' | 'xlsx' | 'docx' | 'png' | 'mp4' | 'mp3' | 'pptx' | string
-  size: number
-  sizeLabel: string
+  size: string
   fileTypeLabel: string
-  modifiedAt: string
   imported?: boolean
+  owner?: string
 }
 
 export type Collaborator = {
@@ -49,128 +48,117 @@ export type Collaborator = {
   email: string
   role: 'Owner' | 'Editor' | 'Viewer'
   avatar?: string
+  lastActive?: string
 }
 
 const mockFiles: SharedFolderFile[] = [
   {
-    id: 'lit-rev-pdf',
-    name: 'Literature Review.pdf',
-    type: 'pdf',
-    size: 12400000,
-    sizeLabel: '12.4 MB',
-    fileTypeLabel: 'PDF Document',
-    modifiedAt: '2023-10-24 14:30',
-    imported: false
+    id: "file-1",
+    name: "Literature Review.pdf",
+    type: "pdf",
+    size: "12.4 MB",
+    fileTypeLabel: "PDF Document",
+    imported: false,
+    owner: "Sarah Jenkins"
   },
   {
-    id: 'dataset-xlsx',
-    name: 'Data Set_V1.xlsx',
-    type: 'xlsx',
-    size: 8200000,
-    sizeLabel: '8.2 MB',
-    fileTypeLabel: 'Spreadsheet',
-    modifiedAt: '2023-10-23 10:15',
-    imported: false
+    id: "file-2",
+    name: "Data Set_V1.xlsx",
+    type: "xlsx",
+    size: "8.2 MB",
+    fileTypeLabel: "Spreadsheet",
+    imported: false,
+    owner: "Marcus Knight"
   },
   {
-    id: 'proj-outline-docx',
-    name: 'Project_Outline.docx',
-    type: 'docx',
-    size: 1500000,
-    sizeLabel: '1.5 MB',
-    fileTypeLabel: 'Word Document',
-    modifiedAt: '2023-10-22 09:00',
-    imported: false
+    id: "file-3",
+    name: "Project_Outline.docx",
+    type: "docx",
+    size: "1.5 MB",
+    fileTypeLabel: "Word Doc",
+    imported: false,
+    owner: "Sarah Jenkins"
   },
   {
-    id: 'diagram-png',
-    name: 'Brainstorming_Diagram.png',
-    type: 'png',
-    size: 4200000,
-    sizeLabel: '4.2 MB',
-    fileTypeLabel: 'Image File',
-    modifiedAt: '2023-10-21 16:45',
-    imported: false
+    id: "file-4",
+    name: "Brainstorming_Diagram.png",
+    type: "png",
+    size: "4.2 MB",
+    fileTypeLabel: "Image",
+    imported: false,
+    owner: "Alex Chen"
   },
   {
-    id: 'notes-docx',
-    name: 'Research Notes.docx',
-    type: 'docx',
-    size: 2800000,
-    sizeLabel: '2.8 MB',
-    fileTypeLabel: 'Word Document',
-    modifiedAt: '2023-10-20 11:20',
-    imported: false
+    id: "file-5",
+    name: "Research Notes.docx",
+    type: "docx",
+    size: "2.1 MB",
+    fileTypeLabel: "Word Doc",
+    imported: false,
+    owner: "Sarah Jenkins"
   },
   {
-    id: 'results-xlsx',
-    name: 'Lab Results.xlsx',
-    type: 'xlsx',
-    size: 1900000,
-    sizeLabel: '1.9 MB',
-    fileTypeLabel: 'Spreadsheet',
-    modifiedAt: '2023-10-19 15:30',
-    imported: false
+    id: "file-6",
+    name: "Lab Results.xlsx",
+    type: "xlsx",
+    size: "6.8 MB",
+    fileTypeLabel: "Spreadsheet",
+    imported: false,
+    owner: "Marcus Knight"
   },
   {
-    id: 'presentation-pptx',
-    name: 'Presentation Draft.pptx',
-    type: 'pptx',
-    size: 5100000,
-    sizeLabel: '5.1 MB',
-    fileTypeLabel: 'PowerPoint Slide',
-    modifiedAt: '2023-10-18 13:10',
-    imported: false
+    id: "file-7",
+    name: "Presentation Draft.pptx",
+    type: "pptx",
+    size: "15.7 MB",
+    fileTypeLabel: "Presentation",
+    imported: false,
+    owner: "Sarah Jenkins"
   },
   {
-    id: 'meeting-mp3',
-    name: 'Meeting Recording.mp3',
-    type: 'mp3',
-    size: 8500000,
-    sizeLabel: '8.5 MB',
-    fileTypeLabel: 'Audio Recording',
-    modifiedAt: '2023-10-17 10:00',
-    imported: false
+    id: "file-8",
+    name: "Meeting Recording.mp3",
+    type: "mp3",
+    size: "18.4 MB",
+    fileTypeLabel: "Audio",
+    imported: false,
+    owner: "Alex Chen"
   },
   {
-    id: 'video-mp4',
-    name: 'Experiment Video.mp4',
-    type: 'mp4',
-    size: 24200000,
-    sizeLabel: '24.2 MB',
-    fileTypeLabel: 'Video File',
-    modifiedAt: '2023-10-16 16:00',
-    imported: false
+    id: "file-9",
+    name: "Experiment Video.mp4",
+    type: "mp4",
+    size: "124 MB",
+    fileTypeLabel: "Video",
+    imported: false,
+    owner: "Marcus Knight"
   },
   {
-    id: 'ref-pdf',
-    name: 'References.pdf',
-    type: 'pdf',
-    size: 3100000,
-    sizeLabel: '3.1 MB',
-    fileTypeLabel: 'PDF Document',
-    modifiedAt: '2023-10-15 14:15',
-    imported: false
+    id: "file-10",
+    name: "References.pdf",
+    type: "pdf",
+    size: "3.5 MB",
+    fileTypeLabel: "PDF Document",
+    imported: false,
+    owner: "Sarah Jenkins"
   },
   {
-    id: 'budget-xlsx',
-    name: 'Budget Sheet.xlsx',
-    type: 'xlsx',
-    size: 1100000,
-    sizeLabel: '1.1 MB',
-    fileTypeLabel: 'Spreadsheet',
-    modifiedAt: '2023-10-14 11:00',
-    imported: false
+    id: "file-11",
+    name: "Budget Sheet.xlsx",
+    type: "xlsx",
+    size: "2.9 MB",
+    fileTypeLabel: "Spreadsheet",
+    imported: false,
+    owner: "Sarah Jenkins"
   },
   {
-    id: 'timeline-docx',
-    name: 'Timeline.docx',
-    type: 'docx',
-    size: 900000,
-    sizeLabel: '0.9 MB',
-    fileTypeLabel: 'Word Document',
-    modifiedAt: '2023-10-13 09:45',
-    imported: false
+    id: "file-12",
+    name: "Timeline.docx",
+    type: "docx",
+    size: "1.1 MB",
+    fileTypeLabel: "Word Doc",
+    imported: false,
+    owner: "Marcus Knight"
   }
 ]
 
@@ -180,55 +168,59 @@ const mockCollaborators: Collaborator[] = [
     name: 'Sarah Jenkins',
     email: 'sarah.jenkins@example.com',
     role: 'Owner',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80'
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+    lastActive: 'Active 2m ago'
   },
   {
     id: 'marcus',
     name: 'Marcus Knight',
     email: 'marcus.knight@example.com',
-    role: 'Editor'
+    role: 'Editor',
+    lastActive: 'Active 15m ago'
   },
   {
     id: 'alex-chen',
     name: 'Alex Chen',
     email: 'alex.chen@example.com',
     role: 'Viewer',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+    lastActive: 'Active 1h ago'
   }
 ]
+
+// Size parsing utility to sort strings like "12.4 MB" or "124 MB" numerically
+function parseSizeToBytes(sizeStr: string): number {
+  const num = parseFloat(sizeStr)
+  if (isNaN(num)) return 0
+  const lower = sizeStr.toLowerCase()
+  if (lower.includes('gb')) return num * 1024 * 1024 * 1024
+  if (lower.includes('mb')) return num * 1024 * 1024
+  if (lower.includes('kb')) return num * 1024
+  return num
+}
 
 export function SharedFolderPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const { t, language } = useTranslation()
 
-  // State Management
-  const [shareModalOpen, setShareModalOpen] = useState(false)
-  const [previewModalOpen, setPreviewModalOpen] = useState(false)
-  const [aiReportOpen, setAiReportOpen] = useState(false)
-  const [confirmImportOpen, setConfirmImportOpen] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<SharedFolderFile | null>(null)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [sortBy, setSortBy] = useState<'name' | 'size' | 'type' | 'date'>('name')
+  // Standard State Management matching requested names
   const [files, setFiles] = useState<SharedFolderFile[]>(mockFiles)
-  const [collaborators, setCollaborators] = useState<Collaborator[]>(mockCollaborators)
-  const [isGeneratingInsight, setIsGeneratingInsight] = useState(false)
-
-  // Extra UX states
+  const [selectedFile, setSelectedFile] = useState<SharedFolderFile | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [importConfirmOpen, setImportConfirmOpen] = useState(false)
+  const [shareAccessOpen, setShareAccessOpen] = useState(false)
+  const [aiSynthesisOpen, setAiSynthesisOpen] = useState(false)
+  const [isGeneratingSynthesis, setIsGeneratingSynthesis] = useState(false)
+  const [showAllFiles, setShowAllFiles] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState('grid')
+  const [sortBy, setSortBy] = useState('name')
+
+  // Additional state hooks
+  const [collaborators, setCollaborators] = useState<Collaborator[]>(mockCollaborators)
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false)
   const [selectedCollaborator, setSelectedCollaborator] = useState<Collaborator | null>(null)
-
-  // Simulated live updates for folder summary
-  const [aiSummaryText, setAiSummaryText] = useState(
-    language === 'vi'
-      ? 'Tôi đã phân tích 12 tệp chính trong thư mục này. Bạn có muốn xem tóm tắt kết hợp hay tổng hợp nghiên cứu không?'
-      : language === 'ja'
-      ? 'このフォルダ内の12個の主要ファイルを分析しました。結合要約または研究総合を生成しますか？'
-      : language === 'ko'
-      ? '이 폴더의 12개 주요 파일을 분석했습니다. 통합 요약 또는 연구 종합을 생성하시겠습니까?'
-      : "I've analyzed the 12 primary files in this folder. Would you like a combined summary or a research synthesis?"
-  )
 
   // Sync with localStorage documents list on mount
   useEffect(() => {
@@ -260,48 +252,55 @@ export function SharedFolderPage() {
 
   const handleManageAccess = () => {
     toast.success(t.sharedFolder.accessSettingsOpened || 'Access settings opened')
-    setShareModalOpen(true)
+    setShareAccessOpen(true)
   }
 
   const handleInviteMembersClick = () => {
     toast.success(t.sharedFolder.inviteMembersOpened || 'Invite members opened')
-    setShareModalOpen(true)
+    setShareAccessOpen(true)
   }
 
-  const handleGenerateSummary = () => {
-    setIsGeneratingInsight(true)
+  // Generate Synthesis handler
+  const handleGenerateSynthesis = () => {
+    setIsGeneratingSynthesis(true)
     setTimeout(() => {
-      setIsGeneratingInsight(false)
-      const VietnameseSummary =
-        'Tóm tắt AI: Thư mục này tập trung vào sự kết hợp giữa tài liệu sinh học nghiên cứu định tính và mô phỏng phân tích tính toán định lượng (Excel). Điểm tối ưu tiếp theo là chạy trắc nghiệm ôn tập để tăng khả năng gợi nhớ thông tin.'
-      const EnglishSummary =
-        'AI Summary: This workspace revolves around the synthesis of qualitative biological literature with quantitative mathematical modeling. The optimal next step is to trigger an automated quiz across worksheets to test active recall of terms.'
-      const JapaneseSummary =
-        'AI要約：このワークスペースは、定性的な生物学文献と定量的な数学的モデリングの統合を中心に構成されています。最適な次のステップは、統合ワークシートで自動小テストを実行することです。'
-      const KoreanSummary =
-        'AI 요약: 이 워크스페이스는 정성적 생물학 문헌과 정량적 수학적 모델링의 통합을 중심으로 합니다. 다음 최적의 단계는 통합 워크시트에서 자동 퀴즈를 생성하여 용어의 능동적 회상을 테스트하는 것입니다.'
-
-      setAiSummaryText(
-        language === 'vi'
-          ? VietnameseSummary
-          : language === 'ja'
-          ? JapaneseSummary
-          : language === 'ko'
-          ? KoreanSummary
-          : EnglishSummary
-      )
-      toast.success(t.sharedFolder.aiSummaryGenerated || 'AI summary generated')
+      setIsGeneratingSynthesis(false)
+      setAiSynthesisOpen(true)
+      toast.success(t.sharedFolder.aiSynthesisGenerated || 'AI synthesis generated')
     }, 1000)
   }
 
-  const handleDownloadReport = () => {
+  // Synthesis detail helper values
+  const synthesisReportContent = `=== AI STUDY HUB - RESEARCH SYNTHESIS REPORT ===
+Folder Name: Group Project: Research Materials
+Total Workspace Files: 12 files • 218 MB
+
+=== FOLDER OVERVIEW ===
+Group Project: Research Materials contains 12 active research files across PDF, Spreadsheet, Document, Image, Audio, and Video formats.
+
+=== KEY FINDINGS ===
+1. Qualitative data from literature reviews (PDFs) integrates semantically with qualitative notes (DOCX).
+2. Quantitative tracking sheets (Excel) contain laboratory data that can be combined for unified charts.
+
+=== DUPLICATE FILES DETECTED ===
+- Redundancy found between Literature Review.pdf & References.pdf (84% semantic overlap).
+- Redundant rows between Budget Sheet.xlsx and Data Set_V1.xlsx.
+
+=== SUGGESTED RESEARCH SUMMARY ===
+The combined research indicates a strong correlation between multivariable biological traits and computational models. Recommended steps involve consolidating quantitative cells and creating flashcard modules for terminologies.
+
+=== RECOMMENDED NEXT ACTIONS ===
+1. Consolidate the quantitative sheets.
+2. Set up automated quizzes across terms.
+3. Transcribe audio recording to text summary.`
+
+  const handleDownloadSynthesisReport = () => {
     try {
-      const textContent = `=== AI STUDY HUB - WORKSPACE AUDIT REPORT ===\nFolder Name: Group Project: Research Materials\nOwner: Sarah Jenkins\nTotal Files: 12 files • 45 MB\n\n=== DUPLICATE ANALYSIS ===\n- Potential Redundancy Found between Literature Review.pdf & References.pdf\n- Shared cells found inside Budget Sheet.xlsx and Data Set_V1.xlsx\n\n=== RECOMMENDATIONS ===\n1. Consolidate columns inside worksheets.\n2. Trigger quizzes across files.\n`
-      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' })
+      const blob = new Blob([synthesisReportContent], { type: 'text/plain;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'Research_Materials_AI_Audit_Report.txt'
+      a.download = 'Research_Materials_AI_Synthesis_Report.txt'
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -312,14 +311,19 @@ export function SharedFolderPage() {
     }
   }
 
+  const handleCopySynthesisSummary = () => {
+    navigator.clipboard.writeText(synthesisReportContent)
+    toast.success(t.sharedFolder.summaryCopied || 'Summary copied')
+  }
+
   const handleImportClick = (file: SharedFolderFile, e: React.MouseEvent) => {
     e.stopPropagation()
     if (file.imported) {
-      navigate('/dashboard/documents')
+      toast.warning(t.sharedFolder.alreadyImported || 'File already imported')
       return
     }
     setSelectedFile(file)
-    setConfirmImportOpen(true)
+    setImportConfirmOpen(true)
   }
 
   const handleConfirmImport = () => {
@@ -350,8 +354,8 @@ export function SharedFolderPage() {
       fileName: selectedFile.name,
       uploadedAt: 'Imported Just Now',
       uploadedDateObj: new Date().toISOString(),
-      size: selectedFile.sizeLabel,
-      sizeKb: selectedFile.size / 1024,
+      size: selectedFile.size,
+      sizeKb: parseSizeToBytes(selectedFile.size) / 1024,
       subject: 'GENERAL',
       status: 'ANALYZED',
       type: mapFileTypeToDocType(selectedFile.type)
@@ -364,13 +368,13 @@ export function SharedFolderPage() {
     )
 
     toast.success(t.sharedFolder.fileImported || 'File imported to My Documents')
-    setConfirmImportOpen(false)
+    setImportConfirmOpen(false)
   }
 
   const handlePreviewOpen = (file: SharedFolderFile, e: React.MouseEvent) => {
     e.stopPropagation()
     setSelectedFile(file)
-    setPreviewModalOpen(true)
+    setPreviewOpen(true)
     toast.success(t.sharedFolder.previewOpened || 'Preview opened')
   }
 
@@ -385,10 +389,17 @@ export function SharedFolderPage() {
     navigate(`/dashboard/shared/file/${file.id}`)
   }
 
-  // Filtered files list
-  const filteredFiles = files.filter((f) =>
-    f.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Filtered files list matching query (by name, type, and collaborator/owner)
+  const filteredFiles = files.filter((f) => {
+    const query = searchQuery.toLowerCase().trim()
+    if (!query) return true
+
+    const matchesName = f.name.toLowerCase().includes(query)
+    const matchesType = f.type.toLowerCase().includes(query) || f.fileTypeLabel.toLowerCase().includes(query)
+    const matchesOwner = f.owner ? f.owner.toLowerCase().includes(query) : false
+
+    return matchesName || matchesType || matchesOwner
+  })
 
   // Sorted files
   const sortedFiles = [...filteredFiles].sort((a, b) => {
@@ -396,16 +407,19 @@ export function SharedFolderPage() {
       return a.name.localeCompare(b.name)
     }
     if (sortBy === 'size') {
-      return a.size - b.size
+      return parseSizeToBytes(a.size) - parseSizeToBytes(b.size)
     }
     if (sortBy === 'type') {
       return a.type.localeCompare(b.type)
     }
     if (sortBy === 'date') {
-      return new Date(a.modifiedAt).getTime() - new Date(b.modifiedAt).getTime()
+      return new Date(a.modifiedAt || '').getTime() - new Date(b.modifiedAt || '').getTime()
     }
     return 0
   })
+
+  // Slice files based on showAllFiles state
+  const filesToDisplay = showAllFiles ? sortedFiles : sortedFiles.slice(0, 4)
 
   // Bridge custom collaborators state into ShareAccessModal structure
   const mappedShareCollabs: ShareAccessCollab[] = collaborators.map((c) => ({
@@ -437,6 +451,23 @@ export function SharedFolderPage() {
       }
     })
     setCollaborators(updated)
+  }
+
+  // Popover / Detail handlers for collaborator
+  const handleUpdateCollaboratorRole = (collabId: string, role: 'Owner' | 'Editor' | 'Viewer') => {
+    const updated = collaborators.map((c) => (c.id === collabId ? { ...c, role } : c))
+    setCollaborators(updated)
+    if (selectedCollaborator && selectedCollaborator.id === collabId) {
+      setSelectedCollaborator({ ...selectedCollaborator, role })
+    }
+    toast.success('Permission role updated')
+  }
+
+  const handleRemoveCollaboratorAccess = (collabId: string) => {
+    const updated = collaborators.filter((c) => c.id !== collabId)
+    setCollaborators(updated)
+    setSelectedCollaborator(null)
+    toast.success('Access removed')
   }
 
   return (
@@ -500,9 +531,9 @@ export function SharedFolderPage() {
         </button>
       </div>
 
-      {/* 3. Main Grid layout */}
+      {/* 3. Main layout */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        {/* Left Side elements */}
+        {/* Left Sidebar */}
         <div className="w-full lg:w-[300px] shrink-0 space-y-6">
           <CollaboratorsCard
             collaborators={collaborators}
@@ -510,16 +541,15 @@ export function SharedFolderPage() {
             onSelectCollaborator={(c) => setSelectedCollaborator(c)}
           />
           <AIInsightCard
-            summary={aiSummaryText}
-            isGenerating={isGeneratingInsight}
-            onGenerate={handleGenerateSummary}
-            onOpenReport={() => setAiReportOpen(true)}
+            summary={synthesisReportContent}
+            isGenerating={isGeneratingSynthesis}
+            onGenerate={handleGenerateSynthesis}
           />
         </div>
 
-        {/* Right Side files catalog */}
+        {/* Right Files Catalog */}
         <div className="flex-1 w-full bg-white dark:bg-slate-900 border border-[#C3C6D7]/30 dark:border-slate-800 rounded-2xl shadow-sm overflow-visible">
-          {/* List Headers / Toggles */}
+          {/* Controls Header */}
           <div className="flex items-center justify-between bg-[#F4F7FE]/60 dark:bg-slate-800/60 border-b border-[#C3C6D7]/20 dark:border-slate-800 px-6 py-4">
             <div className="flex items-center gap-4">
               <span className="text-base font-bold text-[#0b1c30] dark:text-slate-200">
@@ -563,7 +593,7 @@ export function SharedFolderPage() {
               </div>
             </div>
 
-            {/* Sorting Choice */}
+            {/* Sorting */}
             <div className="relative">
               <button
                 type="button"
@@ -597,9 +627,10 @@ export function SharedFolderPage() {
                       { key: 'date', label: t.sharedFolder.sortDate }
                     ].map((opt) => (
                       <button
+                        type="button"
                         key={opt.key}
                         onClick={() => {
-                          setSortBy(opt.key as any)
+                          setSortBy(opt.key)
                           setIsSortDropdownOpen(false)
                           toast.success(`${t.sharedFolder.sortBy || 'Sorted by'} ${opt.label}`)
                         }}
@@ -620,7 +651,7 @@ export function SharedFolderPage() {
             </div>
           </div>
 
-          {/* Search bar */}
+          {/* Search workspace */}
           <div className="p-6 pb-2">
             <div className="relative w-full max-w-md text-left">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -628,12 +659,12 @@ export function SharedFolderPage() {
                 type="text"
                 placeholder={
                   language === 'vi'
-                    ? 'Tìm kiếm theo tên...'
+                    ? 'Tìm kiếm workspace...'
                     : language === 'ja'
-                    ? '名前で検索...'
+                    ? 'ワークスペースを検索...'
                     : language === 'ko'
-                    ? '이름으로 검색...'
-                    : 'Search by file name...'
+                    ? '워크스페이스 검색...'
+                    : 'Search workspace...'
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -642,11 +673,11 @@ export function SharedFolderPage() {
             </div>
           </div>
 
-          {/* Grid / List render content */}
+          {/* Files display */}
           <div className="p-6">
             {viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                {sortedFiles.map((file) => (
+                {filesToDisplay.map((file) => (
                   <FileCard
                     key={file.id}
                     file={file}
@@ -658,7 +689,7 @@ export function SharedFolderPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {sortedFiles.map((file) => (
+                {filesToDisplay.map((file) => (
                   <FileRowCard
                     key={file.id}
                     file={file}
@@ -680,14 +711,35 @@ export function SharedFolderPage() {
                 <p className="text-xs text-slate-400 mt-1">Try adjusting your search query.</p>
               </div>
             )}
+
+            {/* Expand / Collapse Button: View All Files */}
+            {sortedFiles.length > 4 && (
+              <div className="flex justify-center mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextState = !showAllFiles
+                    setShowAllFiles(nextState)
+                    toast.success(
+                      nextState
+                        ? t.sharedFolder.showingAllFiles || 'Showing all files'
+                        : t.sharedFolder.showingFewerFiles || 'Showing fewer files'
+                    )
+                  }}
+                  className="px-5 py-2.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-[#3155F6] hover:text-[#3155F6] rounded-xl font-bold text-sm transition-all shadow-xs cursor-pointer focus:outline-none"
+                >
+                  {showAllFiles ? 'Show Less' : 'View All Files'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Collaborators Manage Access Shared Modal */}
+      {/* Shared Access Modal */}
       <ShareAccessModal
-        isOpen={shareModalOpen}
-        onClose={() => setShareModalOpen(false)}
+        isOpen={shareAccessOpen}
+        onClose={() => setShareAccessOpen(false)}
         folderId="research-materials"
         folderName="Group Project: Research Materials"
         owner="Sarah Jenkins"
@@ -696,42 +748,45 @@ export function SharedFolderPage() {
         onCollaboratorsChange={handleCollaboratorsChange}
       />
 
-      {/* AI Folder Report Modal */}
-      <AIReportModal
-        isOpen={aiReportOpen}
-        onClose={() => setAiReportOpen(false)}
-        onDownloadReport={handleDownloadReport}
-        folderName="Group Project: Research Materials"
-      />
-
       {/* Confirm Import dialog */}
       <ConfirmImportModal
-        isOpen={confirmImportOpen}
-        onClose={() => setConfirmImportOpen(false)}
+        isOpen={importConfirmOpen}
+        onClose={() => setImportConfirmOpen(false)}
         onConfirm={handleConfirmImport}
         fileName={selectedFile?.name || ''}
       />
 
-      {/* File preview player modal */}
+      {/* File preview modal */}
       <FilePreviewModal
-        isOpen={previewModalOpen}
-        onClose={() => setPreviewModalOpen(false)}
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
         file={selectedFile}
         onDownload={() => {
           toast.success('Downloading file...')
-          setPreviewModalOpen(false)
+          setPreviewOpen(false)
         }}
         onOpenFull={() => {
           if (selectedFile) handleOpenPageFull(selectedFile)
-          setPreviewModalOpen(false)
+          setPreviewOpen(false)
         }}
       />
 
-      {/* Collaborator details mock popup modal */}
+      {/* AI Synthesis Modal */}
+      <AISynthesisModal
+        isOpen={aiSynthesisOpen}
+        onClose={() => setAiSynthesisOpen(false)}
+        onDownloadReport={handleDownloadSynthesisReport}
+        onCopySummary={handleCopySynthesisSummary}
+        reportContent={synthesisReportContent}
+      />
+
+      {/* Collaborator details popup popover modal */}
       <CollaboratorDetailModal
         isOpen={selectedCollaborator !== null}
         onClose={() => setSelectedCollaborator(null)}
         collaborator={selectedCollaborator}
+        onUpdateRole={handleUpdateCollaboratorRole}
+        onRemoveAccess={handleRemoveCollaboratorAccess}
       />
     </div>
   )
@@ -810,13 +865,11 @@ function CollaboratorsCard({
 function AIInsightCard({
   summary,
   isGenerating,
-  onGenerate,
-  onOpenReport
+  onGenerate
 }: {
   summary: string
   isGenerating: boolean
   onGenerate: () => void
-  onOpenReport: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -834,11 +887,11 @@ function AIInsightCard({
             Generating combined insight...
           </span>
         ) : (
-          summary
+          "Click the button below to generate a synthesized research summary of this workspace."
         )}
       </p>
 
-      <div className="space-y-2 pt-2">
+      <div className="pt-2">
         <button
           type="button"
           disabled={isGenerating}
@@ -847,14 +900,7 @@ function AIInsightCard({
           aria-busy={isGenerating}
         >
           {isGenerating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          {t.sharedFolder.generateSummary}
-        </button>
-        <button
-          type="button"
-          onClick={onOpenReport}
-          className="w-full py-2.5 border border-[#C3C6D7]/40 hover:border-slate-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition-colors cursor-pointer focus:outline-none"
-        >
-          {t.sharedFolder.viewAIReport}
+          {t.sharedFolder.generateSynthesis || 'Generate Synthesis'}
         </button>
       </div>
     </div>
@@ -933,7 +979,7 @@ function FileCard({
           {file.name}
         </h4>
         <p className="text-xs font-semibold text-[#737686] dark:text-slate-400">
-          {file.sizeLabel} &bull; {file.fileTypeLabel}
+          {file.size} &bull; {file.fileTypeLabel}
         </p>
       </div>
 
@@ -964,7 +1010,7 @@ function FileCard({
           className="flex flex-col items-center justify-center gap-1 py-3 text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 hover:bg-[#F4F7FE]/40 dark:hover:bg-slate-800/40 transition-all cursor-pointer group rounded-br-2xl focus:outline-none"
         >
           <Upload className="w-4 h-4 text-[#737686] dark:text-slate-400 group-hover:text-[#3155F6] dark:group-hover:text-blue-400" />
-          <span className="text-[10px] tracking-wider uppercase font-extrabold max-w-full truncate px-1 text-center">
+          <span className="text-[10px] tracking-wider uppercase font-extrabold max-w-full truncate px-1 text-center font-bold">
             {file.imported ? (t.sharedFolder.viewInMyDocuments || 'View in My Documents') : t.sharedFolder.import}
           </span>
         </button>
@@ -1001,7 +1047,7 @@ function FileRowCard({
             {file.name}
           </h4>
           <p className="text-xs font-semibold text-[#737686] dark:text-slate-400 mt-0.5">
-            {file.sizeLabel} &bull; {file.fileTypeLabel}
+            {file.size} &bull; {file.fileTypeLabel}
           </p>
         </div>
       </div>
@@ -1026,7 +1072,7 @@ function FileRowCard({
         <button
           type="button"
           onClick={onImport}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 border border-[#C3C6D7]/40 dark:border-slate-800 hover:border-[#3155F6]/40 rounded-lg hover:bg-[#E8EEFF]/30 dark:hover:bg-blue-950/30 transition-all cursor-pointer focus:outline-none"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 border border-[#C3C6D7]/40 dark:border-slate-800 hover:border-[#3155F6]/40 rounded-lg hover:bg-[#E8EEFF]/30 dark:hover:bg-blue-950/30 transition-all cursor-pointer focus:outline-none font-bold text-center"
         >
           <Upload className="w-3.5 h-3.5" />
           <span>{file.imported ? (t.sharedFolder.viewInMyDocuments || 'View in My Documents') : t.sharedFolder.import}</span>
@@ -1036,7 +1082,7 @@ function FileRowCard({
   )
 }
 
-/* Nested Modals Components */
+/* Modals */
 
 function ConfirmImportModal({
   isOpen,
@@ -1080,23 +1126,25 @@ function ConfirmImportModal({
   )
 }
 
-function AIReportModal({
+function AISynthesisModal({
   isOpen,
   onClose,
   onDownloadReport,
-  folderName
+  onCopySummary,
+  reportContent
 }: {
   isOpen: boolean
   onClose: () => void
   onDownloadReport: () => void
-  folderName: string
+  onCopySummary: () => void
+  reportContent: string
 }) {
   const { t } = useTranslation()
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="AI Workspace Audit Report"
+      title="AI Research Synthesis"
       className="max-w-2xl"
     >
       <div className="space-y-6 text-left max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin">
@@ -1104,63 +1152,70 @@ function AIReportModal({
           <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
             FOLDER OVERVIEW
           </span>
-          <h3 className="text-base font-extrabold text-slate-850 dark:text-slate-100">
-            {folderName}
-          </h3>
           <p className="text-sm text-slate-500 dark:text-slate-450 leading-relaxed text-justify">
-            This folder contains 12 active research documents, sheets, and media files. The primary
-            research scope relates to multivariable analysis, biology literature reviews, and
-            interactive design outlining.
+            Group Project: Research Materials contains 12 active research files across PDF, Spreadsheet, Document, Image, Audio, and Video formats.
           </p>
+        </div>
+
+        <div className="space-y-2">
+          <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+            KEY FINDINGS
+          </span>
+          <ul className="text-sm font-medium text-slate-655 dark:text-slate-350 list-disc pl-5 space-y-1">
+            <li>Qualitative data from literature reviews (PDFs) integrates semantically with qualitative notes (DOCX).</li>
+            <li>Quantitative tracking sheets (Excel) contain laboratory data that can be combined for unified charts.</li>
+          </ul>
         </div>
 
         <div className="space-y-2">
           <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
             DUPLICATE FILES DETECTED
           </span>
-          <div className="rounded-2xl border border-rose-100 bg-rose-50/10 dark:border-rose-950/20 dark:bg-rose-950/5 p-4.5 space-y-2.5">
-            <div className="flex items-center gap-2.5 text-rose-700 dark:text-rose-450 font-bold text-xs">
-              <Sparkles className="h-4 w-4 shrink-0 text-rose-500" />
-              <span>Potential redundancy found:</span>
-            </div>
+          <div className="rounded-2xl border border-rose-100 bg-rose-50/10 dark:border-rose-950/20 dark:bg-rose-950/5 p-4.5 space-y-2">
             <ul className="text-xs font-semibold text-rose-650 dark:text-rose-450 list-disc pl-5 space-y-1">
-              <li>`Literature Review.pdf` shares 84% semantic similarity with `References.pdf`</li>
-              <li>`Data Set_V1.xlsx` contains redundant rows matching `Budget Sheet.xlsx`</li>
+              <li>\`Literature Review.pdf\` shares 84% semantic similarity with \`References.pdf\`</li>
+              <li>\`Budget Sheet.xlsx\` contains redundant rows matching \`Data Set_V1.xlsx\`</li>
             </ul>
           </div>
         </div>
 
         <div className="space-y-2">
           <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-            RECOMMENDED ACTIONS & KEY INSIGHTS
+            SUGGESTED RESEARCH SUMMARY
           </span>
-          <ul className="text-sm font-medium text-slate-655 dark:text-slate-350 list-decimal pl-5 space-y-2">
-            <li>Consolidate the duplicated columns inside `Data Set_V1.xlsx` and `Budget Sheet.xlsx`.</li>
-            <li>Import `References.pdf` and build a unified bibliography outline to avoid redundant reading cycles.</li>
-            <li>Convert `Meeting Recording.mp3` to an AI-generated text summary for active search indexing.</li>
-          </ul>
+          <p className="text-sm text-slate-550 dark:text-slate-350 leading-relaxed text-justify">
+            The combined research indicates a strong correlation between multivariable biological traits and computational models. Recommended steps involve consolidating quantitative cells and creating flashcard modules for terminologies.
+          </p>
         </div>
 
         <div className="space-y-2">
           <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-            RELATED FILES
+            RECOMMENDED NEXT ACTIONS
           </span>
-          <ul className="text-xs font-semibold text-slate-600 dark:text-slate-400 list-disc pl-5 space-y-1">
-            <li>Literature Review.pdf</li>
-            <li>References.pdf</li>
-            <li>Data Set_V1.xlsx</li>
-            <li>Budget Sheet.xlsx</li>
+          <ul className="text-sm font-medium text-slate-655 dark:text-slate-350 list-decimal pl-5 space-y-2">
+            <li>Consolidate the quantitative sheets.</li>
+            <li>Set up automated quizzes across terms.</li>
+            <li>Transcribe audio recording to text summary.</li>
           </ul>
         </div>
 
-        <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-5 mt-6">
-          <Button
-            onClick={onDownloadReport}
-            className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 flex items-center gap-2 shadow-sm border-none cursor-pointer"
-          >
-            <Download className="h-4 w-4" />
-            {t.sharedFolder.downloadReport}
-          </Button>
+        <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-5 mt-6 flex-wrap gap-3">
+          <div className="flex gap-2">
+            <Button
+              onClick={onDownloadReport}
+              className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 flex items-center gap-2 border-none cursor-pointer"
+            >
+              <Download className="h-4 w-4" />
+              {t.sharedFolder.downloadReport}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={onCopySummary}
+              className="rounded-xl font-bold text-xs px-5 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
+            >
+              Copy Summary
+            </Button>
+          </div>
           <Button variant="ghost" onClick={onClose} className="rounded-xl font-bold">
             Close
           </Button>
@@ -1194,21 +1249,21 @@ function FilePreviewModal({
             <GraduationCap className="h-10 w-10 text-rose-500" />
             <span className="text-sm font-extrabold text-slate-100">{file.name} Reader Mock</span>
             <span className="text-[10px] text-slate-500">
-              Visualizing Pages 1 - {file.name.includes('Lit') ? '12' : '4'} of PDF Stream
+              Visualizing Pages 1 - 4 of PDF Stream
             </span>
           </div>
         )
       case 'xlsx':
         return (
-          <div className="w-full overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/20 max-h-[260px]">
+          <div className="w-full overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-955/20 max-h-[260px]">
             <table className="w-full text-[10px] font-medium border-collapse text-left select-none">
               <thead>
                 <tr className="bg-slate-100 dark:bg-slate-850 text-slate-505 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                  <th className="py-1 px-2 border-r border-slate-200 dark:border-slate-850 text-center w-6"></th>
+                  <th className="py-1 px-2 border-r border-slate-200 dark:border-slate-855 text-center w-6"></th>
                   {['A', 'B', 'C', 'D', 'E'].map((col) => (
                     <th
                       key={col}
-                      className="py-1 px-2 border-r border-slate-200 dark:border-slate-850 text-center uppercase font-bold"
+                      className="py-1 px-2 border-r border-slate-200 dark:border-slate-855 text-center uppercase font-bold"
                     >
                       {col}
                     </th>
@@ -1232,7 +1287,7 @@ function FilePreviewModal({
                     {row.map((cell, cIdx) => (
                       <td
                         key={cIdx}
-                        className="py-1.5 px-2 border-r border-slate-200 dark:border-slate-850 font-mono text-slate-700 dark:text-slate-300"
+                        className="py-1.5 px-2 border-r border-slate-200 dark:border-slate-855 font-mono text-slate-700 dark:text-slate-300"
                       >
                         {cell}
                       </td>
@@ -1253,10 +1308,6 @@ function FilePreviewModal({
               This outlines the primary conceptual structures and derivations for the research task.
               Students should review these guidelines before collaborating.
             </p>
-            <p>
-              Key topics include study planning, outline setups, draft review rules, and concept
-              matches.
-            </p>
           </div>
         )
       case 'png':
@@ -1265,9 +1316,6 @@ function FilePreviewModal({
             <ImageIcon className="h-10 w-10 text-purple-500 animate-pulse" />
             <span className="text-[10px] font-mono tracking-widest text-[#2563eb]">
               Brainstorming Diagram Graphic Note
-            </span>
-            <span className="text-xs font-bold text-slate-450">
-              glowing_blue_brain.png preview stream
             </span>
           </div>
         )
@@ -1278,19 +1326,12 @@ function FilePreviewModal({
             <span className="text-xs font-bold text-slate-200">
               Experiment Video Capture player stream
             </span>
-            <div className="absolute bottom-4 left-4 right-4 bg-slate-900/80 p-2 rounded-lg flex items-center justify-between text-[10px] text-slate-400 font-mono">
-              <span>00:15 / 02:40</span>
-              <div className="w-32 h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div className="w-[10%] h-full bg-[#6366F1]" />
-              </div>
-              <span>1080p</span>
-            </div>
           </div>
         )
       case 'mp3':
       case 'wav':
         return (
-          <div className="w-full rounded-xl bg-slate-50 dark:bg-slate-950/20 border border-slate-250 dark:border-slate-800 p-6 flex flex-col items-center justify-center space-y-4">
+          <div className="w-full rounded-xl bg-slate-50 dark:bg-slate-955/20 border border-slate-250 dark:border-slate-800 p-6 flex flex-col items-center justify-center space-y-4">
             <Music className="h-10 w-10 text-pink-500 animate-pulse" />
             <span className="text-xs font-bold text-slate-700 dark:text-slate-350">
               Audio Recording Player Mock
@@ -1305,7 +1346,6 @@ function FilePreviewModal({
             <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">
               {file.name}
             </span>
-            <span className="text-[10px] text-slate-500">File preview stream</span>
           </div>
         )
     }
@@ -1333,7 +1373,7 @@ function FilePreviewModal({
               {file.name}
             </h3>
             <p className="text-xs text-slate-450 dark:text-slate-500 font-semibold mt-0.5">
-              {file.sizeLabel} &bull; {file.fileTypeLabel}
+              {file.size} &bull; {file.fileTypeLabel}
             </p>
           </div>
         </div>
@@ -1368,15 +1408,20 @@ function FilePreviewModal({
 function CollaboratorDetailModal({
   isOpen,
   onClose,
-  collaborator
+  collaborator,
+  onUpdateRole,
+  onRemoveAccess
 }: {
   isOpen: boolean
   onClose: () => void
   collaborator: Collaborator | null
+  onUpdateRole: (collabId: string, role: 'Owner' | 'Editor' | 'Viewer') => void
+  onRemoveAccess: (collabId: string) => void
 }) {
   const { t } = useTranslation()
   if (!collaborator) return null
   const initials = collaborator.name ? collaborator.name.charAt(0).toUpperCase() : 'A'
+  const isOwner = collaborator.role === 'Owner'
 
   return (
     <Modal
@@ -1406,7 +1451,7 @@ function CollaboratorDetailModal({
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
               {collaborator.email}
             </p>
-            <span className="inline-block mt-2 text-xs font-bold px-2.5 py-1 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-full">
+            <span className="inline-block mt-2 text-xs font-bold px-2.5 py-1 bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 rounded-full select-none">
               {collaborator.role === 'Owner'
                 ? t.sharedFolder.owner
                 : collaborator.role === 'Editor'
@@ -1416,27 +1461,42 @@ function CollaboratorDetailModal({
           </div>
         </div>
 
-        <div className="border-t border-slate-100 dark:border-slate-800/80 pt-4 space-y-3">
+        <div className="border-t border-slate-100 dark:border-slate-800/80 pt-4 space-y-4">
           <div className="flex justify-between text-sm">
-            <span className="text-slate-400 font-semibold">Status:</span>
-            <span className="text-slate-800 dark:text-slate-200 font-bold flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 bg-green-500 rounded-full inline-block" /> Active Now
-            </span>
+            <span className="text-slate-400 font-semibold">Last Active:</span>
+            <span className="text-slate-800 dark:text-slate-200 font-bold">{collaborator.lastActive || 'Active recently'}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-slate-400 font-semibold">Joined Workspace:</span>
-            <span className="text-slate-800 dark:text-slate-200 font-bold">Oct 12, 2023</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-slate-400 font-semibold">Recent Activity:</span>
-            <span className="text-slate-850 dark:text-slate-300 font-medium text-right">
-              Viewed "Literature Review.pdf"
-            </span>
-          </div>
+
+          {!isOwner && (
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                Manage Role Access
+              </label>
+              <select
+                value={collaborator.role}
+                onChange={(e) => onUpdateRole(collaborator.id, e.target.value as any)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-250 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:text-white cursor-pointer font-semibold"
+              >
+                <option value="Viewer">{t.sharedFolder.canView}</option>
+                <option value="Editor">{t.sharedFolder.canEdit}</option>
+              </select>
+            </div>
+          )}
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800/80 pt-4 mt-6">
-          <Button onClick={onClose} className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white border-none">
+        <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-5 mt-6">
+          {!isOwner ? (
+            <Button
+              variant="destructive"
+              onClick={() => onRemoveAccess(collaborator.id)}
+              className="rounded-xl font-bold text-xs bg-rose-600 hover:bg-rose-700 text-white cursor-pointer border-none"
+            >
+              Remove Access
+            </Button>
+          ) : (
+            <div />
+          )}
+          <Button variant="ghost" onClick={onClose} className="rounded-xl font-bold">
             Close
           </Button>
         </div>

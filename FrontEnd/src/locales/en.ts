@@ -770,7 +770,7 @@ export const en = {
     canEdit: "Can Edit",
     canView: "Can View",
     aiInsight: "AI Insight",
-    generateSummary: "Generate Summary",
+    generateSynthesis: "Generate Synthesis",
     viewAIReport: "View AI Report",
     downloadReport: "Download Report",
     filesTotal: "Files Total",
@@ -788,12 +788,15 @@ export const en = {
     importConfirmDescription: "Are you sure you want to import this file to My Documents?",
     invitationSent: "Invitation sent successfully",
     accessSettingsOpened: "Access settings opened",
-    aiSummaryGenerated: "AI summary generated",
+    aiSynthesisGenerated: "AI synthesis generated",
     aiReportDownloaded: "AI report downloaded",
     previewOpened: "Preview opened",
     openingFile: "Opening file",
     fileImported: "File imported to My Documents",
-    alreadyImported: "File already imported"
+    alreadyImported: "File already imported",
+    showingAllFiles: "Showing all files",
+    showingFewerFiles: "Showing fewer files",
+    summaryCopied: "Summary copied"
   },
   footer: {
     copyright: "© 2024 AI Study Hub. Empowering Deep Learning.",

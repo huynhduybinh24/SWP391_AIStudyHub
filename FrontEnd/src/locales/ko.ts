@@ -772,7 +772,7 @@ export const ko: typeof en = {
     canEdit: "편집 가능",
     canView: "보기 가능",
     aiInsight: "AI 인사이트",
-    generateSummary: "요약 생성",
+    generateSynthesis: "종합 생성",
     viewAIReport: "AI 보고서 보기",
     downloadReport: "보고서 다운로드",
     filesTotal: "총 파일 수",
@@ -790,12 +790,15 @@ export const ko: typeof en = {
     importConfirmDescription: "이 파일을 내 문서로 가져오시겠습니까?",
     invitationSent: "초대가 전송되었습니다",
     accessSettingsOpened: "액세스 설정이 열렸습니다",
-    aiSummaryGenerated: "AI 요약이 생성되었습니다",
+    aiSynthesisGenerated: "AI 종합이 생성되었습니다",
     aiReportDownloaded: "AI 보고서가 다운로드되었습니다",
     previewOpened: "미리보기가 열렸습니다",
     openingFile: "파일을 여는 중",
     fileImported: "파일을 내 문서로 가져왔습니다",
-    alreadyImported: "이미 가져온 파일입니다"
+    alreadyImported: "이미 가져온 파일입니다",
+    showingAllFiles: "모든 파일 표시 중",
+    showingFewerFiles: "일부 파일만 표시 중",
+    summaryCopied: "요약이 복사되었습니다"
   },
   footer: {
     copyright: "© 2024 AI Study Hub. 효과적인 딥러닝을 지원합니다.",

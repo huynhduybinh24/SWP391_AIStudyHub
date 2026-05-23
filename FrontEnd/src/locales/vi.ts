@@ -772,7 +772,7 @@ export const vi: typeof en = {
     canEdit: "Có thể chỉnh sửa",
     canView: "Có thể xem",
     aiInsight: "AI Insight",
-    generateSummary: "Tạo tóm tắt",
+    generateSynthesis: "Tạo tổng hợp",
     viewAIReport: "Xem báo cáo AI",
     downloadReport: "Tải báo cáo",
     filesTotal: "Tổng số tệp",
@@ -790,12 +790,15 @@ export const vi: typeof en = {
     importConfirmDescription: "Bạn có chắc chắn muốn nhập tệp này vào Tài liệu của tôi?",
     invitationSent: "Đã gửi lời mời thành công",
     accessSettingsOpened: "Đã mở cài đặt quyền truy cập",
-    aiSummaryGenerated: "Đã tạo tóm tắt AI",
+    aiSynthesisGenerated: "Đã tạo tổng hợp AI",
     aiReportDownloaded: "Đã tải báo cáo AI",
     previewOpened: "Đã mở xem trước",
     openingFile: "Đang mở tệp",
     fileImported: "Đã nhập tệp vào Tài liệu của tôi",
-    alreadyImported: "Tệp đã được nhập trước đó"
+    alreadyImported: "Tệp đã được nhập trước đó",
+    showingAllFiles: "Đang hiển thị tất cả tệp",
+    showingFewerFiles: "Đang thu gọn danh sách tệp",
+    summaryCopied: "Đã sao chép tóm tắt"
   },
   footer: {
     copyright: "© 2024 AI Study Hub. Tăng cường khả năng tự học.",

@@ -772,7 +772,7 @@ export const ja: typeof en = {
     canEdit: "編集可能",
     canView: "閲覧可能",
     aiInsight: "AI インサイト",
-    generateSummary: "要約を生成",
+    generateSynthesis: "統合を生成",
     viewAIReport: "AIレポートを表示",
     downloadReport: "レポートをダウンロード",
     filesTotal: "ファイル総数",
@@ -790,12 +790,15 @@ export const ja: typeof en = {
     importConfirmDescription: "このファイルをマイドキュメントにインポートしてもよろしいですか？",
     invitationSent: "招待が送信されました",
     accessSettingsOpened: "アクセス設定を開きました",
-    aiSummaryGenerated: "AI要約が生成されました",
+    aiSynthesisGenerated: "AI統合が生成されました",
     aiReportDownloaded: "AIレポートがダウンロードされました",
     previewOpened: "プレビューを開きました",
     openingFile: "ファイルを開いています",
     fileImported: "ファイルをマイドキュメントにインポートしました",
-    alreadyImported: "ファイルは既にインポートされています"
+    alreadyImported: "ファイルは既にインポートされています",
+    showingAllFiles: "すべてのファイルを表示しています",
+    showingFewerFiles: "表示するファイルを減らしています",
+    summaryCopied: "要約をコピーしました"
   },
   footer: {
     copyright: "© 2024 AI Study Hub. ディープラーニングを支援します。",
