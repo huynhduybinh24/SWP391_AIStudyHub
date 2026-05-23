@@ -104,7 +104,7 @@ export function FileViewer({
         behavior: 'instant'
       })
       
-      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"], .overflow-auto, [class*="overflow-auto"]')
       scrollableContainers.forEach((container) => {
         container.scrollTop = 0
       })
