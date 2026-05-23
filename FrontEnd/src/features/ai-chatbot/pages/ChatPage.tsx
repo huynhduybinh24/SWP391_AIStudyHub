@@ -264,7 +264,7 @@ export function ChatPage() {
           <div className="flex justify-center">
             <span className="rounded-full bg-[#e5eeff] dark:bg-blue-950/40 px-4 py-1.5 text-xs font-semibold text-[#3155F6] dark:text-blue-400 tracking-wide shadow-[0_1px_2px_rgba(49,85,246,0.05)]">
               New Chat Started
-            </button>
+            </span>
           </div>
 
           {/* Messages List */}
