@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
 
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
@@ -36,6 +38,11 @@ interface QuotaDetailsModalProps {
 
 function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsModalProps) {
   const { t, language } = useTranslation()
+  
+  const isPro = totalGb > 10;
+  const pdfGb = isPro ? '6.2 GB' : '1.2 GB';
+  const officeGb = isPro ? '3.8 GB' : '0.8 GB';
+  const foldersGb = isPro ? '2.4 GB' : '0.4 GB';
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -117,7 +124,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
                   {language === 'vi' ? 'Tài liệu PDF' : (language === 'ja' ? 'PDFドキュメント' : (language === 'ko' ? 'PDF 문서' : 'PDF Documents'))}
                 </span>
               </div>
-              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">6.2 GB</span>
+              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{pdfGb}</span>
             </div>
 
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
@@ -127,7 +134,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
                   {language === 'vi' ? 'Tệp văn phòng (.docx, .xlsx)' : (language === 'ja' ? 'Officeファイル（.docx, .xlsx）' : (language === 'ko' ? '오피스 파일 (.docx, .xlsx)' : 'Office Files (.docx, .xlsx)'))}
                 </span>
               </div>
-              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">3.8 GB</span>
+              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{officeGb}</span>
             </div>
 
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
@@ -137,7 +144,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
                   {language === 'vi' ? 'Thư mục & Tài sản nhóm' : (language === 'ja' ? 'フォルダとグループアセット' : (language === 'ko' ? '폴더 및 그룹 자산' : 'Folders & Group Assets'))}
                 </span>
               </div>
-              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">2.4 GB</span>
+              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{foldersGb}</span>
             </div>
           </div>
         </div>
@@ -159,6 +166,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
 export function SharedFilesPage() {
   const toast = useToast()
   const { t, language } = useTranslation()
+  const user = useAuthStore((s) => s.user)
 
   // State Management
   const [files, setFiles] = useState<SharedFile[]>([
@@ -755,8 +763,8 @@ export function SharedFilesPage() {
       <QuotaDetailsModal
         isOpen={modals.quota}
         onClose={() => setModals(prev => ({ ...prev, quota: false }))}
-        usedGb={12.4}
-        totalGb={50}
+        usedGb={user?.plan === 'pro' ? 12.4 : 2.4}
+        totalGb={user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT}
       />
 
       <CollaboratorsModal
