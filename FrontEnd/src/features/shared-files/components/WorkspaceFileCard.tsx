@@ -137,7 +137,7 @@ export function WorkspaceFileCard({
         onClick={onSelect}
         onDoubleClick={handleDoubleClick}
         className={cn(
-          "group relative flex items-center justify-between rounded-3xl border p-4 transition-all duration-200 cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 overflow-visible",
+          "group relative flex items-center justify-between rounded-3xl border p-4 transition-all duration-300 ease-out cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 overflow-visible",
           isSelected 
             ? "bg-blue-50/20 dark:bg-blue-955/10 border-blue-600 dark:border-blue-500 ring-1 ring-blue-500" 
             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
@@ -236,7 +236,7 @@ export function WorkspaceFileCard({
       onClick={onSelect}
       onDoubleClick={handleDoubleClick}
       className={cn(
-        "group relative flex flex-col justify-between rounded-3xl border p-5 transition-all duration-200 cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 min-h-[160px] overflow-visible",
+        "group relative flex flex-col justify-between rounded-3xl border p-5 transition-all duration-300 ease-out cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 min-h-[160px] overflow-visible",
         isSelected 
           ? "bg-blue-50/20 dark:bg-blue-955/10 border-blue-600 dark:border-blue-500 ring-1 ring-blue-500" 
           : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"

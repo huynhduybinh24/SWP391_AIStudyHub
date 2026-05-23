@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 
@@ -228,6 +228,24 @@ export function SharedFilesPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+
+  // Viewport tracking & select stability checks
+  const [isLargeScreen, setIsLargeScreen] = useState(false)
+  const shouldReduceMotion = useReducedMotion()
+
+  useEffect(() => {
+    const checkScreen = () => {
+      setIsLargeScreen(window.innerWidth >= 1024)
+    }
+    checkScreen()
+    window.addEventListener('resize', checkScreen)
+    return () => window.removeEventListener('resize', checkScreen)
+  }, [])
+
+  const handleSelectFile = (file: SharedFile) => {
+    if (selectedFile?.id === file.id) return
+    setSelectedFile(file)
+  }
 
   // Comments mapping by file ID
   const [commentsMap, setCommentsMap] = useState<Record<string, CommentItem[]>>({
@@ -584,9 +602,13 @@ export function SharedFilesPage() {
       transition={{ duration: 0.4 }}
       className="text-slate-900 dark:text-slate-100"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="flex flex-col lg:flex-row gap-8 items-start w-full relative">
         
-        <div className={selectedFile ? "lg:col-span-8 space-y-6 transition-all duration-300" : "lg:col-span-12 space-y-6 transition-all duration-300"}>
+        <motion.div
+          layout
+          className="flex-1 w-full space-y-6"
+          transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
+        >
           <SharedWorkspaceHeader
             onUploadClick={() => setIsUploading(true)}
             onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
@@ -616,7 +638,7 @@ export function SharedFilesPage() {
             selectedFile={selectedFile}
             viewMode={viewMode}
             favorites={favorites}
-            onSelectFile={setSelectedFile}
+            onSelectFile={handleSelectFile}
             onOpenFile={handleOpenFile}
             onStarToggle={handleStarToggle}
             onRename={(file) => {
@@ -639,30 +661,39 @@ export function SharedFilesPage() {
               toast.success(`${prefix} ${file.name}`)
             }}
           />
-        </div>
+        </motion.div>
 
         {/* Right side panel */}
-        {selectedFile && (
-          <div className="lg:col-span-4 h-full animate-fade-in">
-            <WorkspaceRightPanel
-              file={selectedFile}
-              comments={commentsMap[selectedFile.id] || []}
-              onAddComment={handleAddComment}
-              onRegenerateSummary={handleRegenerateSummary}
-              isRegenerating={isRegenerating}
-              onOpenFullSummary={() => setModals(prev => ({ ...prev, summary: true }))}
-              onGenerateQuiz={() => setModals(prev => ({ ...prev, quiz: true }))}
-              onAskAI={() => {
-                const msg = language === 'vi' ? 'Trợ lý AI đã sẵn sàng' : (language === 'ja' ? 'AIアシスタントの準備ができました' : (language === 'ko' ? 'AI 어시스턴트가 준비되었습니다' : 'AI Assistant ready for query'))
-                toast.success(msg)
-                const commentInput = document.querySelector('input[placeholder="Add a comment..."]') as HTMLInputElement
-                if (commentInput) {
-                  commentInput.focus()
-                }
-              }}
-            />
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {selectedFile && (
+            <motion.aside
+              key={selectedFile.id}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 32 : 0, y: isLargeScreen ? 0 : 24, scale: 0.98 }}
+              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 32 : 0, y: isLargeScreen ? 0 : 24, scale: 0.98 }}
+              transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
+              className="w-full lg:w-[360px] shrink-0"
+            >
+              <WorkspaceRightPanel
+                file={selectedFile}
+                comments={commentsMap[selectedFile.id] || []}
+                onAddComment={handleAddComment}
+                onRegenerateSummary={handleRegenerateSummary}
+                isRegenerating={isRegenerating}
+                onOpenFullSummary={() => setModals(prev => ({ ...prev, summary: true }))}
+                onGenerateQuiz={() => setModals(prev => ({ ...prev, quiz: true }))}
+                onAskAI={() => {
+                  const msg = language === 'vi' ? 'Trợ lý AI đã sẵn sàng' : (language === 'ja' ? 'AIアシスタントの準備ができました' : (language === 'ko' ? 'AI 어시스턴트가 준비되었습니다' : 'AI Assistant ready for query'))
+                  toast.success(msg)
+                  const commentInput = document.querySelector('input[placeholder="Add a comment..."]') as HTMLInputElement
+                  if (commentInput) {
+                    commentInput.focus()
+                  }
+                }}
+              />
+            </motion.aside>
+          )}
+        </AnimatePresence>
 
       </div>
 
