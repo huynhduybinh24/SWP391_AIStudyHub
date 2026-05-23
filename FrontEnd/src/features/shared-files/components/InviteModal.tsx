@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Mail, ChevronDown, Check } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface InviteModalProps {
   isOpen: boolean
@@ -11,6 +12,7 @@ interface InviteModalProps {
 }
 
 export function InviteModal({ isOpen, onClose, onInviteSubmit }: InviteModalProps) {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'Viewer' | 'Editor'>('Viewer')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -38,7 +40,7 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit }: InviteModalProp
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email.trim())) {
-      alert('Vui lòng nhập địa chỉ email hợp lệ!')
+      alert(t.validation.invalidEmail)
       return
     }
 
@@ -73,7 +75,7 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit }: InviteModalProp
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-6 top-6 text-slate-450 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="absolute right-6 top-6 text-slate-455 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               aria-label="Close dialog"
             >
               <X className="size-5" />
@@ -86,10 +88,10 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit }: InviteModalProp
               </div>
               <div>
                 <h3 id="invite-title" className="text-base font-extrabold text-slate-900 dark:text-white">
-                  Invite Teammate
+                  {t.sharedFiles.invite}
                 </h3>
-                <p className="text-xs text-slate-450 dark:text-slate-500 font-semibold mt-0.5">
-                  Share this workspace to collaborate in real time
+                <p className="text-xs text-slate-455 dark:text-slate-500 font-semibold mt-0.5">
+                  {t.sharedFiles.inviteDesc}
                 </p>
               </div>
             </div>
@@ -98,7 +100,7 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit }: InviteModalProp
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Email Address
+                  {t.sharedFiles.emailLabel}
                 </label>
                 <input
                   type="text"
@@ -112,14 +114,14 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit }: InviteModalProp
 
               <div className="space-y-1.5 relative">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Permission / Role
+                  {t.sharedFiles.roleLabel}
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
                 >
-                  <span>{role === 'Editor' ? 'Editor (Can edit and share)' : 'Viewer (View Only)'}</span>
+                  <span>{role === 'Editor' ? t.sharedFiles.roleEditor : t.sharedFiles.roleViewer}</span>
                   <ChevronDown className="h-4 w-4 text-slate-400" />
                 </button>
 
@@ -140,7 +142,7 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit }: InviteModalProp
                             role === r ? "text-blue-600 bg-blue-50/40 dark:text-blue-400 dark:bg-blue-955/20" : "text-slate-700 dark:text-slate-300"
                           )}
                         >
-                          <span>{r === 'Editor' ? 'Editor' : 'Viewer'}</span>
+                          <span>{r === 'Editor' ? t.sharedFiles.roleEditor : t.sharedFiles.roleViewer}</span>
                           {role === r && <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
                         </button>
                       ))}
@@ -154,16 +156,16 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit }: InviteModalProp
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-550 hover:bg-slate-50 dark:text-slate-350 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-550 hover:bg-slate-50 dark:text-slate-355 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
                 <Button
                   type="submit"
                   disabled={!email.trim()}
                   className="bg-[#3155F6] hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md shadow-blue-500/10"
                 >
-                  Send Invite
+                  {t.sharedFiles.sendInvite}
                 </Button>
               </div>
             </form>

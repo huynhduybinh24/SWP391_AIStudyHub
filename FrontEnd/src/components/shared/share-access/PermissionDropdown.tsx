@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 export type ShareRole = 'editor' | 'commenter' | 'viewer'
 
@@ -29,11 +30,12 @@ export function PermissionDropdown({
   const listboxRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [focusedIndex, setFocusedIndex] = useState(-1)
+  const { t } = useTranslation()
 
   const roles: { value: ShareRole; label: string }[] = [
-    { value: 'viewer', label: 'Người xem' },
-    { value: 'commenter', label: 'Người nhận xét' },
-    { value: 'editor', label: 'Người chỉnh sửa' }
+    { value: 'viewer', label: t.shareModal.roleViewer },
+    { value: 'commenter', label: t.shareModal.roleCommenter },
+    { value: 'editor', label: t.shareModal.roleEditor }
   ]
 
   const totalOptions = showRemove ? roles.length + 1 : roles.length
@@ -109,7 +111,7 @@ export function PermissionDropdown({
     }
   }, [focusedIndex, isOpen])
 
-  const currentRoleLabel = roles.find((r) => r.value === value)?.label || 'Người xem'
+  const currentRoleLabel = roles.find((r) => r.value === value)?.label || t.shareModal.roleViewer
 
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>
@@ -167,7 +169,7 @@ export function PermissionDropdown({
                   "w-full text-left px-4 py-2.5 text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer focus:outline-none select-none",
                   value === r.value 
                     ? "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20" 
-                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white focus:bg-slate-100 dark:focus:bg-slate-850"
+                    : "text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white focus:bg-slate-100 dark:focus:bg-slate-850"
                 )}
               >
                 <span>{r.label}</span>
@@ -189,7 +191,7 @@ export function PermissionDropdown({
                   }}
                   className="w-full text-left px-4 py-2.5 text-xs font-bold text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer focus:outline-none focus:bg-rose-100 dark:focus:bg-rose-800 select-none"
                 >
-                  Xóa quyền truy cập
+                  {t.shareModal.removePermissionLabel || t.shareModal.removeAccess}
                 </div>
               </>
             )}

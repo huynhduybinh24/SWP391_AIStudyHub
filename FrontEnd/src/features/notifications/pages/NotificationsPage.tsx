@@ -3,36 +3,8 @@ import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, File
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { notificationApi, Notification } from '../api/notification.api'
-
-/**
- * Text Encoding and Spellings Verification:
- * - AI Study Hub (Corrected from "AI êtudy Hub")
- * - Unread (Corrected from "ỉ nread")
- * - Shared Files (Corrected from "r hared ailes")
- * - AI Updates (Corrected from "AI pdates")
- * - View Summary (Corrected from "View r ummary")
- * - Settings (Corrected from "êettings")
- * - Terms of Service (Corrected from "Terms of Service")
- */
-
-/**
- * Interaction Verification Checklist (Commit 5):
- * - Page `/dashboard/notifications` loaded successfully.
- * - Selecting "Mentions" tab highlights it correctly.
- * - Clicking "Reply" on the Emily card expands the active reply box.
- * - Typable textarea with placeholder "Type your reply here..." is functional.
- * - Clicking "Cancel" closes the reply box and restores the "Reply" button.
- * - Clicking "Send Reply" successfully clears text and closes the reply box.
- * - No console errors or crashes encountered during interaction testing.
- */
-
-/**
- * Interaction Verification Checklist (Commit 7):
- * - Verified npm run build compiled successfully with zero errors.
- * - Verified /dashboard/notifications route is accessible.
- * - Verified AI Updates tab successfully loads exactly 3 cards.
- * - Verified clicking "View Summary", "Open Plan", and "Practice Now" buttons doesn't crash the page.
- */
+import { useTranslation } from '@/context/LanguageContext'
+import { Language } from '@/locales'
 
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
@@ -63,6 +35,7 @@ interface NotificationCardProps {
 }
 
 function NotificationCard({
+  id,
   type,
   title,
   time,
@@ -82,15 +55,217 @@ function NotificationCard({
   onMarkRead,
 }: NotificationCardProps) {
   const navigate = useNavigate()
+  const { t, language } = useTranslation()
   const [commentText, setCommentText] = useState('')
   const [isReplied, setIsReplied] = useState(false)
   const [replyContent, setReplyContent] = useState('')
   const [showReplyInput, setShowReplyInput] = useState(false)
 
+  // Localize Notification contents dynamically
+  const localized = (() => {
+    if (id === 'ai-summary') {
+      return {
+        title: language === 'vi' ? 'Bản tóm tắt AI đã sẵn sàng' : language === 'ja' ? 'AI要約の準備完了' : language === 'ko' ? 'AI 요약 완료' : 'AI Summary Ready',
+        description: (
+          <>
+            {language === 'vi' ? 'Bản tóm tắt toàn diện cho tài liệu ' : language === 'ja' ? 'ドキュメント ' : language === 'ko' ? '다음 문서에 대한 포괄적인 요약 ' : 'The comprehensive summary for your document '}
+            <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
+              "Advanced Neuroscience Syllabus 2024.pdf"
+            </strong>{' '}
+            {language === 'vi' ? 'của bạn đã hoàn thành và sẵn sàng để xem lại.' : language === 'ja' ? 'の包括的な要約が完了し、確認の準備が整いました。' : language === 'ko' ? '이(가) 완료되어 검토할 준비가 되었습니다.' : 'is now complete and ready for review.'}
+          </>
+        ),
+        actionText: language === 'vi' ? 'Xem bản tóm tắt' : language === 'ja' ? '要約を表示' : language === 'ko' ? '요약 보기' : 'View Summary',
+      }
+    }
+    if (id === 'shared-folder') {
+      return {
+        title: language === 'vi' ? 'Sarah Jenkins đã chia sẻ một thư mục với bạn' : language === 'ja' ? 'Sarah Jenkins がフォルダーを共有しました' : language === 'ko' ? 'Sarah Jenkins가 폴더를 공유했습니다' : 'Sarah Jenkins shared a folder with you',
+        description: (
+          <>
+            {language === 'vi' ? 'Thư mục: ' : language === 'ja' ? 'フォルダー: ' : language === 'ko' ? '폴더: ' : 'Folder: ' }
+            <span className="font-semibold text-[#0b1c30] dark:text-slate-100">Group Project Research Materials</span>
+          </>
+        ),
+      }
+    }
+    if (id === 'emily') {
+      return {
+        title: language === 'vi' ? 'Emily R. đã nhắc đến bạn' : language === 'ja' ? 'Emily R. があなたをメンションしました' : language === 'ko' ? 'Emily R.님이 당신을 언급했습니다' : 'Emily R. mentioned you',
+        description: (
+          <>
+            <span className="text-[#3155F6] dark:text-blue-400 font-semibold">@User</span>
+            {language === 'vi' 
+              ? ', bạn nghĩ thế nào về phần phương pháp luận ở trang 4 của bài báo "Cognitive Science"?' 
+              : language === 'ja' 
+              ? '、"Cognitive Science"の論文의 4ページ目にある方法論セクションについてどう思いますか？' 
+              : language === 'ko' 
+              ? '님, "Cognitive Science" 논문의 4페이지 방법론 섹션에 대해 어떻게 생각하시나요?' 
+              : ", what do you think about the methodology section on page 4 of the 'Cognitive Science' paper?"}
+          </>
+        ),
+        actionText: language === 'vi' ? 'Phản hồi' : language === 'ja' ? '返信' : language === 'ko' ? '답장' : 'Reply',
+      }
+    }
+    if (id === 'all-3') {
+      return {
+        title: language === 'vi' ? 'Đã nhắc đến bạn' : language === 'ja' ? 'あなたをメンションしました' : language === 'ko' ? '언급됨' : 'Mentioned You',
+        description: (
+          <>
+            {language === 'vi' 
+              ? 'Emily R. đã nhắc đến bạn trong một bình luận ở ' 
+              : language === 'ja' 
+              ? 'Emily R. がコメントであなたをメンションしました：' 
+              : language === 'ko' 
+              ? 'Emily R.님이 다음 문서의 댓글에서 당신을 언급했습니다: ' 
+              : 'Emily R. mentioned you in a comment on '}
+            <span className="text-[#3155F6] dark:text-blue-400 hover:underline cursor-pointer font-semibold">
+              {language === 'vi' ? 'Ghi chú bài giảng Tuần 4.' : language === 'ja' ? '講義ノート第4週。' : language === 'ko' ? '강의 노트 4주차.' : 'Lecture Notes Week 4.'}
+            </span>
+          </>
+        ),
+        quote: language === 'vi' 
+          ? '@You bạn có thể xác minh các công thức được sử dụng trong phần 3 không? Chúng có vẻ hơi khác so với sách giáo khoa.' 
+          : language === 'ja' 
+          ? '@You セクション3で使用されている数式を確認していただけますか？教科書と少し異なるようです。' 
+          : language === 'ko' 
+          ? '@You 섹션 3에 사용된 공식을 확인해 주시겠습니까? 교과서와 약간 다른 것 같습니다.' 
+          : '@You could you verify the formulas used in section 3? They seem slightly different from the textbook.',
+        actionText: language === 'vi' ? 'Phản hồi' : language === 'ja' ? '返信' : language === 'ko' ? '답장' : 'Reply',
+      }
+    }
+    if (id === 'security-alert') {
+      return {
+        title: language === 'vi' ? 'Cảnh báo bảo mật: Đăng nhập mới' : language === 'ja' ? 'セキュリティ警告: 新規ログイン' : language === 'ko' ? '보안 경고: 새로운 로그인' : 'Security Alert: New Login',
+        description: (
+          <>
+            {language === 'vi' 
+              ? 'Một đăng nhập mới đã được phát hiện trên tài khoản của bạn từ trình duyệt Chrome trên thiết bị MacOS. Nếu đây không phải là bạn, vui lòng bảo mật tài khoản ngay lập tức.' 
+              : language === 'ja' 
+              ? 'MacOSデバイスのChromeブラウザからアカウントへの新しいログインが検出されました。これがご自身でない場合は、すぐにアカウントを保護してください。' 
+              : language === 'ko' 
+              ? 'MacOS 기기의 Chrome 브라우저에서 계정에 대한 새로운 로그인이 감지되었습니다. 본인이 아닌 경우 즉시 계정을 보호하십시오.' 
+              : 'A new login was detected on your account from a Chrome browser on a MacOS device. If this wasn\'t you, please secure your account immediately.'}
+          </>
+        ),
+      }
+    }
+    if (id === 'study-plan') {
+      return {
+        title: language === 'vi' ? 'Đã tạo kế hoạch học tập' : language === 'ja' ? '学習計画が作成されました' : language === 'ko' ? '학습 계획 생성됨' : 'Study Plan Generated',
+        description: (
+          <>
+            {language === 'vi' 
+              ? 'AI đã tạo một kế hoạch học tập 4 tuần được cá nhân hóa cho ' 
+              : language === 'ja' 
+              ? 'AIがパーソナライズされた4週間の学習計画を作成しました：' 
+              : language === 'ko' 
+              ? 'AI가 다음 과목에 대한 맞춤형 4주 학습 계획을 생성했습니다: ' 
+              : 'AI has created a personalized 4-week study plan for '}
+            <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
+              {language === 'vi' ? '"Hóa hữu cơ"' : language === 'ja' ? '「有機化学」' : language === 'ko' ? '"유기 화학"' : '"Organic Chemistry"'}
+            </strong>{' '}
+            {language === 'vi' 
+              ? 'dựa trên các tệp bạn đã tải lên gần đây.' 
+              : language === 'ja' 
+              ? '（最近のアップロードに基づく）。' 
+              : language === 'ko' 
+              ? ' (최근 업로드 기준).' 
+              : 'based on your recent uploads.'}
+          </>
+        ),
+      }
+    }
+    if (id === 'mention-2') {
+      return {
+        title: language === 'vi' ? 'Sarah Mitchell đã nhắc đến bạn' : language === 'ja' ? 'Sarah Mitchell があなたをメンションしました' : language === 'ko' ? 'Sarah Mitchell님이 당신을 언급했습니다' : 'Sarah Mitchell mentioned you',
+        description: (
+          <>
+            {language === 'vi' 
+              ? 'Sarah Mitchell đã nhắc đến bạn trong một bình luận ở ' 
+              : language === 'ja' 
+              ? 'Sarah Mitchell がコメントであなたをメンションしました：' 
+              : language === 'ko' 
+              ? 'Sarah Mitchell님이 다음 문서의 댓글에서 당신을 언급했습니다: ' 
+              : "Sarah Mitchell mentioned you in a comment on "}
+            <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
+              'Neuroscience_Ch4_Syn...'
+            </strong>
+            {language === 'vi'
+              ? ': "@Sarah Mitchell, hãy kiểm tra sơ đồ tính dẻo của khớp thần kinh ở trang 12."'
+              : language === 'ja'
+              ? ': 「@Sarah Mitchell、12ページのシナプス可塑性図を確認してください。」'
+              : language === 'ko'
+              ? ': "@Sarah Mitchell, 12페이지의 시냅스 가소성 다이어그램을 확인하세요."'
+              : ': "@Sarah Mitchell, check the synaptic plasticity diagram on page 12."'}
+          </>
+        ),
+        actionText: language === 'vi' ? 'Xem bình luận' : language === 'ja' ? 'コメントを表示' : language === 'ko' ? '댓글 보기' : 'View Comment',
+      }
+    }
+    if (id === 'shared-doc-1') {
+      return {
+        title: language === 'vi' ? 'Alex Chen đã chia sẻ một tài liệu' : language === 'ja' ? 'Alex Chen がドキュメントを共有しました' : language === 'ko' ? 'Alex Chen님이 문서를 공유했습니다' : 'Alex Chen shared a document',
+        description: (
+          <>
+            {language === 'vi' ? 'Tài liệu: ' : language === 'ja' ? 'ドキュメント: ' : language === 'ko' ? '문서: ' : 'Document: '}
+            <span className="font-semibold text-[#0b1c30] dark:text-slate-100">Advanced Neuroscience Syllabus 2024.pdf</span>
+          </>
+        ),
+      }
+    }
+    if (id === 'flashcards') {
+      return {
+        title: language === 'vi' ? 'Có thẻ ghi nhớ mới' : language === 'ja' ? '新しいフラッシュカードがあります' : language === 'ko' ? '새로운 플래시카드 사용 가능' : 'New Flashcards Available',
+        description: (
+          <>
+            {language === 'vi' 
+              ? '25 thẻ ghi nhớ mới đã được tạo tự động cho ' 
+              : language === 'ja' 
+              ? 'に対して25枚の新しいフラッシュカードが自動的に生成されました：' 
+              : language === 'ko' 
+              ? '에 대해 25개의 새로운 플래시카드가 자동으로 생성되었습니다: '
+              : '25 new flashcards have been automatically generated for '}
+            <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
+              {language === 'vi' ? '"Sinh học tế bào - Tuần 4"' : language === 'ja' ? '「細胞生物学 - 第4週」' : language === 'ko' ? '"세포 생물학 - 4주차"' : '"Cell Biology - Week 4"'}
+            </strong>
+            {language === 'vi' ? '.' : ''}
+          </>
+        ),
+      }
+    }
+    return {
+      title,
+      description,
+      quote,
+      actionText
+    }
+  })()
+
+  const finalTitle = localized.title
+  const finalDescription = localized.description
+  const finalQuote = localized.quote ?? quote
+  const finalActionText = localized.actionText ?? actionText
+
+  const formatTime = (tString: string) => {
+    if (tString.endsWith('m ago')) {
+      const mins = tString.split('m')[0]
+      return language === 'vi' ? `${mins} phút trước` : language === 'ja' ? `${mins}分前` : language === 'ko' ? `${mins}분 전` : `${mins}m ago`
+    }
+    if (tString.endsWith('h ago')) {
+      const hours = tString.split('h')[0]
+      return language === 'vi' ? `${hours} giờ trước` : language === 'ja' ? `${hours}時間前` : language === 'ko' ? `${hours}시간 전` : `${hours}h ago`
+    }
+    if (tString === 'Yesterday') {
+      return t.common.yesterday
+    }
+    return tString
+  }
+
   const handleActionClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     onMarkRead?.()
-    if (actionText === 'Reply') {
+    if (finalActionText === 'Reply' || finalActionText === 'Phản hồi' || finalActionText === '返信' || finalActionText === '답장') {
       if (onReplyClick) {
         onReplyClick()
       } else {
@@ -122,7 +297,7 @@ function NotificationCard({
         {avatar ? (
           <img
             src={avatar}
-            alt={title}
+            alt={finalTitle}
             className="w-12 h-12 rounded-full object-cover border border-slate-100 dark:border-slate-800"
             onError={(e) => {
               e.currentTarget.src = '/avatar.svg'
@@ -147,11 +322,13 @@ function NotificationCard({
       {/* Main Content Area */}
       <div className="flex-grow min-w-0">
         <div className="flex items-center justify-between mb-1.5">
-          <h2 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100">{title}</h2>
+          <h2 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100">{finalTitle}</h2>
           <div className="flex items-center gap-1.5 text-xs font-semibold">
             {!isRead && (
               <>
-                <span className="text-[#3155F6] dark:text-blue-400">New</span>
+                <span className="text-[#3155F6] dark:text-blue-400">
+                  {language === 'vi' ? 'Mới' : language === 'ja' ? '新規' : language === 'ko' ? '새로운' : 'New'}
+                </span>
                 <span className="w-2 h-2 rounded-full bg-[#3155F6] dark:bg-blue-500" />
               </>
             )}
@@ -159,53 +336,73 @@ function NotificationCard({
         </div>
 
         <div className="text-sm text-[#434655] dark:text-slate-300 leading-relaxed">
-          {description}
+          {finalDescription}
         </div>
 
         {/* Optional Quote Block */}
-        {quote && (
+        {finalQuote && (
           <div className="bg-[#F4F7FE] dark:bg-slate-950 border border-[#E8EEFF] dark:border-slate-800 p-3.5 rounded-xl mt-3.5 text-sm italic text-[#434655] dark:text-slate-400 leading-relaxed">
-            {quote}
+            {finalQuote}
           </div>
         )}
 
         {buttons && buttons.length > 0 ? (
           <div className="flex items-center gap-3 mt-4">
-            {buttons.map((btn, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onMarkRead?.()
-                  if (btn.onClick) {
-                    btn.onClick()
-                  } else if (btn.url) {
-                    navigate(btn.url)
-                  }
-                }}
-                className={cn(
-                  "px-5 py-2.5 text-sm font-semibold rounded-xl transition-colors cursor-pointer border flex items-center gap-1.5",
-                  btn.variant === 'primary' && "bg-[#3155F6] hover:bg-[#2563eb] text-white border-[#3155F6] shadow-sm shadow-[#3155F6]/10 dark:bg-blue-600 dark:hover:bg-blue-500 dark:border-blue-600",
-                  btn.variant === 'secondary' && "bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] border-[#E8EEFF] dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-400 dark:border-blue-950/40",
-                  btn.variant === 'light' && "bg-[#F4F7FE] hover:bg-slate-100 text-[#0b1c30] border-[rgba(195,198,215,0.4)] dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 dark:border-slate-700",
-                  btn.variant === 'shared-btn' && "bg-[#F0F4FF] hover:bg-[#E5EEFF] text-[#3155F6] border-none px-4 py-2 text-xs font-semibold rounded-lg shadow-none dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-400"
-                )}
-              >
-                <span>{btn.text}</span>
-                {btn.icon && btn.icon}
-              </button>
-            ))}
+            {buttons.map((btn, index) => {
+              // Localize button text
+              let localizedBtnText = btn.text
+              if (id === 'shared-folder' && btn.text === 'Open Folder') {
+                localizedBtnText = language === 'vi' ? 'Mở thư mục' : language === 'ja' ? 'フォルダーを開く' : language === 'ko' ? '폴더 열기' : 'Open Folder'
+              } else if (id === 'security-alert') {
+                if (btn.text === 'Review Activity') {
+                  localizedBtnText = language === 'vi' ? 'Xem lại hoạt động' : language === 'ja' ? 'アクティビティを確認' : language === 'ko' ? '활동 검토' : 'Review Activity'
+                } else if (btn.text === 'It was me') {
+                  localizedBtnText = language === 'vi' ? 'Chính là tôi' : language === 'ja' ? '私です' : language === 'ko' ? '본인입니다' : 'It was me'
+                }
+              } else if (id === 'study-plan' && btn.text === 'Open Plan') {
+                localizedBtnText = language === 'vi' ? 'Mở kế hoạch' : language === 'ja' ? '計画を開く' : language === 'ko' ? '계획 열기' : 'Open Plan'
+              } else if (id === 'shared-doc-1' && btn.text === 'View Document') {
+                localizedBtnText = language === 'vi' ? 'Xem tài liệu' : language === 'ja' ? 'ドキュメントを表示' : language === 'ko' ? '문서 보기' : 'View Document'
+              } else if (id === 'flashcards' && btn.text === 'Practice Now') {
+                localizedBtnText = language === 'vi' ? 'Luyện tập ngay' : language === 'ja' ? '今すぐ練習' : language === 'ko' ? '지금 연습하기' : 'Practice Now'
+              }
+
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onMarkRead?.()
+                    if (btn.onClick) {
+                      btn.onClick()
+                    } else if (btn.url) {
+                      navigate(btn.url)
+                    }
+                  }}
+                  className={cn(
+                    "px-5 py-2.5 text-sm font-semibold rounded-xl transition-colors cursor-pointer border flex items-center gap-1.5",
+                    btn.variant === 'primary' && "bg-[#3155F6] hover:bg-[#2563eb] text-white border-[#3155F6] shadow-sm shadow-[#3155F6]/10 dark:bg-blue-600 dark:hover:bg-blue-500 dark:border-blue-600",
+                    btn.variant === 'secondary' && "bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] border-[#E8EEFF] dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-400 dark:border-blue-950/40",
+                    btn.variant === 'light' && "bg-[#F4F7FE] hover:bg-slate-100 text-[#0b1c30] border-[rgba(195,198,215,0.4)] dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 dark:border-slate-700",
+                    btn.variant === 'shared-btn' && "bg-[#F0F4FF] hover:bg-[#E5EEFF] text-[#3155F6] border-none px-4 py-2 text-xs font-semibold rounded-lg shadow-none dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-400"
+                  )}
+                >
+                  <span>{localizedBtnText}</span>
+                  {btn.icon && btn.icon}
+                </button>
+              )
+            })}
           </div>
-        ) : actionText && !showReplyInput && !isReplied && !isActiveReply ? (
+        ) : finalActionText && !showReplyInput && !isReplied && !isActiveReply ? (
           <div>
             <button
               type="button"
               onClick={handleActionClick}
               className="inline-flex items-center gap-1.5 bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] px-5 py-2.5 rounded-xl text-sm font-semibold mt-4 transition-colors cursor-pointer border border-[#E8EEFF] dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-400 dark:border-blue-950/40"
             >
-              <span>{actionText}</span>
-              {actionText === 'Reply' ? (
+              <span>{finalActionText}</span>
+              {(finalActionText === 'Reply' || finalActionText === 'Phản hồi' || finalActionText === '返信' || finalActionText === '답장') ? (
                 <ReplyIcon className="w-3.5 h-3.5" />
               ) : (
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -218,7 +415,7 @@ function NotificationCard({
         {isActiveReply && (
           <div className="mt-3.5 flex flex-col gap-3.5 w-full" onClick={(e) => e.stopPropagation()}>
             <textarea
-              placeholder="Type your reply here..."
+              placeholder={language === 'vi' ? 'Nhập phản hồi của bạn ở đây...' : language === 'ja' ? '返信を入力してください...' : language === 'ko' ? '여기에 답장을 입력하세요...' : 'Type your reply here...'}
               value={replyText || ''}
               onChange={(e) => onReplyTextChange?.(e.target.value)}
               className="w-full bg-[#F4F7FE]/70 dark:bg-slate-950/70 border border-[#E8EEFF] dark:border-slate-800 rounded-2xl p-4 text-sm text-[#0b1c30] dark:text-slate-100 placeholder-[#737686] dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3155F6]/15 resize-none h-[100px]"
@@ -229,14 +426,14 @@ function NotificationCard({
                 onClick={onCancelClick}
                 className="bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800 text-[#434655] dark:text-slate-400 hover:text-[#0b1c30] dark:hover:text-slate-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
               >
-                Cancel
+                {t.common.cancel}
               </button>
               <button
                 type="button"
                 onClick={() => onSendReplyClick?.(replyText || '')}
                 className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[#3155F6] shadow-sm shadow-[#3155F6]/10 dark:bg-blue-600 dark:hover:bg-blue-500 dark:border-blue-600"
               >
-                <span>Send Reply</span>
+                <span>{language === 'vi' ? 'Gửi phản hồi' : language === 'ja' ? '返信を送信' : language === 'ko' ? '답장 전송' : 'Send Reply'}</span>
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -247,7 +444,7 @@ function NotificationCard({
         {showReplyInput && !isReplied && (
           <div className="mt-4.5 relative" onClick={(e) => e.stopPropagation()}>
             <textarea
-              placeholder="Type a reply..."
+              placeholder={language === 'vi' ? 'Nhập phản hồi...' : language === 'ja' ? '返信を入力...' : language === 'ko' ? '답장 입력...' : 'Type a reply...'}
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => {
@@ -264,7 +461,7 @@ function NotificationCard({
               disabled={!commentText.trim()}
               className="absolute bottom-3 right-3 bg-[#3155F6] hover:bg-[#2563eb] dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
             >
-              Reply
+              {language === 'vi' ? 'Phản hồi' : language === 'ja' ? '返信' : language === 'ko' ? '답장' : 'Reply'}
             </button>
           </div>
         )}
@@ -273,7 +470,7 @@ function NotificationCard({
         {isReplied && (
           <div className="mt-4 flex gap-3" onClick={(e) => e.stopPropagation()}>
             <div className="w-8 h-8 rounded-full bg-[#3155F6] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              Me
+              {language === 'vi' ? 'Tôi' : language === 'ja' ? '自分' : language === 'ko' ? '나' : 'Me'}
             </div>
             <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl rounded-tl-none p-3.5 text-sm text-[#434655] dark:text-slate-300">
               {replyContent}
@@ -287,6 +484,7 @@ function NotificationCard({
 
 export function NotificationsPage() {
   const navigate = useNavigate()
+  const { t, language } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const tabs = ['All', 'Unread', 'Mentions', 'Shared Files', 'AI Updates']
@@ -301,6 +499,23 @@ export function NotificationsPage() {
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
 
+  const getTabLabel = (tab: string) => {
+    switch (tab) {
+      case 'All':
+        return t.common.all
+      case 'Unread':
+        return language === 'vi' ? 'Chưa đọc' : language === 'ja' ? '未読' : language === 'ko' ? '읽지 않음' : 'Unread'
+      case 'Mentions':
+        return language === 'vi' ? 'Lượt nhắc' : language === 'ja' ? 'メンション' : language === 'ko' ? '언급' : 'Mentions'
+      case 'Shared Files':
+        return t.sidebar.sharedFiles
+      case 'AI Updates':
+        return language === 'vi' ? 'AI cập nhật' : language === 'ja' ? 'AI更新' : language === 'ko' ? 'AI 업데이트' : 'AI Updates'
+      default:
+        return tab
+    }
+  }
+
   const fetchNotifications = useCallback(async (filter: string) => {
     setLoading(true)
     setError(null)
@@ -308,11 +523,11 @@ export function NotificationsPage() {
       const data = await notificationApi.getNotifications(filter)
       setNotifications(data)
     } catch (err) {
-      setError('Failed to fetch notifications')
+      setError(language === 'vi' ? 'Không thể tải thông báo' : language === 'ja' ? '通知の取得に失敗しました' : language === 'ko' ? '알림을 가져오는 데 실패했습니다' : 'Failed to fetch notifications')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [language])
 
   const normalize = (str: string) => str.toLowerCase().replace(/[\s-_]+/g, '')
 
@@ -343,9 +558,9 @@ export function NotificationsPage() {
       {/* Title Section */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#0b1c30] dark:text-slate-100">Notifications</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0b1c30] dark:text-slate-100">{t.notificationsPage.title}</h1>
           <p className="text-base text-[#737686] dark:text-slate-400 mt-2">
-            Stay updated on your study materials and collaborations.
+            {t.notificationsPage.subtitle}
           </p>
         </div>
         <button
@@ -354,7 +569,9 @@ export function NotificationsPage() {
           className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-[rgba(195,198,215,0.4)] dark:border-slate-800 rounded-xl text-sm font-semibold text-[#434655] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer"
         >
           <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-          <span className="hidden sm:inline">Refresh</span>
+          <span className="hidden sm:inline">
+            {language === 'vi' ? 'Làm mới' : language === 'ja' ? '更新' : language === 'ko' ? '새로고침' : 'Refresh'}
+          </span>
         </button>
       </div>
 
@@ -374,7 +591,7 @@ export function NotificationsPage() {
                   : "bg-white dark:bg-slate-900 text-[#434655] dark:text-slate-300 border-[rgba(195,198,215,0.4)] dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
               )}
             >
-              {tab}
+              {getTabLabel(tab)}
             </button>
           )
         })}
@@ -387,18 +604,24 @@ export function NotificationsPage() {
             <div className="w-12 h-12 rounded-full bg-[#F4F7FE] dark:bg-slate-800 flex items-center justify-center mb-4">
               <RefreshCw className="w-6 h-6 text-[#3155F6] animate-spin" />
             </div>
-            <h3 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100 mb-1">Loading notifications...</h3>
-            <p className="text-[#737686] font-medium text-sm">Please wait a moment while we fetch your data</p>
+            <h3 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100 mb-1">
+              {language === 'vi' ? 'Đang tải thông báo...' : language === 'ja' ? '通知を読み込み中...' : language === 'ko' ? '알림 로딩 중...' : 'Loading notifications...'}
+            </h3>
+            <p className="text-[#737686] font-medium text-sm">
+              {language === 'vi' ? 'Vui lòng đợi trong giây lát...' : language === 'ja' ? 'データを取得するまでしばらくお待ちください' : language === 'ko' ? '데이터를 가져오는 동안 잠시만 기다려주세요' : 'Please wait a moment while we fetch your data'}
+            </p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-20 bg-[#FFF0F0]/50 dark:bg-red-950/20 rounded-3xl border border-dashed border-red-200 dark:border-red-900/50">
-            <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-1">Oops, something went wrong!</h3>
+            <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-1">
+              {language === 'vi' ? 'Có lỗi xảy ra!' : language === 'ja' ? 'エラーが発生しました' : language === 'ko' ? '오류가 발생했습니다' : 'Oops, something went wrong!'}
+            </h3>
             <p className="text-red-500 font-medium text-sm mb-4">{error}</p>
             <button
               onClick={() => fetchNotifications(activeFilter)}
               className="px-4 py-2 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
             >
-              Try Again
+              {language === 'vi' ? 'Thử lại' : language === 'ja' ? '再試行' : language === 'ko' ? '다시 시도' : 'Try Again'}
             </button>
           </div>
         ) : notifications.length > 0 ? (
@@ -429,11 +652,11 @@ export function NotificationsPage() {
             <div className="w-16 h-16 rounded-full bg-[#F4F7FE] dark:bg-slate-800 flex items-center justify-center mb-5">
               <BellOff className="w-8 h-8 text-[#A0AABF] dark:text-slate-500" />
             </div>
-            <h3 className="text-xl font-bold text-[#0b1c30] dark:text-slate-100 mb-2">No notifications yet</h3>
+            <h3 className="text-xl font-bold text-[#0b1c30] dark:text-slate-100 mb-2">{t.notificationsPage.noNotifications}</h3>
             <p className="text-[#737686] font-medium text-sm text-center max-w-[250px]">
               {activeTab === 'Unread' 
-                ? "You're all caught up! There are no unread messages." 
-                : "When you get new notifications, they'll show up here."}
+                ? (language === 'vi' ? 'Bạn đã đọc hết tất cả thông báo!' : language === 'ja' ? 'すべて確認済みです！未読メッセージはありません。' : language === 'ko' ? '모두 읽으셨습니다! 읽지 않은 메시지가 없습니다.' : "You're all caught up! There are no unread messages.")
+                : (language === 'vi' ? 'Khi có thông báo mới, chúng sẽ hiển thị ở đây.' : language === 'ja' ? '新しい通知が届くと、ここに表示されます。' : language === 'ko' ? '새로운 알림이 도착하면 여기에 표시됩니다.' : "When you get new notifications, they'll show up here.")}
             </p>
           </div>
         )}

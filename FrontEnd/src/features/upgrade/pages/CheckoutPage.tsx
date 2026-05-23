@@ -8,9 +8,11 @@ import { OrderSummary } from '../components/OrderSummary'
 import { PaymentSuccessModal } from '../components/PaymentSuccessModal'
 import { ExpressCheckoutModal } from '../components/ExpressCheckoutModal'
 import { useToast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function CheckoutPage() {
   const toast = useToast()
+  const { t } = useTranslation()
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState<'apple' | 'google' | 'paypal' | null>('paypal')
   const [paymentMethod, setPaymentMethod] = useState<'Apple Pay' | 'Google Pay' | 'PayPal' | 'Credit Card'>('PayPal')
@@ -27,13 +29,12 @@ export function CheckoutPage() {
     }
 
     setSelectedProvider(provider)
-    toast.info(`${providerNames[provider]} selected`)
+    toast.info(t.upgrade.toastProviderSelected(providerNames[provider]))
     setExpressConfirmProvider(provider)
     setShowExpressConfirmModal(true)
   }
 
   const handleClearExpressSelection = () => {
-    // When credit card input fields are focused, express provider state is cleared
     setSelectedProvider(null)
   }
 
@@ -67,20 +68,20 @@ export function CheckoutPage() {
             <div className="space-y-6">
               {/* Back to Plans Link */}
               <Link
-                to="/pricing"
+                to="/dashboard/upgrade"
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-[#2563eb] dark:text-slate-500 dark:hover:text-blue-400 no-underline transition-colors"
               >
                 <ArrowLeft className="size-3.5" />
-                Back to Plans
+                {t.upgrade.backToPlans}
               </Link>
 
               {/* Title & Subtitle */}
               <div className="space-y-1.5">
                 <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                  Secure Checkout
+                  {t.upgrade.secureCheckout}
                 </h1>
                 <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-                  Complete your upgrade to AI Study Hub Pro.
+                  {t.upgrade.secureCheckoutDesc}
                 </p>
               </div>
 
@@ -94,7 +95,7 @@ export function CheckoutPage() {
               <div className="relative flex py-2 items-center">
                 <div className="flex-grow border-t border-slate-200/50 dark:border-slate-800/60" />
                 <span className="flex-shrink mx-4 text-[9px] font-black text-slate-400 dark:text-slate-400 tracking-widest uppercase">
-                  Or Pay With Card
+                  {t.upgrade.orPayWithCard}
                 </span>
                 <div className="flex-grow border-t border-slate-200/50 dark:border-slate-800/60" />
               </div>
@@ -119,7 +120,7 @@ export function CheckoutPage() {
       <PaymentSuccessModal
         isOpen={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
-        planName="Pro Plan (Annual)"
+        planName={t.upgrade.proPlanAnnual}
         transactionId="#ASH-9284751"
         amount="$132.00"
         paymentMethod={paymentMethod}

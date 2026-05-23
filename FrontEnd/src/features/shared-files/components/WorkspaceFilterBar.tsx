@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Search, Grid, List, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface WorkspaceFilterBarProps {
   searchQuery: string
@@ -23,6 +24,7 @@ export function WorkspaceFilterBar({
   viewMode,
   onViewModeChange
 }: WorkspaceFilterBarProps) {
+  const { t } = useTranslation()
   const [isTypeOpen, setIsTypeOpen] = useState(false)
   const [isSortOpen, setIsSortOpen] = useState(false)
   
@@ -45,8 +47,8 @@ export function WorkspaceFilterBar({
 
   const types = ['All', 'PDF', 'DOCX', 'XLSX', 'Folder']
   const sorts = [
-    { label: 'Recent', value: 'recent' },
-    { label: 'Oldest', value: 'oldest' }
+    { label: t.sharedFiles.recent, value: 'recent' },
+    { label: t.sharedFiles.oldest, value: 'oldest' }
   ]
 
   return (
@@ -54,14 +56,14 @@ export function WorkspaceFilterBar({
       
       {/* Smart search input */}
       <div className="relative flex-1 max-w-sm">
-        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-550" />
         <input
           type="text"
-          placeholder="Smart filter files..."
+          placeholder={t.sharedFiles.smartFilterPlaceholder}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           aria-label="Smart filter files"
-          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 pl-10 pr-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all"
+          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 pl-10 pr-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 placeholder:text-slate-405 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all"
         />
       </div>
 
@@ -75,26 +77,26 @@ export function WorkspaceFilterBar({
             onClick={() => setIsTypeOpen(!isTypeOpen)}
             className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
-            <span>Type: {fileTypeFilter}</span>
+            <span>{t.sharedFiles.typeLabel}: {fileTypeFilter === 'All' ? t.sharedFiles.allTypes : fileTypeFilter}</span>
             <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
           </button>
           
           {isTypeOpen && (
             <div className="absolute right-0 mt-1.5 w-36 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 shadow-lg z-30 animate-fade-in text-left">
-              {types.map((t) => (
+              {types.map((typeVal) => (
                 <button
-                  key={t}
+                  key={typeVal}
                   type="button"
                   onClick={() => {
-                    onFileTypeChange(t)
+                    onFileTypeChange(typeVal)
                     setIsTypeOpen(false)
                   }}
                   className={cn(
                     "w-full rounded-lg px-3 py-2 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition-colors cursor-pointer",
-                    fileTypeFilter === t ? "text-blue-600 bg-blue-50/40 dark:text-blue-400 dark:bg-blue-950/20" : "text-slate-700 dark:text-slate-300"
+                    fileTypeFilter === typeVal ? "text-blue-600 bg-blue-50/40 dark:text-blue-400 dark:bg-blue-950/20" : "text-slate-700 dark:text-slate-300"
                   )}
                 >
-                  {t === 'All' ? 'All Types' : t}
+                  {typeVal === 'All' ? t.sharedFiles.allTypes : typeVal}
                 </button>
               ))}
             </div>
@@ -108,7 +110,7 @@ export function WorkspaceFilterBar({
             onClick={() => setIsSortOpen(!isSortOpen)}
             className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
-            <span>Sort: {sorts.find(s => s.value === sortOrder)?.label}</span>
+            <span>{t.sharedFiles.sortLabel}: {sorts.find(s => s.value === sortOrder)?.label}</span>
             <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
           </button>
           
@@ -146,10 +148,10 @@ export function WorkspaceFilterBar({
               'rounded-lg p-1.5 transition-all duration-200 cursor-pointer',
               viewMode === 'list'
                 ? 'bg-white text-blue-600 shadow-xs dark:bg-slate-900 dark:text-blue-400'
-                : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
+                : 'text-slate-400 hover:text-slate-650 dark:text-slate-500 dark:hover:text-slate-300'
             )}
-            title="List View"
-            aria-label="List View"
+            title={t.sharedFiles.listView}
+            aria-label={t.sharedFiles.listView}
           >
             <List className="h-4.5 w-4.5" />
           </button>
@@ -160,10 +162,10 @@ export function WorkspaceFilterBar({
               'rounded-lg p-1.5 transition-all duration-200 cursor-pointer',
               viewMode === 'grid'
                 ? 'bg-white text-blue-600 shadow-xs dark:bg-slate-900 dark:text-blue-400'
-                : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
+                : 'text-slate-400 hover:text-slate-650 dark:text-slate-500 dark:hover:text-slate-300'
             )}
-            title="Grid View"
-            aria-label="Grid View"
+            title={t.sharedFiles.gridView}
+            aria-label={t.sharedFiles.gridView}
           >
             <Grid className="h-4.5 w-4.5" />
           </button>

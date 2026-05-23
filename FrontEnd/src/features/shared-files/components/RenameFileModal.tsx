@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Edit3 } from 'lucide-react'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface RenameFileModalProps {
   isOpen: boolean
@@ -17,6 +18,7 @@ export function RenameFileModal({
   initialName,
   files
 }: RenameFileModalProps) {
+  const { t, language } = useTranslation()
   const modalRef = useRef<HTMLDivElement>(null)
   const [name, setName] = useState(initialName)
   const [error, setError] = useState('')
@@ -77,18 +79,18 @@ export function RenameFileModal({
     const trimmed = name.trim()
     
     if (!trimmed) {
-      setError('File name cannot be empty')
+      setError(language === 'vi' ? 'Tên tệp không thể để trống' : (language === 'ja' ? 'ファイル名は空にできません' : (language === 'ko' ? '파일 이름은 비워 둘 수 없습니다' : 'File name cannot be empty')))
       return
     }
 
     const invalidChars = /[\/:*?"<>|]/
     if (invalidChars.test(trimmed)) {
-      setError('File name cannot contain invalid characters: \\ / : * ? " < > |')
+      setError(language === 'vi' ? 'Tên tệp không được chứa ký tự đặc biệt' : (language === 'ja' ? 'ファイル名に無効な文字を含めることはできません' : (language === 'ko' ? '파일 이름에 잘못된 문자가 포함될 수 없습니다' : 'File name cannot contain invalid characters')))
       return
     }
 
     if (files && files.some(f => f.name.toLowerCase() === trimmed.toLowerCase() && f.name.toLowerCase() !== initialName.toLowerCase())) {
-      setError('A file with this name already exists')
+      setError(language === 'vi' ? 'Tên tệp này đã tồn tại' : (language === 'ja' ? 'この名前のファイルは既に存在します' : (language === 'ko' ? '이 이름의 파일이 이미 존재합니다' : 'A file with this name already exists')))
       return
     }
 
@@ -128,15 +130,15 @@ export function RenameFileModal({
             </button>
 
             <div className="flex gap-3.5 items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-800/80 text-left">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 shrink-0">
                 <Edit3 className="size-5.5" />
               </div>
               <div>
                 <h3 id="rename-title" className="text-base font-bold text-slate-900 dark:text-white">
-                  Rename Resource
+                  {t.sharedFiles.rename}
                 </h3>
                 <p className="text-xs text-slate-455 dark:text-slate-500 font-medium">
-                  Enter a new name for the selected shared item
+                  {t.sharedFiles.renameDesc}
                 </p>
               </div>
             </div>
@@ -144,7 +146,7 @@ export function RenameFileModal({
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="text-left">
                 <label htmlFor="rename-input" className="block text-xs font-bold text-slate-655 dark:text-slate-400 uppercase tracking-wider mb-2">
-                  New Name
+                  {t.sharedFiles.fileNameLabel}
                 </label>
                 <input
                   id="rename-input"
@@ -154,10 +156,10 @@ export function RenameFileModal({
                     setName(e.target.value)
                     if (e.target.value.trim()) setError('')
                   }}
-                  className={`w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white ${
+                  className={`w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-805 dark:border-slate-700 dark:text-white ${
                     error ? 'border-red-500 focus:border-red-500 dark:border-red-500' : 'focus:border-blue-500 dark:focus:border-blue-500'
                   } rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none transition-colors shadow-sm`}
-                  placeholder="Enter name..."
+                  placeholder={language === 'vi' ? 'Nhập tên...' : (language === 'ja' ? '名前を入力してください...' : (language === 'ko' ? '이름 입력...' : 'Enter name...'))}
                   autoComplete="off"
                 />
                 {error && (
@@ -173,13 +175,13 @@ export function RenameFileModal({
                   onClick={onClose}
                   className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98] focus:outline-none"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98] focus:outline-none border-none"
                 >
-                  Save Changes
+                  {t.sharedFiles.renameBtn}
                 </button>
               </div>
             </form>

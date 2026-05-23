@@ -1,8 +1,10 @@
 import { GraduationCap, School, BookOpen, Mail, User } from 'lucide-react'
 import { useProfileStore } from '../stores/profileStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function ProfileCard() {
+  const { language } = useTranslation()
   const { profile } = useProfileStore()
   const user = useAuthStore((s) => s.user)
 
@@ -54,7 +56,7 @@ export function ProfileCard() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
-                University
+                {language === 'vi' ? 'Trường Đại học' : language === 'ja' ? '大学' : language === 'ko' ? '대학교' : 'University'}
               </p>
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mt-0.5 leading-snug">
                 {profile.university}
@@ -69,7 +71,7 @@ export function ProfileCard() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
-                Major
+                {language === 'vi' ? 'Chuyên ngành' : language === 'ja' ? '専攻' : language === 'ko' ? '전공' : 'Major'}
               </p>
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mt-0.5 leading-snug">
                 {profile.major}
@@ -84,7 +86,7 @@ export function ProfileCard() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
-                Degree
+                {language === 'vi' ? 'Bằng cấp' : language === 'ja' ? '学位' : language === 'ko' ? '학위' : 'Degree'}
               </p>
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mt-0.5 leading-snug">
                 {profile.degree}

@@ -158,6 +158,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
 
 export function SharedFilesPage() {
   const toast = useToast()
+  const { t, language } = useTranslation()
 
   // State Management
   const [files, setFiles] = useState<SharedFile[]>([
@@ -333,7 +334,7 @@ export function SharedFilesPage() {
     setIsAnalyzing(true)
     setTimeout(() => {
       setIsAnalyzing(false)
-      toast.success('AI analysis completed')
+      toast.success(t.toasts.aiAnalysisComplete)
     }, 1000)
   }
 
@@ -355,11 +356,13 @@ export function SharedFilesPage() {
       })
     }
     setViewingFile(file)
-    toast.success(`Opening ${file.name}`)
+    const prefix = language === 'vi' ? 'Đang mở' : (language === 'ja' ? '開いています' : (language === 'ko' ? '열기 중' : 'Opening'))
+    toast.success(`${prefix} ${file.name}`)
   }
 
   const handleDownload = (file: SharedFile) => {
-    toast.success(`Downloading ${file.name}`)
+    const prefix = language === 'vi' ? 'Đang tải xuống' : (language === 'ja' ? 'ダウンロード中' : (language === 'ko' ? '다운로드 중' : 'Downloading'))
+    toast.success(`${prefix} ${file.name}`)
     try {
       if (file.url) {
         const link = document.createElement('a')
@@ -381,10 +384,10 @@ export function SharedFilesPage() {
         URL.revokeObjectURL(url)
       }
       setTimeout(() => {
-        toast.success('Download completed')
+        toast.success(t.toasts.downloadSuccess)
       }, 1000)
     } catch (err) {
-      toast.error('Download failed')
+      toast.error(t.toasts.downloadFailed)
     }
   }
 
@@ -394,7 +397,7 @@ export function SharedFilesPage() {
       prev.map(f => (f.id === selectedFile.id ? { ...f, name: newName } : f))
     )
     setSelectedFile(prev => (prev ? { ...prev, name: newName } : null))
-    toast.success('File renamed successfully')
+    toast.success(t.toasts.renameSuccess)
     setModals(prev => ({ ...prev, rename: false }))
   }
 
@@ -404,14 +407,14 @@ export function SharedFilesPage() {
       prev.map(f => (f.id === selectedFile.id ? { ...f, permission: newPermission } : f))
     )
     setSelectedFile(prev => (prev ? { ...prev, permission: newPermission } : null))
-    toast.success('Permission updated successfully')
+    toast.success(t.toasts.permissionSuccess)
     setModals(prev => ({ ...prev, permission: false }))
   }
 
   const handleDeleteConfirm = () => {
     if (!selectedFile) return
     setFiles(prev => prev.filter(f => f.id !== selectedFile.id))
-    toast.success('Access removed successfully')
+    toast.success(t.toasts.deleteSuccess)
     setSelectedFile(null)
     setViewingFile(null)
     setModals(prev => ({ ...prev, confirmDelete: false }))
@@ -421,10 +424,12 @@ export function SharedFilesPage() {
     setFavorites(prev => {
       const isFav = prev.includes(file.id)
       if (isFav) {
-        toast.success(`Removed "${file.name}" from favorites`)
+        const msg = language === 'vi' ? `Đã xóa "${file.name}" khỏi mục yêu thích` : (language === 'ja' ? `お気に入りから「${file.name}」を削除しました` : (language === 'ko' ? `즐겨찾기에서 "${file.name}"을(를) 제거했습니다` : `Removed "${file.name}" from favorites`))
+        toast.success(msg)
         return prev.filter(id => id !== file.id)
       } else {
-        toast.success(`Added "${file.name}" to favorites`)
+        const msg = language === 'vi' ? `Đã thêm "${file.name}" vào mục yêu thích` : (language === 'ja' ? `お気に入りへ「${file.name}」を追加しました` : (language === 'ko' ? `즐겨찾기에 "${file.name}"을(를) 추가했습니다` : `Added "${file.name}" to favorites`))
+        toast.success(msg)
         return [...prev, file.id]
       }
     })
@@ -443,7 +448,8 @@ export function SharedFilesPage() {
       ...prev,
       [selectedFile.id]: [newComment, ...(prev[selectedFile.id] || [])]
     }))
-    toast.success('Comment added')
+    const msg = language === 'vi' ? 'Đã thêm bình luận' : (language === 'ja' ? 'コメントを追加しました' : (language === 'ko' ? '댓글이 추가되었습니다' : 'Comment added'))
+    toast.success(msg)
   }
 
   const handleRegenerateSummary = () => {
@@ -457,7 +463,8 @@ export function SharedFilesPage() {
         )
         setSelectedFile(prev => (prev ? { ...prev, summary: updatedSummary } : null))
       }
-      toast.success('Summary regenerated')
+      const msg = language === 'vi' ? 'Đã tạo lại bản tóm tắt' : (language === 'ja' ? '要約を再生成しました' : (language === 'ko' ? '요약이 재생성되었습니다' : 'Summary regenerated'))
+      toast.success(msg)
     }, 1000)
   }
 
@@ -636,7 +643,8 @@ export function SharedFilesPage() {
             onShareAccess={(file) => {
               setSelectedFile(file)
               setModals(prev => ({ ...prev, share: true }))
-              toast.success(`Sharing ${file.name}`)
+              const prefix = language === 'vi' ? 'Đang chia sẻ' : (language === 'ja' ? '共有中' : (language === 'ko' ? '공유 중' : 'Sharing'))
+              toast.success(`${prefix} ${file.name}`)
             }}
           />
         </div>
@@ -652,7 +660,8 @@ export function SharedFilesPage() {
             onOpenFullSummary={() => setModals(prev => ({ ...prev, summary: true }))}
             onGenerateQuiz={() => setModals(prev => ({ ...prev, quiz: true }))}
             onAskAI={() => {
-              toast.success('AI Assistant ready for query')
+              const msg = language === 'vi' ? 'Trợ lý AI đã sẵn sàng' : (language === 'ja' ? 'AIアシスタントの準備ができました' : (language === 'ko' ? 'AI 어시스턴트가 준비되었습니다' : 'AI Assistant ready for query'))
+              toast.success(msg)
               const commentInput = document.querySelector('input[placeholder="Add a comment..."]') as HTMLInputElement
               if (commentInput) {
                 commentInput.focus()
@@ -686,7 +695,8 @@ export function SharedFilesPage() {
         isOpen={modals.invite}
         onClose={() => setModals(prev => ({ ...prev, invite: false }))}
         onInviteSubmit={(email, role) => {
-          toast.success(`Invitation sent successfully to ${email} as ${role}`)
+          const msg = language === 'vi' ? `Đã gửi lời mời thành công đến ${email} với vai trò ${role}` : (language === 'ja' ? `${email}へ${role}として招待メールを正常に送信しました` : (language === 'ko' ? `${email}님에게 ${role}(으)로 초대를 성공적으로 보냈습니다` : `Invitation sent successfully to ${email} as ${role}`))
+          toast.success(msg)
           setModals(prev => ({ ...prev, invite: false }))
         }}
       />
@@ -695,7 +705,8 @@ export function SharedFilesPage() {
         isOpen={modals.aiReport}
         onClose={() => setModals(prev => ({ ...prev, aiReport: false }))}
         onOptimize={() => {
-          toast.success('AI Workspace optimized successfully')
+          const msg = language === 'vi' ? 'Đã tối ưu hóa không gian làm việc AI thành công' : (language === 'ja' ? 'AIワークスペースの最適化に成功しました' : (language === 'ko' ? 'AI 워크스페이스가 성공적으로 최적화되었습니다' : 'AI Workspace optimized successfully'))
+          toast.success(msg)
           setModals(prev => ({ ...prev, aiReport: false }))
         }}
       />

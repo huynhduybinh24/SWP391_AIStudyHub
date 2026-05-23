@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useTranslation } from '@/context/LanguageContext'
 
 export interface LinkedAccount {
   id: string
@@ -17,6 +18,8 @@ interface LinkedAccountCardProps {
 }
 
 export function LinkedAccountCard({ account, onConnect, onManage }: LinkedAccountCardProps) {
+  const { t } = useTranslation()
+
   const getProviderIcon = (id: string) => {
     switch (id) {
       case 'google':
@@ -73,7 +76,7 @@ export function LinkedAccountCard({ account, onConnect, onManage }: LinkedAccoun
                   : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
               }`}
             >
-              {account.connected ? 'Connected' : 'Not Connected'}
+              {account.connected ? t.profile.connectedStatus : t.profile.notConnectedStatus}
             </span>
           </div>
           {account.connected && account.email ? (
@@ -82,7 +85,7 @@ export function LinkedAccountCard({ account, onConnect, onManage }: LinkedAccoun
             </span>
           ) : (
             <span className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">
-              No account connected
+              {t.profile.noAccountConnected}
             </span>
           )}
         </div>
@@ -97,7 +100,7 @@ export function LinkedAccountCard({ account, onConnect, onManage }: LinkedAccoun
             aria-label={`Manage connection for ${account.provider}`}
             className="rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 border border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/35 cursor-pointer"
           >
-            Manage
+            {t.profile.manageBtn}
           </motion.button>
         ) : (
           <motion.button
@@ -106,7 +109,7 @@ export function LinkedAccountCard({ account, onConnect, onManage }: LinkedAccoun
             aria-label={`Connect with ${account.provider}`}
             className="rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 bg-[#3155F6] hover:bg-[#2563eb] text-white cursor-pointer shadow-sm shadow-[#3155F6]/10"
           >
-            Connect
+            {t.profile.connectBtn}
           </motion.button>
         )}
       </div>

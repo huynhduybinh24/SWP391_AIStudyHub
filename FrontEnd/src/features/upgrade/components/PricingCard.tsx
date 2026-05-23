@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 export interface PricingPlan {
   name: string
@@ -30,6 +31,7 @@ export function PricingCard({
   onUpgradeClick,
   onContactSalesClick,
 }: PricingCardProps) {
+  const { t } = useTranslation()
   const isPro = plan.popular
 
   const handleButtonClick = () => {
@@ -62,7 +64,7 @@ export function PricingCard({
       {/* Most Popular Badge */}
       {isPro && (
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#3155F6] text-white text-[10px] font-extrabold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-sm whitespace-nowrap z-20">
-          Most Popular
+          {t.upgrade.popular}
         </div>
       )}
 

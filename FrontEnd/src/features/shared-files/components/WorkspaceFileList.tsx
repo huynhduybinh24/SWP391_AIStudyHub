@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Folder } from 'lucide-react'
 import { WorkspaceFileCard } from './WorkspaceFileCard'
-import { FileActionsDropdown } from './FileActionsDropdown'
 import { SharedFile } from './SharedFilesTable'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface WorkspaceFileListProps {
   files: SharedFile[]
@@ -34,14 +34,15 @@ export function WorkspaceFileList({
   onDownload,
   onShareAccess
 }: WorkspaceFileListProps) {
+  const { t } = useTranslation()
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
 
   if (files.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[28px] p-6 shadow-xs select-none">
         <Folder className="size-12 text-slate-305 dark:text-slate-700 mb-3.5 stroke-[1.5]" />
-        <h4 className="text-sm font-extrabold text-slate-700 dark:text-slate-355">No files match your filters</h4>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjustments to your search queries or drop selection filters.</p>
+        <h4 className="text-sm font-extrabold text-slate-700 dark:text-slate-355">{t.sharedFiles.noMatches}</h4>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t.sharedFiles.noMatchesSub}</p>
       </div>
     )
   }

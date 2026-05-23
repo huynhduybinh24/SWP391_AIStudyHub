@@ -1,5 +1,6 @@
 import { LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useTranslation } from '@/context/LanguageContext'
 
 export interface StatisticItem {
   id: string
@@ -17,6 +18,7 @@ interface StatisticsCardProps {
 }
 
 export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: StatisticsCardProps) {
+  const { t } = useTranslation()
   const isStorage = item.id === 'storageUsed'
 
   return (
@@ -47,10 +49,10 @@ export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: Sta
             onViewDetails()
           }}
           type="button"
-          aria-label={`View details for ${item.label}`}
+          aria-label={`${t.profile.viewDetails} for ${item.label}`}
           className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors uppercase tracking-wider cursor-pointer py-1 px-2 rounded-md hover:bg-blue-50/55 dark:hover:bg-blue-950/20"
         >
-          View Details
+          {t.profile.viewDetails}
         </button>
       </div>
 
