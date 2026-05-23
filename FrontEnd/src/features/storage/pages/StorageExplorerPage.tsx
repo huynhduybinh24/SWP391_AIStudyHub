@@ -23,6 +23,8 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
 
 const INITIAL_FOLDERS = [
   { id: '1', name: 'Physics 101', items: '12 Items', size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe', category: 'Study' },
@@ -81,6 +83,11 @@ export function StorageExplorerPage() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  
+  const totalGb = user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
+  const usedGb = user?.plan === 'pro' ? 75 : 2.4
+  const usedPercentage = Math.round((usedGb / totalGb) * 100)
   const [folders, setFolders] = useState(INITIAL_FOLDERS)
   const [files, setFiles] = useState(INITIAL_FILES)
   const [searchQuery, setSearchQuery] = useState('')
@@ -154,12 +161,15 @@ export function StorageExplorerPage() {
     return result
   }, [files, searchQuery, typeFilter])
 
-  const chartData = [
-    { name: 'Documents', value: 45, color: '#2563eb' },
-    { name: 'Images', value: 20.5, color: '#0d9488' },
-    { name: 'Other', value: 9.5, color: isDark ? '#334155' : '#cbd5e1' },
-    { name: 'Remaining', value: 25, color: isDark ? '#1e293b' : '#e5eeff' },
-  ]
+  const chartData = useMemo(() => {
+    const isPro = user?.plan === 'pro'
+    return [
+      { name: 'Documents', value: isPro ? 45 : 1.2, color: '#2563eb' },
+      { name: 'Images', value: isPro ? 20.5 : 0.8, color: '#0d9488' },
+      { name: 'Other', value: isPro ? 9.5 : 0.4, color: isDark ? '#334155' : '#cbd5e1' },
+      { name: 'Remaining', value: isPro ? 25 : 7.6, color: isDark ? '#1e293b' : '#e5eeff' },
+    ]
+  }, [user, isDark])
 
   const folderOptions = ['All Folders', 'Study', 'Archived', 'New']
   const typeOptions = ['All Types', 'PDF', 'DOCX', 'Image', 'ZIP']
@@ -453,13 +463,13 @@ export function StorageExplorerPage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                <span className="text-3xl font-bold text-foreground">75%</span>
+                <span className="text-3xl font-bold text-foreground">{usedPercentage}%</span>
                 <span className="text-xs text-muted font-medium mt-1">Used</span>
               </div>
             </div>
 
             <div className="text-center mt-6 mb-8">
-              <h3 className="font-bold text-foreground text-[15px]">75 GB of 100 GB</h3>
+              <h3 className="font-bold text-foreground text-[15px]">{usedGb} GB of {totalGb} GB</h3>
             </div>
 
             <div className="flex flex-col gap-3 mb-8">
@@ -468,21 +478,21 @@ export function StorageExplorerPage() {
                   <div className="w-2.5 h-2.5 rounded-full bg-[#2563eb]"></div>
                   <span className="text-foreground font-medium">Documents</span>
                 </div>
-                <span className="text-muted font-medium">45.0 GB</span>
+                <span className="text-muted font-medium">{user?.plan === 'pro' ? '45.0 GB' : '1.2 GB'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#0d9488]"></div>
                   <span className="text-foreground font-medium">Images</span>
                 </div>
-                <span className="text-muted font-medium">20.5 GB</span>
+                <span className="text-muted font-medium">{user?.plan === 'pro' ? '20.5 GB' : '0.8 GB'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1] dark:bg-slate-700"></div>
                   <span className="text-foreground font-medium">Other</span>
                 </div>
-                <span className="text-muted font-medium">9.5 GB</span>
+                <span className="text-muted font-medium">{user?.plan === 'pro' ? '9.5 GB' : '0.4 GB'}</span>
               </div>
             </div>
 
@@ -515,7 +525,7 @@ export function StorageExplorerPage() {
               <h3 className="font-bold text-lg mb-2 text-foreground">Basic</h3>
               <div className="text-3xl font-bold mb-4 text-foreground">$0<span className="text-sm font-normal text-muted">/mo</span></div>
               <ul className="space-y-3 mb-6 flex-1">
-                <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> 100 GB Storage</li>
+                <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> {user?.plan === 'pro' ? '50 GB' : '10 GB'} Storage</li>
                 <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> Basic AI Tools</li>
                 <li className="flex items-center gap-2 text-sm text-muted opacity-50 dark:text-slate-600"><CheckCircle2 className="size-4 text-slate-300 dark:text-slate-700"/> Priority Support</li>
               </ul>
