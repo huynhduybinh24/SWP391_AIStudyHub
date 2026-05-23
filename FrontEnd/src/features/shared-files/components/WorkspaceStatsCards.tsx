@@ -1,5 +1,7 @@
 import { HardDrive, Sparkles } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
 
 interface WorkspaceStatsCardsProps {
   onViewAIReport: () => void
@@ -13,11 +15,16 @@ export function WorkspaceStatsCards({
   onActiveCardClick
 }: WorkspaceStatsCardsProps) {
   const { t } = useTranslation()
+  const user = useAuthStore((s) => s.user)
+  
+  const totalGb = user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
+  const usedGb = user?.plan === 'pro' ? 12.4 : 2.4
+  const usedPercentage = Math.round((usedGb / totalGb) * 100)
 
-  // SVG Stroke parameters for 24% circular progress
+  // SVG Stroke parameters for dynamic circular progress
   const radius = 18
   const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (24 / 100) * circumference
+  const strokeDashoffset = circumference - (usedPercentage / 100) * circumference
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-5 select-none text-left">
@@ -59,15 +66,15 @@ export function WorkspaceStatsCards({
               />
             </svg>
             <span className="absolute text-[10px] font-black text-slate-855 dark:text-slate-100">
-              24%
+              {usedPercentage}%
             </span>
           </div>
 
           <div>
-            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">12.4</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{usedGb}</span>
             <span className="text-xs font-bold text-slate-400 dark:text-slate-550 ml-0.5">GB</span>
             <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">
-              {t.sharedFiles.used} 12.4 GB {t.sharedFiles.usedOf} 50 GB
+              {t.sharedFiles.used} {usedGb} GB {t.sharedFiles.usedOf} {totalGb} GB
             </p>
           </div>
         </div>
