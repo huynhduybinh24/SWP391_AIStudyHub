@@ -148,9 +148,13 @@ function NotificationCard({
       <div className="flex-grow min-w-0">
         <div className="flex items-center justify-between mb-1.5">
           <h2 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100">{title}</h2>
-          <div className="flex items-center gap-1.5 text-xs text-[#737686] dark:text-slate-400 font-medium">
-            <span>{time}</span>
-            {!isRead && <span className="w-2 h-2 rounded-full bg-[#3155F6] dark:bg-blue-500" />}
+          <div className="flex items-center gap-1.5 text-xs font-semibold">
+            {!isRead && (
+              <>
+                <span className="text-[#3155F6] dark:text-blue-400">New</span>
+                <span className="w-2 h-2 rounded-full bg-[#3155F6] dark:bg-blue-500" />
+              </>
+            )}
           </div>
         </div>
 
