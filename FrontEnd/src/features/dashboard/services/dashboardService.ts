@@ -1,5 +1,7 @@
 import type { DashboardData } from '@/features/dashboard/types'
 import { getCurrentWeekDays, getTrackedSeconds, addTrackedSeconds, formatDateLocal } from '../utils/studyTime'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
 
 const MOCK_DASHBOARD: DashboardData = {
   pendingPlans: 3,
@@ -68,8 +70,25 @@ export const dashboardService = {
     const diff = formattedTotalWeeklyHours - 12
     const weeklyTrend = diff >= 0 ? `+${diff.toFixed(1)} hrs` : `-${Math.abs(diff).toFixed(1)} hrs`
 
+    const user = useAuthStore.getState().user
+    const isPro = user?.plan === 'pro'
+    const storageTotalGb = isPro ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
+    const storageUsedGb = isPro ? 12.4 : 2.4
+
+    // Update alert contents dynamically for storage
+    const dynamicAlerts = MOCK_DASHBOARD.alerts.map(alert => {
+      if (alert.id === '3') {
+        const percentage = Math.round((storageUsedGb / storageTotalGb) * 100)
+        return { ...alert, title: `Storage is ${percentage}% full` }
+      }
+      return alert
+    })
+
     return {
       ...MOCK_DASHBOARD,
+      storageUsedGb,
+      storageTotalGb,
+      alerts: dynamicAlerts,
       weeklyHours: formattedTotalWeeklyHours,
       weeklyTrend,
       weeklyActivity: dynamicActivity,
