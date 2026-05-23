@@ -3,6 +3,7 @@ import { Zap, X } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 function isNavActive(pathname: string, path: string) {
   if (pathname.startsWith('/dashboard/shared-files')) {
@@ -54,6 +55,30 @@ export function Sidebar() {
   const { pathname } = useLocation()
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
+  const { t } = useTranslation()
+
+  const getSidebarLabel = (label: string) => {
+    switch (label.toLowerCase()) {
+      case 'dashboard':
+        return t.sidebar.dashboard
+      case 'my documents':
+        return t.sidebar.myDocuments
+      case 'shared files':
+        return t.sidebar.sharedFiles
+      case 'study plans':
+        return t.sidebar.studyPlans
+      case 'ai chatbot':
+        return t.sidebar.aiChatbot
+      case 'settings':
+        return t.sidebar.settings
+      case 'upgrade to pro':
+        return t.sidebar.upgradePro
+      case 'log out':
+        return t.sidebar.logout
+      default:
+        return label
+    }
+  }
 
   const handleLinkClick = () => {
     // Close sidebar drawer on mobile after clicking a link
@@ -76,17 +101,17 @@ export function Sidebar() {
         <div className="flex flex-col gap-6 flex-1 min-h-0">
           {/* Logo and Brand */}
           <div className="px-2 flex items-center justify-between shrink-0">
-            <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-3 no-underline">
+            <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-3.5 no-underline">
               <img
                 src="/logo.png"
                 alt="AI Study Hub"
-                className="w-9 h-9 shrink-0 object-contain"
+                className="w-[54px] h-[54px] shrink-0 object-contain"
               />
               <div className="flex flex-col justify-center md:max-lg:hidden">
-                <h1 className="text-[18px] font-extrabold leading-tight text-[#3155F6] dark:text-blue-500 tracking-tight">
+                <h1 className="text-[21px] font-extrabold leading-tight text-[#3155F6] dark:text-blue-500 tracking-tight">
                   AI Study Hub
                 </h1>
-                <p className="text-[11px] font-semibold leading-tight text-slate-400 dark:text-slate-500 mt-0.5">
+                <p className="text-[12px] font-semibold leading-tight text-slate-400 dark:text-slate-500 mt-0.5">
                   Focused Intelligence
                 </p>
               </div>
@@ -109,7 +134,7 @@ export function Sidebar() {
                 key={item.path}
                 to={item.path}
                 icon={item.icon}
-                label={item.label}
+                label={getSidebarLabel(item.label)}
                 pathname={pathname}
                 onClick={handleLinkClick}
               />
@@ -128,7 +153,7 @@ export function Sidebar() {
                 key={item.path}
                 to={item.path}
                 icon={item.icon}
-                label={item.label}
+                label={getSidebarLabel(item.label)}
                 pathname={pathname}
                 onClick={handleLinkClick}
               />
@@ -145,7 +170,7 @@ export function Sidebar() {
             )}
           >
             <Zap className="size-4 text-white shrink-0" strokeWidth={2.25} />
-            <span className="md:max-lg:hidden block">Upgrade to Pro</span>
+            <span className="md:max-lg:hidden block">{t.sidebar.upgradePro}</span>
           </Link>
         </div>
       </aside>

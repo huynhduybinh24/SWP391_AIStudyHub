@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 import {
   Upload,
   MessageSquare,
@@ -19,76 +20,62 @@ interface HelpModalProps {
   onClose: () => void
 }
 
-const SHORTCUTS = [
-  { keys: ['Ctrl', 'K'], label: 'Open global search' },
-  { keys: ['Ctrl', 'U'], label: 'Upload new document' },
-  { keys: ['Ctrl', '/'], label: 'Open AI chat assistant' },
-  { keys: ['Esc'],       label: 'Close any open modal' },
-  { keys: ['Ctrl', 'D'], label: 'Go to My Documents' },
-  { keys: ['Ctrl', 'H'], label: 'Go to Dashboard home' },
-]
-
-const FAQ = [
-  {
-    q: 'Làm thế nào để upload tài liệu học?',
-    a: 'Nhấn nút "Upload New" ở trang Documents, hoặc dùng phím tắt Ctrl + U. Hỗ trợ PDF, DOCX, TXT, PNG, PPTX tối đa 50MB.',
-  },
-  {
-    q: 'AI phân tích tài liệu mất bao lâu?',
-    a: 'Thường dưới 30 giây cho tài liệu dưới 10MB. Sau khi xử lý, bạn sẽ thấy badge "ANALYZED" và có thể tạo flashcard, tóm tắt ngay lập tức.',
-  },
-  {
-    q: 'Flashcard và Quiz hoạt động như thế nào?',
-    a: 'Mở bất kỳ tài liệu đã phân tích, chọn tab "Flashcards" để ôn bài, hoặc nhấn "Start Quiz" trong trang Subject để làm bài kiểm tra AI tự tạo từ nội dung tài liệu.',
-  },
-  {
-    q: 'Tôi có thể chat với AI về tài liệu không?',
-    a: 'Có! Ở mỗi tài liệu, nhấn icon chat (💬) hoặc chọn "Chat with AI" trong menu. AI sẽ trả lời các câu hỏi dựa trên nội dung tài liệu đó.',
-  },
-  {
-    q: 'Giới hạn lưu trữ là bao nhiêu?',
-    a: 'Gói Free có 100MB cloud storage. Nâng cấp lên Pro để có 10GB và không giới hạn số tài liệu phân tích AI mỗi tháng.',
-  },
-]
-
-const QUICK_TIPS = [
-  { icon: Upload,        color: 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400',      title: 'Upload & Analyze',  desc: 'Tải tài liệu lên và AI sẽ tự động tạo tóm tắt, flashcard ngay lập tức.', path: '/dashboard/upload' },
-  { icon: MessageSquare, color: 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400',  title: 'Chat with AI',      desc: 'Hỏi AI về bất kỳ nội dung nào trong tài liệu — như có gia sư riêng 24/7.', path: '/dashboard/chat' },
-  { icon: BrainCircuit,  color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400',title: 'Practice Quiz',     desc: 'Kiểm tra kiến thức với bộ đề trắc nghiệm AI tạo từ tài liệu của bạn.', path: '/dashboard/quizzes' },
-  { icon: BookOpen,      color: 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400',    title: 'Flashcards',        desc: 'Ôn tập hiệu quả với hệ thống thẻ flashcard tương tác, lật thẻ xem đáp án.', path: '/dashboard/documents' },
-]
-
 export function HelpModal({ isOpen, onClose }: HelpModalProps) {
   const navigate = useNavigate()
   const [tab, setTab] = useState<'tips' | 'shortcuts' | 'faq'>('tips')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const { t } = useTranslation()
+
+  const SHORTCUTS = [
+    { keys: ['Ctrl', 'K'], label: t.helpCenter.shortcutSearch },
+    { keys: ['Ctrl', 'U'], label: t.helpCenter.shortcutUpload },
+    { keys: ['Ctrl', '/'], label: t.helpCenter.shortcutChat },
+    { keys: ['Esc'],       label: t.helpCenter.shortcutClose },
+    { keys: ['Ctrl', 'D'], label: t.helpCenter.shortcutDocs },
+    { keys: ['Ctrl', 'H'], label: t.helpCenter.shortcutHome },
+  ]
+
+  const FAQ = [
+    { q: t.helpCenter.faqQ1, a: t.helpCenter.faqA1 },
+    { q: t.helpCenter.faqQ2, a: t.helpCenter.faqA2 },
+    { q: t.helpCenter.faqQ3, a: t.helpCenter.faqA3 },
+    { q: t.helpCenter.faqQ4, a: t.helpCenter.faqA4 },
+    { q: t.helpCenter.faqQ5, a: t.helpCenter.faqA5 },
+  ]
+
+  const QUICK_TIPS = [
+    { icon: Upload,        color: 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400',      title: t.helpCenter.tipUploadTitle,  desc: t.helpCenter.tipUploadDesc, path: '/dashboard/upload' },
+    { icon: MessageSquare, color: 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400',  title: t.helpCenter.tipChatTitle,      desc: t.helpCenter.tipChatDesc, path: '/dashboard/chat' },
+    { icon: BrainCircuit,  color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400',title: t.helpCenter.tipQuizTitle,     desc: t.helpCenter.tipQuizDesc, path: '/dashboard/quizzes' },
+    { icon: BookOpen,      color: 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400',    title: t.helpCenter.tipFlashTitle,        desc: t.helpCenter.tipFlashDesc, path: '/dashboard/documents' },
+  ]
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Help Center"
-      description="AI Study Hub — Quick Reference"
+      title={t.helpCenter.title}
+      description={t.helpCenter.subtitle}
       className="max-w-lg"
     >
       <div className="space-y-4 -mt-2">
         {/* Tabs */}
         <div className="flex border-b border-slate-100 dark:border-slate-800 -mx-6 px-6">
-          {(['tips', 'shortcuts', 'faq'] as const).map((t) => (
+          {(['tips', 'shortcuts', 'faq'] as const).map((tValue) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tValue}
+              onClick={() => setTab(tValue)}
               className={cn(
                 'flex items-center gap-1.5 px-1 py-3 mr-5 text-xs font-bold border-b-2 -mb-px transition-all cursor-pointer',
-                tab === t
+                tab === tValue
                   ? 'border-[#2563eb] text-[#2563eb]'
                   : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               )}
             >
-              {t === 'tips' && <Zap className="size-3.5" />}
-              {t === 'shortcuts' && <Keyboard className="size-3.5" />}
-              {t === 'faq' && <FileText className="size-3.5" />}
-              {t === 'tips' ? 'Quick Start' : t === 'shortcuts' ? 'Shortcuts' : 'FAQ'}
+              {tValue === 'tips' && <Zap className="size-3.5" />}
+              {tValue === 'shortcuts' && <Keyboard className="size-3.5" />}
+              {tValue === 'faq' && <FileText className="size-3.5" />}
+              {tValue === 'tips' ? t.helpCenter.quickStart : tValue === 'shortcuts' ? t.helpCenter.shortcuts : t.helpCenter.faq}
             </button>
           ))}
         </div>
@@ -98,7 +85,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
           {/* Quick Tips Tab */}
           {tab === 'tips' && (
             <div className="space-y-3 animate-fade-in">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">4 tính năng cốt lõi</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.helpCenter.coreFeatures}</p>
               {QUICK_TIPS.map(({ icon: Icon, color, title, desc, path }) => (
                 <button
                   key={title}
@@ -120,7 +107,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
               <div className="rounded-xl bg-[#EEF2FF] dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 p-4 flex items-start gap-3 mt-2">
                 <BrainCircuit className="size-5 text-[#4F46E5] dark:text-indigo-400 shrink-0 mt-0.5" />
                 <p className="text-xs text-[#4338CA] dark:text-indigo-300 font-semibold leading-relaxed">
-                  💡 <strong>Mẹo:</strong> Upload tài liệu và AI sẽ tự tạo tóm tắt + flashcard trong vài giây. Không cần cài đặt gì thêm!
+                  {t.helpCenter.tipText}
                 </p>
               </div>
             </div>
@@ -129,7 +116,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
           {/* Shortcuts Tab */}
           {tab === 'shortcuts' && (
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Keyboard shortcuts</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.helpCenter.keyboardShortcuts}</p>
               <div className="divide-y divide-slate-100 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                 {SHORTCUTS.map(({ keys, label }) => (
                   <div key={label} className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-colors">
@@ -153,7 +140,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
           {/* FAQ Tab */}
           {tab === 'faq' && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Câu hỏi thường gặp</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.helpCenter.faqHeading}</p>
               {FAQ.map(({ q, a }, idx) => (
                 <div key={idx} className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                   <button
@@ -178,13 +165,13 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
         {/* Footer */}
         <div className="border-t border-slate-100 dark:border-slate-800 -mx-6 -mb-6 px-6 py-4 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40 rounded-b-2xl">
-          <p className="text-xs text-slate-400">AI Study Hub v1.0 — SWP391 Project</p>
+          <p className="text-xs text-slate-400">{t.helpCenter.footerInfo}</p>
           <Button
             variant="secondary"
             onClick={onClose}
             className="rounded-xl text-xs font-semibold h-8 px-4"
           >
-            Got it!
+            {t.helpCenter.gotIt}
           </Button>
         </div>
       </div>

@@ -36,9 +36,14 @@ export function AskAIAssistantPanel({
 }: AskAIAssistantPanelProps) {
   const [chatInput, setChatInput] = React.useState('')
   const chatEndRef = useRef<HTMLDivElement>(null)
+  const isFirstRender = useRef(true)
 
   // Scroll chat to bottom when logs update
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatLog, aiTypingText])
 

@@ -45,13 +45,13 @@ export function LoginPage() {
 
       {/* Footer */}
       <footer className="w-full bg-[#F3F5F8] border-t border-border/50 py-6 px-8 flex flex-col md:flex-row items-center justify-between text-sm text-body">
-        <p>© 2024 AI Study Hub. All rights reserved.</p>
+        <p>© 2026 AI Study Hub Team. All rights reserved.</p>
         <div className="flex items-center gap-6 mt-4 md:mt-0 font-medium">
           <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <Link to="/" className="hover:text-primary transition-colors">Features</Link>
           <Link to="/login" className="hover:text-primary transition-colors">Login</Link>
           <Link to="/register" className="hover:text-primary transition-colors">Register</Link>
-          <Link to="/" className="hover:text-primary transition-colors">Help Center</Link>
+          <Link to="/help" className="hover:text-primary transition-colors">Help Center</Link>
         </div>
       </footer>
     </div>

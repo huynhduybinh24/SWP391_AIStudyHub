@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
 
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
@@ -18,8 +19,8 @@ import SummaryModal from '../components/SummaryModal'
 import QuizModal from '../components/QuizModal'
 import ShareAccessModal, { Collaborator } from '../components/ShareAccessModal'
 import RenameFileModal from '../components/RenameFileModal'
-import PermissionModal from '../components/PermissionModal'
-import ConfirmModal from '../components/ConfirmModal'
+import ChangePermissionModal from '../components/ChangePermissionModal'
+import ConfirmRemoveAccessModal from '../components/ConfirmRemoveAccessModal'
 import CollaboratorsModal from '../components/CollaboratorsModal'
 import AIInsightsModal from '../components/AIInsightsModal'
 import { SharedFile } from '../components/SharedFilesTable'
@@ -34,6 +35,8 @@ interface QuotaDetailsModalProps {
 }
 
 function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsModalProps) {
+  const { t, language } = useTranslation()
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -76,10 +79,10 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
           </div>
           <div className="text-left">
             <h3 id="quota-title" className="text-base font-bold text-slate-900 dark:text-white">
-              Shared Storage Quota
+              {t.sharedFiles.quotaTitle}
             </h3>
             <p className="text-xs text-slate-450 dark:text-slate-500 font-medium">
-              Detailed analysis of shared cloud volume
+              {t.sharedFiles.quotaSub}
             </p>
           </div>
         </div>
@@ -88,9 +91,13 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
           <div className="flex items-end justify-between">
             <div>
               <span className="text-3xl font-black text-slate-900 dark:text-white">{usedGb}GB</span>
-              <span className="text-sm font-bold text-slate-400 dark:text-slate-550 ml-1 font-sans">of {totalGb}GB used</span>
+              <span className="text-sm font-bold text-slate-400 dark:text-slate-550 ml-1 font-sans">
+                {t.sharedFiles.usedOf} {totalGb}GB {t.sharedFiles.used.toLowerCase()}
+              </span>
             </div>
-            <span className="text-sm font-bold text-[#3155F6] dark:text-blue-450">{percentage.toFixed(0)}% Used</span>
+            <span className="text-sm font-bold text-[#3155F6] dark:text-blue-450">
+              {percentage.toFixed(0)}% {t.sharedFiles.used}
+            </span>
           </div>
 
           <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -106,7 +113,9 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
               <div className="flex items-center gap-3">
                 <div className="size-2.5 rounded-full bg-red-500" />
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">PDF Documents</span>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  {language === 'vi' ? 'Tài liệu PDF' : (language === 'ja' ? 'PDFドキュメント' : (language === 'ko' ? 'PDF 문서' : 'PDF Documents'))}
+                </span>
               </div>
               <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">6.2 GB</span>
             </div>
@@ -114,7 +123,9 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
               <div className="flex items-center gap-3">
                 <div className="size-2.5 rounded-full bg-blue-500" />
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Office Files (.docx, .xlsx)</span>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  {language === 'vi' ? 'Tệp văn phòng (.docx, .xlsx)' : (language === 'ja' ? 'Officeファイル（.docx, .xlsx）' : (language === 'ko' ? '오피스 파일 (.docx, .xlsx)' : 'Office Files (.docx, .xlsx)'))}
+                </span>
               </div>
               <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">3.8 GB</span>
             </div>
@@ -122,7 +133,9 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
               <div className="flex items-center gap-3">
                 <div className="size-2.5 rounded-full bg-indigo-500" />
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Folders & Group Assets</span>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  {language === 'vi' ? 'Thư mục & Tài sản nhóm' : (language === 'ja' ? 'フォルダとグループアセット' : (language === 'ko' ? '폴더 및 그룹 자산' : 'Folders & Group Assets'))}
+                </span>
               </div>
               <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">2.4 GB</span>
             </div>
@@ -135,7 +148,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
             onClick={onClose}
             className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98]"
           >
-            Close Details
+            {t.sharedFiles.closeDetails}
           </button>
         </div>
       </motion.div>
@@ -324,6 +337,57 @@ export function SharedFilesPage() {
     }, 1000)
   }
 
+  const handleOpenFile = (file: SharedFile) => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual'
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      })
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      scrollableContainers.forEach((container) => {
+        container.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'instant'
+        })
+      })
+    }
+    setViewingFile(file)
+    toast.success(`Opening ${file.name}`)
+  }
+
+  const handleDownload = (file: SharedFile) => {
+    toast.success(`Downloading ${file.name}`)
+    try {
+      if (file.url) {
+        const link = document.createElement('a')
+        link.href = file.url
+        link.download = file.name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } else {
+        const content = file.previewContent || `Mock content for ${file.name}`
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = file.name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      }
+      setTimeout(() => {
+        toast.success('Download completed')
+      }, 1000)
+    } catch (err) {
+      toast.error('Download failed')
+    }
+  }
+
   const handleRenameConfirm = (newName: string) => {
     if (!selectedFile) return
     setFiles(prev =>
@@ -334,21 +398,20 @@ export function SharedFilesPage() {
     setModals(prev => ({ ...prev, rename: false }))
   }
 
-  const handlePermissionConfirm = (newPermission: 'Editor' | 'View Only') => {
+  const handlePermissionConfirm = (newPermission: 'Editor' | 'Commenter' | 'Viewer') => {
     if (!selectedFile) return
-    const resolvedPermission = newPermission === 'View Only' ? 'Viewer' : newPermission
     setFiles(prev =>
-      prev.map(f => (f.id === selectedFile.id ? { ...f, permission: resolvedPermission } : f))
+      prev.map(f => (f.id === selectedFile.id ? { ...f, permission: newPermission } : f))
     )
-    setSelectedFile(prev => (prev ? { ...prev, permission: resolvedPermission } : null))
-    toast.success(`Permission updated to ${newPermission}`)
+    setSelectedFile(prev => (prev ? { ...prev, permission: newPermission } : null))
+    toast.success('Permission updated successfully')
     setModals(prev => ({ ...prev, permission: false }))
   }
 
   const handleDeleteConfirm = () => {
     if (!selectedFile) return
     setFiles(prev => prev.filter(f => f.id !== selectedFile.id))
-    toast.success('File deleted successfully')
+    toast.success('Access removed successfully')
     setSelectedFile(null)
     setViewingFile(null)
     setModals(prev => ({ ...prev, confirmDelete: false }))
@@ -440,7 +503,7 @@ export function SharedFilesPage() {
         file={viewingFile}
         onBack={() => setViewingFile(null)}
         showToast={showToastWrapper}
-        onDownload={(file) => toast.success(`Downloading ${file.name}`)}
+        onDownload={handleDownload}
       />
     )
   }
@@ -555,7 +618,7 @@ export function SharedFilesPage() {
             viewMode={viewMode}
             favorites={favorites}
             onSelectFile={setSelectedFile}
-            onOpenFile={setViewingFile}
+            onOpenFile={handleOpenFile}
             onStarToggle={handleStarToggle}
             onRename={(file) => {
               setSelectedFile(file)
@@ -569,10 +632,11 @@ export function SharedFilesPage() {
               setSelectedFile(file)
               setModals(prev => ({ ...prev, confirmDelete: true }))
             }}
-            onDownload={(file) => toast.success(`Downloading ${file.name}`)}
+            onDownload={handleDownload}
             onShareAccess={(file) => {
               setSelectedFile(file)
               setModals(prev => ({ ...prev, share: true }))
+              toast.success(`Sharing ${file.name}`)
             }}
           />
         </div>
@@ -686,25 +750,22 @@ export function SharedFilesPage() {
         onClose={() => setModals(prev => ({ ...prev, rename: false }))}
         onRename={handleRenameConfirm}
         initialName={selectedFile?.name || ''}
+        files={files}
       />
 
-      <PermissionModal
+      <ChangePermissionModal
         isOpen={modals.permission}
         onClose={() => setModals(prev => ({ ...prev, permission: false }))}
         onUpdatePermission={handlePermissionConfirm}
         fileName={selectedFile?.name || ''}
-        initialPermission={selectedFile?.permission || 'View Only'}
+        initialPermission={selectedFile?.permission || 'Viewer'}
       />
 
-      <ConfirmModal
+      <ConfirmRemoveAccessModal
         isOpen={modals.confirmDelete}
         onClose={() => setModals(prev => ({ ...prev, confirmDelete: false }))}
         onConfirm={handleDeleteConfirm}
-        title="Remove File Access"
-        message={`Are you sure you want to remove your access to "${selectedFile?.name || ''}"? This action cannot be undone.`}
-        confirmText="Remove Access"
-        cancelText="Cancel"
-        type="danger"
+        fileName={selectedFile?.name || ''}
       />
     </motion.div>
   )

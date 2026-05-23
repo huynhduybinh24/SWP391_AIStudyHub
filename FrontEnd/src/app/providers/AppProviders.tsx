@@ -4,13 +4,16 @@ import { queryClient } from '@/lib/queryClient'
 import { router } from '@/app/router/routes'
 import { ToastContainer } from '@/components/ui/Toast'
 import { ThemeProvider } from '@/features/settings/components/ThemeProvider'
+import { LanguageProvider } from '@/context/LanguageContext'
 
 export function AppProviders() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <RouterProvider router={router} />
-        <ToastContainer />
+        <LanguageProvider>
+          <RouterProvider router={router} />
+          <ToastContainer />
+        </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>
   )

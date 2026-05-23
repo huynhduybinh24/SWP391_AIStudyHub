@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useProfileStore } from '@/features/profile/stores/profileStore'
 import { authService } from '@/features/auth/services/authService'
 import { useToast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface UserDropdownProps {
   onClose: () => void
@@ -17,6 +18,7 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
   const logout = useAuthStore((s) => s.logout)
   const { profile } = useProfileStore()
   const toast = useToast()
+  const { t } = useTranslation()
 
   async function handleLogout() {
     try {
@@ -25,7 +27,7 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
       console.error(e)
     }
     logout()
-    toast.success('Logged out successfully')
+    toast.success(t.toasts.logoutSuccess || 'Logged out successfully')
     onClose()
     navigate('/')
   }
@@ -61,7 +63,7 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
         role="menuitem"
       >
         <User className="size-4 text-muted dark:text-slate-500" />
-        My Profile
+        {t.header.profile}
       </button>
       
       <button
@@ -71,18 +73,18 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
         role="menuitem"
       >
         <Settings className="size-4 text-slate-400 dark:text-slate-500" />
-        Settings
+        {t.sidebar.settings}
       </button>
       
       <div className="mt-1 border-t border-slate-200 dark:border-slate-800 pt-1">
         <button
           type="button"
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-600 dark:text-rose-450 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-left font-semibold cursor-pointer"
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-600 dark:text-rose-455 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-left font-semibold cursor-pointer"
           onClick={onLogoutClick || handleLogout}
           role="menuitem"
         >
           <LogOut className="size-4 text-rose-600 dark:text-rose-455" />
-          Log Out
+          {t.sidebar.logout}
         </button>
       </div>
     </motion.div>
