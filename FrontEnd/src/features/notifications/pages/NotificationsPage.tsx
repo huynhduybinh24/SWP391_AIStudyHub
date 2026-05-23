@@ -112,7 +112,7 @@ function NotificationCard({
   return (
     <div className={cn(
       "border rounded-2xl p-6 shadow-sm flex gap-5 transition-all duration-200 hover:shadow-md",
-      isUnread 
+      !isRead 
         ? "bg-blue-50/20 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/50" 
         : "bg-white dark:bg-slate-900 border-[rgba(195,198,215,0.4)] dark:border-slate-800"
     )}>
@@ -149,7 +149,7 @@ function NotificationCard({
           <h2 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100">{title}</h2>
           <div className="flex items-center gap-1.5 text-xs text-[#737686] dark:text-slate-400 font-medium">
             <span>{time}</span>
-            {isUnread && <span className="w-2 h-2 rounded-full bg-[#3155F6] dark:bg-blue-500" />}
+            {!isRead && <span className="w-2 h-2 rounded-full bg-[#3155F6] dark:bg-blue-500" />}
           </div>
         </div>
 
