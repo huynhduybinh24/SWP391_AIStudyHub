@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Mail, UserPlus, ArrowLeft, Settings } from 'lucide-react'
+import { X, Mail, UserPlus, ArrowLeft, Settings, Link } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
@@ -257,7 +257,7 @@ export function ShareAccessModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-[#0b1c30]/40 dark:bg-black/60 backdrop-blur-md cursor-pointer"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-pointer"
           />
 
           {/* Modal Container */}
@@ -267,7 +267,12 @@ export function ShareAccessModal({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 15 }}
             transition={{ type: 'spring', duration: 0.35, bounce: 0.15 }}
-            className="bg-slate-900 text-white rounded-[32px] shadow-2xl border border-slate-700 w-full max-w-[760px] overflow-visible z-10 font-sans flex flex-col relative max-h-[90vh] p-8"
+            className={cn(
+              "w-[calc(100vw-24px)] rounded-[24px] sm:rounded-[28px] sm:w-[560px] sm:max-w-[90vw] md:max-w-[calc(100vw-32px)]",
+              "shadow-[0_20px_60px_rgba(0,0,0,0.18)] border overflow-hidden z-10 font-sans flex flex-col relative max-h-[90vh] p-6 text-left",
+              "bg-white text-slate-900 border-slate-200",
+              "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-800"
+            )}
             role="dialog"
             aria-modal="true"
             aria-labelledby="share-modal-title"
@@ -276,23 +281,23 @@ export function ShareAccessModal({
               /* sharing settings view */
               <div className="flex flex-col h-full animate-fade-in text-left">
                 {/* Settings Header */}
-                <div className="flex items-center gap-3 pb-6 border-b border-slate-800 shrink-0">
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-150 dark:border-slate-800 shrink-0">
                   <button
                     type="button"
                     onClick={() => setIsSettingsViewOpen(false)}
-                    className="text-slate-400 hover:text-white hover:bg-slate-800 p-2 rounded-full transition-colors flex items-center justify-center cursor-pointer"
+                    className="text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-full transition-colors flex items-center justify-center cursor-pointer focus:outline-none"
                     title="Back"
                     aria-label="Back to share settings"
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </button>
-                  <h2 className="text-xl font-bold tracking-tight">
+                  <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                     Cài đặt chia sẻ
                   </h2>
                 </div>
 
                 {/* Settings Options */}
-                <div className="py-8 flex-1 space-y-6">
+                <div className="py-6 flex-1 space-y-6">
                   <label className="flex items-start gap-4 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -301,13 +306,13 @@ export function ShareAccessModal({
                         setEditorsCanShare(e.target.checked)
                         triggerToast(e.target.checked ? '✅ Người chỉnh sửa hiện có thể thay đổi quyền và chia sẻ.' : '🔒 Người chỉnh sửa không thể thay đổi quyền chia sẻ.')
                       }}
-                      className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
+                      className="w-5 h-5 rounded border-slate-350 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
                     />
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-200 leading-normal">
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-normal">
                         Người chỉnh sửa có thể thay đổi quyền và chia sẻ
                       </span>
-                      <span className="text-xs text-slate-500 font-semibold leading-relaxed mt-0.5">
+                      <span className="text-xs text-slate-550 dark:text-slate-400 font-semibold leading-relaxed mt-0.5">
                         Nếu tắt, chỉ chủ sở hữu tài liệu mới có quyền thay đổi cài đặt chia sẻ
                       </span>
                     </div>
@@ -321,13 +326,13 @@ export function ShareAccessModal({
                         setViewersCanDownload(e.target.checked)
                         triggerToast(e.target.checked ? '✅ Người xem/nhận xét có thể tải xuống, in và sao chép.' : '🔒 Đã khóa tính năng tải xuống, in và sao chép.')
                       }}
-                      className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
+                      className="w-5 h-5 rounded border-slate-355 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
                     />
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-200 leading-normal">
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-normal">
                         Người xem và người nhận xét có thể thấy tùy chọn tải xuống, in và sao chép
                       </span>
-                      <span className="text-xs text-slate-500 font-semibold leading-relaxed mt-0.5">
+                      <span className="text-xs text-slate-550 dark:text-slate-400 font-semibold leading-relaxed mt-0.5">
                         Nếu tắt, các nút tải xuống và in ấn sẽ bị khóa với Người xem
                       </span>
                     </div>
@@ -335,10 +340,10 @@ export function ShareAccessModal({
                 </div>
 
                 {/* Settings Footer */}
-                <div className="pt-6 border-t border-slate-800 flex justify-end shrink-0">
+                <div className="pt-4 border-t border-slate-150 dark:border-slate-800 flex justify-end shrink-0">
                   <Button
                     onClick={() => setIsSettingsViewOpen(false)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-6 py-3.5 rounded-full shadow-md cursor-pointer border-none"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-full shadow-sm cursor-pointer border-none"
                   >
                     Quay lại
                   </Button>
@@ -348,43 +353,43 @@ export function ShareAccessModal({
               /* main view */
               <>
                 {/* Modal Header */}
-                <div className="flex justify-between items-center pb-4 shrink-0 text-left">
-                  <h2 id="share-modal-title" className="text-2xl font-bold tracking-tight truncate max-w-[580px]">
+                <div className="flex justify-between items-center pb-2 shrink-0 text-left">
+                  <h2 id="share-modal-title" className="text-xl font-bold tracking-tight truncate pr-4 text-slate-900 dark:text-slate-100">
                     Chia sẻ "{fileName}"
                   </h2>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setIsSettingsViewOpen(true)}
-                      className="p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
+                      className="p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer focus:outline-none"
                       title="Cài đặt chia sẻ"
                       aria-label="Cài đặt chia sẻ"
                     >
-                      <Settings className="h-5.5 w-5.5" />
+                      <Settings className="h-5 w-5" />
                     </button>
                     <button
                       type="button"
                       onClick={onClose}
-                      className="p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
+                      className="p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer focus:outline-none"
                       title="Đóng"
                       aria-label="Close dialog"
                     >
-                      <X className="h-5.5 w-5.5" />
+                      <X className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
 
                 {/* Invite Row */}
-                <div className="py-4 shrink-0">
+                <div className="py-2 shrink-0">
                   <form onSubmit={handleAddCollaborator} className="flex gap-3 items-center">
                     <div className="relative flex-1">
-                      <Mail className="absolute left-4.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <Mail className="absolute left-4.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500" />
                       <input
                         type="text"
-                        placeholder="Thêm người hoặc địa chỉ email"
+                        placeholder="Thêm người, nhóm hoặc địa chỉ email"
                         value={newEmail}
                         onChange={(e) => setNewEmail(e.target.value)}
-                        className="w-full pl-12 pr-4 py-4 bg-slate-800 border border-slate-700 focus:border-blue-500 focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10 rounded-2xl text-xs font-semibold placeholder-slate-400 text-slate-100 transition-all focus:outline-none"
+                        className="w-full pl-12 pr-4 h-[52px] bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-full text-sm font-medium placeholder-slate-400 text-slate-900 transition-all focus:outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:focus:border-blue-500"
                       />
                     </div>
 
@@ -393,6 +398,7 @@ export function ShareAccessModal({
                         value={newRole}
                         onChange={setNewRole}
                         align="right"
+                        className="h-[52px] w-[140px] text-sm rounded-full bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white"
                         ariaLabel="Select invite role"
                       />
                     </div>
@@ -400,7 +406,7 @@ export function ShareAccessModal({
                     <button
                       type="submit"
                       disabled={!newEmail.trim()}
-                      className="w-[48px] h-[48px] bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 rounded-full flex items-center justify-center shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer border-none focus:outline-none"
+                      className="w-[52px] h-[52px] bg-slate-50 hover:bg-slate-100 disabled:opacity-40 text-slate-600 rounded-full flex items-center justify-center shadow-xs transition-all cursor-pointer border border-slate-200 focus:outline-none dark:bg-slate-850 dark:hover:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                       title="Mời cộng tác viên"
                       aria-label="Invite user button"
                     >
@@ -409,45 +415,43 @@ export function ShareAccessModal({
                   </form>
                 </div>
 
-                <div className="border-t border-slate-800 my-2 shrink-0" />
-
                 {/* Collaborators List */}
                 <div className="py-4 flex-1 overflow-y-auto space-y-4 text-left scrollbar-thin max-h-[220px] pr-2">
-                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 select-none">
+                  <h3 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 select-none">
                     NGƯỜI CÓ QUYỀN TRUY CẬP
                   </h3>
 
-                  <div className="space-y-3.5">
+                  <div className="space-y-3">
                     {activeCollaborators.map((c) => {
                       const initials = c.name ? c.name.charAt(0).toUpperCase() : 'A'
                       const isOwner = c.role === 'owner'
                       return (
                         <div key={c.id} className="flex items-center justify-between gap-3 py-1">
-                          <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="flex items-center gap-3 min-w-0">
                             <div className={cn(
-                              "w-[38px] h-[38px] rounded-full flex items-center justify-center font-bold text-sm shadow-inner shrink-0 select-none text-white",
+                              "w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shadow-inner shrink-0 select-none text-white",
                               c.avatarBg || "bg-blue-600"
                             )}>
                               {initials}
                             </div>
 
                             <div className="min-w-0">
-                              <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5 leading-normal truncate">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 leading-normal truncate">
                                 {c.name}
                                 {isOwner && (
-                                  <span className="bg-slate-800 text-slate-400 text-[9px] px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider border border-slate-700 select-none">
-                                    Chủ sở hữu
+                                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider select-none">
+                                    CHỦ SỞ HỮU
                                   </span>
                                 )}
                               </h4>
-                              <p className="text-[10px] text-slate-500 font-semibold truncate mt-0.5">
+                              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
                                 {c.email}
                               </p>
                             </div>
                           </div>
 
                           {isOwner ? (
-                            <span className="text-xs font-bold text-slate-500 select-none mr-3">
+                            <span className="text-xs font-semibold text-slate-550 dark:text-slate-500 select-none mr-2">
                               Chủ sở hữu
                             </span>
                           ) : (
@@ -458,6 +462,7 @@ export function ShareAccessModal({
                                 showRemove={true}
                                 onRemove={() => handleRemoveCollaborator(c.id, c.name)}
                                 align="right"
+                                className="h-[36px] px-3 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold"
                                 ariaLabel={`Change permission for ${c.name}`}
                               />
                             </div>
@@ -468,10 +473,10 @@ export function ShareAccessModal({
                   </div>
                 </div>
 
-                <div className="border-t border-slate-800 my-2 shrink-0" />
+                <div className="border-t border-slate-150 dark:border-slate-800/80 my-2 shrink-0" />
 
                 {/* General Access Selector */}
-                <div className="py-4 shrink-0">
+                <div className="py-2 shrink-0">
                   <GeneralAccessSelector
                     value={activeGeneralAccess}
                     onChange={updateGeneralAccess}
@@ -482,19 +487,20 @@ export function ShareAccessModal({
                 </div>
 
                 {/* Footer Section */}
-                <div className="mt-6 pt-6 border-t border-slate-800/80 flex items-center justify-between gap-3 shrink-0">
+                <div className="mt-4 pt-4 border-t border-slate-150 dark:border-slate-800/80 flex items-center justify-between gap-3 shrink-0">
                   <button
                     type="button"
                     onClick={handleCopyLink}
-                    className="flex items-center gap-2 text-blue-400 hover:text-blue-300 font-extrabold text-xs px-4 py-2.5 rounded-full hover:bg-slate-800 transition-colors cursor-pointer border-none bg-transparent focus:outline-none"
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-bold text-sm px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-white dark:bg-slate-800 focus:outline-none"
                     aria-label="Sao chép đường liên kết"
                   >
+                    <Link className="h-4 w-4" />
                     <span>Sao chép đường liên kết</span>
                   </button>
 
                   <Button
                     onClick={onClose}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-8 py-3.5 rounded-full shadow-md cursor-pointer border-none"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-full shadow-sm cursor-pointer border-none"
                   >
                     Xong
                   </Button>
