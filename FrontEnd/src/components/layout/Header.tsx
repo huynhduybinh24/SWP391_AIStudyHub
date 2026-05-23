@@ -205,18 +205,13 @@ export function Header() {
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const [logoutModalOpen, setLogoutModalOpen] = useState(false)
 
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, resolvedTheme } = useTheme()
 
   const toggleTheme = () => {
-    const isCurrentlyDark = document.documentElement.classList.contains('dark')
-    setTheme(isCurrentlyDark ? 'light' : 'dark')
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
   }
 
-  const isDark =
-    theme === 'dark' ||
-    (theme === 'system' &&
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const isDark = resolvedTheme === 'dark'
 
   useEffect(() => {
     setSearchVal(urlKeyword)
@@ -276,19 +271,17 @@ export function Header() {
     setShowSuggestions(false)
   }
 
-  // Dynamic filter for autocomplete recommendations
-  const filteredTopics = SEARCH_SUGGESTION_TOPICS.filter(
-    (item) =>
-      item.title.toLowerCase().includes(searchVal.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchVal.toLowerCase())
-  ).slice(0, 5)
+  // Dynamic filter for autocomplete suggestions
+  const filteredTopics = SEARCH_SUGGESTION_TOPICS.filter((item) =>
+    item.title.toLowerCase().includes(searchVal.toLowerCase())
+  )
 
   return (
-    <header className="relative z-20 flex h-[72px] shrink-0 items-center justify-between border-b border-border bg-white dark:bg-slate-950 dark:border-slate-850 px-8 shadow-sm">
+    <header className="relative z-20 flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 px-8 shadow-sm">
       <button
         type="button"
         onClick={() => setSidebarOpen(true)}
-        className="md:hidden p-2 -ml-2 mr-3 rounded-lg text-slate-550 hover:text-slate-755 dark:text-slate-400 dark:hover:text-slate-255 hover:bg-slate-50 dark:hover:bg-slate-850 shrink-0 cursor-pointer"
+        className="md:hidden p-2 -ml-2 mr-3 rounded-lg text-slate-550 hover:text-slate-755 dark:text-slate-400 dark:hover:text-slate-255 hover:bg-slate-50 dark:hover:bg-slate-800 shrink-0 cursor-pointer"
         aria-label="Open sidebar"
       >
         <Menu className="size-5" />
@@ -307,7 +300,7 @@ export function Header() {
               ? 'Search study plans...'
               : 'Search documents, chats, plans...'
           }
-          className="w-full bg-[#f0f4ff]/70 border border-[#e2e8f0]/40 rounded-xl dark:bg-slate-900 dark:border-slate-800"
+          className="w-full bg-slate-100 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
           aria-label="Search"
           value={isChatPage ? searchQuery : searchVal}
           onChange={(e) => {
@@ -332,15 +325,8 @@ export function Header() {
               setShowSuggestions(false)
             }
           }}
-          startIcon={
-            <button
-              type="submit"
-              className="flex items-center justify-center p-0 border-none bg-transparent cursor-pointer shrink-0"
-              title="Search"
-            >
-              <Search className="size-4.5 text-slate-400 dark:text-slate-550 hover:text-[#3155F6] transition-colors" />
-            </button>
-          }
+          onFocus={() => setShowSuggestions(true)}
+          startIcon={<Search className="size-4.5 text-slate-400 dark:text-slate-500" />}
           endIcon={
             isChatPage ? (
               searchQuery ? (
@@ -374,15 +360,16 @@ export function Header() {
 
         {/* Custom Autocomplete or Search Suggestion Dropdown */}
         <AnimatePresence>
-          {isChatPage ? (
-            isSearchOpen && searchQuery.trim() !== '' && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="absolute left-0 right-0 top-full mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-955 z-50 select-none"
-              >
+          {showSuggestions && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="absolute left-0 right-0 top-full mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900 z-50 select-none"
+            >
+              {searchVal.trim() === '' ? (
+                // 1. STATE: EMPTY INPUT (Show History and Trending)
                 <div className="space-y-3.5">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-1.5 block text-left">

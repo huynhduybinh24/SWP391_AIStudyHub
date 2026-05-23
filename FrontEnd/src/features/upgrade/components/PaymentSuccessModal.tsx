@@ -102,7 +102,7 @@ Thank you for your purchase!
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               aria-label="Close modal"
             >
               <X className="size-4" />
@@ -132,29 +132,29 @@ Thank you for your purchase!
             </p>
 
             {/* Info Table Box */}
-            <div className="w-full bg-slate-50/80 dark:bg-slate-950/50 rounded-2xl p-5 mb-8 border border-slate-100 dark:border-slate-850 space-y-4">
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-650 dark:text-slate-400">
+            <div className="w-full bg-slate-50/80 dark:bg-slate-950/50 rounded-2xl p-5 mb-8 border border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
                 <span>Plan</span>
-                <span className="text-slate-850 dark:text-slate-200 font-bold">{planName}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold">{planName}</span>
               </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-850 w-full" />
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-650 dark:text-slate-400">
+              <div className="h-px bg-slate-100 dark:bg-slate-800 w-full" />
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
                 <span>Transaction ID</span>
-                <span className="text-slate-850 dark:text-slate-200 font-mono font-bold">
+                <span className="text-slate-800 dark:text-slate-200 font-mono font-bold">
                   {transactionId}
                 </span>
               </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-850 w-full" />
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-650 dark:text-slate-400">
+              <div className="h-px bg-slate-100 dark:bg-slate-800 w-full" />
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
                 <span>Amount</span>
                 <span className="text-[#2563eb] dark:text-blue-400 font-extrabold text-sm">
                   {amount}
                 </span>
               </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-850 w-full" />
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-650 dark:text-slate-400">
+              <div className="h-px bg-slate-100 dark:bg-slate-800 w-full" />
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
                 <span>Payment Method</span>
-                <span className="text-slate-850 dark:text-slate-200 font-bold">
+                <span className="text-slate-800 dark:text-slate-200 font-bold">
                   {paymentMethod}
                 </span>
               </div>
@@ -171,7 +171,7 @@ Thank you for your purchase!
             <a
               href="#"
               onClick={handleDownloadReceipt}
-              className="mt-4 text-xs font-bold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              className="mt-4 text-xs font-bold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="size-3.5" />
               Download Receipt

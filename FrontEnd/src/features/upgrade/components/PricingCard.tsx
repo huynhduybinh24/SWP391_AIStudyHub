@@ -79,7 +79,7 @@ export function PricingCard({
               {plan.price}
             </span>
             {plan.billing && (
-              <span className="text-sm font-semibold text-slate-450 dark:text-slate-400">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                 {plan.billing}
               </span>
             )}
@@ -113,11 +113,11 @@ export function PricingCard({
                   <Check className="size-3" strokeWidth={3.5} />
                 </div>
               ) : (
-                <div className="flex size-5 shrink-0 items-center justify-center text-slate-400 dark:text-slate-555 mt-0.5">
+                <div className="flex size-5 shrink-0 items-center justify-center text-slate-400 dark:text-slate-500 mt-0.5">
                   <Check className="size-4" strokeWidth={2.5} />
                 </div>
               )}
-              <span className="text-sm font-semibold text-slate-600 dark:text-slate-350 leading-snug">
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300 leading-snug">
                 {feature}
               </span>
             </li>
@@ -131,7 +131,7 @@ export function PricingCard({
           <button
             type="button"
             onClick={handleButtonClick}
-            className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3.5 px-4 text-sm font-bold text-slate-400 dark:text-slate-500 transition-colors cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-850"
+            className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3.5 px-4 text-sm font-bold text-slate-400 dark:text-slate-500 transition-colors cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
             aria-label="Current Plan activated"
           >
             {plan.buttonText}

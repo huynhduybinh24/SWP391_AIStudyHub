@@ -53,14 +53,14 @@ export function NotificationDropdown({ onClose, notifications, setNotifications,
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-      className="absolute right-0 top-[52px] w-80 rounded-xl border border-border/85 bg-white dark:bg-slate-900 dark:border-slate-800 py-2 shadow-xl z-50 select-none"
+      className="absolute right-0 top-[52px] w-80 rounded-xl border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 py-2 shadow-xl z-50 select-none"
       role="menu"
     >
       {/* Header */}
-      <div className="border-b border-border/50 dark:border-slate-800/80 px-4 py-3 flex items-center justify-between">
+      <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <Bell className="size-4 text-foreground dark:text-white" />
-          <span className="text-sm font-bold text-foreground dark:text-slate-200">Notifications</span>
+          <Bell className="size-4 text-slate-900 dark:text-white" />
+          <span className="text-sm font-bold text-slate-900 dark:text-slate-200">Notifications</span>
           {unreadCount > 0 && (
             <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-bold">
               {unreadCount}
@@ -78,30 +78,30 @@ export function NotificationDropdown({ onClose, notifications, setNotifications,
       </div>
 
       {/* Notifications List */}
-      <div className="max-h-64 overflow-y-auto divide-y divide-border/40 dark:divide-slate-800/50">
+      <div className="max-h-64 overflow-y-auto divide-y divide-slate-200 dark:divide-slate-800">
         {notifications.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => handleNotificationClick(item)}
-            className={`w-full flex gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors cursor-pointer relative items-start ${
-              !item.isRead ? 'bg-blue-50/20 dark:bg-blue-950/10' : 'opacity-80'
+            className={`w-full flex gap-3 px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative items-start ${
+              !item.read ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''
             }`}
           >
-            <div className="mt-0.5 size-7 rounded-lg bg-slate-50 dark:bg-slate-800 border border-border/50 dark:border-slate-700/80 flex items-center justify-center shrink-0">
+            <div className="mt-0.5 size-7 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
               {getIcon(item.type)}
             </div>
             
             <div className="flex-1 min-w-0 pr-2">
               <div className="flex items-center justify-between gap-2">
-                <p className={`text-xs truncate ${!item.isRead ? 'font-bold text-foreground dark:text-white' : 'font-medium text-slate-700 dark:text-slate-350'}`}>
+                <p className={`text-xs truncate ${!item.read ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300'}`}>
                   {item.title}
                 </p>
-                <span className="text-[10px] text-muted dark:text-slate-500 shrink-0 font-medium">
+                <span className="text-[10px] text-slate-550 dark:text-slate-500 shrink-0 font-medium">
                   {item.time}
                 </span>
               </div>
-              <p className="text-[11px] text-muted dark:text-slate-400 mt-0.5 leading-snug line-clamp-2">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug line-clamp-2">
                 {item.description}
               </p>
             </div>
@@ -114,14 +114,14 @@ export function NotificationDropdown({ onClose, notifications, setNotifications,
       </div>
 
       {/* Footer */}
-      <div className="border-t border-border/50 dark:border-slate-800/80 pt-2 pb-0.5 px-4 text-center">
+      <div className="border-t border-slate-200 dark:border-slate-800 pt-2 pb-0.5 px-4 text-center">
         <button
           type="button"
           onClick={() => {
             navigate('/dashboard/notifications')
             onClose()
           }}
-          className="text-xs font-bold text-slate-550 dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 inline-block py-1 cursor-pointer transition-colors w-full"
+          className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 inline-block py-1 cursor-pointer transition-colors w-full"
         >
           View All Notifications
         </button>
