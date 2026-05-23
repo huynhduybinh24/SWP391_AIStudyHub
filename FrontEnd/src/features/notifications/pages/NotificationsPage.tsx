@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Eye, Calendar, Layers, ExternalLink } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Eye, Calendar, Layers, ExternalLink, RefreshCw, BellOff } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { notificationApi, Notification } from '../api/notification.api'
 
 /**
  * Text Encoding and Spellings Verification:
@@ -110,11 +111,12 @@ function NotificationCard({
 
   return (
     <div className={cn(
-      "border rounded-2xl p-6 shadow-sm flex gap-5 transition-all duration-200 hover:shadow-md",
+      "border rounded-2xl p-6 shadow-sm flex gap-5 transition-all duration-200 hover:shadow-md cursor-pointer",
       !isRead 
         ? "bg-blue-50/20 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/50" 
         : "bg-white dark:bg-slate-900 border-[rgba(195,198,215,0.4)] dark:border-slate-800"
-    )}>
+    )}
+    onClick={() => onMarkRead?.()}>
       {/* Icon/Avatar Container */}
       <div className="flex-shrink-0">
         {avatar ? (
@@ -285,53 +287,29 @@ export function NotificationsPage() {
 
   const tabs = ['All', 'Unread', 'Mentions', 'Shared Files', 'AI Updates']
   
-  // Read and normalize search parameter filter
   const filterParam = searchParams.get('filter') || 'all'
   const [activeFilter, setActiveFilter] = useState(filterParam)
+  
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
 
-  // Default read/unread states based on instructions
-  const defaultReadMap: Record<string, boolean> = {
-    'ai-summary': false,
-    'shared-folder': false,
-    'emily': false,
-    'security-alert': false,
-    'study-plan': false,
-    'mention-2': true,
-    'shared-doc-1': true,
-    'flashcards': true,
-    'all-3': true,
-  }
-
-  // Load state from localStorage or default values
-  const [isReadMap, setIsReadMap] = useState<Record<string, boolean>>(() => {
+  const fetchNotifications = useCallback(async (filter: string) => {
+    setLoading(true)
+    setError(null)
     try {
-      const stored = localStorage.getItem('aiStudyHubNotificationReadState')
-      if (stored) {
-        return JSON.parse(stored)
-      }
+      const data = await notificationApi.getNotifications(filter)
+      setNotifications(data)
     } catch (err) {
-      console.error('Failed to read notification read state from localStorage', err)
+      setError('Failed to fetch notifications')
+    } finally {
+      setLoading(false)
     }
-    return defaultReadMap
-  })
+  }, [])
 
-  // Mark notification as read and save to localStorage
-  const handleMarkAsRead = (id: string) => {
-    setIsReadMap((prev) => {
-      if (prev[id]) return prev // already read
-      const updated = { ...prev, [id]: true }
-      try {
-        localStorage.setItem('aiStudyHubNotificationReadState', JSON.stringify(updated))
-      } catch (err) {
-        console.error('Failed to save notification read state to localStorage', err)
-      }
-      return updated
-    })
-  }
-
-  // Normalizes filter strings (e.g., 'shared-files' or 'Shared Files' -> 'sharedfiles')
   const normalize = (str: string) => str.toLowerCase().replace(/[\s-_]+/g, '')
 
   const activeTab = tabs.find(
@@ -339,362 +317,41 @@ export function NotificationsPage() {
   ) || 'All'
 
   const handleTabClick = (tab: string) => {
-    // Generate parameter key (e.g. "Shared Files" -> "shared-files")
     const filterKey = tab.toLowerCase().replace(/\s+/g, '-')
     setActiveFilter(filterKey)
     setSearchParams({ filter: filterKey })
   }
 
-  // Sync state if URL changes
+  // Sync state if URL changes and fetch data
   useEffect(() => {
     setActiveFilter(filterParam)
-  }, [filterParam])
+    fetchNotifications(filterParam)
+  }, [filterParam, fetchNotifications])
 
-  // 1. "All" Filter Data: Exact 3 original notifications
-  const allNotifications = [
-    {
-      id: 'ai-summary',
-      type: 'ai' as const,
-      title: 'AI Summary Ready',
-      time: '10m ago',
-      isRead: !!isReadMap['ai-summary'],
-      description: (
-        <>
-          The comprehensive summary for your document{' '}
-          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
-            "Advanced Neuroscience Syllabus 2024.pdf"
-          </strong>{' '}
-          is now complete and ready for review.
-        </>
-      ),
-      actionText: 'View Summary',
-      actionUrl: '/dashboard/notifications/summary',
-    },
-    {
-      id: 'shared-folder',
-      type: 'folder' as const,
-      title: 'New File Shared',
-      time: '2h ago',
-      isRead: !!isReadMap['shared-folder'],
-      description: (
-        <>
-          Sarah Jenkins shared a folder with you:{' '}
-          <span
-            onClick={() => navigate('/dashboard/shared-files/research-materials')}
-            className="text-[#3155F6] dark:text-blue-400 hover:underline cursor-pointer font-semibold"
-          >
-            Group Project Research Materials.
-          </span>
-        </>
-      ),
-      actionText: 'Open Folder',
-      actionUrl: '/dashboard/shared-files/research-materials',
-    },
-    {
-      id: 'all-3',
-      type: 'mention' as const,
-      title: 'Mentioned You',
-      time: 'Yesterday',
-      isRead: !!isReadMap['all-3'],
-      avatar: '/emily.png',
-      description: (
-        <>
-          Emily R. mentioned you in a comment on{' '}
-          <span className="text-[#3155F6] dark:text-blue-400 hover:underline cursor-pointer font-semibold">
-            Lecture Notes Week 4.
-          </span>
-        </>
-      ),
-      quote: '@You could you verify the formulas used in section 3? They seem slightly different from the textbook.',
-      actionText: 'Reply',
-    },
-  ]
-
-  // 2. "Mentions" Filter Data: Exact 2 custom mentions from Figma with precise button labels and actions
-  const mentionsNotifications = [
-    {
-      id: 'emily',
-      type: 'mention' as const,
-      title: 'Emily R. mentioned you',
-      time: '1h ago',
-      isRead: !!isReadMap['emily'],
-      description: (
-        <>
-          <span className="text-[#3155F6] dark:text-blue-400 font-semibold">@User</span>, what do you think about the methodology section on page 4 of the 'Cognitive Science' paper?
-        </>
-      ),
-      actionText: 'Reply',
-    },
-    {
-      id: 'mention-2',
-      type: 'mention' as const,
-      title: 'Sarah Mitchell mentioned you',
-      time: '4h ago',
-      isRead: !!isReadMap['mention-2'],
-      description: (
-        <>
-          Sarah Mitchell mentioned you in a comment on{' '}
-          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
-            'Neuroscience_Ch4_Syn...'
-          </strong>
-          : "@Sarah Mitchell, check the synaptic plasticity diagram on page 12."
-        </>
-      ),
-      actionText: 'View Comment',
-      actionUrl: '/dashboard/shared-files/research-materials',
-    },
-  ]
-
-  // 3. "Unread" Filter Data: Exact unread notifications across all lists dynamically
-  const unreadNotifications: typeof allNotifications = []
-
-  if (!isReadMap['ai-summary']) {
-    unreadNotifications.push({
-      id: 'ai-summary',
-      type: 'ai' as const,
-      title: 'AI Summary Ready',
-      time: '10m ago',
-      isRead: false,
-      description: (
-        <>
-          The comprehensive summary for your document{' '}
-          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
-            "Advanced Neuroscience Syllabus 2024.pdf"
-          </strong>{' '}
-          is now complete and ready for review.
-        </>
-      ),
-      actionText: 'View Summary',
-      actionUrl: '/dashboard/notifications/summary',
-    })
+  const handleMarkAsRead = async (id: string) => {
+    // Optimistic UI update
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
+    await notificationApi.markAsRead(id)
   }
-
-  if (!isReadMap['security-alert']) {
-    unreadNotifications.push({
-      id: 'security-alert',
-      type: 'security' as const,
-      title: 'Security Alert: New Login',
-      time: '35m ago',
-      isRead: false,
-      description: (
-        <>
-          A new login was detected on your account from a Chrome browser on a MacOS device. If this wasn't you, please secure your account immediately.
-        </>
-      ),
-      buttons: [
-        { text: 'Review Activity', variant: 'primary' as const },
-        { text: 'It was me', variant: 'light' as const },
-      ],
-    } as any)
-  }
-
-  if (!isReadMap['shared-folder']) {
-    unreadNotifications.push({
-      id: 'shared-folder',
-      type: 'folder' as const,
-      title: 'Sarah Jenkins shared a folder with you',
-      time: '2h ago',
-      isRead: false,
-      description: (
-        <>
-          Folder: <span className="font-semibold text-[#0b1c30]">Group Project Research Materials</span>
-        </>
-      ),
-      buttons: [
-        {
-          text: 'Open Folder',
-          variant: 'shared-btn' as const,
-          icon: <Folder className="w-3.5 h-3.5 text-[#3155F6]" />,
-          url: '/dashboard/shared-files/research-materials',
-        },
-      ],
-    } as any)
-  }
-
-  if (!isReadMap['emily']) {
-    unreadNotifications.push({
-      id: 'emily',
-      type: 'mention' as const,
-      title: 'Emily R. mentioned you',
-      time: '1h ago',
-      isRead: false,
-      description: (
-        <>
-          <span className="text-[#3155F6] font-semibold">@User</span>, what do you think about the methodology section on page 4 of the 'Cognitive Science' paper?
-        </>
-      ),
-      actionText: 'Reply',
-    } as any)
-  }
-
-  if (!isReadMap['study-plan']) {
-    unreadNotifications.push({
-      id: 'study-plan',
-      type: 'calendar' as const,
-      title: 'Study Plan Generated',
-      time: '4h ago',
-      isRead: false,
-      description: (
-        <>
-          AI has created a personalized 4-week study plan for{' '}
-          <strong className="font-semibold text-[#0b1c30]">
-            "Organic Chemistry"
-          </strong>{' '}
-          based on your recent uploads.
-        </>
-      ),
-      buttons: [
-        {
-          text: 'Open Plan',
-          variant: 'secondary' as const,
-          icon: <Calendar className="w-3.5 h-3.5 text-[#3155F6]" />,
-          url: '/dashboard/study-plans',
-        },
-      ],
-    } as any)
-  }
-
-  // 4. "Shared Files" Filter Data
-  const sharedFilesNotifications = [
-    {
-      id: 'shared-folder',
-      type: 'folder' as const,
-      title: 'Sarah Jenkins shared a folder with you',
-      time: '2h ago',
-      isRead: !!isReadMap['shared-folder'],
-      description: (
-        <>
-          Folder: <span className="font-semibold text-[#0b1c30] dark:text-slate-100">Group Project Research Materials</span>
-        </>
-      ),
-      buttons: [
-        {
-          text: 'Open Folder',
-          variant: 'shared-btn',
-          icon: <Folder className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-          url: '/dashboard/shared-files/research-materials',
-        },
-      ],
-    },
-    {
-      id: 'shared-doc-1',
-      type: 'document' as const,
-      title: 'Alex Chen shared a document',
-      time: '5h ago',
-      isRead: !!isReadMap['shared-doc-1'],
-      description: (
-        <>
-          Document: <span className="font-semibold text-[#0b1c30] dark:text-slate-100">Advanced Neuroscience Syllabus 2024.pdf</span>
-        </>
-      ),
-      buttons: [
-        {
-          text: 'View Document',
-          variant: 'shared-btn',
-          icon: <Eye className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-          url: '/dashboard/notifications/summary',
-        },
-      ],
-    },
-  ]
-
-  // 5. "AI Updates" Filter Data
-  const aiUpdatesNotifications = [
-    {
-      id: 'ai-summary',
-      type: 'document' as const,
-      title: 'AI Summary Ready',
-      time: '10m ago',
-      isRead: !!isReadMap['ai-summary'],
-      description: (
-        <>
-          The comprehensive summary for your document{' '}
-          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
-            "Advanced Neuroscience Syllabus 2024.pdf"
-          </strong>{' '}
-          is now complete and ready for review.
-        </>
-      ),
-      actionText: 'View Summary',
-      actionUrl: '/dashboard/notifications/summary',
-    },
-    {
-      id: 'study-plan',
-      type: 'calendar' as const,
-      title: 'Study Plan Generated',
-      time: '4h ago',
-      isRead: !!isReadMap['study-plan'],
-      description: (
-        <>
-          AI has created a personalized 4-week study plan for{' '}
-          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
-            "Organic Chemistry"
-          </strong>{' '}
-          based on your recent uploads.
-        </>
-      ),
-      buttons: [
-        {
-          text: 'Open Plan',
-          variant: 'secondary',
-          icon: <Calendar className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-          url: '/dashboard/study-plans',
-        },
-      ],
-    },
-    {
-      id: 'flashcards',
-      type: 'flashcard' as const,
-      title: 'New Flashcards Available',
-      time: 'Yesterday',
-      isRead: !!isReadMap['flashcards'],
-      description: (
-        <>
-          25 new flashcards have been automatically generated for{' '}
-          <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
-            "Cell Biology - Week 4"
-          </strong>.
-        </>
-      ),
-      buttons: [
-        {
-          text: 'Practice Now',
-          variant: 'secondary',
-          icon: <ExternalLink className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-          url: '/dashboard/quizzes',
-        },
-      ],
-    },
-  ]
-
-  // Map active tab to current notifications array
-  const getFilteredNotifications = () => {
-    switch (activeTab) {
-      case 'All':
-        return allNotifications
-      case 'Unread':
-        return unreadNotifications
-      case 'Mentions':
-        return mentionsNotifications
-      case 'Shared Files':
-        return sharedFilesNotifications
-      case 'AI Updates':
-        return aiUpdatesNotifications
-      default:
-        return allNotifications
-    }
-  }
-
-  const currentNotifications = getFilteredNotifications()
 
   return (
     <div className="mx-auto max-w-[800px] py-8 px-4 md:px-6">
       {/* Title Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-[#0b1c30] dark:text-slate-100">Notifications</h1>
-        <p className="text-base text-[#737686] dark:text-slate-400 mt-2">
-          Stay updated on your study materials and collaborations.
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0b1c30] dark:text-slate-100">Notifications</h1>
+          <p className="text-base text-[#737686] dark:text-slate-400 mt-2">
+            Stay updated on your study materials and collaborations.
+          </p>
+        </div>
+        <button
+          onClick={() => fetchNotifications(activeFilter)}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-[rgba(195,198,215,0.4)] dark:border-slate-800 rounded-xl text-sm font-semibold text-[#434655] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer"
+        >
+          <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+          <span className="hidden sm:inline">Refresh</span>
+        </button>
       </div>
 
       {/* Filter Tabs */}
@@ -721,8 +378,27 @@ export function NotificationsPage() {
 
       {/* Cards List */}
       <div className="space-y-5">
-        {currentNotifications.length > 0 ? (
-          currentNotifications.map((notification: any) => (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-[rgba(195,198,215,0.4)] dark:border-slate-800">
+            <div className="w-12 h-12 rounded-full bg-[#F4F7FE] dark:bg-slate-800 flex items-center justify-center mb-4">
+              <RefreshCw className="w-6 h-6 text-[#3155F6] animate-spin" />
+            </div>
+            <h3 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100 mb-1">Loading notifications...</h3>
+            <p className="text-[#737686] font-medium text-sm">Please wait a moment while we fetch your data</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-[#FFF0F0]/50 dark:bg-red-950/20 rounded-3xl border border-dashed border-red-200 dark:border-red-900/50">
+            <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-1">Oops, something went wrong!</h3>
+            <p className="text-red-500 font-medium text-sm mb-4">{error}</p>
+            <button
+              onClick={() => fetchNotifications(activeFilter)}
+              className="px-4 py-2 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : notifications.length > 0 ? (
+          notifications.map((notification) => (
             <NotificationCard
               key={notification.id}
               {...notification}
@@ -730,8 +406,8 @@ export function NotificationsPage() {
               replyText={replyText}
               onMarkRead={() => handleMarkAsRead(notification.id)}
               onReplyClick={() => {
-                if (notification.id === 'emily') {
-                  setActiveReplyId('emily')
+                if (notification.id === 'emily' || notification.id === 'all-3') {
+                  setActiveReplyId(notification.id)
                 }
               }}
               onCancelClick={() => {
@@ -745,8 +421,16 @@ export function NotificationsPage() {
             />
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center text-[#737686] font-medium text-base">
-            {activeTab === 'Unread' ? 'No unread notifications.' : 'No notifications.'}
+          <div className="flex flex-col items-center justify-center py-24 bg-white/50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-[rgba(195,198,215,0.4)] dark:border-slate-800">
+            <div className="w-16 h-16 rounded-full bg-[#F4F7FE] dark:bg-slate-800 flex items-center justify-center mb-5">
+              <BellOff className="w-8 h-8 text-[#A0AABF] dark:text-slate-500" />
+            </div>
+            <h3 className="text-xl font-bold text-[#0b1c30] dark:text-slate-100 mb-2">No notifications yet</h3>
+            <p className="text-[#737686] font-medium text-sm text-center max-w-[250px]">
+              {activeTab === 'Unread' 
+                ? "You're all caught up! There are no unread messages." 
+                : "When you get new notifications, they'll show up here."}
+            </p>
           </div>
         )}
       </div>
