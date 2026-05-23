@@ -1,20 +1,22 @@
 import { useState, useRef } from 'react'
-import { FileText, FileSpreadsheet, Folder, MoreVertical, Eye, Edit2, Image as ImageIcon } from 'lucide-react'
+import { FileText, FileSpreadsheet, MoreVertical, Eye, Edit2, Image as ImageIcon } from 'lucide-react'
 import { FileActionsDropdown } from './FileActionsDropdown'
 import { cn } from '@/lib/utils'
 
 export interface SharedFile {
   id: string
   name: string
-  owner: string
-  permissions: 'Editor' | 'View Only' | 'Owner' | 'Viewer'
-  dateShared: string
-  type: 'pdf' | 'xlsx' | 'docx' | 'folder' | 'txt' | 'png' | 'jpg'
-  size?: string
-  previewContent?: string
+  type: 'pdf' | 'docx' | 'xlsx' | 'txt' | 'image'
+  owner?: string
   sharedWith?: string
+  permission: 'View Only' | 'Viewer' | 'Editor' | 'Owner'
+  dateShared: string
+  size: string
+  totalPages?: number
+  description: string
+  tags: string[]
+  previewContent?: string
 }
-
 
 interface SharedFilesTableProps {
   files: SharedFile[]
@@ -36,7 +38,6 @@ export function SharedFilesTable({
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null)
   const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
 
-
   const getFileIcon = (type: SharedFile['type']) => {
     switch (type) {
       case 'pdf':
@@ -47,11 +48,8 @@ export function SharedFilesTable({
         return <FileText className="size-5 text-blue-500" />
       case 'txt':
         return <FileText className="size-5 text-slate-500" />
-      case 'png':
-      case 'jpg':
+      case 'image':
         return <ImageIcon className="size-5 text-amber-500" />
-      case 'folder':
-        return <Folder className="size-5 text-indigo-500 fill-indigo-550/10" />
       default:
         return <FileText className="size-5 text-slate-450" />
     }
@@ -60,24 +58,21 @@ export function SharedFilesTable({
   const getFileBg = (type: SharedFile['type']) => {
     switch (type) {
       case 'pdf':
-        return 'bg-red-50 dark:bg-red-950/20'
+        return 'bg-red-55/10 dark:bg-red-950/20'
       case 'xlsx':
-        return 'bg-emerald-50 dark:bg-emerald-950/20'
+        return 'bg-emerald-55/10 dark:bg-emerald-950/20'
       case 'docx':
-        return 'bg-blue-50 dark:bg-blue-950/20'
+        return 'bg-blue-55/10 dark:bg-blue-950/20'
       case 'txt':
         return 'bg-slate-100 dark:bg-slate-800/40'
-      case 'png':
-      case 'jpg':
-        return 'bg-amber-50 dark:bg-amber-950/20'
-      case 'folder':
-        return 'bg-indigo-50 dark:bg-indigo-950/20'
+      case 'image':
+        return 'bg-amber-55/10 dark:bg-amber-950/20'
       default:
         return 'bg-slate-50 dark:bg-slate-800/20'
     }
   }
 
-  const getPermissionBadge = (perm: SharedFile['permissions']) => {
+  const getPermissionBadge = (perm: SharedFile['permission']) => {
     switch (perm) {
       case 'Owner':
         return (
@@ -94,14 +89,14 @@ export function SharedFilesTable({
         )
       case 'View Only':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#3155F6] dark:bg-blue-950/30 dark:text-blue-400 border border-blue-100/30 dark:border-blue-900/20">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#3155F6] dark:bg-blue-955/30 dark:text-blue-400 border border-blue-100/30 dark:border-blue-900/20">
             <Eye className="size-3" />
             View Only
           </span>
         )
       case 'Viewer':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-105 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800">
             <Eye className="size-3" />
             Viewer
           </span>
@@ -109,11 +104,10 @@ export function SharedFilesTable({
     }
   }
 
-
   if (files.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Folder className="size-12 text-slate-300 dark:text-slate-700 mb-3" />
+        <FileText className="size-12 text-slate-305 dark:text-slate-700 mb-3" />
         <p className="text-sm font-bold text-slate-500 dark:text-slate-400">No shared files found</p>
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Files shared in this category will appear here.</p>
       </div>
@@ -138,7 +132,7 @@ export function SharedFilesTable({
           {files.map((file) => (
             <tr
               key={file.id}
-              className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
+              className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
             >
               <td className="py-4 px-6 font-bold text-slate-900 dark:text-slate-100">
                 <div className="flex items-center gap-3.5 max-w-[320px]">
@@ -146,8 +140,9 @@ export function SharedFilesTable({
                     {getFileIcon(file.type)}
                   </div>
                   <button
+                    type="button"
                     onClick={() => onOpen(file)}
-                    className="truncate text-sm font-extrabold text-slate-850 hover:text-[#3155F6] dark:text-slate-205 dark:hover:text-blue-400 hover:underline cursor-pointer text-left focus:outline-none"
+                    className="truncate text-sm font-extrabold text-slate-850 hover:text-[#3155F6] dark:text-slate-200 dark:hover:text-blue-400 hover:underline cursor-pointer text-left focus:outline-none"
                     title={file.name}
                   >
                     {file.name}
@@ -158,14 +153,15 @@ export function SharedFilesTable({
                 {isSharedByMe ? file.sharedWith : file.owner}
               </td>
 
-              <td className="py-4 px-6">
-                {getPermissionBadge(file.permissions)}
+              <td className="py-4 px-6 font-semibold">
+                {getPermissionBadge(file.permission)}
               </td>
               <td className="py-4 px-6 text-sm font-semibold text-slate-450 dark:text-slate-400">
                 {file.dateShared}
               </td>
               <td className="py-4 px-6 text-right relative">
                 <button
+                  type="button"
                   ref={(el) => (buttonRefs.current[file.id] = el)}
                   onClick={() => setActiveDropdownId(activeDropdownId === file.id ? null : file.id)}
                   className="p-2 rounded-xl text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors inline-flex cursor-pointer"
