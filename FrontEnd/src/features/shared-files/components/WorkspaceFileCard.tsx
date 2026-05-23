@@ -1,6 +1,8 @@
+import { useRef } from 'react'
 import { FileText, FileSpreadsheet, Folder, MoreVertical, Eye, Edit2, Star, Image as ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SharedFile } from './SharedFilesTable'
+import { FileActionsDropdown } from './FileActionsDropdown'
 
 interface WorkspaceFileCardProps {
   file: SharedFile
@@ -10,8 +12,15 @@ interface WorkspaceFileCardProps {
   onSelect: () => void
   onDoubleClick: () => void
   onStarToggle: (e: React.MouseEvent) => void
+  isMenuOpen: boolean
   onMenuToggle: (e: React.MouseEvent) => void
-  buttonRef: (el: HTMLButtonElement | null) => void
+  onMenuClose: () => void
+  onOpenFile: () => void
+  onDownload: () => void
+  onShareAccess: () => void
+  onRename: () => void
+  onChangePermission: () => void
+  onRemoveAccess: () => void
 }
 
 export function WorkspaceFileCard({
@@ -22,20 +31,28 @@ export function WorkspaceFileCard({
   onSelect,
   onDoubleClick,
   onStarToggle,
+  isMenuOpen,
   onMenuToggle,
-  buttonRef
+  onMenuClose,
+  onOpenFile,
+  onDownload,
+  onShareAccess,
+  onRename,
+  onChangePermission,
+  onRemoveAccess
 }: WorkspaceFileCardProps) {
+  const buttonRef = useRef<HTMLButtonElement>(null)
   
   const getFileIcon = (type: SharedFile['type']) => {
     switch (type) {
       case 'pdf':
-        return <FileText className="size-5 text-red-550" />
+        return <FileText className="size-5 text-red-555" />
       case 'xlsx':
         return <FileSpreadsheet className="size-5 text-emerald-500" />
       case 'docx':
         return <FileText className="size-5 text-blue-500" />
       case 'txt':
-        return <FileText className="size-5 text-slate-500" />
+        return <FileText className="size-5 text-slate-505" />
       case 'image':
         return <ImageIcon className="size-5 text-amber-500" />
       case 'folder':
@@ -90,7 +107,6 @@ export function WorkspaceFileCard({
     }
   }
 
-  // Double click handler
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault()
     onDoubleClick()
@@ -103,13 +119,13 @@ export function WorkspaceFileCard({
         onClick={onSelect}
         onDoubleClick={handleDoubleClick}
         className={cn(
-          "group relative flex items-center justify-between rounded-3xl border p-4 transition-all duration-200 cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30",
+          "group relative flex items-center justify-between rounded-3xl border p-4 transition-all duration-200 cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 overflow-visible",
           isSelected 
             ? "bg-blue-50/20 dark:bg-blue-950/10 border-blue-600 dark:border-blue-500 ring-1 ring-blue-500" 
             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
         )}
       >
-        <div className="flex items-center gap-4.5 min-w-0 flex-1">
+        <div className="flex items-center gap-4.5 min-w-0 flex-1 overflow-visible">
           {/* File icon */}
           <div className={cn("size-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm", getFileBg(file.type))}>
             {getFileIcon(file.type)}
@@ -121,7 +137,6 @@ export function WorkspaceFileCard({
                 {file.name}
               </h3>
               
-              {/* Star toggle button */}
               <button
                 type="button"
                 onClick={onStarToggle}
@@ -141,17 +156,16 @@ export function WorkspaceFileCard({
                 </span>
                 <span>{file.owner || 'Alex Chen'}</span>
               </span>
-              <span className="text-slate-300 dark:text-slate-750 font-black">&bull;</span>
+              <span className="text-slate-300 dark:text-slate-755 font-black">&bull;</span>
               <span>{file.dateShared.includes('ago') ? file.dateShared : `Shared ${file.dateShared}`}</span>
-              <span className="text-slate-300 dark:text-slate-750 font-black">&bull;</span>
+              <span className="text-slate-300 dark:text-slate-755 font-black">&bull;</span>
               <div>{getPermissionBadge(file.permission)}</div>
             </div>
           </div>
         </div>
 
         {/* Right action details */}
-        <div className="flex items-center gap-4 ml-4 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {/* Collaborator stack or badge */}
+        <div className="flex items-center gap-4 ml-4 shrink-0 overflow-visible" onClick={(e) => e.stopPropagation()}>
           {file.name.includes('Notes') ? (
             <div className="flex -space-x-1.5 shrink-0 hidden sm:flex">
               <div className="size-6 rounded-full bg-[#0fbf7c] text-white flex items-center justify-center font-bold text-[9px]">S</div>
@@ -163,7 +177,6 @@ export function WorkspaceFileCard({
             </span>
           ) : null}
 
-          {/* Special summary badge */}
           {file.name.includes('Notes') && (
             <span className="rounded-md bg-blue-50/70 dark:bg-blue-955 border border-blue-100/50 dark:border-blue-900/50 px-2.5 py-0.5 text-[9px] font-black tracking-wider text-[#3155F6] dark:text-blue-400">
               SUMMARY
@@ -171,16 +184,29 @@ export function WorkspaceFileCard({
           )}
 
           {/* 3-dots actions trigger */}
-          <button
-            type="button"
-            ref={buttonRef}
-            onClick={onMenuToggle}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            aria-label="Actions"
-            aria-haspopup="menu"
-          >
-            <MoreVertical className="size-4.5" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              ref={buttonRef}
+              onClick={onMenuToggle}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 hover:bg-slate-55 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              aria-label="Actions"
+              aria-haspopup="menu"
+            >
+              <MoreVertical className="size-4.5" />
+            </button>
+            <FileActionsDropdown
+              isOpen={isMenuOpen}
+              onClose={onMenuClose}
+              onOpen={onOpenFile}
+              onDownload={onDownload}
+              onShareAccess={onShareAccess}
+              onRename={onRename}
+              onChangePermission={onChangePermission}
+              onRemoveAccess={onRemoveAccess}
+              buttonRef={buttonRef}
+            />
+          </div>
         </div>
       </div>
     )
@@ -192,18 +218,18 @@ export function WorkspaceFileCard({
       onClick={onSelect}
       onDoubleClick={handleDoubleClick}
       className={cn(
-        "group relative flex flex-col justify-between rounded-3xl border p-5 transition-all duration-200 cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 min-h-[160px]",
+        "group relative flex flex-col justify-between rounded-3xl border p-5 transition-all duration-200 cursor-pointer shadow-xs select-none hover:shadow-md hover:border-blue-500/30 min-h-[160px] overflow-visible",
         isSelected 
           ? "bg-blue-50/20 dark:bg-blue-950/10 border-blue-600 dark:border-blue-500 ring-1 ring-blue-500" 
           : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
       )}
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between overflow-visible">
         <div className={cn("size-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm", getFileBg(file.type))}>
           {getFileIcon(file.type)}
         </div>
         
-        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1.5 overflow-visible" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={onStarToggle}
@@ -211,21 +237,35 @@ export function WorkspaceFileCard({
           >
             <Star className={cn("size-4", isFavorite ? "text-amber-500 fill-amber-500" : "text-slate-300 dark:text-slate-700")} />
           </button>
-          <button
-            type="button"
-            ref={buttonRef}
-            onClick={onMenuToggle}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            aria-label="Actions"
-            aria-haspopup="menu"
-          >
-            <MoreVertical className="size-4" />
-          </button>
+          
+          <div className="relative">
+            <button
+              type="button"
+              ref={buttonRef}
+              onClick={onMenuToggle}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              aria-label="Actions"
+              aria-haspopup="menu"
+            >
+              <MoreVertical className="size-4" />
+            </button>
+            <FileActionsDropdown
+              isOpen={isMenuOpen}
+              onClose={onMenuClose}
+              onOpen={onOpenFile}
+              onDownload={onDownload}
+              onShareAccess={onShareAccess}
+              onRename={onRename}
+              onChangePermission={onChangePermission}
+              onRemoveAccess={onRemoveAccess}
+              buttonRef={buttonRef}
+            />
+          </div>
         </div>
       </div>
 
       <div className="mt-4 flex-1">
-        <h3 className="line-clamp-1 text-sm font-extrabold text-slate-850 dark:text-slate-100" title={file.name}>
+        <h3 className="line-clamp-1 text-sm font-extrabold text-slate-855 dark:text-slate-100" title={file.name}>
           {file.name}
         </h3>
         
