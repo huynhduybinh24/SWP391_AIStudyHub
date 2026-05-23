@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { User, Check } from 'lucide-react'
+import { User, Check, HelpCircle, X } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/Input'
@@ -28,6 +28,8 @@ export function AccountSettingsCard() {
   const currentUser = useAuthStore((state) => state.user)
   const currentEmail = currentUser?.email ?? 'student@university.edu'
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pendingData, setPendingData] = useState<AccountFormValues | null>(null)
   const toast = useToast()
 
   let initialLanguage = account.language
@@ -57,15 +59,23 @@ export function AccountSettingsCard() {
   }, [currentEmail, setValue])
 
   const onSubmit = (data: AccountFormValues) => {
-    const lang = data.language as Language
+    setPendingData(data)
+    setShowConfirmModal(true)
+  }
+
+  const handleConfirmSave = () => {
+    if (!pendingData) return
+    const lang = pendingData.language as Language
     setLanguage(lang)
     updateAccount({
-      name: data.name,
+      name: pendingData.name,
       language: lang,
-      timezone: data.timezone,
+      timezone: pendingData.timezone,
     })
     toast.success(t.toasts.saved)
     setSaveSuccess(true)
+    setShowConfirmModal(false)
+    setPendingData(null)
     setTimeout(() => {
       setSaveSuccess(false)
     }, 3000)
@@ -162,6 +172,84 @@ export function AccountSettingsCard() {
           </Button>
         </div>
       </form>
+
+      {/* ── Confirmation Modal on Save ── */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowConfirmModal(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-[3px]"
+            />
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', duration: 0.4 }}
+              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl z-10 p-6"
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg p-1.5 transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+
+              {/* Modal Content */}
+              <div className="flex gap-4 items-start">
+                <div className="flex-none flex size-10 items-center justify-center rounded-full bg-[#E5EEFF] dark:bg-blue-950/50 text-[#2563EB]">
+                  <HelpCircle className="size-5" />
+                </div>
+                <div className="space-y-2 flex-1">
+                  <h3 className="text-base font-bold text-foreground dark:text-white">
+                    {t.common.areYouSure}
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-normal">
+                    {pendingData?.language !== initialLanguage
+                      ? (pendingData?.language === 'vi'
+                        ? 'Bạn có chắc muốn cập nhật thông tin và đổi ngôn ngữ hiển thị sang Tiếng Việt không?'
+                        : pendingData?.language === 'ja'
+                        ? '日本語に変更し,設定を保存してもよろしいですか？'
+                        : pendingData?.language === 'ko'
+                        ? '한국어로 변경하고 설정을 저장하시겠습니까?'
+                        : 'Are you sure you want to save changes and switch your display language to English?')
+                      : (pendingData?.language === 'vi'
+                        ? 'Bạn có chắc chắn muốn lưu lại các thay đổi thiết lập tài khoản này không?'
+                        : 'Are you sure you want to save your updated account settings?')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-6 border-t border-border/40 dark:border-slate-800/40 mt-6">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-foreground dark:text-slate-400 dark:hover:text-white transition-colors"
+                >
+                  {t.common.cancel}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleConfirmSave}
+                  className="bg-[#2563eb] hover:bg-[#2563eb]/90 text-white px-5 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-colors duration-200"
+                >
+                  {t.common.confirm}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
