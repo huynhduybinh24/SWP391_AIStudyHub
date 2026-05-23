@@ -690,6 +690,8 @@ export function SharedFilesPage() {
             selectedFile={selectedFile}
             viewMode={viewMode}
             favorites={favorites}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
             onSelectFile={handleSelectFile}
             onOpenFile={handleOpenFile}
             onStarToggle={handleStarToggle}
