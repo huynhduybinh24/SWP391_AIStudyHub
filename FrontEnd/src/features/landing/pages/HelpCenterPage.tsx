@@ -133,7 +133,7 @@ export function HelpCenterPage() {
       <header className="w-full bg-white border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3.5">
-            <img src="/logo.png" alt="AI Study Hub Logo" className="w-[54px] h-[54px] object-contain" />
+            <img src="/logo.png" alt="AI Study Hub Logo" className="w-[68px] h-[68px] object-contain" />
             <span className="text-2xl font-bold text-primary tracking-tight">AI Study Hub</span>
           </Link>
           <Link
