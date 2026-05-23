@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { MoreVertical, Users, ArrowDown, Star } from 'lucide-react'
+import { MoreVertical, Users, ArrowDown, ArrowUp, Star } from 'lucide-react'
 import { SharedFile } from './SharedFilesTable'
 import { FileActionsDropdown } from './FileActionsDropdown'
 import { FileTypeIcon } from './FileTypeIcon'
@@ -10,6 +10,8 @@ interface WorkspaceFileTableProps {
   files: SharedFile[]
   selectedFile: SharedFile | null
   favorites: string[]
+  sortOrder: string
+  onSortOrderChange: (order: string) => void
   onSelectFile: (file: SharedFile) => void
   onOpenFile: (file: SharedFile) => void
   onStarToggle: (file: SharedFile) => void
@@ -24,6 +26,8 @@ export function WorkspaceFileTable({
   files,
   selectedFile,
   favorites,
+  sortOrder,
+  onSortOrderChange,
   onSelectFile,
   onOpenFile,
   onStarToggle,
@@ -114,11 +118,18 @@ export function WorkspaceFileTable({
               <th className="py-3 px-5 text-xs font-semibold text-slate-500 dark:text-slate-400 w-[25%]">
                 {t.sharedFiles.sharedBy || 'Shared by'}
               </th>
-              <th className="py-3 px-5 text-xs font-semibold text-slate-500 dark:text-slate-400 w-[20%]">
+              <th
+                className="py-3 px-5 text-xs font-semibold text-slate-500 dark:text-slate-400 w-[20%] cursor-pointer hover:text-slate-850 dark:hover:text-slate-200 select-none group"
+                onClick={() => onSortOrderChange(sortOrder === 'recent' ? 'oldest' : 'recent')}
+              >
                 <div className="flex items-center gap-1.5">
                   <span>{t.sharedFiles.dateShared || 'Date shared'}</span>
-                  <div className="size-4.5 rounded-full bg-blue-50 dark:bg-blue-955 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
-                    <ArrowDown className="size-3 stroke-[2.5]" />
+                  <div className="size-4.5 rounded-full bg-blue-50 dark:bg-blue-955 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs group-hover:bg-blue-100 dark:group-hover:bg-blue-900 transition-colors">
+                    {sortOrder === 'recent' ? (
+                      <ArrowDown className="size-3 stroke-[2.5]" />
+                    ) : (
+                      <ArrowUp className="size-3 stroke-[2.5]" />
+                    )}
                   </div>
                 </div>
               </th>
