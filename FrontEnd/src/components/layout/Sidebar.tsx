@@ -105,7 +105,7 @@ export function Sidebar() {
               <img
                 src="/logo.png"
                 alt="AI Study Hub"
-                className="w-[54px] h-[54px] shrink-0 object-contain"
+                className="w-[68px] h-[68px] shrink-0 object-contain"
               />
               <div className="flex flex-col justify-center md:max-lg:hidden">
                 <h1 className="text-[21px] font-extrabold leading-tight text-[#3155F6] dark:text-blue-500 tracking-tight">
