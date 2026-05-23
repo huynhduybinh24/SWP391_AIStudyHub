@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Times New Roman', Times, serif;
   --color-primary: #2563eb;
   --color-primary-dark: #2653eb;
   --color-surface: #f8f9ff;
