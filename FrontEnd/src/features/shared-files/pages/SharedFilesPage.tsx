@@ -247,8 +247,11 @@ export function SharedFilesPage() {
   }, [])
 
   const handleSelectFile = (file: SharedFile) => {
-    if (selectedFile?.id === file.id) return
-    setSelectedFile(file)
+    if (selectedFile?.id === file.id) {
+      setSelectedFile(null)
+    } else {
+      setSelectedFile(file)
+    }
   }
 
   // Comments mapping by file ID
