@@ -25,6 +25,9 @@ import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { useToast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
+
+const formatFileTime = (time: string) => time;
 
 const INITIAL_UPLOADS = [
   {
