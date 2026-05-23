@@ -660,7 +660,7 @@ export function SharedFilesPage() {
         
         <motion.div
           layout
-          className="flex-1 w-full space-y-6"
+          className="flex-1 w-full min-w-0 overflow-hidden space-y-6"
           transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
         >
           <SharedWorkspaceHeader
@@ -730,11 +730,11 @@ export function SharedFilesPage() {
           {selectedFile && (
             <motion.aside
               key="workspace-right-sidebar"
-              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 32 : 0, y: isLargeScreen ? 0 : 24, scale: 0.98 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 20 : 0, y: isLargeScreen ? 0 : 16 }}
               animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 32 : 0, y: isLargeScreen ? 0 : 24, scale: 0.98 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 20 : 0, y: isLargeScreen ? 0 : 16 }}
               transition={shouldReduceMotion ? { duration: 0.25 } : { type: "spring", stiffness: 220, damping: 26, mass: 0.8 }}
-              className="w-full lg:w-[360px] shrink-0"
+              className="w-full lg:w-[240px] xl:w-[280px] 2xl:w-[320px] shrink-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto scrollbar-none"
             >
               <WorkspaceRightPanel
                 file={selectedFile}

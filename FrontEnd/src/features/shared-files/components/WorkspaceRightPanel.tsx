@@ -55,9 +55,9 @@ export function WorkspaceRightPanel({
   // Render empty state if no file is selected
   if (!file) {
     return (
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[28px] p-6 shadow-xs h-full flex flex-col items-center justify-center text-center select-none min-h-[480px]">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-xs h-full flex flex-col items-center justify-center text-center select-none min-h-[380px]">
         <FileText className="size-10 text-slate-300 dark:text-slate-700 mb-3 stroke-[1.5]" />
-        <h4 className="text-sm font-extrabold text-slate-750 dark:text-slate-350">No document selected</h4>
+        <h4 className="text-sm font-extrabold text-slate-750 dark:text-slate-355">No document selected</h4>
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-[200px]">Select a file from the workspace list to view summaries and activities.</p>
       </div>
     )
@@ -70,11 +70,11 @@ export function WorkspaceRightPanel({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -8, scale: 0.99 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-[28px] p-6 shadow-sm space-y-6 text-left select-none"
+      className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 shadow-sm space-y-4 text-left select-none w-full max-w-full"
     >
       
       {/* 1. Preview Container Box */}
-      <div className="w-full aspect-[4/3] rounded-2xl bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-4 text-slate-400 dark:text-slate-600 border border-slate-200/40 dark:border-slate-850 shadow-inner">
+      <div className="w-full h-[140px] rounded-3xl bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-4 text-slate-400 dark:text-slate-600 border border-slate-200/40 dark:border-slate-850 shadow-inner">
         <FileText className="size-8 stroke-[1.5] mb-2 text-slate-350 dark:text-slate-700" />
         <span className="text-[10px] font-black tracking-widest uppercase select-none">
           PREVIEW NOT AVAILABLE
@@ -83,10 +83,10 @@ export function WorkspaceRightPanel({
 
       {/* 2. File Title Info */}
       <div className="space-y-1">
-        <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight break-words">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug break-words">
           {file.name}
         </h3>
-        <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
           Shared with 3 people &bull; {file.size}
         </p>
       </div>
@@ -115,7 +115,7 @@ export function WorkspaceRightPanel({
             <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-md animate-pulse w-4/6" />
           </div>
         ) : (
-          <p className="text-xs text-slate-655 dark:text-slate-300 leading-relaxed font-semibold text-justify">
+          <p className="text-sm text-slate-600 dark:text-slate-355 leading-relaxed font-semibold text-justify line-clamp-4">
             {file.summary || (file.name.includes('Biology')
               ? 'This document covers the fundamental principles of cellular biology, ATP production, and DNA replication stages. Key focus on Mitochondria and Krebs cycle.'
               : file.description || 'This file provides critical guidelines and data updates for team sync meetings. Details can be expanded via the full summary AI tool.')}
@@ -123,7 +123,7 @@ export function WorkspaceRightPanel({
         )}
 
         {/* Tags */}
-        <div className="flex flex-wrap gap-1.5 pt-1.5 select-none">
+        <div className="flex flex-wrap gap-2 pt-1 select-none">
           {file.tags.map(t => (
             <span
               key={t}
@@ -145,7 +145,7 @@ export function WorkspaceRightPanel({
           <button
             type="button"
             onClick={onOpenFullSummary}
-            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 py-3 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-xs"
+            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 h-11 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-xs"
           >
             <div className="flex items-center gap-2">
               <FileText className="size-4 text-slate-400 shrink-0" />
@@ -156,7 +156,7 @@ export function WorkspaceRightPanel({
           <button
             type="button"
             onClick={onGenerateQuiz}
-            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 py-3 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-xs"
+            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 h-11 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-xs"
           >
             <div className="flex items-center gap-2">
               <Sparkles className="size-4 text-indigo-400 shrink-0" />
@@ -167,7 +167,7 @@ export function WorkspaceRightPanel({
           <button
             type="button"
             onClick={onAskAI}
-            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 py-3 rounded-2xl text-xs font-bold text-slate-750 dark:text-slate-350 transition-all cursor-pointer shadow-xs"
+            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 h-11 rounded-2xl text-sm font-semibold text-slate-750 dark:text-slate-355 transition-all cursor-pointer shadow-xs"
           >
             <div className="flex items-center gap-2">
               <MessageSquare className="size-4 text-blue-500 shrink-0" />
@@ -186,7 +186,7 @@ export function WorkspaceRightPanel({
         <div className="space-y-4 max-h-[140px] overflow-y-auto scrollbar-none pr-1">
           {comments.map((comment) => (
             <div key={comment.id} className="flex items-start gap-3 text-xs">
-              <span className={cn("size-7 rounded-full text-white font-bold flex items-center justify-center shrink-0", comment.avatarBg)}>
+              <span className={cn("size-6 rounded-full text-white font-bold flex items-center justify-center shrink-0 text-[9px]", comment.avatarBg)}>
                 {comment.user.charAt(0)}
               </span>
               <div className="flex-1 min-w-0">
