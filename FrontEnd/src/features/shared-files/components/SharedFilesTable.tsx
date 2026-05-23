@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react'
-import { FileText, FileSpreadsheet, MoreVertical, Eye, Edit2, Image as ImageIcon } from 'lucide-react'
+import { FileText, FileSpreadsheet, Folder, MoreVertical, Eye, Edit2, Image as ImageIcon } from 'lucide-react'
 import { FileActionsDropdown } from './FileActionsDropdown'
 import { cn } from '@/lib/utils'
 
 export interface SharedFile {
   id: string
   name: string
-  type: 'pdf' | 'docx' | 'xlsx' | 'txt' | 'image'
+  type: 'pdf' | 'docx' | 'xlsx' | 'txt' | 'image' | 'folder'
   owner?: string
   sharedWith?: string
   permission: 'View Only' | 'Viewer' | 'Editor' | 'Owner'
@@ -16,6 +16,7 @@ export interface SharedFile {
   description: string
   tags: string[]
   previewContent?: string
+  summary?: string
 }
 
 interface SharedFilesTableProps {
@@ -50,6 +51,8 @@ export function SharedFilesTable({
         return <FileText className="size-5 text-slate-500" />
       case 'image':
         return <ImageIcon className="size-5 text-amber-500" />
+      case 'folder':
+        return <Folder className="size-5 text-indigo-500" />
       default:
         return <FileText className="size-5 text-slate-450" />
     }
@@ -67,6 +70,8 @@ export function SharedFilesTable({
         return 'bg-slate-100 dark:bg-slate-800/40'
       case 'image':
         return 'bg-amber-55/10 dark:bg-amber-950/20'
+      case 'folder':
+        return 'bg-indigo-50/10 dark:bg-indigo-950/20'
       default:
         return 'bg-slate-50 dark:bg-slate-800/20'
     }

@@ -1,0 +1,110 @@
+import { useState, useRef } from 'react'
+import { Folder } from 'lucide-react'
+import { WorkspaceFileCard } from './WorkspaceFileCard'
+import { FileActionsDropdown } from './FileActionsDropdown'
+import { SharedFile } from './SharedFilesTable'
+import { cn } from '@/lib/utils'
+
+interface WorkspaceFileListProps {
+  files: SharedFile[]
+  selectedFile: SharedFile | null
+  viewMode: 'list' | 'grid'
+  favorites: string[]
+  onSelectFile: (file: SharedFile) => void
+  onOpenFile: (file: SharedFile) => void
+  onStarToggle: (file: SharedFile) => void
+  onRename: (file: SharedFile) => void
+  onChangePermission: (file: SharedFile) => void
+  onRemoveAccess: (file: SharedFile) => void
+  onDownload: (file: SharedFile) => void
+  onShareAccess: (file: SharedFile) => void
+}
+
+export function WorkspaceFileList({
+  files,
+  selectedFile,
+  viewMode,
+  favorites,
+  onSelectFile,
+  onOpenFile,
+  onStarToggle,
+  onRename,
+  onChangePermission,
+  onRemoveAccess,
+  onDownload,
+  onShareAccess
+}: WorkspaceFileListProps) {
+  const [activeMenuFile, setActiveMenuFile] = useState<SharedFile | null>(null)
+  const [triggerEl, setTriggerEl] = useState<HTMLButtonElement | null>(null)
+  const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
+
+  // Custom callback ref to capture button element for specific file ID
+  const setButtonRef = (fileId: string, el: HTMLButtonElement | null) => {
+    buttonRefs.current[fileId] = el
+  }
+
+  if (files.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[28px] p-6 shadow-xs select-none">
+        <Folder className="size-12 text-slate-300 dark:text-slate-700 mb-3.5 stroke-[1.5]" />
+        <h4 className="text-sm font-extrabold text-slate-700 dark:text-slate-355">No files match your filters</h4>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjustments to your search queries or drop selection filters.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative">
+      <div
+        className={cn(
+          "transition-all duration-300",
+          viewMode === 'grid' 
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" 
+            : "space-y-4"
+        )}
+      >
+        {files.map((file) => (
+          <WorkspaceFileCard
+            key={file.id}
+            file={file}
+            viewMode={viewMode}
+            isSelected={selectedFile?.id === file.id}
+            isFavorite={favorites.includes(file.id)}
+            onSelect={() => onSelectFile(file)}
+            onDoubleClick={() => onOpenFile(file)}
+            onStarToggle={(e) => {
+              e.stopPropagation()
+              onStarToggle(file)
+            }}
+            onMenuToggle={(e) => {
+              e.stopPropagation()
+              setActiveMenuFile(file)
+              setTriggerEl(buttonRefs.current[file.id] || null)
+            }}
+            buttonRef={(el) => setButtonRef(file.id, el)}
+          />
+        ))}
+      </div>
+
+      {/* Floating Actions Portal Menu */}
+      {activeMenuFile && (
+        <FileActionsDropdown
+          isOpen={!!activeMenuFile}
+          onClose={() => {
+            setActiveMenuFile(null)
+            setTriggerEl(null)
+          }}
+          onOpen={() => onOpenFile(activeMenuFile)}
+          onDownload={() => onDownload(activeMenuFile)}
+          onShareAccess={() => onShareAccess(activeMenuFile)}
+          onRename={() => onRename(activeMenuFile)}
+          onChangePermission={() => onChangePermission(activeMenuFile)}
+          onRemoveAccess={() => onRemoveAccess(activeMenuFile)}
+          buttonRef={{ current: triggerEl }}
+        />
+      )}
+    </div>
+  )
+}
+
+export default WorkspaceFileList

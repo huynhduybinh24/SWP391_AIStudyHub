@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ExternalLink, Edit2, Shield, Trash2, Download, Share2 } from 'lucide-react'
 
@@ -26,6 +27,7 @@ export function FileActionsDropdown({
   buttonRef
 }: FileActionsDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [coords, setCoords] = useState({ top: 0, left: 0, isBelow: true })
 
   useEffect(() => {
     if (!isOpen) return
@@ -53,16 +55,56 @@ export function FileActionsDropdown({
     }
   }, [isOpen, onClose, buttonRef])
 
-  return (
+  useEffect(() => {
+    if (!isOpen || !buttonRef.current) return
+
+    const updatePosition = () => {
+      const rect = buttonRef.current!.getBoundingClientRect()
+      const dropdownWidth = 192 // w-48 is 192px
+      const dropdownHeight = 260 // approx height of menu items
+
+      let top = rect.bottom + window.scrollY + 8
+      let left = rect.right + window.scrollX - dropdownWidth
+      let isBelow = true
+
+      // If opening below would overflow screen height, open above
+      if (rect.bottom + dropdownHeight + 8 > window.innerHeight) {
+        top = rect.top + window.scrollY - dropdownHeight - 8
+        isBelow = false
+      }
+
+      // Safeguard left bounds
+      if (left < 10) {
+        left = 10
+      }
+
+      setCoords({ top, left, isBelow })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition)
+    }
+  }, [isOpen, buttonRef])
+
+  const menuContent = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
           ref={dropdownRef}
-          initial={{ opacity: 0, scale: 0.95, y: -8 }}
+          initial={{ opacity: 0, scale: 0.95, y: coords.isBelow ? -8 : 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -8 }}
+          exit={{ opacity: 0, scale: 0.95, y: coords.isBelow ? -8 : 8 }}
           transition={{ duration: 0.12 }}
-          className="absolute right-0 mt-2 w-48 rounded-2xl bg-white p-1.5 shadow-xl border border-slate-200/60 dark:bg-slate-900 dark:border-slate-800 z-30 text-left"
+          style={{
+            position: 'absolute',
+            top: coords.top,
+            left: coords.left,
+          }}
+          className="w-48 rounded-2xl bg-white p-1.5 shadow-xl border border-slate-200/60 dark:bg-slate-900 dark:border-slate-800 z-[9999] text-left"
           role="menu"
           aria-orientation="vertical"
         >
@@ -149,5 +191,8 @@ export function FileActionsDropdown({
       )}
     </AnimatePresence>
   )
+
+  return createPortal(menuContent, document.body)
 }
+
 export default FileActionsDropdown
