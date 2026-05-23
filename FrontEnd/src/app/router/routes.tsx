@@ -9,6 +9,8 @@ import SubjectCategoryPage from '@/features/documents/pages/SubjectCategoryPage'
 import { UploadSubjectDocumentPage } from '@/features/documents/pages/UploadSubjectDocumentPage'
 import { SearchResultsPage } from '@/features/documents/pages/SearchResultsPage'
 import DocumentDetailPage from '@/features/documents/pages/DocumentDetailPage'
+import EditDocumentPage from '@/features/documents/pages/EditDocumentPage'
+import DownloadDocumentPage from '@/features/documents/pages/DownloadDocumentPage'
 import { UploadPage } from '@/features/documents/pages/UploadPage'
 import { ChatPage } from '@/features/ai-chatbot/pages/ChatPage'
 import { QuizzesPage } from '@/features/quizzes/pages/QuizzesPage'
@@ -22,6 +24,7 @@ import { StorageAnalyticsPage } from '@/features/storage/pages/StorageAnalyticsP
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
 import { SummaryDetailPage } from '@/features/notifications/pages/SummaryDetailPage'
 import { SharedFolderPage } from '@/features/shared-files/pages/SharedFolderPage'
+import { SharedFilesPage } from '@/features/shared-files/pages/SharedFilesPage'
 import { DEV_SKIP_AUTH } from '@/config/dev'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
@@ -80,12 +83,14 @@ export const router = createBrowserRouter([
               { path: 'subject/:subjectId', element: <SubjectCategoryPage /> },
               { path: 'subject/:subjectId/upload', element: <UploadSubjectDocumentPage /> },
               { path: 'search', element: <SearchResultsPage /> },
-              { path: 'document/:documentId', element: <DocumentDetailPage /> }
+              { path: 'document/:documentId', element: <DocumentDetailPage /> },
+              { path: 'document/:documentId/edit', element: <EditDocumentPage /> },
+              { path: 'document/:documentId/download', element: <DownloadDocumentPage /> }
             ]
           },
           { path: 'upload', element: <UploadPage /> },
           { path: 'chat', element: <ChatPage /> },
-          { path: 'shared', element: <PlaceholderPage title="Shared Files" /> },
+          { path: 'shared', element: <SharedFilesPage /> },
           { path: 'shared-files/research-materials', element: <SharedFolderPage /> },
           { path: 'storage', element: <CloudStoragePage /> },
           { path: 'storage/explorer', element: <StorageExplorerPage /> },

@@ -76,7 +76,7 @@ export const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 dark:bg-black/70 p-4 backdrop-blur-sm"
       onClick={onClose}
       aria-label="Modal backdrop"
     >
@@ -84,7 +84,7 @@ export const Modal = ({
         ref={modalRef}
         tabIndex={-1}
         className={cn(
-          'relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-border dark:border-slate-800 shadow-xl focus:outline-none',
+          'relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white text-slate-900 border border-slate-200 shadow-xl focus:outline-none dark:bg-slate-900 dark:text-slate-100 dark:border-slate-800',
           className
         )}
         onClick={(e) => e.stopPropagation()}
@@ -93,15 +93,15 @@ export const Modal = ({
         aria-labelledby={title ? 'modal-title' : undefined}
         aria-describedby={description ? 'modal-desc' : undefined}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-border dark:border-slate-800 bg-white dark:bg-slate-900 p-6 pb-4">
+        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 pb-4">
           <div>
             {title && (
-              <h2 id="modal-title" className="text-xl font-bold text-foreground dark:text-white">
+              <h2 id="modal-title" className="text-xl font-bold text-slate-900 dark:text-white">
                 {title}
               </h2>
             )}
             {description && (
-              <p id="modal-desc" className="mt-1 text-sm text-muted dark:text-slate-400">
+              <p id="modal-desc" className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {description}
               </p>
             )}
@@ -116,7 +116,7 @@ export const Modal = ({
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <div className="p-6 text-foreground dark:text-slate-200">{children}</div>
+        <div className="p-6 text-slate-900 dark:text-slate-100">{children}</div>
       </div>
     </div>
   )

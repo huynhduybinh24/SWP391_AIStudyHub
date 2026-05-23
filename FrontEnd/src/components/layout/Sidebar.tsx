@@ -37,12 +37,12 @@ function SidebarLink({ to, icon: Icon, label, pathname, onClick }: SidebarLinkPr
         "flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-all duration-200 no-underline select-none rounded-xl",
         "md:max-lg:justify-center md:max-lg:px-2 md:max-lg:py-3",
         active
-          ? "bg-[#3155F6] text-white shadow-md shadow-blue-500/10"
-          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-white"
+          ? "bg-blue-600 text-white shadow-md shadow-blue-500/10"
+          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
       )}
     >
       <Icon
-        className={cn("size-[18px] shrink-0 transition-colors", active ? "text-white" : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-350")}
+        className={cn("size-[18px] shrink-0 transition-colors", active ? "text-white" : "text-slate-400 group-hover:text-slate-600 dark:text-slate-400 dark:group-hover:text-slate-200")}
         strokeWidth={active ? 2.25 : 1.75}
       />
       <span className="md:max-lg:hidden block truncate">{label}</span>
@@ -51,7 +51,6 @@ function SidebarLink({ to, icon: Icon, label, pathname, onClick }: SidebarLinkPr
 }
 
 export function Sidebar() {
-  const { pathname } = useLocation()
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
 
@@ -66,7 +65,7 @@ export function Sidebar() {
     <>
       <aside
         className={cn(
-          "flex h-screen flex-col justify-between border-r border-[#EAECF0] dark:border-slate-800 bg-white dark:bg-slate-950 py-6 px-4 sticky top-0 left-0 z-50 select-none transition-all duration-300",
+          "flex h-screen flex-col justify-between border-r border-[#EAECF0] dark:border-slate-800 bg-white dark:bg-slate-900 py-6 px-4 sticky top-0 left-0 z-50 select-none transition-all duration-300",
           "w-64 md:max-lg:w-20",
           // Mobile drawer states
           "max-md:fixed max-md:h-full max-md:w-64 max-md:translate-x-0",
@@ -140,11 +139,8 @@ export function Sidebar() {
             to="/dashboard/upgrade"
             onClick={handleLinkClick}
             className={cn(
-              "mt-4 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-all duration-200 cursor-pointer shadow-sm shrink-0 no-underline",
-              "md:max-lg:px-2 md:max-lg:py-3",
-              pathname === "/dashboard/upgrade"
-                ? "bg-[#3155F6] hover:bg-[#2563eb] ring-2 ring-blue-500/20 shadow-lg shadow-blue-500/25"
-                : "bg-[#3155F6] hover:bg-[#2563eb] shadow-[#3155F6]/10"
+              "mt-4 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-all duration-200 cursor-pointer shadow-sm shrink-0 no-underline bg-blue-600 hover:bg-blue-500 active:bg-blue-700",
+              "md:max-lg:px-2 md:max-lg:py-3"
             )}
           >
             <Zap className="size-4 text-white shrink-0" strokeWidth={2.25} />

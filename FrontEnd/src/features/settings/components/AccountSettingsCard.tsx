@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User, Check } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
@@ -8,6 +9,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useToast } from '@/components/ui/Toast'
 
 const accountSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -20,21 +22,30 @@ type AccountFormValues = z.infer<typeof accountSchema>
 
 export function AccountSettingsCard() {
   const { account, updateAccount } = useSettingsStore()
+  const currentUser = useAuthStore((state) => state.user)
+  const currentEmail = currentUser?.email ?? 'student@university.edu'
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const toast = useToast()
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
     defaultValues: {
-      email: account.email,
+      email: currentEmail,
       name: account.name,
       language: account.language,
       timezone: account.timezone,
     },
   })
+
+  // Keep the email input reactive to auth state changes
+  useEffect(() => {
+    setValue('email', currentEmail)
+  }, [currentEmail, setValue])
 
   const onSubmit = (data: AccountFormValues) => {
     updateAccount({
@@ -42,6 +53,7 @@ export function AccountSettingsCard() {
       language: data.language,
       timezone: data.timezone,
     })
+    toast.success('Account settings saved successfully')
     setSaveSuccess(true)
     setTimeout(() => {
       setSaveSuccess(false)
@@ -49,7 +61,7 @@ export function AccountSettingsCard() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white dark:bg-slate-900 p-6 shadow-sm">
+    <div className="rounded-2xl border border-[#dbe3f0] dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
       <div className="flex items-center gap-2 border-b border-border/60 dark:border-slate-800/80 pb-4 mb-6">
         <div className="flex size-8 items-center justify-center rounded-lg bg-[#E5EEFF] dark:bg-blue-950/50 text-[#2563EB]">
           <User className="size-5" />
@@ -64,13 +76,14 @@ export function AccountSettingsCard() {
             <label className="text-sm font-semibold text-foreground dark:text-slate-200">Email Address</label>
             <Input
               type="email"
-              disabled
+              readOnly
               error={errors.email?.message}
               {...register('email')}
               className="bg-slate-50 dark:bg-slate-950 text-muted cursor-not-allowed border-border dark:border-slate-800"
             />
             <p className="text-xs text-muted dark:text-slate-400 mt-1">Contact support to change your primary email.</p>
           </div>
+
 
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-foreground dark:text-slate-200">Display Name</label>
@@ -92,9 +105,10 @@ export function AccountSettingsCard() {
               {...register('language')}
               className="bg-transparent dark:text-white border-border dark:border-slate-800"
             >
-              <option value="en-US">English (US)</option>
-              <option value="vi-VN">Tiếng Việt (VN)</option>
-              <option value="fr-FR">Français (FR)</option>
+              <option value="English (US)">English (US)</option>
+              <option value="Vietnamese">Vietnamese</option>
+              <option value="Japanese">Japanese</option>
+              <option value="Korean">Korean</option>
             </Select>
           </div>
 
@@ -105,9 +119,10 @@ export function AccountSettingsCard() {
               {...register('timezone')}
               className="bg-transparent dark:text-white border-border dark:border-slate-800"
             >
-              <option value="America/Los_Angeles">Pacific Time (PT)</option>
-              <option value="Asia/Ho_Chi_Minh">Indochina Time (ICT)</option>
-              <option value="UTC">Coordinated Universal Time (UTC)</option>
+              <option value="Pacific Time (PT)">Pacific Time (PT)</option>
+              <option value="Eastern Time (ET)">Eastern Time (ET)</option>
+              <option value="Vietnam Time (ICT)">Vietnam Time (ICT)</option>
+              <option value="Japan Time (JST)">Japan Time (JST)</option>
             </Select>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Bot, FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send, Loader2, User } from 'lucide-react'
+import { Bot, FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send, Loader2, User, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Message {
@@ -7,6 +7,7 @@ interface Message {
   sender: 'bot' | 'user'
   text: string
   time?: string
+  files?: Array<{ name: string; size: string }>
 }
 
 export function ChatPage() {
@@ -21,28 +22,169 @@ export function ChatPage() {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // --- Selected Files State ---
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [fileError, setFileError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // --- Voice Input State ---
+  const [isListening, setIsListening] = useState(false)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
+  const recognitionRef = useRef<any>(null)
+
+  // --- New Chat & Confirm Modal States ---
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [currentChatId, setCurrentChatId] = useState(() => Date.now().toString())
+
+  // Auto-clear file errors after 3 seconds
+  useEffect(() => {
+    if (fileError) {
+      const timer = setTimeout(() => setFileError(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [fileError])
+
+  // Auto-clear voice errors after 3 seconds
+  useEffect(() => {
+    if (voiceError) {
+      const timer = setTimeout(() => setVoiceError(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [voiceError])
+
   // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  }
+
+  // --- Voice Input Handlers ---
+  const startListening = () => {
+    setVoiceError(null)
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setVoiceError("Voice input is not supported in this browser.")
+      return
+    }
+
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.continuous = false
+      recognition.interimResults = false
+      recognition.lang = 'en-US'
+
+      recognition.onstart = () => {
+        setIsListening(true)
+      }
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error', event)
+        setIsListening(false)
+      }
+
+      recognition.onend = () => {
+        setIsListening(false)
+      }
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript
+        if (transcript) {
+          setInputText((prev) => prev + (prev ? ' ' : '') + transcript)
+        }
+      }
+
+      recognitionRef.current = recognition
+      recognition.start()
+    } catch (err) {
+      console.error(err)
+      setIsListening(false)
+    }
+  }
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+    }
+    setIsListening(false)
+  }
+
+  const handleMicClick = () => {
+    if (isListening) {
+      stopListening()
+    } else {
+      startListening()
+    }
+  }
+
+  // --- File Upload Handlers ---
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    const filesArray = Array.from(e.target.files)
+    e.target.value = ''
+    setFileError(null)
+
+    if (selectedFiles.length + filesArray.length > 3) {
+      setFileError("You can attach up to 3 files.")
+      return
+    }
+
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt', '.ppt', '.pptx', '.png', '.jpg', '.jpeg']
+    const maxSizeBytes = 10 * 1024 * 1024 // 10MB
+
+    for (const file of filesArray) {
+      const extension = '.' + file.name.split('.').pop()?.toLowerCase()
+      if (!allowedExtensions.includes(extension)) {
+        setFileError("Unsupported file type.")
+        return
+      }
+      if (file.size > maxSizeBytes) {
+        setFileError("File size must be less than 10MB.")
+        return
+      }
+    }
+
+    setSelectedFiles((prev) => [...prev, ...filesArray])
+  }
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleAttachClick = () => {
+    fileInputRef.current?.click()
+  }
+
   const handleSend = (textToSend?: string) => {
     const text = (textToSend || inputText).trim()
-    if (!text) return
+    const filesToSend = textToSend ? [] : selectedFiles
+
+    if (!text && filesToSend.length === 0) return
 
     // Add user message
     const userMsgId = Date.now().toString()
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: userMsgId,
-        sender: 'user',
-        text,
-      },
-    ])
-    setInputText('')
+    const newUserMsg: Message = {
+      id: userMsgId,
+      sender: 'user',
+      text,
+      files: filesToSend.map((file) => ({
+        name: file.name,
+        size: formatFileSize(file.size),
+      })),
+    }
 
-    // Simulate bot response
+    setMessages((prev) => [...prev, newUserMsg])
+    setInputText('')
+    setSelectedFiles([])
+    setFileError(null)
+
+    // Simulate bot response after 500ms
     setIsTyping(true)
     setTimeout(() => {
       setIsTyping(false)
@@ -50,11 +192,11 @@ export function ChatPage() {
       
       const lowerText = text.toLowerCase()
       if (lowerText.includes('summarize') || lowerText.includes('notes')) {
-        botResponse = "Here is a structured summary of your recent notes:\n\n**Topic: Quantum Physics Foundations**\n\n1. **Wave-Particle Duality**: Matter and light exhibit both wave-like and particle-like properties (e.g., photo-electric effect).\n2. **Quantization of Energy**: Energy is emitted or absorbed in discrete packets called quanta ($E = hf$).\n3. **Schrödinger Equation**: Describes how the quantum state of a physical system changes with time.\n\n*Would you like me to generate a quick practice quiz based on these points?*"
+        botResponse = "Here is a structured summary of your recent notes:\n\nTopic: Quantum Physics Foundations\n\n1. Wave-Particle Duality: Matter and light exhibit both wave-like and particle-like properties (e.g., photo-electric effect).\n2. Quantization of Energy: Energy is emitted or absorbed in discrete packets called quanta ($E = hf$).\n3. Schrödinger Equation: Describes how the quantum state of a physical system changes with time.\n\n*Would you like me to generate a quick practice quiz based on these points?*"
       } else if (lowerText.includes('quantum') || lowerText.includes('mechanics')) {
-        botResponse = "Quantum Mechanics is the branch of physics dealing with the behavior of matter and light on the atomic and subatomic scale. It attempts to describe and account for the properties of molecules and atoms and their constituents—electrons, protons, neutrons, and other more esoteric particles.\n\n**Key Postulates:**\n- **Superposition**: A system can exist in multiple states simultaneously until it is measured.\n- **Entanglement**: Particles can become correlated such that the state of one instantaneously influences the other, regardless of distance.\n- **Heisenberg Uncertainty Principle**: It is impossible to simultaneously know both the precise position and momentum of a particle."
+        botResponse = "Quantum Mechanics is the branch of physics dealing with the behavior of matter and light on the atomic and subatomic scale. It attempts to describe and account for the properties of molecules and atoms and their constituents—electrons, protons, neutrons, and other more esoteric particles.\n\nKey Postulates:\n- Superposition: A system can exist in multiple states simultaneously until it is measured.\n- Entanglement: Particles can become correlated such that the state of one instantaneously influences the other, regardless of distance.\n- Heisenberg Uncertainty Principle: It is impossible to simultaneously know both the precise position and momentum of a particle."
       } else if (lowerText.includes('quiz') || lowerText.includes('generate')) {
-        botResponse = "Here is a quick quiz to test your understanding:\n\n**Question**: Which principle states that it is impossible to simultaneously know both the exact position and momentum of a particle?\n\n- **A)** Wave-particle duality\n- **B)** Heisenberg Uncertainty Principle\n- **C)** Quantum Superposition\n- **D)** Quantum Entanglement\n\n*Reply with A, B, C, or D to check your answer!*"
+        botResponse = "Here is a quick quiz to test your understanding:\n\nQuestion: Which principle states that it is impossible to simultaneously know both the exact position and momentum of a particle?\n\n- A) Wave-particle duality\n- B) Heisenberg Uncertainty Principle\n- C) Quantum Superposition\n- D) Quantum Entanglement\n\n*Reply with A, B, C, or D to check your answer!*"
       }
 
       setMessages((prev) => [
@@ -65,7 +207,7 @@ export function ChatPage() {
           text: botResponse,
         },
       ])
-    }, 1200)
+    }, 500)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -75,14 +217,44 @@ export function ChatPage() {
     }
   }
 
+  const handleNewChatClick = () => {
+    if (messages.length > 1) {
+      setIsConfirmOpen(true)
+    }
+  }
+
+  const resetNewChat = () => {
+    setMessages([
+      {
+        id: '1',
+        sender: 'bot',
+        text: "Hello! I'm your AI Study Assistant. How can I help you with your studies today?",
+      },
+    ])
+    setInputText('')
+    setSelectedFiles([])
+    setIsListening(false)
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    setFileError(null)
+    setVoiceError(null)
+    setCurrentChatId(Date.now().toString())
+    setIsConfirmOpen(false)
+  }
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-220px)] justify-between select-none">
       {/* Top Header section */}
       <div>
-        <h1 className="text-[26px] font-bold text-[#0b1c30] tracking-tight mb-1">
+        <h1 className="text-[26px] font-bold text-[#0b1c30] dark:text-white tracking-tight mb-1">
           AI Study Assistant
         </h1>
-        <p className="text-[15px] font-medium text-[#737686]">
+        <p className="text-[15px] font-medium text-[#737686] dark:text-slate-400">
           Select a suggestion or type your question below.
         </p>
 
@@ -90,9 +262,9 @@ export function ChatPage() {
         <div className="mt-8 flex flex-col gap-6">
           {/* New Chat Started Badge */}
           <div className="flex justify-center">
-            <span className="rounded-full bg-[#e5eeff] px-4 py-1.5 text-xs font-semibold text-[#3155F6] tracking-wide shadow-[0_1px_2px_rgba(49,85,246,0.05)]">
+            <span className="rounded-full bg-[#e5eeff] dark:bg-blue-950/40 px-4 py-1.5 text-xs font-semibold text-[#3155F6] dark:text-blue-400 tracking-wide shadow-[0_1px_2px_rgba(49,85,246,0.05)]">
               New Chat Started
-            </span>
+            </button>
           </div>
 
           {/* Messages List */}
@@ -107,11 +279,11 @@ export function ChatPage() {
               >
                 {/* Avatar Icon */}
                 {msg.sender === 'bot' ? (
-                  <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] border border-[#3155f6]/10 shadow-sm">
-                    <Bot className="size-4.5 text-[#3155F6]" />
+                  <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30 shadow-sm">
+                    <Bot className="size-4.5 text-[#3155F6] dark:text-blue-400" />
                   </div>
                 ) : (
-                  <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#3155F6] border border-[#3155f6]/20 shadow-sm">
+                  <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#3155F6] dark:bg-blue-600 border border-[#3155f6]/20 dark:border-blue-700 shadow-sm">
                     <User className="size-4.5 text-white" />
                   </div>
                 )}
@@ -119,13 +291,32 @@ export function ChatPage() {
                 {/* Message Bubble */}
                 <div
                   className={cn(
-                    "max-w-[75%] rounded-2xl p-4 text-[14.5px] leading-relaxed shadow-[0_2px_8px_rgba(0,0,0,0.02)] border whitespace-pre-line",
+                    "max-w-[75%] rounded-2xl p-4 text-[14.5px] leading-relaxed shadow-[0_2px_8px_rgba(0,0,0,0.02)] border whitespace-pre-line flex flex-col gap-2",
                     msg.sender === 'user'
-                      ? "bg-[#3155F6] text-white border-transparent rounded-tr-none"
-                      : "bg-white text-[#434655] border-border/60 rounded-tl-none"
+                      ? "bg-[#3155F6] dark:bg-blue-600 text-white border-transparent rounded-tr-none"
+                      : "bg-white dark:bg-slate-900 text-[#434655] dark:text-slate-200 border-border/60 dark:border-slate-800 rounded-tl-none"
                   )}
                 >
-                  {msg.text}
+                  {msg.text && <div>{msg.text}</div>}
+                  {msg.files && msg.files.length > 0 && (
+                    <div className="flex flex-col gap-1.5 mt-1 border-t border-white/20 pt-2 shrink-0">
+                      {msg.files.map((file, idx) => (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium border",
+                            msg.sender === 'user'
+                              ? "bg-white/10 border-white/15 text-white"
+                              : "bg-slate-50 border-slate-100 text-slate-700"
+                          )}
+                        >
+                          <FileText className="size-3.5 shrink-0 opacity-80" />
+                          <span className="truncate max-w-[200px]">{file.name}</span>
+                          <span className="text-[10px] opacity-70 shrink-0">({file.size})</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -133,11 +324,11 @@ export function ChatPage() {
             {/* Thinking / Typing State Indicator */}
             {isTyping && (
               <div className="flex items-start gap-3.5">
-                <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] border border-[#3155f6]/10 shadow-sm">
-                  <Bot className="size-4.5 text-[#3155F6]" />
+                <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30 shadow-sm">
+                  <Bot className="size-4.5 text-[#3155F6] dark:text-blue-400" />
                 </div>
-                <div className="max-w-[75%] rounded-2xl rounded-tl-none p-4 text-[14.5px] leading-relaxed shadow-[0_2px_8px_rgba(0,0,0,0.02)] border bg-white text-[#737686] border-border/60 flex items-center gap-2">
-                  <Loader2 className="size-4 animate-spin text-[#3155F6]" />
+                <div className="max-w-[75%] rounded-2xl rounded-tl-none p-4 text-[14.5px] leading-relaxed shadow-[0_2px_8px_rgba(0,0,0,0.02)] border bg-white dark:bg-slate-900 text-[#737686] dark:text-slate-400 border-border/60 dark:border-slate-800 flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin text-[#3155F6] dark:text-blue-400" />
                   <span>Thinking...</span>
                 </div>
               </div>
@@ -154,54 +345,55 @@ export function ChatPage() {
           <button
             type="button"
             onClick={() => handleSend("Summarize recent notes")}
-            className="flex items-center gap-2 rounded-full border border-border/70 bg-white px-4 py-2.5 text-sm font-medium text-[#434655] shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 hover:border-[#3155F6]/30 hover:shadow-sm cursor-pointer"
+            className="flex items-center gap-2 rounded-full border border-border/70 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-[#434655] dark:text-slate-350 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/30 dark:hover:border-blue-500/30 hover:shadow-sm cursor-pointer"
           >
-            <FileText className="size-4 text-[#737686]" />
+            <FileText className="size-4 text-[#737686] dark:text-slate-400" />
             Summarize recent notes
           </button>
           <button
             type="button"
             onClick={() => handleSend("Explain Quantum Mechanics")}
-            className="flex items-center gap-2 rounded-full border border-border/70 bg-white px-4 py-2.5 text-sm font-medium text-[#434655] shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 hover:border-[#3155F6]/30 hover:shadow-sm cursor-pointer"
+            className="flex items-center gap-2 rounded-full border border-border/70 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-[#434655] dark:text-slate-350 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/30 dark:hover:border-blue-500/30 hover:shadow-sm cursor-pointer"
           >
-            <FlaskConical className="size-4 text-[#737686]" />
+            <FlaskConical className="size-4 text-[#737686] dark:text-slate-400" />
             Explain Quantum Mechanics
           </button>
           <button
             type="button"
             onClick={() => handleSend("Generate Quiz")}
-            className="flex items-center gap-2 rounded-full border border-border/70 bg-white px-4 py-2.5 text-sm font-medium text-[#434655] shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 hover:border-[#3155F6]/30 hover:shadow-sm cursor-pointer"
+            className="flex items-center gap-2 rounded-full border border-border/70 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-[#434655] dark:text-slate-350 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/30 dark:hover:border-blue-500/30 hover:shadow-sm cursor-pointer"
           >
-            <FileQuestion className="size-4 text-[#737686]" />
+            <FileQuestion className="size-4 text-[#737686] dark:text-slate-400" />
             Generate Quiz
           </button>
         </div>
 
         {/* Sleek Chat Input Container */}
-        <div className="rounded-2xl border-2 border-[#e5eeff] bg-white p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all focus-within:border-[#3155F6]/40 focus-within:shadow-[0_2px_16px_rgba(49,85,246,0.06)]">
+        <div className="rounded-2xl border-2 border-[#e5eeff] dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all focus-within:border-[#3155F6]/40 dark:focus-within:border-blue-500/40 focus-within:shadow-[0_2px_16px_rgba(49,85,246,0.06)] dark:focus-within:shadow-[0_2px_16px_rgba(59,130,246,0.1)]">
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="min-h-[48px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-[#0b1c30] outline-none placeholder:text-[#737686]/60"
+            className="min-h-[48px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-[#0b1c30] dark:text-white outline-none placeholder:text-[#737686]/60 dark:placeholder:text-slate-500"
             placeholder="Ask your study assistant anything..."
           />
-          <div className="mt-2.5 flex items-center justify-between border-t border-slate-100/50 pt-2.5">
+          <div className="mt-2.5 flex items-center justify-between border-t border-slate-100/50 dark:border-slate-800/50 pt-2.5">
             {/* Attachment and Mic Controls */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="text-[#737686] hover:text-[#3155F6] p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                className="text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 title="Attach Files"
               >
                 <Paperclip className="size-5" />
               </button>
               <button
                 type="button"
-                className="text-[#737686] hover:text-[#3155F6] p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                className="text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 title="Voice Input"
               >
-                <Mic className="size-5" />
+                <Mic className={cn("size-5", isListening && "animate-pulse")} />
+                {isListening && <span className="text-xs font-semibold">Listening...</span>}
               </button>
             </div>
 
@@ -209,7 +401,7 @@ export function ChatPage() {
             <button
               type="button"
               onClick={() => handleSend()}
-              className="flex size-10 items-center justify-center rounded-xl bg-[#3155F6] text-white shadow-sm transition-all hover:bg-[#2563eb] hover:scale-105 active:scale-95 cursor-pointer disabled:pointer-events-none disabled:opacity-50"
+              className="flex size-10 items-center justify-center rounded-xl bg-[#3155F6] dark:bg-blue-600 text-white shadow-sm transition-all hover:bg-[#2563eb] dark:hover:bg-blue-500 hover:scale-105 active:scale-95 cursor-pointer disabled:pointer-events-none disabled:opacity-50"
               disabled={!inputText.trim()}
               title="Send Message"
             >
@@ -218,6 +410,36 @@ export function ChatPage() {
           </div>
         </div>
       </div>
+
+      {/* Confirm Start New Chat Modal */}
+      {isConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px] transition-opacity animate-in fade-in duration-200">
+          <div className="w-full max-w-[380px] rounded-2xl bg-white p-6 shadow-xl border border-slate-100 animate-in zoom-in-95 duration-150">
+            <h3 className="text-lg font-bold text-[#0b1c30] mb-2 text-left animate-none">
+              Start a new chat?
+            </h3>
+            <p className="text-[14.5px] leading-relaxed text-[#737686] mb-6 text-left animate-none">
+              Your current conversation will be cleared.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsConfirmOpen(false)}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-[#737686] hover:bg-slate-50 border border-slate-200/60 transition-colors cursor-pointer outline-none"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={resetNewChat}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#EF4444] hover:bg-red-600 transition-colors cursor-pointer outline-none border-none"
+              >
+                Start New Chat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

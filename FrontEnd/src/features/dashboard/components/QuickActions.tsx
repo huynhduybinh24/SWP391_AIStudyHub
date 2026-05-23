@@ -21,14 +21,14 @@ export function QuickActions() {
             key={label}
             to={to}
             className={cn(
-              'flex flex-col items-center justify-center gap-2 rounded-lg border border-border',
-              'bg-white py-7 transition-colors hover:border-primary/30 hover:bg-surface',
+              'flex flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800',
+              'bg-white dark:bg-slate-900 py-7 transition-colors hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800',
             )}
           >
-            <span className="flex size-10 items-center justify-center rounded-full bg-icon-bg text-primary">
+            <span className="flex size-10 items-center justify-center rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
               <Icon className="size-4" />
             </span>
-            <span className="text-center text-base text-foreground">{label}</span>
+            <span className="text-center text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</span>
           </Link>
         ))}
       </div>

@@ -19,7 +19,7 @@ export function RecentAlerts({ alerts }: RecentAlertsProps) {
       <CardTitle className="normal-case tracking-normal text-base font-bold text-foreground">
         Recent Alerts
       </CardTitle>
-      <Card className="divide-y divide-border/50 p-2">
+      <Card className="divide-y divide-slate-200 dark:divide-slate-800 p-2">
         {alerts.map((alert) => (
           <article key={alert.id} className="flex gap-3 px-3 py-3">
             <span

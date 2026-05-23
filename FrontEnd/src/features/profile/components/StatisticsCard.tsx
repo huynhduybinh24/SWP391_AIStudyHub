@@ -1,74 +1,85 @@
-import { CalendarDays, Sparkles, BookOpen, Clock } from 'lucide-react'
-import { useProfileStore } from '../stores/profileStore'
+import { LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-export function StatisticsCard() {
-  const { statistics } = useProfileStore()
+export interface StatisticItem {
+  id: string
+  label: string
+  value: string | number
+  description: string
+  route: string
+}
 
-  const items = [
-    {
-      label: 'STUDY PLANS',
-      value: statistics.studyPlans,
-      icon: CalendarDays,
-      bg: 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800',
-      iconBg: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400',
-      textColor: 'text-slate-800 dark:text-slate-200',
-      labelColor: 'text-slate-400 dark:text-slate-500',
-    },
-    {
-      label: 'AI SUMMARIES',
-      value: statistics.aiSummaries,
-      icon: Sparkles,
-      bg: 'bg-[#3155F6] text-white shadow-md shadow-blue-500/20 border border-transparent',
-      iconBg: 'bg-white/15 text-white',
-      textColor: 'text-white',
-      labelColor: 'text-white/80',
-    },
-    {
-      label: 'STUDY HOURS',
-      value: `${statistics.studyHours}h`,
-      icon: Clock,
-      bg: 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800',
-      iconBg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400',
-      textColor: 'text-slate-800 dark:text-slate-200',
-      labelColor: 'text-slate-400 dark:text-slate-500',
-    },
-    {
-      label: 'ASSIGNMENTS',
-      value: statistics.assignments,
-      icon: BookOpen,
-      bg: 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800',
-      iconBg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400',
-      textColor: 'text-slate-800 dark:text-slate-200',
-      labelColor: 'text-slate-400 dark:text-slate-500',
-    },
-  ]
+interface StatisticsCardProps {
+  item: StatisticItem
+  icon: LucideIcon
+  onClick: () => void
+  onViewDetails: () => void
+}
+
+export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: StatisticsCardProps) {
+  const isStorage = item.id === 'storageUsed'
 
   return (
-    <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm border border-slate-100 dark:border-slate-800/80">
-      <h3 className="text-base font-bold text-[#0b1c30] dark:text-white mb-4">Statistics</h3>
-      <div className="grid grid-cols-2 gap-4">
-        {items.map((item) => (
-          <motion.div
-            key={item.label}
-            whileHover={{ y: -4 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-            className={`rounded-2xl p-4 flex flex-col justify-between min-h-[120px] transition-colors select-none ${item.bg}`}
-          >
-            <div className="flex items-center justify-between">
-              <div className={`p-2.5 rounded-xl ${item.iconBg}`}>
-                <item.icon className="size-5" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <p className={`text-2xl font-bold tracking-tight ${item.textColor}`}>{item.value}</p>
-              <p className={`text-[10px] font-bold tracking-wider mt-1 uppercase leading-none ${item.labelColor}`}>
-                {item.label}
-              </p>
-            </div>
-          </motion.div>
-        ))}
+    <motion.div
+      onClick={onClick}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+      role="button"
+      tabIndex={0}
+      aria-label={`View ${item.label} stats`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      className="flex flex-col justify-between p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500/80 transition-all select-none min-h-[160px]"
+    >
+      {/* Top Section */}
+      <div className="flex items-start justify-between w-full">
+        <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
+          <Icon className="size-5" />
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onViewDetails()
+          }}
+          type="button"
+          aria-label={`View details for ${item.label}`}
+          className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors uppercase tracking-wider cursor-pointer py-1 px-2 rounded-md hover:bg-blue-50/55 dark:hover:bg-blue-950/20"
+        >
+          View Details
+        </button>
       </div>
-    </div>
+
+      {/* Value and Description Section */}
+      <div className="mt-4 space-y-1">
+        <p className="text-3xl sm:text-4xl font-extrabold text-blue-600 dark:text-blue-500 tracking-tight">
+          {item.value}
+        </p>
+        <div>
+          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-105">
+            {item.label}
+          </h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            {item.description}
+          </p>
+        </div>
+
+        {/* Progress Bar for Storage Used Card */}
+        {isStorage && (
+          <div className="pt-2 w-full">
+            <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden" role="progressbar" aria-valuenow={36} aria-valuemin={0} aria-valuemax={100}>
+              <div
+                className="bg-blue-600 h-full rounded-full transition-all duration-500"
+                style={{ width: '36%' }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
   )
 }

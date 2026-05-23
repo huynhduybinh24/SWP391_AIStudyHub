@@ -435,9 +435,9 @@ const CURRICULUM_DATA: Record<string, CurriculumPlan> = {
 
 function DifficultyPill({ level }: { level: StudyPlan['difficulty'] }) {
   const map: Record<StudyPlan['difficulty'], { color: string }> = {
-    Easy: { color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-    Medium: { color: 'text-amber-700 bg-amber-50 border-amber-200' },
-    Hard: { color: 'text-rose-700 bg-rose-50 border-rose-200' },
+    Easy: { color: 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-900/50' },
+    Medium: { color: 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/30 dark:border-amber-900/50' },
+    Hard: { color: 'text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-950/30 dark:border-rose-900/50' },
   }
   return (
     <span
@@ -561,7 +561,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
             {/* Title row */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2 min-w-0">
-                <h3 className="font-bold text-slate-900 text-[15px] leading-snug">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-[15px] leading-snug">
                   {plan.title}
                 </h3>
                 {isCompleted ? (
@@ -605,18 +605,18 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
               <div className="relative shrink-0">
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors"
                   aria-label="More options"
                 >
                   <MoreVertical className="size-4" />
                 </button>
                 {menuOpen && (
-                  <div className="absolute right-0 top-8 z-20 min-w-[160px] rounded-xl border border-slate-200 bg-white shadow-lg py-1">
+                  <div className="absolute right-0 top-8 z-20 min-w-[160px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg dark:shadow-black/50 py-1">
                     {menuItems.map(({ label, icon: Icon, action, danger }) => (
                       <button
                         key={label}
-                        className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors hover:bg-slate-50 ${
-                          danger ? 'text-red-500 hover:bg-red-50' : 'text-slate-700'
+                        className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                          danger ? 'text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/20' : 'text-slate-700 dark:text-slate-300'
                         }`}
                         onClick={() => { setMenuOpen(false); action() }}
                       >
@@ -629,7 +629,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
             </div>
 
             {/* Description */}
-            <p className="text-slate-500 text-sm mt-1 leading-relaxed line-clamp-2">
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 leading-relaxed line-clamp-2">
               {plan.description}
             </p>
 
@@ -778,8 +778,8 @@ function FilterTabs({
             onClick={() => onChange(tab)}
             className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2557E8]/40 ${
               isActive
-                ? 'bg-[#2557E8] border-[#2557E8] text-white shadow-sm'
-                : 'border-slate-300 text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-400'
+                ? 'bg-[#2557E8] dark:bg-blue-600 border-[#2557E8] dark:border-blue-600 text-white shadow-sm'
+                : 'border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-700'
             }`}
           >
             {tab === 'AI Generated' && (
@@ -799,18 +799,18 @@ function FilterTabs({
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#e5eeff] bg-white py-16 px-8 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e5eeff]">
-        <FlaskConical className="size-8 text-[#2557E8]" strokeWidth={1.5} />
+    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#e5eeff] dark:border-slate-800 bg-white dark:bg-slate-900 py-16 px-8 text-center">
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e5eeff] dark:bg-slate-800">
+        <FlaskConical className="size-8 text-[#2557E8] dark:text-blue-400" strokeWidth={1.5} />
       </div>
-      <h3 className="text-lg font-bold text-slate-800">No study plans found</h3>
-      <p className="mt-2 text-sm text-slate-500 max-w-xs">
+      <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">No study plans found</h3>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-xs">
         Create your first study plan to organize your learning journey and track your progress.
       </p>
       <Button
         onClick={onAdd}
         variant="primary"
-        className="mt-6 bg-[#2557E8] hover:bg-[#1d4ed8] text-white"
+        className="mt-6 bg-[#2557E8] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white"
       >
         <Plus className="size-4" /> Create Study Plan
       </Button>
@@ -867,15 +867,15 @@ export function StudyPlansPage() {
         {/* ── Page header ── */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Study Plans</h1>
-            <p className="text-slate-500 mt-1 text-sm">
+            <h1 className="text-[28px] font-bold text-slate-900 dark:text-slate-100 leading-tight">Study Plans</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
               Manage your personalized learning journeys and academic goals.
             </p>
           </div>
           <Button
             onClick={() => setCreateOpen(true)}
             variant="primary"
-            className="shrink-0 bg-[#2557E8] hover:bg-[#1d4ed8] text-white shadow-sm"
+            className="shrink-0 bg-[#2557E8] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-sm"
           >
             <Plus className="size-4" /> Create Plan
           </Button>
@@ -936,26 +936,26 @@ export function StudyPlansPage() {
           onClick={() => setDeleteTarget(null)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-white border border-slate-200 shadow-xl p-6"
+            className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
-                <AlertTriangle className="size-5 text-red-500" />
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="size-5 text-red-500 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-900">Delete Study Plan</h3>
-                <p className="text-sm text-slate-500">This action cannot be undone.</p>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100">Delete Study Plan</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">This action cannot be undone.</p>
               </div>
             </div>
-            <p className="text-sm text-slate-600 mb-5">
-              Are you sure you want to delete <span className="font-semibold">&ldquo;{deleteTarget.title}&rdquo;</span>?
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">
+              Are you sure you want to delete <span className="font-semibold text-slate-900 dark:text-slate-100">&ldquo;{deleteTarget.title}&rdquo;</span>?
             </p>
             <div className="flex gap-3 justify-end">
               <Button variant="ghost" onClick={() => setDeleteTarget(null)}>Cancel</Button>
               <Button
                 variant="primary"
-                className="bg-red-500 hover:bg-red-600 text-white"
+                className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500 text-white"
                 onClick={confirmDelete}
               >
                 Delete

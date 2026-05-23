@@ -91,13 +91,13 @@ export function OrderSummary() {
       {/* Security Info & Payment Logos */}
       <div className="space-y-5">
         {/* Safe Badge */}
-        <div className="flex gap-3 bg-blue-50/45 dark:bg-blue-950/20 border border-blue-100/70 dark:border-blue-950/40 rounded-2xl p-4 text-slate-650 dark:text-slate-300">
-          <Shield className="size-5 text-[#2563eb] dark:text-blue-450 shrink-0 mt-0.5" />
+        <div className="flex gap-3 bg-blue-50/45 dark:bg-blue-950/20 border border-blue-100/70 dark:border-blue-950/40 rounded-2xl p-4 text-slate-600 dark:text-slate-300">
+          <Shield className="size-5 text-[#2563eb] dark:text-blue-400 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <p className="text-[11px] font-bold">
               Guaranteed safe & secure checkout.
             </p>
-            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-555">
+            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
               SSL Encrypted.
             </p>
           </div>

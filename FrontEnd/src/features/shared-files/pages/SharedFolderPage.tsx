@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ShareModal, ShareModalUser } from '@/components/common/ShareModal'
 
 interface FileItem {
   name: string
@@ -30,6 +31,13 @@ interface FileItem {
 export function SharedFolderPage() {
   const navigate = useNavigate()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+
+  const defaultUsers: ShareModalUser[] = [
+    { id: 'sarah', name: 'Sarah Jenkins', email: 'sarah@example.com', permission: 'Chủ sở hữu' },
+    { id: 'marcus', name: 'Marcus Knight', email: 'marcus@example.com', permission: 'Người chỉnh sửa' },
+    { id: 'alex-chen', name: 'Alex Chen', email: 'alex.chen@example.com', permission: 'Người xem' }
+  ]
 
   const files: FileItem[] = [
     {
@@ -72,7 +80,7 @@ export function SharedFolderPage() {
       <button
         type="button"
         onClick={() => navigate('/dashboard/notifications')}
-        className="inline-flex items-center gap-2 text-sm font-semibold text-[#737686] hover:text-[#3155F6] transition-colors cursor-pointer focus-visible:outline-none"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 transition-colors cursor-pointer focus-visible:outline-none"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Back to Notifications</span>
@@ -81,28 +89,29 @@ export function SharedFolderPage() {
       {/* Page Title & Manage Access */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#0b1c30]">
+          <h1 className="text-3xl font-black tracking-tight text-[#0b1c30] dark:text-white">
             Group Project: Research Materials
           </h1>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 text-sm text-[#737686] font-medium">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 text-sm text-[#737686] dark:text-slate-400 font-medium">
             <span className="inline-flex items-center gap-2">
-              <User className="w-4 h-4 text-[#3155F6]" />
-              <span>Owner: <strong className="font-bold text-[#0b1c30]">Sarah Jenkins</strong></span>
+              <User className="w-4 h-4 text-[#3155F6] dark:text-blue-400" />
+              <span>Owner: <strong className="font-bold text-[#0b1c30] dark:text-slate-200">Sarah Jenkins</strong></span>
             </span>
             <span className="inline-flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[#3155F6]" />
-              <span>Shared: <strong className="font-bold text-[#0b1c30]">Oct 24, 2023</strong></span>
+              <Calendar className="w-4 h-4 text-[#3155F6] dark:text-blue-400" />
+              <span>Shared: <strong className="font-bold text-[#0b1c30] dark:text-slate-200">Oct 24, 2023</strong></span>
             </span>
             <span className="inline-flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#3155F6]" />
-              <span><strong className="font-bold text-[#0b1c30]">12 files • 45 MB</strong></span>
+              <FileText className="w-4 h-4 text-[#3155F6] dark:text-blue-400" />
+              <span><strong className="font-bold text-[#0b1c30] dark:text-slate-200">12 files • 45 MB</strong></span>
             </span>
           </div>
         </div>
 
         <button
           type="button"
-          className="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-[#434655] hover:text-[#3155F6] border border-[#C3C6D7]/40 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm shrink-0 cursor-pointer active:scale-[0.98]"
+          onClick={() => setIsShareModalOpen(true)}
+          className="inline-flex items-center justify-center gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-[#434655] dark:text-slate-300 hover:text-[#3155F6] dark:hover:text-blue-400 border border-[#C3C6D7]/40 dark:border-slate-800 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm shrink-0 cursor-pointer active:scale-[0.98]"
         >
           <Share2 className="w-4 h-4" />
           <span>Manage Access</span>
@@ -113,25 +122,25 @@ export function SharedFolderPage() {
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Left Column: Collaborators & AI Insight */}
         <div className="w-full lg:w-[300px] shrink-0 space-y-6">
-          <CollaboratorsCard />
+          <CollaboratorsCard onInvite={() => setIsShareModalOpen(true)} />
           <AIInsightCard />
         </div>
 
         {/* Right Column: Files Panel */}
-        <div className="flex-1 w-full bg-white border border-[#C3C6D7]/30 rounded-2xl shadow-sm overflow-hidden">
+        <div className="flex-1 w-full bg-white dark:bg-slate-900 border border-[#C3C6D7]/30 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
           {/* Header Panel */}
-          <div className="flex items-center justify-between bg-[#F4F7FE]/60 border-b border-[#C3C6D7]/20 px-6 py-4">
+          <div className="flex items-center justify-between bg-[#F4F7FE]/60 dark:bg-slate-800/60 border-b border-[#C3C6D7]/20 dark:border-slate-800 px-6 py-4">
             <div className="flex items-center gap-4">
-              <span className="text-base font-bold text-[#0b1c30]">12 Files Total</span>
-              <div className="flex items-center bg-white border border-[#C3C6D7]/40 rounded-lg p-0.5 shadow-sm">
+              <span className="text-base font-bold text-[#0b1c30] dark:text-slate-200">12 Files Total</span>
+              <div className="flex items-center bg-white dark:bg-slate-900 border border-[#C3C6D7]/40 dark:border-slate-800 rounded-lg p-0.5 shadow-sm">
                 <button
                   type="button"
                   onClick={() => setViewMode('grid')}
                   className={cn(
                     "p-1.5 rounded transition-all cursor-pointer",
                     viewMode === 'grid'
-                      ? "bg-[#E8EEFF] text-[#3155F6]"
-                      : "text-[#737686] hover:bg-slate-50"
+                      ? "bg-[#E8EEFF] dark:bg-blue-950 text-[#3155F6] dark:text-blue-400"
+                      : "text-[#737686] dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                   )}
                 >
                   <LayoutGrid className="w-4 h-4" />
@@ -142,8 +151,8 @@ export function SharedFolderPage() {
                   className={cn(
                     "p-1.5 rounded transition-all cursor-pointer",
                     viewMode === 'list'
-                      ? "bg-[#E8EEFF] text-[#3155F6]"
-                      : "text-[#737686] hover:bg-slate-50"
+                      ? "bg-[#E8EEFF] dark:bg-blue-950 text-[#3155F6] dark:text-blue-400"
+                      : "text-[#737686] dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                   )}
                 >
                   <List className="w-4 h-4" />
@@ -153,9 +162,9 @@ export function SharedFolderPage() {
 
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 text-sm font-bold text-[#434655] hover:text-[#3155F6] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-[#434655] dark:text-slate-300 hover:text-[#3155F6] dark:hover:text-blue-400 transition-colors cursor-pointer"
             >
-              <ArrowUpDown className="w-4 h-4 text-[#737686]" />
+              <ArrowUpDown className="w-4 h-4 text-[#737686] dark:text-slate-400" />
               <span>Sort by: Name</span>
             </button>
           </div>
@@ -178,10 +187,10 @@ export function SharedFolderPage() {
 
             {/* More Files Indicator */}
             <div className="flex flex-col items-center justify-center pt-10 pb-4">
-              <p className="text-sm font-semibold text-[#737686] mb-2">+ 8 more files available</p>
+              <p className="text-sm font-semibold text-[#737686] dark:text-slate-400 mb-2">+ 8 more files available</p>
               <button
                 type="button"
-                className="text-[#3155F6] hover:text-[#2563eb] text-base font-extrabold transition-all cursor-pointer hover:underline"
+                className="text-[#3155F6] dark:text-blue-400 hover:text-[#2563eb] dark:hover:text-blue-300 text-base font-extrabold transition-all cursor-pointer hover:underline"
               >
                 View All Files
               </button>
@@ -189,16 +198,24 @@ export function SharedFolderPage() {
           </div>
         </div>
       </div>
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        fileName="Group Project: Research Materials"
+        shareUrl="http://localhost:5173/dashboard/shared-files/research-materials"
+        initialUsers={defaultUsers}
+      />
     </div>
   )
 }
 
 /* Sub-Components */
 
-function CollaboratorsCard() {
+function CollaboratorsCard({ onInvite }: { onInvite: () => void }) {
   return (
-    <div className="bg-white border border-[#C3C6D7]/30 rounded-2xl p-6 shadow-sm">
-      <h3 className="text-base font-black text-[#0b1c30] mb-4">Collaborators</h3>
+    <div className="bg-white dark:bg-slate-900 border border-[#C3C6D7]/30 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+      <h3 className="text-base font-black text-[#0b1c30] dark:text-white mb-4">Collaborators</h3>
       <div className="space-y-4">
         {/* Sarah Jenkins */}
         <div className="flex items-center justify-between">
@@ -207,13 +224,13 @@ function CollaboratorsCard() {
               <img
                 src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80"
                 alt="Sarah Jenkins"
-                className="w-10 h-10 rounded-full object-cover border border-slate-100"
+                className="w-10 h-10 rounded-full object-cover border border-slate-100 dark:border-slate-800"
               />
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#10B981] border-2 border-white rounded-full" />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#10B981] border-2 border-white dark:border-slate-900 rounded-full" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0b1c30] leading-tight">Sarah Jenkins</p>
-              <p className="text-xs text-[#737686] font-semibold mt-0.5">Owner</p>
+              <p className="text-sm font-bold text-[#0b1c30] dark:text-slate-200 leading-tight">Sarah Jenkins</p>
+              <p className="text-xs text-[#737686] dark:text-slate-400 font-semibold mt-0.5">Owner</p>
             </div>
           </div>
         </div>
@@ -225,11 +242,11 @@ function CollaboratorsCard() {
               <div className="w-10 h-10 rounded-full bg-[#8B5CF6] text-white flex items-center justify-center text-sm font-bold">
                 MK
               </div>
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#10B981] border-2 border-white rounded-full" />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#10B981] border-2 border-white dark:border-slate-900 rounded-full" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0b1c30] leading-tight">Marcus Knight</p>
-              <p className="text-xs text-[#737686] font-semibold mt-0.5">Can Edit</p>
+              <p className="text-sm font-bold text-[#0b1c30] dark:text-slate-200 leading-tight">Marcus Knight</p>
+              <p className="text-xs text-[#737686] dark:text-slate-400 font-semibold mt-0.5">Can Edit</p>
             </div>
           </div>
         </div>
@@ -241,13 +258,13 @@ function CollaboratorsCard() {
               <img
                 src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80"
                 alt="Alex Chen"
-                className="w-10 h-10 rounded-full object-cover border border-slate-100"
+                className="w-10 h-10 rounded-full object-cover border border-slate-100 dark:border-slate-800"
               />
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#9CA3AF] border-2 border-white rounded-full" />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#9CA3AF] border-2 border-white dark:border-slate-900 rounded-full" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0b1c30] leading-tight">Alex Chen</p>
-              <p className="text-xs text-[#737686] font-semibold mt-0.5">Can View</p>
+              <p className="text-sm font-bold text-[#0b1c30] dark:text-slate-200 leading-tight">Alex Chen</p>
+              <p className="text-xs text-[#737686] dark:text-slate-400 font-semibold mt-0.5">Can View</p>
             </div>
           </div>
         </div>
@@ -255,7 +272,8 @@ function CollaboratorsCard() {
 
       <button
         type="button"
-        className="w-full mt-5 py-2.5 border border-[#3155F6]/20 hover:border-[#3155F6] hover:bg-[#E8EEFF]/30 text-[#3155F6] font-bold rounded-xl text-sm transition-colors cursor-pointer"
+        onClick={onInvite}
+        className="w-full mt-5 py-2.5 border border-[#3155F6]/20 hover:border-[#3155F6] hover:bg-[#E8EEFF]/30 dark:border-blue-900/30 dark:hover:bg-blue-950/30 dark:text-blue-400 font-bold rounded-xl text-sm transition-colors cursor-pointer"
       >
         Invite Members
       </button>
@@ -309,42 +327,42 @@ function getFileIcon(type: 'pdf' | 'xlsx' | 'docx' | 'image') {
 
 function FileCard({ file }: { file: FileItem }) {
   return (
-    <div className="bg-white border border-[#C3C6D7]/40 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-slate-900 border border-[#C3C6D7]/40 dark:border-slate-800 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
       <div className="p-5">
         {/* Document Type Rounded Badge */}
-        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4", file.iconBg)}>
+        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4", file.iconBg, file.iconType === 'pdf' && "dark:bg-red-950/20", file.iconType === 'xlsx' && "dark:bg-emerald-950/20", file.iconType === 'docx' && "dark:bg-blue-950/20", file.iconType === 'image' && "dark:bg-purple-950/20")}>
           {getFileIcon(file.iconType)}
         </div>
-        <h4 className="text-[15px] font-extrabold text-[#0b1c30] line-clamp-2 leading-snug mb-1" title={file.name}>
+        <h4 className="text-[15px] font-extrabold text-[#0b1c30] dark:text-slate-100 line-clamp-2 leading-snug mb-1" title={file.name}>
           {file.name}
         </h4>
-        <p className="text-xs font-semibold text-[#737686]">
+        <p className="text-xs font-semibold text-[#737686] dark:text-slate-400">
           {file.size} • {file.type}
         </p>
       </div>
 
       {/* Grid Bottom Action Panel */}
-      <div className="grid grid-cols-3 border-t border-slate-100 divide-x divide-slate-100">
+      <div className="grid grid-cols-3 border-t border-slate-100 dark:border-slate-800 divide-x divide-slate-100 dark:divide-slate-800">
         <button
           type="button"
-          className="flex flex-col items-center justify-center gap-1 py-3 text-[#737686] hover:text-[#3155F6] hover:bg-[#F4F7FE]/40 transition-all cursor-pointer group rounded-bl-2xl"
+          className="flex flex-col items-center justify-center gap-1 py-3 text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 hover:bg-[#F4F7FE]/40 dark:hover:bg-slate-800/40 transition-all cursor-pointer group rounded-bl-2xl"
         >
-          <Eye className="w-4 h-4 text-[#737686] group-hover:text-[#3155F6]" />
-          <span className="text-[10px] tracking-wider uppercase font-extrabold text-[#737686] group-hover:text-[#3155F6]">Preview</span>
+          <Eye className="w-4 h-4 text-[#737686] dark:text-slate-400 group-hover:text-[#3155F6] dark:group-hover:text-blue-400" />
+          <span className="text-[10px] tracking-wider uppercase font-extrabold text-[#737686] dark:text-slate-400 group-hover:text-[#3155F6] dark:group-hover:text-blue-400">Preview</span>
         </button>
         <button
           type="button"
-          className="flex flex-col items-center justify-center gap-1 py-3 text-[#737686] hover:text-[#3155F6] hover:bg-[#F4F7FE]/40 transition-all cursor-pointer group"
+          className="flex flex-col items-center justify-center gap-1 py-3 text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 hover:bg-[#F4F7FE]/40 dark:hover:bg-slate-800/40 transition-all cursor-pointer group"
         >
-          <Download className="w-4 h-4 text-[#737686] group-hover:text-[#3155F6]" />
-          <span className="text-[10px] tracking-wider uppercase font-extrabold text-[#737686] group-hover:text-[#3155F6]">Page</span>
+          <Download className="w-4 h-4 text-[#737686] dark:text-slate-400 group-hover:text-[#3155F6] dark:group-hover:text-blue-400" />
+          <span className="text-[10px] tracking-wider uppercase font-extrabold text-[#737686] dark:text-slate-400 group-hover:text-[#3155F6] dark:group-hover:text-blue-400">Page</span>
         </button>
         <button
           type="button"
-          className="flex flex-col items-center justify-center gap-1 py-3 text-[#737686] hover:text-[#3155F6] hover:bg-[#F4F7FE]/40 transition-all cursor-pointer group rounded-br-2xl"
+          className="flex flex-col items-center justify-center gap-1 py-3 text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 hover:bg-[#F4F7FE]/40 dark:hover:bg-slate-800/40 transition-all cursor-pointer group rounded-br-2xl"
         >
-          <Upload className="w-4 h-4 text-[#737686] group-hover:text-[#3155F6]" />
-          <span className="text-[10px] tracking-wider uppercase font-extrabold text-[#737686] group-hover:text-[#3155F6]">Import</span>
+          <Upload className="w-4 h-4 text-[#737686] dark:text-slate-400 group-hover:text-[#3155F6] dark:group-hover:text-blue-400" />
+          <span className="text-[10px] tracking-wider uppercase font-extrabold text-[#737686] dark:text-slate-400 group-hover:text-[#3155F6] dark:group-hover:text-blue-400">Import</span>
         </button>
       </div>
     </div>
@@ -353,16 +371,16 @@ function FileCard({ file }: { file: FileItem }) {
 
 function FileRowCard({ file }: { file: FileItem }) {
   return (
-    <div className="bg-white border border-[#C3C6D7]/40 rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-slate-900 border border-[#C3C6D7]/40 dark:border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center gap-4 min-w-0">
-        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", file.iconBg)}>
+        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", file.iconBg, file.iconType === 'pdf' && "dark:bg-red-950/20", file.iconType === 'xlsx' && "dark:bg-emerald-950/20", file.iconType === 'docx' && "dark:bg-blue-950/20", file.iconType === 'image' && "dark:bg-purple-950/20")}>
           {getFileIcon(file.iconType)}
         </div>
         <div className="min-w-0">
-          <h4 className="text-sm font-extrabold text-[#0b1c30] truncate" title={file.name}>
+          <h4 className="text-sm font-extrabold text-[#0b1c30] dark:text-slate-100 truncate" title={file.name}>
             {file.name}
           </h4>
-          <p className="text-xs font-semibold text-[#737686] mt-0.5">
+          <p className="text-xs font-semibold text-[#737686] dark:text-slate-400 mt-0.5">
             {file.size} • {file.type}
           </p>
         </div>
@@ -372,21 +390,21 @@ function FileRowCard({ file }: { file: FileItem }) {
       <div className="flex items-center gap-2 shrink-0">
         <button
           type="button"
-          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-[#737686] hover:text-[#3155F6] border border-[#C3C6D7]/40 hover:border-[#3155F6]/40 rounded-lg hover:bg-[#E8EEFF]/30 transition-all cursor-pointer"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 border border-[#C3C6D7]/40 dark:border-slate-800 hover:border-[#3155F6]/40 rounded-lg hover:bg-[#E8EEFF]/30 dark:hover:bg-blue-950/30 transition-all cursor-pointer"
         >
           <Eye className="w-3.5 h-3.5" />
           <span>Preview</span>
         </button>
         <button
           type="button"
-          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-[#737686] hover:text-[#3155F6] border border-[#C3C6D7]/40 hover:border-[#3155F6]/40 rounded-lg hover:bg-[#E8EEFF]/30 transition-all cursor-pointer"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 border border-[#C3C6D7]/40 dark:border-slate-800 hover:border-[#3155F6]/40 rounded-lg hover:bg-[#E8EEFF]/30 dark:hover:bg-blue-950/30 transition-all cursor-pointer"
         >
           <Download className="w-3.5 h-3.5" />
           <span>Page</span>
         </button>
         <button
           type="button"
-          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-[#737686] hover:text-[#3155F6] border border-[#C3C6D7]/40 hover:border-[#3155F6]/40 rounded-lg hover:bg-[#E8EEFF]/30 transition-all cursor-pointer"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 border border-[#C3C6D7]/40 dark:border-slate-800 hover:border-[#3155F6]/40 rounded-lg hover:bg-[#E8EEFF]/30 dark:hover:bg-blue-950/30 transition-all cursor-pointer"
         >
           <Upload className="w-3.5 h-3.5" />
           <span>Import</span>

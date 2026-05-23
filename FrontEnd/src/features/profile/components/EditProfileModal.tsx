@@ -235,7 +235,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 <Input
                   {...register('name')}
                   error={errors.name?.message}
-                  className="bg-[#f0f4ff]/50 border border-slate-200/50 hover:border-slate-350 dark:bg-slate-800/40 dark:border-slate-850 focus:bg-white dark:focus:bg-slate-800 focus:ring-offset-0 focus:ring-2 focus:ring-[#3155F6]/20 transition-all font-medium py-3 px-4 rounded-xl"
+                  className="bg-[#f0f4ff]/50 border border-slate-200/50 hover:border-slate-300 dark:bg-slate-800/40 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:ring-offset-0 focus:ring-2 focus:ring-[#3155F6]/20 transition-all font-medium py-3 px-4 rounded-xl"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -248,7 +248,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 <Input
                   {...register('university')}
                   error={errors.university?.message}
-                  className="bg-[#f0f4ff]/50 border border-slate-200/50 hover:border-slate-350 dark:bg-slate-800/40 dark:border-slate-850 focus:bg-white dark:focus:bg-slate-800 focus:ring-offset-0 focus:ring-2 focus:ring-[#3155F6]/20 transition-all font-medium py-3 px-4 rounded-xl"
+                  className="bg-[#f0f4ff]/50 border border-slate-200/50 hover:border-slate-300 dark:bg-slate-800/40 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:ring-offset-0 focus:ring-2 focus:ring-[#3155F6]/20 transition-all font-medium py-3 px-4 rounded-xl"
                   placeholder="Enter your university"
                 />
               </div>
@@ -262,7 +262,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                   <Input
                     {...register('major')}
                     error={errors.major?.message}
-                    className="bg-[#f0f4ff]/50 border border-slate-200/50 hover:border-slate-350 dark:bg-slate-800/40 dark:border-slate-850 focus:bg-white dark:focus:bg-slate-800 focus:ring-offset-0 focus:ring-2 focus:ring-[#3155F6]/20 transition-all font-medium py-3 px-4 rounded-xl"
+                    className="bg-[#f0f4ff]/50 border border-slate-200/50 hover:border-slate-300 dark:bg-slate-800/40 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:ring-offset-0 focus:ring-2 focus:ring-[#3155F6]/20 transition-all font-medium py-3 px-4 rounded-xl"
                     placeholder="Enter your major"
                   />
                 </div>
@@ -274,7 +274,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                   <Select
                     {...register('degree')}
                     error={errors.degree?.message}
-                    className="bg-[#f0f4ff]/50 border border-slate-200/50 hover:border-slate-350 dark:bg-slate-800/40 dark:border-slate-850 focus:bg-white dark:focus:bg-slate-800 focus:ring-offset-0 focus:ring-2 focus:ring-[#3155F6]/20 transition-all font-medium py-3 px-4 rounded-xl h-[50px] cursor-pointer"
+                    className="bg-[#f0f4ff]/50 border border-slate-200/50 hover:border-slate-300 dark:bg-slate-800/40 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:ring-offset-0 focus:ring-2 focus:ring-[#3155F6]/20 transition-all font-medium py-3 px-4 rounded-xl h-[50px] cursor-pointer"
                   >
                     <option value="Associate">Associate</option>
                     <option value="Bachelor">Bachelor</option>

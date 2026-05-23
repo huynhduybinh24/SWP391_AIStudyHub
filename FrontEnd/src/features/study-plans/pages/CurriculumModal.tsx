@@ -141,13 +141,13 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
           { icon: Link2, label: 'Lessons', value: `${completedCount}/${totalCount}`, color: 'text-emerald-700 bg-emerald-50' },
           { icon: Clock, label: 'Est. Time', value: `${plan.hoursEst}h`, color: 'text-amber-700 bg-amber-50' },
         ].map(({ icon: Icon, label, value, color }) => (
-          <div key={label} className="rounded-xl border border-slate-200 bg-white p-3 flex items-center gap-3">
+          <div key={label} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
               <Icon className="size-4" />
             </div>
             <div>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{label}</p>
-              <p className="text-sm font-bold text-slate-800">{value}</p>
+              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">{label}</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{value}</p>
             </div>
           </div>
         ))}
@@ -175,7 +175,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
               <button
                 type="button"
                 onClick={() => setExpandedModule(isExpanded ? null : mod.id)}
-                className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+                className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
               >
                 {/* Index / trophy badge */}
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${isFullyDone
@@ -187,12 +187,12 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-slate-800">{mod.title}</span>
-                    <span className="text-xs text-slate-400 shrink-0">{done}/{mod.lessons.length}</span>
+                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{mod.title}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">{done}/{mod.lessons.length}</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">{mod.description}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{mod.description}</p>
                   {/* Module progress bar */}
-                  <div className="mt-2 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="mt-2 h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${isFullyDone ? 'bg-emerald-500' : 'bg-[#2557E8]'
                         }`}
@@ -209,7 +209,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
 
               {/* Lesson rows */}
               {isExpanded && (
-                <div className="border-t border-slate-100 divide-y divide-slate-100">
+                <div className="border-t border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
                   {mod.lessons.map((lesson) => {
                     const isLocked = lesson.status === 'locked'
                     // Attach ref to first non-completed lesson in the active module
@@ -234,8 +234,8 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
                           {lesson.title}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
-                          <Clock className="size-3 text-slate-400" />
-                          <span className="text-xs text-slate-400">{lesson.duration}</span>
+                          <Clock className="size-3 text-slate-400 dark:text-slate-500" />
+                          <span className="text-xs text-slate-400 dark:text-slate-500">{lesson.duration}</span>
                         </div>
                       </button>
                     )
@@ -248,12 +248,12 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
       </div>
 
       {/* ── Footer ── */}
-      <div className="flex items-center justify-end gap-3 mt-5 pt-4 border-t border-slate-100">
+      <div className="flex items-center justify-end gap-3 mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
         <Button variant="ghost" onClick={onClose}>Close</Button>
         {completedCount === totalCount ? (
           <Button
             variant="primary"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white"
             onClick={onClose}
           >
             🎉 Curriculum Complete!
@@ -261,7 +261,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
         ) : (
           <Button
             variant="primary"
-            className="bg-[#2557E8] hover:bg-[#1d4ed8] text-white"
+            className="bg-[#2557E8] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white"
             onClick={handleStart}
           >
             {firstActiveModule ? 'Start Learning' : 'Review All'}

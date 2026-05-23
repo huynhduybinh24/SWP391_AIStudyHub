@@ -1,23 +1,18 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { Bot } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { Button } from '@/components/ui/Button'
-import { ChatPopup } from '@/features/ai-chatbot/components/ChatPopup'
+import { FloatingAssistantButton } from '@/components/layout/FloatingAssistantButton'
 import { useUiStore } from '@/stores/uiStore'
 
 export function DashboardLayout() {
-
   const location = useLocation()
   const isChatPage = location.pathname === '/dashboard/chat' || location.pathname === '/dashboard/chat/'
-  const isChatPopupOpen = useUiStore((s) => s.isChatPopupOpen)
-  const setChatPopupOpen = useUiStore((s) => s.setChatPopupOpen)
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface relative">
+    <div className="flex h-screen overflow-hidden bg-[#f5f7fb] text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300 relative">
       <Sidebar />
       
       {/* Mobile Sidebar Backdrop Overlay */}
@@ -28,7 +23,7 @@ export function DashboardLayout() {
         />
       )}
 
-      <div className="relative flex min-w-0 flex-1 flex-col bg-surface h-full">
+      <div className="relative flex min-w-0 flex-1 flex-col bg-[#f5f7fb] dark:bg-slate-950 transition-colors duration-300 h-full">
         <Header />
         
         {/* Main Content Area */}

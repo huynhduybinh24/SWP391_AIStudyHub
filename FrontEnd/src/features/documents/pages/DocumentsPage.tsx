@@ -694,7 +694,18 @@ const QUIZ_QUESTIONS = [
 export function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>(() => {
     const saved = localStorage.getItem('ai_study_hub_documents')
-    return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as DocumentItem[]
+        return parsed.map(doc => ({
+          ...doc,
+          uploadedDateObj: new Date(doc.uploadedDateObj)
+        }))
+      } catch (e) {
+        return INITIAL_DOCUMENTS
+      }
+    }
+    return INITIAL_DOCUMENTS
   })
 
   useEffect(() => {
@@ -877,7 +888,7 @@ export function DocumentsPage() {
         const db = getDocContent(selectedDocForChat)
         aiText += `tôi đã tạo nhanh các flashcard ôn tập sau:\n\n` + db.flashcards.map((fc, idx) => `Thẻ ${idx+1}:\n- Câu hỏi: ${fc.q}\n- Trả lời: ${fc.a}`).join('\n\n')
       } else if (lowerText.includes('trắc nghiệm') || lowerText.includes('đố') || lowerText.includes('quiz')) {
-        aiText += `đây là 1 câu hỏi ôn tập nhanh cho bạn:\n\n**Câu hỏi**: Đâu là khái niệm cốt lõi được định nghĩa ở mục 1.1 của tài liệu này?\n\n*Gợi ý*: Trả lời trực tiếp để tôi kiểm tra xem bạn đã nắm vững kiến thức chưa!`
+        aiText += `đây là 1 câu hỏi ôn tập nhanh cho bạn:\n\nCâu hỏi: Đâu là khái niệm cốt lõi được định nghĩa ở mục 1.1 của tài liệu này?\n\n*Gợi ý*: Trả lời trực tiếp để tôi kiểm tra xem bạn đã nắm vững kiến thức chưa!`
       } else {
         aiText += `tôi ghi nhận câu hỏi về "${textToSend}". Đây là chủ đề cốt lõi thuộc phần nghiên cứu chuyên ngành ${selectedDocForChat.subject.toLowerCase()}.\n\nTheo dữ liệu phân tích, nội dung này liên quan chặt chẽ đến phương pháp luận tổng quát ở chương đầu. Bạn cần tôi trích xuất thêm chi tiết ở mục nào không?`
       }
