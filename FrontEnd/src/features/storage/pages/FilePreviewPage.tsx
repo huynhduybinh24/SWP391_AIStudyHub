@@ -10,6 +10,7 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Check,
   Loader2,
   X,
@@ -19,6 +20,8 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Avatar } from '@/components/ui/Avatar'
+import { Modal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
 
 const getFilePreviewPageContent = (pageNum: number) => {
   if (pageNum === 1) {
@@ -64,7 +67,8 @@ export function FilePreviewPage() {
   const pageContent = getFilePreviewPageContent(currentPage)
   const [isDownloading, setIsDownloading] = useState(false)
   const [isDownloaded, setIsDownloaded] = useState(false)
-  const [isShared, setIsShared] = useState(false)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isLinkCopied, setIsLinkCopied] = useState(false)
   const [tags, setTags] = useState(['Biology', 'Exam Prep'])
   const [newTag, setNewTag] = useState('')
   const [isAddingTag, setIsAddingTag] = useState(false)
@@ -86,8 +90,7 @@ export function FilePreviewPage() {
   }
 
   const handleShare = () => {
-    setIsShared(true)
-    setTimeout(() => setIsShared(false), 3000)
+    setIsShareModalOpen(true)
   }
 
   const handleRemoveTag = (tagToRemove: string) => {
@@ -130,22 +133,18 @@ export function FilePreviewPage() {
             <Button 
               onClick={handleShare}
               variant="secondary" 
-              className={`gap-2 h-10 px-4 transition-colors ${
-                isShared 
-                  ? 'text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-50 hover:text-emerald-700' 
-                  : 'text-[#2563eb] border-[#2563eb]/20 hover:bg-[#2563eb]/5 bg-white'
-              }`}
+              className="gap-2 h-9 px-4 text-sm font-medium transition-colors shadow-sm text-[#3155F6] border-slate-200 hover:bg-slate-50 bg-white"
             >
-              {isShared ? <Check className="size-4" /> : <Share2 className="size-4" />}
-              {isShared ? 'Link Copied' : 'Share Access'}
+              <Share2 className="size-4" />
+              Share Access
             </Button>
             <Button 
               onClick={handleDownload}
               disabled={isDownloading}
-              className={`gap-2 h-10 px-4 transition-colors ${
+              className={`gap-2 h-9 px-4 text-sm font-medium transition-colors shadow-sm ${
                 isDownloaded
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : 'bg-[#2563eb] hover:bg-[#2563eb]/90 text-white'
+                  : 'bg-[#3155F6] hover:bg-[#2563eb] text-white'
               }`}
             >
               {isDownloading ? (
@@ -163,9 +162,9 @@ export function FilePreviewPage() {
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Left PDF Viewer */}
-        <div className={isFullscreen ? "fixed inset-0 z-50 bg-[#f8fafc] flex flex-col w-full h-full" : "flex-1 flex flex-col w-full"}>
+        <div className={isFullscreen ? "fixed inset-0 z-50 bg-[#f8fafc] dark:bg-slate-950 flex flex-col w-full h-full" : "flex-1 flex flex-col w-full"}>
           {/* Viewer Toolbar */}
-          <div className={`h-12 bg-white border-border flex items-center justify-between px-4 ${isFullscreen ? 'border-b' : 'border rounded-t-xl'}`}>
+          <div className={`h-12 bg-white dark:bg-slate-900 border-border dark:border-slate-800 flex items-center justify-between px-4 ${isFullscreen ? 'border-b' : 'border rounded-t-xl'}`}>
             <div className="flex items-center gap-2">
               <FileText className="size-4 text-[#ef4444]" />
               <span className="text-sm font-semibold text-foreground truncate max-w-[150px] sm:max-w-none">Neuroscience_Ch4_Synap...</span>
@@ -176,7 +175,7 @@ export function FilePreviewPage() {
                 <span className="w-12 text-center select-none">{zoom}%</span>
                 <button onClick={handleZoomIn} className="hover:text-foreground transition-colors p-1" title="Zoom In"><ZoomIn className="size-4" /></button>
               </div>
-              <div className="hidden sm:block w-px h-4 bg-border"></div>
+              <div className="hidden sm:block w-px h-4 bg-border dark:bg-slate-800"></div>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={handlePrevPage} 
@@ -194,7 +193,7 @@ export function FilePreviewPage() {
                   <ChevronRight className="size-4" />
                 </button>
               </div>
-              <div className="hidden sm:block w-px h-4 bg-border"></div>
+              <div className="hidden sm:block w-px h-4 bg-border dark:bg-slate-800"></div>
               <button onClick={() => setIsFullscreen(!isFullscreen)} className="hover:text-foreground transition-colors p-1 hidden sm:block" title="Toggle Fullscreen">
                 {isFullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
               </button>
@@ -202,9 +201,9 @@ export function FilePreviewPage() {
           </div>
           
           {/* Document Content */}
-          <div className={`bg-[#f8fafc] border-border p-4 sm:p-8 flex justify-center overflow-auto ${isFullscreen ? 'flex-1' : 'border border-t-0 rounded-b-xl min-h-[600px]'}`}>
+          <div className={`bg-[#f8fafc] dark:bg-slate-950 border-border dark:border-slate-800 p-4 sm:p-8 flex justify-center overflow-auto ${isFullscreen ? 'flex-1' : 'border border-t-0 rounded-b-xl min-h-[600px]'}`}>
             <div 
-              className="bg-white w-full max-w-[600px] shadow-sm border border-border p-6 sm:p-10 flex flex-col h-fit transition-all duration-200"
+              className="bg-white dark:bg-slate-900 w-full max-w-[600px] shadow-sm border border-border dark:border-slate-800 p-6 sm:p-10 flex flex-col h-fit transition-all duration-200"
               style={{ zoom: `${zoom}%` } as React.CSSProperties}
             >
               <h2 className="text-2xl sm:text-[28px] font-bold leading-tight text-[#1e293b] mb-1">
@@ -233,14 +232,14 @@ export function FilePreviewPage() {
         </div>
 
         {/* Right Details Panel */}
-        <Card className="w-full lg:w-[320px] shrink-0 border-border bg-white shadow-sm lg:sticky lg:top-6">
+        <Card className="w-full lg:w-[320px] shrink-0 border-border dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm lg:sticky lg:top-6">
           <CardContent className="p-6">
             <h3 className="font-bold text-foreground text-lg mb-6">File Details</h3>
             
             <div className="flex flex-col gap-5 mb-8">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">Type</span>
-                <span className="text-[10px] font-bold bg-[#e5eeff] text-[#2563eb] px-2 py-1 rounded">PDF DOCUMENT</span>
+                <span className="text-[10px] font-bold bg-[#e5eeff] dark:bg-blue-950/40 text-[#2563eb] dark:text-blue-400 px-2 py-1 rounded">PDF DOCUMENT</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">Size</span>
@@ -253,7 +252,7 @@ export function FilePreviewPage() {
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">Owner</span>
                 <div className="flex items-center gap-2">
-                  <Avatar src="/avatar.svg" name="Me" className="size-6 border border-border" />
+                  <Avatar src="/avatar.svg" name="Me" className="size-6 border border-border dark:border-slate-800" />
                   <span className="font-semibold text-foreground">Me</span>
                 </div>
               </div>
@@ -263,9 +262,9 @@ export function FilePreviewPage() {
               <h4 className="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">TAGS</h4>
               <div className="flex flex-wrap gap-2">
                 {tags.map(tag => (
-                  <span key={tag} className="group px-3 py-1 bg-[#e5eeff] hover:bg-blue-100 text-[#2563eb] text-xs font-medium rounded-full flex items-center gap-1.5 cursor-default transition-colors">
+                  <span key={tag} className="group px-3 py-1 bg-[#e5eeff] dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-[#2563eb] dark:text-blue-400 text-xs font-medium rounded-full flex items-center gap-1.5 cursor-default transition-colors">
                     {tag}
-                    <button onClick={() => handleRemoveTag(tag)} className="opacity-0 group-hover:opacity-100 hover:text-blue-800 transition-opacity focus:opacity-100 outline-none">
+                    <button onClick={() => handleRemoveTag(tag)} className="opacity-0 group-hover:opacity-100 hover:text-blue-800 dark:hover:text-blue-200 transition-opacity focus:opacity-100 outline-none">
                       <X className="size-3" />
                     </button>
                   </span>
@@ -281,13 +280,13 @@ export function FilePreviewPage() {
                       setIsAddingTag(false)
                     }}
                     autoFocus
-                    className="px-3 py-1 text-xs border border-blue-200 rounded-full focus:outline-none focus:border-[#2563eb] w-24 bg-white text-foreground"
+                    className="px-3 py-1 text-xs border border-blue-200 dark:border-blue-900/50 rounded-full focus:outline-none focus:border-[#2563eb] dark:focus:border-blue-500 w-24 bg-white dark:bg-slate-800 text-foreground"
                     placeholder="New tag..."
                   />
                 ) : (
                   <button 
                     onClick={() => setIsAddingTag(true)}
-                    className="px-3 py-1 border border-dashed border-slate-300 hover:border-[#2563eb] text-muted hover:text-[#2563eb] text-xs font-medium rounded-full flex items-center gap-1 transition-colors outline-none"
+                    className="px-3 py-1 border border-dashed border-slate-300 dark:border-slate-700 hover:border-[#2563eb] dark:hover:border-blue-500 text-muted hover:text-[#2563eb] dark:hover:text-blue-400 text-xs font-medium rounded-full flex items-center gap-1 transition-colors outline-none"
                   >
                     <Plus className="size-3" /> Add
                   </button>
@@ -297,6 +296,82 @@ export function FilePreviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Modal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title="Share Access"
+        description="Share this file with your study group or copy the link."
+        className="max-w-md"
+      >
+        <div className="flex flex-col gap-4 mt-2">
+          {/* Link Section */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Share Link</label>
+            <div className="flex items-center gap-2">
+              <input 
+                type="text" 
+                readOnly 
+                value="https://aistudyhub.com/s/Neuroscience_Ch4" 
+                className="flex-1 h-10 px-3 py-2 text-sm rounded-lg border border-border bg-slate-50 text-slate-500 focus:outline-none"
+              />
+              <Button 
+                onClick={() => {
+                  setIsLinkCopied(true);
+                  setTimeout(() => setIsLinkCopied(false), 2000);
+                }}
+                className={`shrink-0 h-10 transition-colors ${
+                  isLinkCopied 
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                    : 'bg-[#3155F6] hover:bg-[#2563eb] text-white'
+                }`}
+              >
+                {isLinkCopied ? <Check className="size-4 mr-1.5" /> : <Share2 className="size-4 mr-1.5" />}
+                {isLinkCopied ? 'Copied!' : 'Copy'}
+              </Button>
+            </div>
+            <p className="text-xs text-muted">Anyone with this link can view and download the file.</p>
+          </div>
+
+          <div className="h-px bg-border my-2"></div>
+
+          {/* Access List */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground">People with access</label>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Avatar src="/avatar.svg" name="Me" className="size-10" />
+                <div>
+                  <p className="text-[15px] font-bold text-slate-900">You</p>
+                  <p className="text-sm text-slate-500">alex.rivera@example.com</p>
+                </div>
+              </div>
+              <span className="text-sm font-medium text-slate-500 pr-2">Owner</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-full bg-[#eff6ff] text-[#3155F6] flex items-center justify-center text-sm font-bold shadow-sm border border-[#dbeafe]">
+                  SG
+                </div>
+                <div>
+                  <p className="text-[15px] font-bold text-slate-900">Study Group Alpha</p>
+                  <p className="text-sm text-slate-500">3 members</p>
+                </div>
+              </div>
+              <div className="relative group">
+                <select className="appearance-none w-24 h-[34px] pl-3 pr-8 bg-[#f8fafc] hover:bg-slate-100 border border-slate-200 text-slate-700 text-[13px] font-medium rounded-lg focus:outline-none focus:border-[#3155F6] focus:ring-1 focus:ring-[#3155F6] cursor-pointer transition-colors">
+                  <option>Viewer</option>
+                  <option selected>Editor</option>
+                  <option>Remove</option>
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-slate-500 pointer-events-none group-hover:text-slate-700 transition-colors" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

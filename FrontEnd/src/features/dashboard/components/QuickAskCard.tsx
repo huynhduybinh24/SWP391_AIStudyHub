@@ -38,14 +38,14 @@ export function QuickAskCard() {
           <button
             type="button"
             onClick={() => handleQuickAsk('Summarize latest upload')}
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-body hover:border-primary/30"
+            className="rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:border-blue-500/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           >
             Summarize latest upload
           </button>
           <button
             type="button"
             onClick={() => handleQuickAsk('Generate quiz from notes')}
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-body hover:border-primary/30"
+            className="rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:border-blue-500/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           >
             Generate quiz from notes
           </button>

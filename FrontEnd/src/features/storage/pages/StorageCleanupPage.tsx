@@ -32,8 +32,8 @@ const DEEP_ANALYSIS_FILES = [
     size: '850 MB',
     modified: 'Modified 6 months ago',
     icon: Video,
-    color: 'text-purple-600',
-    bg: 'bg-purple-100'
+    color: 'text-purple-600 dark:text-purple-400',
+    bg: 'bg-purple-100 dark:bg-purple-950/40'
   },
   {
     id: '5',
@@ -41,8 +41,8 @@ const DEEP_ANALYSIS_FILES = [
     size: '1.2 GB',
     modified: 'Modified 1 year ago',
     icon: Archive,
-    color: 'text-amber-600',
-    bg: 'bg-amber-100'
+    color: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-100 dark:bg-amber-950/40'
   }
 ]
 
@@ -102,9 +102,9 @@ export function StorageCleanupPage() {
             <CardContent className="p-6">
               <div className="flex flex-col gap-4">
                 {duplicates.map(file => (
-                  <div key={file.id} className="flex items-center justify-between p-4 bg-[#f8fafc] border border-slate-100 rounded-xl hover:shadow-sm transition-shadow">
+                  <div key={file.id} className="flex items-center justify-between p-4 bg-[#f8fafc] dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl hover:shadow-sm transition-shadow">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-[#eff6ff] rounded-lg flex items-center justify-center shrink-0">
+                      <div className="w-12 h-12 bg-[#eff6ff] dark:bg-blue-950/40 rounded-lg flex items-center justify-center shrink-0">
                         <div className="relative flex items-center justify-center">
                           <FileText className="size-6 text-[#3b82f6]" strokeWidth={1.5} />
                           {file.name.endsWith('.pdf') && (
@@ -145,7 +145,7 @@ export function StorageCleanupPage() {
               <CardContent className="p-6">
                 <div className="flex flex-col gap-4">
                   {largeFiles.map(file => (
-                    <div key={file.id} className="flex items-center justify-between p-4 bg-[#f8fafc] border border-slate-100 rounded-xl hover:shadow-sm transition-shadow">
+                    <div key={file.id} className="flex items-center justify-between p-4 bg-[#f8fafc] dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl hover:shadow-sm transition-shadow">
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 ${file.bg} rounded-lg flex items-center justify-center shrink-0`}>
                           <file.icon className={`size-6 ${file.color}`} strokeWidth={1.5} />
@@ -184,7 +184,7 @@ export function StorageCleanupPage() {
                 <span className="text-sm font-medium text-muted">Used Space</span>
                 <span className="text-sm font-bold text-foreground">{usedGB} GB / {totalGB} GB</span>
               </div>
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-[#1d4ed8] rounded-full transition-all duration-500" 
                   style={{ width: `${percentage}%` }}
@@ -202,7 +202,7 @@ export function StorageCleanupPage() {
               className={`w-full h-[42px] text-sm font-medium transition-colors ${
                 hasAnalyzed 
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-                  : 'bg-[#1e293b] hover:bg-[#0f172a] text-white'
+                  : 'bg-[#1e293b] hover:bg-[#0f172a] dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 text-white'
               }`}
             >
               {isAnalyzing && <Loader2 className="mr-2 size-4 animate-spin" />}

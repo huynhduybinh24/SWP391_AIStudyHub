@@ -61,7 +61,7 @@ export function AccountSettingsCard() {
   }
 
   return (
-    <div className="rounded-2xl border border-[#dbe3f0] bg-white dark:bg-slate-900 p-6 shadow-sm">
+    <div className="rounded-2xl border border-[#dbe3f0] dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
       <div className="flex items-center gap-2 border-b border-border/60 dark:border-slate-800/80 pb-4 mb-6">
         <div className="flex size-8 items-center justify-center rounded-lg bg-[#E5EEFF] dark:bg-blue-950/50 text-[#2563EB]">
           <User className="size-5" />

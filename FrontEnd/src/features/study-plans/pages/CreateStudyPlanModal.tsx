@@ -145,7 +145,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
 
         {/* ── Title ── */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-slate-800">
+          <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
             Study Plan Title <span className="text-red-500">*</span>
           </label>
           <Input
@@ -157,7 +157,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
 
         {/* ── Subject ── */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-slate-800">
+          <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
             Subject <span className="text-red-500">*</span>
           </label>
           <Select {...register('subject')} error={errors.subject?.message}>
@@ -172,7 +172,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
 
         {/* ── Description ── */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-slate-800">Goal / Description</label>
+          <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Goal / Description</label>
           <Textarea
             placeholder="What do you want to achieve with this study plan?"
             {...register('description')}
@@ -183,13 +183,13 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
         {/* ── Dates ── */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-800">
+            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
               Start Date <span className="text-red-500">*</span>
             </label>
             <Input type="date" {...register('startDate')} error={errors.startDate?.message} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-800">
+            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
               End Date <span className="text-red-500">*</span>
             </label>
             <Input type="date" {...register('endDate')} error={errors.endDate?.message} />
@@ -198,7 +198,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
 
         {/* ── Priority ── */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-800">Priority</label>
+          <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Priority</label>
           <Controller
             control={control}
             name="priority"
@@ -221,7 +221,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
 
         {/* ── Study Schedule ── */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-800">
+          <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
             Study Schedule <span className="text-red-500">*</span>
           </label>
           <Controller
@@ -237,8 +237,8 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
                       className={cn(
                         'flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150 select-none',
                         isSelected
-                          ? 'border-[#2557E8] bg-[#eef2ff] text-[#2557E8]'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                          ? 'border-[#2557E8] bg-[#eef2ff] text-[#2557E8] dark:border-blue-500 dark:bg-blue-950/30 dark:text-blue-400'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:border-slate-700'
                       )}
                     >
                       <input
@@ -257,7 +257,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
                       <div
                         className={cn(
                           'flex h-4 w-4 items-center justify-center rounded border transition-colors shrink-0',
-                          isSelected ? 'border-[#2557E8] bg-[#2557E8] text-white' : 'border-slate-300 bg-white'
+                          isSelected ? 'border-[#2557E8] bg-[#2557E8] text-white dark:border-blue-600 dark:bg-blue-600' : 'border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900'
                         )}
                       >
                         {isSelected && (
@@ -277,16 +277,16 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
         </div>
 
         {/* ── AI Suggestion Box ── */}
-        <div className="flex items-start gap-4 rounded-xl bg-[#eef2ff] border border-[#c7d2fe] p-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#2557E8] shadow-sm">
+        <div className="flex items-start gap-4 rounded-xl bg-[#eef2ff] dark:bg-blue-950/20 border border-[#c7d2fe] dark:border-blue-900 p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-900 text-[#2557E8] dark:text-blue-400 shadow-sm">
             {isGenerating
               ? <Loader2 className="h-5 w-5 animate-spin" />
               : <BrainCircuit className="h-5 w-5" />
             }
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-semibold text-[#2557E8]">AI Study Suggestion</h4>
-            <p className="mt-0.5 text-sm text-slate-600">
+            <h4 className="text-sm font-semibold text-[#2557E8] dark:text-blue-400">AI Study Suggestion</h4>
+            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
               {isGenerating
                 ? `Generating a smart plan for ${currentSubject}...`
                 : 'Let AI help you create a smart study schedule based on your deadline and subject.'}
@@ -296,7 +296,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
             type="button"
             variant="primary"
             size="sm"
-            className="shrink-0 mt-1 bg-[#2557E8] hover:bg-[#1d4ed8] text-white"
+            className="shrink-0 mt-1 bg-[#2557E8] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white"
             onClick={handleGenerateAI}
             disabled={isGenerating}
           >
@@ -305,7 +305,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
         </div>
 
         {/* ── Actions ── */}
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <Button type="button" variant="ghost" onClick={handleClose}>
             Cancel
           </Button>
@@ -315,7 +315,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
           <Button
             type="submit"
             variant="primary"
-            className="bg-[#2557E8] hover:bg-[#1d4ed8] text-white"
+            className="bg-[#2557E8] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white"
             disabled={isSubmitting}
           >
             Create Study Plan

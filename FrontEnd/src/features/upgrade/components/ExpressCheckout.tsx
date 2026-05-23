@@ -56,7 +56,7 @@ export function ExpressCheckout({
           // Dynamic selected / unselected styling as requested
           const buttonStyle = isSelected
             ? 'bg-[#fbbf24] hover:bg-[#f59e0b] border-[#d97706] text-black dark:text-black ring-2 ring-[#fbbf24]/50 shadow-sm shadow-[#fbbf24]/20 font-bold'
-            : 'bg-white hover:bg-slate-50/80 dark:bg-slate-900 dark:hover:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white'
+            : 'bg-white hover:bg-slate-50/80 dark:bg-slate-900 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white'
 
           return (
             <motion.button

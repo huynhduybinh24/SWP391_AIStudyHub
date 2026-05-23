@@ -3,7 +3,7 @@ import { motion, type Variants } from 'framer-motion'
 import { Edit2 } from 'lucide-react'
 import { ProfileCard } from '../components/ProfileCard'
 import { LinkedAccounts } from '../components/LinkedAccounts'
-import { StatisticsCard } from '../components/StatisticsCard'
+import { StatisticsSection } from '../components/StatisticsSection'
 import { EditProfileModal } from '../components/EditProfileModal'
 
 export function ProfilePage() {
@@ -68,7 +68,7 @@ export function ProfilePage() {
         {/* Right Column: Linked Accounts & Stats */}
         <motion.div variants={itemVariants} className="lg:col-span-5 space-y-6">
           <LinkedAccounts />
-          <StatisticsCard />
+          <StatisticsSection />
         </motion.div>
       </div>
 

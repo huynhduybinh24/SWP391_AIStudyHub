@@ -41,11 +41,11 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-      className="absolute right-0 top-[52px] w-64 rounded-xl border border-border/85 bg-white dark:bg-slate-900 dark:border-slate-800 py-2 shadow-xl z-50 select-none"
+      className="absolute right-0 top-[52px] w-64 rounded-xl border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 py-2 shadow-xl z-50 select-none"
       role="menu"
     >
-      <div className="border-b border-border/50 dark:border-slate-800/80 px-4 py-3 flex items-center gap-3">
-        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#E8EEFF] dark:bg-slate-850 flex items-center justify-center border border-border/40 dark:border-slate-800 overflow-hidden">
+      <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-3">
+        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#E8EEFF] dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-800 overflow-hidden">
           <img src={profile.avatarUrl} alt="Avatar" className="w-8 h-8 object-cover rounded-full" />
         </div>
         <div className="min-w-0 flex-1">
@@ -56,7 +56,7 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
       
       <button
         type="button"
-        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-body dark:text-slate-350 hover:bg-surface dark:hover:bg-slate-800/50 transition-colors text-left cursor-pointer font-medium"
+        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer font-medium"
         onClick={() => handleNavigate('/dashboard/profile')}
         role="menuitem"
       >
@@ -66,22 +66,22 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
       
       <button
         type="button"
-        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-body dark:text-slate-350 hover:bg-surface dark:hover:bg-slate-800/50 transition-colors text-left cursor-pointer font-medium"
+        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer font-medium"
         onClick={() => handleNavigate('/dashboard/settings')}
         role="menuitem"
       >
-        <Settings className="size-4 text-muted dark:text-slate-500" />
+        <Settings className="size-4 text-slate-400 dark:text-slate-500" />
         Settings
       </button>
       
-      <div className="mt-1 border-t border-border/50 dark:border-slate-800/80 pt-1">
+      <div className="mt-1 border-t border-slate-200 dark:border-slate-800 pt-1">
         <button
           type="button"
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors text-left font-semibold cursor-pointer"
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-600 dark:text-rose-450 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-left font-semibold cursor-pointer"
           onClick={onLogoutClick || handleLogout}
           role="menuitem"
         >
-          <LogOut className="size-4 text-danger" />
+          <LogOut className="size-4 text-rose-600 dark:text-rose-455" />
           Log Out
         </button>
       </div>

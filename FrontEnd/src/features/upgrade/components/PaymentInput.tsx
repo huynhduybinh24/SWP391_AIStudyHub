@@ -12,7 +12,7 @@ export const PaymentInput = forwardRef<HTMLInputElement, PaymentInputProps>(
   ({ label, error, leftIcon, rightIcon, className, ...props }, ref) => {
     return (
       <div className="space-y-1.5 w-full">
-        <label className="text-xs font-bold text-slate-700 dark:text-slate-350">
+        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
           {label}
         </label>
         <div className="relative">
@@ -24,7 +24,7 @@ export const PaymentInput = forwardRef<HTMLInputElement, PaymentInputProps>(
           <input
             ref={ref}
             className={cn(
-              'w-full h-11 rounded-lg bg-[#f5f7fb] dark:bg-slate-950 border border-slate-200/85 dark:border-slate-850 px-3.5 text-sm font-semibold text-slate-900 dark:text-white transition-all placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 dark:focus:ring-[#2563eb]/5',
+              'w-full h-11 rounded-lg bg-[#f5f7fb] dark:bg-slate-950 border border-slate-200/85 dark:border-slate-800 px-3.5 text-sm font-semibold text-slate-900 dark:text-white transition-all placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 dark:focus:ring-[#2563eb]/5',
               leftIcon && 'pl-11',
               rightIcon && 'pr-11',
               error && 'border-red-500 focus:border-red-500 focus:ring-red-500/10 dark:focus:ring-red-500/5',

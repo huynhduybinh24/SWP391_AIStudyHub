@@ -251,16 +251,16 @@ export function UploadPage() {
   const getFileTypeStyle = () => {
     switch (fileType) {
       case 'pdf':
-        return 'bg-rose-50 border border-rose-100'
+        return 'bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30'
       case 'word':
-        return 'bg-blue-50 border border-blue-100'
+        return 'bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30'
       case 'text':
-        return 'bg-emerald-50 border border-emerald-100'
+        return 'bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30'
       case 'image':
-        return 'bg-sky-50 border border-sky-100'
+        return 'bg-sky-50 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/30'
       case 'slides':
       default:
-        return 'bg-amber-50 border border-amber-100'
+        return 'bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30'
     }
   }
 
@@ -467,7 +467,7 @@ export function UploadPage() {
                         "rounded-full px-4 py-1.5 text-xs font-bold border transition-all duration-200 focus:outline-none cursor-pointer disabled:opacity-50",
                         isSelected
                           ? "bg-[#2563eb] border-[#2563eb] text-white shadow-sm shadow-blue-500/10"
-                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                       )}
                     >
                       {tag}
@@ -621,7 +621,7 @@ export function UploadPage() {
                     "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
                     generateSummary
                       ? "border-[#2563eb] bg-[#2563eb] text-white"
-                      : "border-slate-300 bg-white"
+                      : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                   )}
                 >
                   {generateSummary && (
@@ -660,7 +660,7 @@ export function UploadPage() {
                     "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
                     createFlashcards
                       ? "border-[#2563eb] bg-[#2563eb] text-white"
-                      : "border-slate-300 bg-white"
+                      : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                   )}
                 >
                   {createFlashcards && (
@@ -686,7 +686,7 @@ export function UploadPage() {
               type="button"
               onClick={() => navigate('/dashboard/documents')}
               disabled={isProcessing}
-              className="rounded-xl font-bold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-xs px-6 h-[44px] cursor-pointer transition-all disabled:opacity-50 text-sm"
+              className="rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 shadow-xs px-6 h-[44px] cursor-pointer transition-all disabled:opacity-50 text-sm"
             >
               Cancel
             </button>

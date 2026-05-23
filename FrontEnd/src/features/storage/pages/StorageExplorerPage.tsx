@@ -22,6 +22,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
+import { useTheme } from '@/features/settings/components/ThemeProvider'
 
 const INITIAL_FOLDERS = [
   { id: '1', name: 'Physics 101', items: '12 Items', size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe', category: 'Study' },
@@ -77,6 +78,8 @@ const INITIAL_FILES = [
 ]
 
 export function StorageExplorerPage() {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
   const navigate = useNavigate()
   const [folders, setFolders] = useState(INITIAL_FOLDERS)
   const [files, setFiles] = useState(INITIAL_FILES)
@@ -113,7 +116,7 @@ export function StorageExplorerPage() {
       items: '0 Items',
       size: '0 MB',
       color: '#64748b',
-      bgColor: '#f1f5f9',
+      bgColor: isDark ? '#334155' : '#f1f5f9',
       category: 'New'
     }
     setFolders([newFolder, ...folders])
@@ -154,8 +157,8 @@ export function StorageExplorerPage() {
   const chartData = [
     { name: 'Documents', value: 45, color: '#2563eb' },
     { name: 'Images', value: 20.5, color: '#0d9488' },
-    { name: 'Other', value: 9.5, color: '#cbd5e1' },
-    { name: 'Remaining', value: 25, color: '#e5eeff' },
+    { name: 'Other', value: 9.5, color: isDark ? '#334155' : '#cbd5e1' },
+    { name: 'Remaining', value: 25, color: isDark ? '#1e293b' : '#e5eeff' },
   ]
 
   const folderOptions = ['All Folders', 'Study', 'Archived', 'New']
@@ -179,7 +182,7 @@ export function StorageExplorerPage() {
               Browse and organize all cloud-stored study files.
             </p>
           </div>
-          <Button onClick={handleCreateFolder} variant="secondary" className="gap-2 bg-white h-10 px-4">
+          <Button onClick={handleCreateFolder} variant="secondary" className="gap-2 bg-white dark:bg-slate-900 border-border dark:border-slate-800 h-10 px-4 text-foreground">
             <FolderPlus className="size-4" />
             New Folder
           </Button>
@@ -199,14 +202,14 @@ export function StorageExplorerPage() {
                 placeholder="Find in Explorer..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-10 pl-9 pr-4 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full h-10 pl-9 pr-4 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none" ref={folderDropdownRef}>
                 <button 
                   onClick={() => setShowFolderDropdown(!showFolderDropdown)}
-                  className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white text-sm font-medium hover:bg-slate-50 justify-between whitespace-nowrap"
+                  className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 justify-between whitespace-nowrap text-foreground"
                 >
                   <div className="flex items-center gap-2">
                     <Folder className="size-4 text-muted" />
@@ -215,11 +218,11 @@ export function StorageExplorerPage() {
                   <ChevronDown className="size-4 text-muted" />
                 </button>
                 {showFolderDropdown && (
-                  <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-border z-10 py-1">
+                  <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-slate-900 rounded-lg shadow-lg border border-border dark:border-slate-800 z-10 py-1">
                     {folderOptions.map(opt => (
                       <button
                         key={opt}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center justify-between text-foreground"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between text-foreground"
                         onClick={() => { setFolderFilter(opt); setShowFolderDropdown(false) }}
                       >
                         {opt}
@@ -233,7 +236,7 @@ export function StorageExplorerPage() {
               <div className="relative flex-1 sm:flex-none" ref={typeDropdownRef}>
                 <button 
                   onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-                  className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white text-sm font-medium hover:bg-slate-50 justify-between whitespace-nowrap"
+                  className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 justify-between whitespace-nowrap text-foreground"
                 >
                   <div className="flex items-center gap-2">
                     <FileIcon className="size-4 text-muted" />
@@ -242,11 +245,11 @@ export function StorageExplorerPage() {
                   <ChevronDown className="size-4 text-muted" />
                 </button>
                 {showTypeDropdown && (
-                  <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-border z-10 py-1">
+                  <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-slate-900 rounded-lg shadow-lg border border-border dark:border-slate-800 z-10 py-1">
                     {typeOptions.map(opt => (
                       <button
                         key={opt}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center justify-between text-foreground"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between text-foreground"
                         onClick={() => { setTypeFilter(opt); setShowTypeDropdown(false) }}
                       >
                         {opt}
@@ -257,7 +260,7 @@ export function StorageExplorerPage() {
                 )}
               </div>
 
-              <div className="flex items-center h-10 rounded-lg border border-border bg-white p-1">
+              <div className="flex items-center h-10 rounded-lg border border-border bg-white dark:bg-slate-900 p-1">
                 <button 
                   onClick={() => setViewMode('grid')}
                   className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted hover:text-foreground'}`}
@@ -278,18 +281,18 @@ export function StorageExplorerPage() {
           <div>
             <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Folders {filteredFolders.length}</h2>
             {filteredFolders.length === 0 ? (
-              <div className="py-8 text-center text-muted text-sm border border-dashed rounded-lg bg-white/50">
+              <div className="py-8 text-center text-muted text-sm border border-dashed rounded-lg bg-white/50 dark:bg-slate-900/50 dark:border-slate-800">
                 No folders found.
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {filteredFolders.map((folder) => (
-                  <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border group">
+                  <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group">
                     <CardContent className="p-4 flex flex-col h-[120px] justify-between">
                       <div className="flex justify-between items-start">
                         <div 
                           className="w-10 h-10 rounded-lg flex items-center justify-center" 
-                          style={{ backgroundColor: folder.bgColor }}
+                          style={{ backgroundColor: isDark ? `${folder.color}22` : folder.bgColor }}
                         >
                           <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
                         </div>
@@ -315,12 +318,12 @@ export function StorageExplorerPage() {
             ) : (
               <div className="flex flex-col gap-3">
                 {filteredFolders.map((folder) => (
-                  <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border group">
+                  <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group">
                     <CardContent className="p-3 flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div 
                           className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" 
-                          style={{ backgroundColor: folder.bgColor }}
+                          style={{ backgroundColor: isDark ? `${folder.color}22` : folder.bgColor }}
                         >
                           <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
                         </div>
@@ -350,7 +353,7 @@ export function StorageExplorerPage() {
           <div>
             <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Recent Files Displaying {filteredFiles.length}</h2>
             {filteredFiles.length === 0 ? (
-              <div className="py-8 text-center text-muted text-sm border border-dashed rounded-lg bg-white/50">
+              <div className="py-8 text-center text-muted text-sm border border-dashed rounded-lg bg-white/50 dark:bg-slate-900/50 dark:border-slate-800">
                 No files found.
               </div>
             ) : viewMode === 'grid' ? (
@@ -359,19 +362,19 @@ export function StorageExplorerPage() {
                   <Card 
                     key={file.id} 
                     onClick={() => navigate('/dashboard/storage/explorer/preview')}
-                    className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border group"
+                    className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group"
                   >
-                    <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] border border-slate-100 flex items-center justify-center relative mb-3 overflow-hidden">
-                      <file.icon className="size-12 text-[#93c5fd]" strokeWidth={1.5} />
+                    <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex items-center justify-center relative mb-3 overflow-hidden">
+                      <file.icon className="size-12 text-[#93c5fd] dark:text-blue-500" strokeWidth={1.5} />
                       {file.aiSummarized && (
-                        <div className="absolute bottom-2 left-2 bg-teal-50 text-teal-600 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 border border-teal-100 shadow-sm">
+                        <div className="absolute bottom-2 left-2 bg-teal-50 dark:bg-emerald-950/20 text-teal-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 border border-teal-100 dark:border-emerald-900/30 shadow-sm">
                           <Sparkles className="size-3" />
                           AI SUMMARIZED
                         </div>
                       )}
                       <button 
                         onClick={(e) => handleDeleteFile(file.id, e)}
-                        className="absolute top-2 right-2 text-muted hover:text-red-500 p-1.5 bg-white shadow-sm border border-slate-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 text-muted hover:text-red-500 p-1.5 bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Delete file"
                       >
                         <Trash2 className="size-4" />
@@ -390,11 +393,11 @@ export function StorageExplorerPage() {
                   <Card 
                     key={file.id} 
                     onClick={() => navigate('/dashboard/storage/explorer/preview')}
-                    className="p-3 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer border-border group"
+                    className="p-3 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-[#f8fafc] border border-slate-100 flex items-center justify-center shrink-0">
-                        <file.icon className="size-5 text-[#93c5fd]" />
+                      <div className="w-10 h-10 rounded-lg bg-[#f8fafc] dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0">
+                        <file.icon className="size-5 text-[#93c5fd] dark:text-blue-500" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-[14px] text-foreground truncate max-w-[200px] sm:max-w-[400px]" title={file.name}>{file.name}</h3>
@@ -403,7 +406,7 @@ export function StorageExplorerPage() {
                     </div>
                     <div className="flex items-center gap-3 sm:gap-6">
                       {file.aiSummarized && (
-                        <div className="hidden sm:flex bg-teal-50 text-teal-600 text-[10px] font-bold px-2 py-1 rounded items-center gap-1 border border-teal-100">
+                        <div className="hidden sm:flex bg-teal-50 dark:bg-emerald-950/20 text-teal-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded items-center gap-1 border border-teal-100 dark:border-emerald-900/30">
                           <Sparkles className="size-3" />
                           AI SUMMARIZED
                         </div>
@@ -424,7 +427,7 @@ export function StorageExplorerPage() {
         </div>
 
         {/* Right Panel - Storage Status */}
-        <Card className="w-full lg:w-[320px] shrink-0 border-border">
+        <Card className="w-full lg:w-[320px] shrink-0 border-border dark:border-slate-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-center gap-2 mb-6">
               <Cloud className="size-5 text-primary" />
@@ -476,14 +479,14 @@ export function StorageExplorerPage() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1]"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1] dark:bg-slate-700"></div>
                   <span className="text-foreground font-medium">Other</span>
                 </div>
                 <span className="text-muted font-medium">9.5 GB</span>
               </div>
             </div>
 
-            <div className="bg-[#f8fafc] rounded-lg p-4 text-center border border-slate-100">
+            <div className="bg-[#f8fafc] dark:bg-slate-900 rounded-lg p-4 text-center border border-slate-100 dark:border-slate-800">
               <h4 className="font-bold text-sm text-foreground">Need more space?</h4>
               <p className="text-[11px] text-muted mt-1.5 mb-4 leading-relaxed">
                 Upgrade to Pro for 1TB of storage and advanced AI tools.
@@ -491,7 +494,7 @@ export function StorageExplorerPage() {
               <Button 
                 onClick={() => setIsPlanModalOpen(true)}
                 variant="secondary" 
-                className="w-full bg-white text-primary border border-primary/20 hover:bg-primary/5 h-9 text-sm transition-colors"
+                className="w-full bg-white dark:bg-slate-950 text-primary dark:text-blue-400 border border-primary/20 dark:border-blue-900/40 hover:bg-primary/5 dark:hover:bg-blue-950/30 h-9 text-sm transition-colors"
               >
                 View Plans
               </Button>
@@ -507,31 +510,31 @@ export function StorageExplorerPage() {
         description="Choose the right plan to expand your storage and AI capabilities."
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-          <Card className="border-border flex flex-col shadow-none">
+          <Card className="border-border dark:border-slate-800 flex flex-col shadow-none">
             <CardContent className="p-6 flex-1 flex flex-col">
               <h3 className="font-bold text-lg mb-2 text-foreground">Basic</h3>
               <div className="text-3xl font-bold mb-4 text-foreground">$0<span className="text-sm font-normal text-muted">/mo</span></div>
               <ul className="space-y-3 mb-6 flex-1">
                 <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> 100 GB Storage</li>
                 <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> Basic AI Tools</li>
-                <li className="flex items-center gap-2 text-sm text-muted opacity-50"><CheckCircle2 className="size-4 text-slate-300"/> Priority Support</li>
+                <li className="flex items-center gap-2 text-sm text-muted opacity-50 dark:text-slate-600"><CheckCircle2 className="size-4 text-slate-300 dark:text-slate-700"/> Priority Support</li>
               </ul>
-              <Button variant="secondary" className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600" onClick={() => setIsPlanModalOpen(false)}>Current Plan</Button>
+              <Button variant="secondary" className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-none" onClick={() => setIsPlanModalOpen(false)}>Current Plan</Button>
             </CardContent>
           </Card>
 
-          <Card className="border-primary bg-primary/[0.03] flex flex-col relative overflow-hidden shadow-sm">
+          <Card className="border-primary dark:border-blue-500 bg-primary/[0.03] dark:bg-blue-950/10 flex flex-col relative overflow-hidden shadow-sm">
             <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg">POPULAR</div>
             <CardContent className="p-6 flex-1 flex flex-col">
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-bold text-lg text-primary">Pro</h3>
-                <Zap className="size-4 text-primary fill-primary/20" />
+                <h3 className="font-bold text-lg text-primary dark:text-blue-400">Pro</h3>
+                <Zap className="size-4 text-primary fill-primary/20 dark:text-blue-400 dark:fill-blue-400/20" />
               </div>
               <div className="text-3xl font-bold mb-4 text-foreground">$9.99<span className="text-sm font-normal text-muted">/mo</span></div>
               <ul className="space-y-3 mb-6 flex-1">
-                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary"/> 1 TB Storage</li>
-                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary"/> Advanced AI Summarization</li>
-                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary"/> Priority Support</li>
+                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> 1 TB Storage</li>
+                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> Advanced AI Summarization</li>
+                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> Priority Support</li>
               </ul>
               <Button className="w-full bg-primary hover:bg-primary/90 text-white" onClick={() => setIsPlanModalOpen(false)}>Upgrade Now</Button>
             </CardContent>
