@@ -5,11 +5,20 @@ import { useToast } from '@/components/ui/Toast'
 import { StatisticsCard, StatisticItem } from './StatisticsCard'
 import { StatisticsDetailModal } from './StatisticsDetailModal'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
 
 export function StatisticsSection() {
   const navigate = useNavigate()
   const toast = useToast()
   const { t, language } = useTranslation()
+  const user = useAuthStore((s) => s.user)
+
+  const isPro = user?.plan === 'pro'
+  const isInstitutional = user?.plan === 'institutional'
+  
+  const totalGb = isPro ? env.PRO_STORAGE_LIMIT : isInstitutional ? 1000 : env.FREE_STORAGE_LIMIT
+  const usedGb = isPro ? 18.0 : isInstitutional ? 12.4 : 2.4
 
   // Localized statistics values recalculated on language change
   const statistics = useMemo<StatisticItem[]>(() => [
@@ -37,11 +46,13 @@ export function StatisticsSection() {
     {
       id: 'storageUsed',
       label: t.profile.storageUsedLabel,
-      value: '18GB',
-      description: t.profile.storageUsedDesc,
+      value: `${usedGb}GB`,
+      description: language === 'vi' 
+        ? `Đã dùng trên ${totalGb}GB` 
+        : `Used of ${totalGb}GB`,
       route: '/cloud-storage',
     },
-  ], [t])
+  ], [t, language, usedGb, totalGb])
 
   const [selectedStatistic, setSelectedStatistic] = useState<StatisticItem | null>(null)
   const [statisticDetailOpen, setStatisticDetailOpen] = useState(false)
