@@ -256,6 +256,13 @@ export function Header() {
       return
     }
 
+    if (pathname.startsWith('/dashboard/shared')) {
+      if (searchVal.trim()) {
+        toast.success(`Searching workspace: ${searchVal.trim()}`)
+      }
+      return
+    }
+
     if (searchVal.trim()) {
       toast.success(`Searching results for: "${searchVal.trim()}"`)
       const kw = encodeURIComponent(searchVal.trim())
@@ -300,7 +307,9 @@ export function Header() {
       >
         <Input
           placeholder={
-            pathname.startsWith('/dashboard/shared-files/research-materials')
+            pathname.startsWith('/dashboard/shared')
+              ? 'Search workspace...'
+              : pathname.startsWith('/dashboard/shared-files/research-materials')
               ? 'Search in this folder...'
               : pathname.startsWith('/dashboard/study-plans')
               ? 'Search study plans...'

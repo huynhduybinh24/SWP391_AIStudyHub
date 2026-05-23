@@ -1,19 +1,30 @@
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { HardDrive, Users, Sparkles, X } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
-import { SummaryCard } from '../components/SummaryCard'
-import { CollaboratorsModal, Collaborator } from '../components/CollaboratorsModal'
-import { AIInsightsModal } from '../components/AIInsightsModal'
-import { SharedFilesTabs } from '../components/SharedFilesTabs'
-import { SharedFilesTable, SharedFile } from '../components/SharedFilesTable'
-import { RenameFileModal } from '../components/RenameFileModal'
-import { PermissionModal } from '../components/PermissionModal'
-import { ShareFileModal } from '../components/ShareFileModal'
-import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
-import { SharedFileViewer } from '../components/SharedFileViewer'
 
-// Quota Breakdown Modal
+// Workspace Components
+import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
+import WorkspaceStatsCards from '../components/WorkspaceStatsCards'
+import WorkspaceFilterBar from '../components/WorkspaceFilterBar'
+import WorkspaceFileList from '../components/WorkspaceFileList'
+import WorkspaceRightPanel, { CommentItem } from '../components/WorkspaceRightPanel'
+import SharedFileViewer from '../components/SharedFileViewer'
+
+// Modals & Overlays
+import InviteModal from '../components/InviteModal'
+import AIReportModal from '../components/AIReportModal'
+import SummaryModal from '../components/SummaryModal'
+import QuizModal from '../components/QuizModal'
+import ShareAccessModal from '../components/ShareAccessModal'
+import RenameFileModal from '../components/RenameFileModal'
+import PermissionModal from '../components/PermissionModal'
+import ConfirmModal from '../components/ConfirmModal'
+import CollaboratorsModal from '../components/CollaboratorsModal'
+import AIInsightsModal from '../components/AIInsightsModal'
+import { SharedFile } from '../components/SharedFilesTable'
+import { X, HardDrive } from 'lucide-react'
+
+// Inline Quota details view modal
 interface QuotaDetailsModalProps {
   isOpen: boolean
   onClose: () => void
@@ -33,236 +44,371 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
   const percentage = (usedGb / totalGb) * 100
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-[#0b1c30]/40 dark:bg-black/60 backdrop-blur-md cursor-pointer"
-          />
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isOpen ? 'block' : 'hidden'}`}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isOpen ? 1 : 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-[#0b1c30]/40 dark:bg-black/60 backdrop-blur-md cursor-pointer"
+      />
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            transition={{ type: 'spring', duration: 0.5, bounce: 0.15 }}
-            className="relative z-10 w-full max-w-[460px] overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="quota-title"
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-6 top-6 text-slate-400 hover:text-slate-655 dark:hover:text-slate-205 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
-              aria-label="Close dialog"
-            >
-              <X className="size-5" />
-            </button>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: isOpen ? 1 : 0, scale: isOpen ? 1 : 0.95, y: isOpen ? 0 : 15 }}
+        className="relative z-10 w-full max-w-[460px] overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quota-title"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-6 top-6 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+          aria-label="Close dialog"
+        >
+          <X className="size-5" />
+        </button>
 
-            <div className="flex gap-3.5 items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-800/80">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
-                <HardDrive className="size-5.5" />
-              </div>
-              <div>
-                <h3 id="quota-title" className="text-base font-bold text-slate-900 dark:text-white">
-                  Shared Storage Quota
-                </h3>
-                <p className="text-xs text-slate-450 dark:text-slate-550 font-medium">
-                  Detailed analysis of shared cloud volume
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className="flex items-end justify-between">
-                <div>
-                  <span className="text-3xl font-black text-slate-900 dark:text-white">{usedGb}GB</span>
-                  <span className="text-sm font-bold text-slate-400 dark:text-slate-550 ml-1">of {totalGb}GB used</span>
-                </div>
-                <span className="text-sm font-bold text-[#3155F6] dark:text-blue-450">{percentage.toFixed(0)}% Used</span>
-              </div>
-
-              <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percentage}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                  className="h-full bg-gradient-to-r from-blue-555 to-[#3155F6] rounded-full"
-                />
-              </div>
-
-              <div className="space-y-3 pt-3">
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
-                  <div className="flex items-center gap-3">
-                    <div className="size-2.5 rounded-full bg-red-500" />
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">PDF Documents</span>
-                  </div>
-                  <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">6.2 GB</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
-                  <div className="flex items-center gap-3">
-                    <div className="size-2.5 rounded-full bg-blue-500" />
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Office Files (.docx, .xlsx)</span>
-                  </div>
-                  <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">3.8 GB</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
-                  <div className="flex items-center gap-3">
-                    <div className="size-2.5 rounded-full bg-indigo-500" />
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Folders & Group Assets</span>
-                  </div>
-                  <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">2.0 GB</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end pt-5 border-t border-slate-100 dark:border-slate-800/60 mt-6">
-              <button
-                type="button"
-                onClick={onClose}
-                className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98]"
-              >
-                Close Details
-              </button>
-            </div>
-          </motion.div>
+        <div className="flex gap-3.5 items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 shrink-0">
+            <HardDrive className="size-5.5" />
+          </div>
+          <div className="text-left">
+            <h3 id="quota-title" className="text-base font-bold text-slate-900 dark:text-white">
+              Shared Storage Quota
+            </h3>
+            <p className="text-xs text-slate-450 dark:text-slate-500 font-medium">
+              Detailed analysis of shared cloud volume
+            </p>
+          </div>
         </div>
-      )}
-    </AnimatePresence>
+
+        <div className="space-y-5 text-left">
+          <div className="flex items-end justify-between">
+            <div>
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{usedGb}GB</span>
+              <span className="text-sm font-bold text-slate-400 dark:text-slate-550 ml-1 font-sans">of {totalGb}GB used</span>
+            </div>
+            <span className="text-sm font-bold text-[#3155F6] dark:text-blue-450">{percentage.toFixed(0)}% Used</span>
+          </div>
+
+          <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${percentage}%` }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="h-full bg-gradient-to-r from-blue-500 to-[#3155F6] rounded-full"
+            />
+          </div>
+
+          <div className="space-y-3 pt-3">
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
+              <div className="flex items-center gap-3">
+                <div className="size-2.5 rounded-full bg-red-500" />
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">PDF Documents</span>
+              </div>
+              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">6.2 GB</span>
+            </div>
+
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
+              <div className="flex items-center gap-3">
+                <div className="size-2.5 rounded-full bg-blue-500" />
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Office Files (.docx, .xlsx)</span>
+              </div>
+              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">3.8 GB</span>
+            </div>
+
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
+              <div className="flex items-center gap-3">
+                <div className="size-2.5 rounded-full bg-indigo-500" />
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Folders & Group Assets</span>
+              </div>
+              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">2.4 GB</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end pt-5 border-t border-slate-100 dark:border-slate-800/60 mt-6">
+          <button
+            type="button"
+            onClick={onClose}
+            className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98]"
+          >
+            Close Details
+          </button>
+        </div>
+      </motion.div>
+    </div>
   )
 }
 
 export function SharedFilesPage() {
   const toast = useToast()
 
-  const [activeTab, setActiveTab] = useState<'with-me' | 'by-me'>('with-me')
-
-  // Modals visibility
-  const [isQuotaOpen, setIsQuotaOpen] = useState(false)
-  const [isCollaboratorsOpen, setIsCollaboratorsOpen] = useState(false)
-  const [isAIInsightsOpen, setIsAIInsightsOpen] = useState(false)
-
-  const [isShareOpen, setIsShareOpen] = useState(false)
-  const [isRenameOpen, setIsRenameOpen] = useState(false)
-  const [isPermissionOpen, setIsPermissionOpen] = useState(false)
-  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false)
-
-  // Current action file context
-  const [selectedFile, setSelectedFile] = useState<SharedFile | null>(null)
-
-  // Active full viewer state
-  const [viewingFile, setViewingFile] = useState<SharedFile | null>(null)
-
-  // State for files
-  const [sharedWithMeFiles, setSharedWithMeFiles] = useState<SharedFile[]>([
+  // State Management
+  const [files, setFiles] = useState<SharedFile[]>([
     {
-      id: 'with-me-1',
+      id: 'file-1',
       name: 'Biology 101 Midterm Notes.pdf',
       owner: 'Sarah Jenkins',
-      permission: 'View Only',
-      dateShared: '2023-10-24',
+      permission: 'Viewer',
+      dateShared: '2h ago',
       type: 'pdf',
       size: '2.4 MB',
       totalPages: 42,
       description: 'Comprehensive study guide and midterm summary for General Biology 101, containing cellular respiration diagrams, metabolic pathway notes, and mitosis stages.',
-      tags: ['Biology', 'Notes', 'Midterm'],
+      tags: ['CellBiology', 'KrebsCycle'],
       previewContent: 'Biology 101 Midterm Notes preview content.'
     },
     {
-      id: 'with-me-2',
-      name: 'Group Project Specifications.docx',
+      id: 'file-2',
+      name: 'Group Project Assets',
       owner: 'David Kim',
       permission: 'Editor',
-      dateShared: '2023-10-22',
-      type: 'docx',
+      dateShared: 'Oct 22, 2023',
+      type: 'folder',
       size: '15.8 MB',
-      totalPages: 15,
-      description: 'Draft guidelines and technical specifications for the term team software engineering projects, detailing coding standards and API endpoint requirements.',
-      tags: ['Project', 'Specs', 'Group'],
-      previewContent: 'Group Project Specifications draft. Outlines project requirements and timelines.'
+      description: 'Group assets folder containing images, mock data, design specifications, and reference links.',
+      tags: ['GroupProject', 'Assets'],
+      previewContent: 'Folder contents: assets, design specifications.'
     },
     {
-      id: 'with-me-3',
+      id: 'file-3',
       name: 'Physics Lab Data.xlsx',
       owner: 'Emily Chen',
-      permission: 'View Only',
-      dateShared: '2023-10-18',
+      permission: 'Viewer',
+      dateShared: 'Oct 18, 2023',
       type: 'xlsx',
       size: '1.2 MB',
       totalPages: 10,
       description: 'Tabulated values of raw experimental logs, voltage sweeps, and resistance indexes from the electromagnetism laboratory session.',
-      tags: ['Physics', 'Lab', 'Data'],
-      previewContent: 'Physics Lab Data table values.'
+      tags: ['Physics', 'LabData'],
+      previewContent: 'Voltage, Current, Resistance sweep tables.'
     }
   ])
 
-  const [sharedByMeFiles, setSharedByMeFiles] = useState<SharedFile[]>([
-    {
-      id: 'by-me-1',
-      name: 'Software Design Patterns.pdf',
-      owner: 'Alex Rivera',
-      sharedWith: 'Alex Rivera, +2 others',
-      permission: 'Editor',
-      dateShared: 'Nov 02, 2023',
-      type: 'pdf',
-      size: '4.8 MB',
-      totalPages: 28,
-      description: 'Detailed study notes covering Creational, Structural, and Behavioral patterns with sample class diagrams.',
-      tags: ['SoftwareEng', 'DesignPatterns', 'StudyNotes'],
-      previewContent: 'Software Design Patterns study guide.'
-    },
-    {
-      id: 'by-me-2',
-      name: 'Calculus_Summary_Final.docx',
-      owner: 'Alex Rivera',
-      sharedWith: 'Study Group A',
-      permission: 'Viewer',
-      dateShared: 'Oct 30, 2023',
-      type: 'docx',
-      size: '2.5 MB',
-      totalPages: 12,
-      description: 'Brief overview of core multivariable calculus calculations: gradient descent, Jacobian matrices, and double integrals.',
-      tags: ['Calculus', 'Math', 'Final'],
-      previewContent: 'Calculus Summary Final draft.'
-    },
-    {
-      id: 'by-me-3',
-      name: 'Research_Project_Data.xlsx',
-      owner: 'Alex Rivera',
-      sharedWith: 'Dr. Sarah',
-      permission: 'Editor',
-      dateShared: 'Oct 25, 2023',
-      type: 'xlsx',
-      size: '1.8 MB',
-      totalPages: 8,
-      description: 'Experimental telemetry tables containing data and statistical runs for the final research project.',
-      tags: ['Research', 'Data', 'Spreadsheet'],
-      previewContent: 'Research Project Data table with all experimental results.'
-    }
-  ])
+  // Modals Visibility
+  const [modals, setModals] = useState({
+    quota: false,
+    collaborators: false,
+    aiInsights: false,
+    aiReport: false,
+    invite: false,
+    summary: false,
+    quiz: false,
+    rename: false,
+    permission: false,
+    share: false,
+    confirmDelete: false,
+  })
 
-  // Update viewingFile reference when modifications are made to the list in memory
+  // Workspace Configurations
+  const [selectedFile, setSelectedFile] = useState<SharedFile | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [fileTypeFilter, setFileTypeFilter] = useState('All')
+  const [sortOrder, setSortOrder] = useState('recent')
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+  const [favorites, setFavorites] = useState<string[]>(['file-1'])
+  const [viewingFile, setViewingFile] = useState<SharedFile | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isRegenerating, setIsRegenerating] = useState(false)
+
+  // Comments mapping by file ID
+  const [commentsMap, setCommentsMap] = useState<Record<string, CommentItem[]>>({
+    'file-1': [
+      {
+        id: 'c1',
+        user: 'Sarah Jenkins',
+        text: 'We should add the diagram for cell division...',
+        time: '15 min ago',
+        avatarBg: 'bg-emerald-500'
+      }
+    ],
+    'file-2': [],
+    'file-3': []
+  })
+
+  // Select Default Biology Notes file on mount
+  useEffect(() => {
+    if (!selectedFile && files.length > 0) {
+      const bioFile = files.find(f => f.id === 'file-1') || files[0]
+      setSelectedFile(bioFile)
+    }
+  }, [files, selectedFile])
+
+  // Keep viewing file reference updated
   useEffect(() => {
     if (viewingFile) {
-      const activeList = activeTab === 'with-me' ? sharedWithMeFiles : sharedByMeFiles
-      const current = activeList.find(f => f.id === viewingFile.id)
+      const current = files.find(f => f.id === viewingFile.id)
       if (current) {
         setViewingFile(current)
       } else {
-        // If file was deleted, exit viewer
         setViewingFile(null)
       }
     }
-  }, [sharedWithMeFiles, sharedByMeFiles, activeTab, viewingFile])
+  }, [files, viewingFile])
 
-  // Collaborators list
-  const collaborators: Collaborator[] = [
+  // Action handlers
+  const handleUploadFile = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.onchange = (e) => {
+      const target = e.target as HTMLInputElement
+      if (target.files && target.files.length > 0) {
+        const nativeFile = target.files[0]
+        const ext = nativeFile.name.split('.').pop()?.toLowerCase() || ''
+        const typeMapped = ext === 'pdf' ? 'pdf' : ext === 'xlsx' ? 'xlsx' : ext === 'docx' ? 'docx' : 'txt'
+        
+        const newFile: SharedFile = {
+          id: `file-${Date.now()}`,
+          name: nativeFile.name,
+          owner: 'Alex Rivera',
+          permission: 'Owner',
+          dateShared: 'Just now',
+          type: typeMapped as any,
+          size: `${(nativeFile.size / (1024 * 1024)).toFixed(1)} MB`,
+          description: 'Uploaded study resource.',
+          tags: ['Uploaded', 'Resource'],
+          previewContent: 'Content preview is currently being processed by AI...'
+        }
+        setFiles(prev => [newFile, ...prev])
+        setSelectedFile(newFile)
+        toast.success('File uploaded successfully')
+      }
+    }
+    input.click()
+  }
+
+  const handleAIAnalyze = () => {
+    setIsAnalyzing(true)
+    setTimeout(() => {
+      setIsAnalyzing(false)
+      toast.success('AI analysis completed')
+    }, 1000)
+  }
+
+  const handleRenameConfirm = (newName: string) => {
+    if (!selectedFile) return
+    setFiles(prev =>
+      prev.map(f => (f.id === selectedFile.id ? { ...f, name: newName } : f))
+    )
+    setSelectedFile(prev => (prev ? { ...prev, name: newName } : null))
+    toast.success('File renamed successfully')
+    setModals(prev => ({ ...prev, rename: false }))
+  }
+
+  const handlePermissionConfirm = (newPermission: 'Editor' | 'View Only') => {
+    if (!selectedFile) return
+    const resolvedPermission = newPermission === 'View Only' ? 'Viewer' : newPermission
+    setFiles(prev =>
+      prev.map(f => (f.id === selectedFile.id ? { ...f, permission: resolvedPermission } : f))
+    )
+    setSelectedFile(prev => (prev ? { ...prev, permission: resolvedPermission } : null))
+    toast.success(`Permission updated to ${newPermission}`)
+    setModals(prev => ({ ...prev, permission: false }))
+  }
+
+  const handleDeleteConfirm = () => {
+    if (!selectedFile) return
+    setFiles(prev => prev.filter(f => f.id !== selectedFile.id))
+    toast.success('File deleted successfully')
+    setSelectedFile(null)
+    setViewingFile(null)
+    setModals(prev => ({ ...prev, confirmDelete: false }))
+  }
+
+  const handleStarToggle = (file: SharedFile) => {
+    setFavorites(prev => {
+      const isFav = prev.includes(file.id)
+      if (isFav) {
+        toast.success(`Removed "${file.name}" from favorites`)
+        return prev.filter(id => id !== file.id)
+      } else {
+        toast.success(`Added "${file.name}" to favorites`)
+        return [...prev, file.id]
+      }
+    })
+  }
+
+  const handleAddComment = (text: string) => {
+    if (!selectedFile) return
+    const newComment: CommentItem = {
+      id: `c-${Date.now()}`,
+      user: 'Alex Rivera',
+      text,
+      time: 'Just now',
+      avatarBg: 'bg-indigo-650'
+    }
+    setCommentsMap(prev => ({
+      ...prev,
+      [selectedFile.id]: [newComment, ...(prev[selectedFile.id] || [])]
+    }))
+    toast.success('Comment added')
+  }
+
+  const handleRegenerateSummary = () => {
+    setIsRegenerating(true)
+    setTimeout(() => {
+      setIsRegenerating(false)
+      if (selectedFile) {
+        const updatedSummary = `Regenerated Version: This workspace document covers advanced key terms and context analysis. Key takeaways focus on active revision notes, formulas, and structural summaries verified by AI Guard.`
+        setFiles(prev =>
+          prev.map(f => (f.id === selectedFile.id ? { ...f, summary: updatedSummary } : f))
+        )
+        setSelectedFile(prev => (prev ? { ...prev, summary: updatedSummary } : null))
+      }
+      toast.success('Summary regenerated')
+    }, 1000)
+  }
+
+  // Parse Date helper for sorting
+  const parseDate = (dStr: string) => {
+    if (dStr.includes('ago') || dStr.includes('now') || dStr.includes('Just')) {
+      return Date.now()
+    }
+    return new Date(dStr).getTime()
+  }
+
+  // Filtering files
+  const filteredFiles = files.filter(file => {
+    const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (file.owner && file.owner.toLowerCase().includes(searchQuery.toLowerCase()))
+
+    let matchesType = true
+    if (fileTypeFilter !== 'All') {
+      const filterLower = fileTypeFilter.toLowerCase()
+      if (filterLower === 'folder') {
+        matchesType = file.type === 'folder'
+      } else {
+        matchesType = file.type === filterLower
+      }
+    }
+    return matchesSearch && matchesType
+  }).sort((a, b) => {
+    const timeA = parseDate(a.dateShared)
+    const timeB = parseDate(b.dateShared)
+    return sortOrder === 'recent' ? timeB - timeA : timeA - timeB
+  })
+
+  // Full Screen File Viewer Mode
+  if (viewingFile) {
+    const showToastWrapper = (msg: string) => {
+      if (msg.startsWith('❌')) toast.error(msg)
+      else if (msg.startsWith('⚠️')) toast.warning(msg)
+      else toast.success(msg)
+    }
+
+    return (
+      <SharedFileViewer
+        file={viewingFile}
+        onBack={() => setViewingFile(null)}
+        showToast={showToastWrapper}
+        onDownload={(file) => toast.success(`Downloading ${file.name}`)}
+      />
+    )
+  }
+
+  const collaboratorsCountList = [
     {
       id: '1',
       name: 'Sarah Jenkins',
@@ -316,253 +462,174 @@ export function SharedFilesPage() {
     }
   ]
 
-  // Action handlers
-  const handleOpenFile = (file: SharedFile) => {
-    setViewingFile(file)
-  }
-
-  const handleDownload = (file: SharedFile) => {
-    toast.success(`Downloading ${file.name}`)
-  }
-
-  const handleShareClick = (file: SharedFile) => {
-    setSelectedFile(file)
-    setIsShareOpen(true)
-  }
-
-  const handleShareSubmit = (email: string, role: 'Editor' | 'View Only') => {
-    toast.success('Invitation sent successfully')
-  }
-
-  const handleRenameClick = (file: SharedFile) => {
-    setSelectedFile(file)
-    setIsRenameOpen(true)
-  }
-
-  const handleRenameConfirm = (newName: string) => {
-    if (!selectedFile) return
-    const updateList = (list: SharedFile[]) =>
-      list.map((f) => (f.id === selectedFile.id ? { ...f, name: newName } : f))
-
-    if (activeTab === 'with-me') {
-      setSharedWithMeFiles(updateList(sharedWithMeFiles))
-    } else {
-      setSharedByMeFiles(updateList(sharedByMeFiles))
-    }
-    
-    // Update preview selected file name
-    setSelectedFile((prev) => (prev ? { ...prev, name: newName } : null))
-    toast.success('File renamed successfully')
-  }
-
-  const handlePermissionClick = (file: SharedFile) => {
-    setSelectedFile(file)
-    setIsPermissionOpen(true)
-  }
-
-  const handlePermissionConfirm = (newPermission: 'Editor' | 'View Only') => {
-    if (!selectedFile) return
-    const resolvedPermission = newPermission === 'View Only' && activeTab === 'by-me' ? 'Viewer' : newPermission
-    const updateList = (list: SharedFile[]) =>
-      list.map((f) => (f.id === selectedFile.id ? { ...f, permission: resolvedPermission } : f))
-
-    if (activeTab === 'with-me') {
-      setSharedWithMeFiles(updateList(sharedWithMeFiles))
-    } else {
-      setSharedByMeFiles(updateList(sharedByMeFiles))
-    }
-
-    setSelectedFile((prev) => (prev ? { ...prev, permission: resolvedPermission } : null))
-
-    toast.success(`Permission updated to ${newPermission}`)
-  }
-
-  const handleDeleteClick = (file: SharedFile) => {
-    setSelectedFile(file)
-    setIsConfirmDeleteOpen(true)
-  }
-
-  const handleDeleteConfirm = () => {
-    if (!selectedFile) return
-
-    if (activeTab === 'with-me') {
-      setSharedWithMeFiles(sharedWithMeFiles.filter((f) => f.id !== selectedFile.id))
-    } else {
-      setSharedByMeFiles(sharedByMeFiles.filter((f) => f.id !== selectedFile.id))
-    }
-
-    toast.success('File deleted successfully')
-    setIsConfirmDeleteOpen(false)
-    setViewingFile(null) // Exit viewer if open
-  }
-
-  const currentFiles = activeTab === 'with-me' ? sharedWithMeFiles : sharedByMeFiles
-
-  // Switch to full layout file viewer if active
-  if (viewingFile) {
-    const showToastWrapper = (msg: string) => {
-      if (msg.startsWith('❌')) toast.error(msg)
-      else if (msg.startsWith('⚠️')) toast.warning(msg)
-      else toast.success(msg)
-    }
-
-    return (
-      <SharedFileViewer
-        file={viewingFile}
-        onBack={() => setViewingFile(null)}
-        showToast={showToastWrapper}
-        onDownload={handleDownload}
-      />
-    )
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="space-y-6 text-slate-900 dark:text-slate-100"
+      className="text-slate-900 dark:text-slate-100"
     >
-      {/* Title Header */}
-      <div>
-        <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-          Shared Files
-        </h1>
-        <p className="text-sm font-semibold text-slate-550 dark:text-slate-450 mt-1.5">
-          Manage files shared with you and by you.
-        </p>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        {/* Middle main content workspace area */}
+        <div className="lg:col-span-8 space-y-6">
+          <SharedWorkspaceHeader
+            onUploadClick={handleUploadFile}
+            onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
+            onAIAnalyzeClick={handleAIAnalyze}
+            isAnalyzing={isAnalyzing}
+          />
 
-      {/* Summary Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Shared Quota Card */}
-        <SummaryCard
-          title="Shared Quota"
-          icon={<HardDrive className="size-5" />}
-          onClick={() => setIsQuotaOpen(true)}
-        >
-          <div className="space-y-3.5">
-            <div>
-              <span className="text-3xl font-black text-slate-900 dark:text-white">12</span>
-              <span className="text-sm font-bold text-slate-550 dark:text-slate-400 ml-1">GB</span>
-              <p className="text-xs text-slate-450 dark:text-slate-500 font-bold mt-1">of 50GB Shared Limit</p>
-            </div>
-            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full w-[24%] bg-[#3155F6] dark:bg-blue-500 rounded-full" />
-            </div>
-          </div>
-        </SummaryCard>
+          <WorkspaceStatsCards
+            onViewAIReport={() => setModals(prev => ({ ...prev, aiReport: true }))}
+            onStorageCardClick={() => setModals(prev => ({ ...prev, quota: true }))}
+            onActiveCardClick={() => setModals(prev => ({ ...prev, collaborators: true }))}
+          />
 
-        {/* Collaborators Card */}
-        <SummaryCard
-          title="Collaborators"
-          icon={<Users className="size-5" />}
-          onClick={() => setIsCollaboratorsOpen(true)}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-5xl font-black text-[#3155F6] dark:text-blue-400">8</span>
-            <div className="flex -space-x-2.5 overflow-hidden">
-              {collaborators.slice(0, 3).map((col) => (
-                <div
-                  key={col.id}
-                  className="size-8.5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-100 overflow-hidden flex items-center justify-center font-bold text-xs"
-                >
-                  {col.avatarUrl ? (
-                    <img src={col.avatarUrl} alt={col.name} className="h-full w-full object-cover" />
-                  ) : (
-                    col.name[0]
-                  )}
-                </div>
-              ))}
-              <div className="size-8.5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-slate-800/80 text-slate-550 dark:text-slate-350 flex items-center justify-center font-bold text-[10px]">
-                +5
-              </div>
-            </div>
-          </div>
-        </SummaryCard>
+          <WorkspaceFilterBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            fileTypeFilter={fileTypeFilter}
+            onFileTypeChange={setFileTypeFilter}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
 
-        {/* AI Insights Card */}
-        <SummaryCard
-          title="AI Insights"
-          icon={<Sparkles className="size-5 text-indigo-500 dark:text-indigo-400" />}
-          className="relative overflow-hidden group/insight"
-        >
-          <div className="flex flex-col h-full justify-between gap-3 text-xs leading-relaxed font-semibold text-slate-655 dark:text-slate-350">
-            <p className="line-clamp-3">
-              Most activity is on <strong className="text-slate-800 dark:text-slate-150">Biology 101 Notes</strong>. 'Alex M.' recently requested edit access to your <strong className="text-slate-800 dark:text-slate-150">Lab Report Draft</strong>.
-            </p>
-            <button
-              type="button"
-              onClick={() => setIsAIInsightsOpen(true)}
-              className="text-[#3155F6] dark:text-blue-450 hover:text-blue-650 dark:hover:text-blue-300 font-extrabold flex items-center gap-1 transition-all cursor-pointer w-fit text-left focus:outline-none hover:underline bg-transparent border-none"
-            >
-              View Full Summary
-            </button>
-          </div>
-        </SummaryCard>
-      </div>
-
-      {/* Main Files Table Area */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/65 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-        <SharedFilesTabs activeTab={activeTab} onChangeTab={setActiveTab} />
-        <div className="p-1">
-          <SharedFilesTable
-            files={currentFiles}
-            onOpen={handleOpenFile}
-            onRename={handleRenameClick}
-            onChangePermission={handlePermissionClick}
-            onRemoveAccess={handleDeleteClick}
-            isSharedByMe={activeTab === 'by-me'}
+          <WorkspaceFileList
+            files={filteredFiles}
+            selectedFile={selectedFile}
+            viewMode={viewMode}
+            favorites={favorites}
+            onSelectFile={setSelectedFile}
+            onOpenFile={setViewingFile}
+            onStarToggle={handleStarToggle}
+            onRename={(file) => {
+              setSelectedFile(file)
+              setModals(prev => ({ ...prev, rename: true }))
+            }}
+            onChangePermission={(file) => {
+              setSelectedFile(file)
+              setModals(prev => ({ ...prev, permission: true }))
+            }}
+            onRemoveAccess={(file) => {
+              setSelectedFile(file)
+              setModals(prev => ({ ...prev, confirmDelete: true }))
+            }}
+            onDownload={(file) => toast.success(`Downloading ${file.name}`)}
+            onShareAccess={(file) => {
+              setSelectedFile(file)
+              setModals(prev => ({ ...prev, share: true }))
+            }}
           />
         </div>
+
+        {/* Right side panel */}
+        <div className="lg:col-span-4 h-full">
+          <WorkspaceRightPanel
+            file={selectedFile}
+            comments={selectedFile ? (commentsMap[selectedFile.id] || []) : []}
+            onAddComment={handleAddComment}
+            onRegenerateSummary={handleRegenerateSummary}
+            isRegenerating={isRegenerating}
+            onOpenFullSummary={() => setModals(prev => ({ ...prev, summary: true }))}
+            onGenerateQuiz={() => setModals(prev => ({ ...prev, quiz: true }))}
+            onAskAI={() => {
+              toast.success('AI Assistant ready for query')
+              const commentInput = document.querySelector('input[placeholder="Add a comment..."]') as HTMLInputElement
+              if (commentInput) {
+                commentInput.focus()
+              }
+            }}
+          />
+        </div>
+
       </div>
 
       {/* Modals & Dialogs */}
       <QuotaDetailsModal
-        isOpen={isQuotaOpen}
-        onClose={() => setIsQuotaOpen(false)}
-        usedGb={12}
+        isOpen={modals.quota}
+        onClose={() => setModals(prev => ({ ...prev, quota: false }))}
+        usedGb={12.4}
         totalGb={50}
       />
 
       <CollaboratorsModal
-        isOpen={isCollaboratorsOpen}
-        onClose={() => setIsCollaboratorsOpen(false)}
-        collaborators={collaborators}
+        isOpen={modals.collaborators}
+        onClose={() => setModals(prev => ({ ...prev, collaborators: false }))}
+        collaborators={collaboratorsCountList}
       />
 
       <AIInsightsModal
-        isOpen={isAIInsightsOpen}
-        onClose={() => setIsAIInsightsOpen(false)}
+        isOpen={modals.aiInsights}
+        onClose={() => setModals(prev => ({ ...prev, aiInsights: false }))}
       />
 
-      <ShareFileModal
-        isOpen={isShareOpen}
-        onClose={() => setIsShareOpen(false)}
-        onShare={handleShareSubmit}
+      <InviteModal
+        isOpen={modals.invite}
+        onClose={() => setModals(prev => ({ ...prev, invite: false }))}
+        onInviteSubmit={(email, role) => {
+          toast.success(`Invitation sent successfully to ${email} as ${role}`)
+          setModals(prev => ({ ...prev, invite: false }))
+        }}
+      />
+
+      <AIReportModal
+        isOpen={modals.aiReport}
+        onClose={() => setModals(prev => ({ ...prev, aiReport: false }))}
+        onOptimize={() => {
+          toast.success('AI Workspace optimized successfully')
+          setModals(prev => ({ ...prev, aiReport: false }))
+        }}
+      />
+
+      <SummaryModal
+        isOpen={modals.summary}
+        onClose={() => setModals(prev => ({ ...prev, summary: false }))}
+        file={selectedFile}
+      />
+
+      <QuizModal
+        isOpen={modals.quiz}
+        onClose={() => setModals(prev => ({ ...prev, quiz: false }))}
+        file={selectedFile}
+      />
+
+      <ShareAccessModal
+        isOpen={modals.share}
+        onClose={() => setModals(prev => ({ ...prev, share: false }))}
+        onShare={(email, permission) => {
+          toast.success(`Access shared successfully with ${email} as ${permission}`)
+          setModals(prev => ({ ...prev, share: false }))
+        }}
         fileName={selectedFile?.name || ''}
       />
 
       <RenameFileModal
-        isOpen={isRenameOpen}
-        onClose={() => setIsRenameOpen(false)}
+        isOpen={modals.rename}
+        onClose={() => setModals(prev => ({ ...prev, rename: false }))}
         onRename={handleRenameConfirm}
         initialName={selectedFile?.name || ''}
       />
 
       <PermissionModal
-        isOpen={isPermissionOpen}
-        onClose={() => setIsPermissionOpen(false)}
+        isOpen={modals.permission}
+        onClose={() => setModals(prev => ({ ...prev, permission: false }))}
         onUpdatePermission={handlePermissionConfirm}
         fileName={selectedFile?.name || ''}
         initialPermission={selectedFile?.permission || 'View Only'}
       />
 
-      <ConfirmDeleteModal
-        isOpen={isConfirmDeleteOpen}
-        onClose={() => setIsConfirmDeleteOpen(false)}
+      <ConfirmModal
+        isOpen={modals.confirmDelete}
+        onClose={() => setModals(prev => ({ ...prev, confirmDelete: false }))}
         onConfirm={handleDeleteConfirm}
-        fileName={selectedFile?.name || ''}
+        title="Remove File Access"
+        message={`Are you sure you want to remove your access to "${selectedFile?.name || ''}"? This action cannot be undone.`}
+        confirmText="Remove Access"
+        cancelText="Cancel"
+        type="danger"
       />
     </motion.div>
   )
