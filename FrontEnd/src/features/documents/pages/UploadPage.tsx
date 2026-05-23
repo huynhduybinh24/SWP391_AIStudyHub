@@ -291,7 +291,7 @@ export function UploadPage() {
   }
 
   return (
-    <div className="space-y-6 pb-12 animate-fade-in max-w-[860px] mx-auto pt-2 px-4 md:px-6">
+    <div className="space-y-5 pb-12 animate-fade-in max-w-[680px] mx-auto pt-2 px-4 md:px-6">
       {/* Hidden native file input */}
       <input
         type="file"
@@ -301,20 +301,22 @@ export function UploadPage() {
         accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.pptx,.ppt"
       />
 
+
+
       {/* Header Title and Description */}
       <div className="space-y-1">
-        <h1 className="text-[32px] font-extrabold text-[#0B1A30] tracking-tight dark:text-slate-100">
-          {t.upload.title}
+        <h1 className="text-2xl md:text-[28px] font-extrabold text-[#0B1A30] tracking-tight">
+          Upload Document
         </h1>
-        <p className="text-sm font-medium text-[#5F6E80] dark:text-slate-400">
-          {t.upload.subtitle}
+        <p className="text-xs md:text-sm font-medium text-[#5F6E80]">
+          Add new study materials to your library. AI will automatically generate summaries and flashcards
         </p>
       </div>
 
 
       {/* Main Single Column Content Card */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-[24px] border border-[#EAF1FB] p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.015)] space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="bg-white rounded-[22px] border border-[#EAF1FB] p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.012)] space-y-6">
           
           {/* Drag & Drop Area */}
           <div
@@ -323,23 +325,23 @@ export function UploadPage() {
             onDrop={handleDrop}
             onClick={handleBrowseFilesClick}
             className={cn(
-              "flex flex-col items-center justify-center rounded-[20px] border-2 border-dashed p-10 text-center min-h-[220px] transition-all duration-300 cursor-pointer",
+              "flex flex-col items-center justify-center rounded-[16px] border-2 border-dashed py-8 px-6 text-center min-h-[190px] transition-all duration-300 cursor-pointer",
               isDragOver
                 ? "border-[#2563eb] bg-blue-50/20 shadow-inner"
                 : "border-[#C3D2FF] bg-[#F4F7FF]/35 hover:bg-[#F4F7FF]/55"
             )}
           >
             {/* White Cloud Circle */}
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#EAF1FB] text-[#2563eb] mb-4">
-              <CloudUpload className="h-7 w-7 stroke-[1.8] text-[#2563eb]" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF1FB] text-[#2563eb] mb-3.5">
+              <CloudUpload className="h-6 w-6 stroke-[1.8] text-[#2563eb]" />
             </div>
             
-            <h3 className="text-xl font-extrabold text-[#0B1A30] tracking-tight dark:text-slate-100">
-              {t.upload.dragDrop}
+            <h3 className="text-lg font-extrabold text-[#0B1A30] tracking-tight">
+              Drag and drop your files here
             </h3>
             
-            <p className="text-sm font-semibold text-[#8B98A5] mt-1 dark:text-slate-400">
-              {t.upload.supportFormat}
+            <p className="text-xs font-semibold text-[#8B98A5] mt-1">
+              Support for PDF, DOCX, and PPTX files (Max 50MB)
             </p>
             
             <button
@@ -728,15 +730,7 @@ export function UploadPage() {
         </div>
       </form>
 
-      {/* Page Footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between text-xs font-semibold text-[#8B98A5] pt-12 border-t border-slate-100 dark:border-slate-800 dark:text-slate-500">
-        <div>© 2024 AI Study Hub. Empowering Deep Learning.</div>
-        <div className="flex items-center gap-6 mt-4 sm:mt-0">
-          <a href="#" className="hover:text-[#2563eb] transition-colors">{language === 'en' ? 'Privacy Policy' : (language === 'vi' ? 'Chính sách bảo mật' : (language === 'ja' ? 'プライバシーポリシー' : '개인정보처리방침'))}</a>
-          <a href="#" className="hover:text-[#2563eb] transition-colors">{language === 'en' ? 'Terms of Service' : (language === 'vi' ? 'Điều khoản dịch vụ' : (language === 'ja' ? '利用規約' : '서비스 약관'))}</a>
-          <a href="#" className="hover:text-[#2563eb] transition-colors">{language === 'en' ? 'Help Center' : (language === 'vi' ? 'Trung tâm trợ giúp' : (language === 'ja' ? 'ヘルプセンター' : '고객센터'))}</a>
-        </div>
-      </div>
+
     </div>
   )
 }

@@ -94,7 +94,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
   }
 
   return (
-    <div className="fixed bottom-[90px] right-[20px] z-50 flex h-[500px] w-[380px] flex-col overflow-hidden rounded-2xl border border-border/50 bg-white shadow-2xl">
+    <div className="fixed bottom-[85px] right-[20px] z-50 flex h-[450px] max-h-[calc(100vh-115px)] w-[360px] flex-col overflow-hidden rounded-2xl border border-border/50 bg-white shadow-2xl transition-all duration-300">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/50 bg-[#3155F6] p-4 text-white">
         <div className="flex items-center gap-3">
