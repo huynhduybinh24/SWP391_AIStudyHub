@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Check,
   Globe,
+  ArrowLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -51,6 +52,9 @@ export function ShareModal({
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
+  const [editorsCanShare, setEditorsCanShare] = useState(true)
+  const [viewersCanDownload, setViewersCanDownload] = useState(true)
 
   const inviteDropdownRef = useRef<HTMLDivElement>(null)
 
@@ -66,6 +70,7 @@ export function ShareModal({
       setErrorMessage('')
       setSuccessMessage('')
       setOpenDropdownId(null)
+      setShowSettings(false)
     }
   }, [isOpen, initialUsers])
 
@@ -237,210 +242,312 @@ export function ShareModal({
 
       {/* Modal Card */}
       <div className="bg-white rounded-[32px] shadow-2xl p-[32px] w-full max-w-[660px] relative z-10 overflow-visible animate-in fade-in zoom-in-95 duration-200 text-slate-800">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl md:text-2xl font-bold text-[#0b1c30] truncate pr-4">
-            {displayTitle}
-          </h2>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="text-[#737686] hover:text-[#0b1c30] p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-[#737686] hover:text-[#0b1c30] p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+        {showSettings ? (
+          <>
+            {/* Settings Header */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSettings(false)}
+                  className="text-[#737686] hover:text-[#0b1c30] p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                  aria-label="Back to main share menu"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-xl md:text-2xl font-bold text-[#0b1c30]">
+                  Cài đặt chia sẻ
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-[#737686] hover:text-[#0b1c30] p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-        {/* Input Invite Row */}
-        <div className="flex items-center gap-2 mb-4 relative z-50">
-          <div className="relative flex-1">
-            <Mail className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Thêm người, nhóm hoặc địa chỉ email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#3155F6] rounded-[20px] text-sm text-[#0b1c30] placeholder-slate-400 transition-colors focus:ring-1 focus:ring-[#3155F6] focus:outline-none"
-            />
-          </div>
-
-          {/* Invite Permission Custom Dropdown */}
-          <div className="relative shrink-0" ref={inviteDropdownRef}>
-            <button
-              type="button"
-              onClick={() => setOpenDropdownId(openDropdownId === 'invite' ? null : 'invite')}
-              className="inline-flex items-center justify-between gap-1 bg-white hover:bg-slate-50 border border-slate-200 text-[#434655] px-4 py-3 rounded-[20px] text-sm font-semibold transition-all cursor-pointer min-w-[130px]"
-            >
-              <span>{invitePermission}</span>
-              <ChevronDown className="w-4 h-4 text-slate-500" />
-            </button>
-
-            {openDropdownId === 'invite' && (
-              <div className="absolute right-0 mt-2 w-[160px] bg-white border border-slate-100 rounded-[12px] shadow-lg py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150">
-                {(['Người xem', 'Người nhận xét', 'Người chỉnh sửa'] as const).map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => {
-                      setInvitePermission(role)
-                      setOpenDropdownId(null)
+            {/* Settings Items */}
+            <div className="space-y-6 mb-8 pt-2">
+              {/* Setting 1: Editors can change permissions and share */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <label htmlFor="editors-can-share-checkbox" className="text-sm font-bold text-[#0b1c30] block cursor-pointer select-none">
+                    Người chỉnh sửa có thể thay đổi các quyền và chia sẻ
+                  </label>
+                  <span className="text-xs text-slate-550 block mt-1 leading-normal">
+                    Nếu tắt, chỉ chủ sở hữu mới có thể thay đổi cài đặt bảo mật và thêm người dùng mới.
+                  </span>
+                </div>
+                <div className="relative shrink-0 flex items-center h-6">
+                  <input
+                    id="editors-can-share-checkbox"
+                    type="checkbox"
+                    checked={editorsCanShare}
+                    onChange={(e) => {
+                      setEditorsCanShare(e.target.checked)
+                      setSuccessMessage('Đã cập nhật cài đặt chia sẻ.')
+                      setTimeout(() => setSuccessMessage(''), 2000)
                     }}
-                    className={cn(
-                      "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between font-semibold",
-                      invitePermission === role
-                        ? "bg-[#E8EEFF]/60 text-[#3155F6]"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    )}
-                  >
-                    <span>{role}</span>
-                    {invitePermission === role && <Check className="w-4 h-4 text-[#3155F6]" />}
-                  </button>
-                ))}
+                    className="w-5 h-5 rounded border-slate-350 text-[#3155F6] focus:ring-[#3155F6] cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Setting 2: Viewers can see download, print, copy option */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <label htmlFor="viewers-can-download-checkbox" className="text-sm font-bold text-[#0b1c30] block cursor-pointer select-none">
+                    Người xem và người nhận xét có thể thấy tùy chọn tải xuống, in và sao chép
+                  </label>
+                  <span className="text-xs text-slate-550 block mt-1 leading-normal">
+                    Nếu tắt, những người có quyền xem/nhận xét sẽ không thể sao chép văn bản, tải hoặc in tài liệu này.
+                  </span>
+                </div>
+                <div className="relative shrink-0 flex items-center h-6">
+                  <input
+                    id="viewers-can-download-checkbox"
+                    type="checkbox"
+                    checked={viewersCanDownload}
+                    onChange={(e) => {
+                      setViewersCanDownload(e.target.checked)
+                      setSuccessMessage('Đã cập nhật cài đặt chia sẻ.')
+                      setTimeout(() => setSuccessMessage(''), 2000)
+                    }}
+                    className="w-5 h-5 rounded border-slate-350 text-[#3155F6] focus:ring-[#3155F6] cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Success message inline feedback */}
+            {successMessage && (
+              <div className="text-emerald-600 text-xs font-semibold mb-6 ml-2 animate-in fade-in duration-150">
+                {successMessage}
               </div>
             )}
-          </div>
 
-          {/* Invite Action Button */}
-          <button
-            type="button"
-            onClick={handleAddUser}
-            className="flex items-center justify-center bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] p-3 rounded-full transition-all cursor-pointer shrink-0"
-          >
-            <UserPlus className="w-5 h-5" />
-          </button>
-        </div>
+            {/* Settings Footer */}
+            <div className="flex items-center justify-end border-t border-slate-100 pt-6">
+              <button
+                type="button"
+                onClick={() => setShowSettings(false)}
+                className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-8 py-3 rounded-full text-sm font-bold transition-all shadow-md cursor-pointer hover:shadow-lg"
+              >
+                Xong
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl md:text-2xl font-bold text-[#0b1c30] truncate pr-4">
+                {displayTitle}
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSettings(true)}
+                  className="text-[#737686] hover:text-[#0b1c30] p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer animate-press"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="text-[#737686] hover:text-[#0b1c30] p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
 
-        {/* Error / Success Messages */}
-        {errorMessage && (
-          <div className="text-red-500 text-xs font-semibold mb-4 ml-2 animate-in fade-in duration-150">
-            {errorMessage}
-          </div>
-        )}
+            {/* Input Invite Row */}
+            <div className="flex items-center gap-2 mb-4 relative z-50">
+              <div className="relative flex-1">
+                <Mail className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Thêm người, nhóm hoặc địa chỉ email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#3155F6] rounded-[20px] text-sm text-[#0b1c30] placeholder-slate-400 transition-colors focus:ring-1 focus:ring-[#3155F6] focus:outline-none"
+                />
+              </div>
 
-        {successMessage && (
-          <div className="text-emerald-600 text-xs font-semibold mb-4 ml-2 animate-in fade-in duration-150">
-            {successMessage}
-          </div>
-        )}
+              {/* Invite Permission Custom Dropdown */}
+              <div className="relative shrink-0" ref={inviteDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setOpenDropdownId(openDropdownId === 'invite' ? null : 'invite')}
+                  className="inline-flex items-center justify-between gap-1 bg-white hover:bg-slate-50 border border-slate-200 text-[#434655] px-4 py-3 rounded-[20px] text-sm font-semibold transition-all cursor-pointer min-w-[130px]"
+                >
+                  <span>{invitePermission}</span>
+                  <ChevronDown className="w-4 h-4 text-slate-500" />
+                </button>
 
-        {/* Section 1: Shared Users */}
-        <div className="mb-6">
-          <h3 className="text-xs font-bold text-slate-400 tracking-wider mb-4 uppercase">
-            Người có quyền truy cập
-          </h3>
-          <div className="space-y-4 max-h-[180px] overflow-y-auto pr-1">
-            {sharedUsers.map((user) => {
-              const isOwner = user.permission === 'Chủ sở hữu'
-              return (
-                <div key={user.id} className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {renderAvatar(user)}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-[#0b1c30]">{user.name}</span>
-                        {isOwner && (
-                          <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-[4px] tracking-wide uppercase shrink-0">
-                            CHỦ SỞ HỮU
-                          </span>
+                {openDropdownId === 'invite' && (
+                  <div className="absolute right-0 mt-2 w-[160px] bg-white border border-slate-100 rounded-[12px] shadow-lg py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150">
+                    {(['Người xem', 'Người nhận xét', 'Người chỉnh sửa'] as const).map((role) => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => {
+                          setInvitePermission(role)
+                          setOpenDropdownId(null)
+                        }}
+                        className={cn(
+                          "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between font-semibold",
+                          invitePermission === role
+                            ? "bg-[#E8EEFF]/60 text-[#3155F6]"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                         )}
-                      </div>
-                      <span className="text-xs text-slate-500 block truncate">{user.email}</span>
-                    </div>
+                      >
+                        <span>{role}</span>
+                        {invitePermission === role && <Check className="w-4 h-4 text-[#3155F6]" />}
+                      </button>
+                    ))}
                   </div>
+                )}
+              </div>
 
-                  {/* Permission Dropdown/Label */}
-                  <div className="shrink-0">
-                    {isOwner ? (
-                      <span className="text-sm text-slate-500 font-semibold pr-2">
-                        Chủ sở hữu
-                      </span>
-                    ) : (
-                      <div className="relative">
-                        <button
-                          type="button"
-                          id={`dropdown-trigger-${user.id}`}
-                          onClick={() => setOpenDropdownId(openDropdownId === user.id ? null : user.id)}
-                          className="inline-flex items-center justify-between gap-1 bg-white hover:bg-slate-50 border border-slate-200 text-[#434655] px-3.5 py-2 rounded-[20px] text-sm font-semibold transition-all cursor-pointer min-w-[130px]"
-                        >
-                          <span>{user.permission}</span>
-                          <ChevronDown className="w-4 h-4 text-slate-500" />
-                        </button>
+              {/* Invite Action Button */}
+              <button
+                type="button"
+                onClick={handleAddUser}
+                className="flex items-center justify-center bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] p-3 rounded-full transition-all cursor-pointer shrink-0"
+              >
+                <UserPlus className="w-5 h-5" />
+              </button>
+            </div>
 
-                        {openDropdownId === user.id && (
-                          <div
-                            id={`dropdown-container-${user.id}`}
-                            className="absolute right-0 mt-2 w-[180px] bg-white border border-slate-100 rounded-[12px] shadow-lg py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
-                          >
-                            {([
-                              { value: 'Người xem', label: 'Người xem' },
-                              { value: 'Người nhận xét', label: 'Người nhận xét' },
-                              { value: 'Người chỉnh sửa', label: 'Người chỉnh sửa' },
-                              { value: 'Xóa', label: 'Xóa quyền truy cập', isDanger: true },
-                            ] as Array<{ value: 'Người xem' | 'Người nhận xét' | 'Người chỉnh sửa' | 'Xóa'; label: string; isDanger?: boolean }>).map((opt) => (
-                              <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => handleUpdateUserPermission(user.id, opt.value)}
-                                className={cn(
-                                  "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between font-semibold",
-                                  opt.isDanger
-                                    ? "text-red-500 hover:bg-red-50"
-                                    : user.permission === opt.value
-                                    ? "bg-[#E8EEFF]/60 text-[#3155F6]"
-                                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                                )}
+            {/* Error / Success Messages */}
+            {errorMessage && (
+              <div className="text-red-500 text-xs font-semibold mb-4 ml-2 animate-in fade-in duration-150">
+                {errorMessage}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="text-emerald-600 text-xs font-semibold mb-4 ml-2 animate-in fade-in duration-150">
+                {successMessage}
+              </div>
+            )}
+
+            {/* Section 1: Shared Users */}
+            <div className="mb-6">
+              <h3 className="text-xs font-bold text-slate-400 tracking-wider mb-4 uppercase">
+                Người có quyền truy cập
+              </h3>
+              <div className="space-y-4 pr-1">
+                {sharedUsers.map((user) => {
+                  const isOwner = user.permission === 'Chủ sở hữu'
+                  return (
+                    <div key={user.id} className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {renderAvatar(user)}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-[#0b1c30]">{user.name}</span>
+                            {isOwner && (
+                              <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-[4px] tracking-wide uppercase shrink-0">
+                                CHỦ SỞ HỮU
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-slate-500 block truncate">{user.email}</span>
+                        </div>
+                      </div>
+
+                      {/* Permission Dropdown/Label */}
+                      <div className="shrink-0">
+                        {isOwner ? (
+                          <span className="text-sm text-slate-500 font-semibold pr-2">
+                            Chủ sở hữu
+                          </span>
+                        ) : (
+                          <div className="relative">
+                            <button
+                              type="button"
+                              id={`dropdown-trigger-${user.id}`}
+                              onClick={() => setOpenDropdownId(openDropdownId === user.id ? null : user.id)}
+                              className="inline-flex items-center justify-between gap-1 bg-white hover:bg-slate-50 border border-slate-200 text-[#434655] px-3.5 py-2 rounded-[20px] text-sm font-semibold transition-all cursor-pointer min-w-[130px]"
+                            >
+                              <span>{user.permission}</span>
+                              <ChevronDown className="w-4 h-4 text-slate-500" />
+                            </button>
+
+                            {openDropdownId === user.id && (
+                              <div
+                                id={`dropdown-container-${user.id}`}
+                                className="absolute right-0 mt-2 w-[180px] bg-white border border-slate-100 rounded-[12px] shadow-lg py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
                               >
-                                <span>{opt.label}</span>
-                                {user.permission === opt.value && <Check className="w-4 h-4 text-[#3155F6]" />}
-                              </button>
-                            ))}
+                                {([
+                                  { value: 'Người xem', label: 'Người xem' },
+                                  { value: 'Người nhận xét', label: 'Người nhận xét' },
+                                  { value: 'Người chỉnh sửa', label: 'Người chỉnh sửa' },
+                                  { value: 'Xóa', label: 'Xóa quyền truy cập', isDanger: true },
+                                ] as Array<{ value: 'Người xem' | 'Người nhận xét' | 'Người chỉnh sửa' | 'Xóa'; label: string; isDanger?: boolean }>).map((opt) => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => handleUpdateUserPermission(user.id, opt.value)}
+                                    className={cn(
+                                      "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between font-semibold",
+                                      opt.isDanger
+                                        ? "text-red-500 hover:bg-red-50"
+                                        : user.permission === opt.value
+                                        ? "bg-[#E8EEFF]/60 text-[#3155F6]"
+                                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                    )}
+                                  >
+                                    <span>{opt.label}</span>
+                                    {user.permission === opt.value && <Check className="w-4 h-4 text-[#3155F6]" />}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-        {/* Section 2: General Access */}
-        <div className="border-t border-slate-100 pt-6 mb-8">
-          <h3 className="text-xs font-bold text-slate-400 tracking-wider mb-4 uppercase">
-            Quyền truy cập chung
-          </h3>
-          <GeneralAccessControl openDropdownId={openDropdownId} setOpenDropdownId={setOpenDropdownId} />
-        </div>
+            {/* Section 2: General Access */}
+            <div className="border-t border-slate-100 pt-6 mb-8">
+              <h3 className="text-xs font-bold text-slate-400 tracking-wider mb-4 uppercase">
+                Quyền truy cập chung
+              </h3>
+              <GeneralAccessControl openDropdownId={openDropdownId} setOpenDropdownId={setOpenDropdownId} />
+            </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-6">
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            className="inline-flex items-center gap-2 bg-white hover:bg-[#F4F7FE] border border-slate-200 text-[#3155F6] px-5 py-3 rounded-full text-sm font-bold transition-all shadow-sm cursor-pointer"
-          >
-            <Copy className="w-4 h-4" />
-            <span>Sao chép đường liên kết</span>
-          </button>
+            {/* Footer */}
+            <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="inline-flex items-center gap-2 bg-white hover:bg-[#F4F7FE] border border-slate-200 text-[#3155F6] px-5 py-3 rounded-full text-sm font-bold transition-all shadow-sm cursor-pointer"
+              >
+                <Copy className="w-4 h-4" />
+                <span>Sao chép đường liên kết</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-8 py-3 rounded-full text-sm font-bold transition-all shadow-md cursor-pointer hover:shadow-lg"
-          >
-            Xong
-          </button>
-        </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-8 py-3 rounded-full text-sm font-bold transition-all shadow-md cursor-pointer hover:shadow-lg"
+              >
+                Xong
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
