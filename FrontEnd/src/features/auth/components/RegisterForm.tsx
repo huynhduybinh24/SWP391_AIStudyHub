@@ -226,32 +226,12 @@ export function RegisterForm() {
         <Button 
           type="button" 
           variant="secondary" 
-          className="w-full h-11 bg-white border border-[#E5E7EB] hover:bg-gray-50 flex items-center justify-center gap-3 text-[#0B1C30] font-medium"
+          className="w-full h-11 bg-white border border-[#E5E7EB] hover:bg-gray-50 flex items-center justify-center gap-3 text-[#0B1C30] font-semibold rounded-xl"
           onClick={() => handleRealSocialLogin('google')}
         >
           <GoogleIcon />
           Sign up with Google
         </Button>
-        <div className="flex gap-3">
-          <Button 
-            type="button" 
-            variant="secondary" 
-            className="flex-1 h-11 bg-white border border-[#E5E7EB] hover:bg-gray-50 flex items-center justify-center gap-2 text-[#0B1C30] font-medium"
-            onClick={() => handleRealSocialLogin('facebook')}
-          >
-            <FacebookIcon />
-            Facebook
-          </Button>
-          <Button 
-            type="button" 
-            variant="secondary" 
-            className="flex-1 h-11 bg-white border border-[#E5E7EB] hover:bg-gray-50 flex items-center justify-center gap-2 text-[#0B1C30] font-medium"
-            onClick={() => handleRealSocialLogin('apple')}
-          >
-            <AppleIcon />
-            Apple
-          </Button>
-        </div>
       </div>
 
       <p className="mt-8 text-center text-[15px] text-body">

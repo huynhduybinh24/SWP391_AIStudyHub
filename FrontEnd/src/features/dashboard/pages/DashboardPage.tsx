@@ -44,11 +44,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-12 gap-6">
         <RecentDocuments documents={data.documents} />
         <QuickAskCard />
-        <WeeklyActivityChart
-          data={data.weeklyActivity}
-          totalHours={data.weeklyHours}
-          trend={data.weeklyTrend}
-        />
+        <WeeklyActivityChart />
         <RecentAlerts alerts={data.alerts} />
       </div>
 

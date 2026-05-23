@@ -76,8 +76,8 @@ export function LoginForm() {
       
       <div className="bg-white rounded-2xl shadow-sm border border-border p-6 pt-8">
         <div className="flex flex-col items-center gap-1.5 text-center mb-6">
-          <div className="flex items-center justify-center gap-2">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+          <div className="flex items-center justify-center gap-3">
+            <img src="/logo.png" alt="Logo" className="w-[52px] h-[52px] object-contain" />
             <h1 className="text-2xl font-bold text-primary">AI Study Hub</h1>
           </div>
           <p className="text-sm text-body">Welcome back. Please enter your details.</p>
@@ -150,32 +150,15 @@ export function LoginForm() {
             <div className="flex-grow border-t border-border"></div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <Button 
-              type="button" 
-              variant="secondary" 
-              className="h-10"
-              onClick={() => handleRealSocialLogin('google')}
-            >
-              <GoogleIcon />
-            </Button>
-            <Button 
-              type="button" 
-              variant="secondary" 
-              className="h-10"
-              onClick={() => handleRealSocialLogin('facebook')}
-            >
-              <FacebookIcon />
-            </Button>
-            <Button 
-              type="button" 
-              variant="secondary" 
-              className="h-10"
-              onClick={() => handleRealSocialLogin('github')}
-            >
-              <GithubIcon />
-            </Button>
-          </div>
+          <Button 
+            type="button" 
+            variant="secondary" 
+            className="w-full h-11 bg-white border border-[#E5E7EB] hover:bg-gray-50 flex items-center justify-center gap-3 text-[#0B1C30] font-semibold rounded-xl"
+            onClick={() => handleRealSocialLogin('google')}
+          >
+            <GoogleIcon />
+            Continue with Google
+          </Button>
         </div>
 
         <p className="mt-6 text-center text-sm text-body">

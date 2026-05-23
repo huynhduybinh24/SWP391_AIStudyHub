@@ -62,7 +62,6 @@ interface NotificationCardProps {
 }
 
 function NotificationCard({
-  id,
   type,
   title,
   time,
@@ -525,7 +524,7 @@ export function NotificationsPage() {
         </>
       ),
       actionText: 'Reply',
-    })
+    } as any)
   }
 
   if (!isReadMap['study-plan']) {
@@ -723,7 +722,7 @@ export function NotificationsPage() {
       {/* Cards List */}
       <div className="space-y-5">
         {currentNotifications.length > 0 ? (
-          currentNotifications.map((notification) => (
+          currentNotifications.map((notification: any) => (
             <NotificationCard
               key={notification.id}
               {...notification}
