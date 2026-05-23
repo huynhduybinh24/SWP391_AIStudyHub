@@ -51,8 +51,19 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
           <img src={profile.avatarUrl} alt="Avatar" className="w-8 h-8 object-cover rounded-full" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-foreground dark:text-slate-200 truncate leading-snug">{profile.name}</p>
-          <p className="text-xs text-muted dark:text-slate-500 truncate leading-snug">{user?.email ?? 'alex@example.com'}</p>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="text-sm font-bold text-foreground dark:text-slate-200 truncate leading-snug">{profile.name}</p>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider leading-none shadow-2xs border shrink-0 ${
+              user?.plan === 'pro' 
+                ? 'bg-blue-50 text-blue-600 border-blue-250/20 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/30' 
+                : user?.plan === 'institutional'
+                  ? 'bg-purple-50 text-purple-600 border-purple-250/20 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-900/30'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-450 dark:border-slate-750'
+            }`}>
+              {user?.plan === 'pro' ? 'PRO' : user?.plan === 'institutional' ? 'INST' : 'FREE'}
+            </span>
+          </div>
+          <p className="text-xs text-muted dark:text-slate-500 truncate leading-snug mt-0.5">{user?.email ?? 'alex@example.com'}</p>
         </div>
       </div>
       
