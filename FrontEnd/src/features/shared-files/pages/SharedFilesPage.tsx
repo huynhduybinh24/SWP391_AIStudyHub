@@ -309,13 +309,6 @@ export function SharedFilesPage() {
     'file-3': 'restricted'
   })
 
-  // Select Default Biology Notes file on mount
-  useEffect(() => {
-    if (!selectedFile && files.length > 0) {
-      const bioFile = files.find(f => f.id === 'file-1') || files[0]
-      setSelectedFile(bioFile)
-    }
-  }, [files, selectedFile])
 
   // Keep viewing file reference updated
   useEffect(() => {
@@ -593,8 +586,7 @@ export function SharedFilesPage() {
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* Middle main content workspace area */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className={selectedFile ? "lg:col-span-8 space-y-6 transition-all duration-300" : "lg:col-span-12 space-y-6 transition-all duration-300"}>
           <SharedWorkspaceHeader
             onUploadClick={() => setIsUploading(true)}
             onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
@@ -650,25 +642,27 @@ export function SharedFilesPage() {
         </div>
 
         {/* Right side panel */}
-        <div className="lg:col-span-4 h-full">
-          <WorkspaceRightPanel
-            file={selectedFile}
-            comments={selectedFile ? (commentsMap[selectedFile.id] || []) : []}
-            onAddComment={handleAddComment}
-            onRegenerateSummary={handleRegenerateSummary}
-            isRegenerating={isRegenerating}
-            onOpenFullSummary={() => setModals(prev => ({ ...prev, summary: true }))}
-            onGenerateQuiz={() => setModals(prev => ({ ...prev, quiz: true }))}
-            onAskAI={() => {
-              const msg = language === 'vi' ? 'Trợ lý AI đã sẵn sàng' : (language === 'ja' ? 'AIアシスタントの準備ができました' : (language === 'ko' ? 'AI 어시스턴트가 준비되었습니다' : 'AI Assistant ready for query'))
-              toast.success(msg)
-              const commentInput = document.querySelector('input[placeholder="Add a comment..."]') as HTMLInputElement
-              if (commentInput) {
-                commentInput.focus()
-              }
-            }}
-          />
-        </div>
+        {selectedFile && (
+          <div className="lg:col-span-4 h-full animate-fade-in">
+            <WorkspaceRightPanel
+              file={selectedFile}
+              comments={commentsMap[selectedFile.id] || []}
+              onAddComment={handleAddComment}
+              onRegenerateSummary={handleRegenerateSummary}
+              isRegenerating={isRegenerating}
+              onOpenFullSummary={() => setModals(prev => ({ ...prev, summary: true }))}
+              onGenerateQuiz={() => setModals(prev => ({ ...prev, quiz: true }))}
+              onAskAI={() => {
+                const msg = language === 'vi' ? 'Trợ lý AI đã sẵn sàng' : (language === 'ja' ? 'AIアシスタントの準備ができました' : (language === 'ko' ? 'AI 어시스턴트가 준비되었습니다' : 'AI Assistant ready for query'))
+                toast.success(msg)
+                const commentInput = document.querySelector('input[placeholder="Add a comment..."]') as HTMLInputElement
+                if (commentInput) {
+                  commentInput.focus()
+                }
+              }}
+            />
+          </div>
+        )}
 
       </div>
 
