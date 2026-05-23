@@ -4,8 +4,10 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { FloatingAssistantButton } from '@/components/layout/FloatingAssistantButton'
 import { useUiStore } from '@/stores/uiStore'
+import { useStudyTimeTracker } from '@/features/dashboard/hooks/useStudyTimeTracker'
 
 export function DashboardLayout() {
+  useStudyTimeTracker()
   const location = useLocation()
   const isChatPage = location.pathname === '/dashboard/chat' || location.pathname === '/dashboard/chat/'
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
