@@ -44,7 +44,7 @@ export function LoginPage() {
         </div>
       </div>
 
-      <AppFooter />
+      <AppFooter variant="simple" />
     </div>
   )
 }

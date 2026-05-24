@@ -56,7 +56,7 @@ export function RegisterPage() {
         </div>
       </div>
 
-      <AppFooter />
+      <AppFooter variant="simple" />
     </div>
   )
 }
