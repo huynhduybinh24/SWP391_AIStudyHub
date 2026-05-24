@@ -778,10 +778,10 @@ export function ChatPage() {
                  ================================================== */}
               {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center max-w-[620px] mx-auto w-full">
-                  <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100/30 dark:border-blue-900/20 rounded-2xl text-blue-500 dark:text-blue-400 shadow-inner mb-5">
-                    <AIChatbotIcon className="size-9 animate-float" />
+                  <div className="p-3 bg-blue-900/40 border border-blue-400/30 rounded-2xl shadow-[0_0_15px_rgba(37,99,235,0.2)] mb-5">
+                    <AIChatbotIcon className="size-9 animate-float drop-shadow-sm" />
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-heading font-bold text-slate-800 dark:text-white leading-tight tracking-tight mb-8">
+                  <h2 className="text-2xl md:text-3xl font-heading font-bold text-slate-100 leading-tight tracking-tight mb-8 drop-shadow-sm">
                     {t.aiChatbot.emptyTitle}
                   </h2>
 
@@ -790,26 +790,26 @@ export function ChatPage() {
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.summarizeRecentNotes)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-white/10 bg-slate-900/50 backdrop-blur-md px-5 py-4 text-sm font-bold text-slate-300 shadow-md transition-all hover:bg-slate-800 hover:border-blue-500/40 hover:shadow-[0_4px_12px_rgba(37,99,235,0.15)] cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.summarizeRecentNotes}</span>
-                      <FileText className="size-4 text-slate-400 shrink-0" />
+                      <FileText className="size-4 text-blue-400 shrink-0" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.explainQuantum)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-white/10 bg-slate-900/50 backdrop-blur-md px-5 py-4 text-sm font-bold text-slate-300 shadow-md transition-all hover:bg-slate-800 hover:border-blue-500/40 hover:shadow-[0_4px_12px_rgba(37,99,235,0.15)] cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.explainQuantum}</span>
-                      <FlaskConical className="size-4 text-slate-400 shrink-0" />
+                      <FlaskConical className="size-4 text-blue-400 shrink-0" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.generateQuiz)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-white/10 bg-slate-900/50 backdrop-blur-md px-5 py-4 text-sm font-bold text-slate-300 shadow-md transition-all hover:bg-slate-800 hover:border-blue-500/40 hover:shadow-[0_4px_12px_rgba(37,99,235,0.15)] cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.generateQuiz}</span>
-                      <FileQuestion className="size-4 text-slate-400 shrink-0" />
+                      <FileQuestion className="size-4 text-blue-400 shrink-0" />
                     </button>
                   </div>
                 </div>
@@ -835,11 +835,11 @@ export function ChatPage() {
                       >
                         {/* Avatar */}
                         {isUser ? (
-                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600 border border-blue-500 shadow-sm text-white">
+                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600 border border-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.4)] text-white">
                             <User className="size-4" />
                           </div>
                         ) : (
-                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 text-[#3155F6] dark:text-blue-400">
+                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-900/50 shadow-[0_0_10px_rgba(37,99,235,0.2)] border border-blue-400/30">
                             <AIChatbotIcon className="size-4" />
                           </div>
                         )}
@@ -851,8 +851,8 @@ export function ChatPage() {
                             className={cn(
                               "rounded-[20px] p-4 text-[14.5px] leading-relaxed shadow-[0_2px_8px_rgba(0,0,0,0.02)] border whitespace-pre-line text-left flex flex-col gap-3",
                               isUser
-                                ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-transparent rounded-tr-sm"
-                                : "bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-800 dark:text-slate-200 border-slate-200/50 dark:border-slate-700/50 rounded-tl-sm"
+                                ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-transparent rounded-tr-sm shadow-[0_4px_12px_rgba(37,99,235,0.2)]"
+                                : "bg-slate-900/80 backdrop-blur-md text-slate-200 border-blue-500/30 rounded-tl-sm shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
                             )}
                           >
                             {msg.content && <div>{msg.content}</div>}
@@ -913,12 +913,12 @@ export function ChatPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       className="flex items-start gap-3.5 w-full flex-row"
                     >
-                      <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm text-[#3155F6] dark:text-blue-400">
+                      <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-900/50 shadow-[0_0_10px_rgba(37,99,235,0.2)] border border-blue-400/30">
                         <AIChatbotIcon className="size-4" />
                       </div>
-                      <div className="max-w-[80%] rounded-[20px] rounded-tl-sm p-4 px-5 text-[14.5px] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                        <Loader2 className="size-4.5 animate-spin text-blue-500" />
-                        <span className="font-medium">{t.aiChatbot.thinking}</span>
+                      <div className="max-w-[80%] rounded-[20px] rounded-tl-sm p-4 px-5 text-[14.5px] bg-slate-900/80 backdrop-blur-md border border-blue-500/30 flex items-center gap-3 shadow-[0_2px_10px_rgba(0,0,0,0.2)]">
+                        <Loader2 className="size-4.5 animate-spin text-blue-400" />
+                        <span className="font-medium text-blue-300">Processing...</span>
                       </div>
                     </motion.div>
                   )}
@@ -967,12 +967,12 @@ export function ChatPage() {
                 )}
 
                 {/* Main input composer box */}
-                <div className="rounded-[24px] border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-4 px-5 shadow-sm transition-all focus-within:border-blue-500/50 focus-within:ring-2 focus-within:ring-blue-500/20">
+                <div className="rounded-[24px] border border-white/10 bg-slate-900/60 backdrop-blur-xl p-4 px-5 shadow-[0_4px_25px_rgba(0,0,0,0.5)] transition-all focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/30">
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="min-h-[48px] max-h-[160px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-[#0b1c30] dark:text-white outline-none placeholder:text-[#737686]/60 dark:placeholder:text-slate-500 border-none p-0 focus:ring-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+                    className="min-h-[48px] max-h-[160px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-slate-100 outline-none placeholder:text-slate-500 border-none p-0 focus:ring-0 scrollbar-thin scrollbar-thumb-slate-700"
                     placeholder={t.aiChatbot.askAnything || "Message AI Assistant..."}
                     rows={2}
                   />
@@ -1060,7 +1060,7 @@ export function ChatPage() {
                       <button
                         type="button"
                         onClick={() => handleSend()}
-                        className="flex size-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md transition-all hover:bg-blue-500 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none cursor-pointer"
+                        className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all hover:from-blue-500 hover:to-indigo-500 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none cursor-pointer"
                         disabled={!input.trim() && selectedFiles.length === 0}
                         title={t.aiChatbot.sendMessage}
                       >
