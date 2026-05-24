@@ -439,6 +439,93 @@ export const vi: typeof en = {
     faqQ5: "Giới hạn lưu trữ là bao nhiêu?",
     faqA5: "Gói Free có 100MB cloud storage. Nâng cấp lên Pro để có 10GB và không giới hạn số tài liệu phân tích AI mỗi tháng."
   },
+  searchResultsPage: {
+    backToDocs: "Quay lại tài liệu",
+    resultsCount: (count: number, term: string) => `${count} kết quả cho "${term}"`,
+    searchHistory: "Lịch sử tìm kiếm:",
+    historyPsychology: "Tâm lý học",
+    historyBrain: "Não bộ",
+    historyBiology: "Sinh học",
+    subject: "MÔN HỌC",
+    subjects: {
+      neuroscience: "Thần kinh học",
+      biology: "Sinh học",
+      psychology: "Tâm lý học"
+    },
+    fileType: "LOẠI TỆP",
+    fileTypes: {
+      pdf: "PDF",
+      notes: "Ghi chú bài giảng",
+      presentations: "Thuyết trình"
+    },
+    dateAdded: "NGÀY THÊM",
+    dateOptions: {
+      last7Days: "7 ngày qua",
+      last30Days: "30 ngày qua",
+      allTime: "Tất cả thời gian"
+    },
+    noMatches: "Không tìm thấy kết quả",
+    noMatchesSub: "Không có tài liệu nào trong kết quả tìm kiếm khớp với bộ lọc đã chọn. Hãy thử cập nhật lại danh mục môn học hoặc định dạng.",
+    resetFilters: "Đặt lại bộ lọc",
+    aiGenerated: "AI TỰ ĐỘNG TẠO",
+    bookmarkTooltip: "Đánh dấu tài liệu",
+    shareTooltip: "Chia sẻ liên kết tài liệu",
+    toastBookmarkAdded: "Đã đánh dấu tài liệu thành công!",
+    toastBookmarkRemoved: "Đã xóa đánh dấu.",
+    toastShareSuccess: (title: string) => `Đã sao chép liên kết chia sẻ cho "${title}" vào bộ nhớ tạm!`,
+    toastShareError: "Không thể sao chép liên kết vào bộ nhớ tạm.",
+    toastShareNotSupported: "Trình duyệt này không hỗ trợ tính năng chia sẻ bộ nhớ tạm.",
+    defaultLabel: "TÀI LIỆU HỌC TẬP",
+    defaultDesc: (title: string) => `Tài liệu học tập chất lượng cao về ${title} đã được hệ thống AI của chúng tôi lập chỉ mục. Nó phác thảo các cấu trúc học thuật cốt lõi, định nghĩa dữ liệu thực nghiệm và các thủ tục đánh giá chẩn đoán để nâng cao khả năng hiểu và kết quả kiểm tra.`,
+    defaultTags: ["#chuan-bi-thi", "#ghi-chu-hoc-tap"],
+    documentDetails: {
+      'neuro-1': {
+        label: 'TÀI LIỆU HỌC TẬP',
+        description: "Bản tóm tắt toàn diện này bao gồm các vùng giải phẫu chính của não người, bao gồm vai trò của thùy trán trong chức năng điều hành, quá trình xử lý thông tin thính giác của thùy thái dương và các đường dẫn thần kinh phức tạp kết nối hệ thống viền.",
+        tags: ['#giai-phau-than-kinh', '#chuan-bi-thi', '#co-ban']
+      },
+      'neuro-2': {
+        label: 'GHI CHÚ BÀI GIẢNG',
+        description: 'Phân tích chi tiết về sự tích hợp cảm giác, các đường dẫn vỏ não, mạng lưới truyền tín hiệu thần kinh và cơ chế mã hóa trí nhớ bên trong thùy thái dương và các phức hợp hải mã.',
+        tags: ['#than-kinh-nhan-thuc', '#bai-giang', '#tin-hieu-nao']
+      },
+      'neuro-3': {
+        label: 'TÀI LIỆU HỌC TẬP',
+        description: 'Tài liệu hướng dẫn học tập giải thích các chất dẫn truyền thần kinh chính: Dopamine, Serotonin, GABA, Glutamate và Acetylcholine, chi tiết về các đường dẫn, thụ thể và ảnh hưởng hành vi của chúng.',
+        tags: ['#chat-dan-truyen', '#ghi-chu-thi', '#hoa-sinh']
+      },
+      'neuro-4': {
+        label: 'GHI CHÚ BÀI GIẢNG',
+        description: 'Phân tích các khớp thần kinh hóa học và điện học, sự lan truyền điện thế hoạt động, động học khe synap và cơ chế giải phóng chất dẫn truyền thần kinh dưới kích thích tần số cao.',
+        tags: ['#khop-than-kinh', '#than-kinh-te-bao', '#co-ban']
+      },
+      'neuro-5': {
+        label: 'BÁO CÁO NGHIÊN CỨU',
+        description: 'Phân tích nghiên cứu về tính mềm dẻo của cấu trúc thần kinh, sự cắt tỉa synap, sự phân nhánh đuôi gai và những thay đổi vi cấu trúc phụ thuộc vào kinh nghiệm trong vỏ não động vật có vú.',
+        tags: ['#tinh-mem-deo-than-kinh', '#nghien-cuu', '#nang-cao']
+      },
+      'psych-1': {
+        label: 'GHI CHÚ BÀI GIẢNG',
+        description: 'Giới thiệu về nền tảng thần kinh của tâm lý học hành vi, cơ chế điều kiện hóa cổ điển Pavlov, đường dẫn củng cố hoạt động và các lý thuyết phát triển nhận thức.',
+        tags: ['#tam-ly-hoc-than-kinh', '#tam-ly-hoc-co-ban', '#hoc-tap']
+      },
+      'psych-2': {
+        label: 'TÀI LIỆU HỌC TẬP',
+        description: 'Tài liệu đồng hành tập trung vào lịch trình củng cố, mô hình hộp Skinner, mô hình hóa hành vi và các hoạt động chất dẫn truyền thần kinh cơ bản trong điều kiện hóa tích cực so với tiêu cực.',
+        tags: ['#tam-ly-hoc-hanh-vi', '#dieu-kien-hoa', '#co-ban']
+      },
+      'doc-2': {
+        label: 'GHI CHÚ BÀI GIẢNG',
+        description: 'Đề cương bài giảng nghiên cứu các con đường sinh học phân tử, biểu hiện gen thần kinh, các chỉ số tạo mới thần kinh và công nghệ nhân bản tế bào liên kết với nuôi cấy mô thần kinh.',
+        tags: ['#sinh-hoc-phan-tu', '#tin-hieu-te-bao', '#di-truyen']
+      },
+      'doc-6': {
+        label: 'BÁO CÁO NGHIÊN CỨU',
+        description: 'Bản thảo báo cáo phòng thí nghiệm chi tiết về lập hồ sơ di truyền phân tử, các mẫu di truyền, các đột biến di truyền thần kinh và bản đồ nhiễm sắc thể chuyển gen.',
+        tags: ['#phong-thi-nghiem-di-truyen', '#bao-cao', '#di-truyen-than-kinh']
+      }
+    }
+  },
   footer: {
     copyright: "© 2024 AI Study Hub. Tăng cường khả năng tự học.",
     privacyPolicy: "Chính sách bảo mật",
