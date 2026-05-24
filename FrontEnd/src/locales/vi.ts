@@ -116,6 +116,7 @@ export const vi: typeof en = {
     storageUsedText: (used: number, total: number) => `Đã dùng ${used} GB trên ${total} GB`,
     manageStorage: "Quản lý dung lượng",
     weeklyActivity: "Hoạt động hàng tuần",
+    weekdays: ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
     hoursStudied: (hours: number) => `Đã học ${hours} giờ`,
     alert1: "Kế hoạch học tập 'Tuần thi cuối kỳ' bắt đầu vào ngày mai",
     alert2: 'TS. Smith đã chia sẻ "Midterm Review.pdf"',

@@ -59,6 +59,7 @@ export const dashboardService = {
       return {
         day: day.label,
         hours: Number(hours.toFixed(2)),
+        dateStr: day.dateStr,
       }
     })
 

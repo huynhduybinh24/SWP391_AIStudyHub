@@ -116,6 +116,7 @@ export const ja: typeof en = {
     storageUsedText: (used: number, total: number) => `使用容量: ${used} GB / ${total} GB`,
     manageStorage: "ストレージ管理",
     weeklyActivity: "今週のアクティビティ",
+    weekdays: ["月", "火", "水", "木", "金", "土", "日"],
     hoursStudied: (hours: number) => `${hours} 時間学習済み`,
     alert1: "学習計画「期末試験週」が明日開始します",
     alert2: "スミス先生が「Midterm Review.pdf」を共有しました",

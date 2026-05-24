@@ -114,6 +114,7 @@ export const en = {
     storageUsedText: (used: number, total: number) => `${used} GB of ${total} GB used`,
     manageStorage: "Manage Storage",
     weeklyActivity: "Weekly Activity",
+    weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     hoursStudied: (hours: number) => `${hours} hrs studied`,
     alert1: "Study Plan 'Finals Week' starts tomorrow",
     alert2: 'Dr. Smith shared "Midterm Review.pdf"',

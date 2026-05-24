@@ -116,6 +116,7 @@ export const ko: typeof en = {
     storageUsedText: (used: number, total: number) => `사용량: ${used} GB / ${total} GB`,
     manageStorage: "저장 공간 관리",
     weeklyActivity: "주간 활동",
+    weekdays: ["월", "화", "수", "목", "금", "토", "일"],
     hoursStudied: (hours: number) => `${hours}시간 학습함`,
     alert1: "학습 계획 '기말고사 주간'이 내일부터 시작됩니다",
     alert2: "Smith 교수가 'Midterm Review.pdf'를 공유했습니다",
