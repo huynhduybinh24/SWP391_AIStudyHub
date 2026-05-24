@@ -61,7 +61,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/pricing',
-        element: <Navigate to="/dashboard/upgrade" replace />,
+        element: <PricingPage isPublic={true} />,
       },
       {
         path: '/help',

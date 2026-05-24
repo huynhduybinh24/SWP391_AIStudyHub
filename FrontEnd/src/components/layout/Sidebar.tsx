@@ -188,7 +188,7 @@ export function Sidebar() {
               <div className="hidden md:flex group relative size-10 items-center justify-center mx-auto shrink-0 select-none">
                 <img
                   src="/logo.png"
-                  alt="AI Study Hub"
+                  alt="LumiEdu"
                   className="
                     size-8 transition-opacity duration-200
                     group-hover:opacity-0 group-focus-within:opacity-0 object-contain
@@ -220,15 +220,15 @@ export function Sidebar() {
                 <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
                   <img
                     src="/logo.png"
-                    alt="AI Study Hub"
+                    alt="LumiEdu"
                     className="w-8 h-8 shrink-0 object-contain"
                   />
                   <div className="flex flex-col justify-center animate-fade-in whitespace-nowrap overflow-hidden min-w-0 text-left">
                     <h1 className="text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
-                      AI Study Hub
+                      LumiEdu
                     </h1>
                     <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                      {t.sidebar.brandSubtitle || "Focused Intelligence"}
+                      {t.sidebar.brandSubtitle || "Illuminate Your Learning"}
                     </p>
                   </div>
                 </Link>
@@ -249,15 +249,15 @@ export function Sidebar() {
                 <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
                   <img
                     src="/logo.png"
-                    alt="AI Study Hub"
+                    alt="LumiEdu"
                     className="w-8 h-8 shrink-0 object-contain"
                   />
                   <div className="flex flex-col justify-center whitespace-nowrap overflow-hidden min-w-0 text-left">
                     <h1 className="text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
-                      AI Study Hub
+                      LumiEdu
                     </h1>
                     <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                      {t.sidebar.brandSubtitle || "Focused Intelligence"}
+                      {t.sidebar.brandSubtitle || "Illuminate Your Learning"}
                     </p>
                   </div>
                 </Link>

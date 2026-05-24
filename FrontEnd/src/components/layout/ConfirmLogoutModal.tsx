@@ -35,7 +35,7 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
       isOpen={isOpen}
       onClose={onClose}
       title={t.sidebar.logoutConfirmTitle || "Confirm Log Out"}
-      description={t.sidebar.logoutConfirmDesc || "Are you sure you want to sign out of your AI Study Hub account?"}
+      description={t.sidebar.logoutConfirmDesc || "Are you sure you want to sign out of your LumiEdu account?"}
       className="max-w-md"
     >
       <div className="space-y-6">
