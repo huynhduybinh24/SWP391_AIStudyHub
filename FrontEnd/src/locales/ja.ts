@@ -439,6 +439,93 @@ export const ja: typeof en = {
     faqQ5: "ストレージ容量の制限はありますか？",
     faqA5: "無料プランには100MB of ストレージが含まれています。Proにアップグレードすると、10GBのストレージが利用でき、毎月のAI分析が無制限になります。"
   },
+  searchResultsPage: {
+    backToDocs: "ドキュメントに戻る",
+    resultsCount: (count: number, term: string) => `「${term}」の検索結果 ${count} 件`,
+    searchHistory: "検索履歴:",
+    historyPsychology: "心理学",
+    historyBrain: "脳科学",
+    historyBiology: "生物学",
+    subject: "科目",
+    subjects: {
+      neuroscience: "神経科学",
+      biology: "生物学",
+      psychology: "心理学"
+    },
+    fileType: "ファイルタイプ",
+    fileTypes: {
+      pdf: "PDF",
+      notes: "講義ノート",
+      presentations: "プレゼンテーション"
+    },
+    dateAdded: "追加日",
+    dateOptions: {
+      last7Days: "過去7日間",
+      last30Days: "過去30日間",
+      allTime: "全期間"
+    },
+    noMatches: "一致する結果が見つかりません",
+    noMatchesSub: "検索条件に一致するドキュメントがありません。科目やフォーマットのフィルターを更新してください。",
+    resetFilters: "フィルターをリセット",
+    aiGenerated: "AI生成",
+    bookmarkTooltip: "ドキュメントをブックマーク",
+    shareTooltip: "ドキュメントのリンクを共有",
+    toastBookmarkAdded: "ドキュメントをブックマークしました！",
+    toastBookmarkRemoved: "ブックマークを解除しました。",
+    toastShareSuccess: (title: string) => `「${title}」の共有リンクをクリップボードにコピーしました！`,
+    toastShareError: "クリップボードへのコピーに失敗しました。",
+    toastShareNotSupported: "このブラウザはクリップボード共有をサポートしていません。",
+    defaultLabel: "学習ガイド",
+    defaultDesc: (title: string) => `AIシステムによってインデックスされた${title}に関する高品質な学習教材です。理解度とテストの成績を向上させるための、中心的な学問構造、実験データの定義、および診断レビュー手順を概説しています。`,
+    defaultTags: ["#試験対策", "#学習ノート"],
+    documentDetails: {
+      'neuro-1': {
+        label: '学習ガイド',
+        description: "この包括的な要約は、人間の脳의 주요한 해부학적 영역을 다루고 있으며, 앞이마엽의 실행 기능 역할, 관자엽의 청각 정보 처리, 그리고 대뇌변연계를 연결하는 복잡한 신경 경로를 포함합니다.",
+        tags: ['#神経解剖学', '#試験対策', '#基礎']
+      },
+      'neuro-2': {
+        label: '講義ノート',
+        description: '感覚統合、皮質経路、神経信号伝達ネットワーク、および側頭葉と海馬複合体内部の記憶符号化メカニズムの詳細な分析。',
+        tags: ['#認知神経科学', '#講義', '#脳信号']
+      },
+      'neuro-3': {
+        label: '学習ガイド',
+        description: '主要な神経伝達物質（ドーパミン、セロトニン、GABA、グルタミン酸、アセチルコリン）の経路、受容体、および行動への影響を詳細に説明する学習ガイド。',
+        tags: ['#神経伝達物質', '#試験ノート', '#生化学']
+      },
+      'neuro-4': {
+        label: '講義ノート',
+        description: '化学的および電気的シナプス、活動電位の伝播、シナプス間隙のダイナミクス、および高頻度刺激下での神経伝達物質の放出メカニズムの分析。',
+        tags: ['#シナプス', '#細胞神経科学', '#基礎']
+      },
+      'neuro-5': {
+        label: '研究論文',
+        description: '哺乳類の自己新皮質内における構造的神経可塑性、シナプス刈り込み、樹状突起分岐、および経験依存的な微細構造変化に関する研究分析。',
+        tags: ['#神経可塑性', '#研究', '#高度']
+      },
+      'psych-1': {
+        label: '講義ノート',
+        description: '行動心理学の神経学的基礎、パブロフの古典的条件付けのメカニズム、オペラナト強化経路、および認知発達理論の紹介。',
+        tags: ['#神経心理学', '#心理学基礎', '#学習']
+      },
+      'psych-2': {
+        label: '学習ガイド',
+        description: '強化スケジュール、スキナー箱モデル、行動モデリング、および正と負の条件付けにおける潜在的な神経伝達物質の作用に焦点を当てた学習コンパニオン。',
+        tags: ['#行動心理学', '#条件付け', '#基礎']
+      },
+      'doc-2': {
+        label: '講義ノート',
+        description: '分子生物学の経路、神経遺伝子発現、神経発生指標、および神経組織培養に関連する細胞クローニング技術を検討する講義概要。',
+        tags: ['#分子生物学', '#細胞シグナル伝達', '#遺伝学']
+      },
+      'doc-6': {
+        label: '研究論文',
+        description: '分子遺伝学的プロファイリング、遺伝的遺伝パターン、神経遺伝学的遺伝的変異、およびトランスジェニック染色体マッピングを詳細に示す研究室レポートのドラフト。',
+        tags: ['#遺伝学研究室', '#レポート', '#神経遺伝学']
+      }
+    }
+  },
   footer: {
     copyright: "© 2024 AI Study Hub. ディープラーニングを支援します。",
     privacyPolicy: "プライバシーポリシー",
