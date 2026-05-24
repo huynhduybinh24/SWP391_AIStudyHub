@@ -17,7 +17,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             className="peer sr-only"
             {...props}
           />
-          <div className="h-4 w-4 rounded border border-border bg-white transition-colors peer-checked:bg-primary peer-checked:border-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary/30"></div>
+          <div className="h-4 w-4 rounded border border-border bg-white dark:bg-slate-950 transition-colors peer-checked:bg-primary peer-checked:border-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary/30"></div>
           <svg
             className="absolute inset-0 h-4 w-4 pointer-events-none stroke-white opacity-0 peer-checked:opacity-100 transition-opacity"
             viewBox="0 0 24 24"

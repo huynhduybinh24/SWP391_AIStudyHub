@@ -93,7 +93,7 @@ export function Sidebar() {
     <>
       <aside
         className={cn(
-          "flex h-screen flex-col justify-between border-r border-[#EAECF0] dark:border-slate-800 bg-white dark:bg-slate-900 py-6 px-4 sticky top-0 left-0 z-50 select-none transition-all duration-300",
+          "flex h-screen flex-col justify-between border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-955 py-6 px-4 sticky top-0 left-0 z-50 select-none transition-all duration-300",
           "w-64 md:max-lg:w-20",
           // Mobile drawer states
           "max-md:fixed max-md:h-full max-md:w-64 max-md:translate-x-0",
@@ -146,7 +146,7 @@ export function Sidebar() {
 
         <div className="flex flex-col gap-1 px-1 shrink-0 mt-auto">
           {/* Divider */}
-          <div className="border-t border-[#EAECF0] dark:border-slate-800 my-3 w-full" />
+          <div className="border-t border-slate-200 dark:border-slate-800 my-3 w-full" />
 
           {/* Bottom Nav items */}
           <nav className="flex flex-col gap-1">

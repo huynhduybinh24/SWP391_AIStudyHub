@@ -183,10 +183,17 @@ const StatsCard = () => {
 const ProfileModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   if (!isOpen) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-lg">Profile editor placeholder
-        <div className="mt-4 flex justify-end">
-          <button onClick={onClose} className="px-3 py-1 rounded bg-gray-200">Close</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl max-w-sm w-full mx-4 animate-fade-in">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Profile Editor</h3>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Profile editor placeholder</p>
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold transition-colors text-sm cursor-pointer"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>

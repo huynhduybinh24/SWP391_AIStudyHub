@@ -321,7 +321,7 @@ export function ShareAccessModal({
                         setEditorsCanShare(e.target.checked)
                         triggerToast(e.target.checked ? t.shareModal.editorsCanShareToastTrue : t.shareModal.editorsCanShareToastFalse)
                       }}
-                      className="w-5 h-5 rounded border-slate-350 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
+                      className="w-5 h-5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
                     />
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-normal">
@@ -341,7 +341,7 @@ export function ShareAccessModal({
                         setViewersCanDownload(e.target.checked)
                         triggerToast(e.target.checked ? t.shareModal.viewersCanDownloadToastTrue : t.shareModal.viewersCanDownloadToastFalse)
                       }}
-                      className="w-5 h-5 rounded border-slate-355 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
+                      className="w-5 h-5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
                     />
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-normal">

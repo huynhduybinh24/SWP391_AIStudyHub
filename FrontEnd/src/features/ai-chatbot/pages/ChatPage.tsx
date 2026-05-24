@@ -590,7 +590,7 @@ export function ChatPage() {
                 </button>
                 <button
                   onClick={() => setSearchModalOpen(true)}
-                  className="flex items-center justify-center gap-3 h-14 rounded-2xl bg-slate-50 dark:bg-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-250 font-bold border border-slate-200/50 dark:border-slate-800 active:scale-98 transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-3 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 font-bold border border-slate-200/50 dark:border-slate-800 active:scale-98 transition-all cursor-pointer"
                 >
                   <Search className="size-5" />
                   <span>{t.aiChatbot.searchChats}</span>
@@ -615,7 +615,7 @@ export function ChatPage() {
                       <div
                         key={conv.id}
                         onClick={() => !isEditing && handleOpenConversation(conv.id)}
-                        className="group relative flex items-start gap-3.5 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 hover:bg-white dark:hover:bg-slate-850 hover:border-blue-500/20 dark:hover:border-blue-500/20 hover:shadow-md cursor-pointer transition-all duration-200"
+                        className="group relative flex items-start gap-3.5 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-500/20 dark:hover:border-blue-500/20 hover:shadow-md cursor-pointer transition-all duration-200"
                       >
                         {/* Icon */}
                         <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-100/30 dark:border-blue-900/20 rounded-xl text-blue-500 dark:text-blue-400 shrink-0">
@@ -640,7 +640,7 @@ export function ChatPage() {
                               <button type="submit" className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600">
                                 <Check className="size-3.5" />
                               </button>
-                              <button type="button" onClick={() => setEditingConvId(null)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-lg hover:bg-slate-350">
+                              <button type="button" onClick={() => setEditingConvId(null)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700">
                                 <X className="size-3.5" />
                               </button>
                             </form>
@@ -657,7 +657,7 @@ export function ChatPage() {
                               <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5 font-medium">
                                 {conv.preview}
                               </p>
-                              <span className="text-[10px] text-slate-400 dark:text-slate-650 font-semibold uppercase mt-2.5 block">
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase mt-2.5 block">
                                 {conv.updatedAt}
                               </span>
                             </>
@@ -676,19 +676,19 @@ export function ChatPage() {
 
                             {/* Dropdown Menu */}
                             {activeDropdownConvId === conv.id && (
-                              <div className="absolute right-0 mt-1 z-20 w-36 bg-white dark:bg-slate-900 border border-slate-250/60 dark:border-slate-800 rounded-xl shadow-lg p-1.5 flex flex-col gap-0.5">
+                              <div className="absolute right-0 mt-1 z-20 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 flex flex-col gap-0.5">
                                 <button
                                   onClick={(e) => handleTogglePin(conv.id, e)}
-                                  className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-950 rounded-lg w-full text-left cursor-pointer"
+                                  className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg w-full text-left cursor-pointer"
                                 >
-                                  <Pin className="size-3.5 text-slate-450" />
+                                  <Pin className="size-3.5 text-slate-400" />
                                   <span>{isPinned ? "Unpin" : "Pin"}</span>
                                 </button>
                                 <button
                                   onClick={(e) => handleRenameConvClick(conv.id, conv.title, e)}
-                                  className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-950 rounded-lg w-full text-left cursor-pointer"
+                                  className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg w-full text-left cursor-pointer"
                                 >
-                                  <Edit2 className="size-3.5 text-slate-450" />
+                                  <Edit2 className="size-3.5 text-slate-400" />
                                   <span>Rename</span>
                                 </button>
                                 <hr className="border-slate-100 dark:border-slate-800 my-1" />
@@ -723,7 +723,7 @@ export function ChatPage() {
             className="flex-1 flex flex-col"
           >
             {/* Header / Top bar */}
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-4 mb-4 select-none">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4 select-none">
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => {
@@ -787,7 +787,7 @@ export function ChatPage() {
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.summarizeRecentNotes)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.summarizeRecentNotes}</span>
                       <FileText className="size-4 text-slate-400 shrink-0" />
@@ -795,7 +795,7 @@ export function ChatPage() {
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.explainQuantum)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.explainQuantum}</span>
                       <FlaskConical className="size-4 text-slate-400 shrink-0" />
@@ -803,7 +803,7 @@ export function ChatPage() {
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.generateQuiz)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.generateQuiz}</span>
                       <FileQuestion className="size-4 text-slate-400 shrink-0" />
@@ -881,16 +881,16 @@ export function ChatPage() {
                             <div className="flex items-center gap-2 ml-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                               <button
                                 onClick={() => handleCopyResponse(msg.content)}
-                                className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-250 cursor-pointer"
+                                className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                                 title={t.aiChatbot.copy || "Copy response"}
                               >
                                 <Copy className="size-3" />
                                 <span>Copy</span>
                               </button>
-                              <span className="text-slate-200 dark:text-slate-850 text-[10px] font-bold">•</span>
+                              <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">•</span>
                               <button
                                 onClick={() => handleRegenerateResponse(index)}
-                                className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-250 cursor-pointer"
+                                className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                                 title={t.aiChatbot.regenerate || "Regenerate"}
                               >
                                 <RefreshCw className="size-3" />
@@ -927,20 +927,20 @@ export function ChatPage() {
               {/* ==================================================
                   2C. COMPOSER BAR
                  ================================================== */}
-              <div className="mt-6 border-t border-slate-100 dark:border-slate-850 pt-4">
+              <div className="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4">
                 {/* Attached files ready to upload */}
                 {selectedFiles.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2 justify-start items-center">
                     {selectedFiles.map((file, idx) => (
                       <div 
                         key={idx}
-                        className="flex items-center gap-2 rounded-xl border border-blue-200/50 bg-[#e5eeff]/50 dark:border-blue-900/30 dark:bg-blue-950/30 px-3 py-1.5 text-xs text-blue-650 dark:text-blue-300 shadow-2xs"
+                        className="flex items-center gap-2 rounded-xl border border-blue-200/50 bg-[#e5eeff]/50 dark:border-blue-900/30 dark:bg-blue-950/30 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-300 shadow-2xs"
                       >
                         <FileText className="size-3.5 shrink-0 text-blue-500" />
                         <span className="truncate max-w-[150px] font-semibold">{file.name}</span>
                         <button 
                           onClick={() => handleRemoveFile(idx)}
-                          className="ml-1 rounded-full p-0.5 hover:bg-blue-250 dark:hover:bg-blue-900 text-blue-400 hover:text-blue-700 transition-colors"
+                          className="ml-1 rounded-full p-0.5 hover:bg-blue-200 dark:hover:bg-blue-900 text-blue-400 hover:text-blue-700 transition-colors"
                         >
                           <X className="size-3" />
                         </button>
@@ -985,7 +985,7 @@ export function ChatPage() {
                         <button
                           type="button"
                           onClick={() => setAttachDropdownOpen(!attachDropdownOpen)}
-                          className="text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 transition-all cursor-pointer flex items-center justify-center"
+                          className="text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center"
                           title={t.aiChatbot.attachFiles}
                         >
                           <Plus className={cn("size-5 transition-transform", attachDropdownOpen && "rotate-45")} />
@@ -996,23 +996,23 @@ export function ChatPage() {
                           <div className="absolute left-0 bottom-full mb-2 z-20 w-52 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 flex flex-col gap-0.5">
                             <button
                               onClick={handleAttachClick}
-                              className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-655 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-950 rounded-xl w-full text-left cursor-pointer transition-colors"
+                              className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-xl w-full text-left cursor-pointer transition-colors"
                             >
-                              <Paperclip className="size-4 text-slate-450" />
+                              <Paperclip className="size-4 text-slate-400" />
                               <span>{t.aiChatbot.uploadFile || "Upload File"}</span>
                             </button>
                             <button
                               onClick={handleAttachFromDocs}
-                              className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-655 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-950 rounded-xl w-full text-left cursor-pointer transition-colors"
+                              className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-xl w-full text-left cursor-pointer transition-colors"
                             >
-                              <FileText className="size-4 text-slate-450" />
+                              <FileText className="size-4 text-slate-400" />
                               <span>{t.aiChatbot.addFromMyDocuments || "Add from My Documents"}</span>
                             </button>
                             <button
                               onClick={handleAttachFromShared}
-                              className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-655 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-950 rounded-xl w-full text-left cursor-pointer transition-colors"
+                              className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-xl w-full text-left cursor-pointer transition-colors"
                             >
-                              <FolderOpen className="size-4 text-slate-450" />
+                              <FolderOpen className="size-4 text-slate-400" />
                               <span>{t.aiChatbot.addFromSharedFiles || "Add from Shared Files"}</span>
                             </button>
                           </div>
@@ -1036,7 +1036,7 @@ export function ChatPage() {
                           "p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5",
                           isListening
                             ? "bg-rose-50 border border-rose-100 text-rose-500 dark:bg-rose-950/20 dark:border-rose-900/30"
-                            : "text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-850"
+                            : "text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                         )}
                         title={t.aiChatbot.voiceInput}
                       >
@@ -1102,7 +1102,7 @@ export function ChatPage() {
           {/* Searched chats results list */}
           <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
             {filteredConversations.length === 0 ? (
-              <div className="text-center py-10 text-slate-450 dark:text-slate-500 text-sm font-semibold">
+              <div className="text-center py-10 text-slate-400 dark:text-slate-500 text-sm font-semibold">
                 {t.aiChatbot.noChatsFound || "No chats found"}
               </div>
             ) : (
@@ -1114,18 +1114,18 @@ export function ChatPage() {
                     setSearchModalOpen(false)
                     setSearchQuery("")
                   }}
-                  className="flex items-start gap-3 p-3.5 rounded-xl border border-transparent hover:border-slate-200/60 dark:hover:border-slate-850 hover:bg-slate-50/50 dark:hover:bg-slate-950/20 text-left w-full cursor-pointer transition-all"
+                  className="flex items-start gap-3 p-3.5 rounded-xl border border-transparent hover:border-slate-200/60 dark:hover:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-950/20 text-left w-full cursor-pointer transition-all"
                 >
                   <MessageSquare className="size-4 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-bold text-slate-850 dark:text-slate-200 truncate leading-snug">
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate leading-snug">
                       {conv.title}
                     </h4>
                     <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5 font-medium">
                       {conv.preview}
                     </p>
                   </div>
-                  <span className="text-[9px] text-slate-400 dark:text-slate-650 font-bold uppercase shrink-0 self-center">
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase shrink-0 self-center">
                     {conv.updatedAt}
                   </span>
                 </button>
