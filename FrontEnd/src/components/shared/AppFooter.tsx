@@ -69,19 +69,19 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
           <p className="text-sm font-medium">
             {t.footer.copyright}
           </p>
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-6 md:pr-24">
             <Link
               to="/help"
               className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               {t.footer.supportCenter}
             </Link>
-            <Link
-              to="/contact"
-              className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            <a
+              href="mailto:partnership@aistudyhub.com?subject=Partnership%20Inquiry"
+              className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
             >
               {t.footer.partnershipContact}
-            </Link>
+            </a>
           </nav>
         </div>
       </footer>

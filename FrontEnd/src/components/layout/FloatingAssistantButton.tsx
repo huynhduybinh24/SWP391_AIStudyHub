@@ -61,7 +61,7 @@ export function FloatingAssistantButton() {
 
   return (
     <>
-      <div className="fixed bottom-[24px] right-[24px] z-50">
+      <div className="fixed bottom-4 right-[20px] md:bottom-4 md:right-[24px] z-50">
         <button
           onClick={handleToggle}
           aria-label="Open AI Chatbot"
