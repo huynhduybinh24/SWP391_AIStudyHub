@@ -2,38 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Send, Loader2, X, Paperclip, FileIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUiStore } from '@/stores/uiStore'
-
-const AIChatbotIcon = ({ className, ...props }: any) => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
-    <defs>
-      <linearGradient id="ai-bot-body" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#ffffff" />
-        <stop offset="1" stopColor="#e0e7ff" />
-      </linearGradient>
-      <linearGradient id="ai-bot-face" x1="6" y1="8" x2="18" y2="18" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#0f172a" />
-        <stop offset="1" stopColor="#1e293b" />
-      </linearGradient>
-      <filter id="ai-bot-glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="1.5" result="blur" />
-        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-      </filter>
-      <filter id="ai-bot-shadow" x="-10%" y="-10%" width="120%" height="120%">
-        <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.15" />
-      </filter>
-    </defs>
-    <rect x="3" y="6" width="18" height="14" rx="5" fill="url(#ai-bot-body)" filter="url(#ai-bot-shadow)" />
-    <rect x="5.5" y="8.5" width="13" height="9" rx="3" fill="url(#ai-bot-face)" />
-    <circle cx="9.5" cy="13" r="1.8" fill="#38bdf8" filter="url(#ai-bot-glow)" />
-    <circle cx="14.5" cy="13" r="1.8" fill="#38bdf8" filter="url(#ai-bot-glow)" />
-    <path d="M7.5 10.5h1.5" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
-    <path d="M15 10.5h1.5" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
-    <path d="M12 6V2.5" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="12" cy="2" r="1.2" fill="#38bdf8" filter="url(#ai-bot-glow)" />
-    <path d="M3 11c-1 0-1.5 1-1.5 2s.5 2 1.5 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M21 11c1 0 1.5 1 1.5 2s-.5 2-1.5 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-)
+import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
+import { motion } from 'framer-motion'
 
 interface Message {
   id: string
@@ -126,53 +96,67 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
   }
 
   return (
-    <div className="fixed bottom-[85px] right-[20px] z-50 flex h-[450px] max-h-[calc(100vh-115px)] w-[360px] flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl transition-all duration-300 text-slate-900 dark:text-slate-100">
+    <motion.div 
+      initial={{ opacity: 0, y: 30, x: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 30, x: 20, scale: 0.95 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="fixed bottom-[85px] right-[20px] z-50 flex h-[480px] max-h-[calc(100vh-115px)] w-[380px] flex-col overflow-hidden rounded-[24px] border border-white/40 dark:border-slate-700/50 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] text-slate-900 dark:text-slate-100"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/50 bg-[#3155F6] p-4 text-white">
+      <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 bg-gradient-to-r from-blue-600/90 to-indigo-600/90 p-4 text-white">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 items-center justify-center rounded-full bg-white/20">
+          <div className="flex size-9 items-center justify-center rounded-full bg-white/20 shadow-inner">
             <AIChatbotIcon className="size-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-[15px]">AI Assistant</h3>
-            <p className="text-xs text-white/80">Online</p>
+            <h3 className="font-semibold text-[15px] tracking-tight">AI Assistant</h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <p className="text-[11px] font-medium text-white/90">Online</p>
+            </div>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="rounded-full p-1.5 hover:bg-white/20 transition-colors"
+          className="rounded-full p-2 hover:bg-white/20 transition-colors"
         >
-          <X className="size-5" />
+          <X className="size-4.5" />
         </button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-slate-50 dark:bg-slate-950">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
         {messages.map((msg) => (
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             key={msg.id}
             className={cn(
-              "flex items-start gap-2 max-w-[85%]",
+              "flex items-end gap-2.5 max-w-[85%]",
               msg.sender === 'user' ? "ml-auto flex-row-reverse" : ""
             )}
           >
             {msg.sender === 'bot' && (
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30">
-                <AIChatbotIcon className="size-4 text-[#3155F6]" />
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700">
+                <AIChatbotIcon className="size-4" />
               </div>
             )}
             <div
               className={cn(
-                "rounded-2xl p-3 text-[14px] leading-relaxed shadow-sm whitespace-pre-line",
+                "rounded-[20px] p-3.5 text-[14px] leading-relaxed shadow-sm whitespace-pre-line border",
                 msg.sender === 'user'
-                  ? "bg-blue-600 text-white rounded-tr-none"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-tl-none"
+                  ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-transparent rounded-br-sm"
+                  : "bg-white/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-800 dark:text-slate-200 border-slate-200/50 dark:border-slate-700/50 rounded-bl-sm"
               )}
             >
               {msg.attachment && (
                 <div className={cn(
-                  "mb-2 flex items-center gap-2 rounded-lg p-2 text-xs font-medium",
-                  msg.sender === 'user' ? "bg-white/20" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                  "mb-2.5 flex items-center gap-2 rounded-xl p-2.5 text-xs font-semibold",
+                  msg.sender === 'user' ? "bg-white/15 border border-white/20" : "bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600"
                 )}>
                   <FileIcon className="size-4 shrink-0" />
                   <span className="truncate">{msg.attachment.name}</span>
@@ -180,75 +164,77 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
               )}
               {msg.text}
             </div>
-          </div>
+          </motion.div>
         ))}
         {isTyping && (
-          <div className="flex items-start gap-2 max-w-[85%]">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30">
-              <AIChatbotIcon className="size-4 text-[#3155F6]" />
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-end gap-2.5 max-w-[85%]">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700">
+              <AIChatbotIcon className="size-4" />
             </div>
-            <div className="rounded-2xl rounded-tl-none p-3 text-[14px] bg-slate-100 dark:bg-slate-800 text-[#737686] dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center gap-2">
-              <Loader2 className="size-4 animate-spin text-[#3155F6]" />
-              <span>Thinking...</span>
+            <div className="rounded-[20px] rounded-bl-sm p-3.5 px-4 text-[14px] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-3 shadow-sm">
+              <Loader2 className="size-4 animate-spin text-blue-500" />
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Thinking...</span>
             </div>
-          </div>
+          </motion.div>
         )}
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-2" />
       </div>
 
       {/* Input */}
-      <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
-        {selectedFile && (
-          <div className="mb-2 flex items-center justify-between rounded-lg border border-[#3155F6]/20 dark:border-blue-900/30 bg-[#e5eeff]/50 dark:bg-blue-950/30 px-3 py-2 text-sm text-[#3155F6] dark:text-blue-400">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <FileIcon className="size-4 shrink-0" />
-              <span className="truncate font-medium">{selectedFile.name}</span>
+      <div className="bg-transparent p-4 pt-0">
+        <div className="relative flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md shadow-sm focus-within:border-blue-500/50 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+          {selectedFile && (
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-3 py-2 text-xs font-medium bg-blue-50/50 dark:bg-blue-900/20 rounded-t-2xl">
+              <div className="flex items-center gap-2 overflow-hidden text-blue-600 dark:text-blue-400">
+                <FileIcon className="size-3.5 shrink-0" />
+                <span className="truncate">{selectedFile.name}</span>
+              </div>
+              <button 
+                onClick={() => setSelectedFile(null)}
+                className="ml-2 rounded-full p-1 hover:bg-blue-100 dark:hover:bg-blue-800/50 text-blue-600 dark:text-blue-400 transition-colors"
+              >
+                <X className="size-3.5" />
+              </button>
             </div>
-            <button 
-              onClick={() => setSelectedFile(null)}
-              className="ml-2 rounded-full p-1 hover:bg-[#3155F6]/10"
+          )}
+          <div className="flex items-end px-2 py-2">
+            <input 
+              type="file" 
+              className="hidden" 
+              ref={fileInputRef}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setSelectedFile(e.target.files[0])
+                }
+                e.target.value = ''
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex size-9 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition-colors mb-0.5"
+              title="Attach File"
             >
-              <X className="size-3.5" />
+              <Paperclip className="size-4.5" />
+            </button>
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Message AI Assistant..."
+              className="max-h-[120px] min-h-[40px] w-full resize-none bg-transparent px-2 py-2.5 text-[14px] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none scrollbar-thin scrollbar-thumb-slate-200"
+              rows={1}
+            />
+            <button
+              onClick={() => handleSend()}
+              disabled={!inputText.trim() && !selectedFile}
+              className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md transition-all hover:bg-blue-500 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none mb-0.5"
+            >
+              <Send className="size-4" />
             </button>
           </div>
-        )}
-        <div className="flex items-end gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2 focus-within:border-[#3155F6]/40 focus-within:ring-1 focus-within:ring-[#3155F6]/40">
-          <input 
-            type="file" 
-            className="hidden" 
-            ref={fileInputRef}
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                setSelectedFile(e.target.files[0])
-              }
-              e.target.value = ''
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-            title="Attach File"
-          >
-            <Paperclip className="size-4.5" />
-          </button>
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="max-h-[100px] min-h-[36px] w-full resize-none bg-transparent py-1.5 text-[14px] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none"
-            rows={1}
-          />
-          <button
-            onClick={() => handleSend()}
-            disabled={!inputText.trim() && !selectedFile}
-            className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#3155F6] text-white transition-all hover:bg-[#2563eb] disabled:opacity-50"
-          >
-            <Send className="size-4" />
-          </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
