@@ -92,11 +92,11 @@ function SidebarLink({ to, icon: Icon, label, pathname, onClick }: SidebarLinkPr
         onClick={onClick}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          "group relative flex items-center h-12 text-sm font-bold no-underline select-none transition-all duration-200 w-full min-w-0 overflow-hidden shrink-0",
+          "group relative flex items-center h-11 text-[15px] font-bold no-underline select-none transition-all duration-200 w-full min-w-0 overflow-hidden shrink-0",
           isSidebarCollapsed 
-            ? "justify-center px-2 rounded-2xl w-12 h-12 mx-auto" 
-            : "px-4 rounded-2xl gap-3",
-          "md:max-lg:justify-center md:max-lg:px-2 md:max-lg:w-12 md:max-lg:h-12 md:max-lg:mx-auto md:max-lg:rounded-2xl",
+            ? "justify-center px-2 rounded-2xl w-10 h-10 mx-auto" 
+            : "px-3 rounded-xl gap-3",
+          "md:max-lg:justify-center md:max-lg:px-2 md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:rounded-2xl",
           active
             ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
             : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
@@ -167,30 +167,30 @@ export function Sidebar() {
       <aside
         className={cn(
           "flex h-screen flex-col justify-between border-r bg-white text-slate-900 border-slate-200 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-800 py-5 sticky top-0 left-0 z-50 select-none transition-all duration-300 ease-in-out overflow-x-hidden",
-          isSidebarCollapsed ? "w-[88px] px-4" : "w-[280px] px-5",
+          isSidebarCollapsed ? "w-[72px] px-4" : "w-[240px] px-4",
           // Mobile drawer states
-          "max-md:fixed max-md:h-full max-md:w-[280px] max-md:translate-x-0 max-md:px-5 max-md:py-5",
+          "max-md:fixed max-md:h-full max-md:w-[240px] max-md:translate-x-0 max-md:px-4 max-md:py-5",
           sidebarOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full"
         )}
       >
         <div className="flex flex-col gap-0 flex-1 min-h-0">
           {/* Logo and Brand */}
           <div className={cn(
-            "flex items-center shrink-0 border-b border-slate-200 dark:border-slate-800 transition-all duration-300 pb-5 mb-6 overflow-hidden w-full min-w-0",
-            isSidebarCollapsed ? "flex-col gap-3 justify-center px-0" : "justify-between px-1"
+            "flex items-center shrink-0 border-b border-slate-200 dark:border-slate-800 transition-all duration-300 pb-4 mb-5 overflow-hidden w-full min-w-0",
+            isSidebarCollapsed ? "flex-col gap-2.5 justify-center px-0" : "justify-between px-1"
           )}>
-            <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-3 no-underline shrink-0 max-w-full overflow-hidden">
+            <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden">
               <img
                 src="/logo.png"
                 alt="AI Study Hub"
-                className="w-9 h-9 shrink-0 object-contain"
+                className="w-8 h-8 shrink-0 object-contain"
               />
               {!isSidebarCollapsed && (
                 <div className="flex flex-col justify-center animate-fade-in whitespace-nowrap overflow-hidden min-w-0 text-left">
-                  <h1 className="text-base font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                  <h1 className="text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
                     AI Study Hub
                   </h1>
-                  <p className="text-xs font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                     Focused Intelligence
                   </p>
                 </div>
@@ -234,8 +234,7 @@ export function Sidebar() {
 
           {/* Navigation list */}
           <nav className={cn(
-            "flex-1 overflow-y-auto overflow-x-hidden flex flex-col pr-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent",
-            isSidebarCollapsed ? "gap-3" : "gap-2"
+            "flex-1 overflow-y-auto overflow-x-hidden flex flex-col pr-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent gap-2"
           )}>
             {mainNavItems.map((item) => (
               <SidebarLink
@@ -252,10 +251,10 @@ export function Sidebar() {
 
         <div className="flex flex-col shrink-0 mt-auto overflow-hidden w-full min-w-0">
           {/* Section Divider & Spacing to separate Main nav from Secondary nav */}
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-6 mt-6 w-full" />
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4 w-full" />
 
           {/* Bottom Nav items */}
-          <nav className={cn("flex flex-col overflow-x-hidden", isSidebarCollapsed ? "gap-3" : "gap-2")}>
+          <nav className={cn("flex flex-col overflow-x-hidden gap-2")}>
             {bottomNavItems.map((item) => (
               <SidebarLink
                 key={item.path}
@@ -274,14 +273,14 @@ export function Sidebar() {
               to={user?.plan === 'pro' ? '#' : '/dashboard/upgrade'}
               onClick={user?.plan === 'pro' ? undefined : handleLinkClick}
               className={cn(
-                "mt-6 mb-6 flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 shadow-sm shrink-0 no-underline w-full max-w-full overflow-hidden",
+                "mt-4 mb-4 flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 shadow-sm shrink-0 no-underline w-full max-w-full overflow-hidden",
                 isSidebarCollapsed 
-                  ? "rounded-2xl w-12 h-12 mx-auto justify-center p-0" 
-                  : "rounded-2xl px-4 h-14",
+                  ? "rounded-2xl w-10 h-10 mx-auto justify-center p-0" 
+                  : "rounded-2xl px-4 h-12",
                 user?.plan === 'pro' 
                   ? "bg-slate-100 text-slate-500 cursor-default dark:bg-slate-800 dark:text-slate-400" 
                   : "text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 cursor-pointer",
-                "md:max-lg:w-12 md:max-lg:h-12 md:max-lg:mx-auto md:max-lg:rounded-2xl md:max-lg:p-0 md:max-lg:mt-6 md:max-lg:mb-6"
+                "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:rounded-2xl md:max-lg:p-0 md:max-lg:mt-4 md:max-lg:mb-4"
               )}
             >
               <Zap className={cn("size-5 shrink-0", user?.plan === 'pro' ? "text-slate-500 dark:text-slate-400" : "text-white")} strokeWidth={2.25} />
@@ -294,17 +293,17 @@ export function Sidebar() {
           </PortalTooltip>
 
           {/* Footer / Profile Section Wrapper */}
-          <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col w-full">
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col w-full">
             {/* User Profile Card */}
             <PortalTooltip content={`${profile.name} (${user?.email})`} disabled={!isSidebarCollapsed}>
               <div className={cn(
-                "flex items-center gap-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 relative transition-all duration-200 overflow-hidden",
+                "flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 relative transition-all duration-200 overflow-hidden",
                 isSidebarCollapsed 
-                  ? "w-12 h-12 mx-auto justify-center p-0 border-none bg-transparent dark:bg-transparent" 
-                  : "p-3 w-full max-w-full h-14",
-                "md:max-lg:w-12 md:max-lg:h-12 md:max-lg:mx-auto md:max-lg:justify-center md:max-lg:p-0 md:max-lg:border-none md:max-lg:bg-transparent md:max-lg:dark:bg-transparent"
+                  ? "w-10 h-10 mx-auto justify-center p-0 border-none bg-transparent dark:bg-transparent rounded-full" 
+                  : "p-3 w-full max-w-full rounded-2xl",
+                "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:justify-center md:max-lg:p-0 md:max-lg:border-none md:max-lg:bg-transparent md:max-lg:dark:bg-transparent md:max-lg:rounded-full"
               )}>
-                <div className="w-9 h-9 rounded-lg bg-slate-200 dark:bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-800">
+                <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-800">
                   {profile.avatarUrl ? (
                     <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
                   ) : (
@@ -313,10 +312,10 @@ export function Sidebar() {
                 </div>
                 {!isSidebarCollapsed && (
                   <div className="min-w-0 flex-1 md:max-lg:hidden text-left animate-fade-in overflow-hidden">
-                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate leading-tight">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate leading-tight">
                       {profile.name}
                     </p>
-                    <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate leading-none mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-none mt-1">
                       {user?.email}
                     </p>
                   </div>
@@ -330,11 +329,11 @@ export function Sidebar() {
                 type="button"
                 onClick={() => setLogoutModalOpen(true)}
                 className={cn(
-                  "mt-4 flex items-center gap-3 rounded-2xl text-sm font-bold transition-all duration-200 no-underline select-none text-left cursor-pointer w-full max-w-full overflow-hidden hover:bg-red-50 text-red-600 dark:hover:bg-red-500/10 dark:text-red-400 relative shrink-0 h-12",
+                  "mt-3 flex items-center gap-3 rounded-xl text-[15px] font-bold transition-all duration-200 no-underline select-none text-left cursor-pointer w-full max-w-full overflow-hidden hover:bg-red-50 text-red-600 dark:hover:bg-red-500/10 dark:text-red-400 relative shrink-0 h-11",
                   isSidebarCollapsed 
-                    ? "w-12 h-12 mx-auto justify-center p-0" 
-                    : "px-4",
-                  "md:max-lg:w-12 md:max-lg:h-12 md:max-lg:mx-auto md:max-lg:justify-center md:max-lg:p-0 md:max-lg:mt-4"
+                    ? "w-10 h-10 mx-auto justify-center p-0 rounded-2xl" 
+                    : "px-3",
+                  "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:justify-center md:max-lg:p-0 md:max-lg:mt-3"
                 )}
               >
                 <LogOut className="size-5 shrink-0 text-red-500 dark:text-red-400" />

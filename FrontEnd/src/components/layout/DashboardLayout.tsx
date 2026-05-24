@@ -31,7 +31,7 @@ export function DashboardLayout() {
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto flex flex-col justify-between">
           <main className="px-8 pb-10 pt-6 flex-1">
-            <div className="mx-auto max-w-[1000px]">
+            <div className="mx-auto max-w-[1200px]">
               <Outlet />
             </div>
           </main>
