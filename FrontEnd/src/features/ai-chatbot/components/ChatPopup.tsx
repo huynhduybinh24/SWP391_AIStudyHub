@@ -146,8 +146,8 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
               ].map((prompt, i) => (
                 <button
                   key={i}
-                  onClick={() => setInputText(prompt.label)}
-                  className="flex items-center gap-2.5 px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm text-[12.5px] font-medium text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 hover:shadow-sm transition-all"
+                  onClick={() => handleSend(prompt.label)}
+                  className="flex items-center gap-2.5 px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm text-[12.5px] font-medium text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 hover:shadow-sm transition-all active:scale-[0.98]"
                 >
                   <div className="text-blue-500 opacity-70">
                     {prompt.icon}
