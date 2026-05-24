@@ -437,6 +437,93 @@ export const en = {
     faqQ5: "What is the storage limit?",
     faqA5: "Free plans include 100MB of storage. Upgrade to Pro for 10GB of storage and unlimited AI analyses each month."
   },
+  searchResultsPage: {
+    backToDocs: "Back to Documents",
+    resultsCount: (count: number, term: string) => `${count} Results for "${term}"`,
+    searchHistory: "Search history:",
+    historyPsychology: "Psychology",
+    historyBrain: "Brain",
+    historyBiology: "Biology",
+    subject: "SUBJECT",
+    subjects: {
+      neuroscience: "Neuroscience",
+      biology: "Biology",
+      psychology: "Psychology"
+    },
+    fileType: "FILE TYPE",
+    fileTypes: {
+      pdf: "PDF",
+      notes: "Lecture Notes",
+      presentations: "Presentations"
+    },
+    dateAdded: "DATE ADDED",
+    dateOptions: {
+      last7Days: "Last 7 Days",
+      last30Days: "Last 30 Days",
+      allTime: "All Time"
+    },
+    noMatches: "No matches found",
+    noMatchesSub: "No documents in search match the selected filters. Try updating your subject or format checklists.",
+    resetFilters: "Reset Filter Choices",
+    aiGenerated: "AI GENERATED",
+    bookmarkTooltip: "Bookmark document",
+    shareTooltip: "Share document link",
+    toastBookmarkAdded: "Document successfully bookmarked!",
+    toastBookmarkRemoved: "Bookmark removed.",
+    toastShareSuccess: (title: string) => `Copied shareable link for "${title}" to clipboard!`,
+    toastShareError: "Failed to copy link to clipboard.",
+    toastShareNotSupported: "Clipboard sharing not supported on this browser.",
+    defaultLabel: "STUDY GUIDE",
+    defaultDesc: (title: string) => `This high-fidelity study material on ${title} has been indexed by our AI system. It outlines core academic structures, experimental data definitions, and diagnostic review procedures to elevate comprehension and test performance.`,
+    defaultTags: ["#exam-prep", "#study-notes"],
+    documentDetails: {
+      'neuro-1': {
+        label: 'STUDY GUIDE',
+        description: "This comprehensive summary covers the primary anatomical regions of the human brain, including the frontal lobe's role in executive function, the temporal lobe's processing of auditory information, and the intricate neural pathways connecting the limbic system.",
+        tags: ['#neuro-anatomy', '#exam-prep', '#basics']
+      },
+      'neuro-2': {
+        label: 'LECTURE NOTES',
+        description: 'Detailed analysis of sensory integration, cortical pathways, neural signaling transduction networks, and memory encoding mechanisms inside the temporal lobe and hippocampal complexes.',
+        tags: ['#cognitive-neuro', '#lectures', '#brain-signals']
+      },
+      'neuro-3': {
+        label: 'STUDY GUIDE',
+        description: 'A study guide explaining key neurotransmitters: Dopamine, Serotonin, GABA, Glutamate, and Acetylcholine, detailing their pathways, receptors, and behavioral influences.',
+        tags: ['#neurotransmitters', '#exam-notes', '#biochemistry']
+      },
+      'neuro-4': {
+        label: 'LECTURE NOTES',
+        description: 'Analysis of chemical and electrical synapses, action potentials propagation, synaptic cleft dynamics, and neurotransmitters release mechanisms under high frequency stimulation.',
+        tags: ['#synapses', '#cellular-neuro', '#basics']
+      },
+      'neuro-5': {
+        label: 'RESEARCH PAPER',
+        description: 'Research analysis on structural neuroplasticity, synaptic pruning, dendritic branching, and experience-dependent microstructural alterations within the mammalian neocortex.',
+        tags: ['#neuroplasticity', '#research', '#advanced']
+      },
+      'psych-1': {
+        label: 'LECTURE NOTES',
+        description: 'Introduction to neural foundations of behavioral psychology, Pavlovian classical conditioning mechanisms, operant reinforcement pathways, and cognitive development theories.',
+        tags: ['#neuropsychology', '#psychology-basics', '#learning']
+      },
+      'psych-2': {
+        label: 'STUDY GUIDE',
+        description: 'Study companion focusing on reinforcement schedules, Skinner box models, behavior modeling, and underlying neurotransmitter actions in positive vs negative conditioning.',
+        tags: ['#behavioral-psych', '#conditioning', '#basics']
+      },
+      'doc-2': {
+        label: 'LECTURE NOTES',
+        description: 'Lecture outline examining molecular biology pathways, neural gene expressions, neurogenesis indicators, and cellular cloning technologies linked to neural tissue culture.',
+        tags: ['#molecular-bio', '#cellular-signaling', '#genetics']
+      },
+      'doc-6': {
+        label: 'RESEARCH PAPER',
+        description: 'Draft laboratory report detailing molecular genetic profiling, genetic inheritance patterns, neuro-genetic hereditary mutations, and transgenic chromosome mapping.',
+        tags: ['#genetics-lab', '#report', '#neuro-genetics']
+      }
+    }
+  },
   footer: {
     copyright: "© 2024 AI Study Hub. Empowering Deep Learning.",
     privacyPolicy: "Privacy Policy",
