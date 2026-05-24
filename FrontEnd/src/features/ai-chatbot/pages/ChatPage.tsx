@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { 
-  FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send, 
-  Loader2, User, X, Plus, Search, Copy, RefreshCw, MoreVertical, 
+import {
+  FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send,
+  Loader2, User, X, Plus, Search, Copy, RefreshCw, MoreVertical,
   Trash2, Edit2, Pin, MessageSquare, Check, Sparkles, FolderOpen, ArrowLeft
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -127,7 +127,7 @@ export function ChatPage() {
   const [searchModalOpen, setSearchModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [pinnedConvIds, setPinnedConvIds] = useState<string[]>([])
-  
+
   // --- Selected Files State ---
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [fileError, setFileError] = useState<string | null>(null)
@@ -345,7 +345,7 @@ export function ChatPage() {
 
     // Save active conversation state
     let targetConvId = activeConversationId
-    
+
     if (!targetConvId) {
       // First message in a new chat: Create a new conversation
       targetConvId = `chat-${Date.now()}`
@@ -361,7 +361,7 @@ export function ChatPage() {
       setActiveConversationId(targetConvId)
     } else {
       // Update existing conversation
-      setConversations((prev) => 
+      setConversations((prev) =>
         prev.map((c) => {
           if (c.id === targetConvId) {
             return {
@@ -381,7 +381,7 @@ export function ChatPage() {
     setTimeout(() => {
       setIsTyping(false)
       let botResponse = t.aiChatbot.botResponseDefault
-      
+
       const lowerText = text.toLowerCase()
       if (lowerText.includes('summarize') || lowerText.includes('notes') || lowerText.includes('tóm tắt') || lowerText.includes('요약') || lowerText.includes('要約')) {
         botResponse = t.aiChatbot.botResponseNotes
@@ -402,7 +402,7 @@ export function ChatPage() {
       setMessages((prev) => {
         const finalMsgs = [...prev, newBotMsg]
         // Save to conversation
-        setConversations((convList) => 
+        setConversations((convList) =>
           convList.map((c) => {
             if (c.id === targetConvId) {
               return { ...c, messages: finalMsgs }
@@ -451,7 +451,7 @@ export function ChatPage() {
       // Temporarily remove assistant message from this point
       const slicedMsgs = messages.slice(0, index)
       setMessages(slicedMsgs)
-      
+
       setTimeout(() => {
         setIsTyping(false)
         const botResponse = t.aiChatbot.botResponseDefault
@@ -465,7 +465,7 @@ export function ChatPage() {
         setMessages(finalMsgs)
 
         if (activeConversationId) {
-          setConversations((prev) => 
+          setConversations((prev) =>
             prev.map((c) => {
               if (c.id === activeConversationId) {
                 return { ...c, messages: finalMsgs }
@@ -513,7 +513,7 @@ export function ChatPage() {
   const handleSaveRename = (id: string, e: React.FormEvent) => {
     e.preventDefault()
     if (!editingTitle.trim()) return
-    setConversations((prev) => 
+    setConversations((prev) =>
       prev.map((c) => {
         if (c.id === id) {
           return { ...c, title: editingTitle }
@@ -535,7 +535,7 @@ export function ChatPage() {
   })
 
   // Realtime search filter
-  const filteredConversations = conversations.filter((c) => 
+  const filteredConversations = conversations.filter((c) =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.preview.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.messages.some((m) => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -551,7 +551,7 @@ export function ChatPage() {
   return (
     <div className="flex flex-col min-h-[calc(100vh-220px)] justify-between select-none font-sans relative">
       <AnimatePresence mode="wait">
-        
+
         {/* ==================================================
             1. INITIAL START SCREEN
            ================================================== */}
@@ -581,7 +581,7 @@ export function ChatPage() {
 
             {/* Central Panel */}
             <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/70 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] p-6 md:p-8 flex flex-col gap-8 transition-colors duration-300">
-              
+
               {/* Primary Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
@@ -628,7 +628,7 @@ export function ChatPage() {
                         {/* Middle Details */}
                         <div className="flex-1 min-w-0 pr-6 text-left">
                           {isEditing ? (
-                            <form 
+                            <form
                               onSubmit={(e) => handleSaveRename(conv.id, e)}
                               className="flex items-center gap-2 mt-0.5"
                               onClick={(e) => e.stopPropagation()}
@@ -714,7 +714,7 @@ export function ChatPage() {
             </div>
           </motion.div>
         ) : (
-          
+
           /* ==================================================
               2. CHAT LAYOUT WORKSPACE
              ================================================== */
@@ -740,8 +740,8 @@ export function ChatPage() {
                 </button>
                 <div>
                   <h1 className="text-lg font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1.5">
-                    {activeConversationId 
-                      ? conversations.find(c => c.id === activeConversationId)?.title 
+                    {activeConversationId
+                      ? conversations.find(c => c.id === activeConversationId)?.title
                       : t.aiChatbot.newChat
                     }
                   </h1>
@@ -772,7 +772,7 @@ export function ChatPage() {
 
             {/* Chat Area Container */}
             <div className="flex-1 flex flex-col justify-between">
-              
+
               {/* ==================================================
                   2A. EMPTY CHAT STATE
                  ================================================== */}
@@ -790,26 +790,26 @@ export function ChatPage() {
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.summarizeRecentNotes)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-700 cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-5 py-4 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.summarizeRecentNotes}</span>
-                      <FileText className="size-4 text-blue-500 shrink-0" />
+                      <FileText className="size-4 opacity-70 shrink-0" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.explainQuantum)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-700 cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-5 py-4 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.explainQuantum}</span>
-                      <FlaskConical className="size-4 text-blue-500 shrink-0" />
+                      <FlaskConical className="size-4 opacity-70 shrink-0" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.generateQuiz)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-700 cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-5 py-4 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.generateQuiz}</span>
-                      <FileQuestion className="size-4 text-blue-500 shrink-0" />
+                      <FileQuestion className="size-4 opacity-70 shrink-0" />
                     </button>
                   </div>
                 </div>
@@ -839,7 +839,7 @@ export function ChatPage() {
                             <User className="size-4" />
                           </div>
                         ) : (
-                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50">
+                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700/50">
                             <AIChatbotIcon className="size-4" />
                           </div>
                         )}
@@ -851,42 +851,26 @@ export function ChatPage() {
                             className={cn(
                               "rounded-[20px] p-4 text-[14.5px] leading-relaxed shadow-sm border whitespace-pre-line text-left flex flex-col gap-3",
                               isUser
-                                ? "bg-blue-600 text-white border-transparent rounded-tr-sm"
-                                : "bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border-slate-100 dark:border-slate-700/50 rounded-tl-sm"
+                                ? "bg-gradient-to-tr from-blue-600 to-blue-500 text-white border-transparent rounded-tr-sm"
+                                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-100 dark:border-slate-700/50 rounded-tl-sm"
                             )}
                           >
                             {msg.content && <div>{msg.content}</div>}
-                            
-                            {/* Attachments if any */}
-                            {msg.attachments && msg.attachments.length > 0 && (
-                              <div className="flex flex-col gap-2 mt-2">
-                                {msg.attachments.map((file, idx) => (
-                                  <div key={idx} className={cn(
-                                    "flex items-center gap-2.5 rounded-xl p-3 text-xs font-semibold border",
-                                    isUser ? "bg-white/10 border-white/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
-                                  )}>
-                                    <FileText className="size-4 shrink-0" />
-                                    <span className="truncate">{file.name}</span>
-                                    <span className="ml-auto opacity-70 font-normal">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
 
-                            {/* Attached files inside user message (legacy fallback) */}
-                            {msg.files && msg.files.length > 0 && !msg.attachments && (
-                              <div className="flex flex-col gap-1.5 mt-1 border-t border-slate-200 dark:border-slate-700/50 pt-2 shrink-0">
+                            {/* Attached files */}
+                            {msg.files && msg.files.length > 0 && (
+                              <div className="flex flex-col gap-2 mt-2 border-t border-slate-200 dark:border-slate-700/50 pt-3 shrink-0">
                                 {msg.files.map((file, idx) => (
                                   <div
                                     key={idx}
                                     className={cn(
-                                      "flex items-center gap-2 rounded-xl p-2 text-[12.5px] font-medium border",
-                                      isUser ? "bg-white/10 border-white/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                                      "flex items-center gap-2.5 rounded-xl p-3 text-[12.5px] font-medium border shadow-sm",
+                                      isUser ? "bg-white/10 border-white/20 text-white" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
                                     )}
                                   >
-                                    <FileText className="size-3.5 shrink-0 opacity-80" />
+                                    <FileText className="size-4 shrink-0 opacity-80" />
                                     <span className="truncate max-w-[200px]">{file.name}</span>
-                                    <span className="text-[10px] opacity-70 shrink-0">({file.size})</span>
+                                    <span className="text-[11px] opacity-70 shrink-0 ml-auto">{file.size}</span>
                                   </div>
                                 ))}
                               </div>
@@ -927,12 +911,13 @@ export function ChatPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       className="flex items-start gap-3.5 w-full flex-row"
                     >
-                      <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50">
+                      <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700/50">
                         <AIChatbotIcon className="size-4" />
                       </div>
-                      <div className="max-w-[80%] rounded-[20px] rounded-tl-sm p-4 px-5 text-[14.5px] bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/50 flex items-center gap-3 shadow-sm">
-                        <Loader2 className="size-4.5 animate-spin text-blue-500" />
-                        <span className="font-medium text-slate-500 dark:text-slate-400">Processing...</span>
+                      <div className="max-w-[80%] rounded-[20px] rounded-tl-sm px-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 flex items-center gap-1.5 h-[42px] shadow-sm">
+                        <div className="size-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.3s]" />
+                        <div className="size-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.15s]" />
+                        <div className="size-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce" />
                       </div>
                     </motion.div>
                   )}
@@ -949,13 +934,13 @@ export function ChatPage() {
                 {selectedFiles.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2 justify-start items-center">
                     {selectedFiles.map((file, idx) => (
-                      <div 
+                      <div
                         key={idx}
                         className="flex items-center gap-2 rounded-xl border border-blue-200/50 bg-[#e5eeff]/50 dark:border-blue-900/30 dark:bg-blue-950/30 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-300 shadow-2xs"
                       >
                         <FileText className="size-3.5 shrink-0 text-blue-500" />
                         <span className="truncate max-w-[150px] font-semibold">{file.name}</span>
-                        <button 
+                        <button
                           onClick={() => handleRemoveFile(idx)}
                           className="ml-1 rounded-full p-0.5 hover:bg-blue-200 dark:hover:bg-blue-900 text-blue-400 hover:text-blue-700 transition-colors"
                         >
@@ -981,7 +966,7 @@ export function ChatPage() {
                 )}
 
                 {/* Main input composer box */}
-                <div className="rounded-[24px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 px-5 shadow-sm transition-all focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20">
+                <div className="rounded-[20px] border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 p-4 px-5 shadow-inner backdrop-blur-md transition-all duration-300 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 z-10 relative">
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -993,10 +978,10 @@ export function ChatPage() {
 
                   {/* Actions inside composer */}
                   <div className="mt-3 flex items-center justify-between border-t border-slate-100/50 dark:border-slate-800/50 pt-3">
-                    
+
                     {/* Add attachment & microphone */}
                     <div className="flex items-center gap-1.5 relative">
-                      
+
                       {/* Plus Dropdown button */}
                       <div ref={attachDropdownRef}>
                         <button
