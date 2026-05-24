@@ -177,55 +177,94 @@ export function Sidebar() {
           {/* Logo and Brand */}
           <div className={cn(
             "flex items-center shrink-0 border-b border-slate-200 dark:border-slate-800 transition-all duration-300 pb-4 mb-5 overflow-hidden w-full min-w-0",
-            isSidebarCollapsed ? "flex-col gap-2.5 justify-center px-0" : "justify-between px-1"
+            isSidebarCollapsed ? "justify-center px-0 md:justify-center md:px-0 max-md:justify-between max-md:px-1" : "justify-between px-1"
           )}>
-            <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden">
-              <img
-                src="/logo.png"
-                alt="AI Study Hub"
-                className="w-8 h-8 shrink-0 object-contain"
-              />
-              {!isSidebarCollapsed && (
-                <div className="flex flex-col justify-center animate-fade-in whitespace-nowrap overflow-hidden min-w-0 text-left">
-                  <h1 className="text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
-                    AI Study Hub
-                  </h1>
-                  <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                    Focused Intelligence
-                  </p>
-                </div>
-              )}
-            </Link>
-            
-            {/* Collapse Button inside header when expanded */}
-            {!isSidebarCollapsed && (
-              <button
-                type="button"
-                onClick={() => setSidebarCollapsed(true)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors max-md:hidden shrink-0"
-                aria-label="Collapse sidebar"
-              >
-                <PanelLeftClose className="size-5" />
-              </button>
-            )}
-
-            {/* Expand Button inside header when collapsed */}
+            {/* Collapsed Header (Desktop only) */}
             {isSidebarCollapsed && (
-              <button
-                type="button"
-                onClick={() => setSidebarCollapsed(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors max-md:hidden shrink-0 animate-fade-in"
-                aria-label="Expand sidebar"
-              >
-                <PanelLeftOpen className="size-5" />
-              </button>
+              <div className="hidden md:flex group relative size-10 items-center justify-center mx-auto shrink-0 select-none">
+                <img
+                  src="/logo.png"
+                  alt="AI Study Hub"
+                  className="
+                    size-8 transition-opacity duration-200
+                    group-hover:opacity-0 group-focus-within:opacity-0 object-contain
+                  "
+                />
+
+                <button
+                  type="button"
+                  aria-label="Expand sidebar"
+                  onClick={() => setSidebarCollapsed(false)}
+                  className="
+                    absolute inset-0 flex size-10 items-center justify-center rounded-xl
+                    opacity-0 transition-opacity duration-200
+                    group-hover:opacity-100 group-focus-within:opacity-100
+                    hover:bg-slate-100 dark:hover:bg-slate-800
+                    text-slate-600 dark:text-slate-300
+                    focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none
+                    cursor-pointer
+                  "
+                >
+                  <PanelLeftOpen className="size-5" />
+                </button>
+              </div>
             )}
 
-            {/* Close button on Mobile */}
+            {/* Expanded Header (Desktop expanded / Mobile always) */}
+            {!isSidebarCollapsed ? (
+              <>
+                <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
+                  <img
+                    src="/logo.png"
+                    alt="AI Study Hub"
+                    className="w-8 h-8 shrink-0 object-contain"
+                  />
+                  <div className="flex flex-col justify-center animate-fade-in whitespace-nowrap overflow-hidden min-w-0 text-left">
+                    <h1 className="text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                      AI Study Hub
+                    </h1>
+                    <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      Focused Intelligence
+                    </p>
+                  </div>
+                </Link>
+
+                {/* Collapse Button inside header when expanded */}
+                <button
+                  type="button"
+                  onClick={() => setSidebarCollapsed(true)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors max-md:hidden shrink-0 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                  aria-label="Collapse sidebar"
+                >
+                  <PanelLeftClose className="size-5" />
+                </button>
+              </>
+            ) : (
+              /* Expanded Header layout visible ONLY on Mobile when collapsed */
+              <div className="md:hidden flex items-center justify-between w-full min-w-0">
+                <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
+                  <img
+                    src="/logo.png"
+                    alt="AI Study Hub"
+                    className="w-8 h-8 shrink-0 object-contain"
+                  />
+                  <div className="flex flex-col justify-center whitespace-nowrap overflow-hidden min-w-0 text-left">
+                    <h1 className="text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                      AI Study Hub
+                    </h1>
+                    <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      Focused Intelligence
+                    </p>
+                  </div>
+                </Link>
+              </div>
+            )}
+
+            {/* Close button on Mobile (visible only on small screens) */}
             <button
               type="button"
               onClick={() => setSidebarOpen(false)}
-              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer shrink-0"
+              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer shrink-0 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
               aria-label="Close sidebar"
             >
               <X className="size-5" />
