@@ -101,36 +101,35 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
       animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
       exit={{ opacity: 0, y: 30, x: 20, scale: 0.95 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="fixed bottom-[85px] right-[20px] z-50 flex h-[480px] max-h-[calc(100vh-115px)] w-[380px] flex-col overflow-hidden rounded-[24px] border border-blue-500/30 bg-slate-950/80 backdrop-blur-2xl shadow-[0_10px_40px_-10px_rgba(37,99,235,0.25)] text-slate-100"
+      className="fixed bottom-[85px] right-[20px] z-50 flex h-[480px] max-h-[calc(100vh-115px)] w-[380px] flex-col overflow-hidden rounded-[24px] border border-slate-200 dark:border-slate-700/50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] text-slate-800 dark:text-slate-100"
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-blue-500/20 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 p-4 text-white relative overflow-hidden">
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent" />
-        <div className="flex items-center gap-3 relative z-10">
-          <div className="flex size-9 items-center justify-center rounded-full bg-blue-500/10 border border-blue-400/30 shadow-[0_0_15px_rgba(37,99,235,0.3)]">
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 p-4 text-slate-800 dark:text-white">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 shadow-sm">
             <AIChatbotIcon className="size-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-[15px] tracking-tight text-white drop-shadow-md">AI Assistant</h3>
+            <h3 className="font-semibold text-[15px] tracking-tight">AI Assistant</h3>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              <span className="relative flex size-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full size-2 bg-emerald-500"></span>
               </span>
-              <p className="text-[11px] font-medium text-blue-200/90 tracking-widest uppercase">Online</p>
+              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-wide uppercase">Online</p>
             </div>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="rounded-full p-2 hover:bg-white/10 transition-colors relative z-10"
+          className="rounded-full p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors"
         >
           <X className="size-4.5" />
         </button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5 scrollbar-thin scrollbar-thumb-slate-700">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
         {messages.map((msg) => (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -142,7 +141,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
             )}
           >
             {msg.sender === 'bot' && (
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-900/50 shadow-[0_0_10px_rgba(37,99,235,0.2)] border border-blue-400/30">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50">
                 <AIChatbotIcon className="size-4" />
               </div>
             )}
@@ -150,14 +149,14 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
               className={cn(
                 "rounded-[20px] p-3.5 text-[14px] leading-relaxed shadow-sm whitespace-pre-line border",
                 msg.sender === 'user'
-                  ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-transparent rounded-br-sm shadow-[0_4px_12px_rgba(37,99,235,0.2)]"
-                  : "bg-slate-900/80 backdrop-blur-md text-slate-200 border-blue-500/30 rounded-bl-sm shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
+                  ? "bg-blue-600 text-white border-transparent rounded-br-sm"
+                  : "bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border-slate-100 dark:border-slate-700/50 rounded-bl-sm"
               )}
             >
               {msg.attachment && (
                 <div className={cn(
                   "mb-2.5 flex items-center gap-2 rounded-xl p-2.5 text-xs font-semibold border",
-                  msg.sender === 'user' ? "bg-white/10 border-white/20" : "bg-slate-800/80 border-slate-700/50"
+                  msg.sender === 'user' ? "bg-white/10 border-white/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
                 )}>
                   <FileIcon className="size-4 shrink-0" />
                   <span className="truncate">{msg.attachment.name}</span>
@@ -169,12 +168,12 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
         ))}
         {isTyping && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-end gap-2.5 max-w-[85%]">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-900/50 shadow-[0_0_10px_rgba(37,99,235,0.2)] border border-blue-400/30">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50">
               <AIChatbotIcon className="size-4" />
             </div>
-            <div className="rounded-[20px] rounded-bl-sm p-3.5 px-4 text-[14px] bg-slate-900/80 backdrop-blur-md border border-blue-500/30 flex items-center gap-3 shadow-[0_2px_10px_rgba(0,0,0,0.2)]">
-              <Loader2 className="size-4 animate-spin text-blue-400" />
-              <span className="text-blue-300 font-medium">Processing...</span>
+            <div className="rounded-[20px] rounded-bl-sm p-3.5 px-4 text-[14px] bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/50 flex items-center gap-3 shadow-sm">
+              <Loader2 className="size-4 animate-spin text-blue-500" />
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Processing...</span>
             </div>
           </motion.div>
         )}
@@ -183,16 +182,16 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
 
       {/* Input */}
       <div className="bg-transparent p-4 pt-0">
-        <div className="relative flex flex-col rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-[0_4px_25px_rgba(0,0,0,0.5)] focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/30 transition-all">
+        <div className="relative flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
           {selectedFile && (
-            <div className="flex items-center justify-between border-b border-white/5 px-3 py-2 text-xs font-medium bg-slate-800/50 rounded-t-2xl">
-              <div className="flex items-center gap-2 overflow-hidden text-blue-400">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-3 py-2 text-xs font-medium bg-slate-50 dark:bg-slate-800/50 rounded-t-2xl">
+              <div className="flex items-center gap-2 overflow-hidden text-blue-600 dark:text-blue-400">
                 <FileIcon className="size-3.5 shrink-0" />
                 <span className="truncate">{selectedFile.name}</span>
               </div>
               <button 
                 onClick={() => setSelectedFile(null)}
-                className="ml-2 rounded-full p-1 hover:bg-slate-700 text-blue-400 transition-colors"
+                className="ml-2 rounded-full p-1 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               >
                 <X className="size-3.5" />
               </button>
@@ -213,7 +212,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex size-9 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-800 hover:text-blue-400 transition-colors mb-0.5"
+              className="flex size-9 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-0.5"
               title="Attach File"
             >
               <Paperclip className="size-4.5" />
@@ -223,13 +222,13 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Message AI Assistant..."
-              className="max-h-[120px] min-h-[40px] w-full resize-none bg-transparent px-2 py-2.5 text-[14px] text-slate-100 placeholder:text-slate-500 outline-none scrollbar-thin scrollbar-thumb-slate-700"
+              className="max-h-[120px] min-h-[40px] w-full resize-none bg-transparent px-2 py-2.5 text-[14px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
               rows={1}
             />
             <button
               onClick={() => handleSend()}
               disabled={!inputText.trim() && !selectedFile}
-              className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all hover:from-blue-500 hover:to-indigo-500 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none mb-0.5"
+              className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm transition-all hover:bg-blue-700 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:bg-blue-600 mb-0.5"
             >
               <Send className="size-4" />
             </button>
