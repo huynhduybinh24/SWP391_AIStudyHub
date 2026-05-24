@@ -154,7 +154,7 @@ export function SetNewPasswordPage() {
         </div>
       </div>
 
-      <AppFooter />
+      <AppFooter variant="simple" />
     </div>
   )
 }

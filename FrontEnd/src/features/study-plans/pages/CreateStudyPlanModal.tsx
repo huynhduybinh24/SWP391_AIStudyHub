@@ -12,14 +12,13 @@ import { Radio } from '@/components/ui/Radio'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
-import { Language } from '@/locales'
 
 // ─── Types ──────────────────────────────────────────────
 
 type StudyPlanFormValues = {
   title:       string
   subject:     string
-  description: string
+  description?: string
   startDate:   string
   endDate:     string
   priority:    'Low' | 'Medium' | 'High'
@@ -205,6 +204,18 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
     }
   }
 
+  const getSubjectTranslation = (sub: string) => {
+    switch (sub) {
+      case 'Mathematics': return t.myDocuments.math
+      case 'Physics': return language === 'vi' ? 'Vật lý' : language === 'ja' ? '物理学' : language === 'ko' ? '물리학' : 'Physics'
+      case 'Computer Science': return t.myDocuments.compsci
+      case 'Literature': return t.myDocuments.literature || 'Literature'
+      case 'Chemistry': return language === 'vi' ? 'Hóa học' : language === 'ja' ? '化学' : language === 'ko' ? '화학' : 'Chemistry'
+      case 'Biology': return t.myDocuments.bio || 'Biology'
+      default: return sub
+    }
+  }
+
   return (
     <Modal
       isOpen={isOpen}
@@ -366,8 +377,8 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
             </h4>
             <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
               {isGenerating
-                ? (language === 'vi' ? `Đang tạo kế hoạch thông minh cho môn ${t.myDocuments[currentSubject.toLowerCase() as any] || currentSubject}...` : language === 'ja' ? `科目のスマートな計画を生成中...` : language === 'ko' ? `과목에 대한 스마트 계획 생성 중...` : `Generating a smart plan for ${currentSubject}...`)
-                : (language === 'vi' ? 'Hãy để AI giúp bạn thiết lập thời gian học tập thông minh dựa trên hạn chót và môn học.' : language === 'ja' ? '期限や科目に基づいて、AIがスマートな学習スケジュールの作成をサポートします。' : language === 'ko' ? '마감일과 과목을 기반으로 AI가 스마트한 학습 일정을 수립하도록 도와드립니다.' : 'Let AI help you create a smart study schedule based on your deadline and subject.')}
+                ? (language === 'vi' ? `Đang tạo kế hoạch thông minh cho môn ${getSubjectTranslation(currentSubject)}...` : language === 'ja' ? `科目のスマートな計画を生成中...` : language === 'ko' ? `과목에 대한 스마트 계획 생성 중...` : `Generating a smart plan for ${getSubjectTranslation(currentSubject)}...`)
+                : (language === 'vi' ? 'Hãy để AI giúp bạn thiết lập thời gian học tập thông minh dựa trên hạn chót và môn học.' : language === 'ja' ? '期限や科目に基づいて、AIがスマートな学習スケジュールを作成することをサポートします。' : language === 'ko' ? '마감일과 과목을 기반으로 AI가 스마트한 학습 일정을 수립하도록 도와드립니다.' : 'Let AI help you create a smart study schedule based on your deadline and subject.')}
             </p>
           </div>
           <Button

@@ -35,7 +35,7 @@ export function DashboardLayout() {
               <Outlet />
             </div>
           </main>
-          <AppFooter />
+          <AppFooter variant="simple" />
         </div>
 
         {/* Interactive Floating Chatbot */}

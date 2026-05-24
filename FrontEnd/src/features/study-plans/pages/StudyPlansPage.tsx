@@ -68,7 +68,7 @@ type StudyPlan = {
 }
 
 // Helper to localize mock plan strings
-function localizePlan(plan: StudyPlan, language: Language, t: any): StudyPlan {
+function localizePlan(plan: StudyPlan, language: Language): StudyPlan {
   const localMap: Record<string, { title: string; description: string; segments?: string[]; milestoneTitle?: string }> = {
     '1': {
       title: language === 'vi' ? 'Làm chủ Cơ học lượng tử' : language === 'ja' ? '量子力学マスター' : language === 'ko' ? '양자 역학 마스터' : 'Quantum Mechanics Mastery',
@@ -623,7 +623,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
     : plan.iconType === 'languages' ? Languages 
     : FlaskConical
 
-  const localizedPlanInfo = useMemo(() => localizePlan(plan, language, t), [plan, language, t])
+  const localizedPlanInfo = useMemo(() => localizePlan(plan, language), [plan, language])
 
   const localizedDateStr = (date: string, type: 'completed' | 'starts') => {
     if (type === 'completed') {

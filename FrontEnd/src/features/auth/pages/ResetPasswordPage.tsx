@@ -117,7 +117,7 @@ export function ResetPasswordPage() {
         </div>
       </div>
 
-      <AppFooter />
+      <AppFooter variant="simple" />
     </div>
   )
 }
