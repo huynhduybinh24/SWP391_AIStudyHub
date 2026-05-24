@@ -19,13 +19,7 @@ interface ChatPopupProps {
 }
 
 export function ChatPopup({ onClose }: ChatPopupProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      sender: 'bot',
-      text: "Hello! I'm your AI Study Assistant. How can I help you today?",
-    },
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -101,7 +95,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
       animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
       exit={{ opacity: 0, y: 30, x: 20, scale: 0.95 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="fixed bottom-[85px] right-[20px] z-50 flex h-[480px] max-h-[calc(100vh-115px)] w-[380px] flex-col overflow-hidden rounded-[24px] border border-slate-200 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] text-slate-800 dark:text-slate-100 relative"
+      className="fixed bottom-[90px] right-6 z-50 flex h-[600px] max-h-[calc(100vh-100px)] w-[calc(100vw-40px)] sm:w-[500px] flex-col overflow-hidden rounded-[24px] border border-slate-200 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] text-slate-800 dark:text-slate-100 relative"
     >
       {/* Background Depth */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100/40 dark:from-blue-900/20 via-transparent to-transparent -z-10 pointer-events-none" />
@@ -130,84 +124,97 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
         </button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
-        {messages.map((msg) => (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={msg.id}
-            className={cn(
-              "flex items-end gap-2.5 max-w-[85%]",
-              msg.sender === 'user' ? "ml-auto flex-row-reverse" : ""
-            )}
-          >
-            {msg.sender === 'bot' && (
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700/50">
-                <AIChatbotIcon className="size-4" />
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto pl-5 pr-2 py-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
+        <div className="flex flex-col gap-5 pr-3 min-h-full">
+          {messages.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-2 mt-2 text-center">
+              <div className="size-12 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center mb-5 shadow-sm">
+                <AIChatbotIcon className="size-6 animate-float drop-shadow-sm" />
               </div>
-            )}
-            <div
-              className={cn(
-                "rounded-[20px] p-3.5 px-4 text-[14px] leading-relaxed shadow-sm whitespace-pre-line border",
-                msg.sender === 'user'
-                  ? "bg-gradient-to-tr from-blue-600 to-blue-500 text-white border-transparent rounded-br-sm"
-                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-100 dark:border-slate-700/50 rounded-tl-sm"
-              )}
-            >
-              {msg.attachment && (
-                <div className={cn(
-                  "mb-2.5 flex items-center gap-2 rounded-xl p-2.5 text-xs font-semibold border",
-                  msg.sender === 'user' ? "bg-white/10 border-white/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
-                )}>
-                  <FileIcon className="size-4 shrink-0" />
-                  <span className="truncate">{msg.attachment.name}</span>
-                </div>
-              )}
-              {msg.text}
+              <h3 className="font-bold text-[18px] mb-2 text-slate-800 dark:text-slate-100">How can I help you today?</h3>
+              <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-8 max-w-[280px]">
+                Ask me anything about your studies, or choose a prompt below to get started.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-[420px]">
+              {[
+                { label: "Create my study plan", icon: <Loader2 className="size-3.5" /> }, // Replace with FileText if available
+                { label: "Summarize my files", icon: <FileIcon className="size-3.5" /> },
+                { label: "Generate quiz questions", icon: <Loader2 className="size-3.5" /> },
+                { label: "Explain this topic", icon: <Loader2 className="size-3.5" /> }
+              ].map((prompt, i) => (
+                <button
+                  key={i}
+                  onClick={() => setInputText(prompt.label)}
+                  className="flex items-center gap-2.5 px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm text-[12.5px] font-medium text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 hover:shadow-sm transition-all"
+                >
+                  <div className="text-blue-500 opacity-70">
+                    {prompt.icon}
+                  </div>
+                  <span className="truncate">{prompt.label}</span>
+                </button>
+              ))}
             </div>
-          </motion.div>
-        ))}
-
-        {/* Suggested Prompts for Initial State */}
-        {messages.length === 1 && messages[0].sender === 'bot' && (
-          <motion.div 
-            initial={{ opacity: 0, y: 5 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ delay: 0.3 }}
-            className="flex flex-col gap-2.5 mt-2 ml-10 w-[85%]"
-          >
-            {[
-              "Create my study plan",
-              "Summarize my files",
-              "Generate quiz questions",
-              "Explain this topic"
-            ].map((prompt, i) => (
-              <button
-                key={i}
-                onClick={() => setInputText(prompt)}
-                className="text-left px-4 py-2.5 rounded-[14px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 hover:shadow-sm transition-all"
-              >
-                {prompt}
-              </button>
+          </div>
+        ) : (
+          <>
+              {messages.map((msg) => (
+                <div key={msg.id} className="flex flex-col gap-3">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn(
+                      "flex items-start gap-2 max-w-[92%]",
+                      msg.sender === 'user' ? "ml-auto flex-row-reverse" : ""
+                    )}
+                  >
+                    {msg.sender === 'bot' && (
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700/50 mt-0.5">
+                        <AIChatbotIcon className="size-4" />
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        "rounded-[20px] p-3.5 px-4 text-[14.5px] leading-relaxed shadow-sm whitespace-pre-line border",
+                        msg.sender === 'user'
+                          ? "bg-gradient-to-tr from-blue-600 to-blue-500 text-white border-transparent rounded-tr-sm"
+                          : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-100 dark:border-slate-700/50 rounded-tl-sm"
+                      )}
+                    >
+                    {msg.attachment && (
+                      <div className={cn(
+                        "mb-2.5 flex items-center gap-2 rounded-xl p-2.5 text-xs font-semibold border",
+                        msg.sender === 'user' ? "bg-white/10 border-white/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                      )}>
+                        <FileIcon className="size-4 shrink-0" />
+                        <span className="truncate">{msg.attachment.name}</span>
+                      </div>
+                    )}
+                    {msg.text}
+                  </div>
+                </motion.div>
+              </div>
             ))}
-          </motion.div>
+            
+            {isTyping && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-2 max-w-[92%]">
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700/50 mt-0.5">
+                  <AIChatbotIcon className="size-4" />
+                </div>
+                <div className="rounded-[20px] rounded-tl-sm px-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 flex items-center gap-1.5 h-[42px] shadow-sm">
+                  <div className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.3s]" />
+                  <div className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.15s]" />
+                  <div className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce" />
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
-
-        {isTyping && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-end gap-2.5 max-w-[85%]">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700/50">
-              <AIChatbotIcon className="size-4" />
-            </div>
-            <div className="rounded-[20px] rounded-tl-sm px-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 flex items-center gap-1.5 h-[38px] shadow-sm">
-              <div className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.3s]" />
-              <div className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.15s]" />
-              <div className="size-1.5 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce" />
-            </div>
-          </motion.div>
-        )}
-        <div ref={messagesEndRef} className="h-2" />
+        <div ref={messagesEndRef} className="h-1 shrink-0" />
+        </div>
       </div>
+
 
       {/* Input */}
       <div className="bg-transparent p-4 pt-0 z-10">
