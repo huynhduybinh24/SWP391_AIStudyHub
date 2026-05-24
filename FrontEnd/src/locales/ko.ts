@@ -974,5 +974,22 @@ export const ko: typeof en = {
     apr: "4월",
     may: "5월",
     jun: "6월"
+  },
+  aiGuardReport: {
+    aiGuardReport: "AI 가드 보고서",
+    redundancyReportSubtitle: "중복 파일 발견 및 클라우드 용량 최적화 보고서",
+    biologicalRedundancyAlert: "생물학적 중복 경고",
+    biologicalRedundancyDescription: "\"Biology\" 공유 폴더 내에서 구조가 동일한 파일 3개가 발견되어 4.7MB의 용량을 추가로 소모하고 있습니다.",
+    redundantFileGroups: "중복 파일 그룹",
+    aiRecommendation: "AI 권장 사항:",
+    aiRecommendationText: "원본 기말고사 노트 파일만 유지하고 나머지는 영구 삭제하여 공유 공간을 확보하세요.",
+    cancel: "취소",
+    applyOptimization: "최적화 적용",
+    original: "원본",
+    match99: "99% 일치",
+    match95: "95% 일치",
+    shared2hAgo: "2시간 전 공유됨",
+    sharedYesterday: "어제 공유됨",
+    sharedOct15: "2023년 10월 15일 공유됨"
   }
 };

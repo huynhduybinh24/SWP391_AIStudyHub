@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Sparkles, AlertCircle, Trash2, CheckCircle2 } from 'lucide-react'
+import { X, Sparkles, AlertCircle, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface AIReportModalProps {
   isOpen: boolean
@@ -10,6 +11,7 @@ interface AIReportModalProps {
 }
 
 export function AIReportModal({ isOpen, onClose, onOptimize }: AIReportModalProps) {
+  const { t } = useTranslation()
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -22,9 +24,9 @@ export function AIReportModal({ isOpen, onClose, onOptimize }: AIReportModalProp
   }, [isOpen, onClose])
 
   const duplicates = [
-    { name: 'Biology 101 Midterm Notes.pdf', size: '2.4 MB', match: 'Original', date: '2h ago' },
-    { name: 'Bio_Midterm_Summary_v2.pdf', size: '2.4 MB', match: '99% Match', date: 'Yesterday' },
-    { name: 'Biology_Review_Backup.pdf', size: '2.3 MB', match: '95% Match', date: 'Oct 15, 2023' }
+    { name: 'Biology 101 Midterm Notes.pdf', size: '2.4 MB', matchType: 'original', dateKey: 'shared2hAgo' },
+    { name: 'Bio_Midterm_Summary_v2.pdf', size: '2.4 MB', matchType: 'match99', dateKey: 'sharedYesterday' },
+    { name: 'Biology_Review_Backup.pdf', size: '2.3 MB', matchType: 'match95', dateKey: 'sharedOct15' }
   ]
 
   return (
@@ -53,7 +55,7 @@ export function AIReportModal({ isOpen, onClose, onOptimize }: AIReportModalProp
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-6 top-6 text-slate-450 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="absolute right-6 top-6 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               aria-label="Close dialog"
             >
               <X className="size-5" />
@@ -66,60 +68,60 @@ export function AIReportModal({ isOpen, onClose, onOptimize }: AIReportModalProp
               </div>
               <div>
                 <h3 id="report-title" className="text-base font-extrabold text-slate-900 dark:text-white">
-                  AI Guard Report
+                  {t.aiGuardReport.aiGuardReport}
                 </h3>
-                <p className="text-xs text-slate-455 dark:text-slate-500 font-semibold mt-0.5">
-                  Redundancy findings and cloud volume optimization report
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold mt-0.5">
+                  {t.aiGuardReport.redundancyReportSubtitle}
                 </p>
               </div>
             </div>
 
             {/* Content info */}
             <div className="space-y-5">
-              <div className="flex items-start gap-3 bg-amber-50/50 dark:bg-amber-955/20 border border-amber-200/50 dark:border-amber-900/30 p-3.5 rounded-2xl">
-                <AlertCircle className="size-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 p-3.5 rounded-2xl">
+                <AlertCircle className="size-5 text-orange-500 dark:text-orange-400 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-xs font-bold text-amber-850 dark:text-amber-400">Biological Redundancy Alert</h4>
+                  <h4 className="text-xs font-bold text-amber-900 dark:text-amber-400">{t.aiGuardReport.biologicalRedundancyAlert}</h4>
                   <p className="text-[11px] text-amber-700 dark:text-amber-500 font-medium leading-relaxed mt-0.5">
-                    Found 3 files with identical structures inside the "Biology" shared folder, consuming an extra 4.7 MB of space.
+                    {t.aiGuardReport.biologicalRedundancyDescription}
                   </p>
                 </div>
               </div>
 
               {/* Duplicates list */}
               <div className="space-y-2.5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Redundant File Groups
+                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                  {t.aiGuardReport.redundantFileGroups}
                 </span>
 
                 <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
                   {duplicates.map((file, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800"
+                      className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800"
                     >
                       <div className="min-w-0 flex-1 mr-3">
-                        <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-205 truncate">
+                        <h4 className="text-xs font-extrabold text-slate-900 dark:text-slate-200 truncate">
                           {file.name}
                         </h4>
-                        <p className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold mt-0.5">
-                          {file.size} &bull; Shared {file.date}
+                        <p className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold mt-0.5">
+                          {file.size} &bull; {file.dateKey === 'shared2hAgo' ? t.aiGuardReport.shared2hAgo : file.dateKey === 'sharedYesterday' ? t.aiGuardReport.sharedYesterday : t.aiGuardReport.sharedOct15}
                         </p>
                       </div>
                       <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${
-                        file.match === 'Original'
-                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-955 dark:text-blue-400 border border-blue-100/30'
-                          : 'bg-rose-50 text-rose-600 dark:bg-rose-955 dark:text-rose-400 border border-rose-100/30'
+                        file.matchType === 'original'
+                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-100/30'
+                          : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-100/30'
                       }`}>
-                        {file.match}
+                        {file.matchType === 'original' ? t.aiGuardReport.original : file.matchType === 'match99' ? t.aiGuardReport.match99 : t.aiGuardReport.match95}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed italic bg-slate-50 dark:bg-slate-850/30 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/80">
-                💡 <strong>AI Recommendation:</strong> Keep the original midterm notes file and purge the rest to free up shared space.
+              <div className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed italic bg-slate-50 dark:bg-slate-800/30 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+                💡 <strong>{t.aiGuardReport.aiRecommendation}</strong> {t.aiGuardReport.aiRecommendationText}
               </div>
             </div>
 
@@ -128,17 +130,17 @@ export function AIReportModal({ isOpen, onClose, onOptimize }: AIReportModalProp
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-550 hover:bg-slate-50 dark:text-slate-355 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition-all cursor-pointer"
               >
-                Cancel
+                {t.aiGuardReport.cancel}
               </button>
               <Button
                 type="button"
                 onClick={onOptimize}
-                className="bg-indigo-650 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-indigo-500/10 cursor-pointer"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-indigo-500/10 cursor-pointer"
               >
                 <Trash2 className="size-4" />
-                <span>Apply Optimization</span>
+                <span>{t.aiGuardReport.applyOptimization}</span>
               </Button>
             </div>
           </motion.div>
