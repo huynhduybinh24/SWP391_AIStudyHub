@@ -77,8 +77,8 @@ export function LandingPage() {
             className="flex items-center gap-3.5 cursor-pointer"
             onClick={scrollToHome}
           >
-            <img src="/logo.png" alt="AI Study Hub Logo" className="w-[68px] h-[68px] object-contain" />
-            <h1 className="text-2xl font-bold text-primary tracking-tight">AI Study Hub</h1>
+            <img src="/logo.png" alt="LumiEdu Logo" className="w-[68px] h-[68px] object-contain" />
+            <h1 className="text-2xl font-bold text-primary tracking-tight">LumiEdu</h1>
           </div>
           
           <nav className="hidden md:flex items-center gap-8">
@@ -235,7 +235,7 @@ export function LandingPage() {
       <section id="about" className="w-full bg-white py-20 px-6">
         <div className="max-w-[800px] mx-auto text-center">
           <h3 className="text-3xl font-heading font-bold text-[#0B1C30] mb-6">
-            About AI Study Hub
+            About LumiEdu
           </h3>
           <p className="text-lg text-[#434655] leading-relaxed mb-6">
             We are dedicated to transforming how university students interact with their course materials. 
@@ -244,7 +244,7 @@ export function LandingPage() {
           </p>
           <p className="text-lg text-[#434655] leading-relaxed">
             Our mission is to help you study smarter, not harder. Whether it's summarizing a 50-page thesis 
-            or finding that one specific concept buried in your lecture slides, AI Study Hub is your ultimate academic companion.
+            or finding that one specific concept buried in your lecture slides, LumiEdu is your ultimate academic companion.
           </p>
         </div>
       </section>

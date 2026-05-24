@@ -22,14 +22,14 @@ const faqs = [
   {
     id: 1,
     category: 'Getting Started',
-    question: 'How do I create an account on AI Study Hub?',
+    question: 'How do I create an account on LumiEdu?',
     answer:
       'Click the "Register" button on the homepage, fill in your name, email, and password, then verify your email. Your account will be ready to use immediately after verification.',
   },
   {
     id: 2,
     category: 'Getting Started',
-    question: 'What file formats does AI Study Hub support?',
+    question: 'What file formats does LumiEdu support?',
     answer:
       'We support PDF, DOCX, PPTX, TXT, and image files (PNG, JPG). The AI works best with PDF and DOCX files as they preserve text formatting.',
   },
@@ -134,8 +134,8 @@ export function HelpCenterPage() {
       <header className="w-full bg-white border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3.5">
-            <img src="/logo.png" alt="AI Study Hub Logo" className="w-[68px] h-[68px] object-contain" />
-            <span className="text-2xl font-bold text-primary tracking-tight">AI Study Hub</span>
+            <img src="/logo.png" alt="LumiEdu Logo" className="w-[68px] h-[68px] object-contain" />
+            <span className="text-2xl font-bold text-primary tracking-tight">LumiEdu</span>
           </Link>
           <Link
             to="/"

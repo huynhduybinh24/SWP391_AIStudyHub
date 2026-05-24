@@ -137,7 +137,7 @@ export function SharedFilesUploadModal({ isOpen, onClose, onSave }: SharedFilesU
         description: description.trim() || 'No description provided.',
         tags: selectedTags,
         previewContent: previewUrl || '',
-        summary: `AI Workspace Summary: Media file containing lecture slides, references, or recordings related to ${selectedSubjectKey}. Optimized by AI Study Hub.`,
+        summary: `AI Workspace Summary: Media file containing lecture slides, references, or recordings related to ${selectedSubjectKey}. Optimized by LumiEdu.`,
         url: previewUrl || ''
       };
 
