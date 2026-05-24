@@ -1,29 +1,204 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from '@/context/LanguageContext'
+import { Github, Facebook, Linkedin, Mail, GraduationCap } from 'lucide-react'
 
-export function AppFooter() {
-  const { t } = useTranslation()
+interface AppFooterProps {
+  variant?: 'full' | 'simple'
+}
+
+export function AppFooter({ variant = 'full' }: AppFooterProps) {
+  const { t, language } = useTranslation()
+
+  // Simplified variant: standard sleek light/dark footer bar
+  if (variant === 'simple') {
+    return (
+      <footer className="w-full border-t bg-white text-slate-500 border-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:border-slate-800 select-none">
+        <div className="mx-auto flex max-w-[1800px] flex-col items-center justify-between gap-4 px-8 py-6 text-center md:flex-row md:text-left">
+          <p className="text-sm font-medium">
+            {t.footer.copyright}
+          </p>
+          <nav className="flex items-center gap-6">
+            <Link
+              to="/help"
+              className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              {t.footer.supportCenter}
+            </Link>
+            <Link
+              to="/contact"
+              className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              {t.footer.partnershipContact}
+            </Link>
+          </nav>
+        </div>
+      </footer>
+    )
+  }
+
+  // Define localized strings based on active language (vi / en / ja / ko)
+  const isVi = language === 'vi'
+  
+  const content = {
+    aboutTitle: isVi ? 'Về AI Study Hub' : 'About AI Study Hub',
+    aboutLinks: [
+      { text: isVi ? 'Giới thiệu' : 'Introduction', to: '/about' },
+      { text: isVi ? 'Tính năng' : 'Features', to: '/#features' },
+      { text: isVi ? 'Bảng giá' : 'Pricing Plans', to: '/pricing' },
+      { text: t.footer.termsOfService, to: '/terms' },
+      { text: t.footer.privacyPolicy, to: '/privacy' },
+    ],
+    exploreTitle: isVi ? 'Tính năng & Khám phá' : 'Features & Explore',
+    exploreLinks: [
+      { text: isVi ? 'Tài liệu của tôi' : 'My Documents', to: '/login' },
+      { text: isVi ? 'Trợ lý AI Chatbot' : 'AI Chatbot Assistant', to: '/login' },
+      { text: isVi ? 'Không gian chia sẻ' : 'Shared Workspace', to: '/login' },
+      { text: isVi ? 'Kế hoạch học tập' : 'Study Plans', to: '/login' },
+      { text: isVi ? 'Dung lượng đám mây' : 'Cloud Storage', to: '/login' },
+      { text: t.footer.helpCenter, to: '/help' },
+    ],
+    infoTitle: isVi ? 'DỰ ÁN HỆ THỐNG HỌC TẬP THÔNG MINH' : 'INTELLIGENT LEARNING SYSTEM',
+    infoItems: [
+      { label: isVi ? 'Nhóm phát triển' : 'Developed by', value: 'SWP391 Team 24' },
+      { label: isVi ? 'Lĩnh vực' : 'Sector', value: isVi ? 'AI & Giáo dục (EdTech)' : 'AI & EdTech' },
+      { label: isVi ? 'Định hướng' : 'Mission', value: isVi ? 'Tối ưu hóa học tập cá nhân' : 'Personalized Study Optimization' },
+      { label: isVi ? 'Mã số dự án' : 'Project ID', value: 'SWP391_AIStudyHub' },
+      { label: isVi ? 'Công nghệ chính' : 'Core Tech', value: 'React, TS, Tailwind, Gemini AI' },
+    ],
+    slogan: isVi ? 'Khơi nguồn tri thức — Kiến tạo tương lai' : 'Igniting knowledge — Shaping the future',
+    copyrightText: isVi ? '© 2026 AI Study Hub. Tất cả quyền được bảo lưu.' : '© 2026 AI Study Hub. All rights reserved.',
+  }
 
   return (
-    <footer className="w-full border-t bg-white text-slate-500 border-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:border-slate-800 select-none">
-      <div className="mx-auto flex max-w-[1800px] flex-col items-center justify-between gap-4 px-8 py-8 text-center md:flex-row md:text-left">
-        <p className="text-sm font-medium">
-          {t.footer.copyright}
-        </p>
-        <nav className="flex items-center gap-6">
-          <Link
-            to="/help"
-            className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            {t.footer.supportCenter}
-          </Link>
-          <Link
-            to="/contact"
-            className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            {t.footer.partnershipContact}
-          </Link>
-        </nav>
+    <footer className="w-full bg-gradient-to-br from-[#1E3A8A] via-[#1E40AF] to-[#2563EB] text-slate-100 border-t border-blue-900/40 select-none relative overflow-hidden">
+      {/* Visual background accents */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="mx-auto max-w-[1280px] px-6 py-12 md:py-16 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-16">
+          
+          {/* Column 1: About Links */}
+          <div className="flex flex-col">
+            <h4 className="text-white font-bold font-heading text-lg mb-6 pb-2 border-b border-white/10 uppercase tracking-wider">
+              {content.aboutTitle}
+            </h4>
+            <ul className="flex flex-col gap-3.5">
+              {content.aboutLinks.map((link, idx) => (
+                <li key={idx}>
+                  <Link
+                    to={link.to}
+                    className="text-slate-200/90 hover:text-white text-[15px] font-medium transition-all duration-200 hover:translate-x-1 inline-block"
+                  >
+                    {link.text}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 2: Explore Links */}
+          <div className="flex flex-col">
+            <h4 className="text-white font-bold font-heading text-lg mb-6 pb-2 border-b border-white/10 uppercase tracking-wider">
+              {content.exploreTitle}
+            </h4>
+            <ul className="flex flex-col gap-3.5">
+              {content.exploreLinks.map((link, idx) => (
+                <li key={idx}>
+                  <Link
+                    to={link.to}
+                    className="text-slate-200/90 hover:text-white text-[15px] font-medium transition-all duration-200 hover:translate-x-1 inline-block"
+                  >
+                    {link.text}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 3: Tech Project Info */}
+          <div className="flex flex-col">
+            <h4 className="text-white font-bold font-heading text-lg mb-6 pb-2 border-b border-white/10 uppercase tracking-wider">
+              {content.infoTitle}
+            </h4>
+            <div className="bg-blue-950/40 rounded-2xl p-5 border border-white/5 space-y-4">
+              <h5 className="font-bold text-white text-[16px] tracking-wide flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-blue-300" />
+                AI STUDY HUB
+              </h5>
+              <ul className="space-y-3 text-sm text-slate-200/95">
+                {content.infoItems.map((item, idx) => (
+                  <li key={idx} className="flex justify-between items-start gap-4">
+                    <span className="text-slate-300/80 font-medium shrink-0">{item.label}:</span>
+                    <span className="font-semibold text-right text-white">{item.value}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Horizontal Divider */}
+        <div className="w-full border-t border-white/10 my-10" />
+
+        {/* Bottom Panel */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          {/* Brand & Slogan */}
+          <div className="flex flex-col items-center md:items-start text-center md:text-left gap-2.5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20">
+                <img src="/logo.png" alt="AI Study Hub Logo" className="w-9 h-9 object-contain" />
+              </div>
+              <span className="text-xl md:text-2xl font-bold font-heading text-white tracking-tight">
+                AI Study Hub
+              </span>
+            </div>
+            <p className="text-slate-300/90 text-sm italic font-medium">
+              "{content.slogan}"
+            </p>
+          </div>
+
+          {/* Social Links & Copyright */}
+          <div className="flex flex-col items-center md:items-end gap-3.5">
+            <div className="flex items-center gap-4">
+              <a
+                href="https://github.com/huynhduybinh24/SWP391_AIStudyHub"
+                target="_blank"
+                rel="noreferrer"
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white border border-white/10 transition-colors"
+                title="GitHub Repository"
+              >
+                <Github className="w-5 h-5" />
+              </a>
+              <a
+                href="#"
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white border border-white/10 transition-colors"
+                title="Facebook Page"
+              >
+                <Facebook className="w-5 h-5" />
+              </a>
+              <a
+                href="#"
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white border border-white/10 transition-colors"
+                title="LinkedIn Profile"
+              >
+                <Linkedin className="w-5 h-5" />
+              </a>
+              <a
+                href="mailto:support@aistudyhub.com"
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white border border-white/10 transition-colors"
+                title="Email Support"
+              >
+                <Mail className="w-5 h-5" />
+              </a>
+            </div>
+            <p className="text-slate-300/80 text-xs font-semibold tracking-wide">
+              {content.copyrightText}
+            </p>
+          </div>
+        </div>
+
       </div>
     </footer>
   )
