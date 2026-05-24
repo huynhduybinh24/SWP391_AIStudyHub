@@ -974,5 +974,22 @@ export const ja: typeof en = {
     apr: "4月",
     may: "5月",
     jun: "6月"
+  },
+  aiGuardReport: {
+    aiGuardReport: "AIガードレポート",
+    redundancyReportSubtitle: "重複の検出とクラウド容量最適化レポート",
+    biologicalRedundancyAlert: "生物学的重複アラート",
+    biologicalRedundancyDescription: "「Biology」共有フォルダ内に同一構造のファイルが3つ見つかりました。追加で4.7MBの容量を消費しています。",
+    redundantFileGroups: "重複ファイルグループ",
+    aiRecommendation: "AIの推奨事項：",
+    aiRecommendationText: "元の期末試験ノートファイルを保持し、残りを消去して共有スペースを解放します。",
+    cancel: "キャンセル",
+    applyOptimization: "最適化を適用",
+    original: "オリジナル",
+    match99: "99%一致",
+    match95: "95%一致",
+    shared2hAgo: "2時間前に共有",
+    sharedYesterday: "昨日共有",
+    sharedOct15: "2023年10月15日に共有"
   }
 };
