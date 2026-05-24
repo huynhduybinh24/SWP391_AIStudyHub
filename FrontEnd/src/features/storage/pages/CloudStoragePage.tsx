@@ -317,7 +317,7 @@ export function CloudStoragePage() {
                   <button 
                     onClick={() => handleDelete(file.id)}
                     className="p-2 text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
-                    title={t.common.deleteDoc || t.common.delete}
+                    title={t.common.delete}
                   >
                     <Trash2 className="size-4" />
                   </button>
