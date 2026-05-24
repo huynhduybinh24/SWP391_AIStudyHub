@@ -20,7 +20,7 @@ export function DashboardLayout() {
       {/* Mobile Sidebar Backdrop Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-[#0b1c30]/40 backdrop-blur-sm z-40 md:hidden cursor-pointer"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden cursor-pointer"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -31,7 +31,7 @@ export function DashboardLayout() {
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto flex flex-col justify-between">
           <main className="px-8 pb-10 pt-6 flex-1">
-            <div className="mx-auto max-w-[1000px]">
+            <div className="mx-auto max-w-[1200px]">
               <Outlet />
             </div>
           </main>

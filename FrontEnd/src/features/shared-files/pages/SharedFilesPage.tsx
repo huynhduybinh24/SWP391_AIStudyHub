@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
@@ -167,6 +168,8 @@ export function SharedFilesPage() {
   const toast = useToast()
   const { t, language } = useTranslation()
   const user = useAuthStore((s) => s.user)
+  const navigate = useNavigate()
+  const { fileId } = useParams<{ fileId: string }>()
 
   // State Management
   const [files, setFiles] = useState<SharedFile[]>([
@@ -355,6 +358,170 @@ export function SharedFilesPage() {
     }
   }, [files, viewingFile])
 
+  // Sync route fileId with viewingFile state
+  useEffect(() => {
+    if (fileId) {
+      const fileToView = files.find(f => f.id === fileId)
+      if (fileToView) {
+        setViewingFile(fileToView)
+      } else {
+        const folderFiles = [
+          {
+            id: 'lit-rev-pdf',
+            name: 'Literature Review.pdf',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 24, 2023',
+            type: 'pdf',
+            size: '12.4 MB',
+            description: 'Literature review notes for multivariable computational sweep analysis.',
+            tags: ['Biology', 'Research'],
+            previewContent: 'Literature Review mock details content.'
+          },
+          {
+            id: 'dataset-xlsx',
+            name: 'Data Set_V1.xlsx',
+            owner: 'Marcus Knight',
+            permission: 'Editor',
+            dateShared: 'Oct 23, 2023',
+            type: 'xlsx',
+            size: '8.2 MB',
+            description: 'Spreadsheet of computational modeling sweeps and volt sweeps.',
+            tags: ['Spreadsheet', 'Data'],
+            previewContent: 'Data Set sweeps table mock.'
+          },
+          {
+            id: 'proj-outline-docx',
+            name: 'Project_Outline.docx',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 22, 2023',
+            type: 'docx',
+            size: '1.5 MB',
+            description: 'Conceptual outlines and study rules.',
+            tags: ['Outline', 'Draft'],
+            previewContent: 'Project Outline draft rules.'
+          },
+          {
+            id: 'diagram-png',
+            name: 'Brainstorming_Diagram.png',
+            owner: 'Alex Chen',
+            permission: 'Viewer',
+            dateShared: 'Oct 21, 2023',
+            type: 'png',
+            size: '4.2 MB',
+            description: 'Concept graphics of study design.',
+            tags: ['Image', 'Brainstorming'],
+            previewContent: 'Image mockup visualization.'
+          },
+          {
+            id: 'notes-docx',
+            name: 'Research Notes.docx',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 20, 2023',
+            type: 'docx',
+            size: '2.1 MB',
+            description: 'Notes on biological sweeper models.',
+            tags: ['Research', 'Notes'],
+            previewContent: 'Research notes details.'
+          },
+          {
+            id: 'results-xlsx',
+            name: 'Lab Results.xlsx',
+            owner: 'Marcus Knight',
+            permission: 'Editor',
+            dateShared: 'Oct 19, 2023',
+            type: 'xlsx',
+            size: '6.8 MB',
+            description: 'Lab sweep result calculations.',
+            tags: ['Data', 'Results'],
+            previewContent: 'Lab results sweep calculations.'
+          },
+          {
+            id: 'presentation-pptx',
+            name: 'Presentation Draft.pptx',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 18, 2023',
+            type: 'pptx',
+            size: '15.7 MB',
+            description: 'Slide drafts for midterm presentation.',
+            tags: ['Presentation', 'Draft'],
+            previewContent: 'PowerPoint draft slides.'
+          },
+          {
+            id: 'meeting-mp3',
+            name: 'Meeting Recording.mp3',
+            owner: 'Alex Chen',
+            permission: 'Viewer',
+            dateShared: 'Oct 17, 2023',
+            type: 'mp3',
+            size: '18.4 MB',
+            description: 'Meeting recording audio file.',
+            tags: ['Audio', 'Meeting'],
+            previewContent: 'Meeting transcription text.'
+          },
+          {
+            id: 'video-mp4',
+            name: 'Experiment Video.mp4',
+            owner: 'Marcus Knight',
+            permission: 'Editor',
+            dateShared: 'Oct 16, 2023',
+            type: 'mp4',
+            size: '124 MB',
+            description: 'Video recording of the sweep sweep experiment.',
+            tags: ['Video', 'Experiment'],
+            previewContent: 'Video player capture.'
+          },
+          {
+            id: 'ref-pdf',
+            name: 'References.pdf',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 15, 2023',
+            type: 'pdf',
+            size: '3.5 MB',
+            description: 'Reference citations for the project outline.',
+            tags: ['References', 'PDF'],
+            previewContent: 'Reference citations details.'
+          },
+          {
+            id: 'budget-xlsx',
+            name: 'Budget Sheet.xlsx',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 14, 2023',
+            type: 'xlsx',
+            size: '2.9 MB',
+            description: 'Budget estimates sheet.',
+            tags: ['Budget', 'Excel'],
+            previewContent: 'Budget columns table.'
+          },
+          {
+            id: 'timeline-docx',
+            name: 'Timeline.docx',
+            owner: 'Marcus Knight',
+            permission: 'Editor',
+            dateShared: 'Oct 13, 2023',
+            type: 'docx',
+            size: '1.1 MB',
+            description: 'Milestones and tasks deadline timeline document.',
+            tags: ['Timeline', 'Tasks'],
+            previewContent: 'Milestone timeline notes.'
+          }
+        ]
+
+        const folderFile = folderFiles.find(f => f.id === fileId)
+        if (folderFile) {
+          setViewingFile(folderFile as any)
+        }
+      }
+    } else {
+      setViewingFile(null)
+    }
+  }, [fileId, files])
+
   // Action handlers
   const handleAIAnalyze = () => {
     setIsAnalyzing(true)
@@ -372,7 +539,7 @@ export function SharedFilesPage() {
         left: 0,
         behavior: 'instant'
       })
-      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"], .overflow-auto, [class*="overflow-auto"]')
       scrollableContainers.forEach((container) => {
         container.scrollTo({
           top: 0,
@@ -573,7 +740,7 @@ export function SharedFilesPage() {
     return (
       <SharedFileViewer
         file={viewingFile}
-        onBack={() => setViewingFile(null)}
+        onBack={() => navigate('/dashboard/shared')}
         showToast={showToastWrapper}
         onDownload={handleDownload}
       />
@@ -660,7 +827,7 @@ export function SharedFilesPage() {
         
         <motion.div
           layout
-          className="flex-1 w-full space-y-6"
+          className="flex-1 w-full min-w-0 overflow-hidden space-y-6"
           transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
         >
           <SharedWorkspaceHeader
@@ -730,11 +897,11 @@ export function SharedFilesPage() {
           {selectedFile && (
             <motion.aside
               key="workspace-right-sidebar"
-              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 32 : 0, y: isLargeScreen ? 0 : 24, scale: 0.98 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 20 : 0, y: isLargeScreen ? 0 : 16 }}
               animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 32 : 0, y: isLargeScreen ? 0 : 24, scale: 0.98 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 20 : 0, y: isLargeScreen ? 0 : 16 }}
               transition={shouldReduceMotion ? { duration: 0.25 } : { type: "spring", stiffness: 220, damping: 26, mass: 0.8 }}
-              className="w-full lg:w-[360px] shrink-0"
+              className="w-full lg:w-[240px] xl:w-[280px] 2xl:w-[320px] shrink-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto scrollbar-none"
             >
               <WorkspaceRightPanel
                 file={selectedFile}

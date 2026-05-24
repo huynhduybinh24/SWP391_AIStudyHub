@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
+import BackToSharedFilesButton from '@/components/shared/BackToSharedFilesButton'
 import { motion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
@@ -135,14 +136,7 @@ export function UploadFilesSection({ onBack, onSave }: UploadFilesSectionProps) 
       
       {/* 1. Header Back link */}
       <div className="flex items-center justify-between text-left">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm font-semibold text-[#5F6E80] hover:text-[#3155F6] dark:text-slate-400 dark:hover:text-blue-400 transition-colors focus:outline-none w-fit cursor-pointer"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Back to Shared Files</span>
-        </button>
+        <BackToSharedFilesButton />
       </div>
 
       {/* 2. Title Description */}

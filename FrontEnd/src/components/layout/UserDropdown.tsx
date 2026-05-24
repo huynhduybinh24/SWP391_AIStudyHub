@@ -55,10 +55,10 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
             <p className="text-sm font-bold text-foreground dark:text-slate-200 truncate leading-snug">{profile.name}</p>
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider leading-none shadow-2xs border shrink-0 ${
               user?.plan === 'pro' 
-                ? 'bg-blue-50 text-blue-600 border-blue-250/20 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/30' 
+                ? 'bg-blue-50 text-blue-600 border-blue-200/20 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/30' 
                 : user?.plan === 'institutional'
-                  ? 'bg-purple-50 text-purple-600 border-purple-250/20 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-900/30'
-                  : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-450 dark:border-slate-750'
+                  ? 'bg-purple-50 text-purple-600 border-purple-200/20 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-900/30'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
             }`}>
               {user?.plan === 'pro' ? 'PRO' : user?.plan === 'institutional' ? 'INST' : 'FREE'}
             </span>
@@ -90,11 +90,11 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
       <div className="mt-1 border-t border-slate-200 dark:border-slate-800 pt-1">
         <button
           type="button"
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-600 dark:text-rose-455 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-left font-semibold cursor-pointer"
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-left font-semibold cursor-pointer"
           onClick={onLogoutClick || handleLogout}
           role="menuitem"
         >
-          <LogOut className="size-4 text-rose-600 dark:text-rose-455" />
+          <LogOut className="size-4 text-rose-600 dark:text-rose-400" />
           {t.sidebar.logout}
         </button>
       </div>

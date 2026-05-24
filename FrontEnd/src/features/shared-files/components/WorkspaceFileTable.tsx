@@ -109,17 +109,17 @@ export function WorkspaceFileTable({
   return (
     <div className="w-full overflow-visible bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-[28px] p-2 shadow-xs select-none">
       <div className="w-full overflow-x-auto overflow-y-visible">
-        <table className="w-full border-collapse text-left min-w-[680px]">
+        <table className="w-full border-collapse text-left min-w-0">
           <thead>
             <tr className="border-b border-slate-100 dark:border-slate-800/60">
               <th className="py-3 px-5 text-xs font-semibold text-slate-500 dark:text-slate-400 w-[45%]">
                 {t.sharedFiles.name || 'Name'}
               </th>
-              <th className="py-3 px-5 text-xs font-semibold text-slate-500 dark:text-slate-400 w-[25%]">
+              <th className="py-3 px-5 text-xs font-semibold text-slate-500 dark:text-slate-400 w-[25%] hidden md:table-cell">
                 {t.sharedFiles.sharedBy || 'Shared by'}
               </th>
               <th
-                className="py-3 px-5 text-xs font-semibold text-slate-500 dark:text-slate-400 w-[20%] cursor-pointer hover:text-slate-850 dark:hover:text-slate-200 select-none group"
+                className="py-3 px-5 text-xs font-semibold text-slate-500 dark:text-slate-400 w-[20%] cursor-pointer hover:text-slate-850 dark:hover:text-slate-200 select-none group hidden xl:table-cell"
                 onClick={() => onSortOrderChange(sortOrder === 'recent' ? 'oldest' : 'recent')}
               >
                 <div className="flex items-center gap-1.5">
@@ -204,7 +204,7 @@ export function WorkspaceFileTable({
                         </td>
 
                         {/* Shared By Column */}
-                        <td className="py-2.5 px-5 text-xs text-slate-600 dark:text-slate-350">
+                        <td className="py-2.5 px-5 text-xs text-slate-600 dark:text-slate-350 hidden md:table-cell">
                           <div className="flex items-center gap-2">
                             <div className={cn("size-6 rounded-full text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm", getAvatarBg(file.owner || ''))}>
                               {ownerChar}
@@ -216,7 +216,7 @@ export function WorkspaceFileTable({
                         </td>
 
                         {/* Date Shared Column */}
-                        <td className="py-2.5 px-5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <td className="py-2.5 px-5 text-xs font-medium text-slate-500 dark:text-slate-400 hidden xl:table-cell">
                           {formatDate(file.dateShared)}
                         </td>
 

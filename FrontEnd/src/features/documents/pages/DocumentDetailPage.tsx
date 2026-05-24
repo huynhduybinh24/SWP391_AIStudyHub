@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import BackButton from '@/components/shared/BackButton'
 import { FileViewer } from '@/components/shared/file-viewer/FileViewer'
 
 interface DocumentItem {
@@ -102,7 +102,7 @@ export default function DocumentDetailPage() {
         left: 0,
         behavior: 'instant'
       })
-      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"], .overflow-auto, [class*="overflow-auto"]')
       scrollableContainers.forEach((container) => {
         container.scrollTo({
           top: 0,
@@ -127,13 +127,10 @@ export default function DocumentDetailPage() {
   }
 
   const backLink = (
-    <button
-      onClick={() => navigate(-1)}
-      className="group flex items-center gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-750 hover:text-slate-900 dark:text-slate-200 px-4 py-2 text-sm font-semibold shadow-sm transition-all duration-200 cursor-pointer"
-    >
-      <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-      <span>Back to Documents</span>
-    </button>
+    <BackButton
+      label="Back to Documents"
+      to="/dashboard/documents"
+    />
   )
 
   return (

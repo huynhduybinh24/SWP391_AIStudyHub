@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
-import { ArrowLeft } from 'lucide-react'
 import { FileViewer } from '@/components/shared/file-viewer/FileViewer'
 import { SharedFile } from './SharedFilesTable'
+import { useTranslation } from '@/context/LanguageContext'
+import BackToSharedFilesButton from '@/components/shared/BackToSharedFilesButton'
 
 interface SharedFileViewerProps {
   file: SharedFile
@@ -16,6 +17,8 @@ export function SharedFileViewer({
   showToast,
   onDownload
 }: SharedFileViewerProps) {
+  const { t } = useTranslation()
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.history.scrollRestoration = 'manual'
@@ -24,7 +27,7 @@ export function SharedFileViewer({
         left: 0,
         behavior: 'instant'
       })
-      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"], .overflow-auto, [class*="overflow-auto"]')
       scrollableContainers.forEach((container) => {
         container.scrollTo({
           top: 0,
@@ -36,15 +39,7 @@ export function SharedFileViewer({
   }, [])
 
   const backLink = (
-    <button
-      type="button"
-      onClick={onBack}
-      className="group flex items-center gap-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-750 hover:text-slate-900 dark:text-slate-200 px-4 py-2 text-sm font-semibold shadow-sm transition-all duration-200 cursor-pointer"
-      aria-label="Back to Shared Files"
-    >
-      <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-      <span>← Back to Shared Files</span>
-    </button>
+    <BackToSharedFilesButton />
   )
 
   // Map file categories or subject if present (e.g. from file tags or names)

@@ -94,8 +94,21 @@ export function FileViewer({
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Cleanup timers on unmount
+  // Reset scroll to top on mount, and cleanup timers on unmount
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual'
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      })
+      
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"], .overflow-auto, [class*="overflow-auto"]')
+      scrollableContainers.forEach((container) => {
+        container.scrollTop = 0
+      })
+    }
     return () => {
       if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current)
       if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
