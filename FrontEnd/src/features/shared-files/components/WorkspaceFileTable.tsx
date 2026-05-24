@@ -181,7 +181,9 @@ export function WorkspaceFileTable({
                               </span>
                               
                               {file.collaborators && (
-                                <Users className="size-3.5 text-slate-400 shrink-0" title="Collaborators" />
+                                <span title="Collaborators" className="shrink-0 inline-flex">
+                                  <Users className="size-3.5 text-slate-400" />
+                                </span>
                               )}
                             </div>
 
