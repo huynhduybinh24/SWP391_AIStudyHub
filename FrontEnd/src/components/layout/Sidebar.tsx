@@ -71,6 +71,38 @@ function PortalTooltip({ children, content, disabled }: TooltipProps) {
   )
 }
 
+const AIChatbotIcon = ({ className, ...props }: any) => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
+    <defs>
+      <linearGradient id="ai-bot-body" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#ffffff" />
+        <stop offset="1" stopColor="#e0e7ff" />
+      </linearGradient>
+      <linearGradient id="ai-bot-face" x1="6" y1="8" x2="18" y2="18" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#0f172a" />
+        <stop offset="1" stopColor="#1e293b" />
+      </linearGradient>
+      <filter id="ai-bot-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="1.5" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+      <filter id="ai-bot-shadow" x="-10%" y="-10%" width="120%" height="120%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.15" />
+      </filter>
+    </defs>
+    <rect x="3" y="6" width="18" height="14" rx="5" fill="url(#ai-bot-body)" filter="url(#ai-bot-shadow)" />
+    <rect x="5.5" y="8.5" width="13" height="9" rx="3" fill="url(#ai-bot-face)" />
+    <circle cx="9.5" cy="13" r="1.8" fill="#38bdf8" filter="url(#ai-bot-glow)" />
+    <circle cx="14.5" cy="13" r="1.8" fill="#38bdf8" filter="url(#ai-bot-glow)" />
+    <path d="M7.5 10.5h1.5" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+    <path d="M15 10.5h1.5" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+    <path d="M12 6V2.5" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="12" cy="2" r="1.2" fill="#38bdf8" filter="url(#ai-bot-glow)" />
+    <path d="M3 11c-1 0-1.5 1-1.5 2s.5 2 1.5 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M21 11c1 0 1.5 1 1.5 2s-.5 2-1.5 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+)
+
 interface SidebarLinkProps {
   to: string
   icon: React.ComponentType<{ className?: string; strokeWidth?: number; style?: React.CSSProperties }>
@@ -100,15 +132,26 @@ function SidebarLink({ to, icon: Icon, label, pathname, onClick }: SidebarLinkPr
             : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
         )}
       >
-        <Icon
-          className={cn(
-            "size-5 shrink-0 transition-colors duration-200", 
-            active 
-              ? "text-blue-600 dark:text-blue-300" 
-              : "text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100"
-          )}
-          strokeWidth={active ? 2.25 : 1.75}
-        />
+        {to === '/dashboard/chat' ? (
+          <AIChatbotIcon
+            className={cn(
+              "size-5 shrink-0 transition-colors duration-200", 
+              active 
+                ? "text-blue-600 dark:text-blue-300" 
+                : "text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100"
+            )}
+          />
+        ) : (
+          <Icon
+            className={cn(
+              "size-5 shrink-0 transition-colors duration-200", 
+              active 
+                ? "text-blue-600 dark:text-blue-300" 
+                : "text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100"
+            )}
+            strokeWidth={active ? 2.25 : 1.75}
+          />
+        )}
         {!isSidebarCollapsed && (
           <span className="md:max-lg:hidden block truncate animate-fade-in min-w-0 flex-1 text-left">
             {label}
