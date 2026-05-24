@@ -29,6 +29,7 @@ interface FileViewerProps {
   showToast: (msg: string) => void
   onDownload: () => void
   onBackLink: React.ReactNode
+  fileUrl?: string
 }
 
 export function FileViewer({
@@ -44,7 +45,8 @@ export function FileViewer({
   permission = 'View Only',
   showToast,
   onDownload,
-  onBackLink
+  onBackLink,
+  fileUrl
 }: FileViewerProps) {
   const { t } = useTranslation()
 
@@ -301,6 +303,7 @@ export function FileViewer({
             subject={subject}
             previewContent={previewContent}
             isDownloadRestricted={isDownloadRestricted()}
+            fileUrl={fileUrl}
           />
         </div>
 

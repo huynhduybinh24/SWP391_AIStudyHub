@@ -1,57 +1,35 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import {
-  CloudUpload,
-  FileText,
-  X,
-  Sparkles,
-  FileCheck,
-  Image as ImageIcon,
-  BookOpen,
-  FileCode,
-  Folder,
-  Video,
-  Volume2,
-  Mic,
-  Music,
-  Trash2,
-  Download,
-  Edit2,
-  Eye,
-  Play,
-  Pause,
-  AlertCircle
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useToast } from '@/components/ui/Toast'
-import { useTranslation } from '@/context/LanguageContext'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles, Folder, FileCheck, AlertCircle } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/context/LanguageContext';
+import { motion } from 'framer-motion';
+
+import { useMediaUpload } from '@/components/shared/media-upload/useMediaUpload';
+import { MediaUploadTabs } from '@/components/shared/media-upload/MediaUploadTabs';
+import { MediaDropzone } from '@/components/shared/media-upload/MediaDropzone';
+import { VideoPreview } from '@/components/shared/media-upload/VideoPreview';
+import { AudioPreview } from '@/components/shared/media-upload/AudioPreview';
+import { AudioRecorder } from '@/components/shared/media-upload/AudioRecorder';
+import { MediaMetadataForm } from '@/components/shared/media-upload/MediaMetadataForm';
+import { MediaPreviewModal } from '@/components/shared/media-upload/MediaPreviewModal';
+import { RecentUploadsList } from '@/components/shared/media-upload/RecentUploadsList';
+import { UploadedMedia } from '@/components/shared/media-upload/mediaUploadTypes';
+import { cn } from '@/lib/utils';
 
 interface DocumentItem {
-  id: string
-  title: string
-  fileName: string
-  uploadedAt: string
-  uploadedDateObj: Date
-  size: string
-  sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'
-  status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
-  type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
-  essential?: boolean
+  id: string;
+  title: string;
+  fileName: string;
+  uploadedAt: string;
+  uploadedDateObj: Date;
+  size: string;
+  sizeKb: number;
+  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL';
+  status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED';
+  type: 'pdf' | 'word' | 'image' | 'text' | 'slides';
+  essential?: boolean;
 }
-
-const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
-  COMPSCI: { title: 'Software Engineering', courseCode: 'CS-402' },
-  MATHEMATICS: { title: 'Mathematics', courseCode: 'Calculus II' },
-  BIOLOGY: { title: 'Molecular Biology', courseCode: 'BIO-201' },
-  PHYSICS: { title: 'Physics', courseCode: 'PHY-301' },
-  PHILOSOPHY: { title: 'Philosophy', courseCode: 'PHIL-101' },
-  ECONOMICS: { title: 'Economics', courseCode: 'ECON-201' },
-  GENERAL: { title: 'General Studies', courseCode: 'GEN-101' }
-}
-
-const AVAILABLE_TAGS = ['Notes', 'Assignment', 'Lecture', 'Midterm', 'Final Exam']
 
 const INITIAL_DOCUMENTS: DocumentItem[] = [
   {
@@ -64,7 +42,7 @@ const INITIAL_DOCUMENTS: DocumentItem[] = [
     sizeKb: 3890,
     subject: 'COMPSCI',
     status: 'ANALYZED',
-    type: 'pdf',
+    type: 'pdf'
   },
   {
     id: 'doc-agile',
@@ -77,422 +55,104 @@ const INITIAL_DOCUMENTS: DocumentItem[] = [
     subject: 'GENERAL',
     status: 'ANALYZED',
     type: 'word',
-    essential: true,
+    essential: true
   }
-]
-
-type UploadType = "document" | "video" | "audio" | "recording";
-
-type UploadedMedia = {
-  id: string;
-  title: string;
-  type: UploadType;
-  fileName: string;
-  fileSize: number;
-  mimeType: string;
-  url: string;
-  duration?: string;
-  uploadedAt: string;
-  description?: string;
-  tags: string[];
-};
+];
 
 export function UploadPage() {
-  const navigate = useNavigate()
-  const toast = useToast()
-  const { language, t } = useTranslation()
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { language, t } = useTranslation();
 
-  // Tab State
-  const [activeTab, setActiveTab] = useState<UploadType>("document")
-
-  // Form states
-  const [docTitle, setDocTitle] = useState('')
-  const [selectedSubjectKey, setSelectedSubjectKey] = useState<'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'>('BIOLOGY')
-  const [description, setDescription] = useState('')
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [fileType, setFileType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
-  const [visibility, setVisibility] = useState<'private' | 'shared' | 'public'>('private')
-  const [generateSummary, setGenerateSummary] = useState(true)
-  const [createFlashcards, setCreateFlashcards] = useState(true)
-
-  // Document tab file state
-  const [uploadedDocument, setUploadedDocument] = useState<File | null>(null)
-
-  // File stats
-  const [fileName, setFileName] = useState('')
-  const [fileSize, setFileSize] = useState('')
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [uploadComplete, setUploadComplete] = useState(false)
-
-  // Video & Audio tab states
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [isDragOver, setIsDragOver] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Recording states
-  const [recordingStatus, setRecordingStatus] = useState<"idle" | "recording" | "paused" | "stopped">("idle")
-  const [recordingTimer, setRecordingTimer] = useState(0)
-  const [isTimerRunning, setIsTimerRunning] = useState(false)
-  const [recorderSupported, setRecorderSupported] = useState(true)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
-  const timerIntervalRef = useRef<number | null>(null)
+  const {
+    activeTab,
+    setActiveTab,
+    docTitle,
+    setDocTitle,
+    selectedSubjectKey,
+    setSelectedSubjectKey,
+    description,
+    setDescription,
+    selectedTags,
+    setSelectedTags,
+    fileType,
+    setFileType,
+    visibility,
+    setVisibility,
+    generateSummary,
+    setGenerateSummary,
+    createFlashcards,
+    setCreateFlashcards,
+    uploadedDocument,
+    uploadedFile,
+    previewUrl,
+    fileName,
+    fileSize,
+    uploadProgress,
+    uploadComplete,
+    isDragOver,
+    isProcessing,
+    setIsProcessing,
+    recordingStatus,
+    recordingTimer,
+    recorderSupported,
+    startRecording,
+    pauseRecording,
+    resumeRecording,
+    stopRecording,
+    deleteRecording,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    handleFileChange,
+    clearAllState,
+    resetForm
+  } = useMediaUpload('document');
 
   // Recent Uploads State
-  const [recentUploads, setRecentUploads] = useState<UploadedMedia[]>([])
+  const [recentUploads, setRecentUploads] = useState<UploadedMedia[]>([]);
 
   // Modal states
-  const [previewModalOpen, setPreviewModalOpen] = useState(false)
-  const [previewModalMedia, setPreviewModalMedia] = useState<UploadedMedia | null>(null)
-  const [renameModalOpen, setRenameModalOpen] = useState(false)
-  const [renameModalMedia, setRenameModalMedia] = useState<UploadedMedia | null>(null)
-  const [renameTitle, setRenameTitle] = useState('')
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [deleteConfirmMedia, setDeleteConfirmMedia] = useState<UploadedMedia | null>(null)
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewModalMedia, setPreviewModalMedia] = useState<UploadedMedia | null>(null);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameModalMedia, setRenameModalMedia] = useState<UploadedMedia | null>(null);
+  const [renameTitle, setRenameTitle] = useState('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmMedia, setDeleteConfirmMedia] = useState<UploadedMedia | null>(null);
 
-  // Check MediaRecorder support on mount
+  // Load recent uploads from localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)
-      setRecorderSupported(supported)
-    }
-
-    // Load recent uploads from localStorage
-    const saved = localStorage.getItem('ai_study_hub_recent_media_uploads')
+    const saved = localStorage.getItem('ai_study_hub_recent_media_uploads');
     if (saved) {
       try {
-        setRecentUploads(JSON.parse(saved))
+        setRecentUploads(JSON.parse(saved));
       } catch (e) {
-        console.error('Error parsing recent media uploads:', e)
+        console.error('Error parsing recent media uploads:', e);
       }
     }
-  }, [])
+  }, []);
 
-  const resetForm = () => {
-    setDocTitle('')
-    setDescription('')
-    setSelectedTags([])
-  }
-
-  // Progress Bar Simulation for Document upload
-  useEffect(() => {
-    if (activeTab !== 'document' || !uploadedDocument || uploadComplete) return
-
-    setUploadProgress(0)
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setUploadComplete(true)
-          return 100
-        }
-        const next = prev + Math.floor(Math.random() * 15) + 5
-        return next > 100 ? 100 : next
-      })
-    }, 150)
-
-    return () => clearInterval(interval)
-  }, [uploadedDocument, uploadComplete, activeTab])
-
-  // Progress Bar Simulation for Audio and Video uploads
-  useEffect(() => {
-    if (activeTab === 'document' || !uploadedFile || uploadComplete) return
-
-    setUploadProgress(0)
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setUploadComplete(true)
-          return 100
-        }
-        const next = prev + Math.floor(Math.random() * 18) + 6
-        return next > 100 ? 100 : next
-      })
-    }, 150)
-
-    return () => clearInterval(interval)
-  }, [uploadedFile, uploadComplete, activeTab])
-
-  // Recording Count-up Timer Hook
-  useEffect(() => {
-    if (isTimerRunning && recordingStatus === 'recording') {
-      timerIntervalRef.current = window.setInterval(() => {
-        setRecordingTimer((prev) => prev + 1)
-      }, 1000)
-    } else {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current)
-      }
-    }
-    return () => {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current)
-      }
-    }
-  }, [isTimerRunning, recordingStatus])
-
-  // Cleanup blob urls on unmount
-  useEffect(() => {
-    return () => {
-      if (previewUrl && !recentUploads.some(u => u.url === previewUrl)) {
-        URL.revokeObjectURL(previewUrl)
-      }
-    }
-  }, [previewUrl, recentUploads])
-
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0')
-    const s = (secs % 60).toString().padStart(2, '0')
-    return `${m}:${s}`
-  }
-
-  // MediaRecorder handlers
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream)
-      mediaRecorderRef.current = mediaRecorder
-      audioChunksRef.current = []
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          audioChunksRef.current.push(event.data)
-        }
-      }
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-        const url = URL.createObjectURL(audioBlob)
-        setPreviewUrl(url)
-        
-        const timestamp = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')
-        const recordingName = `Recording_${timestamp.substring(0, 10)}`
-        setUploadedFile(new File([audioBlob], `${recordingName}.webm`, { type: 'audio/webm' }))
-        setDocTitle(recordingName.replace('_', ' '))
-        setRecordingStatus('stopped')
-        setUploadComplete(true)
-        setUploadProgress(100)
-        toast.success(t.upload.recordingCompleted || 'Recording completed')
-      }
-
-      mediaRecorder.start()
-      setRecordingStatus('recording')
-      setRecordingTimer(0)
-      setIsTimerRunning(true)
-      toast.success(t.upload.recordingStarted || 'Recording started')
-    } catch (err: any) {
-      console.error('Error starting recording:', err)
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        toast.error(t.upload.permissionDenied || 'Microphone permission denied')
-      } else {
-        toast.error(t.upload.unsupportedFormat || 'Unsupported recording configuration')
-      }
-    }
-  }
-
-  const pauseRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.pause()
-      setRecordingStatus('paused')
-      setIsTimerRunning(false)
-      toast.success(t.upload.recordingPaused || 'Recording paused')
-    }
-  }
-
-  const resumeRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
-      mediaRecorderRef.current.resume()
-      setRecordingStatus('recording')
-      setIsTimerRunning(true)
-      toast.success(t.upload.recordingResumed || 'Recording resumed')
-    }
-  }
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && (mediaRecorderRef.current.state === 'recording' || mediaRecorderRef.current.state === 'paused')) {
-      mediaRecorderRef.current.stop()
-      setIsTimerRunning(false)
-      if (mediaRecorderRef.current.stream) {
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
-      }
-    }
-  }
-
-  const deleteRecording = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
-    }
-    setPreviewUrl(null)
-    setUploadedFile(null)
-    setRecordingTimer(0)
-    setIsTimerRunning(false)
-    setRecordingStatus('idle')
-    resetForm()
-    toast.success(t.upload.recordingDeleted || 'Recording deleted')
-  }
-
-  // Drag and drop handlers
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(true)
-  }
-
-  const handleDragLeave = () => {
-    setIsDragOver(false)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-    const files = e.dataTransfer.files
-    if (files && files[0]) {
-      processSelectedFile(files[0])
-    }
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files && files[0]) {
-      processSelectedFile(files[0])
-    }
-  }
-
-  const processSelectedFile = (file: File) => {
-    if (activeTab === 'document') {
-      if (file.size > 50 * 1024 * 1024) {
-        toast.error(language === 'en' ? 'Document size exceeds 50MB' : 'Dung lượng tài liệu học tập vượt quá 50MB!')
-        return
-      }
-      setUploadedDocument(file)
-      setFileName(file.name)
-      setFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB`)
-
-      // Auto-detect type
-      const ext = file.name.split('.').pop()?.toLowerCase()
-      let detectedType: 'pdf' | 'word' | 'image' | 'text' | 'slides' = 'pdf'
-      if (ext === 'pdf') detectedType = 'pdf'
-      else if (ext === 'docx' || ext === 'doc') detectedType = 'word'
-      else if (ext === 'txt') detectedType = 'text'
-      else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') detectedType = 'image'
-      else if (ext === 'pptx' || ext === 'ppt') detectedType = 'slides'
-
-      setFileType(detectedType)
-      setUploadProgress(0)
-      setUploadComplete(false)
-
-      const cleanName = file.name.split('.')[0].replace(/[_-]/g, ' ')
-      setDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
-      setDescription('')
-      setSelectedTags(['Notes'])
-    } else if (activeTab === 'video') {
-      const ext = file.name.split('.').pop()?.toLowerCase()
-      const allowed = ['mp4', 'mov', 'webm']
-      if (!ext || !allowed.includes(ext)) {
-        toast.error(t.upload.unsupportedFormat || 'Unsupported video format')
-        return
-      }
-      if (file.size > 500 * 1024 * 1024) {
-        toast.error(t.upload.videoSizeExceeds || 'Video size exceeds 500MB')
-        return
-      }
-
-      setUploadedFile(file)
-      setFileName(file.name)
-      setFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB`)
-      if (previewUrl) URL.revokeObjectURL(previewUrl)
-      const url = URL.createObjectURL(file)
-      setPreviewUrl(url)
-      
-      const cleanName = file.name.split('.')[0].replace(/[_-]/g, ' ')
-      setDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
-      setUploadProgress(0)
-      setUploadComplete(false)
-      toast.success(t.upload.videoUploaded || 'Video uploaded successfully')
-    } else if (activeTab === 'audio') {
-      const ext = file.name.split('.').pop()?.toLowerCase()
-      const allowed = ['mp3', 'wav', 'm4a', 'webm']
-      if (!ext || !allowed.includes(ext)) {
-        toast.error(t.upload.unsupportedFormat || 'Unsupported audio format')
-        return
-      }
-      if (file.size > 100 * 1024 * 1024) {
-        toast.error(t.upload.audioSizeExceeds || 'Audio size exceeds 100MB')
-        return
-      }
-
-      setUploadedFile(file)
-      setFileName(file.name)
-      setFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB`)
-      if (previewUrl) URL.revokeObjectURL(previewUrl)
-      const url = URL.createObjectURL(file)
-      setPreviewUrl(url)
-      
-      const cleanName = file.name.split('.')[0].replace(/[_-]/g, ' ')
-      setDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
-      setUploadProgress(0)
-      setUploadComplete(false)
-      toast.success(t.upload.audioUploaded || 'Audio uploaded successfully')
-    }
-  }
-
-  const handleBrowseFilesClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    )
-  }
-
-  const getSubjectName = (key: string) => {
-    if (key === 'COMPSCI') return t.myDocuments.compsci
-    if (key === 'MATHEMATICS') return t.myDocuments.math
-    if (key === 'BIOLOGY') return language === 'en' ? 'Molecular Biology' : (language === 'vi' ? 'Sinh học phân tử' : (language === 'ja' ? '分子生物学' : '분자생물학'))
-    const subjectMap: Record<string, Record<string, string>> = {
-      PHYSICS: { en: 'Physics', vi: 'Vật lý', ja: '物理学', ko: '물리학' },
-      PHILOSOPHY: { en: 'Philosophy', vi: 'Triết học', ja: '哲学', ko: '철학' },
-      ECONOMICS: { en: 'Economics', vi: 'Kinh tế học', ja: '経済学', ko: '경제학' },
-      GENERAL: { en: 'General Studies', vi: 'Đại cương', ja: '一般教養', ko: '교양' }
-    }
-    return subjectMap[key]?.[language] || key
-  }
-
-  const getTagName = (tag: string) => {
-    const tagMap: Record<string, Record<string, string>> = {
-      'Notes': { en: 'Notes', vi: 'Ghi chú', ja: 'ノート', ko: '노트' },
-      'Assignment': { en: 'Assignment', vi: 'Bài tập', ja: '課題', ko: '과제' },
-      'Lecture': { en: 'Lecture', vi: 'Bài giảng', ja: '講義', ko: '강의' },
-      'Midterm': { en: 'Midterm', vi: 'Giữa kỳ', ja: '中間試験', ko: '중간고사' },
-      'Final Exam': { en: 'Final Exam', vi: 'Cuối kỳ', ja: '期末試験', ko: '기말고사' }
-    }
-    return tagMap[tag]?.[language] || tag
-  }
-
-  // Handle document tab submit (navigates away)
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleDocumentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
     if (!uploadedDocument) {
-      toast.error(language === 'en' ? 'Please attach a study document first!' : 'Vui lòng đính kèm tài liệu học tập trước!')
-      return
+      toast.error(language === 'en' ? 'Please attach a study document first!' : 'Vui lòng đính kèm tài liệu học tập trước!');
+      return;
     }
 
-    const finalTitle = docTitle.trim()
+    const finalTitle = docTitle.trim();
     if (!finalTitle) {
-      toast.error('Document title is required')
-      return
+      toast.error('Document title is required');
+      return;
     }
 
-    setIsProcessing(true)
+    setIsProcessing(true);
 
     setTimeout(() => {
-      const finalFileName = uploadedDocument.name
-      const finalSize = `${(uploadedDocument.size / (1024 * 1024)).toFixed(1)} MB`
-      const finalSizeKb = Math.round(uploadedDocument.size / 1024)
+      const finalFileName = uploadedDocument.name;
+      const finalSize = `${(uploadedDocument.size / (1024 * 1024)).toFixed(1)} MB`;
+      const finalSizeKb = Math.round(uploadedDocument.size / 1024);
 
       const newDoc: DocumentItem = {
         id: `doc-${Date.now()}`,
@@ -506,31 +166,30 @@ export function UploadPage() {
         status: 'ANALYZED',
         type: fileType,
         essential: selectedTags.includes('Lecture') || selectedTags.includes('Midterm')
-      }
+      };
 
-      const savedDocsStr = localStorage.getItem('ai_study_hub_documents')
-      let currentDocs: DocumentItem[] = savedDocsStr ? JSON.parse(savedDocsStr) : INITIAL_DOCUMENTS
-      currentDocs = currentDocs.filter(d => d.id !== newDoc.id)
-      const updatedDocs = [newDoc, ...currentDocs]
+      const savedDocsStr = localStorage.getItem('ai_study_hub_documents');
+      let currentDocs: DocumentItem[] = savedDocsStr ? JSON.parse(savedDocsStr) : INITIAL_DOCUMENTS;
+      currentDocs = currentDocs.filter((d) => d.id !== newDoc.id);
+      const updatedDocs = [newDoc, ...currentDocs];
 
-      localStorage.setItem('ai_study_hub_documents', JSON.stringify(updatedDocs))
-      toast.success('Document uploaded successfully')
-      setIsProcessing(false)
-      navigate(`/dashboard/documents/subject/${selectedSubjectKey}`)
-    }, 1200)
-  }
+      localStorage.setItem('ai_study_hub_documents', JSON.stringify(updatedDocs));
+      toast.success('Document uploaded successfully');
+      setIsProcessing(false);
+      navigate(`/dashboard/documents/subject/${selectedSubjectKey}`);
+    }, 1200);
+  };
 
-  // Handle Video / Audio / Recording Save (adds to list locally without navigating)
   const handleSaveMedia = () => {
-    const titleVal = docTitle.trim()
+    const titleVal = docTitle.trim();
     if (!titleVal) {
-      toast.error('Title is required')
-      return
+      toast.error('Title is required');
+      return;
     }
 
-    const finalSize = uploadedFile ? uploadedFile.size : 0
-    const finalMime = uploadedFile ? uploadedFile.type : (activeTab === 'recording' ? 'audio/webm' : '')
-    const finalFileName = uploadedFile ? uploadedFile.name : `recording-${Date.now()}.webm`
+    const finalSize = uploadedFile ? uploadedFile.size : 0;
+    const finalMime = uploadedFile ? uploadedFile.type : activeTab === 'recording' ? 'audio/webm' : '';
+    const finalFileName = uploadedFile ? uploadedFile.name : `recording-${Date.now()}.webm`;
 
     const newMedia: UploadedMedia = {
       id: `media-${Date.now()}`,
@@ -543,151 +202,124 @@ export function UploadPage() {
       uploadedAt: 'Uploaded Just Now',
       description: description.trim(),
       tags: selectedTags
-    }
+    };
 
-    const updatedUploads = [newMedia, ...recentUploads]
-    setRecentUploads(updatedUploads)
-    localStorage.setItem('ai_study_hub_recent_media_uploads', JSON.stringify(updatedUploads))
+    const updatedUploads = [newMedia, ...recentUploads];
+    setRecentUploads(updatedUploads);
+    localStorage.setItem('ai_study_hub_recent_media_uploads', JSON.stringify(updatedUploads));
 
     if (activeTab === 'video') {
-      toast.success(t.upload.videoSaved || 'Video saved successfully')
+      toast.success(t.upload.videoSaved || 'Video saved successfully');
     } else if (activeTab === 'audio') {
-      toast.success(t.upload.audioSaved || 'Audio saved successfully')
+      toast.success(t.upload.audioSaved || 'Audio saved successfully');
     } else {
-      toast.success(t.upload.recordingSaved || 'Recording saved successfully')
+      toast.success(t.upload.recordingSaved || 'Recording saved successfully');
     }
 
-    setUploadedFile(null)
-    setPreviewUrl(null)
-    setUploadProgress(0)
-    setUploadComplete(false)
-    resetForm()
-    if (activeTab === 'recording') {
-      setRecordingStatus('idle')
-    }
-  }
+    clearAllState();
+  };
 
-  const handleCancelMedia = () => {
-    if (previewUrl && !recentUploads.some(u => u.url === previewUrl)) {
-      URL.revokeObjectURL(previewUrl)
-    }
-    setUploadedFile(null)
-    setPreviewUrl(null)
-    setUploadProgress(0)
-    setUploadComplete(false)
-    resetForm()
-    if (activeTab === 'recording') {
-      setRecordingStatus('idle')
-      setRecordingTimer(0)
-      setIsTimerRunning(false)
-    }
-    toast.success('Upload discarded')
-  }
-
-  const handleCancelDocument = () => {
-    setUploadedDocument(null)
-    setUploadProgress(0)
-    setUploadComplete(false)
-    resetForm()
-    toast.success('Document upload canceled')
-  }
-
-  // Media Library Actions
+  // Recent Uploads Actions
   const handlePreviewClick = (item: UploadedMedia) => {
-    setPreviewModalMedia(item)
-    setPreviewModalOpen(true)
-  }
+    setPreviewModalMedia(item);
+    setPreviewModalOpen(true);
+  };
 
   const handleDownloadClick = (item: UploadedMedia) => {
     try {
-      const link = document.createElement('a')
-      link.href = item.url
-      link.download = item.fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      toast.success('File downloaded successfully')
+      const link = document.createElement('a');
+      link.href = item.url;
+      link.download = item.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('File downloaded successfully');
     } catch (err) {
-      toast.error('Download failed')
+      toast.error('Download failed');
     }
-  }
+  };
 
   const handleRenameClick = (item: UploadedMedia) => {
-    setRenameModalMedia(item)
-    setRenameTitle(item.title)
-    setRenameModalOpen(true)
-  }
+    setRenameModalMedia(item);
+    setRenameTitle(item.title);
+    setRenameModalOpen(true);
+  };
 
   const confirmRename = () => {
-    if (!renameModalMedia || !renameTitle.trim()) return
-    const updated = recentUploads.map(item =>
+    if (!renameModalMedia || !renameTitle.trim()) return;
+    const updated = recentUploads.map((item) =>
       item.id === renameModalMedia.id ? { ...item, title: renameTitle.trim() } : item
-    )
-    setRecentUploads(updated)
-    localStorage.setItem('ai_study_hub_recent_media_uploads', JSON.stringify(updated))
-    setRenameModalOpen(false)
-    setRenameModalMedia(null)
-    toast.success('File renamed successfully')
-  }
+    );
+    setRecentUploads(updated);
+    localStorage.setItem('ai_study_hub_recent_media_uploads', JSON.stringify(updated));
+    setRenameModalOpen(false);
+    setRenameModalMedia(null);
+    toast.success('File renamed successfully');
+  };
 
   const handleDeleteClick = (item: UploadedMedia) => {
-    setDeleteConfirmMedia(item)
-    setDeleteConfirmOpen(true)
-  }
+    setDeleteConfirmMedia(item);
+    setDeleteConfirmOpen(true);
+  };
 
   const confirmDelete = () => {
-    if (!deleteConfirmMedia) return
+    if (!deleteConfirmMedia) return;
     if (deleteConfirmMedia.url && deleteConfirmMedia.url.startsWith('blob:')) {
-      URL.revokeObjectURL(deleteConfirmMedia.url)
+      URL.revokeObjectURL(deleteConfirmMedia.url);
     }
-    const updated = recentUploads.filter(item => item.id !== deleteConfirmMedia.id)
-    setRecentUploads(updated)
-    localStorage.setItem('ai_study_hub_recent_media_uploads', JSON.stringify(updated))
-    setDeleteConfirmOpen(false)
-    setDeleteConfirmMedia(null)
-    toast.success('File deleted successfully')
-  }
+    const updated = recentUploads.filter((item) => item.id !== deleteConfirmMedia.id);
+    setRecentUploads(updated);
+    localStorage.setItem('ai_study_hub_recent_media_uploads', JSON.stringify(updated));
+    setDeleteConfirmOpen(false);
+    setDeleteConfirmMedia(null);
+    toast.success('File deleted successfully');
+  };
 
-  const renderPreviewFileIcon = () => {
-    switch (fileType) {
-      case 'pdf':
-        return <FileText className="h-6 w-6 stroke-[1.8] text-rose-500" />
-      case 'word':
-        return <FileCode className="h-6 w-6 stroke-[1.8] text-blue-500" />
-      case 'text':
-        return <BookOpen className="h-6 w-6 stroke-[1.8] text-emerald-500" />
-      case 'image':
-        return <ImageIcon className="h-6 w-6 stroke-[1.8] text-sky-500" />
-      case 'slides':
-      default:
-        return <FileText className="h-6 w-6 stroke-[1.8] text-amber-500" />
+  const isFileAttached =
+    (activeTab === 'document' && uploadedDocument) ||
+    (activeTab !== 'document' && uploadedFile && activeTab !== 'recording');
+
+  const getDropzoneLabels = () => {
+    if (activeTab === 'video') {
+      return {
+        dragDrop: t.upload.videoDropzone || 'Drag and drop your video here',
+        support: t.upload.videoSupport || 'Support for MP4, MOV, WEBM files (Max 500MB)',
+        browse: t.upload.browseVideo || 'Browse Video',
+        extensions: '.mp4,.mov,.webm'
+      };
     }
-  }
+    if (activeTab === 'audio') {
+      return {
+        dragDrop: t.upload.audioDropzone || 'Drag and drop your audio file here',
+        support: t.upload.audioSupport || 'Support for MP3, WAV, M4A, WEBM files (Max 100MB)',
+        browse: t.upload.browseAudio || 'Browse Audio',
+        extensions: '.mp3,.wav,.m4a,.webm'
+      };
+    }
+    return {
+      dragDrop: t.upload.dragDrop || 'Drag and drop your files here',
+      support: t.upload.supportFormat || 'Support for PDF, DOCX, and PPTX files (Max 50MB)',
+      browse: t.upload.browse || 'Browse Files',
+      extensions: '.pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.pptx,.ppt'
+    };
+  };
 
-  const TABS: { key: UploadType; label: string; icon: React.ReactNode }[] = [
-    { key: 'document', label: t.upload.title || 'Document', icon: <FileCheck className="h-4 w-4" /> },
-    { key: 'video', label: t.upload.uploadVideo || 'Video', icon: <Video className="h-4 w-4" /> },
-    { key: 'audio', label: t.upload.uploadAudio || 'Audio', icon: <Music className="h-4 w-4" /> },
-    { key: 'recording', label: t.upload.recordAudio || 'Record', icon: <Mic className="h-4 w-4" /> }
-  ]
+  const dzLabels = getDropzoneLabels();
+
+  const getPreviewIcon = () => {
+    if (activeTab === 'video') return <VideoIcon className="h-6 w-6 text-indigo-500" />;
+    if (activeTab === 'audio') return <Music className="h-6 w-6 text-emerald-500" />;
+    
+    // Document icons
+    if (fileType === 'pdf') return <FileCheck className="h-6 w-6 text-rose-500" />;
+    if (fileType === 'word') return <FileCheck className="h-6 w-6 text-blue-500" />;
+    if (fileType === 'text') return <FileCheck className="h-6 w-6 text-emerald-500" />;
+    if (fileType === 'image') return <FileCheck className="h-6 w-6 text-sky-500" />;
+    return <FileCheck className="h-6 w-6 text-amber-500" />;
+  };
 
   return (
     <div className="space-y-5 pb-12 animate-fade-in max-w-[680px] mx-auto pt-2 px-4 md:px-6">
-      {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        className="hidden"
-        accept={
-          activeTab === 'document'
-            ? ".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.pptx,.ppt"
-            : activeTab === 'video'
-            ? ".mp4,.mov,.webm"
-            : ".mp3,.wav,.m4a,.webm"
-        }
-      />
-
       {/* Header */}
       <div className="space-y-1">
         <h1 className="text-2xl md:text-[28px] font-extrabold text-[#0B1A30] dark:text-slate-100 tracking-tight">
@@ -699,269 +331,72 @@ export function UploadPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#EAF1FB] dark:border-slate-800 overflow-x-auto scrollbar-none pb-2 select-none">
-        {TABS.map((tab) => {
-          const isSelected = activeTab === tab.key
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => {
-                if (previewUrl && !recentUploads.some(u => u.url === previewUrl)) {
-                  URL.revokeObjectURL(previewUrl)
-                }
-                setPreviewUrl(null)
-                setUploadedFile(null)
-                setUploadedDocument(null)
-                setRecordingStatus('idle')
-                setRecordingTimer(0)
-                setIsTimerRunning(false)
-                if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-                  mediaRecorderRef.current.stop()
-                }
-                resetForm()
-                setActiveTab(tab.key)
-              }}
-              className={cn(
-                "flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-extrabold transition-all cursor-pointer shrink-0 border",
-                isSelected
-                  ? "bg-[#2563eb] border-[#2563eb] text-white"
-                  : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-              )}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          )
-        })}
-      </div>
+      <MediaUploadTabs
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          clearAllState();
+          setActiveTab(tab);
+        }}
+        labels={{
+          document: t.upload.title || 'Document',
+          video: t.upload.uploadVideo || 'Video',
+          audio: t.upload.uploadAudio || 'Audio',
+          record: t.upload.recordAudio || 'Record'
+        }}
+      />
 
-      {/* Card Form */}
-      <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Form Card */}
+      <form onSubmit={activeTab === 'document' ? handleDocumentSubmit : (e) => e.preventDefault()} className="space-y-5">
         <div className="bg-white dark:bg-slate-900 rounded-[22px] border border-[#EAF1FB] dark:border-slate-800 p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.012)] space-y-6">
           
-          {/* 1. DOCUMENT TAB CONTENT (Upload Document Drag & Drop zone) */}
-          {activeTab === 'document' && !uploadedDocument && (
-            <div
+          {/* Dropzone */}
+          {activeTab !== 'recording' && !isFileAttached && (
+            <MediaDropzone
+              activeTab={activeTab}
+              isDragOver={isDragOver}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              onClick={handleBrowseFilesClick}
-              className={cn(
-                "flex flex-col items-center justify-center rounded-[16px] border-2 border-dashed py-8 px-6 text-center min-h-[190px] transition-all duration-300 cursor-pointer",
-                isDragOver
-                  ? "border-[#2563eb] bg-blue-50/20 shadow-inner"
-                  : "border-[#C3D2FF] bg-[#F4F7FF]/35 dark:bg-slate-950/20 hover:bg-[#F4F7FF]/55"
-              )}
-            >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF1FB] dark:bg-slate-800 text-[#2563eb] mb-3.5">
-                <CloudUpload className="h-6 w-6 stroke-[1.8] text-[#2563eb]" />
-              </div>
-              <h3 className="text-lg font-extrabold text-[#0B1A30] dark:text-slate-100 tracking-tight">
-                {t.upload.dragDrop || 'Drag and drop your files here'}
-              </h3>
-              <p className="text-xs font-semibold text-[#8B98A5] mt-1">
-                {t.upload.supportFormat || 'Support for PDF, DOCX, and PPTX files (Max 50MB)'}
-              </p>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleBrowseFilesClick()
-                }}
-                className="mt-5 rounded-xl border border-[#D5E1F2] dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-[#2563eb] font-bold text-xs px-6 py-2.5 shadow-sm transition-all cursor-pointer hover:border-blue-200"
-              >
-                {t.upload.browse}
-              </button>
-            </div>
+              onFileSelect={handleFileChange}
+              browseLabel={dzLabels.browse}
+              dragDropLabel={dzLabels.dragDrop}
+              supportLabel={dzLabels.support}
+              allowedExtensions={dzLabels.extensions}
+            />
           )}
 
-          {/* 2. VIDEO TAB CONTENT */}
-          {activeTab === 'video' && !uploadedFile && (
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={handleBrowseFilesClick}
-              className={cn(
-                "flex flex-col items-center justify-center rounded-[16px] border-2 border-dashed py-8 px-6 text-center min-h-[190px] transition-all duration-300 cursor-pointer",
-                isDragOver
-                  ? "border-[#2563eb] bg-blue-50/20 shadow-inner"
-                  : "border-[#C3D2FF] bg-[#F4F7FF]/35 dark:bg-slate-950/20 hover:bg-[#F4F7FF]/55"
-              )}
-            >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF1FB] dark:bg-slate-800 text-[#2563eb] mb-3.5">
-                <Video className="h-6 w-6 stroke-[1.8] text-[#2563eb]" />
-              </div>
-              <h3 className="text-lg font-extrabold text-[#0B1A30] dark:text-slate-100 tracking-tight">
-                {t.upload.videoDropzone || 'Drag and drop your video here'}
-              </h3>
-              <p className="text-xs font-semibold text-[#8B98A5] mt-1">
-                {t.upload.videoSupport || 'Support for MP4, MOV, WEBM files (Max 500MB)'}
-              </p>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleBrowseFilesClick()
-                }}
-                className="mt-5 rounded-xl border border-[#D5E1F2] dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-[#2563eb] font-bold text-xs px-6 py-2.5 shadow-sm transition-all cursor-pointer hover:border-blue-200"
-              >
-                {t.upload.browseVideo || 'Browse Video'}
-              </button>
-            </div>
-          )}
-
-          {/* 3. AUDIO TAB CONTENT */}
-          {activeTab === 'audio' && !uploadedFile && (
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={handleBrowseFilesClick}
-              className={cn(
-                "flex flex-col items-center justify-center rounded-[16px] border-2 border-dashed py-8 px-6 text-center min-h-[190px] transition-all duration-300 cursor-pointer",
-                isDragOver
-                  ? "border-[#2563eb] bg-blue-50/20 shadow-inner"
-                  : "border-[#C3D2FF] bg-[#F4F7FF]/35 dark:bg-slate-950/20 hover:bg-[#F4F7FF]/55"
-              )}
-            >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF1FB] dark:bg-slate-800 text-[#2563eb] mb-3.5">
-                <Music className="h-6 w-6 stroke-[1.8] text-[#2563eb]" />
-              </div>
-              <h3 className="text-lg font-extrabold text-[#0B1A30] dark:text-slate-100 tracking-tight">
-                {t.upload.audioDropzone || 'Drag and drop your audio file here'}
-              </h3>
-              <p className="text-xs font-semibold text-[#8B98A5] mt-1">
-                {t.upload.audioSupport || 'Support for MP3, WAV, M4A, WEBM files (Max 100MB)'}
-              </p>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleBrowseFilesClick()
-                }}
-                className="mt-5 rounded-xl border border-[#D5E1F2] dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-[#2563eb] font-bold text-xs px-6 py-2.5 shadow-sm transition-all cursor-pointer hover:border-blue-200"
-              >
-                {t.upload.browseAudio || 'Browse Audio'}
-              </button>
-            </div>
-          )}
-
-          {/* 4. RECORD TAB CONTENT */}
+          {/* Live Recording */}
           {activeTab === 'recording' && (
-            <div className="space-y-4">
-              {recordingStatus === 'idle' && (
-                <div className="flex flex-col items-center justify-center py-8 text-center bg-[#F4F7FF]/35 dark:bg-slate-950/20 border border-[#EAF1FB] dark:border-slate-800 rounded-2xl p-6 min-h-[190px]">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF1FB] dark:bg-slate-800 text-[#2563eb] mb-3.5 animate-pulse">
-                    <Mic className="h-6 w-6 stroke-[1.8]" />
-                  </div>
-                  <h3 className="text-lg font-extrabold text-[#0B1A30] dark:text-slate-100">
-                    {t.upload.recordAudio || 'Record Audio'}
-                  </h3>
-                  {!recorderSupported ? (
-                    <p className="text-xs font-semibold text-rose-500 mt-2">
-                      Audio recording is not supported in this browser.
-                    </p>
-                  ) : (
-                    <>
-                      <p className="text-xs font-semibold text-[#8B98A5] mt-1">
-                        Ready to record
-                      </p>
-                      <button
-                        type="button"
-                        onClick={startRecording}
-                        className="mt-5 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-bold text-xs px-6 py-2.5 shadow-sm transition-all cursor-pointer flex items-center gap-2"
-                      >
-                        <Mic className="h-4 w-4" />
-                        {t.upload.startRecording || 'Start Recording'}
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {(recordingStatus === 'recording' || recordingStatus === 'paused') && (
-                <div className="flex flex-col items-center justify-center py-8 text-center bg-[#F4F7FF]/35 dark:bg-slate-950/20 border border-[#EAF1FB] dark:border-slate-800 rounded-2xl p-6 min-h-[190px] select-none">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-955/30 dark:text-rose-400 mb-3.5 animate-ping">
-                    <Mic className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-2xl font-black text-[#0B1A30] dark:text-slate-100" aria-live="polite">
-                    {formatTime(recordingTimer)}
-                  </h3>
-                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1 capitalize animate-pulse" aria-live="polite">
-                    {recordingStatus === 'recording' ? 'Recording...' : 'Recording paused'}
-                  </p>
-                  <div className="flex items-center gap-3 mt-6">
-                    {recordingStatus === 'recording' ? (
-                      <button
-                        type="button"
-                        onClick={pauseRecording}
-                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs px-5 py-2 cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Pause className="h-3.5 w-3.5" />
-                        {t.upload.pause || 'Pause'}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={resumeRecording}
-                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs px-5 py-2 cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Play className="h-3.5 w-3.5" />
-                        {t.upload.resume || 'Resume'}
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={stopRecording}
-                      className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-5 py-2 cursor-pointer flex items-center gap-1.5"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                      {t.upload.stop || 'Stop'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {recordingStatus === 'stopped' && previewUrl && (
-                <div className="space-y-4 animate-fade-in">
-                  <div className="w-full bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 border border-[#EAF1FB] dark:border-slate-800">
-                    <div className="text-xs font-bold text-[#5F6E80] dark:text-slate-400 mb-2">Recording Playback</div>
-                    <audio controls src={previewUrl} className="w-full" />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={deleteRecording}
-                      className="rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs px-4 py-2 cursor-pointer"
-                    >
-                      Delete Recording
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <AudioRecorder
+              recordingStatus={recordingStatus}
+              recordingTimer={recordingTimer}
+              recorderSupported={recorderSupported}
+              previewUrl={previewUrl}
+              startRecording={startRecording}
+              pauseRecording={pauseRecording}
+              resumeRecording={resumeRecording}
+              stopRecording={stopRecording}
+              deleteRecording={deleteRecording}
+              startLabel={t.upload.startRecording || 'Start Recording'}
+              pauseLabel={t.upload.pause || 'Pause'}
+              resumeLabel={t.upload.resume || 'Resume'}
+              stopLabel={t.upload.stop || 'Stop'}
+              deleteLabel="Delete Recording"
+              saveLabel="Save Recording"
+              readyLabel={t.upload.recordAudio || 'Record Audio'}
+              unsupportedLabel={t.sharedFiles.recordingNotSupported || 'Audio recording is not supported in this browser'}
+            />
           )}
 
-          {/* Active Upload Card for Document/Video/Audio (Document preview/info) */}
-          {activeTab !== 'recording' && (
-            (activeTab === 'document' && uploadedDocument) || 
-            (activeTab !== 'document' && uploadedFile)
-          ) && (
-            <div className="rounded-xl bg-[#F0F4F9]/60 dark:bg-slate-855/20 p-5 shadow-none animate-fade-in select-none relative overflow-hidden">
+          {/* Upload progress indicator */}
+          {activeTab !== 'recording' && isFileAttached && (
+            <div className="rounded-xl bg-[#F0F4F9]/60 dark:bg-slate-800/20 p-5 relative overflow-hidden select-none">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-slate-900 shadow-sm">
-                    {activeTab === 'video' ? (
-                      <Video className="h-6 w-6 text-indigo-500" />
-                    ) : activeTab === 'audio' ? (
-                      <Music className="h-6 w-6 text-emerald-500" />
-                    ) : (
-                      renderPreviewFileIcon()
-                    )}
+                    {getPreviewIcon()}
                   </div>
-                  <span className="font-bold text-[#0B1A30] dark:text-slate-205 text-sm truncate pr-8" title={fileName}>
+                  <span className="font-bold text-[#0B1A30] dark:text-slate-200 text-sm truncate pr-8" title={fileName}>
                     {fileName}
                   </span>
                 </div>
@@ -980,189 +415,65 @@ export function UploadPage() {
                 />
               </div>
 
-              {/* Cancel / Remove File button */}
               <button
                 type="button"
-                onClick={() => {
-                  if (activeTab === 'document') {
-                    handleCancelDocument()
-                  } else {
-                    handleCancelMedia()
-                  }
-                }}
+                onClick={clearAllState}
                 className="absolute top-3.5 right-3.5 rounded-full p-1 text-slate-400 hover:bg-slate-200/55 dark:hover:bg-slate-800 hover:text-[#0B1A30] dark:hover:text-white transition-colors focus:outline-none cursor-pointer"
                 aria-label="Remove file"
-                title="Remove file"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
           )}
 
-          {/* Media Player Previews for completed Video & Audio */}
-          {uploadComplete && uploadedFile && (
-            <div className="space-y-4 animate-fade-in border-b border-[#EAF1FB] dark:border-slate-800 pb-6">
-              {activeTab === 'video' && (
-                <div className="space-y-4">
-                  <div className="w-full bg-slate-50 dark:bg-slate-950 rounded-2xl p-2 border border-[#EAF1FB] dark:border-slate-800">
-                    <video controls src={previewUrl || ''} className="w-full rounded-xl max-h-[300px]" />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleBrowseFilesClick}
-                      className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs px-4 py-2 cursor-pointer"
-                    >
-                      Replace Video
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCancelMedia}
-                      className="rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs px-4 py-2 cursor-pointer"
-                    >
-                      Remove Video
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'audio' && (
-                <div className="space-y-4">
-                  <div className="w-full bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 border border-[#EAF1FB] dark:border-slate-800">
-                    <audio controls src={previewUrl || ''} className="w-full" />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleBrowseFilesClick}
-                      className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs px-4 py-2 cursor-pointer"
-                    >
-                      Replace Audio
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCancelMedia}
-                      className="rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs px-4 py-2 cursor-pointer"
-                    >
-                      Remove Audio
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* Completed Video preview player */}
+          {activeTab === 'video' && uploadComplete && uploadedFile && previewUrl && (
+            <VideoPreview
+              previewUrl={previewUrl}
+              onReplace={clearAllState}
+              onRemove={clearAllState}
+              replaceLabel="Replace Video"
+              removeLabel="Remove Video"
+            />
           )}
 
-          {/* Form Fields Stack: ONLY shown after document/file upload is complete */}
-          {((activeTab === 'document' && uploadedDocument && uploadComplete) || 
-            (activeTab !== 'document' && uploadedFile && uploadComplete)) && (
+          {/* Completed Audio preview player */}
+          {activeTab === 'audio' && uploadComplete && uploadedFile && previewUrl && (
+            <AudioPreview
+              previewUrl={previewUrl}
+              onReplace={clearAllState}
+              onRemove={clearAllState}
+              replaceLabel="Replace Audio"
+              removeLabel="Remove Audio"
+            />
+          )}
+
+          {/* Form fields shown only after upload finishes */}
+          {uploadComplete && (isFileAttached || activeTab === 'recording') && (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
               className="space-y-6 pt-4"
             >
-              {/* Type Read-only */}
-              {activeTab !== 'document' && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-[#5F6E80] dark:text-slate-400 select-none">
-                    Type
-                  </label>
-                  <div className="flex items-center gap-2 rounded-xl border border-[#EAF1FB] dark:border-slate-800 bg-[#F0F4F9]/60 dark:bg-slate-800/40 px-4 py-3 text-sm text-[#0B1A30] dark:text-slate-200 font-semibold select-none capitalize">
-                    <span>{activeTab === 'recording' ? 'Recording' : activeTab}</span>
-                  </div>
-                </div>
-              )}
+              <MediaMetadataForm
+                title={docTitle}
+                onTitleChange={setDocTitle}
+                subject={selectedSubjectKey}
+                onSubjectChange={setSelectedSubjectKey}
+                description={description}
+                onDescriptionChange={setDescription}
+                tags={selectedTags}
+                onTagsChange={setSelectedTags}
+                mediaType={activeTab}
+                isProcessing={isProcessing}
+                titleLabel={t.upload.docTitle || 'Title'}
+                subjectLabel={t.myDocuments.subject || 'Subject'}
+                descriptionLabel={t.upload.description || 'Description'}
+                tagsLabel={t.upload.tags || 'Tags'}
+              />
 
-              {/* Title Input */}
-              <div className="space-y-2">
-                <label htmlFor="upload-title" className="block text-sm font-bold text-[#5F6E80] select-none dark:text-slate-400">
-                  {t.upload.docTitle}
-                </label>
-                <input
-                  id="upload-title"
-                  type="text"
-                  value={docTitle}
-                  onChange={(e) => setDocTitle(e.target.value)}
-                  placeholder={t.upload.placeholderTitle}
-                  disabled={isProcessing}
-                  required
-                  className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
-                />
-              </div>
-
-              {/* Subject Dropdown Select */}
-              <div className="space-y-2">
-                <label htmlFor="upload-subject" className="block text-sm font-bold text-[#5F6E80] select-none dark:text-slate-400">
-                  {t.myDocuments.subject}
-                </label>
-                <div className="relative">
-                  <select
-                    id="upload-subject"
-                    value={selectedSubjectKey}
-                    onChange={(e) => setSelectedSubjectKey(e.target.value as any)}
-                    disabled={isProcessing}
-                    className="w-full appearance-none rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] cursor-pointer dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900"
-                  >
-                    <option value="COMPSCI">{getSubjectName('COMPSCI')}</option>
-                    <option value="MATHEMATICS">{getSubjectName('MATHEMATICS')}</option>
-                    <option value="BIOLOGY">{getSubjectName('BIOLOGY')}</option>
-                    <option value="PHYSICS">{getSubjectName('PHYSICS')}</option>
-                    <option value="PHILOSOPHY">{getSubjectName('PHILOSOPHY')}</option>
-                    <option value="ECONOMICS">{getSubjectName('ECONOMICS')}</option>
-                    <option value="GENERAL">{getSubjectName('GENERAL')}</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#5F6E80] dark:text-slate-455">
-                    <svg className="fill-current h-4 w-4" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Description Textarea */}
-              <div className="space-y-2">
-                <label htmlFor="upload-desc" className="block text-sm font-bold text-[#5F6E80] select-none dark:text-slate-400">
-                  {t.upload.description}
-                </label>
-                <textarea
-                  id="upload-desc"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={t.upload.placeholderDesc}
-                  disabled={isProcessing}
-                  className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400 min-h-[100px] resize-none dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
-                />
-              </div>
-
-              {/* Tags Pills Selection */}
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-[#5F6E80] select-none dark:text-slate-400">
-                  {t.upload.tags}
-                </label>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {AVAILABLE_TAGS.map((tag) => {
-                    const isSelected = selectedTags.includes(tag);
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleTag(tag)}
-                        disabled={isProcessing}
-                        className={cn(
-                          "rounded-full px-4 py-1.5 text-xs font-bold border transition-all duration-200 focus:outline-none cursor-pointer disabled:opacity-50",
-                          isSelected
-                            ? "bg-[#2563eb] border-[#2563eb] text-white shadow-sm shadow-blue-500/10"
-                            : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
-                        )}
-                      >
-                        {getTagName(tag)}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Document specific Visibility / AI configuration */}
+              {/* Visibility and AI options - Document Tab specific */}
               {activeTab === 'document' && (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -1171,7 +482,7 @@ export function UploadPage() {
                         {t.upload.fileType}
                       </label>
                       <div className="flex items-center gap-2 rounded-xl border border-[#EAF1FB] bg-white px-4 py-3 text-sm text-slate-700 font-semibold select-none dark:bg-slate-800 dark:border-slate-800 dark:text-slate-205">
-                        <FileText className="h-4.5 w-4.5 text-[#5F6E80] dark:text-slate-400" />
+                        <FileCheck className="h-4.5 w-4.5 text-[#5F6E80] dark:text-slate-400" />
                         <span>{t.upload.autoDetected}: {fileType.toUpperCase()}</span>
                       </div>
                     </div>
@@ -1181,89 +492,35 @@ export function UploadPage() {
                         {t.upload.visibility}
                       </label>
                       <div className="flex items-center gap-4 h-[46px]">
-                        <label className="relative flex items-center gap-2 cursor-pointer select-none">
-                          <input
-                            type="radio"
-                            name="visibility"
-                            value="private"
-                            checked={visibility === 'private'}
-                            onChange={() => setVisibility('private')}
-                            disabled={isProcessing}
-                            className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
-                          />
-                          <div className="relative flex items-center justify-center">
-                            <div className={cn(
-                              "h-4.5 w-4.5 rounded-full border bg-white transition-all duration-200",
-                              visibility === 'private' ? "border-[#2563eb] ring-2 ring-blue-50" : "border-slate-300"
-                            )} />
-                            <div className={cn(
-                              "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
-                              visibility === 'private' && "scale-100"
-                            )} />
-                          </div>
-                          <span className={cn(
-                            "text-sm font-bold transition-colors duration-200",
-                            visibility === 'private' ? "text-[#2563eb]" : "text-[#5F6E80]"
-                          )}>
-                            {t.upload.private}
-                          </span>
-                        </label>
-
-                        <label className="relative flex items-center gap-2 cursor-pointer select-none">
-                          <input
-                            type="radio"
-                            name="visibility"
-                            value="shared"
-                            checked={visibility === 'shared'}
-                            onChange={() => setVisibility('shared')}
-                            disabled={isProcessing}
-                            className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
-                          />
-                          <div className="relative flex items-center justify-center">
-                            <div className={cn(
-                              "h-4.5 w-4.5 rounded-full border bg-white transition-all duration-200",
-                              visibility === 'shared' ? "border-[#2563eb] ring-2 ring-blue-50" : "border-slate-300"
-                            )} />
-                            <div className={cn(
-                              "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
-                              visibility === 'shared' && "scale-100"
-                            )} />
-                          </div>
-                          <span className={cn(
-                            "text-sm font-bold transition-colors duration-200",
-                            visibility === 'shared' ? "text-[#2563eb]" : "text-[#5F6E80]"
-                          )}>
-                            {t.upload.shared}
-                          </span>
-                        </label>
-
-                        <label className="relative flex items-center gap-2 cursor-pointer select-none">
-                          <input
-                            type="radio"
-                            name="visibility"
-                            value="public"
-                            checked={visibility === 'public'}
-                            onChange={() => setVisibility('public')}
-                            disabled={isProcessing}
-                            className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
-                          />
-                          <div className="relative flex items-center justify-center">
-                            <div className={cn(
-                              "h-4.5 w-4.5 rounded-full border bg-white transition-all duration-200",
-                              visibility === 'public' ? "border-[#2563eb] ring-2 ring-blue-50" : "border-slate-300"
-                            )} />
-                            <div className={cn(
-                              "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
-                              visibility === 'public' && "scale-100"
-                            )} />
-                          </div>
-                          <span className={cn(
-                            "text-sm font-bold transition-colors duration-200",
-                            visibility === 'public' ? "text-[#2563eb]" : "text-[#5F6E80]"
-                          )}>
-                            {t.upload.public}
-                          </span>
-                        </label>
+                        {['private', 'shared', 'public'].map((vis) => (
+                          <label key={vis} className="relative flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="radio"
+                              name="visibility"
+                              value={vis}
+                              checked={visibility === vis}
+                              onChange={() => setVisibility(vis as any)}
+                              disabled={isProcessing}
+                              className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                            />
+                            <div className="relative flex items-center justify-center">
+                              <div className={cn(
+                                "h-4.5 w-4.5 rounded-full border bg-white transition-all duration-200",
+                                visibility === vis ? "border-[#2563eb] ring-2 ring-blue-55" : "border-slate-300"
+                              )} />
+                              <div className={cn(
+                                "absolute h-2.5 w-2.5 rounded-full bg-[#2563eb] transition-all duration-200 scale-0",
+                                visibility === vis && "scale-100"
+                              )} />
+                            </div>
+                            <span className={cn(
+                              "text-sm font-bold transition-colors duration-200 capitalize",
+                              visibility === vis ? "text-[#2563eb]" : "text-[#5F6E80]"
+                            )}>
+                              {t.upload[vis] || vis}
+                            </span>
+                          </label>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -1277,81 +534,49 @@ export function UploadPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <label
-                        className={cn(
-                          "relative flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white dark:bg-slate-900",
-                          generateSummary
-                            ? "border-blue-100 bg-[#F4F7FF]/30 shadow-xs dark:border-blue-900/30"
-                            : "border-slate-200 hover:bg-slate-50/50 dark:border-slate-800"
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={generateSummary}
-                          onChange={(e) => setGenerateSummary(e.target.checked)}
-                          className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
-                          disabled={isProcessing}
-                        />
-                        <div
+                      {[
+                        { checked: generateSummary, setChecked: setGenerateSummary, label: t.upload.genSummary || 'Generate Summary' },
+                        { checked: createFlashcards, setChecked: setCreateFlashcards, label: t.upload.createFlashcards || 'Create Flashcards' }
+                      ].map((item, idx) => (
+                        <label
+                          key={idx}
                           className={cn(
-                            "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
-                            generateSummary
-                              ? "border-[#2563eb] bg-[#2563eb] text-white"
-                              : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                            "relative flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white dark:bg-slate-900",
+                            item.checked
+                              ? "border-blue-100 bg-[#F4F7FF]/30 shadow-xs dark:border-blue-900/30"
+                              : "border-slate-200 hover:bg-slate-55/50 dark:border-slate-800"
                           )}
                         >
-                          {generateSummary && (
-                            <svg
-                              className="h-3.5 w-3.5 stroke-[3] stroke-current"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                        <span className="text-sm font-bold text-[#0B1A30] dark:text-slate-200">
-                          {t.upload.genSummary}
-                        </span>
-                      </label>
-
-                      <label
-                        className={cn(
-                          "relative flex items-center gap-3 rounded-xl border p-4 transition-all cursor-pointer select-none bg-white dark:bg-slate-900",
-                          createFlashcards
-                            ? "border-blue-100 bg-[#F4F7FF]/30 shadow-xs dark:border-blue-900/30"
-                            : "border-slate-200 hover:bg-slate-50/50 dark:border-slate-800"
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={createFlashcards}
-                          onChange={(e) => setCreateFlashcards(e.target.checked)}
-                          className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
-                          disabled={isProcessing}
-                        />
-                        <div
-                          className={cn(
-                            "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
-                            createFlashcards
-                              ? "border-[#2563eb] bg-[#2563eb] text-white"
-                              : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                          )}
-                        >
-                          {createFlashcards && (
-                            <svg
-                              className="h-3.5 w-3.5 stroke-[3] stroke-current"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                        <span className="text-sm font-bold text-[#0B1A30] dark:text-slate-200">
-                          {t.upload.createFlashcards}
-                        </span>
-                      </label>
+                          <input
+                            type="checkbox"
+                            checked={item.checked}
+                            onChange={(e) => item.setChecked(e.target.checked)}
+                            className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full"
+                            disabled={isProcessing}
+                          />
+                          <div
+                            className={cn(
+                              "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
+                              item.checked
+                                ? "border-[#2563eb] bg-[#2563eb] text-white"
+                                : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                            )}
+                          >
+                            {item.checked && (
+                              <svg
+                                className="h-3.5 w-3.5 stroke-[3] stroke-current"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="text-sm font-bold text-[#0B1A30] dark:text-slate-200">
+                            {item.label}
+                          </span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                 </>
@@ -1361,17 +586,11 @@ export function UploadPage() {
               <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (activeTab === 'document') {
-                      handleCancelDocument()
-                    } else {
-                      handleCancelMedia()
-                    }
-                  }}
+                  onClick={clearAllState}
                   disabled={isProcessing}
                   className="rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 shadow-xs px-6 h-[44px] cursor-pointer transition-all disabled:opacity-50 text-sm"
                 >
-                  {t.upload.cancel}
+                  {t.upload.cancel || 'Cancel'}
                 </button>
                 
                 {activeTab === 'document' ? (
@@ -1383,7 +602,7 @@ export function UploadPage() {
                     {isProcessing ? (
                       <>
                         <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        {t.upload.processing}
+                        {t.upload.processing || 'Processing...'}
                       </>
                     ) : (
                       <>
@@ -1416,131 +635,35 @@ export function UploadPage() {
           {t.upload.recentUploads || 'Recent Uploads'}
         </h2>
         
-        {recentUploads.length === 0 ? (
-          <div className="text-center py-8 text-[#8B98A5] dark:text-slate-500 font-semibold text-sm">
-            {t.upload.noRecentUploads || 'No recent uploads'}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm min-w-[500px]">
-              <thead>
-                <tr className="border-b border-[#EAF1FB] dark:border-slate-800 text-xs font-bold text-[#5F6E80] dark:text-slate-400">
-                  <th className="pb-3 pr-4">{t.upload.docTitle || 'Title'}</th>
-                  <th className="pb-3 px-4">{t.upload.fileType || 'Type'}</th>
-                  <th className="pb-3 px-4">Size</th>
-                  <th className="pb-3 px-4">Uploaded</th>
-                  <th className="pb-3 pl-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#EAF1FB] dark:divide-slate-800">
-                {recentUploads.map((item) => (
-                  <tr key={item.id} className="text-[#0B1A30] dark:text-slate-205">
-                    <td className="py-4 pr-4 font-bold max-w-[200px] truncate" title={item.title}>
-                      <div className="flex items-center gap-2">
-                        {item.type === 'video' ? (
-                          <Video className="h-4 w-4 text-indigo-500 shrink-0" />
-                        ) : item.type === 'audio' || item.type === 'recording' ? (
-                          <Music className="h-4 w-4 text-emerald-500 shrink-0" />
-                        ) : (
-                          <FileText className="h-4 w-4 text-rose-500 shrink-0" />
-                        )}
-                        <span className="truncate">{item.title}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 font-semibold capitalize">{item.type}</td>
-                    <td className="py-4 px-4 text-[#5F6E80] dark:text-slate-400 font-semibold">
-                      {item.fileSize > 0 ? `${(item.fileSize / (1024 * 1024)).toFixed(1)} MB` : 'N/A'}
-                    </td>
-                    <td className="py-4 px-4 text-[#5F6E80] dark:text-slate-400 font-medium">
-                      {item.uploadedAt}
-                    </td>
-                    <td className="py-4 pl-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handlePreviewClick(item)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-[#2563eb] hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                          title={t.upload.preview || 'Preview'}
-                          aria-label={t.upload.preview || 'Preview'}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDownloadClick(item)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                          title={t.upload.download || 'Download'}
-                          aria-label={t.upload.download || 'Download'}
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRenameClick(item)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                          title={t.upload.rename || 'Rename'}
-                          aria-label={t.upload.rename || 'Rename'}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteClick(item)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-955/20 transition-colors cursor-pointer"
-                          title={t.upload.delete || 'Delete'}
-                          aria-label={t.upload.delete || 'Delete'}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <RecentUploadsList
+          items={recentUploads}
+          onPreview={handlePreviewClick}
+          onDownload={handleDownloadClick}
+          onRename={handleRenameClick}
+          onDelete={handleDeleteClick}
+          labels={{
+            title: t.upload.docTitle || 'Title',
+            type: t.upload.fileType || 'Type',
+            size: 'Size',
+            uploaded: 'Uploaded',
+            actions: 'Actions',
+            preview: t.upload.preview || 'Preview',
+            download: t.upload.download || 'Download',
+            rename: t.upload.rename || 'Rename',
+            delete: t.upload.delete || 'Delete',
+            noUploads: t.upload.noRecentUploads || 'No recent uploads'
+          }}
+        />
       </div>
 
-      {/* OVERLAY MODALS */}
-      {/* 1. Preview Modal */}
-      {previewModalOpen && previewModalMedia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-[#0b1c30]/40 dark:bg-black/60 backdrop-blur-md cursor-pointer" onClick={() => setPreviewModalOpen(false)} />
-          <div className="relative z-10 w-full max-w-[640px] overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 text-left">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white truncate pr-4 max-w-[500px]">
-                {previewModalMedia.title}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setPreviewModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="w-full flex justify-center bg-slate-50 dark:bg-slate-950 rounded-2xl p-2 border border-slate-100 dark:border-slate-850">
-              {previewModalMedia.type === 'video' ? (
-                <video controls src={previewModalMedia.url} className="w-full max-h-[360px] rounded-xl" autoPlay />
-              ) : (
-                <audio controls src={previewModalMedia.url} className="w-full py-4 px-2" autoPlay />
-              )}
-            </div>
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setPreviewModalOpen(false)}
-                className="bg-[#2563eb] hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Preview Modal */}
+      <MediaPreviewModal
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        media={previewModalMedia}
+      />
 
-      {/* 2. Rename Modal */}
+      {/* Rename Modal */}
       {renameModalOpen && renameModalMedia && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-[#0b1c30]/40 dark:bg-black/60 backdrop-blur-md cursor-pointer" onClick={() => setRenameModalOpen(false)} />
@@ -1583,7 +706,7 @@ export function UploadPage() {
         </div>
       )}
 
-      {/* 3. Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {deleteConfirmOpen && deleteConfirmMedia && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-[#0b1c30]/40 dark:bg-black/60 backdrop-blur-md cursor-pointer" onClick={() => setDeleteConfirmOpen(false)} />
@@ -1596,7 +719,7 @@ export function UploadPage() {
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {t.upload.delete || 'Delete'} "{deleteConfirmMedia.title}"?
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-450 font-semibold leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Are you sure you want to permanently remove this media file? This action cannot be undone.
                 </p>
               </div>
@@ -1622,7 +745,7 @@ export function UploadPage() {
       )}
 
     </div>
-  )
+  );
 }
 
-export default UploadPage
+export default UploadPage;

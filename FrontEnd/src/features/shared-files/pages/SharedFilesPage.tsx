@@ -14,6 +14,7 @@ import WorkspaceFileList from '../components/WorkspaceFileList'
 import WorkspaceRightPanel, { CommentItem } from '../components/WorkspaceRightPanel'
 import SharedFileViewer from '../components/SharedFileViewer'
 import UploadFilesSection from '../components/UploadFilesSection'
+import SharedFilesUploadModal from '../components/SharedFilesUploadModal'
 
 // Modals & Overlays
 import InviteModal from '../components/InviteModal'
@@ -240,6 +241,7 @@ export function SharedFilesPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
 
   const [peopleFilter, setPeopleFilter] = useState('All')
   const [lastModifiedFilter, setLastModifiedFilter] = useState('All')
@@ -843,7 +845,7 @@ export function SharedFilesPage() {
           transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
         >
           <SharedWorkspaceHeader
-            onUploadClick={() => setIsUploading(true)}
+            onUploadClick={() => setUploadModalOpen(true)}
             onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
             onAIAnalyzeClick={handleAIAnalyze}
             isAnalyzing={isAnalyzing}
@@ -1043,6 +1045,16 @@ export function SharedFilesPage() {
         onClose={() => setModals(prev => ({ ...prev, confirmDelete: false }))}
         onConfirm={handleDeleteConfirm}
         fileName={selectedFile?.name || ''}
+      />
+
+      <SharedFilesUploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onSave={(newFile) => {
+          setFiles(prev => [newFile, ...prev])
+          setSelectedFile(newFile)
+          toast.success(t.toasts?.uploadSuccess || 'File uploaded successfully')
+        }}
       />
     </motion.div>
   )

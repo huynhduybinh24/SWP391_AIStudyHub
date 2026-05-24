@@ -68,6 +68,7 @@ export function SharedFileViewer({
       showToast={showToast}
       onDownload={() => onDownload(file)}
       onBackLink={backLink}
+      fileUrl={file.url}
     />
   )
 }
