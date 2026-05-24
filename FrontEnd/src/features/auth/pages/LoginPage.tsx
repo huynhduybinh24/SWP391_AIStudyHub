@@ -26,7 +26,7 @@ export function LoginPage() {
               <BrainCog className="w-[28px] h-[28px] text-blue-600 dark:text-blue-400" strokeWidth={2} />
             </div>
             <h2 className="text-[32px] leading-tight font-bold text-slate-900 dark:text-white mb-4">
-              Focused Intelligence
+              Illuminate Your Learning
             </h2>
             <p className="text-slate-600 dark:text-slate-400 text-[16px] leading-relaxed font-medium">
               Your premium workspace for deep academic work.<br/>
