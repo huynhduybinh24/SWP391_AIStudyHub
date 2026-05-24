@@ -80,9 +80,7 @@ export function FloatingAssistantButton() {
     const nextState = !isChatPopupOpen
     setChatPopupOpen(nextState)
     if (nextState) {
-      toast.success('AI Assistant connected', {
-        icon: '👋'
-      })
+      toast.success('AI Assistant connected 👋')
     }
   }
 
