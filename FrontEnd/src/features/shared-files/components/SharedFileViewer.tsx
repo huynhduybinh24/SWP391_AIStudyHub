@@ -39,7 +39,7 @@ export function SharedFileViewer({
   }, [])
 
   const backLink = (
-    <BackToSharedFilesButton />
+    <BackToSharedFilesButton setViewingFile={onBack} />
   )
 
   // Map file categories or subject if present (e.g. from file tags or names)

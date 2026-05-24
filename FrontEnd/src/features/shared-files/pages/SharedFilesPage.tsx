@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
@@ -169,6 +169,7 @@ export function SharedFilesPage() {
   const { t, language } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
+  const location = useLocation()
   const { fileId } = useParams<{ fileId: string }>()
 
   // State Management
@@ -256,6 +257,14 @@ export function SharedFilesPage() {
     window.addEventListener('resize', checkScreen)
     return () => window.removeEventListener('resize', checkScreen)
   }, [])
+
+  useEffect(() => {
+    if (location.state?.resetViewer) {
+      setViewingFile(null)
+      setSelectedFile(null)
+      setIsUploading(false)
+    }
+  }, [location.state])
 
   const handleSelectFile = (file: SharedFile) => {
     if (selectedFile?.id === file.id) {
@@ -740,7 +749,10 @@ export function SharedFilesPage() {
     return (
       <SharedFileViewer
         file={viewingFile}
-        onBack={() => navigate('/dashboard/shared')}
+        onBack={() => {
+          setViewingFile(null)
+          setSelectedFile(null)
+        }}
         showToast={showToastWrapper}
         onDownload={handleDownload}
       />
