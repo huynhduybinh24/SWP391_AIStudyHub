@@ -8,37 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 
-const AIChatbotIcon = ({ className, ...props }: any) => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
-    <defs>
-      <linearGradient id="ai-bot-body" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#ffffff" />
-        <stop offset="1" stopColor="#e0e7ff" />
-      </linearGradient>
-      <linearGradient id="ai-bot-face" x1="6" y1="8" x2="18" y2="18" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#0f172a" />
-        <stop offset="1" stopColor="#1e293b" />
-      </linearGradient>
-      <filter id="ai-bot-glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="1.5" result="blur" />
-        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-      </filter>
-      <filter id="ai-bot-shadow" x="-10%" y="-10%" width="120%" height="120%">
-        <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.15" />
-      </filter>
-    </defs>
-    <rect x="3" y="6" width="18" height="14" rx="5" fill="url(#ai-bot-body)" filter="url(#ai-bot-shadow)" />
-    <rect x="5.5" y="8.5" width="13" height="9" rx="3" fill="url(#ai-bot-face)" />
-    <circle cx="9.5" cy="13" r="1.8" fill="#38bdf8" filter="url(#ai-bot-glow)" />
-    <circle cx="14.5" cy="13" r="1.8" fill="#38bdf8" filter="url(#ai-bot-glow)" />
-    <path d="M7.5 10.5h1.5" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
-    <path d="M15 10.5h1.5" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
-    <path d="M12 6V2.5" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="12" cy="2" r="1.2" fill="#38bdf8" filter="url(#ai-bot-glow)" />
-    <path d="M3 11c-1 0-1.5 1-1.5 2s.5 2 1.5 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M21 11c1 0 1.5 1 1.5 2s-.5 2-1.5 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-)
+import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
@@ -848,7 +818,7 @@ export function ChatPage() {
                 /* ==================================================
                     2B. ACTIVE MESSAGES LIST
                    ================================================== */
-                <div className="flex-1 overflow-y-auto max-h-[500px] pr-1 flex flex-col gap-6 pt-4">
+                <div className="flex-1 overflow-y-auto max-h-[500px] pr-2 flex flex-col gap-6 pt-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
                   {messages.map((msg, index) => {
                     const isUser = msg.role === 'user'
 
@@ -865,11 +835,11 @@ export function ChatPage() {
                       >
                         {/* Avatar */}
                         {isUser ? (
-                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#3155F6] dark:bg-blue-600 border border-[#3155f6]/20 dark:border-blue-700 shadow-sm text-white">
+                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600 border border-blue-500 shadow-sm text-white">
                             <User className="size-4" />
                           </div>
                         ) : (
-                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30 shadow-sm text-[#3155F6] dark:text-blue-400">
+                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 text-[#3155F6] dark:text-blue-400">
                             <AIChatbotIcon className="size-4" />
                           </div>
                         )}
@@ -879,10 +849,10 @@ export function ChatPage() {
                           {/* Chat Bubble */}
                           <div
                             className={cn(
-                              "rounded-2xl p-4 text-[14.5px] leading-relaxed shadow-[0_2px_8px_rgba(0,0,0,0.015)] border whitespace-pre-line text-left flex flex-col gap-3",
+                              "rounded-[20px] p-4 text-[14.5px] leading-relaxed shadow-[0_2px_8px_rgba(0,0,0,0.02)] border whitespace-pre-line text-left flex flex-col gap-3",
                               isUser
-                                ? "bg-[#3155F6] dark:bg-blue-600 text-white border-transparent rounded-tr-none"
-                                : "bg-white dark:bg-slate-900 text-[#434655] dark:text-slate-200 border-slate-200/60 dark:border-slate-800 rounded-tl-none"
+                                ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-transparent rounded-tr-sm"
+                                : "bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-800 dark:text-slate-200 border-slate-200/50 dark:border-slate-700/50 rounded-tl-sm"
                             )}
                           >
                             {msg.content && <div>{msg.content}</div>}
@@ -943,12 +913,12 @@ export function ChatPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       className="flex items-start gap-3.5 w-full flex-row"
                     >
-                      <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30 shadow-sm text-[#3155F6] dark:text-blue-400">
+                      <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm text-[#3155F6] dark:text-blue-400">
                         <AIChatbotIcon className="size-4" />
                       </div>
-                      <div className="max-w-[80%] rounded-2xl rounded-tl-none p-4 text-[14.5px] bg-white dark:bg-slate-900 text-[#737686] dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 flex items-center gap-2">
-                        <Loader2 className="size-4 animate-spin text-[#3155F6] dark:text-blue-400" />
-                        <span>{t.aiChatbot.thinking}</span>
+                      <div className="max-w-[80%] rounded-[20px] rounded-tl-sm p-4 px-5 text-[14.5px] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                        <Loader2 className="size-4.5 animate-spin text-blue-500" />
+                        <span className="font-medium">{t.aiChatbot.thinking}</span>
                       </div>
                     </motion.div>
                   )}
@@ -997,13 +967,13 @@ export function ChatPage() {
                 )}
 
                 {/* Main input composer box */}
-                <div className="rounded-2xl border-2 border-[#e5eeff] dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-[0_2px_12px_rgba(0,0,0,0.01)] transition-all focus-within:border-[#3155F6]/40 dark:focus-within:border-blue-500/40 focus-within:shadow-[0_2px_16px_rgba(49,85,246,0.04)] dark:focus-within:shadow-[0_2px_16px_rgba(59,130,246,0.08)]">
+                <div className="rounded-[24px] border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-4 px-5 shadow-sm transition-all focus-within:border-blue-500/50 focus-within:ring-2 focus-within:ring-blue-500/20">
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="min-h-[48px] max-h-[160px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-[#0b1c30] dark:text-white outline-none placeholder:text-[#737686]/60 dark:placeholder:text-slate-500 border-none p-0 focus:ring-0"
-                    placeholder={t.aiChatbot.askAnything || "Ask anything..."}
+                    className="min-h-[48px] max-h-[160px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-[#0b1c30] dark:text-white outline-none placeholder:text-[#737686]/60 dark:placeholder:text-slate-500 border-none p-0 focus:ring-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+                    placeholder={t.aiChatbot.askAnything || "Message AI Assistant..."}
                     rows={2}
                   />
 
@@ -1090,7 +1060,7 @@ export function ChatPage() {
                       <button
                         type="button"
                         onClick={() => handleSend()}
-                        className="flex size-10 items-center justify-center rounded-xl bg-[#3155F6] dark:bg-blue-600 text-white shadow-sm transition-all hover:bg-[#2563eb] dark:hover:bg-blue-500 hover:scale-105 active:scale-95 cursor-pointer disabled:pointer-events-none disabled:opacity-40"
+                        className="flex size-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md transition-all hover:bg-blue-500 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none cursor-pointer"
                         disabled={!input.trim() && selectedFiles.length === 0}
                         title={t.aiChatbot.sendMessage}
                       >
