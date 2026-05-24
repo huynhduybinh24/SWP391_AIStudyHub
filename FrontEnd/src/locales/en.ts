@@ -971,5 +971,22 @@ export const en = {
     apr: "Apr",
     may: "May",
     jun: "Jun"
+  },
+  aiGuardReport: {
+    aiGuardReport: "AI Guard Report",
+    redundancyReportSubtitle: "Redundancy findings and cloud volume optimization report",
+    biologicalRedundancyAlert: "Biological Redundancy Alert",
+    biologicalRedundancyDescription: "Found 3 files with identical structures inside the \"Biology\" shared folder, consuming an extra 4.7 MB of space.",
+    redundantFileGroups: "REDUNDANT FILE GROUPS",
+    aiRecommendation: "AI Recommendation:",
+    aiRecommendationText: "Keep the original midterm notes file and purge the rest to free up shared space.",
+    cancel: "Cancel",
+    applyOptimization: "Apply Optimization",
+    original: "ORIGINAL",
+    match99: "99% MATCH",
+    match95: "95% MATCH",
+    shared2hAgo: "Shared 2h ago",
+    sharedYesterday: "Shared Yesterday",
+    sharedOct15: "Shared Oct 15, 2023"
   }
 };

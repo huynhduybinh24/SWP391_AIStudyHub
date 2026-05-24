@@ -974,5 +974,22 @@ export const vi: typeof en = {
     apr: "T4",
     may: "T5",
     jun: "T6"
+  },
+  aiGuardReport: {
+    aiGuardReport: "Báo Cáo AI Guard",
+    redundancyReportSubtitle: "Báo cáo phát hiện trùng lặp và tối ưu dung lượng cloud",
+    biologicalRedundancyAlert: "Cảnh Báo Trùng Lặp Sinh Học",
+    biologicalRedundancyDescription: "Phát hiện 3 tệp có cấu trúc giống nhau trong thư mục chia sẻ \"Biology\", chiếm thêm 4.7 MB dung lượng.",
+    redundantFileGroups: "NHÓM TỆP TRÙNG LẶP",
+    aiRecommendation: "Đề xuất AI:",
+    aiRecommendationText: "Giữ lại tệp ghi chú midterm gốc và xóa các tệp còn lại để giải phóng dung lượng chia sẻ.",
+    cancel: "Hủy",
+    applyOptimization: "Áp Dụng Tối Ưu",
+    original: "BẢN GỐC",
+    match99: "TRÙNG 99%",
+    match95: "TRÙNG 95%",
+    shared2hAgo: "Đã chia sẻ 2 giờ trước",
+    sharedYesterday: "Đã chia sẻ hôm qua",
+    sharedOct15: "Đã chia sẻ ngày 15/10/2023"
   }
 };
