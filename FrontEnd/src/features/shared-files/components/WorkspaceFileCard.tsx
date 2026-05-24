@@ -3,6 +3,7 @@ import { FileText, FileSpreadsheet, Folder, MoreVertical, Eye, Edit2, Star, Imag
 import { cn } from '@/lib/utils'
 import { SharedFile } from './SharedFilesTable'
 import { FileActionsDropdown } from './FileActionsDropdown'
+import { FileTypeIcon } from './FileTypeIcon'
 import { useTranslation } from '@/context/LanguageContext'
 
 interface WorkspaceFileCardProps {
@@ -46,36 +47,42 @@ export function WorkspaceFileCard({
   const buttonRef = useRef<HTMLButtonElement>(null)
   
   const getFileIcon = (type: SharedFile['type']) => {
-    switch (type) {
-      case 'pdf':
-        return <FileText className="size-5 text-red-555" />
-      case 'xlsx':
-        return <FileSpreadsheet className="size-5 text-emerald-500" />
-      case 'docx':
-        return <FileText className="size-5 text-blue-500" />
-      case 'txt':
-        return <FileText className="size-5 text-slate-505" />
-      case 'image':
-        return <ImageIcon className="size-5 text-amber-500" />
-      case 'folder':
-        return <Folder className="size-5 text-indigo-500" />
-      default:
-        return <FileText className="size-5 text-slate-400" />
-    }
+    return <FileTypeIcon type={type} className="size-5 shrink-0 bg-transparent dark:bg-transparent shadow-none" />
   }
 
   const getFileBg = (type: SharedFile['type']) => {
-    switch (type) {
+    const normType = type.toLowerCase()
+    switch (normType) {
       case 'pdf':
         return 'bg-red-55/10 dark:bg-red-955/20'
       case 'xlsx':
+      case 'xls':
+      case 'spreadsheet':
         return 'bg-emerald-55/10 dark:bg-emerald-955/20'
       case 'docx':
+      case 'doc':
         return 'bg-blue-55/10 dark:bg-blue-955/20'
       case 'txt':
+      case 'text':
         return 'bg-slate-100 dark:bg-slate-800/40'
       case 'image':
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
         return 'bg-amber-55/10 dark:bg-amber-955/20'
+      case 'mp4':
+      case 'mov':
+      case 'webm':
+      case 'video':
+        return 'bg-rose-55/10 dark:bg-rose-955/20'
+      case 'mp3':
+      case 'wav':
+      case 'm4a':
+      case 'audio':
+        return 'bg-emerald-55/10 dark:bg-emerald-955/20'
+      case 'recording':
+        return 'bg-violet-55/10 dark:bg-violet-955/20'
       case 'folder':
         return 'bg-indigo-50/10 dark:bg-indigo-955/20'
       default:

@@ -11,19 +11,27 @@ export const rawTranslations = {
 }
 
 // Deep merge utility to fallback individual missing nested keys or functions to English defaults
-function deepMerge<T extends object>(target: T, source: object): T {
+function deepMerge<T extends object>(target: T, source: object, path = '', lang = ''): T {
   const output = { ...target } as any
   for (const key in source) {
     if (Object.prototype.hasOwnProperty.call(source, key)) {
       const sVal = (source as any)[key]
       const tVal = (target as any)[key]
+      const currentPath = path ? `${path}.${key}` : key
+
       if (sVal && typeof sVal === 'object' && !Array.isArray(sVal)) {
         if (tVal && typeof tVal === 'object' && !Array.isArray(tVal)) {
-          output[key] = deepMerge(tVal, sVal)
+          output[key] = deepMerge(tVal, sVal, currentPath, lang)
         } else {
+          if (import.meta.env.DEV) {
+            console.warn(`[i18n] Missing translation key: ${currentPath} for language: ${lang}`)
+          }
           output[key] = sVal
         }
       } else if (tVal === undefined) {
+        if (import.meta.env.DEV) {
+          console.warn(`[i18n] Missing translation key: ${currentPath} for language: ${lang}`)
+        }
         output[key] = sVal
       }
     }
@@ -34,9 +42,9 @@ function deepMerge<T extends object>(target: T, source: object): T {
 // Prepared translations with complete English fallback overlay
 export const translations = {
   en: rawTranslations.en,
-  vi: deepMerge(rawTranslations.vi, rawTranslations.en),
-  ja: deepMerge(rawTranslations.ja, rawTranslations.en),
-  ko: deepMerge(rawTranslations.ko, rawTranslations.en),
+  vi: deepMerge(rawTranslations.vi, rawTranslations.en, '', 'vi'),
+  ja: deepMerge(rawTranslations.ja, rawTranslations.en, '', 'ja'),
+  ko: deepMerge(rawTranslations.ko, rawTranslations.en, '', 'ko'),
 }
 
 export type TranslationKey = keyof typeof en

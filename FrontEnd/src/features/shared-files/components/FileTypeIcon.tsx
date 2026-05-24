@@ -1,10 +1,10 @@
 import React from 'react'
-import { FileText, FileSpreadsheet, Folder, Image as ImageIcon, Video, File } from 'lucide-react'
+import { FileText, FileSpreadsheet, Folder, Image as ImageIcon, Video, File, Music, Mic } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FileTypeIconProps {
-  type: string
-  className?: string
+  type: string;
+  className?: string;
 }
 
 export function FileTypeIcon({ type, className }: FileTypeIconProps) {
@@ -49,6 +49,21 @@ export function FileTypeIcon({ type, className }: FileTypeIconProps) {
       return (
         <div className={cn("size-8 rounded-lg flex items-center justify-center bg-rose-50 dark:bg-rose-955/35 text-rose-500", className)}>
           <Video className="size-4.5 stroke-[2]" />
+        </div>
+      )
+    case 'mp3':
+    case 'wav':
+    case 'm4a':
+    case 'audio':
+      return (
+        <div className={cn("size-8 rounded-lg flex items-center justify-center bg-emerald-50 dark:bg-emerald-955/35 text-emerald-500", className)}>
+          <Music className="size-4.5 stroke-[2]" />
+        </div>
+      )
+    case 'recording':
+      return (
+        <div className={cn("size-8 rounded-lg flex items-center justify-center bg-violet-50 dark:bg-violet-955/35 text-violet-500", className)}>
+          <Mic className="size-4.5 stroke-[2]" />
         </div>
       )
     case 'folder':

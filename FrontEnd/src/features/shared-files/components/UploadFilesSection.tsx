@@ -136,7 +136,7 @@ export function UploadFilesSection({ onBack, onSave }: UploadFilesSectionProps) 
       
       {/* 1. Header Back link */}
       <div className="flex items-center justify-between text-left">
-        <BackToSharedFilesButton />
+        <BackToSharedFilesButton setViewingFile={onBack} />
       </div>
 
       {/* 2. Title Description */}

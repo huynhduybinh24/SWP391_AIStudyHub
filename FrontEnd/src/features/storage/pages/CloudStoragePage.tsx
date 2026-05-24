@@ -181,7 +181,7 @@ export function CloudStoragePage() {
           {/* Active Plan Badge */}
           <div className="mt-3.5 flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {language === 'vi' ? 'Gói tài khoản hiện tại:' : 'Current account package:'}
+              {t.common.currentAccountPackage || 'Current account package:'}
             </span>
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold leading-none shadow-xs border ${
               user?.plan === 'pro' 
@@ -198,10 +198,10 @@ export function CloudStoragePage() {
                     : 'bg-slate-400'
               }`} />
               {user?.plan === 'pro' 
-                ? (language === 'vi' ? 'Gói Pro' : 'Pro Plan') 
+                ? (t.common.proPlan || 'Pro Plan') 
                 : user?.plan === 'institutional'
-                  ? (language === 'vi' ? 'Gói Tổ chức' : 'Institutional')
-                  : (language === 'vi' ? 'Gói Miễn phí' : 'Free Plan')
+                  ? (t.common.institutionalPlan || 'Institutional Plan')
+                  : (t.common.freePlan || 'Free Plan')
               }
             </span>
           </div>

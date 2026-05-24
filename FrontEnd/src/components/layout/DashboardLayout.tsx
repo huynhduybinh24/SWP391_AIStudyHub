@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppFooter } from '@/components/shared/AppFooter'
 import { FloatingAssistantButton } from '@/components/layout/FloatingAssistantButton'
 import { useUiStore } from '@/stores/uiStore'
 import { useStudyTimeTracker } from '@/features/dashboard/hooks/useStudyTimeTracker'
@@ -35,7 +35,7 @@ export function DashboardLayout() {
               <Outlet />
             </div>
           </main>
-          <Footer />
+          <AppFooter />
         </div>
 
         {/* Interactive Floating Chatbot */}
