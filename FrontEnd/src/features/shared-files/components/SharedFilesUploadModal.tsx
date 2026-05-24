@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { X, Sparkles, FileText, Video as VideoIcon, Music, Mic, FileCheck } from 'lucide-react';
+import { X, Sparkles, FileText, Video as VideoIcon, Music, FileCheck } from 'lucide-react';
 import { useMediaUpload } from '@/components/shared/media-upload/useMediaUpload';
 import { MediaUploadTabs } from '@/components/shared/media-upload/MediaUploadTabs';
 import { MediaDropzone } from '@/components/shared/media-upload/MediaDropzone';
@@ -9,7 +9,8 @@ import { AudioRecorder } from '@/components/shared/media-upload/AudioRecorder';
 import { MediaMetadataForm } from '@/components/shared/media-upload/MediaMetadataForm';
 import { SharedFile } from './SharedFilesTable';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+
 
 interface SharedFilesUploadModalProps {
   isOpen: boolean;
@@ -32,7 +33,6 @@ export function SharedFilesUploadModal({ isOpen, onClose, onSave }: SharedFilesU
     selectedTags,
     setSelectedTags,
     fileType,
-    setFileType,
     permission,
     setPermission,
     uploadedDocument,
@@ -58,7 +58,6 @@ export function SharedFilesUploadModal({ isOpen, onClose, onSave }: SharedFilesU
     handleDrop,
     handleFileChange,
     clearAllState,
-    language,
     t
   } = useMediaUpload('document');
 
@@ -121,10 +120,6 @@ export function SharedFilesUploadModal({ isOpen, onClose, onSave }: SharedFilesU
           ? 'audio'
           : 'recording';
 
-      const finalName =
-        activeTab === 'document'
-          ? uploadedDocument?.name || ''
-          : uploadedFile?.name || `${docTitle}.webm`;
 
       const newSharedFile: SharedFile = {
         id: `file-shared-${Date.now()}`,
