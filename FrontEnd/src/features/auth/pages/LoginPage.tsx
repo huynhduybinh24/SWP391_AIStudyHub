@@ -22,8 +22,8 @@ export function LoginPage() {
           </div>
           
           <div className="relative z-10 flex flex-col items-center text-center max-w-[420px] mt-12">
-            <div className="flex items-center justify-center w-[56px] h-[56px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm mb-5">
-              <BrainCog className="w-[28px] h-[28px] text-blue-600 dark:text-blue-400" strokeWidth={2} />
+            <div className="flex items-center justify-center mb-5">
+              <img src="/logo.png" alt="LumiEdu" className="w-24 h-24 object-contain" />
             </div>
             <h2 className="text-[32px] leading-tight font-bold text-slate-900 dark:text-white mb-4">
               Illuminate Your Learning
