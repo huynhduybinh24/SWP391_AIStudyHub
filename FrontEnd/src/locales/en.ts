@@ -477,7 +477,13 @@ export const en = {
     emailNotifications: "Email Notifications",
     pushNotifications: "Push Notifications",
     emailNotificationsSub: "Receive notifications about account activities via email.",
-    pushNotificationsSub: "Receive instant notifications on your browser."
+    pushNotificationsSub: "Receive instant notifications on your browser.",
+    avatarLabel: "Profile photo",
+    avatarDescription: "Upload a JPG, PNG, or WEBP image. Maximum 2MB.",
+    avatarChangePhoto: "Change photo",
+    avatarRemovePhoto: "Remove photo",
+    avatarInvalidType: "Only JPG, PNG, or WEBP images are supported.",
+    avatarTooLarge: "Image size must be less than 2MB.",
   },
   fileViewer: {
     backToDocuments: "Back to Documents",

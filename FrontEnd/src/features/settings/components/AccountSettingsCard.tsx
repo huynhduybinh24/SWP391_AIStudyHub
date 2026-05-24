@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { User, Check, HelpCircle, X } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useProfileStore } from '@/features/profile/stores/profileStore'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
@@ -12,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 import { Language } from '@/locales'
+import { AvatarUploader } from './AvatarUploader'
 
 const accountSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -27,10 +29,38 @@ export function AccountSettingsCard() {
   const { account, updateAccount } = useSettingsStore()
   const currentUser = useAuthStore((state) => state.user)
   const currentEmail = currentUser?.email ?? 'student@university.edu'
+  const { profile, updateProfile } = useProfileStore()
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [pendingData, setPendingData] = useState<AccountFormValues | null>(null)
   const toast = useToast()
+
+  // ── Avatar State ───────────────────────────────────────────────────────
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(() => {
+    // Load from localStorage first, fallback to profileStore
+    const stored = localStorage.getItem('aiStudyHubUserAvatar')
+    if (stored) return stored
+    // If profileStore has a non-default avatar, use that
+    if (profile.avatarUrl && profile.avatarUrl !== '/avatar.svg') return profile.avatarUrl
+    return null
+  })
+  const [hasCustomAvatar, setHasCustomAvatar] = useState(() => {
+    return !!localStorage.getItem('aiStudyHubUserAvatar') ||
+      (!!profile.avatarUrl && profile.avatarUrl !== '/avatar.svg')
+  })
+  const [pendingAvatarRemoval, setPendingAvatarRemoval] = useState(false)
+
+  const handleAvatarChange = (dataUrl: string) => {
+    setAvatarPreview(dataUrl)
+    setHasCustomAvatar(true)
+    setPendingAvatarRemoval(false)
+  }
+
+  const handleAvatarRemove = () => {
+    setAvatarPreview(null)
+    setHasCustomAvatar(false)
+    setPendingAvatarRemoval(true)
+  }
 
   let initialLanguage = account.language
   if (initialLanguage === 'English (US)') initialLanguage = 'en'
@@ -72,6 +102,27 @@ export function AccountSettingsCard() {
       language: lang,
       timezone: pendingData.timezone,
     })
+
+    // ── Persist Avatar ──────────────────────────────────────────────────
+    if (pendingAvatarRemoval) {
+      // Remove custom avatar
+      localStorage.removeItem('aiStudyHubUserAvatar')
+      updateProfile({ avatarUrl: '/avatar.svg' })
+      setPendingAvatarRemoval(false)
+    } else if (avatarPreview) {
+      // Save custom avatar
+      localStorage.setItem('aiStudyHubUserAvatar', avatarPreview)
+      updateProfile({ avatarUrl: avatarPreview })
+    }
+
+    // ── Persist Display Name ────────────────────────────────────────────
+    if (pendingData.name) {
+      localStorage.setItem('aiStudyHubDisplayName', pendingData.name)
+    }
+
+    // Dispatch custom event so Header can react immediately
+    window.dispatchEvent(new Event('aiStudyHubProfileUpdated'))
+
     toast.success(t.toasts.saved)
     setSaveSuccess(true)
     setShowConfirmModal(false)
@@ -89,6 +140,15 @@ export function AccountSettingsCard() {
         </div>
         <h2 className="text-lg font-semibold text-foreground dark:text-slate-100">{t.settings.accountSettings}</h2>
       </div>
+
+      {/* ── Avatar Section ── */}
+      <AvatarUploader
+        avatarPreview={avatarPreview}
+        hasCustomAvatar={hasCustomAvatar}
+        displayName={account.name}
+        onAvatarChange={handleAvatarChange}
+        onAvatarRemove={handleAvatarRemove}
+      />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Email Address & Display Name (Row 1) */}
