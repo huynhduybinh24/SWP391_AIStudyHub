@@ -1,12 +1,45 @@
 import { useState, useRef, useEffect } from 'react'
 import { 
-  Bot, FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send, 
+  FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send, 
   Loader2, User, X, Plus, Search, Copy, RefreshCw, MoreVertical, 
   Trash2, Edit2, Pin, MessageSquare, Check, Sparkles, FolderOpen, ArrowLeft
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+
+const AIChatbotIcon = ({ className, ...props }: any) => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
+    <defs>
+      <linearGradient id="ai-bot-body" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#ffffff" />
+        <stop offset="1" stopColor="#e0e7ff" />
+      </linearGradient>
+      <linearGradient id="ai-bot-face" x1="6" y1="8" x2="18" y2="18" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#0f172a" />
+        <stop offset="1" stopColor="#1e293b" />
+      </linearGradient>
+      <filter id="ai-bot-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="1.5" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+      <filter id="ai-bot-shadow" x="-10%" y="-10%" width="120%" height="120%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.15" />
+      </filter>
+    </defs>
+    <rect x="3" y="6" width="18" height="14" rx="5" fill="url(#ai-bot-body)" filter="url(#ai-bot-shadow)" />
+    <rect x="5.5" y="8.5" width="13" height="9" rx="3" fill="url(#ai-bot-face)" />
+    <circle cx="9.5" cy="13" r="1.8" fill="#38bdf8" filter="url(#ai-bot-glow)" />
+    <circle cx="14.5" cy="13" r="1.8" fill="#38bdf8" filter="url(#ai-bot-glow)" />
+    <path d="M7.5 10.5h1.5" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+    <path d="M15 10.5h1.5" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+    <path d="M12 6V2.5" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="12" cy="2" r="1.2" fill="#38bdf8" filter="url(#ai-bot-glow)" />
+    <path d="M3 11c-1 0-1.5 1-1.5 2s.5 2 1.5 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M21 11c1 0 1.5 1 1.5 2s-.5 2-1.5 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+)
+
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 
@@ -564,7 +597,7 @@ export function ChatPage() {
             {/* Logo area */}
             <div className="flex items-center gap-3.5 mb-6">
               <div className="p-3 bg-blue-100 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-900/30 rounded-2xl text-blue-600 dark:text-blue-400 shadow-md">
-                <Bot className="size-8 animate-float" />
+                <AIChatbotIcon className="size-8 animate-float" />
               </div>
               <div>
                 <h1 className="text-3xl font-heading font-bold text-slate-900 dark:text-white leading-tight tracking-tight">
@@ -776,7 +809,7 @@ export function ChatPage() {
               {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center max-w-[620px] mx-auto w-full">
                   <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100/30 dark:border-blue-900/20 rounded-2xl text-blue-500 dark:text-blue-400 shadow-inner mb-5">
-                    <Bot className="size-9 animate-float" />
+                    <AIChatbotIcon className="size-9 animate-float" />
                   </div>
                   <h2 className="text-2xl md:text-3xl font-heading font-bold text-slate-800 dark:text-white leading-tight tracking-tight mb-8">
                     {t.aiChatbot.emptyTitle}
@@ -837,7 +870,7 @@ export function ChatPage() {
                           </div>
                         ) : (
                           <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30 shadow-sm text-[#3155F6] dark:text-blue-400">
-                            <Bot className="size-4" />
+                            <AIChatbotIcon className="size-4" />
                           </div>
                         )}
 
@@ -911,7 +944,7 @@ export function ChatPage() {
                       className="flex items-start gap-3.5 w-full flex-row"
                     >
                       <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30 shadow-sm text-[#3155F6] dark:text-blue-400">
-                        <Bot className="size-4" />
+                        <AIChatbotIcon className="size-4" />
                       </div>
                       <div className="max-w-[80%] rounded-2xl rounded-tl-none p-4 text-[14.5px] bg-white dark:bg-slate-900 text-[#737686] dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 flex items-center gap-2">
                         <Loader2 className="size-4 animate-spin text-[#3155F6] dark:text-blue-400" />
