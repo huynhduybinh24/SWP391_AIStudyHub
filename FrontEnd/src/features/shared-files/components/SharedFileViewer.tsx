@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { FileViewer } from '@/components/shared/file-viewer/FileViewer'
 import { SharedFile } from './SharedFilesTable'
 import { useTranslation } from '@/context/LanguageContext'
-import BackButton from '@/components/shared/BackButton'
+import BackToSharedFilesButton from '@/components/shared/BackToSharedFilesButton'
 
 interface SharedFileViewerProps {
   file: SharedFile
@@ -39,10 +39,7 @@ export function SharedFileViewer({
   }, [])
 
   const backLink = (
-    <BackButton
-      label={t.fileViewer.backToShared || "Back to Share Files"}
-      to="/dashboard/shared-files"
-    />
+    <BackToSharedFilesButton />
   )
 
   // Map file categories or subject if present (e.g. from file tags or names)

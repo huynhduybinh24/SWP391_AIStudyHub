@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
-import BackButton from '@/components/shared/BackButton'
+import BackToSharedFilesButton from '@/components/shared/BackToSharedFilesButton'
 import { motion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
@@ -136,10 +136,7 @@ export function UploadFilesSection({ onBack, onSave }: UploadFilesSectionProps) 
       
       {/* 1. Header Back link */}
       <div className="flex items-center justify-between text-left">
-        <BackButton
-          label="Back to Share Files"
-          to="/dashboard/shared-files"
-        />
+        <BackToSharedFilesButton />
       </div>
 
       {/* 2. Title Description */}

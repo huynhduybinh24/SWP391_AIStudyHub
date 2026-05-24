@@ -30,7 +30,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 import { ShareAccessModal } from '@/components/shared/share-access/ShareAccessModal'
 import type { Collaborator as ShareAccessCollab } from '@/components/shared/share-access/ShareAccessModal'
-import BackButton from '@/components/shared/BackButton'
+import BackToSharedFilesButton from '@/components/shared/BackToSharedFilesButton'
 
 export type SharedFolderFile = {
   id: string
@@ -474,10 +474,7 @@ The combined research indicates a strong correlation between multivariable biolo
     <div className="w-full space-y-6 select-none pb-12 animate-fade-in text-slate-800 dark:text-slate-200">
       {/* 1. Header Back Button */}
       <div className="flex items-center justify-between text-left">
-        <BackButton
-          label={t.sharedFolder.backToNotifications || "Back to Notifications"}
-          to="/dashboard/notifications?tab=shared-files"
-        />
+        <BackToSharedFilesButton />
       </div>
 
       {/* 2. Page Title & Action Block */}
