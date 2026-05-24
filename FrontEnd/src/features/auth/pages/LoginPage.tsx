@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { BrainCog } from 'lucide-react'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import heroImg from '@/assets/hero.png'
+import { AppFooter } from '@/components/shared/AppFooter'
 
 export function LoginPage() {
   return (
@@ -43,17 +44,7 @@ export function LoginPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="w-full bg-white/85 dark:bg-slate-950/85 border-t border-slate-200 dark:border-slate-800 py-6 px-8 flex flex-col md:flex-row items-center justify-between text-sm text-slate-500 dark:text-slate-400">
-        <p>© 2026 AI Study Hub Team. All rights reserved.</p>
-        <div className="flex items-center gap-6 mt-4 md:mt-0 font-medium">
-          <Link to="/" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Home</Link>
-          <Link to="/" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Features</Link>
-          <Link to="/login" className="text-blue-600 dark:text-blue-400 font-semibold transition-colors">Login</Link>
-          <Link to="/register" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Register</Link>
-          <Link to="/help" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Help Center</Link>
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   )
 }

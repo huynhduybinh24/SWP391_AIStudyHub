@@ -799,9 +799,11 @@ export const en = {
     summaryCopied: "Summary copied"
   },
   footer: {
-    copyright: "© 2024 AI Study Hub. Empowering Deep Learning.",
+    copyright: "© 2026 AI Study Hub Team. All rights reserved.",
     privacyPolicy: "Privacy Policy",
     termsOfService: "Terms of Service",
     helpCenter: "Help Center",
+    supportCenter: "Help Center",
+    partnershipContact: "Partnership Contact",
   }
 };

@@ -801,9 +801,11 @@ export const vi: typeof en = {
     summaryCopied: "Đã sao chép tóm tắt"
   },
   footer: {
-    copyright: "© 2024 AI Study Hub. Tăng cường khả năng tự học.",
+    copyright: "© 2026 AI Study Hub Team. All rights reserved.",
     privacyPolicy: "Chính sách bảo mật",
     termsOfService: "Điều khoản dịch vụ",
     helpCenter: "Trung tâm trợ giúp",
+    supportCenter: "Trung tâm hỗ trợ",
+    partnershipContact: "Liên hệ hợp tác",
   }
 };

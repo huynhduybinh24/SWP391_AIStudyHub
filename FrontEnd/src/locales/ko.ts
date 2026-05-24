@@ -801,9 +801,11 @@ export const ko: typeof en = {
     summaryCopied: "요약이 복사되었습니다"
   },
   footer: {
-    copyright: "© 2024 AI Study Hub. 효과적인 딥러닝을 지원합니다.",
+    copyright: "© 2026 AI Study Hub Team. All rights reserved.",
     privacyPolicy: "개인정보 처리방침",
     termsOfService: "서비스 이용약관",
     helpCenter: "고객센터",
+    supportCenter: "고객센터",
+    partnershipContact: "제휴 문의",
   }
 };

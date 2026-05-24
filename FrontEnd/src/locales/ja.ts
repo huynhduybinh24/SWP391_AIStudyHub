@@ -801,9 +801,11 @@ export const ja: typeof en = {
     summaryCopied: "要約をコピーしました"
   },
   footer: {
-    copyright: "© 2024 AI Study Hub. ディープラーニングを支援します。",
+    copyright: "© 2026 AI Study Hub Team. All rights reserved.",
     privacyPolicy: "プライバシーポリシー",
     termsOfService: "利用規約",
     helpCenter: "ヘルプセンター",
+    supportCenter: "ヘルプセンター",
+    partnershipContact: "パートナーシップ窓口",
   }
 };
