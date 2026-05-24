@@ -474,7 +474,7 @@ The combined research indicates a strong correlation between multivariable biolo
     <div className="w-full space-y-6 select-none pb-12 animate-fade-in text-slate-800 dark:text-slate-200">
       {/* 1. Header Back Button */}
       <div className="flex items-center justify-between text-left">
-        <BackToSharedFilesButton />
+        <BackToSharedFilesButton setSelectedFile={setSelectedFile} />
       </div>
 
       {/* 2. Page Title & Action Block */}

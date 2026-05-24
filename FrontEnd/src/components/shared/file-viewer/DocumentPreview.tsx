@@ -11,6 +11,7 @@ interface DocumentPreviewProps {
   subject?: string
   previewContent?: string
   isDownloadRestricted: boolean
+  fileUrl?: string
 }
 
 export function DocumentPreview({
@@ -21,7 +22,8 @@ export function DocumentPreview({
   totalPages,
   subject = 'GENERAL',
   previewContent,
-  isDownloadRestricted
+  isDownloadRestricted,
+  fileUrl
 }: DocumentPreviewProps) {
   const { t } = useTranslation()
   const normType = fileType.toLowerCase()
@@ -140,6 +142,32 @@ export function DocumentPreview({
 
   // Render components according to normalized file type
   const renderPreviewContent = () => {
+    if (normType === 'video' || normType === 'mp4' || normType === 'mov' || normType === 'webm') {
+      return (
+        <div className="w-full flex flex-col items-center justify-center p-4 bg-slate-50 dark:bg-slate-955 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <video
+            controls
+            src={fileUrl || previewContent}
+            className="w-full rounded-xl max-h-[460px] bg-black"
+            aria-label="Video player"
+          />
+        </div>
+      )
+    }
+
+    if (normType === 'audio' || normType === 'mp3' || normType === 'wav' || normType === 'm4a' || normType === 'recording') {
+      return (
+        <div className="w-full flex flex-col items-center justify-center p-6 bg-slate-55 dark:bg-slate-955 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <audio
+            controls
+            src={fileUrl || previewContent}
+            className="w-full"
+            aria-label="Audio player"
+          />
+        </div>
+      )
+    }
+
     // 1. Spreadsheet XLSX Layout
     if (normType === 'xlsx' || normType === 'xls') {
       const mockRows = [

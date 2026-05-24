@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
@@ -14,6 +14,7 @@ import WorkspaceFileList from '../components/WorkspaceFileList'
 import WorkspaceRightPanel, { CommentItem } from '../components/WorkspaceRightPanel'
 import SharedFileViewer from '../components/SharedFileViewer'
 import UploadFilesSection from '../components/UploadFilesSection'
+import SharedFilesUploadModal from '../components/SharedFilesUploadModal'
 
 // Modals & Overlays
 import InviteModal from '../components/InviteModal'
@@ -169,6 +170,7 @@ export function SharedFilesPage() {
   const { t, language } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
+  const location = useLocation()
   const { fileId } = useParams<{ fileId: string }>()
 
   // State Management
@@ -239,6 +241,7 @@ export function SharedFilesPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
 
   const [peopleFilter, setPeopleFilter] = useState('All')
   const [lastModifiedFilter, setLastModifiedFilter] = useState('All')
@@ -256,6 +259,14 @@ export function SharedFilesPage() {
     window.addEventListener('resize', checkScreen)
     return () => window.removeEventListener('resize', checkScreen)
   }, [])
+
+  useEffect(() => {
+    if (location.state?.resetViewer) {
+      setViewingFile(null)
+      setSelectedFile(null)
+      setIsUploading(false)
+    }
+  }, [location.state])
 
   const handleSelectFile = (file: SharedFile) => {
     if (selectedFile?.id === file.id) {
@@ -740,7 +751,10 @@ export function SharedFilesPage() {
     return (
       <SharedFileViewer
         file={viewingFile}
-        onBack={() => navigate('/dashboard/shared')}
+        onBack={() => {
+          setViewingFile(null)
+          setSelectedFile(null)
+        }}
         showToast={showToastWrapper}
         onDownload={handleDownload}
       />
@@ -831,7 +845,7 @@ export function SharedFilesPage() {
           transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
         >
           <SharedWorkspaceHeader
-            onUploadClick={() => setIsUploading(true)}
+            onUploadClick={() => setUploadModalOpen(true)}
             onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
             onAIAnalyzeClick={handleAIAnalyze}
             isAnalyzing={isAnalyzing}
@@ -1031,6 +1045,16 @@ export function SharedFilesPage() {
         onClose={() => setModals(prev => ({ ...prev, confirmDelete: false }))}
         onConfirm={handleDeleteConfirm}
         fileName={selectedFile?.name || ''}
+      />
+
+      <SharedFilesUploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onSave={(newFile) => {
+          setFiles(prev => [newFile, ...prev])
+          setSelectedFile(newFile)
+          toast.success(t.toasts?.uploadSuccess || 'File uploaded successfully')
+        }}
       />
     </motion.div>
   )

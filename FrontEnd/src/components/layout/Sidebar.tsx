@@ -134,12 +134,20 @@ export function Sidebar() {
         return t.sidebar.dashboard
       case 'my documents':
         return t.sidebar.myDocuments
+      case 'upload':
+        return t.sidebar.upload
       case 'shared files':
         return t.sidebar.sharedFiles
+      case 'cloud storage':
+        return t.sidebar.cloudStorage
+      case 'notifications':
+        return t.sidebar.notifications
       case 'study plans':
         return t.sidebar.studyPlans
       case 'ai chatbot':
         return t.sidebar.aiChatbot
+      case 'profile':
+        return t.sidebar.profile
       case 'settings':
         return t.sidebar.settings
       case 'upgrade to pro':
@@ -220,7 +228,7 @@ export function Sidebar() {
                       AI Study Hub
                     </h1>
                     <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                      Focused Intelligence
+                      {t.sidebar.brandSubtitle || "Focused Intelligence"}
                     </p>
                   </div>
                 </Link>
@@ -249,7 +257,7 @@ export function Sidebar() {
                       AI Study Hub
                     </h1>
                     <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                      Focused Intelligence
+                      {t.sidebar.brandSubtitle || "Focused Intelligence"}
                     </p>
                   </div>
                 </Link>
@@ -301,7 +309,7 @@ export function Sidebar() {
           </nav>
 
           {/* Upgrade to Pro button */}
-          <PortalTooltip content={user?.plan === 'pro' ? 'Pro Plan Active' : 'Upgrade to Pro'} disabled={!isSidebarCollapsed}>
+          <PortalTooltip content={user?.plan === 'pro' ? (t.sidebar.proPlanActive || 'Pro Plan Active') : t.sidebar.upgradePro} disabled={!isSidebarCollapsed}>
             <Link
               to={user?.plan === 'pro' ? '#' : '/dashboard/upgrade'}
               onClick={user?.plan === 'pro' ? undefined : handleLinkClick}
@@ -319,7 +327,7 @@ export function Sidebar() {
               <Zap className={cn("size-5 shrink-0", user?.plan === 'pro' ? "text-slate-500 dark:text-slate-400" : "text-white")} strokeWidth={2.25} />
               {!isSidebarCollapsed && (
                 <span className="md:max-lg:hidden block truncate animate-fade-in min-w-0">
-                  {user?.plan === 'pro' ? 'Pro Plan Active' : 'Upgrade to Pro'}
+                  {user?.plan === 'pro' ? (t.sidebar.proPlanActive || 'Pro Plan Active') : t.sidebar.upgradePro}
                 </span>
               )}
             </Link>

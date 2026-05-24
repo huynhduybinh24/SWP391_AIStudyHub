@@ -6,15 +6,37 @@ import { useTranslation } from '@/context/LanguageContext'
 
 export type BackToSharedFilesButtonProps = {
   className?: string
+  clearViewingFile?: () => void
+  clearSelectedFile?: () => void
+  clearOpenedFile?: () => void
+  setViewingFile?: (val: any) => void
+  setSelectedFile?: (val: any) => void
+  setOpenedFile?: (val: any) => void
 }
 
-export default function BackToSharedFilesButton({ className }: BackToSharedFilesButtonProps) {
+export default function BackToSharedFilesButton({
+  className,
+  clearViewingFile,
+  clearSelectedFile,
+  clearOpenedFile,
+  setViewingFile,
+  setSelectedFile,
+  setOpenedFile
+}: BackToSharedFilesButtonProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
 
   const handleBack = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
+
+    clearViewingFile?.()
+    clearSelectedFile?.()
+    clearOpenedFile?.()
+
+    setViewingFile?.(null)
+    setSelectedFile?.(null)
+    setOpenedFile?.(null)
 
     // Disable automatic restoration
     window.history.scrollRestoration = 'manual'
@@ -43,7 +65,12 @@ export default function BackToSharedFilesButton({ className }: BackToSharedFiles
     })
 
     // Route smoothly via React Router
-    navigate('/dashboard/shared-files')
+    navigate('/dashboard/shared-files', {
+      replace: true,
+      state: {
+        resetViewer: true
+      }
+    })
   }
 
   return (

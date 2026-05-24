@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, MessageSquare, Cloud, Search, Share2, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { AppFooter } from '@/components/shared/AppFooter'
 
 export function LandingPage() {
   const [activeSection, setActiveSection] = useState('home')
@@ -249,118 +250,7 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="w-full bg-[#0B132B] text-slate-300 pt-16 pb-8 px-6 mt-auto border-t border-slate-800">
-        <div className="max-w-[1280px] mx-auto">
-          {/* Main Footer Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-            
-            {/* Column 1: Brand Info */}
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="AI Study Hub Logo" className="w-[50px] h-[50px] object-contain animate-pulse" />
-                <span className="text-2xl font-bold text-white tracking-tight">AI Study Hub</span>
-              </div>
-              <p className="text-sm text-slate-400 leading-relaxed font-semibold">
-                Khơi mở tiềm năng - Dẫn đầu công nghệ. Nền tảng học tập thông minh tích hợp trí tuệ nhân tạo toàn diện cho sinh viên đại học.
-              </p>
-              <div className="flex flex-col gap-2 mt-2 text-xs font-semibold text-slate-400">
-                <p>Email: <span className="text-blue-400 hover:underline cursor-pointer">support@aistudyhub.com</span></p>
-                <p>Hotline: <span className="text-blue-400">1900 6868</span></p>
-              </div>
-            </div>
-
-            {/* Column 2: Về AI Study Hub */}
-            <div className="flex flex-col gap-4">
-              <h4 className="text-base font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2">
-                Về AI Study Hub
-              </h4>
-              <ul className="flex flex-col gap-2.5 text-sm font-semibold list-none pl-0">
-                <li>
-                  <Link to="/help" className="text-slate-400 hover:text-blue-400 transition-all duration-200 no-underline hover:translate-x-1 inline-block">
-                    Giới thiệu dự án
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/help" className="text-slate-400 hover:text-blue-400 transition-all duration-200 no-underline hover:translate-x-1 inline-block">
-                    Bảng giá nâng cấp (Pro)
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/help" className="text-slate-400 hover:text-blue-400 transition-all duration-200 no-underline hover:translate-x-1 inline-block">
-                    Điều khoản & Bảo mật
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/help" className="text-slate-400 hover:text-blue-400 transition-all duration-200 no-underline hover:translate-x-1 inline-block">
-                    Trung tâm hỗ trợ (FAQ)
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 3: Giải pháp học tập */}
-            <div className="flex flex-col gap-4">
-              <h4 className="text-base font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2">
-                Giải pháp học tập
-              </h4>
-              <ul className="flex flex-col gap-2.5 text-sm font-semibold list-none pl-0">
-                <li>
-                  <Link to="/login" className="text-slate-400 hover:text-blue-400 transition-all duration-200 no-underline hover:translate-x-1 inline-block">
-                    Trợ lý học tập AI
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/login" className="text-slate-400 hover:text-blue-400 transition-all duration-200 no-underline hover:translate-x-1 inline-block">
-                    Tóm tắt tài liệu tự động
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/login" className="text-slate-400 hover:text-blue-400 transition-all duration-200 no-underline hover:translate-x-1 inline-block">
-                    Quản lý tài liệu thông minh
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/login" className="text-slate-400 hover:text-blue-400 transition-all duration-200 no-underline hover:translate-x-1 inline-block">
-                    Lưu trữ đám mây an toàn
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/login" className="text-slate-400 hover:text-blue-400 transition-all duration-200 no-underline hover:translate-x-1 inline-block">
-                    Trắc nghiệm kiến thức AI
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 4: Đơn vị phát triển */}
-            <div className="flex flex-col gap-4">
-              <h4 className="text-base font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2">
-                Đơn vị phát triển
-              </h4>
-              <div className="flex flex-col gap-3 text-xs leading-relaxed text-slate-400 font-semibold">
-                <p className="text-sm font-bold text-white leading-snug uppercase">
-                  AI Study Hub Team
-                </p>
-                <div className="space-y-1.5">
-                  <p>Email liên hệ: <span className="text-slate-300 font-bold">contact@aistudyhub.com</span></p>
-                  <p>Mục tiêu: Mang giải pháp học tập AI tối ưu đến mọi học sinh, sinh viên.</p>
-                  <p>Sản phẩm: Hệ sinh thái hỗ trợ học tập thông minh AI Study Hub.</p>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Bottom Footer Section */}
-          <div className="border-t border-slate-800/80 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-500">
-            <p>© 2026 AI Study Hub Team. All rights reserved.</p>
-            <div className="flex items-center gap-6">
-              <Link to="/help" className="text-slate-500 hover:text-blue-400 no-underline transition-colors">Trung tâm hỗ trợ</Link>
-              <a href="#" className="text-slate-500 hover:text-blue-400 no-underline transition-colors">Liên hệ hợp tác</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   )
 }

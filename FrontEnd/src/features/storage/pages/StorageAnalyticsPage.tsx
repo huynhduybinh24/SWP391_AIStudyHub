@@ -16,6 +16,7 @@ import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { useMemo } from 'react'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function StorageAnalyticsPage() {
   const navigate = useNavigate()
@@ -23,6 +24,7 @@ export function StorageAnalyticsPage() {
   const isDark = resolvedTheme === 'dark'
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
   const [isMounted, setIsMounted] = useState(false)
+  const { t } = useTranslation()
   
   const user = useAuthStore((s) => s.user)
   const isPro = user?.plan === 'pro'
@@ -33,23 +35,42 @@ export function StorageAnalyticsPage() {
   const usedPercentage = Math.round((usedGb / totalGb) * 100)
 
   const barChartData = useMemo(() => {
+    const getLocalizedMonthName = (month: string) => {
+      switch (month) {
+        case 'Jan': return t.storageAnalytics.jan
+        case 'Feb': return t.storageAnalytics.feb
+        case 'Mar': return t.storageAnalytics.mar
+        case 'Apr': return t.storageAnalytics.apr
+        case 'May': return t.storageAnalytics.may
+        case 'Jun': return t.storageAnalytics.jun
+        default: return month
+      }
+    }
     return [
-      { name: 'Jan', value: isPro ? 12 : 1.2 },
-      { name: 'Feb', value: isPro ? 18 : 1.5 },
-      { name: 'Mar', value: isPro ? 25 : 1.8 },
-      { name: 'Apr', value: isPro ? 32 : 2.0 },
-      { name: 'May', value: isPro ? 38 : 2.2 },
-      { name: 'Jun', value: isPro ? 45.2 : 2.4 },
+      { name: getLocalizedMonthName('Jan'), value: isPro ? 12 : 1.2 },
+      { name: getLocalizedMonthName('Feb'), value: isPro ? 18 : 1.5 },
+      { name: getLocalizedMonthName('Mar'), value: isPro ? 25 : 1.8 },
+      { name: getLocalizedMonthName('Apr'), value: isPro ? 32 : 2.0 },
+      { name: getLocalizedMonthName('May'), value: isPro ? 38 : 2.2 },
+      { name: getLocalizedMonthName('Jun'), value: isPro ? 45.2 : 2.4 },
     ]
-  }, [isPro])
+  }, [isPro, t])
 
   const pieChartData = useMemo(() => {
+    const getPieItemName = (name: string) => {
+      switch (name) {
+        case 'Documents': return t.storageExplorer.documents
+        case 'Media': return t.storageAnalytics.media
+        case 'Other': return t.storageExplorer.other
+        default: return name
+      }
+    }
     return [
-      { name: 'Documents', value: isPro ? 22.1 : 1.2, color: '#2563eb' },
-      { name: 'Media', value: isPro ? 15.5 : 0.8, color: '#0d9488' },
-      { name: 'Other', value: isPro ? 7.6 : 0.4, color: '#8b5cf6' },
+      { name: getPieItemName('Documents'), value: isPro ? 22.1 : 1.2, color: '#2563eb' },
+      { name: getPieItemName('Media'), value: isPro ? 15.5 : 0.8, color: '#0d9488' },
+      { name: getPieItemName('Other'), value: isPro ? 7.6 : 0.4, color: '#8b5cf6' },
     ]
-  }, [isPro])
+  }, [isPro, t])
 
   useEffect(() => {
     setIsMounted(true)
@@ -74,22 +95,22 @@ export function StorageAnalyticsPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-foreground mb-4 transition-colors"
         >
           <ArrowLeft className="size-4" />
-          Back to Cloud Storage
+          {t.storageAnalytics.backToStorage}
         </Link>
         <div>
-          <h1 className="text-[32px] font-bold text-foreground leading-tight">Storage Analytics</h1>
+          <h1 className="text-[32px] font-bold text-foreground leading-tight">{t.storageAnalytics.title}</h1>
           <p className="text-muted mt-2 text-sm">
-            Understand how your study files use cloud storage.
+            {t.storageAnalytics.subtitle}
           </p>
         </div>
       </div>
-
+ 
       {/* Top Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-border hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
-              <span className="text-[13px] font-semibold text-muted-foreground">Total Used</span>
+              <span className="text-[13px] font-semibold text-muted-foreground">{t.storageAnalytics.totalUsed}</span>
               <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
                 <PieChartIcon className="size-4 text-blue-600 dark:text-blue-400" />
               </div>
@@ -99,63 +120,63 @@ export function StorageAnalyticsPage() {
               <div className="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-600 rounded-full transition-all duration-1000" style={{ width: `${usedPercentage}%` }}></div>
               </div>
-              <p className="text-[11px] text-muted mt-2 font-medium">of {totalGb} GB Total</p>
+              <p className="text-[11px] text-muted mt-2 font-medium">{t.storageAnalytics.ofTotalText(totalGb)}</p>
             </div>
           </CardContent>
         </Card>
-
+ 
         <Card className="border-border hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
-              <span className="text-[13px] font-semibold text-muted-foreground">Free Space</span>
+              <span className="text-[13px] font-semibold text-muted-foreground">{t.storageAnalytics.freeSpace}</span>
               <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center">
                 <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
             <div>
               <div className="text-[28px] font-bold text-foreground leading-none">{freeGb} GB</div>
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-3 font-medium">Available for new uploads</p>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-3 font-medium">{t.storageAnalytics.availableUploads}</p>
             </div>
           </CardContent>
         </Card>
-
+ 
         <Card className="border-border hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
-              <span className="text-[13px] font-semibold text-muted-foreground">Total Files</span>
+              <span className="text-[13px] font-semibold text-muted-foreground">{t.storageAnalytics.totalFiles}</span>
               <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
                 <Folder className="size-4 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
             <div>
               <div className="text-[28px] font-bold text-foreground leading-none">1,204</div>
-              <p className="text-[11px] text-muted mt-3 font-medium">+12 this week</p>
+              <p className="text-[11px] text-muted mt-3 font-medium">{t.storageAnalytics.thisWeekText(12)}</p>
             </div>
           </CardContent>
         </Card>
-
+ 
         <Card className="border-border hover:shadow-md transition-shadow">
           <CardContent className="p-5 flex flex-col justify-between h-full">
             <div className="flex items-start justify-between mb-4">
-              <span className="text-[13px] font-semibold text-muted-foreground">Shared Items</span>
+              <span className="text-[13px] font-semibold text-muted-foreground">{t.storageAnalytics.sharedItems}</span>
               <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
                 <Users className="size-4 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
             <div>
               <div className="text-[28px] font-bold text-foreground leading-none">86</div>
-              <p className="text-[11px] text-muted mt-3 font-medium">Active sharing links</p>
+              <p className="text-[11px] text-muted mt-3 font-medium">{t.storageAnalytics.activeSharingLinks}</p>
             </div>
           </CardContent>
         </Card>
       </div>
-
+ 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Storage Usage Over Time */}
         <Card className="lg:col-span-2 border-border flex flex-col min-h-[350px]">
           <CardHeader className="p-6 pb-2 flex flex-row items-center justify-between border-b-0 space-y-0">
-            <CardTitle className="text-base font-bold">Storage Usage Over Time</CardTitle>
+            <CardTitle className="text-base font-bold">{t.storageAnalytics.usageOverTime}</CardTitle>
             <button className="text-muted hover:text-foreground">
               <MoreVertical className="size-5" />
             </button>
@@ -190,7 +211,7 @@ export function StorageAnalyticsPage() {
                         backgroundColor: isDark ? '#1e293b' : '#ffffff',
                         color: isDark ? '#f8fafc' : '#0f172a'
                       }}
-                      formatter={(value: any) => [`${value} GB`, 'Storage Used']}
+                      formatter={(value: any) => [`${value} GB`, t.storageAnalytics.storageUsed]}
                     />
                     <Bar 
                       dataKey="value" 
@@ -212,11 +233,11 @@ export function StorageAnalyticsPage() {
             </div>
           </CardContent>
         </Card>
-
+ 
         {/* File Type Distribution */}
         <Card className="border-border flex flex-col min-h-[350px]">
           <CardHeader className="p-6 pb-2 border-b-0 space-y-0">
-            <CardTitle className="text-base font-bold">File Type Distribution</CardTitle>
+            <CardTitle className="text-base font-bold">{t.storageAnalytics.typeDistribution}</CardTitle>
           </CardHeader>
           <CardContent className="p-6 pt-4 flex-1 flex flex-col min-h-0">
             <div className="w-[180px] h-[180px] relative mx-auto mb-8 [&_.recharts-wrapper]:outline-none [&_.recharts-surface]:outline-none">
@@ -231,7 +252,7 @@ export function StorageAnalyticsPage() {
                         backgroundColor: isDark ? '#1e293b' : '#ffffff',
                         color: isDark ? '#f8fafc' : '#0f172a'
                       }}
-                      formatter={(value: any) => [`${value} GB`, 'Size']}
+                      formatter={(value: any) => [`${value} GB`, t.storageAnalytics.size]}
                     />
                     <Pie
                       data={pieChartData}
@@ -263,11 +284,11 @@ export function StorageAnalyticsPage() {
                   {activeIndex !== undefined && pieChartData[activeIndex] ? pieChartData[activeIndex].value : usedGb}
                 </span>
                 <span className="text-[10px] text-muted font-medium mt-0.5">
-                  {activeIndex !== undefined ? 'GB Used' : 'GB Total'}
+                  {activeIndex !== undefined ? t.storageAnalytics.gbUsed : t.storageAnalytics.gbTotal}
                 </span>
               </div>
             </div>
-
+ 
             <div className="flex flex-col gap-4 mt-auto">
               {pieChartData.map((item, index) => (
                 <div 
@@ -280,9 +301,9 @@ export function StorageAnalyticsPage() {
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
                     <span className="text-foreground font-medium">
                       {item.name} 
-                      {item.name === 'Documents' && <span className="text-muted font-normal"> (PDF, Docx)</span>}
-                      {item.name === 'Media' && <span className="text-muted font-normal"> (Video, Audio)</span>}
-                      {item.name === 'Other' && <span className="text-muted font-normal"> (Zips, Code)</span>}
+                      {item.name === t.storageExplorer.documents && <span className="text-muted font-normal">{t.storageAnalytics.documentsDesc}</span>}
+                      {item.name === t.storageAnalytics.media && <span className="text-muted font-normal">{t.storageAnalytics.mediaDesc}</span>}
+                      {item.name === t.storageExplorer.other && <span className="text-muted font-normal">{t.storageAnalytics.otherDesc}</span>}
                     </span>
                   </div>
                   <span className="text-muted font-medium">{item.value} GB</span>
@@ -292,7 +313,7 @@ export function StorageAnalyticsPage() {
           </CardContent>
         </Card>
       </div>
-
+ 
       {/* AI Storage Insights */}
       <Card className="border-border overflow-hidden">
         <CardContent className="p-0 flex flex-col sm:flex-row items-center">
@@ -301,9 +322,9 @@ export function StorageAnalyticsPage() {
               <Sparkles className="size-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h3 className="font-bold text-foreground text-[15px]">AI Storage Insights</h3>
+              <h3 className="font-bold text-foreground text-[15px]">{t.storageAnalytics.aiInsights}</h3>
               <p className="text-muted text-[13px] mt-1 leading-relaxed max-w-3xl">
-                We noticed you have {isPro ? '4.2 GB' : '0.4 GB'} of duplicate study guides from last semester and several large video files that haven&apos;t been opened in 6 months.
+                {t.storageAnalytics.insightsDesc(isPro ? '4.2 GB' : '0.4 GB')}
               </p>
             </div>
           </div>
@@ -313,7 +334,7 @@ export function StorageAnalyticsPage() {
               className="w-full sm:w-auto bg-[#2563eb] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors"
               onClick={() => navigate('/dashboard/storage/cleanup')}
             >
-              Review Files
+              {t.storageAnalytics.reviewFiles}
             </Button>
           </div>
         </CardContent>
