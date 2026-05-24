@@ -76,12 +76,12 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
             >
               {t.footer.supportCenter}
             </Link>
-            <a
-              href="mailto:partnership@aistudyhub.com?subject=Partnership%20Inquiry"
+            <Link
+              to="/help?tab=contact"
               className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
             >
               {t.footer.partnershipContact}
-            </a>
+            </Link>
           </nav>
         </div>
       </footer>
