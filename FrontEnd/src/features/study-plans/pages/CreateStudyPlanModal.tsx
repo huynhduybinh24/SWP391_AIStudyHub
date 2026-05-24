@@ -19,7 +19,7 @@ import { Language } from '@/locales'
 type StudyPlanFormValues = {
   title:       string
   subject:     string
-  description: string
+  description?: string
   startDate:   string
   endDate:     string
   priority:    'Low' | 'Medium' | 'High'
