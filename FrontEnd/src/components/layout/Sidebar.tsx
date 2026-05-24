@@ -63,12 +63,20 @@ export function Sidebar() {
         return t.sidebar.dashboard
       case 'my documents':
         return t.sidebar.myDocuments
+      case 'upload':
+        return t.sidebar.upload
       case 'shared files':
         return t.sidebar.sharedFiles
+      case 'cloud storage':
+        return t.sidebar.cloudStorage
+      case 'notifications':
+        return t.sidebar.notifications
       case 'study plans':
         return t.sidebar.studyPlans
       case 'ai chatbot':
         return t.sidebar.aiChatbot
+      case 'profile':
+        return t.sidebar.profile
       case 'settings':
         return t.sidebar.settings
       case 'upgrade to pro':
