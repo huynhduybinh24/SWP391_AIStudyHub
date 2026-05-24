@@ -95,7 +95,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
       animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
       exit={{ opacity: 0, y: 30, x: 20, scale: 0.95 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="fixed bottom-[90px] right-6 z-50 flex h-[600px] max-h-[calc(100vh-100px)] w-[calc(100vw-40px)] sm:w-[500px] flex-col overflow-hidden rounded-[24px] border border-slate-200 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] text-slate-800 dark:text-slate-100 relative"
+      className="fixed bottom-[90px] right-6 z-50 flex h-[600px] max-h-[calc(100vh-100px)] w-[calc(100vw-40px)] sm:w-[500px] flex-col overflow-hidden rounded-[24px] border border-slate-200 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] text-slate-800 dark:text-slate-100"
     >
       {/* Background Depth */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100/40 dark:from-blue-900/20 via-transparent to-transparent -z-10 pointer-events-none" />
