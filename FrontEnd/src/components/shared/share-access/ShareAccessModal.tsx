@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
 import { PermissionDropdown, type ShareRole } from './PermissionDropdown'
 import { GeneralAccessSelector } from './GeneralAccessSelector'
+import { useTranslation } from '@/context/LanguageContext'
 
 export interface Collaborator {
   id: string
@@ -19,7 +20,7 @@ interface ShareAccessModalProps {
   isOpen: boolean
   onClose: () => void
   fileId?: string
-  fileName: string
+  fileName?: string
   collaborators?: Collaborator[]
   onCollaboratorsChange?: (collaborators: Collaborator[]) => void
   generalAccess?: 'restricted' | 'public'
@@ -27,6 +28,11 @@ interface ShareAccessModalProps {
   showToast?: (msg: string) => void // optional callback
   initialCollaborators?: Collaborator[] // backward compatibility
   onShareSubmit?: (email: string, permission: 'Viewer' | 'Editor') => void // backward compatibility
+  folderId?: string
+  folderName?: string
+  owner?: string
+  type?: 'file' | 'folder'
+  permission?: string
 }
 
 const defaultCollaborators: Collaborator[] = [
@@ -56,7 +62,7 @@ const defaultCollaborators: Collaborator[] = [
 export function ShareAccessModal({
   isOpen,
   onClose,
-  fileId = 'default-file',
+  fileId,
   fileName,
   collaborators,
   onCollaboratorsChange,
@@ -64,9 +70,18 @@ export function ShareAccessModal({
   onGeneralAccessChange,
   showToast: customShowToast,
   initialCollaborators,
-  onShareSubmit
+  onShareSubmit,
+  folderId,
+  folderName,
+  owner,
+  type = 'file',
+  permission
 }: ShareAccessModalProps) {
   const toast = useToast()
+  const { t } = useTranslation()
+
+  const activeFileId = fileId || folderId || 'default-file'
+  const activeFileName = fileName || folderName || ''
 
   // Advanced settings and inner modal navigation states
   const [isSettingsViewOpen, setIsSettingsViewOpen] = useState(false)
@@ -188,12 +203,12 @@ export function ShareAccessModal({
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(newEmail.trim())) {
-      triggerToast('❌ Vui lòng nhập địa chỉ email hợp lệ!', 'error')
+      triggerToast(t.shareModal.invalidEmail, 'error')
       return
     }
 
     if (activeCollaborators.some(c => c.email.toLowerCase() === newEmail.trim().toLowerCase())) {
-      triggerToast('⚠️ Email này đã có quyền truy cập!', 'warning')
+      triggerToast(t.shareModal.alreadyHasAccess, 'warning')
       return
     }
 
@@ -225,26 +240,26 @@ export function ShareAccessModal({
     if (onShareSubmit) {
       onShareSubmit(newCollab.email, newRole === 'editor' ? 'Editor' : 'Viewer')
     } else {
-      triggerToast('Access shared successfully')
+      triggerToast(t.shareModal.accessSharedSuccess)
     }
   }
 
   const handleRemoveCollaborator = (id: string, name: string) => {
     const updated = activeCollaborators.filter(c => c.id !== id)
     updateCollaborators(updated)
-    triggerToast('Access removed')
+    triggerToast(t.shareModal.accessRemoved)
   }
 
   const handleChangeRole = (id: string, name: string, role: ShareRole) => {
     const updated = activeCollaborators.map(c => c.id === id ? { ...c, role } : c)
     updateCollaborators(updated)
-    triggerToast('Permission updated')
+    triggerToast(t.shareModal.permissionUpdated)
   }
 
   const handleCopyLink = () => {
-    const link = `https://aistudyhub.app/shared/${fileId}`
+    const link = `https://aistudyhub.app/shared/${activeFileId}`
     navigator.clipboard.writeText(link)
-    triggerToast('Link copied to clipboard')
+    triggerToast(t.shareModal.copiedLink)
   }
 
   return (
@@ -286,13 +301,13 @@ export function ShareAccessModal({
                     type="button"
                     onClick={() => setIsSettingsViewOpen(false)}
                     className="text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-full transition-colors flex items-center justify-center cursor-pointer focus:outline-none"
-                    title="Back"
-                    aria-label="Back to share settings"
+                    title={t.common.back}
+                    aria-label={t.common.back}
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </button>
                   <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                    Cài đặt chia sẻ
+                    {t.shareModal.settingsTitle}
                   </h2>
                 </div>
 
@@ -304,16 +319,16 @@ export function ShareAccessModal({
                       checked={editorsCanShare}
                       onChange={(e) => {
                         setEditorsCanShare(e.target.checked)
-                        triggerToast(e.target.checked ? '✅ Người chỉnh sửa hiện có thể thay đổi quyền và chia sẻ.' : '🔒 Người chỉnh sửa không thể thay đổi quyền chia sẻ.')
+                        triggerToast(e.target.checked ? t.shareModal.editorsCanShareToastTrue : t.shareModal.editorsCanShareToastFalse)
                       }}
-                      className="w-5 h-5 rounded border-slate-350 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
+                      className="w-5 h-5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
                     />
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-normal">
-                        Người chỉnh sửa có thể thay đổi quyền và chia sẻ
+                        {t.shareModal.editorsCanShareLabel}
                       </span>
                       <span className="text-xs text-slate-550 dark:text-slate-400 font-semibold leading-relaxed mt-0.5">
-                        Nếu tắt, chỉ chủ sở hữu tài liệu mới có quyền thay đổi cài đặt chia sẻ
+                        {t.shareModal.editorsCanShareSub}
                       </span>
                     </div>
                   </label>
@@ -324,16 +339,16 @@ export function ShareAccessModal({
                       checked={viewersCanDownload}
                       onChange={(e) => {
                         setViewersCanDownload(e.target.checked)
-                        triggerToast(e.target.checked ? '✅ Người xem/nhận xét có thể tải xuống, in và sao chép.' : '🔒 Đã khóa tính năng tải xuống, in và sao chép.')
+                        triggerToast(e.target.checked ? t.shareModal.viewersCanDownloadToastTrue : t.shareModal.viewersCanDownloadToastFalse)
                       }}
-                      className="w-5 h-5 rounded border-slate-355 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
+                      className="w-5 h-5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
                     />
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-normal">
-                        Người xem và người nhận xét có thể thấy tùy chọn tải xuống, in và sao chép
+                        {t.shareModal.viewersCanDownloadLabel}
                       </span>
                       <span className="text-xs text-slate-550 dark:text-slate-400 font-semibold leading-relaxed mt-0.5">
-                        Nếu tắt, các nút tải xuống và in ấn sẽ bị khóa với Người xem
+                        {t.shareModal.viewersCanDownloadSub}
                       </span>
                     </div>
                   </label>
@@ -345,7 +360,7 @@ export function ShareAccessModal({
                     onClick={() => setIsSettingsViewOpen(false)}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-full shadow-sm cursor-pointer border-none"
                   >
-                    Quay lại
+                    {t.common.back}
                   </Button>
                 </div>
               </div>
@@ -355,15 +370,15 @@ export function ShareAccessModal({
                 {/* Modal Header */}
                 <div className="flex justify-between items-center pb-2 shrink-0 text-left">
                   <h2 id="share-modal-title" className="text-xl font-bold tracking-tight truncate pr-4 text-slate-900 dark:text-slate-100">
-                    Chia sẻ "{fileName}"
+                    {t.shareModal.title} "{activeFileName}"
                   </h2>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setIsSettingsViewOpen(true)}
                       className="p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer focus:outline-none"
-                      title="Cài đặt chia sẻ"
-                      aria-label="Cài đặt chia sẻ"
+                      title={t.shareModal.settingsTitle}
+                      aria-label={t.shareModal.settingsTitle}
                     >
                       <Settings className="h-5 w-5" />
                     </button>
@@ -371,14 +386,13 @@ export function ShareAccessModal({
                       type="button"
                       onClick={onClose}
                       className="p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer focus:outline-none"
-                      title="Đóng"
-                      aria-label="Close dialog"
+                      title={t.common.close}
+                      aria-label={t.common.close}
                     >
                       <X className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
-
                 {/* Invite Row */}
                 <div className="py-2 shrink-0">
                   <form onSubmit={handleAddCollaborator} className="flex gap-3 items-center">
@@ -386,7 +400,7 @@ export function ShareAccessModal({
                       <Mail className="absolute left-4.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500" />
                       <input
                         type="text"
-                        placeholder="Thêm người, nhóm hoặc địa chỉ email"
+                        placeholder={t.shareModal.placeholderEmail}
                         value={newEmail}
                         onChange={(e) => setNewEmail(e.target.value)}
                         className="w-full pl-12 pr-4 h-[52px] bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-full text-sm font-medium placeholder-slate-400 text-slate-900 transition-all focus:outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:focus:border-blue-500"
@@ -399,7 +413,7 @@ export function ShareAccessModal({
                         onChange={setNewRole}
                         align="right"
                         className="h-[52px] w-[140px] text-sm rounded-full bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white"
-                        ariaLabel="Select invite role"
+                        ariaLabel={t.shareModal.inviteRoleLabel}
                       />
                     </div>
 
@@ -407,8 +421,8 @@ export function ShareAccessModal({
                       type="submit"
                       disabled={!newEmail.trim()}
                       className="w-[52px] h-[52px] bg-slate-50 hover:bg-slate-100 disabled:opacity-40 text-slate-600 rounded-full flex items-center justify-center shadow-xs transition-all cursor-pointer border border-slate-200 focus:outline-none dark:bg-slate-850 dark:hover:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                      title="Mời cộng tác viên"
-                      aria-label="Invite user button"
+                      title={t.shareModal.inviteCollab}
+                      aria-label={t.shareModal.inviteUserBtn}
                     >
                       <UserPlus className="h-5 w-5" />
                     </button>
@@ -418,7 +432,7 @@ export function ShareAccessModal({
                 {/* Collaborators List */}
                 <div className="py-4 flex-1 overflow-y-auto space-y-4 text-left scrollbar-thin max-h-[220px] pr-2">
                   <h3 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 select-none">
-                    NGƯỜI CÓ QUYỀN TRUY CẬP
+                    {t.shareModal.peopleAccessLabel}
                   </h3>
 
                   <div className="space-y-3">
@@ -440,7 +454,7 @@ export function ShareAccessModal({
                                 {c.name}
                                 {isOwner && (
                                   <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider select-none">
-                                    CHỦ SỞ HỮU
+                                    {t.shareModal.ownerLabel}
                                   </span>
                                 )}
                               </h4>
@@ -452,7 +466,7 @@ export function ShareAccessModal({
 
                           {isOwner ? (
                             <span className="text-xs font-semibold text-slate-550 dark:text-slate-500 select-none mr-2">
-                              Chủ sở hữu
+                              {t.shareModal.roleOwner}
                             </span>
                           ) : (
                             <div className="shrink-0">
@@ -463,7 +477,7 @@ export function ShareAccessModal({
                                 onRemove={() => handleRemoveCollaborator(c.id, c.name)}
                                 align="right"
                                 className="h-[36px] px-3 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold"
-                                ariaLabel={`Change permission for ${c.name}`}
+                                ariaLabel={t.shareModal.changePermissionFor(c.name)}
                               />
                             </div>
                           )}
@@ -492,17 +506,17 @@ export function ShareAccessModal({
                     type="button"
                     onClick={handleCopyLink}
                     className="flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-bold text-sm px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-white dark:bg-slate-800 focus:outline-none"
-                    aria-label="Sao chép đường liên kết"
+                    aria-label={t.shareModal.copyLink}
                   >
                     <Link className="h-4 w-4" />
-                    <span>Sao chép đường liên kết</span>
+                    <span>{t.shareModal.copyLink}</span>
                   </button>
 
                   <Button
                     onClick={onClose}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-full shadow-sm cursor-pointer border-none"
                   >
-                    Xong
+                    {t.shareModal.done || t.common.done}
                   </Button>
                 </div>
               </>

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft,
   Sparkles,
   Star,
   Brain,
@@ -14,6 +13,7 @@ import {
   ThumbsDown,
   X,
 } from 'lucide-react'
+import BackButton from '@/components/shared/BackButton'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import { ShareModal, ShareModalUser } from '@/components/common/ShareModal'
@@ -68,14 +68,12 @@ export function SummaryDetailPage() {
       {/* Left Column: Summary Content */}
       <div className="flex-1 min-w-0 w-full">
         {/* Back Link */}
-        <button
-          type="button"
-          onClick={() => navigate('/dashboard/notifications')}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 transition-colors cursor-pointer mb-5 focus-visible:outline-none"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Notifications</span>
-        </button>
+        <div className="mb-5">
+          <BackButton
+            label="Back to Notifications"
+            to="/dashboard/notifications"
+          />
+        </div>
 
         {/* Title & Badge Section */}
         <div className="mb-6">

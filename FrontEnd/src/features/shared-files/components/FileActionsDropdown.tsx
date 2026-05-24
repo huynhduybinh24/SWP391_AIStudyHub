@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ExternalLink, Edit2, Shield, Trash2, Download, Share2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -8,8 +9,8 @@ interface FileActionsDropdownProps {
   isOpen: boolean
   onClose: () => void
   onOpen: () => void
-  onDownload: () => void
-  onShareAccess: () => void
+  onDownload?: () => void
+  onShareAccess?: () => void
   onRename: () => void
   onChangePermission: () => void
   onRemoveAccess: () => void
@@ -30,14 +31,65 @@ export function FileActionsDropdown({
   const { t } = useTranslation()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [openUpward, setOpenUpward] = useState(false)
+  const [coords, setCoords] = useState({ top: 0, left: 0 })
   const [focusedIndex, setFocusedIndex] = useState(-1)
 
-  // ESC and Click Outside Listeners + Keyboard arrow navigation
+  const updatePosition = () => {
+    if (!buttonRef.current) return
+    const rect = buttonRef.current.getBoundingClientRect()
+    const menuWidth = 260
+    
+    // Estimate menu height based on rendered items
+    let numItems = 4 // Open, Rename, Change Permission, Remove Access are always present
+    if (onDownload) numItems++
+    if (onShareAccess) numItems++
+    const menuHeight = numItems * 44 + 20
+    const gap = 8
+
+    const spaceBelow = window.innerHeight - rect.bottom
+    const spaceAbove = rect.top
+
+    const shouldOpenUp = spaceBelow < menuHeight && spaceAbove > spaceBelow
+
+    const top = shouldOpenUp
+      ? rect.top - menuHeight - gap
+      : rect.bottom + gap
+
+    const left = Math.min(
+      Math.max(rect.right - menuWidth, 8),
+      window.innerWidth - menuWidth - 8
+    )
+
+    // Close the menu if the anchor button is scrolled completely out of the viewport
+    if (rect.bottom < 0 || rect.top > window.innerHeight) {
+      onClose()
+      return
+    }
+
+    setCoords({ top, left })
+    setOpenUpward(shouldOpenUp)
+  }
+
+  // Position updates on scroll & resize (with capture = true for scroll)
+  useEffect(() => {
+    if (!isOpen) return
+
+    updatePosition()
+
+    window.addEventListener('scroll', updatePosition, true)
+    window.addEventListener('resize', updatePosition)
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true)
+      window.removeEventListener('resize', updatePosition)
+    }
+  }, [isOpen, onDownload, onShareAccess, buttonRef])
+
+  // ESC, Click Outside, and Keyboard Navigation
   useEffect(() => {
     if (!isOpen) return
 
     const handleClickOutside = (e: MouseEvent) => {
-      // Don't close if clicking the trigger button itself
       if (buttonRef.current && buttonRef.current.contains(e.target as Node)) {
         return
       }
@@ -88,32 +140,11 @@ export function FileActionsDropdown({
     }
   }, [isOpen])
 
-  // Detect bottom boundaries to flip upward if near screen bottom
-  useEffect(() => {
-    if (!isOpen || !buttonRef.current) return
+  const itemClass = "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-[13px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:bg-slate-100 dark:focus-visible:bg-slate-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
 
-    const checkPosition = () => {
-      const rect = buttonRef.current!.getBoundingClientRect()
-      const dropdownHeight = 270 // Approximate height of menu
-      if (rect.bottom + dropdownHeight > window.innerHeight) {
-        setOpenUpward(true)
-      } else {
-        setOpenUpward(false)
-      }
-    }
+  if (typeof document === 'undefined') return null
 
-    checkPosition()
-    window.addEventListener('resize', checkPosition)
-    window.addEventListener('scroll', checkPosition)
-    return () => {
-      window.removeEventListener('resize', checkPosition)
-      window.removeEventListener('scroll', checkPosition)
-    }
-  }, [isOpen, buttonRef])
-
-  const itemClass = "flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:bg-slate-100 dark:focus-visible:bg-slate-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
-
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -122,11 +153,16 @@ export function FileActionsDropdown({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.15 }}
+          style={{
+            position: 'fixed',
+            top: `${coords.top}px`,
+            left: `${coords.left}px`,
+            zIndex: 9999
+          }}
           className={cn(
-            "absolute right-0 w-[240px] rounded-2xl p-1.5 shadow-xl border z-[9999] text-left",
+            "w-[260px] rounded-3xl p-2 shadow-2xl border text-left",
             "bg-white text-slate-900 border-slate-200",
-            "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-800",
-            openUpward ? "bottom-full mb-2" : "top-full mt-2"
+            "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-800"
           )}
           role="menu"
           aria-orientation="vertical"
@@ -145,33 +181,37 @@ export function FileActionsDropdown({
             <span>{t.actionMenu.open}</span>
           </button>
           
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onDownload()
-              onClose()
-            }}
-            className={itemClass}
-            role="menuitem"
-          >
-            <Download className="size-4 text-slate-400 dark:text-slate-500" />
-            <span>{t.sharedFiles.download}</span>
-          </button>
+          {onDownload && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDownload()
+                onClose()
+              }}
+              className={itemClass}
+              role="menuitem"
+            >
+              <Download className="size-4 text-slate-400 dark:text-slate-500" />
+              <span>Download</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onShareAccess()
-              onClose()
-            }}
-            className={itemClass}
-            role="menuitem"
-          >
-            <Share2 className="size-4 text-slate-400 dark:text-slate-500" />
-            <span>{t.actionMenu.share}</span>
-          </button>
+          {onShareAccess && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onShareAccess()
+                onClose()
+              }}
+              className={itemClass}
+              role="menuitem"
+            >
+              <Share2 className="size-4 text-slate-400 dark:text-slate-500" />
+              <span>Share Access</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -210,7 +250,7 @@ export function FileActionsDropdown({
               onRemoveAccess()
               onClose()
             }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 focus-visible:bg-red-50 dark:focus-visible:bg-red-950/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-[13px] font-bold text-red-600 dark:text-red-400 hover:bg-red-55/15 dark:hover:bg-red-955/20 focus-visible:bg-red-55/15 dark:focus-visible:bg-red-955/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
             role="menuitem"
           >
             <Trash2 className="size-4 text-red-500 dark:text-red-400" />
@@ -218,7 +258,8 @@ export function FileActionsDropdown({
           </button>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
 

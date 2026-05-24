@@ -1,4 +1,7 @@
-import { HardDrive, Users, Sparkles, Activity } from 'lucide-react'
+import { HardDrive, Sparkles } from 'lucide-react'
+import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
 
 interface WorkspaceStatsCardsProps {
   onViewAIReport: () => void
@@ -11,10 +14,17 @@ export function WorkspaceStatsCards({
   onStorageCardClick,
   onActiveCardClick
 }: WorkspaceStatsCardsProps) {
-  // SVG Stroke parameters for 24% circular progress
+  const { t } = useTranslation()
+  const user = useAuthStore((s) => s.user)
+  
+  const totalGb = user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
+  const usedGb = user?.plan === 'pro' ? 12.4 : 2.4
+  const usedPercentage = Math.round((usedGb / totalGb) * 100)
+
+  // SVG Stroke parameters for dynamic circular progress
   const radius = 18
   const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (24 / 100) * circumference
+  const strokeDashoffset = circumference - (usedPercentage / 100) * circumference
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-5 select-none text-left">
@@ -25,8 +35,8 @@ export function WorkspaceStatsCards({
         className="group relative flex flex-col justify-between rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-300 hover:shadow-md hover:border-blue-500/20 cursor-pointer"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-            STORAGE
+          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-550">
+            {t.settings.interface === "Interface" || !t.settings.interface ? "STORAGE" : t.dashboard.storage.toUpperCase()}
           </span>
           <HardDrive className="size-4.5 text-blue-500 dark:text-blue-400" />
         </div>
@@ -55,15 +65,17 @@ export function WorkspaceStatsCards({
                 strokeLinecap="round"
               />
             </svg>
-            <span className="absolute text-[10px] font-black text-slate-850 dark:text-slate-100">
-              24%
+            <span className="absolute text-[10px] font-black text-slate-855 dark:text-slate-100">
+              {usedPercentage}%
             </span>
           </div>
 
           <div>
-            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">12.4</span>
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 ml-0.5">GB</span>
-            <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">Used of 50GB</p>
+            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{usedGb}</span>
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-550 ml-0.5">GB</span>
+            <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">
+              {t.sharedFiles.used} {usedGb} GB {t.sharedFiles.usedOf} {totalGb} GB
+            </p>
           </div>
         </div>
 
@@ -87,12 +99,12 @@ export function WorkspaceStatsCards({
         className="group relative flex flex-col justify-between rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-300 hover:shadow-md hover:border-blue-500/20 cursor-pointer"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-            ACTIVE NOW
+          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-550">
+            {t.sharedFiles.activeNow.toUpperCase()}
           </span>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-wider bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-100/30">
             <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            LIVE
+            {t.sharedFiles.live}
           </span>
         </div>
 
@@ -108,12 +120,12 @@ export function WorkspaceStatsCards({
 
           <div>
             <span className="text-xl font-black text-slate-900 dark:text-white leading-none">8</span>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Team members</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t.sharedFiles.teamMembers}</span>
           </div>
         </div>
 
         <p className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold mt-6 leading-relaxed">
-          Sarah and 2 others are editing <strong className="text-slate-750 dark:text-slate-300">Biology 101 Midterm Notes</strong>
+          {t.sharedFiles.activeEditing}
         </p>
       </div>
 
@@ -124,14 +136,14 @@ export function WorkspaceStatsCards({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Sparkles className="size-4 text-indigo-400 animate-pulse" />
-            <span className="text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase">
-              AI WORKSPACE GUARD
+            <span className="text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-550 uppercase">
+              {t.sharedFiles.aiGuard.toUpperCase()}
             </span>
           </div>
         </div>
 
         <p className="text-xs font-bold text-slate-200 leading-relaxed mt-4.5 mb-5">
-          Found 3 duplicate files in "Biology" folder. Optimization suggested.
+          {t.sharedFiles.aiGuardDesc}
         </p>
 
         <button
@@ -139,7 +151,7 @@ export function WorkspaceStatsCards({
           onClick={onViewAIReport}
           className="w-full bg-slate-850 hover:bg-slate-800 active:scale-[0.98] border border-slate-800 dark:border-slate-700 hover:border-slate-700 text-slate-100 font-extrabold text-[11px] py-2.5 px-4 rounded-xl shadow-xs transition-all duration-200 cursor-pointer"
         >
-          View AI Report
+          {t.sharedFiles.viewAIReport}
         </button>
       </div>
       

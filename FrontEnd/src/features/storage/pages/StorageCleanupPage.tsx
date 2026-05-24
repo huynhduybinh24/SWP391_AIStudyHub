@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { useState } from 'react'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
+import { useTranslation } from '@/context/LanguageContext'
 
 const INITIAL_DUPLICATES = [
   {
@@ -51,16 +54,17 @@ export function StorageCleanupPage() {
   const [largeFiles, setLargeFiles] = useState(DEEP_ANALYSIS_FILES)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [hasAnalyzed, setHasAnalyzed] = useState(false)
+  const { t } = useTranslation()
   const totalFilesFound = 24
-
+ 
   const handleRemove = (id: string) => {
     setDuplicates(prev => prev.filter(item => item.id !== id))
   }
-
+ 
   const handleRemoveLarge = (id: string) => {
     setLargeFiles(prev => prev.filter(item => item.id !== id))
   }
-
+ 
   const handleAnalyze = () => {
     setIsAnalyzing(true)
     setTimeout(() => {
@@ -68,11 +72,23 @@ export function StorageCleanupPage() {
       setHasAnalyzed(true)
     }, 2000)
   }
-
-  const usedGB = 8.5
-  const totalGB = 15
+ 
+  const user = useAuthStore((s) => s.user)
+  const isPro = user?.plan === 'pro'
+  
+  const usedGB = isPro ? 8.5 : 2.4
+  const totalGB = isPro ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
   const percentage = (usedGB / totalGB) * 100
 
+  const getLocalizedModified = (modified: string) => {
+    if (modified.includes('2 days ago')) return t.storageCleanup.modified2d
+    if (modified.includes('1 week ago')) return t.storageCleanup.modified1w
+    if (modified.includes('3 weeks ago')) return t.storageCleanup.modified3w
+    if (modified.includes('6 months ago')) return t.storageCleanup.modified6m
+    if (modified.includes('1 year ago')) return t.storageCleanup.modified1y
+    return modified
+  }
+ 
   return (
     <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10">
       <div>
@@ -81,23 +97,23 @@ export function StorageCleanupPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-foreground mb-4 transition-colors"
         >
           <ArrowLeft className="size-4" />
-          Back to Cloud Storage
+          {t.storageCleanup.backToStorage}
         </Link>
         <div>
-          <h1 className="text-[32px] font-bold text-foreground leading-tight">Storage Cleanup</h1>
+          <h1 className="text-[32px] font-bold text-foreground leading-tight">{t.storageCleanup.title}</h1>
           <p className="text-muted mt-2 text-sm">
-            Manage and optimize your cloud storage space.
+            {t.storageCleanup.subtitle}
           </p>
         </div>
       </div>
-
+ 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Left Column */}
         <div className="flex-1 flex flex-col w-full gap-6">
           <Card className="border-border shadow-sm">
             <div className="p-6 border-b border-border flex justify-between items-center">
-              <h2 className="text-lg font-bold text-foreground">Duplicate Files</h2>
-              <span className="text-sm font-medium text-muted">{totalFilesFound} files found</span>
+              <h2 className="text-lg font-bold text-foreground">{t.storageCleanup.duplicateFiles}</h2>
+              <span className="text-sm font-medium text-muted">{t.storageCleanup.filesFound(totalFilesFound)}</span>
             </div>
             <CardContent className="p-6">
               <div className="flex flex-col gap-4">
@@ -116,31 +132,31 @@ export function StorageCleanupPage() {
                       </div>
                       <div className="flex flex-col">
                         <span className="font-bold text-[15px] text-foreground">{file.name}</span>
-                        <span className="text-[12px] text-muted mt-0.5">{file.size} • {file.modified}</span>
+                        <span className="text-[12px] text-muted mt-0.5">{file.size} • {getLocalizedModified(file.modified)}</span>
                       </div>
                     </div>
                     <button 
                       onClick={() => handleRemove(file.id)}
                       className="text-[#ef4444] text-[13px] font-semibold hover:text-red-600 px-3 py-1.5 transition-colors"
                     >
-                      Remove
+                      {t.storageCleanup.remove}
                     </button>
                   </div>
                 ))}
                 {duplicates.length === 0 && (
                   <div className="text-center text-sm text-muted py-8">
-                    All clear! No more duplicates shown.
+                    {t.storageCleanup.noDuplicates}
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
-
+ 
           {hasAnalyzed && (
             <Card className="border-border shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="p-6 border-b border-border flex justify-between items-center">
-                <h2 className="text-lg font-bold text-foreground">Large Unused Files</h2>
-                <span className="text-sm font-medium text-muted">{largeFiles.length} files found</span>
+                <h2 className="text-lg font-bold text-foreground">{t.storageCleanup.largeUnusedFiles}</h2>
+                <span className="text-sm font-medium text-muted">{t.storageCleanup.filesFound(largeFiles.length)}</span>
               </div>
               <CardContent className="p-6">
                 <div className="flex flex-col gap-4">
@@ -152,20 +168,20 @@ export function StorageCleanupPage() {
                         </div>
                         <div className="flex flex-col">
                           <span className="font-bold text-[15px] text-foreground">{file.name}</span>
-                          <span className="text-[12px] text-muted mt-0.5">{file.size} • {file.modified}</span>
+                          <span className="text-[12px] text-muted mt-0.5">{file.size} • {getLocalizedModified(file.modified)}</span>
                         </div>
                       </div>
                       <button 
                         onClick={() => handleRemoveLarge(file.id)}
                         className="text-[#ef4444] text-[13px] font-semibold hover:text-red-600 px-3 py-1.5 transition-colors"
                       >
-                        Remove
+                        {t.storageCleanup.remove}
                       </button>
                     </div>
                   ))}
                   {largeFiles.length === 0 && (
                     <div className="text-center text-sm text-muted py-8">
-                      Great job! No more large unused files.
+                      {t.storageCleanup.noLargeFiles}
                     </div>
                   )}
                 </div>
@@ -173,16 +189,16 @@ export function StorageCleanupPage() {
             </Card>
           )}
         </div>
-
+ 
         {/* Right Column */}
         <Card className="w-full lg:w-[320px] shrink-0 border-border shadow-sm">
           <CardContent className="p-6">
-            <h3 className="text-[17px] font-bold text-foreground mb-6">Storage Summary</h3>
+            <h3 className="text-[17px] font-bold text-foreground mb-6">{t.storageCleanup.storageSummary}</h3>
             
             <div className="mb-6">
               <div className="flex justify-between items-end mb-2">
-                <span className="text-sm font-medium text-muted">Used Space</span>
-                <span className="text-sm font-bold text-foreground">{usedGB} GB / {totalGB} GB</span>
+                <span className="text-sm font-medium text-muted">{t.storageCleanup.usedSpace}</span>
+                <span className="text-sm font-bold text-foreground">{t.storageCleanup.usedOfText(usedGB, totalGB)}</span>
               </div>
               <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div 
@@ -191,11 +207,11 @@ export function StorageCleanupPage() {
                 ></div>
               </div>
             </div>
-
+ 
             <p className="text-sm text-muted mb-6 leading-relaxed">
-              You can free up to <span className="font-bold text-foreground">1.2 GB</span> by removing recommended files.
+              {t.storageCleanup.freeUpText(isPro ? '1.2 GB' : '0.4 GB')}
             </p>
-
+ 
             <Button 
               onClick={handleAnalyze} 
               disabled={isAnalyzing || hasAnalyzed}
@@ -206,7 +222,7 @@ export function StorageCleanupPage() {
               }`}
             >
               {isAnalyzing && <Loader2 className="mr-2 size-4 animate-spin" />}
-              {isAnalyzing ? 'Analyzing Space...' : hasAnalyzed ? 'Analysis Complete' : 'Analyze Deeply'}
+              {isAnalyzing ? t.storageCleanup.analyzingSpace : hasAnalyzed ? t.storageCleanup.analysisComplete : t.storageCleanup.analyzeDeeply}
             </Button>
           </CardContent>
         </Card>

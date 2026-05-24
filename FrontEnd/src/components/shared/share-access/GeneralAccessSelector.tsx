@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Check, Lock, Globe } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PermissionDropdown, type ShareRole } from './PermissionDropdown'
+import { useTranslation } from '@/context/LanguageContext'
 
 export type GeneralAccessType = 'restricted' | 'public'
 
@@ -24,18 +25,19 @@ export function GeneralAccessSelector({
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [focusedIndex, setFocusedIndex] = useState(-1)
+  const { t } = useTranslation()
 
   const options: { value: GeneralAccessType; label: string; desc: string; icon: any }[] = [
     {
       value: 'restricted',
-      label: 'Bị hạn chế',
-      desc: 'Chỉ những người được thêm mới có thể mở bằng đường liên kết này',
+      label: t.shareModal.restricted,
+      desc: t.shareModal.restrictedSub,
       icon: Lock
     },
     {
       value: 'public',
-      label: 'Bất kỳ ai có đường liên kết',
-      desc: 'Bất kỳ ai có đường liên kết đều có thể xem',
+      label: t.shareModal.publicLink || t.shareModal.publicLabel || 'Anyone with the link',
+      desc: t.shareModal.publicLinkSub || t.shareModal.publicDesc,
       icon: Globe
     }
   ]
@@ -58,7 +60,7 @@ export function GeneralAccessSelector({
   const handleSelect = (type: GeneralAccessType) => {
     onChange(type)
     setIsOpen(false)
-    showToast('General access updated')
+    showToast(t.shareModal.generalAccessUpdated || 'General access updated')
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -101,7 +103,7 @@ export function GeneralAccessSelector({
   return (
     <div className="space-y-2.5 shrink-0 select-none text-left">
       <h3 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-        QUYỀN TRUY CẬP CHUNG
+        {t.shareModal.generalAccessLabel}
       </h3>
 
       <div 
@@ -173,8 +175,8 @@ export function GeneralAccessSelector({
 
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium pl-1 mt-0.5 leading-relaxed">
               {value === 'public'
-                ? 'Bất kỳ ai có đường liên kết đều có thể xem'
-                : 'Chỉ những người được thêm mới có thể mở bằng đường liên kết này'}
+                ? t.shareModal.publicLinkSub || t.shareModal.publicDesc
+                : t.shareModal.restrictedSub || t.shareModal.restrictedDesc}
             </p>
           </div>
         </div>
@@ -186,7 +188,7 @@ export function GeneralAccessSelector({
               value={publicRole}
               onChange={(role) => {
                 onPublicRoleChange(role)
-                showToast(`Permission updated`)
+                showToast(t.shareModal.permissionUpdated || 'Permission updated')
               }}
               className="h-[36px] px-3 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-bold"
               ariaLabel="Public link permission level"

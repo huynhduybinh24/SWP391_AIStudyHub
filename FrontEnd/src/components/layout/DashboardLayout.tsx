@@ -1,11 +1,13 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { AppFooter } from '@/components/shared/AppFooter'
 import { FloatingAssistantButton } from '@/components/layout/FloatingAssistantButton'
 import { useUiStore } from '@/stores/uiStore'
+import { useStudyTimeTracker } from '@/features/dashboard/hooks/useStudyTimeTracker'
 
 export function DashboardLayout() {
+  useStudyTimeTracker()
   const location = useLocation()
   const isChatPage = location.pathname === '/dashboard/chat' || location.pathname === '/dashboard/chat/'
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
@@ -18,7 +20,7 @@ export function DashboardLayout() {
       {/* Mobile Sidebar Backdrop Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-[#0b1c30]/40 backdrop-blur-sm z-40 md:hidden cursor-pointer"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden cursor-pointer"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -29,11 +31,11 @@ export function DashboardLayout() {
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto flex flex-col justify-between">
           <main className="px-8 pb-10 pt-6 flex-1">
-            <div className="mx-auto max-w-[1000px]">
+            <div className="mx-auto max-w-[1200px]">
               <Outlet />
             </div>
           </main>
-          <Footer />
+          <AppFooter variant="simple" />
         </div>
 
         {/* Interactive Floating Chatbot */}

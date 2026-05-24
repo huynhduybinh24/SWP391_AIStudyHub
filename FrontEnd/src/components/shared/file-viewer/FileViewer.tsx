@@ -7,6 +7,7 @@ import { DocumentPreview } from './DocumentPreview'
 import { FileMetadataPanel } from './FileMetadataPanel'
 import { AskAIAssistantPanel } from './AskAIAssistantPanel'
 import { ShareAccessModal } from '../share-access/ShareAccessModal'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface ChatMessage {
   sender: 'user' | 'ai'
@@ -28,6 +29,7 @@ interface FileViewerProps {
   showToast: (msg: string) => void
   onDownload: () => void
   onBackLink: React.ReactNode
+  fileUrl?: string
 }
 
 export function FileViewer({
@@ -43,23 +45,42 @@ export function FileViewer({
   permission = 'View Only',
   showToast,
   onDownload,
-  onBackLink
+  onBackLink,
+  fileUrl
 }: FileViewerProps) {
+  const { t } = useTranslation()
+
   // 1. Zoom and Page state
   const [zoomScale, setZoomScale] = useState(100)
   const [currentPage, setCurrentPage] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   // 2. AI Chat assistant state
-  const [chatLog, setChatLog] = useState<ChatMessage[]>([
-    {
-      sender: 'ai',
-      text: `Chào bạn! Tôi là Trợ lý học tập AI. Bạn cần tôi phân tích hay giải đáp câu hỏi nào về tài liệu "${fileName}" này không?`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  ])
+  const [chatLog, setChatLog] = useState<ChatMessage[]>([])
   const [isAiResponding, setIsAiResponding] = useState(false)
   const [aiTypingText, setAiTypingText] = useState('')
+
+  // Dynamically initialize and update welcome message on language change
+  useEffect(() => {
+    setChatLog(prev => {
+      const welcomeText = t.fileViewer.welcomeMsg(fileName)
+      if (prev.length === 0) {
+        return [
+          {
+            sender: 'ai',
+            text: welcomeText,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]
+      }
+      return prev.map((msg, i) => {
+        if (i === 0 && msg.sender === 'ai') {
+          return { ...msg, text: welcomeText }
+        }
+        return msg
+      })
+    })
+  }, [t, fileName])
 
   // 3. Document AI deep analysis state
   const [isScanning, setIsScanning] = useState(false)
@@ -75,8 +96,21 @@ export function FileViewer({
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Cleanup timers on unmount
+  // Reset scroll to top on mount, and cleanup timers on unmount
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual'
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      })
+      
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"], .overflow-auto, [class*="overflow-auto"]')
+      scrollableContainers.forEach((container) => {
+        container.scrollTop = 0
+      })
+    }
     return () => {
       if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current)
       if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
@@ -97,10 +131,10 @@ export function FileViewer({
   // Print trigger
   const handlePrint = () => {
     if (isDownloadRestricted()) {
-      showToast('🔒 Chủ sở hữu tài liệu đã chặn quyền in ấn của người xem/nhận xét!')
+      showToast(t.fileViewer.printRestricted)
       return
     }
-    showToast(`Preparing ${fileName} for printing`)
+    showToast(t.fileViewer.printPreparing(fileName))
     setTimeout(() => {
       window.print()
     }, 800)
@@ -110,7 +144,7 @@ export function FileViewer({
   const toggleFullscreen = () => {
     const nextVal = !isFullscreen
     setIsFullscreen(nextVal)
-    showToast(`Fullscreen mode ${nextVal ? 'enabled' : 'disabled'}`)
+    showToast(t.fileViewer.fullscreenToast(nextVal ? 'enabled' : 'disabled'))
   }
 
   // Check download permission
@@ -122,7 +156,7 @@ export function FileViewer({
   const handleSendMessage = (text: string) => {
     if (!text.trim()) return
 
-    showToast('AI assistant is processing your question')
+    showToast(t.fileViewer.aiProcessingToast)
 
     // Add user message
     const userMsg: ChatMessage = {
@@ -143,9 +177,9 @@ export function FileViewer({
       const lower = text.toLowerCase()
 
       if (lower.includes('summary') || lower.includes('tóm tắt') || lower.includes('overview') || lower.includes('quá trình')) {
-        responseText = `Dựa trên nội dung tài liệu "${fileName}":\n\n• Tài liệu cung cấp kiến thức nền tảng về ${subject}.\n• Đề cập đến các phương pháp học tập kết hợp, phân tích các chỉ số đo lường hiệu suất thực tiễn.\n• Đề xuất quy trình 3 bước tối ưu để học sinh tự ôn tập và kiểm tra trí nhớ định kỳ.`
+        responseText = t.fileViewer.summaryResponse(fileName, subject)
       } else {
-        responseText = `Hệ thống AI nhận định đây là phần kiến thức quan trọng trong tài liệu "${fileName}". Các mục tiêu ôn tập đề xuất bao gồm:\n\n1. Hiểu rõ các định nghĩa cốt lõi.\n2. Phân tích các biểu đồ và số liệu thực nghiệm.\n3. Vận dụng kiến thức vào bài test đánh giá năng lực.\n\nBạn có muốn tôi làm rõ phần nào chi tiết hơn không?`
+        responseText = t.fileViewer.defaultResponse(fileName)
       }
 
       let idx = 0
@@ -173,16 +207,16 @@ export function FileViewer({
     if (isScanning) return
     setIsScanning(true)
     setScanProgress(10)
-    setScanStep('Analyzing file layout...')
-    showToast(`Analyzing ${fileName}`)
+    setScanStep(t.fileViewer.analyzingLayout)
+    showToast(t.fileViewer.analyzingFile(fileName))
 
     if (scanIntervalRef.current) clearInterval(scanIntervalRef.current)
     if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current)
 
     const steps = [
-      { progress: 40, step: 'Extracting text elements...' },
-      { progress: 75, step: 'Running key concept vector matching...' },
-      { progress: 100, step: 'Syncing cognitive map database...' }
+      { progress: 40, step: t.fileViewer.extractingText },
+      { progress: 75, step: t.fileViewer.runningConceptMatch },
+      { progress: 100, step: t.fileViewer.syncingDb }
     ]
 
     let stepIdx = 0
@@ -195,11 +229,11 @@ export function FileViewer({
         if (scanIntervalRef.current) clearInterval(scanIntervalRef.current)
         scanTimeoutRef.current = setTimeout(() => {
           setIsScanning(false)
-          showToast('AI analysis completed')
+          showToast(t.fileViewer.analysisCompleted)
           
           setChatLog(prev => [...prev, {
             sender: 'ai',
-            text: `⚡ Phân tích thông minh hoàn tất! Tôi đã quét toàn bộ tài liệu "${fileName}". Trạng thái tài liệu đã được cập nhật thành ANALYZED.\n\nBạn có thể bắt đầu các câu hỏi ôn tập chuyên sâu ngay bây giờ.`,
+            text: t.fileViewer.analysisSuccessMsg(fileName),
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }])
         }, 300)
@@ -209,10 +243,10 @@ export function FileViewer({
 
   const handleDownloadClick = () => {
     if (isDownloadRestricted()) {
-      showToast('🔒 Chủ sở hữu tài liệu đã chặn quyền tải xuống của người xem/nhận xét!')
+      showToast(t.fileViewer.downloadRestricted)
       return
     }
-    showToast(`Downloading ${fileName}`)
+    showToast(t.fileViewer.downloadingFile(fileName))
     onDownload()
   }
 
@@ -221,7 +255,7 @@ export function FileViewer({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isFullscreen) {
         setIsFullscreen(false)
-        showToast('Fullscreen mode disabled')
+        showToast(t.fileViewer.fullscreenDisabled)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -269,6 +303,7 @@ export function FileViewer({
             subject={subject}
             previewContent={previewContent}
             isDownloadRestricted={isDownloadRestricted()}
+            fileUrl={fileUrl}
           />
         </div>
 
@@ -296,7 +331,7 @@ export function FileViewer({
             scanProgress={scanProgress}
             scanStep={scanStep}
             onDeepAnalysis={handleDeepAnalysis}
-            suggestedPrompt={`Explain the core concepts and summaries inside "${fileName}".`}
+            suggestedPrompt={t.fileViewer.suggestedPrompt(fileName)}
           />
 
           {/* 3. Action Buttons Column */}
@@ -306,7 +341,7 @@ export function FileViewer({
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer"
             >
               <Download className="h-4.5 w-4.5" />
-              Download File
+              {t.fileViewer.downloadFile}
             </Button>
 
             <Button
@@ -314,8 +349,8 @@ export function FileViewer({
               onClick={() => setIsShareModalOpen(true)}
               className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98 text-xs cursor-pointer"
             >
-              <Share2 className="h-4.5 w-4.5 text-slate-500" />
-              Share Access
+              <Share2 className="h-4.5 w-4.5 text-slate-550" />
+              {t.fileViewer.shareAccess}
             </Button>
           </div>
 

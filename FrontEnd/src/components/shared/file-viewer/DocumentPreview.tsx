@@ -1,5 +1,6 @@
 import { GraduationCap, FileSpreadsheet, ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface DocumentPreviewProps {
   fileType: string
@@ -10,119 +11,7 @@ interface DocumentPreviewProps {
   subject?: string
   previewContent?: string
   isDownloadRestricted: boolean
-}
-
-// Reusable mock content based on Subject or File Name (matching DocumentDetailPage.tsx details)
-const SUBJECT_DETAILS_MOCK: Record<
-  string,
-  {
-    courseTitle: string
-    courseCode: string
-    overview: string
-    objectives: string[]
-    description: string
-  }
-> = {
-  NEUROSCIENCE: {
-    courseTitle: 'Advanced Neuroscience',
-    courseCode: 'NEURO-402 Syllabus 2024',
-    overview:
-      'This course explores the complex dynamics of neural networks and the molecular basis of synaptic plasticity. We examine how individual neuronal activities integrate into large-scale functional networks, utilizing advanced neuroimaging techniques to map the cognitive architecture of the human brain.',
-    objectives: [
-      'Understand functional connectivity in the human brain.',
-      'Analyze fMRI data for resting-state networks.',
-      'Explore molecular mechanisms of memory consolidation.'
-    ],
-    description: 'Comprehensive curriculum overview for the Fall 2024 semester.'
-  },
-  COMPSCI: {
-    courseTitle: 'Advanced Software Engineering',
-    courseCode: 'CS-402 Study Guide 2024',
-    overview:
-      'Deep dive into modern microservice architectures, enterprise design patterns, and cloud-native scaling strategies. This guide details how to build highly decoupled systems using event-driven telemetry and distributed caching models.',
-    objectives: [
-      'Implement thread-safe design patterns in high-concurrency environments.',
-      'Design distributed pub/sub pipelines with automated failover handling.',
-      'Optimize database indexing strategies and memory caching layers.'
-    ],
-    description: 'Comprehensive syllabus overview detailing software engineering models.'
-  },
-  MATHEMATICS: {
-    courseTitle: 'Multivariable Calculus & Linear Algebra',
-    courseCode: 'MATH-202 Reference Sheet',
-    overview:
-      'A compact guide covering fundamental mathematical derivations in multivariable space, gradient descent vector mechanics, and matrix decomposition theorems used extensively inside neural network backpropagation models.',
-    objectives: [
-      'Formulate Taylor expansions in multivariable dimensions.',
-      'Deconstruct high-dimensional matrices using Singular Value Decomposition.',
-      'Compute vector gradients and Jacobians for complex cost functions.'
-    ],
-    description: 'High-fidelity quick reference sheet for complex multivariable equations.'
-  },
-  BIOLOGY: {
-    courseTitle: 'Molecular Genetics & Cell Biology',
-    courseCode: 'BIO-305 Lab Companion',
-    overview:
-      'Detailed overview of intracellular signaling pathways, CRISPR-Cas9 genetic editing mechanics, and mitochondrial DNA transcription processes in active eukaryotic organisms.',
-    objectives: [
-      'Trace chemical cascade dynamics inside ribosomal cell complexes.',
-      'Diagram the double-helix replication loop with enzymatic boundaries.',
-      'Evaluate evolutionary genetics in cellular metabolic cycles.'
-    ],
-    description: 'Laboratory notebook and synthesis manual outlining modern CRISPR gene modification.'
-  },
-  PHYSICS: {
-    courseTitle: 'Quantum Mechanics & Wave Theory',
-    courseCode: 'PHY-301 Core Formulation',
-    overview:
-      'Exploring the mathematical formulations of wave-particle duality, potential barrier tunneling probabilities, and structural applications of the time-independent Schrödinger Equation.',
-    objectives: [
-      'Apply Planck constant scaling in De Broglie equations.',
-      'Solve potential energy barrier states for tunneling values.',
-      'Analyze spin mechanics and quantum entanglement models.'
-    ],
-    description: 'Study notes outlining foundational quantum mechanical principles.'
-  },
-  GENERAL: {
-    courseTitle: 'Integrated Academic Study Methods',
-    courseCode: 'GEN-101 Course Companion',
-    overview:
-      'A practical manual summarizing cognitive science techniques to maximize student recall, including detailed instructions for active recall routines, spaced repetition timers, and the Feynman technique.',
-    objectives: [
-      'Build active recall routines for conceptual examinations.',
-      'Optimize long-term recall rates using spaced retention intervals.',
-      'Simplify complex academic papers through systematic deconstruction.'
-    ],
-    description: 'Detailed cognitive study handbook outlining modern spacing algorithms.'
-  }
-}
-
-function getPageContent(subjectKey: string, pageNum: number, mockDetails: any) {
-  if (pageNum === 1) {
-    return {
-      title: mockDetails.courseTitle,
-      subtitle: mockDetails.courseCode,
-      sectionTitle: 'Course Overview',
-      body: mockDetails.overview,
-      listTitle: 'Learning Objectives',
-      items: mockDetails.objectives,
-      showBrainImage: subjectKey === 'NEUROSCIENCE'
-    }
-  }
-
-  return {
-    title: mockDetails.courseTitle,
-    subtitle: `${mockDetails.courseCode} — Page ${pageNum}`,
-    sectionTitle: `Section ${pageNum - 1}.1 Foundational Theories & Core Precepts`,
-    body: `This section details the critical theoretical frameworks and experimental protocols that apply to ${mockDetails.courseTitle}. Students are expected to understand the historical context, analyze key variables, and verify equations within their study groups.`,
-    listTitle: 'Recommended Reading & Assessment',
-    items: [
-      'Review formulas and reference literature mentioned in Section 1.',
-      'Draft a detailed concept summary explaining main derivations.',
-      'Integrate chapter notes into your personal AI chatbot instance.'
-    ],
-    showBrainImage: false
-  }
+  fileUrl?: string
 }
 
 export function DocumentPreview({
@@ -133,27 +22,162 @@ export function DocumentPreview({
   totalPages,
   subject = 'GENERAL',
   previewContent,
-  isDownloadRestricted
+  isDownloadRestricted,
+  fileUrl
 }: DocumentPreviewProps) {
+  const { t } = useTranslation()
   const normType = fileType.toLowerCase()
   const subjectKey = subject.toUpperCase()
+
+  // Reusable mock content based on Subject or File Name (matching DocumentDetailPage.tsx details)
+  const SUBJECT_DETAILS_MOCK: Record<
+    string,
+    {
+      courseTitle: string
+      courseCode: string
+      overview: string
+      objectives: string[]
+      description: string
+    }
+  > = {
+    NEUROSCIENCE: {
+      courseTitle: t.fileViewer.subjectNeuroscience,
+      courseCode: 'NEURO-402 Syllabus',
+      overview: t.fileViewer.neuroscienceOverview,
+      objectives: [
+        t.fileViewer.neuroscienceObjective1,
+        t.fileViewer.neuroscienceObjective2,
+        t.fileViewer.neuroscienceObjective3
+      ],
+      description: t.fileViewer.termFall2024
+    },
+    COMPSCI: {
+      courseTitle: t.myDocuments.compsci || 'Software Engineering',
+      courseCode: 'CS-402 Study Guide',
+      overview: t.fileViewer.docxPageDesc(t.myDocuments.compsci),
+      objectives: [
+        t.fileViewer.docxBullet1,
+        t.fileViewer.docxBullet2,
+        t.fileViewer.docxBullet3
+      ],
+      description: t.myDocuments.compsci
+    },
+    MATHEMATICS: {
+      courseTitle: t.myDocuments.math || 'Mathematics',
+      courseCode: 'MATH-202 Reference Sheet',
+      overview: t.fileViewer.docxPageDesc(t.myDocuments.math),
+      objectives: [
+        t.fileViewer.readBullet1,
+        t.fileViewer.readBullet2,
+        t.fileViewer.readBullet3
+      ],
+      description: t.myDocuments.math
+    },
+    BIOLOGY: {
+      courseTitle: t.myDocuments.bio || 'Biology',
+      courseCode: 'BIO-305 Lab Companion',
+      overview: t.fileViewer.docxPageDesc(t.myDocuments.bio),
+      objectives: [
+        t.fileViewer.docxBullet1,
+        t.fileViewer.docxBullet2,
+        t.fileViewer.docxBullet3
+      ],
+      description: t.myDocuments.bio
+    },
+    PHYSICS: {
+      courseTitle: t.fileViewer.subjectQuantum,
+      courseCode: 'PHY-301 Core Formulation',
+      overview: t.fileViewer.docxPageDesc(t.fileViewer.subjectPhysics),
+      objectives: [
+        t.fileViewer.docxBullet1,
+        t.fileViewer.docxBullet2,
+        t.fileViewer.docxBullet3
+      ],
+      description: t.fileViewer.subjectPhysics
+    },
+    GENERAL: {
+      courseTitle: t.fileViewer.courseOverview,
+      courseCode: 'GEN-101 Course Companion',
+      overview: t.fileViewer.docxBodyDesc,
+      objectives: [
+        t.fileViewer.docxBullet1,
+        t.fileViewer.docxBullet2,
+        t.fileViewer.docxBullet3
+      ],
+      description: t.fileViewer.subjectGeneral
+    }
+  }
+
   const mockDetails = SUBJECT_DETAILS_MOCK[subjectKey] || SUBJECT_DETAILS_MOCK.GENERAL
 
-  // Standard content for PDF or default documents
-  const pageContent = getPageContent(subjectKey, currentPage, mockDetails)
+  const getPageContent = (pageNum: number) => {
+    if (pageNum === 1) {
+      return {
+        title: mockDetails.courseTitle,
+        subtitle: mockDetails.courseCode,
+        sectionTitle: t.fileViewer.courseOverview,
+        body: mockDetails.overview,
+        listTitle: t.fileViewer.learningObjectives,
+        items: mockDetails.objectives,
+        showBrainImage: subjectKey === 'NEUROSCIENCE'
+      }
+    }
+
+    return {
+      title: mockDetails.courseTitle,
+      subtitle: `${mockDetails.courseCode} — ${t.fileViewer.pageSuffix(pageNum)}`,
+      sectionTitle: t.fileViewer.foundationalTheories(pageNum),
+      body: t.fileViewer.docxPageDesc(mockDetails.courseTitle),
+      listTitle: t.fileViewer.recommendedReading,
+      items: [
+        t.fileViewer.readBullet1,
+        t.fileViewer.readBullet2,
+        t.fileViewer.readBullet3
+      ],
+      showBrainImage: false
+    }
+  }
+
+  const pageContent = getPageContent(currentPage)
 
   // Render components according to normalized file type
   const renderPreviewContent = () => {
+    if (normType === 'video' || normType === 'mp4' || normType === 'mov' || normType === 'webm') {
+      return (
+        <div className="w-full flex flex-col items-center justify-center p-4 bg-slate-50 dark:bg-slate-955 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <video
+            controls
+            src={fileUrl || previewContent}
+            className="w-full rounded-xl max-h-[460px] bg-black"
+            aria-label="Video player"
+          />
+        </div>
+      )
+    }
+
+    if (normType === 'audio' || normType === 'mp3' || normType === 'wav' || normType === 'm4a' || normType === 'recording') {
+      return (
+        <div className="w-full flex flex-col items-center justify-center p-6 bg-slate-55 dark:bg-slate-955 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <audio
+            controls
+            src={fileUrl || previewContent}
+            className="w-full"
+            aria-label="Audio player"
+          />
+        </div>
+      )
+    }
+
     // 1. Spreadsheet XLSX Layout
     if (normType === 'xlsx' || normType === 'xls') {
       const mockRows = [
-        ['Index', 'Subject Name', 'Resource Code', 'Status', 'Shared Date', 'Volume'],
-        ['1', 'Advanced Neuroscience', 'NEURO-402', 'Approved', '2026-05-20', '3.6 MB'],
-        ['2', 'Advanced Software Eng', 'CS-402', 'In Progress', '2026-05-21', '3.8 MB'],
-        ['3', 'Multivariable Calculus', 'MATH-202', 'Approved', '2026-05-18', '2.4 MB'],
-        ['4', 'Molecular Genetics', 'BIO-305', 'Approved', '2026-05-22', '1.8 MB'],
-        ['5', 'Quantum Mechanics', 'PHY-301', 'Queued', '2026-05-15', '5.7 MB'],
-        ['6', 'Integrated Study Methods', 'GEN-101', 'Approved', '2026-05-19', '1.5 MB']
+        [t.fileViewer.indexLabel, t.myDocuments.subject, t.fileViewer.resourceCodeLabel, t.myDocuments.aiStatus, t.myDocuments.uploadDate, t.myDocuments.fileSize],
+        ['1', t.fileViewer.subjectNeuroscience, 'NEURO-402', t.fileViewer.statusApproved, '2026-05-20', '3.6 MB'],
+        ['2', t.fileViewer.subjectSoftwareEng, 'CS-402', t.fileViewer.statusInProgress, '2026-05-21', '3.8 MB'],
+        ['3', t.fileViewer.subjectCalculus, 'MATH-202', t.fileViewer.statusApproved, '2026-05-18', '2.4 MB'],
+        ['4', t.fileViewer.subjectGenetics, 'BIO-305', t.fileViewer.statusApproved, '2026-05-22', '1.8 MB'],
+        ['5', t.fileViewer.subjectQuantum, 'PHY-301', t.fileViewer.statusQueued, '2026-05-15', '5.7 MB'],
+        ['6', t.fileViewer.subjectStudyMethods, 'GEN-101', t.fileViewer.statusApproved, '2026-05-19', '1.5 MB']
       ]
 
       return (
@@ -163,8 +187,8 @@ export function DocumentPreview({
               <FileSpreadsheet className="h-5 w-5" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 font-sans">Spreadsheet Grid View</h4>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Sheet1 &bull; Active cells: 42</p>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 font-sans">{t.fileViewer.sheetGridView}</h4>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{t.fileViewer.activeCells(42)}</p>
             </div>
           </div>
 
@@ -209,7 +233,7 @@ export function DocumentPreview({
               <ImageIcon className="h-8 w-8" />
             </div>
             <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1">{fileName}</h4>
-            <p className="text-[11px] text-slate-450 dark:text-slate-500">Image Asset &bull; 1920x1080px</p>
+            <p className="text-[11px] text-slate-450 dark:text-slate-500">{t.fileViewer.imageAsset}</p>
           </div>
           
           <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-md max-w-md bg-slate-900 p-2 relative group">
@@ -225,10 +249,10 @@ export function DocumentPreview({
             />
             {/* Styled Fallback Graphic */}
             <div className="w-full aspect-video rounded-xl bg-slate-950 flex flex-col items-center justify-center text-slate-500 p-6 space-y-2 select-none border border-slate-800">
-              <span className="text-[10px] font-mono tracking-widest text-[#2563eb]">NEURAL GRAPH MATRIX</span>
+              <span className="text-[10px] font-mono tracking-widest text-[#2563eb]">{t.fileViewer.neuralGraphMatrix}</span>
               <div className="flex gap-1 items-center justify-center">
                 <span className="size-2 rounded-full bg-blue-500 animate-ping" />
-                <span className="text-xs font-bold text-slate-450">Active Graphic Canvas Stream</span>
+                <span className="text-xs font-bold text-slate-450">{t.fileViewer.activeGraphicCanvas}</span>
               </div>
             </div>
           </div>
@@ -240,29 +264,29 @@ export function DocumentPreview({
     if (normType === 'docx' || normType === 'txt' || normType === 'text') {
       return (
         <div className="space-y-6 text-left animate-fade-in font-sans leading-relaxed text-slate-700 dark:text-slate-350">
-          <div className="border-b border-slate-150 dark:border-slate-800 pb-5">
+          <div className="border-b border-slate-155 dark:border-slate-800 pb-5">
             <h2 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
               {fileName.replace(/\.[^/.]+$/, "")}
             </h2>
             <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1 uppercase tracking-wider">
-              Document Text Stream &bull; {subjectKey} Scope
+              {t.fileViewer.documentTextStream(subjectKey)}
             </p>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100">1. Executive Overview</h3>
+            <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100">{t.fileViewer.executiveOverview}</h3>
             <p className="text-sm text-justify">
               {previewContent || pageContent.body}
             </p>
             
-            <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100 mt-6">2. Core Objectives & Conceptual Models</h3>
+            <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100 mt-6">{t.fileViewer.coreObjectives}</h3>
             <p className="text-sm text-justify">
-              The primary focus is to analyze, integrate, and synthesize complex subject components. Students should practice active retrieval to consolidate long-term retention of these models.
+              {t.fileViewer.docxBodyDesc}
             </p>
             <ul className="space-y-2 pl-5 list-disc text-sm">
-              <li>Formulate fundamental understandings of related theories.</li>
-              <li>Perform practical sweeps and verify analytical calculations.</li>
-              <li>Sync study guides to active AI workspaces for automated quizzes.</li>
+              <li>{t.fileViewer.docxBullet1}</li>
+              <li>{t.fileViewer.docxBullet2}</li>
+              <li>{t.fileViewer.docxBullet3}</li>
             </ul>
           </div>
         </div>
@@ -279,7 +303,7 @@ export function DocumentPreview({
 
         {/* Title & metadata heading header */}
         <div className="space-y-2 border-b border-slate-100 dark:border-slate-800 pb-6 mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white font-serif leading-tight">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white font-heading leading-tight">
             {pageContent.title}
           </h1>
           <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 font-mono tracking-wider">
@@ -314,7 +338,7 @@ export function DocumentPreview({
 
         {/* Neural Brain Graphic block with glowing overlay */}
         {pageContent.showBrainImage && (
-          <div className="mt-8 border border-slate-200/85 dark:border-slate-800 rounded-2xl overflow-hidden shadow-inner bg-slate-950 p-2.5 relative group">
+          <div className="mt-8 border border-slate-200/85 dark:border-slate-800 rounded-2xl overflow-hidden shadow-inner bg-slate-955 p-2.5 relative group">
             <div className="absolute inset-0 bg-gradient-to-t from-blue-900/10 to-transparent pointer-events-none opacity-60 transition-opacity" />
             <img
               src="/glowing_blue_brain.png"
@@ -326,10 +350,10 @@ export function DocumentPreview({
             />
             {/* Fallback Graphic */}
             <div className="w-full aspect-video rounded-xl bg-slate-950 flex flex-col items-center justify-center text-slate-500 p-6 space-y-2 select-none border border-slate-800">
-              <span className="text-[10px] font-mono tracking-widest text-[#2563eb]">NEURAL GRAPH MATRIX</span>
+              <span className="text-[10px] font-mono tracking-widest text-[#2563eb]">{t.fileViewer.neuralGraphMatrix}</span>
               <div className="flex gap-1 items-center justify-center">
                 <span className="size-2 rounded-full bg-blue-500 animate-ping" />
-                <span className="text-xs font-bold text-slate-450">Active Graphic Canvas Stream</span>
+                <span className="text-xs font-bold text-slate-450">{t.fileViewer.activeGraphicCanvas}</span>
               </div>
             </div>
           </div>
@@ -337,8 +361,8 @@ export function DocumentPreview({
 
         {/* Sheet page footer number */}
         <div className="border-t border-slate-100 dark:border-slate-800 pt-6 mt-10 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-mono">
-          <span>© 2026 AI Study Hub. Empowering Deep Learning.</span>
-          <span>Page {currentPage} of {totalPages}</span>
+          <span>{t.footer.copyright}</span>
+          <span>{t.fileViewer.pageSuffix(currentPage)} {t.fileViewer.of} {totalPages}</span>
         </div>
       </div>
     )

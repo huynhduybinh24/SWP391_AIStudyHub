@@ -103,7 +103,7 @@ export function NotificationDropdown({ onClose, notifications, setNotifications,
             type="button"
             onClick={() => handleNotificationClick(item)}
             className={`w-full flex gap-3 px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative items-start ${
-              !item.isRead ? 'bg-blue-50/40 dark:bg-blue-955/20' : ''
+              !item.isRead ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''
             }`}
           >
             <div className="mt-0.5 size-7 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">

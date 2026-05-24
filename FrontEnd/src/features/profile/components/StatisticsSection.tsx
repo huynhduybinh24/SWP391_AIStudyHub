@@ -1,47 +1,59 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarDays, Sparkles, Share2, Cloud } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { StatisticsCard, StatisticItem } from './StatisticsCard'
 import { StatisticsDetailModal } from './StatisticsDetailModal'
-
-const defaultStatistics: StatisticItem[] = [
-  {
-    id: 'studyPlans',
-    label: 'Study Plans',
-    value: 12,
-    description: 'Active study plans',
-    route: '/study-plans',
-  },
-  {
-    id: 'aiSummaries',
-    label: 'AI Summaries',
-    value: 86,
-    description: 'Generated summaries',
-    route: '/ai-summaries',
-  },
-  {
-    id: 'sharedFiles',
-    label: 'Shared Files',
-    value: 24,
-    description: 'Files shared with others',
-    route: '/shared-files',
-  },
-  {
-    id: 'storageUsed',
-    label: 'Storage Used',
-    value: '18GB',
-    description: 'Used of 50GB',
-    route: '/cloud-storage',
-  },
-]
+import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
 
 export function StatisticsSection() {
   const navigate = useNavigate()
   const toast = useToast()
+  const { t, language } = useTranslation()
+  const user = useAuthStore((s) => s.user)
 
-  // State Management according to specification
-  const [statistics] = useState<StatisticItem[]>(defaultStatistics)
+  const isPro = user?.plan === 'pro'
+  const isInstitutional = user?.plan === 'institutional'
+  
+  const totalGb = isPro ? env.PRO_STORAGE_LIMIT : isInstitutional ? 1000 : env.FREE_STORAGE_LIMIT
+  const usedGb = isPro ? 18.0 : isInstitutional ? 12.4 : 2.4
+
+  // Localized statistics values recalculated on language change
+  const statistics = useMemo<StatisticItem[]>(() => [
+    {
+      id: 'studyPlans',
+      label: t.profile.studyPlansLabel,
+      value: 12,
+      description: t.profile.studyPlansDesc,
+      route: '/study-plans',
+    },
+    {
+      id: 'aiSummaries',
+      label: t.profile.aiSummariesLabel,
+      value: 86,
+      description: t.profile.aiSummariesDesc,
+      route: '/ai-summaries',
+    },
+    {
+      id: 'sharedFiles',
+      label: t.profile.sharedFilesLabel,
+      value: 24,
+      description: t.profile.sharedFilesDesc,
+      route: '/shared-files',
+    },
+    {
+      id: 'storageUsed',
+      label: t.profile.storageUsedLabel,
+      value: `${usedGb}GB`,
+      description: language === 'vi' 
+        ? `Đã dùng trên ${totalGb}GB` 
+        : `Used of ${totalGb}GB`,
+      route: '/cloud-storage',
+    },
+  ], [t, language, usedGb, totalGb])
+
   const [selectedStatistic, setSelectedStatistic] = useState<StatisticItem | null>(null)
   const [statisticDetailOpen, setStatisticDetailOpen] = useState(false)
 
@@ -61,23 +73,23 @@ export function StatisticsSection() {
     }
   }
 
-  const getToastMessage = (label: string) => {
-    switch (label) {
-      case 'Study Plans':
-        return 'Opening Study Plans'
-      case 'AI Summaries':
-        return 'Opening AI Summaries'
-      case 'Shared Files':
-        return 'Opening Shared Files'
-      case 'Storage Used':
-        return 'Opening Cloud Storage'
+  const getToastMessage = (id: string, label: string) => {
+    switch (id) {
+      case 'studyPlans':
+        return t.profile.openingToast(t.profile.studyPlansLabel)
+      case 'aiSummaries':
+        return t.profile.openingToast(t.profile.aiSummariesLabel)
+      case 'sharedFiles':
+        return t.profile.openingToast(t.profile.sharedFilesLabel)
+      case 'storageUsed':
+        return t.profile.openingToast(t.profile.storageUsedLabel)
       default:
-        return `Opening ${label}`
+        return t.profile.openingToast(label)
     }
   }
 
   const handleCardClick = (item: StatisticItem) => {
-    const toastMsg = getToastMessage(item.label)
+    const toastMsg = getToastMessage(item.id, item.label)
     toast.success(toastMsg)
     navigate(routeMapper(item.route))
   }
@@ -87,8 +99,8 @@ export function StatisticsSection() {
     setStatisticDetailOpen(true)
   }
 
-  const handleModalNavigate = (route: string, label: string) => {
-    const toastMsg = getToastMessage(label)
+  const handleModalNavigate = (route: string, id: string, label: string) => {
+    const toastMsg = getToastMessage(id, label)
     toast.success(toastMsg)
     setStatisticDetailOpen(false)
     navigate(routeMapper(route))

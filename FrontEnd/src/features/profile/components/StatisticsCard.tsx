@@ -1,5 +1,8 @@
 import { LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
 
 export interface StatisticItem {
   id: string
@@ -17,12 +20,21 @@ interface StatisticsCardProps {
 }
 
 export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: StatisticsCardProps) {
+  const { t, language } = useTranslation()
+  const user = useAuthStore((s) => s.user)
   const isStorage = item.id === 'storageUsed'
+
+  const isPro = user?.plan === 'pro'
+  const isInstitutional = user?.plan === 'institutional'
+  
+  const totalGb = isPro ? env.PRO_STORAGE_LIMIT : isInstitutional ? 1000 : env.FREE_STORAGE_LIMIT
+  const usedGb = isPro ? 18.0 : isInstitutional ? 12.4 : 2.4
+  const percentage = Math.round((usedGb / totalGb) * 100)
 
   return (
     <motion.div
       onClick={onClick}
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 350, damping: 25 }}
       role="button"
@@ -34,11 +46,19 @@ export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: Sta
           onClick()
         }
       }}
-      className="flex flex-col justify-between p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-500 dark:hover:border-blue-500/80 transition-all select-none min-h-[160px]"
+      className={`flex flex-col justify-between p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm cursor-pointer hover:shadow-md transition-all select-none min-h-[160px] ${
+        isStorage 
+          ? 'hover:border-indigo-500 dark:hover:border-indigo-500/80 hover:shadow-indigo-500/5' 
+          : 'hover:border-blue-500 dark:hover:border-blue-500/80 hover:shadow-blue-500/5'
+      }`}
     >
       {/* Top Section */}
       <div className="flex items-start justify-between w-full">
-        <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
+        <div className={`p-2.5 rounded-xl shrink-0 ${
+          isStorage 
+            ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400' 
+            : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'
+        }`}>
           <Icon className="size-5" />
         </div>
         <button
@@ -47,16 +67,24 @@ export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: Sta
             onViewDetails()
           }}
           type="button"
-          aria-label={`View details for ${item.label}`}
-          className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors uppercase tracking-wider cursor-pointer py-1 px-2 rounded-md hover:bg-blue-50/55 dark:hover:bg-blue-950/20"
+          aria-label={`${t.profile.viewDetails} for ${item.label}`}
+          className={`text-[11px] font-bold transition-colors uppercase tracking-wider cursor-pointer py-1 px-2 rounded-md ${
+            isStorage 
+              ? 'text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-55/40 dark:hover:bg-indigo-950/20' 
+              : 'text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-55/40 dark:hover:bg-blue-950/20'
+          }`}
         >
-          View Details
+          {t.profile.viewDetails}
         </button>
       </div>
 
       {/* Value and Description Section */}
       <div className="mt-4 space-y-1">
-        <p className="text-3xl sm:text-4xl font-extrabold text-blue-600 dark:text-blue-500 tracking-tight">
+        <p className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+          isStorage 
+            ? 'bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400' 
+            : 'text-blue-600 dark:text-blue-500'
+        }`}>
           {item.value}
         </p>
         <div>
@@ -70,11 +98,23 @@ export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: Sta
 
         {/* Progress Bar for Storage Used Card */}
         {isStorage && (
-          <div className="pt-2 w-full">
-            <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden" role="progressbar" aria-valuenow={36} aria-valuemin={0} aria-valuemax={100}>
-              <div
-                className="bg-blue-600 h-full rounded-full transition-all duration-500"
-                style={{ width: '36%' }}
+          <div className="pt-3 w-full space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] font-bold tracking-wide uppercase text-slate-450 dark:text-slate-500">
+              <span>{percentage}% {language === 'vi' ? 'Đã dùng' : 'Used'}</span>
+              <span>{totalGb - usedGb < 0.5 ? 'Full' : `${(totalGb - usedGb).toFixed(1)} GB ${language === 'vi' ? 'trống' : 'free'}`}</span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-slate-800/80 h-2.5 rounded-full overflow-hidden border border-slate-200/20 dark:border-slate-850/20" role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${percentage}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                className={`h-full rounded-full transition-all duration-500 ${
+                  percentage > 90 
+                    ? 'bg-gradient-to-r from-rose-500 to-red-600' 
+                    : percentage > 75 
+                      ? 'bg-gradient-to-r from-amber-500 to-rose-500' 
+                      : 'bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-600'
+                }`}
               />
             </div>
           </div>
@@ -83,3 +123,4 @@ export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: Sta
     </motion.div>
   )
 }
+

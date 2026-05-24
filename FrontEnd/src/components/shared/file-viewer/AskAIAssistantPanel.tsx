@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react'
 import { Bot, Send, Sparkle, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface ChatMessage {
   sender: 'user' | 'ai'
@@ -35,16 +36,14 @@ export function AskAIAssistantPanel({
   suggestedPrompt = 'Explain the key summary and objectives of this document.'
 }: AskAIAssistantPanelProps) {
   const [chatInput, setChatInput] = React.useState('')
-  const chatEndRef = useRef<HTMLDivElement>(null)
-  const isFirstRender = useRef(true)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation()
 
   // Scroll chat to bottom when logs update
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
     }
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatLog, aiTypingText])
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -71,7 +70,7 @@ export function AskAIAssistantPanel({
             <Bot className="h-4 w-4" />
           </div>
           <h3 className="font-extrabold text-slate-850 dark:text-slate-100 text-sm tracking-wide">
-            Ask AI Assistant
+            {t.fileViewer.askAI || "Ask AI Assistant"}
           </h3>
         </div>
         <Sparkle className="h-4 w-4 text-blue-500 animate-pulse" />
@@ -83,7 +82,7 @@ export function AskAIAssistantPanel({
           <div className="flex justify-between items-center text-xs font-bold text-blue-800 dark:text-blue-400">
             <span className="flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-blue-500 animate-spin" />
-              Running Neural Analyzer...
+              {t.fileViewer.neuralAnalyzerRunning || "Running Neural Analyzer..."}
             </span>
             <span>{scanProgress}%</span>
           </div>
@@ -113,7 +112,7 @@ export function AskAIAssistantPanel({
       )}
 
       {/* Chat Response Area container */}
-      <div className="border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl p-4 h-[210px] overflow-y-auto space-y-3.5 scrollbar-thin">
+      <div ref={chatContainerRef} className="border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl p-4 h-[210px] overflow-y-auto space-y-3.5 scrollbar-thin">
         {chatLog.map((chat, idx) => (
           <div
             key={idx}
@@ -138,18 +137,17 @@ export function AskAIAssistantPanel({
         {isAiResponding && aiTypingText && (
           <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200 flex flex-col max-w-[85%] rounded-2xl rounded-tl-none px-3.5 py-2.5 text-xs mr-auto shadow-sm animate-pulse">
             <p className="whitespace-pre-line font-medium break-words">{aiTypingText}</p>
-            <span className="text-[8px] mt-1.5 text-slate-400 dark:text-slate-500 self-end">Typing...</span>
+            <span className="text-[8px] mt-1.5 text-slate-400 dark:text-slate-500 self-end">{t.aiChatbot.typing}</span>
           </div>
         )}
 
-        <div ref={chatEndRef} />
       </div>
 
       {/* Chat message form input */}
       <form onSubmit={handleFormSubmit} className="flex gap-2">
         <input
           type="text"
-          placeholder="Ask AI anything..."
+          placeholder={t.aiChatbot.placeholder || "Ask AI anything..."}
           value={chatInput}
           onChange={(e) => setChatInput(e.target.value)}
           disabled={isAiResponding || isScanning}
@@ -173,7 +171,7 @@ export function AskAIAssistantPanel({
         className="w-full bg-blue-50 border border-blue-100 dark:bg-slate-800 dark:border-slate-700 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-650 dark:text-blue-450 font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-sm text-xs transition-all duration-200 cursor-pointer disabled:opacity-50"
       >
         <Sparkles className="h-4 w-4 animate-pulse" />
-        Analyze Document
+        {t.fileViewer.analyzeDoc}
       </Button>
     </div>
   )

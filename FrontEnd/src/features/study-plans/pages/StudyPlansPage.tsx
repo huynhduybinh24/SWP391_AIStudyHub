@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Clock,
@@ -27,6 +27,8 @@ import { Card } from '@/components/ui/Card'
 import { CreateStudyPlanModal } from '@/features/study-plans/pages/CreateStudyPlanModal'
 import { LearningProgressModal, type LearningProgressPlan } from '@/features/study-plans/pages/LearningProgressModal'
 import { CurriculumModal, type CurriculumPlan } from '@/features/study-plans/pages/CurriculumModal'
+import { useTranslation } from '@/context/LanguageContext'
+import { Language } from '@/locales'
 
 // ─────────────────────────────────────────────
 // Types
@@ -63,6 +65,77 @@ type StudyPlan = {
   startsAt?: string
   tasks?: number
   iconType?: 'flask' | 'rocket' | 'bot' | 'cpu' | 'languages'
+}
+
+// Helper to localize mock plan strings
+function localizePlan(plan: StudyPlan, language: Language): StudyPlan {
+  const localMap: Record<string, { title: string; description: string; segments?: string[]; milestoneTitle?: string }> = {
+    '1': {
+      title: language === 'vi' ? 'Làm chủ Cơ học lượng tử' : language === 'ja' ? '量子力学マスター' : language === 'ko' ? '양자 역학 마스터' : 'Quantum Mechanics Mastery',
+      description: language === 'vi' ? 'Một hành trình toàn diện từ hàm sóng đến vướng víu lượng tử.' : language === 'ja' ? '波動関数から量子もつれまでの包括的な旅。' : language === 'ko' ? '파동 함수에서 양자 얽힘까지의 포괄적인 여정.' : 'A comprehensive journey from wave functions to quantum entanglement.',
+      segments: language === 'vi' ? ['Khái niệm cốt lõi', 'Lý thuyết nâng cao', 'Thi thử'] : language === 'ja' ? ['コア概念', '高度な理論', '模擬試験'] : language === 'ko' ? ['핵심 개념', '고급 이론', '모의고사'] : ['Core Concepts', 'Advanced Theory', 'Mock Exam'],
+      milestoneTitle: language === 'vi' ? 'Trắc nghiệm Phương trình Schrödinger' : language === 'ja' ? 'シュレーディンガー方程式クイズ' : language === 'ko' ? '슈뢰딩거 방정식 퀴즈' : "Schrödinger's Equation Quiz",
+    },
+    '2': {
+      title: language === 'vi' ? 'Nghiên cứu sâu Hóa hữu cơ' : language === 'ja' ? '有機化学の探求' : language === 'ko' ? '유기 화학 심층 탐구' : 'Organic Chemistry Deep Dive',
+      description: language === 'vi' ? 'Khám phá các hợp chất carbon và con đường chuyển hóa.' : language === 'ja' ? '炭소 화합물 및 대사 경로 탐색.' : language === 'ko' ? '탄소 화합물 및 대사 경로 탐구.' : 'Exploring carbon compounds and metabolic pathways.',
+      segments: language === 'vi' ? ['Danh pháp', 'Phản ứng thế', 'Phản ứng tách'] : language === 'ja' ? ['命名法', '置換反応', '脱離反応'] : language === 'ko' ? ['명명법', '치환 반응', '제거 반응'] : ['Nomenclature', 'Substitution', 'Elimination'],
+      milestoneTitle: language === 'vi' ? 'Alkan & Cycloalkan' : language === 'ja' ? 'アルカンとシクロアルカン' : language === 'ko' ? '알칸 및 시클로알칸' : 'Alkanes & Cycloalkanes',
+    },
+    '3': {
+      title: language === 'vi' ? 'Ôn thi cuối kỳ: Robot nâng cao' : language === 'ja' ? '期末試験対策：高度なロボット工学' : language === 'ko' ? '기말고사 대비: 고급 로봇 공학' : 'Final Exam Prep: Advanced Robotics',
+      description: language === 'vi' ? 'Động học tiên tiến và hệ thống định vị tự hành.' : language === 'ja' ? '高度な運動学と自律ナビゲーションシステム。' : language === 'ko' ? '고급 운동학 및 자율 주행 시스템.' : 'Advanced kinematics and autonomous navigation systems.',
+    },
+    '6': {
+      title: language === 'vi' ? 'Khóa học mùa đông: Cơ bản về Deep Learning' : language === 'ja' ? '冬季セッション：ディープラーニングの基礎' : language === 'ko' ? '겨울 세션: 딥러닝 기초' : 'Winter Session: Deep Learning Fundamentals',
+      description: language === 'vi' ? 'Nền tảng của mạng thần kinh và tối ưu hóa hạ độ dốc.' : language === 'ja' ? 'ニューラルネットワークの基礎と勾配降下法最適化。' : language === 'ko' ? '인공신경망의 기초 및 경사하강법 최적화.' : 'Foundations of neural networks and gradient descent optimization.',
+    },
+    '7': {
+      title: language === 'vi' ? 'Luyện từ vựng & Logic GRE' : language === 'ja' ? 'GRE語彙と論理トラック' : language === 'ko' ? 'GRE 어휘 및 논리 트랙' : 'GRE Vocabulary & Logic Track',
+      description: language === 'vi' ? 'Luyện viết phân tích và suy luận ngôn ngữ chuyên sâu.' : language === 'ja' ? '集中的な言語的推論と分析的ライティング対策。' : language === 'ko' ? '집중적인 언어 추론 및 분석적 쓰기 준비.' : 'Intensive verbal reasoning and analytical writing preparation.',
+    },
+    '8': {
+      title: language === 'vi' ? 'Robot học nâng cao' : language === 'ja' ? '高度なロボット工学' : language === 'ko' ? '고급 로봇 공학' : 'Advanced Robotics',
+      description: language === 'vi' ? 'Động học, hệ thống điều khiển và tích hợp học máy.' : language === 'ja' ? '運動学、制御システム、機械学習の統合。' : language === 'ko' ? '운동학, 제어 시스템 및 머신러닝 통합.' : 'Kinematics, control systems, and machine learning integration.',
+    },
+    '4': {
+      title: language === 'vi' ? 'Hóa học hữu cơ nâng cao' : language === 'ja' ? '高度な有機化学' : language === 'ko' ? '고급 유기 화학' : 'Advanced Organic Chemistry',
+      description: language === 'vi' ? 'Làm chủ các cơ chế phản ứng và tổng hợp nâng cao.' : language === 'ja' ? '高度な反応機構と合成の習得。' : language === 'ko' ? '고급 반응 메커니즘 및 합성 마스터.' : 'Mastery of advanced reaction mechanisms and synthesis.',
+    },
+    '5': {
+      title: language === 'vi' ? 'Giới thiệu về Vật lý thiên văn' : language === 'ja' ? '宇宙物理学入門' : language === 'ko' ? '천체물리학 입문' : 'Introduction to Astrophysics',
+      description: language === 'vi' ? 'Các nguyên lý nền tảng về tiến hóa sao và vũ trụ học.' : language === 'ja' ? '恒星の進化と宇宙論の基礎原理。' : language === 'ko' ? '항성 진화 및 우주론의 기초 원리.' : 'Foundational principles of stellar evolution and cosmology.',
+    },
+  }
+
+  const local = localMap[plan.id]
+  if (!local) return plan
+
+  const updatedSegments = plan.segments.map((seg, idx) => ({
+    ...seg,
+    label: local.segments?.[idx] ?? seg.label
+  }))
+
+  const updatedMilestone = plan.milestone
+    ? {
+        ...plan.milestone,
+        title: local.milestoneTitle ?? plan.milestone.title,
+        month: language === 'vi' ? 'TH10' : language === 'ja' ? '10月' : language === 'ko' ? '10월' : plan.milestone.month,
+        time: plan.milestone.time === '10:00 AM Tomorrow'
+          ? (language === 'vi' ? '10:00 Sáng mai' : language === 'ja' ? '明日 午前10:00' : language === 'ko' ? '내일 오전 10:00' : '10:00 AM Tomorrow')
+          : plan.milestone.time === '2:00 PM Wednesday'
+          ? (language === 'vi' ? '14:00 Thứ Tư' : language === 'ja' ? '水曜 午後2:00' : language === 'ko' ? '수요일 오후 2:00' : '2:00 PM Wednesday')
+          : plan.milestone.time
+      }
+    : undefined
+
+  return {
+    ...plan,
+    title: local.title,
+    description: local.description,
+    segments: updatedSegments,
+    milestone: updatedMilestone
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -434,17 +507,26 @@ const CURRICULUM_DATA: Record<string, CurriculumPlan> = {
 // ─────────────────────────────────────────────
 
 function DifficultyPill({ level }: { level: StudyPlan['difficulty'] }) {
+  const { language } = useTranslation()
   const map: Record<StudyPlan['difficulty'], { color: string }> = {
     Easy: { color: 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-900/50' },
     Medium: { color: 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/30 dark:border-amber-900/50' },
     Hard: { color: 'text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-950/30 dark:border-rose-900/50' },
   }
+  const levelText = level === 'Easy' 
+    ? (language === 'vi' ? 'Dễ' : language === 'ja' ? '初級' : language === 'ko' ? '쉬움' : 'Easy')
+    : level === 'Medium'
+    ? (language === 'vi' ? 'Trung bình' : language === 'ja' ? '中級' : language === 'ko' ? '보통' : 'Medium')
+    : (language === 'vi' ? 'Khó' : language === 'ja' ? '上級' : language === 'ko' ? '어려움' : 'Hard')
+
+  const diffText = language === 'vi' ? 'Độ khó' : language === 'ja' ? '難易度' : language === 'ko' ? '난이도' : 'Difficulty'
+
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${map[level].color}`}
     >
       <TrendingUp className="size-3" />
-      {level} Difficulty
+      {diffText}: {levelText}
     </span>
   )
 }
@@ -513,12 +595,13 @@ interface CardCallbacks {
 
 function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDuplicate, onArchive, onDelete }: { plan: StudyPlan, isAiTab?: boolean } & CardCallbacks) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { t, language } = useTranslation()
 
   const menuItems = [
-    { label: 'Edit Plan',  icon: Pencil,  action: onEdit,      danger: false },
-    { label: 'Duplicate',  icon: Copy,    action: onDuplicate,  danger: false },
-    { label: 'Archive',    icon: Archive,  action: onArchive,   danger: false },
-    { label: 'Delete',     icon: Trash2,  action: onDelete,     danger: true  },
+    { label: language === 'vi' ? 'Chỉnh sửa' : language === 'ja' ? '計画を編集' : language === 'ko' ? '계획 편집' : 'Edit Plan',  icon: Pencil,  action: onEdit,      danger: false },
+    { label: language === 'vi' ? 'Tạo bản sao' : language === 'ja' ? '複製' : language === 'ko' ? '복제' : 'Duplicate',  icon: Copy,    action: onDuplicate,  danger: false },
+    { label: language === 'vi' ? 'Lưu trữ' : language === 'ja' ? 'アーカイブ' : language === 'ko' ? '보관' : 'Archive',    icon: Archive,  action: onArchive,   danger: false },
+    { label: t.common.delete,     icon: Trash2,  action: onDelete,     danger: true  },
   ]
 
   const isPurple = plan.themeColor === 'purple'
@@ -539,6 +622,16 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
     : plan.iconType === 'cpu' ? Cpu 
     : plan.iconType === 'languages' ? Languages 
     : FlaskConical
+
+  const localizedPlanInfo = useMemo(() => localizePlan(plan, language), [plan, language])
+
+  const localizedDateStr = (date: string, type: 'completed' | 'starts') => {
+    if (type === 'completed') {
+      return language === 'vi' ? `Đã hoàn thành ${date}` : language === 'ja' ? `${date}に完了` : language === 'ko' ? `${date} 완료됨` : `Completed ${date}`
+    } else {
+      return language === 'vi' ? `Bắt đầu ${date}` : language === 'ja' ? `${date}に開始` : language === 'ko' ? `${date} 시작` : `Starts ${date}`
+    }
+  }
 
   return (
     <Card className="flex overflow-hidden border border-[#e5eeff] shadow-sm hover:shadow-md transition-shadow duration-200 rounded-xl">
@@ -562,42 +655,42 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2 min-w-0">
                 <h3 className="font-bold text-slate-900 dark:text-slate-100 text-[15px] leading-snug">
-                  {plan.title}
+                  {localizedPlanInfo.title}
                 </h3>
                 {isCompleted ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#ccfbf1] text-[#00897B] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
                     <CheckCircle2 className="size-3" strokeWidth={2.5} />
-                    COMPLETED
+                    {language === 'vi' ? 'ĐÃ HOÀN THÀNH' : language === 'ja' ? '完了' : language === 'ko' ? '완료됨' : 'COMPLETED'}
                   </span>
                 ) : isUpcoming ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#e5eeff] text-[#2557E8] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
-                    Upcoming
+                    {language === 'vi' ? 'Sắp diễn ra' : language === 'ja' ? '今後の予定' : language === 'ko' ? '예정됨' : 'Upcoming'}
                   </span>
                 ) : isAiTab ? (
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#2557E8] text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
-                      AI Generated
+                      {language === 'vi' ? 'AI Tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'}
                     </span>
                     {plan.difficulty === 'Hard' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
-                        Hard
+                        {language === 'vi' ? 'Khó' : language === 'ja' ? '上級' : language === 'ko' ? '어려움' : 'Hard'}
                       </span>
                     )}
                     {plan.difficulty === 'Medium' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
-                        Medium
+                        {language === 'vi' ? 'Trung bình' : language === 'ja' ? '中級' : language === 'ko' ? '보통' : 'Medium'}
                       </span>
                     )}
                     {plan.difficulty === 'Easy' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
-                        Easy
+                        {language === 'vi' ? 'Dễ' : language === 'ja' ? '初級' : language === 'ko' ? '쉬움' : 'Easy'}
                       </span>
                     )}
                   </div>
                 ) : plan.isAiGenerated ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#00897B] text-white text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#ccfbf1] text-[#00897B] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
                     <Sparkles className="size-3" strokeWidth={2} />
-                    AI Generated
+                    {language === 'vi' ? 'AI Tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'}
                   </span>
                 ) : null}
               </div>
@@ -630,7 +723,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
 
             {/* Description */}
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 leading-relaxed line-clamp-2">
-              {plan.description}
+              {localizedPlanInfo.description}
             </p>
 
             {/* Info pills */}
@@ -638,30 +731,30 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
               {isCompleted && plan.completedAt && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                   <Calendar className="size-3.5 text-slate-400" />
-                  Completed {plan.completedAt}
+                  {localizedDateStr(plan.completedAt, 'completed')}
                 </span>
               )}
               {isUpcoming && plan.startsAt && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                   <Calendar className="size-3.5 text-slate-400" />
-                  Starts {plan.startsAt}
+                  {localizedDateStr(plan.startsAt, 'starts')}
                 </span>
               )}
               {isUpcoming && plan.tasks && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                   <ClipboardList className="size-3.5 text-slate-400" />
-                  {plan.tasks} Tasks
+                  {language === 'vi' ? `${plan.tasks} Nhiệm vụ` : language === 'ja' ? `${plan.tasks}個のタスク` : language === 'ko' ? `${plan.tasks}개 작업` : `${plan.tasks} Tasks`}
                 </span>
               )}
               <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                 <Link2 className="size-3.5 text-slate-400" />
-                {plan.documents} Documents
+                {language === 'vi' ? `${plan.documents} Tài liệu` : language === 'ja' ? `${plan.documents}個のドキュメント` : language === 'ko' ? `${plan.documents}개 문서` : `${plan.documents} Documents`}
               </span>
               {!isCompleted && !isUpcoming && (
                 <>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                     <Clock className="size-3.5 text-slate-400" />
-                    {plan.hoursEst} Hours Est.
+                    {language === 'vi' ? `Ước tính ${plan.hoursEst} giờ` : language === 'ja' ? `推定 ${plan.hoursEst} 時間` : language === 'ko' ? `예상 ${plan.hoursEst} 시간` : `${plan.hoursEst} Hours Est.`}
                   </span>
                   {!isAiTab && <DifficultyPill level={plan.difficulty} />}
                 </>
@@ -673,7 +766,11 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
               <div className="mt-4">
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    {isCompleted ? 'Final Grade' : isAiTab ? 'Progress' : 'Overall Progress'}
+                    {isCompleted 
+                      ? (language === 'vi' ? 'Điểm số cuối kỳ' : language === 'ja' ? '最終成績' : language === 'ko' ? '최종 성적' : 'Final Grade') 
+                      : isAiTab 
+                      ? (language === 'vi' ? 'Tiến độ' : language === 'ja' ? '進捗' : language === 'ko' ? '진척도' : 'Progress') 
+                      : (language === 'vi' ? 'Tiến độ tổng thể' : language === 'ja' ? '全体進捗' : language === 'ko' ? '전체 진척도' : 'Overall Progress')}
                   </span>
                   <span className={`text-xs font-bold ${iconTextClass}`}>
                     {plan.overallProgress}%
@@ -687,7 +784,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                     />
                   </div>
                 ) : (
-                  <SegmentedProgress segments={plan.segments} themeColor={plan.themeColor} />
+                  <SegmentedProgress segments={localizedPlanInfo.segments} themeColor={plan.themeColor} />
                 )}
               </div>
             )}
@@ -697,30 +794,30 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
         {/* ── RIGHT PANEL ── */}
         <div className={`shrink-0 sm:w-[220px] border-t sm:border-t-0 sm:border-l border-[#e5eeff] flex flex-col p-5 gap-4 bg-[#fafbff] ${(isCompleted || isUpcoming || isAiTab) ? 'justify-center' : 'justify-between'}`}>
           {/* Milestone */}
-          {!isCompleted && !isUpcoming && !isAiTab && plan.milestone && (
+          {!isCompleted && !isUpcoming && !isAiTab && localizedPlanInfo.milestone && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-                Next Milestone
+                {language === 'vi' ? 'Cột mốc tiếp theo' : language === 'ja' ? '次のマイルストーン' : language === 'ko' ? '다음 마일스톤' : 'Next Milestone'}
               </p>
               <div className="flex items-start gap-3">
                 {/* Date block */}
                 <div className="flex flex-col items-center justify-center w-11 shrink-0 pt-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-widest leading-none text-red-500 mb-0.5">
-                    {plan.milestone.month}
+                    {localizedPlanInfo.milestone.month}
                   </span>
                   <span className="text-2xl font-black leading-none text-slate-900">
-                    {plan.milestone.day}
+                    {localizedPlanInfo.milestone.day}
                   </span>
                 </div>
                 {/* Text */}
                 <div>
                   <p className="font-semibold text-slate-800 text-[13px] leading-snug">
-                    {plan.milestone.title}
+                    {localizedPlanInfo.milestone.title}
                   </p>
                   <div className="flex items-center gap-1 mt-1">
                     <Clock3 className="size-3 text-slate-400" />
                     <span className="text-[11px] text-slate-400">
-                      {plan.milestone.time}
+                      {localizedPlanInfo.milestone.time}
                     </span>
                   </div>
                 </div>
@@ -736,7 +833,11 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
               onClick={onContinue}
               className={`w-full justify-center text-white font-semibold text-[13px] py-2.5 rounded-lg shadow-sm ${isUpcoming ? 'bg-[#0055d4] hover:bg-[#004bbd]' : isCompleted ? 'bg-[#0055d4] hover:bg-[#004bbd]' : buttonClass}`}
             >
-              {isCompleted ? 'View Review' : isUpcoming ? 'View Details' : 'Continue Learning'}
+              {isCompleted 
+                ? (language === 'vi' ? 'Xem đánh giá' : language === 'ja' ? 'レビューを表示' : language === 'ko' ? '평가 보기' : 'View Review') 
+                : isUpcoming 
+                ? (language === 'vi' ? 'Xem chi tiết' : language === 'ja' ? '詳細を表示' : language === 'ko' ? '상세 보기' : 'View Details') 
+                : (language === 'vi' ? 'Tiếp tục học' : language === 'ja' ? '学習を継続' : language === 'ko' ? '학습 계속하기' : 'Continue Learning')}
             </Button>
             {!isUpcoming && (
               <Button
@@ -745,7 +846,9 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                 onClick={onCurriculum}
                 className="w-full justify-center font-semibold text-[13px] py-2.5 rounded-lg border-slate-200 text-slate-700 hover:bg-slate-50"
               >
-                {isCompleted ? 'View Summary' : 'View Curriculum'}
+                {isCompleted 
+                  ? (language === 'vi' ? 'Xem tóm tắt' : language === 'ja' ? '要約を表示' : language === 'ko' ? '요약 보기' : 'View Summary') 
+                  : (language === 'vi' ? 'Xem giáo trình' : language === 'ja' ? 'カリキュラム表示' : language === 'ko' ? '커리큘럼 보기' : 'View Curriculum')}
               </Button>
             )}
           </div>
@@ -768,6 +871,25 @@ function FilterTabs({
   active: FilterTab
   onChange: (t: FilterTab) => void
 }) {
+  const { t, language } = useTranslation()
+
+  const getTabLabel = (tab: FilterTab) => {
+    switch (tab) {
+      case 'All':
+        return t.common.all
+      case 'Active':
+        return language === 'vi' ? 'Đang học' : language === 'ja' ? '学習中' : language === 'ko' ? '학습 중' : 'Active'
+      case 'Completed':
+        return language === 'vi' ? 'Đã hoàn thành' : language === 'ja' ? '完了' : language === 'ko' ? '완료됨' : 'Completed'
+      case 'Upcoming':
+        return language === 'vi' ? 'Sắp diễn ra' : language === 'ja' ? '今後の予定' : language === 'ko' ? '예정됨' : 'Upcoming'
+      case 'AI Generated':
+        return language === 'vi' ? 'AI Tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'
+      default:
+        return tab
+    }
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
       {TABS.map((tab) => {
@@ -785,7 +907,7 @@ function FilterTabs({
             {tab === 'AI Generated' && (
               <Sparkles className="size-3.5" strokeWidth={2} />
             )}
-            {tab}
+            {getTabLabel(tab)}
           </button>
         )
       })}
@@ -798,21 +920,24 @@ function FilterTabs({
 // ─────────────────────────────────────────────
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
+  const { t, language } = useTranslation()
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#e5eeff] dark:border-slate-800 bg-white dark:bg-slate-900 py-16 px-8 text-center">
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e5eeff] dark:bg-slate-800">
         <FlaskConical className="size-8 text-[#2557E8] dark:text-blue-400" strokeWidth={1.5} />
       </div>
-      <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">No study plans found</h3>
+      <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+        {language === 'vi' ? 'Không tìm thấy kế hoạch học tập' : language === 'ja' ? '学習計画が見つかりません' : language === 'ko' ? '학습 계획을 찾을 수 없습니다' : 'No study plans found'}
+      </h3>
       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-xs">
-        Create your first study plan to organize your learning journey and track your progress.
+        {language === 'vi' ? 'Tạo kế hoạch học tập đầu tiên để tổ chức lộ trình học tập và theo dõi tiến độ của bạn.' : language === 'ja' ? '最初の学習計画を作成して、学習の進捗を整理しましょう。' : language === 'ko' ? '첫 번째 학습 계획을 만들어 학습 여정을 체계화하고 진척도를 추적해 보세요.' : 'Create your first study plan to organize your learning journey and track your progress.'}
       </p>
       <Button
         onClick={onAdd}
         variant="primary"
         className="mt-6 bg-[#2557E8] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white"
       >
-        <Plus className="size-4" /> Create Study Plan
+        <Plus className="size-4" /> {t.studyPlans.createPlan}
       </Button>
     </div>
   )
@@ -823,6 +948,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 // ─────────────────────────────────────────────
 
 export function StudyPlansPage() {
+  const { t, language } = useTranslation()
   const [activeTab, setActiveTab]     = useState<FilterTab>('All')
   const [plans, setPlans]             = useState<StudyPlan[]>(STUDY_PLANS)
   const [createOpen, setCreateOpen]   = useState(false)
@@ -867,9 +993,9 @@ export function StudyPlansPage() {
         {/* ── Page header ── */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <h1 className="text-[28px] font-bold text-slate-900 dark:text-slate-100 leading-tight">Study Plans</h1>
+            <h1 className="text-[28px] font-bold text-slate-900 dark:text-slate-100 leading-tight">{t.studyPlans.title}</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
-              Manage your personalized learning journeys and academic goals.
+              {t.studyPlans.subtitle}
             </p>
           </div>
           <Button
@@ -877,7 +1003,7 @@ export function StudyPlansPage() {
             variant="primary"
             className="shrink-0 bg-[#2557E8] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-sm"
           >
-            <Plus className="size-4" /> Create Plan
+            <Plus className="size-4" /> {t.studyPlans.createPlan}
           </Button>
         </div>
 
@@ -944,21 +1070,31 @@ export function StudyPlansPage() {
                 <AlertTriangle className="size-5 text-red-500 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-slate-100">Delete Study Plan</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">This action cannot be undone.</p>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100">
+                  {language === 'vi' ? 'Xóa kế hoạch học tập' : language === 'ja' ? '学習計画の削除' : language === 'ko' ? '학습 계획 삭제' : 'Delete Study Plan'}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {language === 'vi' ? 'Hành động này không thể hoàn tác.' : language === 'ja' ? 'この操作は取り消せません。' : language === 'ko' ? '이 작업은 취소할 수 없습니다.' : 'This action cannot be undone.'}
+                </p>
               </div>
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">
-              Are you sure you want to delete <span className="font-semibold text-slate-900 dark:text-slate-100">&ldquo;{deleteTarget.title}&rdquo;</span>?
+              {language === 'vi' 
+                ? `Bạn có chắc chắn muốn xóa "${deleteTarget.title}"?` 
+                : language === 'ja' 
+                ? `「${deleteTarget.title}」を本当に削除しますか？` 
+                : language === 'ko' 
+                ? `정말 "${deleteTarget.title}"을(를) 삭제하시겠습니까?` 
+                : `Are you sure you want to delete "${deleteTarget.title}"?`}
             </p>
             <div className="flex gap-3 justify-end">
-              <Button variant="ghost" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setDeleteTarget(null)}>{t.common.cancel}</Button>
               <Button
                 variant="primary"
                 className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500 text-white"
                 onClick={confirmDelete}
               >
-                Delete
+                {t.common.delete}
               </Button>
             </div>
           </div>

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
 
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
@@ -11,6 +14,7 @@ import WorkspaceFileList from '../components/WorkspaceFileList'
 import WorkspaceRightPanel, { CommentItem } from '../components/WorkspaceRightPanel'
 import SharedFileViewer from '../components/SharedFileViewer'
 import UploadFilesSection from '../components/UploadFilesSection'
+import SharedFilesUploadModal from '../components/SharedFilesUploadModal'
 
 // Modals & Overlays
 import InviteModal from '../components/InviteModal'
@@ -36,6 +40,11 @@ interface QuotaDetailsModalProps {
 
 function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsModalProps) {
   const { t, language } = useTranslation()
+  
+  const isPro = totalGb > 10;
+  const pdfGb = isPro ? '6.2 GB' : '1.2 GB';
+  const officeGb = isPro ? '3.8 GB' : '0.8 GB';
+  const foldersGb = isPro ? '2.4 GB' : '0.4 GB';
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -117,7 +126,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
                   {language === 'vi' ? 'Tài liệu PDF' : (language === 'ja' ? 'PDFドキュメント' : (language === 'ko' ? 'PDF 문서' : 'PDF Documents'))}
                 </span>
               </div>
-              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">6.2 GB</span>
+              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{pdfGb}</span>
             </div>
 
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
@@ -127,7 +136,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
                   {language === 'vi' ? 'Tệp văn phòng (.docx, .xlsx)' : (language === 'ja' ? 'Officeファイル（.docx, .xlsx）' : (language === 'ko' ? '오피스 파일 (.docx, .xlsx)' : 'Office Files (.docx, .xlsx)'))}
                 </span>
               </div>
-              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">3.8 GB</span>
+              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{officeGb}</span>
             </div>
 
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
@@ -137,7 +146,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
                   {language === 'vi' ? 'Thư mục & Tài sản nhóm' : (language === 'ja' ? 'フォルダとグループアセット' : (language === 'ko' ? '폴더 및 그룹 자산' : 'Folders & Group Assets'))}
                 </span>
               </div>
-              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">2.4 GB</span>
+              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{foldersGb}</span>
             </div>
           </div>
         </div>
@@ -158,6 +167,11 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
 
 export function SharedFilesPage() {
   const toast = useToast()
+  const { t, language } = useTranslation()
+  const user = useAuthStore((s) => s.user)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { fileId } = useParams<{ fileId: string }>()
 
   // State Management
   const [files, setFiles] = useState<SharedFile[]>([
@@ -172,7 +186,8 @@ export function SharedFilesPage() {
       totalPages: 42,
       description: 'Comprehensive study guide and midterm summary for General Biology 101, containing cellular respiration diagrams, metabolic pathway notes, and mitosis stages.',
       tags: ['CellBiology', 'KrebsCycle'],
-      previewContent: 'Biology 101 Midterm Notes preview content.'
+      previewContent: 'Biology 101 Midterm Notes preview content.',
+      url: ''
     },
     {
       id: 'file-2',
@@ -184,7 +199,8 @@ export function SharedFilesPage() {
       size: '15.8 MB',
       description: 'Group assets folder containing images, mock data, design specifications, and reference links.',
       tags: ['GroupProject', 'Assets'],
-      previewContent: 'Folder contents: assets, design specifications.'
+      previewContent: 'Folder contents: assets, design specifications.',
+      url: ''
     },
     {
       id: 'file-3',
@@ -197,7 +213,8 @@ export function SharedFilesPage() {
       totalPages: 10,
       description: 'Tabulated values of raw experimental logs, voltage sweeps, and resistance indexes from the electromagnetism laboratory session.',
       tags: ['Physics', 'LabData'],
-      previewContent: 'Voltage, Current, Resistance sweep tables.'
+      previewContent: 'Voltage, Current, Resistance sweep tables.',
+      url: ''
     }
   ])
 
@@ -227,6 +244,40 @@ export function SharedFilesPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
+
+  const [peopleFilter, setPeopleFilter] = useState('All')
+  const [lastModifiedFilter, setLastModifiedFilter] = useState('All')
+  const [sourceFilter, setSourceFilter] = useState('All')
+
+  // Viewport tracking & select stability checks
+  const [isLargeScreen, setIsLargeScreen] = useState(false)
+  const shouldReduceMotion = useReducedMotion()
+
+  useEffect(() => {
+    const checkScreen = () => {
+      setIsLargeScreen(window.innerWidth >= 1024)
+    }
+    checkScreen()
+    window.addEventListener('resize', checkScreen)
+    return () => window.removeEventListener('resize', checkScreen)
+  }, [])
+
+  useEffect(() => {
+    if (location.state?.resetViewer) {
+      setViewingFile(null)
+      setSelectedFile(null)
+      setIsUploading(false)
+    }
+  }, [location.state])
+
+  const handleSelectFile = (file: SharedFile) => {
+    if (selectedFile?.id === file.id) {
+      setSelectedFile(null)
+    } else {
+      setSelectedFile(file)
+    }
+  }
 
   // Comments mapping by file ID
   const [commentsMap, setCommentsMap] = useState<Record<string, CommentItem[]>>({
@@ -308,13 +359,6 @@ export function SharedFilesPage() {
     'file-3': 'restricted'
   })
 
-  // Select Default Biology Notes file on mount
-  useEffect(() => {
-    if (!selectedFile && files.length > 0) {
-      const bioFile = files.find(f => f.id === 'file-1') || files[0]
-      setSelectedFile(bioFile)
-    }
-  }, [files, selectedFile])
 
   // Keep viewing file reference updated
   useEffect(() => {
@@ -328,12 +372,176 @@ export function SharedFilesPage() {
     }
   }, [files, viewingFile])
 
+  // Sync route fileId with viewingFile state
+  useEffect(() => {
+    if (fileId) {
+      const fileToView = files.find(f => f.id === fileId)
+      if (fileToView) {
+        setViewingFile(fileToView)
+      } else {
+        const folderFiles = [
+          {
+            id: 'lit-rev-pdf',
+            name: 'Literature Review.pdf',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 24, 2023',
+            type: 'pdf',
+            size: '12.4 MB',
+            description: 'Literature review notes for multivariable computational sweep analysis.',
+            tags: ['Biology', 'Research'],
+            previewContent: 'Literature Review mock details content.'
+          },
+          {
+            id: 'dataset-xlsx',
+            name: 'Data Set_V1.xlsx',
+            owner: 'Marcus Knight',
+            permission: 'Editor',
+            dateShared: 'Oct 23, 2023',
+            type: 'xlsx',
+            size: '8.2 MB',
+            description: 'Spreadsheet of computational modeling sweeps and volt sweeps.',
+            tags: ['Spreadsheet', 'Data'],
+            previewContent: 'Data Set sweeps table mock.'
+          },
+          {
+            id: 'proj-outline-docx',
+            name: 'Project_Outline.docx',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 22, 2023',
+            type: 'docx',
+            size: '1.5 MB',
+            description: 'Conceptual outlines and study rules.',
+            tags: ['Outline', 'Draft'],
+            previewContent: 'Project Outline draft rules.'
+          },
+          {
+            id: 'diagram-png',
+            name: 'Brainstorming_Diagram.png',
+            owner: 'Alex Chen',
+            permission: 'Viewer',
+            dateShared: 'Oct 21, 2023',
+            type: 'png',
+            size: '4.2 MB',
+            description: 'Concept graphics of study design.',
+            tags: ['Image', 'Brainstorming'],
+            previewContent: 'Image mockup visualization.'
+          },
+          {
+            id: 'notes-docx',
+            name: 'Research Notes.docx',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 20, 2023',
+            type: 'docx',
+            size: '2.1 MB',
+            description: 'Notes on biological sweeper models.',
+            tags: ['Research', 'Notes'],
+            previewContent: 'Research notes details.'
+          },
+          {
+            id: 'results-xlsx',
+            name: 'Lab Results.xlsx',
+            owner: 'Marcus Knight',
+            permission: 'Editor',
+            dateShared: 'Oct 19, 2023',
+            type: 'xlsx',
+            size: '6.8 MB',
+            description: 'Lab sweep result calculations.',
+            tags: ['Data', 'Results'],
+            previewContent: 'Lab results sweep calculations.'
+          },
+          {
+            id: 'presentation-pptx',
+            name: 'Presentation Draft.pptx',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 18, 2023',
+            type: 'pptx',
+            size: '15.7 MB',
+            description: 'Slide drafts for midterm presentation.',
+            tags: ['Presentation', 'Draft'],
+            previewContent: 'PowerPoint draft slides.'
+          },
+          {
+            id: 'meeting-mp3',
+            name: 'Meeting Recording.mp3',
+            owner: 'Alex Chen',
+            permission: 'Viewer',
+            dateShared: 'Oct 17, 2023',
+            type: 'mp3',
+            size: '18.4 MB',
+            description: 'Meeting recording audio file.',
+            tags: ['Audio', 'Meeting'],
+            previewContent: 'Meeting transcription text.'
+          },
+          {
+            id: 'video-mp4',
+            name: 'Experiment Video.mp4',
+            owner: 'Marcus Knight',
+            permission: 'Editor',
+            dateShared: 'Oct 16, 2023',
+            type: 'mp4',
+            size: '124 MB',
+            description: 'Video recording of the sweep sweep experiment.',
+            tags: ['Video', 'Experiment'],
+            previewContent: 'Video player capture.'
+          },
+          {
+            id: 'ref-pdf',
+            name: 'References.pdf',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 15, 2023',
+            type: 'pdf',
+            size: '3.5 MB',
+            description: 'Reference citations for the project outline.',
+            tags: ['References', 'PDF'],
+            previewContent: 'Reference citations details.'
+          },
+          {
+            id: 'budget-xlsx',
+            name: 'Budget Sheet.xlsx',
+            owner: 'Sarah Jenkins',
+            permission: 'Viewer',
+            dateShared: 'Oct 14, 2023',
+            type: 'xlsx',
+            size: '2.9 MB',
+            description: 'Budget estimates sheet.',
+            tags: ['Budget', 'Excel'],
+            previewContent: 'Budget columns table.'
+          },
+          {
+            id: 'timeline-docx',
+            name: 'Timeline.docx',
+            owner: 'Marcus Knight',
+            permission: 'Editor',
+            dateShared: 'Oct 13, 2023',
+            type: 'docx',
+            size: '1.1 MB',
+            description: 'Milestones and tasks deadline timeline document.',
+            tags: ['Timeline', 'Tasks'],
+            previewContent: 'Milestone timeline notes.'
+          }
+        ]
+
+        const folderFile = folderFiles.find(f => f.id === fileId)
+        if (folderFile) {
+          setViewingFile(folderFile as any)
+        }
+      }
+    } else {
+      setViewingFile(null)
+    }
+  }, [fileId, files])
+
   // Action handlers
   const handleAIAnalyze = () => {
     setIsAnalyzing(true)
     setTimeout(() => {
       setIsAnalyzing(false)
-      toast.success('AI analysis completed')
+      toast.success(t.toasts.aiAnalysisComplete)
     }, 1000)
   }
 
@@ -345,7 +553,7 @@ export function SharedFilesPage() {
         left: 0,
         behavior: 'instant'
       })
-      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]')
+      const scrollableContainers = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"], .overflow-auto, [class*="overflow-auto"]')
       scrollableContainers.forEach((container) => {
         container.scrollTo({
           top: 0,
@@ -355,11 +563,13 @@ export function SharedFilesPage() {
       })
     }
     setViewingFile(file)
-    toast.success(`Opening ${file.name}`)
+    const prefix = language === 'vi' ? 'Đang mở' : (language === 'ja' ? '開いています' : (language === 'ko' ? '열기 중' : 'Opening'))
+    toast.success(`${prefix} ${file.name}`)
   }
 
   const handleDownload = (file: SharedFile) => {
-    toast.success(`Downloading ${file.name}`)
+    const prefix = language === 'vi' ? 'Đang tải xuống' : (language === 'ja' ? 'ダウンロード中' : (language === 'ko' ? '다운로드 중' : 'Downloading'))
+    toast.success(`${prefix} ${file.name}`)
     try {
       if (file.url) {
         const link = document.createElement('a')
@@ -381,10 +591,10 @@ export function SharedFilesPage() {
         URL.revokeObjectURL(url)
       }
       setTimeout(() => {
-        toast.success('Download completed')
+        toast.success(t.toasts.downloadSuccess)
       }, 1000)
     } catch (err) {
-      toast.error('Download failed')
+      toast.error(t.toasts.downloadFailed)
     }
   }
 
@@ -394,24 +604,24 @@ export function SharedFilesPage() {
       prev.map(f => (f.id === selectedFile.id ? { ...f, name: newName } : f))
     )
     setSelectedFile(prev => (prev ? { ...prev, name: newName } : null))
-    toast.success('File renamed successfully')
+    toast.success(t.toasts.renameSuccess)
     setModals(prev => ({ ...prev, rename: false }))
   }
 
-  const handlePermissionConfirm = (newPermission: 'Editor' | 'Commenter' | 'Viewer') => {
+  const handlePermissionConfirm = (newPermission: 'View Only' | 'Viewer' | 'Editor' | 'Owner') => {
     if (!selectedFile) return
     setFiles(prev =>
       prev.map(f => (f.id === selectedFile.id ? { ...f, permission: newPermission } : f))
     )
     setSelectedFile(prev => (prev ? { ...prev, permission: newPermission } : null))
-    toast.success('Permission updated successfully')
+    toast.success(t.toasts.permissionSuccess)
     setModals(prev => ({ ...prev, permission: false }))
   }
 
   const handleDeleteConfirm = () => {
     if (!selectedFile) return
     setFiles(prev => prev.filter(f => f.id !== selectedFile.id))
-    toast.success('Access removed successfully')
+    toast.success(t.toasts.deleteSuccess)
     setSelectedFile(null)
     setViewingFile(null)
     setModals(prev => ({ ...prev, confirmDelete: false }))
@@ -421,10 +631,12 @@ export function SharedFilesPage() {
     setFavorites(prev => {
       const isFav = prev.includes(file.id)
       if (isFav) {
-        toast.success(`Removed "${file.name}" from favorites`)
+        const msg = language === 'vi' ? `Đã xóa "${file.name}" khỏi mục yêu thích` : (language === 'ja' ? `お気に入りから「${file.name}」を削除しました` : (language === 'ko' ? `즐겨찾기에서 "${file.name}"을(를) 제거했습니다` : `Removed "${file.name}" from favorites`))
+        toast.success(msg)
         return prev.filter(id => id !== file.id)
       } else {
-        toast.success(`Added "${file.name}" to favorites`)
+        const msg = language === 'vi' ? `Đã thêm "${file.name}" vào mục yêu thích` : (language === 'ja' ? `お気に入りへ「${file.name}」を追加しました` : (language === 'ko' ? `즐겨찾기에 "${file.name}"을(를) 추가했습니다` : `Added "${file.name}" to favorites`))
+        toast.success(msg)
         return [...prev, file.id]
       }
     })
@@ -443,7 +655,8 @@ export function SharedFilesPage() {
       ...prev,
       [selectedFile.id]: [newComment, ...(prev[selectedFile.id] || [])]
     }))
-    toast.success('Comment added')
+    const msg = language === 'vi' ? 'Đã thêm bình luận' : (language === 'ja' ? 'コメントを追加しました' : (language === 'ko' ? '댓글이 추가되었습니다' : 'Comment added'))
+    toast.success(msg)
   }
 
   const handleRegenerateSummary = () => {
@@ -457,7 +670,8 @@ export function SharedFilesPage() {
         )
         setSelectedFile(prev => (prev ? { ...prev, summary: updatedSummary } : null))
       }
-      toast.success('Summary regenerated')
+      const msg = language === 'vi' ? 'Đã tạo lại bản tóm tắt' : (language === 'ja' ? '要約を再生成しました' : (language === 'ko' ? '요약이 재생성되었습니다' : 'Summary regenerated'))
+      toast.success(msg)
     }, 1000)
   }
 
@@ -465,6 +679,10 @@ export function SharedFilesPage() {
   const parseDate = (dStr: string) => {
     if (dStr.includes('ago') || dStr.includes('now') || dStr.includes('Just')) {
       return Date.now()
+    }
+    // Handle mock dates like "May 18" or "Mar 28" (assume current year 2026)
+    if (dStr.includes('May') || dStr.includes('Mar') || dStr.includes('Oct')) {
+      return new Date(`${dStr}, 2026`).getTime()
     }
     return new Date(dStr).getTime()
   }
@@ -479,11 +697,46 @@ export function SharedFilesPage() {
       const filterLower = fileTypeFilter.toLowerCase()
       if (filterLower === 'folder') {
         matchesType = file.type === 'folder'
+      } else if (filterLower === 'doc') {
+        matchesType = file.type === 'docx' || file.type === 'pdf'
+      } else if (filterLower === 'spreadsheet') {
+        matchesType = file.type === 'xlsx'
       } else {
         matchesType = file.type === filterLower
       }
     }
-    return matchesSearch && matchesType
+
+    let matchesPeople = true
+    if (peopleFilter !== 'All') {
+      matchesPeople = file.owner?.toLowerCase().includes(peopleFilter.toLowerCase()) || false
+    }
+
+    let matchesLastModified = true
+    if (lastModifiedFilter !== 'All') {
+      const fileTime = parseDate(file.dateShared)
+      const now = Date.now()
+      const oneWeek = 7 * 24 * 60 * 60 * 1000
+      const thirtyDays = 30 * 24 * 60 * 60 * 1000
+
+      if (lastModifiedFilter === 'today') {
+        matchesLastModified = (now - fileTime) < (24 * 60 * 60 * 1000)
+      } else if (lastModifiedFilter === 'last7days') {
+        matchesLastModified = (now - fileTime) < oneWeek
+      } else if (lastModifiedFilter === 'last30days') {
+        matchesLastModified = (now - fileTime) < thirtyDays
+      }
+    }
+
+    let matchesSource = true
+    if (sourceFilter !== 'All') {
+      if (sourceFilter === 'sharedWithMe') {
+        matchesSource = file.owner !== 'me'
+      } else if (sourceFilter === 'ownedByMe') {
+        matchesSource = file.owner === 'me'
+      }
+    }
+
+    return matchesSearch && matchesType && matchesPeople && matchesLastModified && matchesSource
   }).sort((a, b) => {
     const timeA = parseDate(a.dateShared)
     const timeB = parseDate(b.dateShared)
@@ -501,7 +754,10 @@ export function SharedFilesPage() {
     return (
       <SharedFileViewer
         file={viewingFile}
-        onBack={() => setViewingFile(null)}
+        onBack={() => {
+          setViewingFile(null)
+          setSelectedFile(null)
+        }}
         showToast={showToastWrapper}
         onDownload={handleDownload}
       />
@@ -584,12 +840,15 @@ export function SharedFilesPage() {
       transition={{ duration: 0.4 }}
       className="text-slate-900 dark:text-slate-100"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="flex flex-col lg:flex-row gap-8 items-start w-full relative">
         
-        {/* Middle main content workspace area */}
-        <div className="lg:col-span-8 space-y-6">
+        <motion.div
+          layout
+          className="flex-1 w-full min-w-0 overflow-hidden space-y-6"
+          transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
+        >
           <SharedWorkspaceHeader
-            onUploadClick={() => setIsUploading(true)}
+            onUploadClick={() => setUploadModalOpen(true)}
             onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
             onAIAnalyzeClick={handleAIAnalyze}
             isAnalyzing={isAnalyzing}
@@ -610,6 +869,12 @@ export function SharedFilesPage() {
             onSortOrderChange={setSortOrder}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
+            peopleFilter={peopleFilter}
+            onPeopleFilterChange={setPeopleFilter}
+            lastModifiedFilter={lastModifiedFilter}
+            onLastModifiedFilterChange={setLastModifiedFilter}
+            sourceFilter={sourceFilter}
+            onSourceFilterChange={setSourceFilter}
           />
 
           <WorkspaceFileList
@@ -617,7 +882,9 @@ export function SharedFilesPage() {
             selectedFile={selectedFile}
             viewMode={viewMode}
             favorites={favorites}
-            onSelectFile={setSelectedFile}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+            onSelectFile={handleSelectFile}
             onOpenFile={handleOpenFile}
             onStarToggle={handleStarToggle}
             onRename={(file) => {
@@ -636,30 +903,43 @@ export function SharedFilesPage() {
             onShareAccess={(file) => {
               setSelectedFile(file)
               setModals(prev => ({ ...prev, share: true }))
-              toast.success(`Sharing ${file.name}`)
+              const prefix = language === 'vi' ? 'Đang chia sẻ' : (language === 'ja' ? '共有中' : (language === 'ko' ? '공유 중' : 'Sharing'))
+              toast.success(`${prefix} ${file.name}`)
             }}
           />
-        </div>
+        </motion.div>
 
         {/* Right side panel */}
-        <div className="lg:col-span-4 h-full">
-          <WorkspaceRightPanel
-            file={selectedFile}
-            comments={selectedFile ? (commentsMap[selectedFile.id] || []) : []}
-            onAddComment={handleAddComment}
-            onRegenerateSummary={handleRegenerateSummary}
-            isRegenerating={isRegenerating}
-            onOpenFullSummary={() => setModals(prev => ({ ...prev, summary: true }))}
-            onGenerateQuiz={() => setModals(prev => ({ ...prev, quiz: true }))}
-            onAskAI={() => {
-              toast.success('AI Assistant ready for query')
-              const commentInput = document.querySelector('input[placeholder="Add a comment..."]') as HTMLInputElement
-              if (commentInput) {
-                commentInput.focus()
-              }
-            }}
-          />
-        </div>
+        <AnimatePresence>
+          {selectedFile && (
+            <motion.aside
+              key="workspace-right-sidebar"
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 20 : 0, y: isLargeScreen ? 0 : 16 }}
+              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: isLargeScreen ? 20 : 0, y: isLargeScreen ? 0 : 16 }}
+              transition={shouldReduceMotion ? { duration: 0.25 } : { type: "spring", stiffness: 220, damping: 26, mass: 0.8 }}
+              className="w-full lg:w-[240px] xl:w-[280px] 2xl:w-[320px] shrink-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto scrollbar-none"
+            >
+              <WorkspaceRightPanel
+                file={selectedFile}
+                comments={commentsMap[selectedFile.id] || []}
+                onAddComment={handleAddComment}
+                onRegenerateSummary={handleRegenerateSummary}
+                isRegenerating={isRegenerating}
+                onOpenFullSummary={() => setModals(prev => ({ ...prev, summary: true }))}
+                onGenerateQuiz={() => setModals(prev => ({ ...prev, quiz: true }))}
+                onAskAI={() => {
+                  const msg = language === 'vi' ? 'Trợ lý AI đã sẵn sàng' : (language === 'ja' ? 'AIアシスタントの準備ができました' : (language === 'ko' ? 'AI 어시스턴트가 준비되었습니다' : 'AI Assistant ready for query'))
+                  toast.success(msg)
+                  const commentInput = document.querySelector('input[placeholder="Add a comment..."]') as HTMLInputElement
+                  if (commentInput) {
+                    commentInput.focus()
+                  }
+                }}
+              />
+            </motion.aside>
+          )}
+        </AnimatePresence>
 
       </div>
 
@@ -667,8 +947,8 @@ export function SharedFilesPage() {
       <QuotaDetailsModal
         isOpen={modals.quota}
         onClose={() => setModals(prev => ({ ...prev, quota: false }))}
-        usedGb={12.4}
-        totalGb={50}
+        usedGb={user?.plan === 'pro' ? 12.4 : 2.4}
+        totalGb={user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT}
       />
 
       <CollaboratorsModal
@@ -686,7 +966,8 @@ export function SharedFilesPage() {
         isOpen={modals.invite}
         onClose={() => setModals(prev => ({ ...prev, invite: false }))}
         onInviteSubmit={(email, role) => {
-          toast.success(`Invitation sent successfully to ${email} as ${role}`)
+          const msg = language === 'vi' ? `Đã gửi lời mời thành công đến ${email} với vai trò ${role}` : (language === 'ja' ? `${email}へ${role}として招待メールを正常に送信しました` : (language === 'ko' ? `${email}님에게 ${role}(으)로 초대를 성공적으로 보냈습니다` : `Invitation sent successfully to ${email} as ${role}`))
+          toast.success(msg)
           setModals(prev => ({ ...prev, invite: false }))
         }}
       />
@@ -695,7 +976,8 @@ export function SharedFilesPage() {
         isOpen={modals.aiReport}
         onClose={() => setModals(prev => ({ ...prev, aiReport: false }))}
         onOptimize={() => {
-          toast.success('AI Workspace optimized successfully')
+          const msg = language === 'vi' ? 'Đã tối ưu hóa không gian làm việc AI thành công' : (language === 'ja' ? 'AIワークスペースの最適化に成功しました' : (language === 'ko' ? 'AI 워크스페이스가 성공적으로 최적화되었습니다' : 'AI Workspace optimized successfully'))
+          toast.success(msg)
           setModals(prev => ({ ...prev, aiReport: false }))
         }}
       />
@@ -766,6 +1048,16 @@ export function SharedFilesPage() {
         onClose={() => setModals(prev => ({ ...prev, confirmDelete: false }))}
         onConfirm={handleDeleteConfirm}
         fileName={selectedFile?.name || ''}
+      />
+
+      <SharedFilesUploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onSave={(newFile) => {
+          setFiles(prev => [newFile, ...prev])
+          setSelectedFile(newFile)
+          toast.success(t.toasts?.uploadSuccess || 'File uploaded successfully')
+        }}
       />
     </motion.div>
   )

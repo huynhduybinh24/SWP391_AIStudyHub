@@ -23,12 +23,15 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
+import { useAuthStore } from '@/stores/authStore'
+import { env } from '@/config/env'
+import { useTranslation } from '@/context/LanguageContext'
 
 const INITIAL_FOLDERS = [
-  { id: '1', name: 'Physics 101', items: '12 Items', size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe', category: 'Study' },
-  { id: '2', name: 'Advanced Calculus', items: '45 Items', size: '3.4 GB', color: '#0d9488', bgColor: '#ccfbf1', category: 'Study' },
-  { id: '3', name: 'Study Group S23', items: '8 Items', size: '450 MB', color: '#8b5cf6', bgColor: '#ede9fe', category: 'Study' },
-  { id: '4', name: 'Archived Notes', items: '102 Items', size: '5.1 GB', color: '#475569', bgColor: '#f1f5f9', category: 'Archived' },
+  { id: '1', name: 'Physics 101', itemsCount: 12, size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe', category: 'Study' },
+  { id: '2', name: 'Advanced Calculus', itemsCount: 45, size: '3.4 GB', color: '#0d9488', bgColor: '#ccfbf1', category: 'Study' },
+  { id: '3', name: 'Study Group S23', itemsCount: 8, size: '450 MB', color: '#8b5cf6', bgColor: '#ede9fe', category: 'Study' },
+  { id: '4', name: 'Archived Notes', itemsCount: 102, size: '5.1 GB', color: '#475569', bgColor: '#f1f5f9', category: 'Archived' },
 ]
 
 const INITIAL_FILES = [
@@ -81,6 +84,12 @@ export function StorageExplorerPage() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  const { t } = useTranslation()
+  
+  const totalGb = user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
+  const usedGb = user?.plan === 'pro' ? 75 : 2.4
+  const usedPercentage = Math.round((usedGb / totalGb) * 100)
   const [folders, setFolders] = useState(INITIAL_FOLDERS)
   const [files, setFiles] = useState(INITIAL_FILES)
   const [searchQuery, setSearchQuery] = useState('')
@@ -113,7 +122,7 @@ export function StorageExplorerPage() {
     const newFolder = {
       id: Math.random().toString(36).substring(7),
       name: 'New Folder',
-      items: '0 Items',
+      itemsCount: 0,
       size: '0 MB',
       color: '#64748b',
       bgColor: isDark ? '#334155' : '#f1f5f9',
@@ -154,15 +163,49 @@ export function StorageExplorerPage() {
     return result
   }, [files, searchQuery, typeFilter])
 
-  const chartData = [
-    { name: 'Documents', value: 45, color: '#2563eb' },
-    { name: 'Images', value: 20.5, color: '#0d9488' },
-    { name: 'Other', value: 9.5, color: isDark ? '#334155' : '#cbd5e1' },
-    { name: 'Remaining', value: 25, color: isDark ? '#1e293b' : '#e5eeff' },
-  ]
+  const chartData = useMemo(() => {
+    const isPro = user?.plan === 'pro'
+    return [
+      { name: 'Documents', value: isPro ? 45 : 1.2, color: '#2563eb' },
+      { name: 'Images', value: isPro ? 20.5 : 0.8, color: '#0d9488' },
+      { name: 'Other', value: isPro ? 9.5 : 0.4, color: isDark ? '#334155' : '#cbd5e1' },
+      { name: 'Remaining', value: isPro ? 25 : 7.6, color: isDark ? '#1e293b' : '#e5eeff' },
+    ]
+  }, [user, isDark])
 
   const folderOptions = ['All Folders', 'Study', 'Archived', 'New']
   const typeOptions = ['All Types', 'PDF', 'DOCX', 'Image', 'ZIP']
+
+  const getFolderFilterLabel = (opt: string) => {
+    switch (opt) {
+      case 'All Folders': return t.storageExplorer.filterAllFolders
+      case 'Study': return t.storageExplorer.filterStudy
+      case 'Archived': return t.storageExplorer.filterArchived
+      case 'New': return t.storageExplorer.filterNew
+      default: return opt
+    }
+  }
+
+  const getTypeFilterLabel = (opt: string) => {
+    switch (opt) {
+      case 'All Types': return t.storageExplorer.filterAllTypes
+      case 'PDF': return t.storageExplorer.filterPdf
+      case 'DOCX': return t.storageExplorer.filterDocx
+      case 'Image': return t.storageExplorer.filterImage
+      case 'ZIP': return t.storageExplorer.filterZip
+      default: return opt
+    }
+  }
+
+  const getLocalizedModified = (modified: string) => {
+    if (modified.includes('2 hours ago')) return t.storageExplorer.modified2h
+    if (modified.includes('Yesterday')) return t.storageExplorer.modifiedYesterday
+    if (modified.includes('Oct 12')) return t.storageExplorer.modifiedOct12
+    if (modified.includes('Oct 10')) return t.storageExplorer.modifiedOct10
+    if (modified.includes('Oct 8')) return t.storageExplorer.modifiedOct8
+    if (modified.includes('Oct 5')) return t.storageExplorer.modifiedOct5
+    return modified
+  }
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
@@ -173,18 +216,18 @@ export function StorageExplorerPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-foreground mb-4 transition-colors"
         >
           <ArrowLeft className="size-4" />
-          Back to Cloud Storage
+          {t.storageExplorer.backToStorage}
         </Link>
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <h1 className="text-[32px] font-bold text-foreground leading-tight">Storage Explorer</h1>
+            <h1 className="text-[32px] font-bold text-foreground leading-tight">{t.storageExplorer.title}</h1>
             <p className="text-muted mt-2 text-sm">
-              Browse and organize all cloud-stored study files.
+              {t.storageExplorer.subtitle}
             </p>
           </div>
           <Button onClick={handleCreateFolder} variant="secondary" className="gap-2 bg-white dark:bg-slate-900 border-border dark:border-slate-800 h-10 px-4 text-foreground">
             <FolderPlus className="size-4" />
-            New Folder
+            {t.storageExplorer.newFolder}
           </Button>
         </div>
       </div>
@@ -199,7 +242,7 @@ export function StorageExplorerPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted" />
               <input 
                 type="text" 
-                placeholder="Find in Explorer..." 
+                placeholder={t.storageExplorer.findInExplorer} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-10 pl-9 pr-4 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -213,7 +256,7 @@ export function StorageExplorerPage() {
                 >
                   <div className="flex items-center gap-2">
                     <Folder className="size-4 text-muted" />
-                    {folderFilter}
+                    {getFolderFilterLabel(folderFilter)}
                   </div>
                   <ChevronDown className="size-4 text-muted" />
                 </button>
@@ -225,7 +268,7 @@ export function StorageExplorerPage() {
                         className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between text-foreground"
                         onClick={() => { setFolderFilter(opt); setShowFolderDropdown(false) }}
                       >
-                        {opt}
+                        {getFolderFilterLabel(opt)}
                         {folderFilter === opt && <Check className="size-4 text-primary" />}
                       </button>
                     ))}
@@ -240,7 +283,7 @@ export function StorageExplorerPage() {
                 >
                   <div className="flex items-center gap-2">
                     <FileIcon className="size-4 text-muted" />
-                    {typeFilter}
+                    {getTypeFilterLabel(typeFilter)}
                   </div>
                   <ChevronDown className="size-4 text-muted" />
                 </button>
@@ -252,7 +295,7 @@ export function StorageExplorerPage() {
                         className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between text-foreground"
                         onClick={() => { setTypeFilter(opt); setShowTypeDropdown(false) }}
                       >
-                        {opt}
+                        {getTypeFilterLabel(opt)}
                         {typeFilter === opt && <Check className="size-4 text-primary" />}
                       </button>
                     ))}
@@ -279,10 +322,10 @@ export function StorageExplorerPage() {
 
           {/* FOLDERS Section */}
           <div>
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Folders {filteredFolders.length}</h2>
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">{t.storageExplorer.folders(filteredFolders.length)}</h2>
             {filteredFolders.length === 0 ? (
               <div className="py-8 text-center text-muted text-sm border border-dashed rounded-lg bg-white/50 dark:bg-slate-900/50 dark:border-slate-800">
-                No folders found.
+                {t.storageExplorer.noFolders}
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -299,7 +342,7 @@ export function StorageExplorerPage() {
                         <button 
                           onClick={(e) => handleDeleteFolder(folder.id, e)}
                           className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Delete folder"
+                          title={t.storageExplorer.deleteFolder}
                         >
                           <Trash2 className="size-4" />
                         </button>
@@ -307,7 +350,7 @@ export function StorageExplorerPage() {
                       <div>
                         <h3 className="font-semibold text-[15px] text-foreground truncate">{folder.name}</h3>
                         <div className="flex items-center justify-between mt-1 text-xs text-muted font-medium">
-                          <span>{folder.items}</span>
+                          <span>{t.storageExplorer.itemsCount(folder.itemsCount)}</span>
                           <span>{folder.size}</span>
                         </div>
                       </div>
@@ -331,13 +374,13 @@ export function StorageExplorerPage() {
                       </div>
                       <div className="flex items-center gap-4 sm:gap-8">
                         <div className="hidden sm:flex items-center gap-8 text-sm text-muted font-medium w-[150px] justify-between">
-                          <span>{folder.items}</span>
+                          <span>{t.storageExplorer.itemsCount(folder.itemsCount)}</span>
                           <span>{folder.size}</span>
                         </div>
                         <button 
                           onClick={(e) => handleDeleteFolder(folder.id, e)}
                           className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Delete folder"
+                          title={t.storageExplorer.deleteFolder}
                         >
                           <Trash2 className="size-4" />
                         </button>
@@ -351,10 +394,10 @@ export function StorageExplorerPage() {
 
           {/* RECENT FILES Section */}
           <div>
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Recent Files Displaying {filteredFiles.length}</h2>
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">{t.storageExplorer.recentFiles(filteredFiles.length)}</h2>
             {filteredFiles.length === 0 ? (
               <div className="py-8 text-center text-muted text-sm border border-dashed rounded-lg bg-white/50 dark:bg-slate-900/50 dark:border-slate-800">
-                No files found.
+                {t.storageExplorer.noFiles}
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -369,20 +412,20 @@ export function StorageExplorerPage() {
                       {file.aiSummarized && (
                         <div className="absolute bottom-2 left-2 bg-teal-50 dark:bg-emerald-950/20 text-teal-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 border border-teal-100 dark:border-emerald-900/30 shadow-sm">
                           <Sparkles className="size-3" />
-                          AI SUMMARIZED
+                          {t.storageExplorer.aiSummarized}
                         </div>
                       )}
                       <button 
                         onClick={(e) => handleDeleteFile(file.id, e)}
                         className="absolute top-2 right-2 text-muted hover:text-red-500 p-1.5 bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Delete file"
+                        title={t.storageExplorer.deleteFile}
                       >
                         <Trash2 className="size-4" />
                       </button>
                     </div>
                     <div className="px-1 flex-1 flex flex-col justify-between">
                       <h3 className="font-semibold text-[13px] text-foreground line-clamp-2 leading-snug" title={file.name}>{file.name}</h3>
-                      <p className="text-[11px] text-muted mt-1.5">{file.modified}</p>
+                      <p className="text-[11px] text-muted mt-1.5">{getLocalizedModified(file.modified)}</p>
                     </div>
                   </Card>
                 ))}
@@ -401,20 +444,20 @@ export function StorageExplorerPage() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-[14px] text-foreground truncate max-w-[200px] sm:max-w-[400px]" title={file.name}>{file.name}</h3>
-                        <p className="text-[11px] text-muted mt-0.5">{file.modified}</p>
+                        <p className="text-[11px] text-muted mt-0.5">{getLocalizedModified(file.modified)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 sm:gap-6">
                       {file.aiSummarized && (
                         <div className="hidden sm:flex bg-teal-50 dark:bg-emerald-950/20 text-teal-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded items-center gap-1 border border-teal-100 dark:border-emerald-900/30">
                           <Sparkles className="size-3" />
-                          AI SUMMARIZED
+                          {t.storageExplorer.aiSummarized}
                         </div>
                       )}
                       <button 
                         onClick={(e) => handleDeleteFile(file.id, e)}
                         className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Delete file"
+                        title={t.storageExplorer.deleteFile}
                       >
                         <Trash2 className="size-4" />
                       </button>
@@ -431,7 +474,7 @@ export function StorageExplorerPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-center gap-2 mb-6">
               <Cloud className="size-5 text-primary" />
-              <h2 className="font-semibold text-foreground">Storage Status</h2>
+              <h2 className="font-semibold text-foreground">{t.storageExplorer.storageStatus}</h2>
             </div>
             
             <div className="w-[180px] h-[180px] relative mx-auto">
@@ -453,50 +496,50 @@ export function StorageExplorerPage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                <span className="text-3xl font-bold text-foreground">75%</span>
-                <span className="text-xs text-muted font-medium mt-1">Used</span>
+                <span className="text-3xl font-bold text-foreground">{usedPercentage}%</span>
+                <span className="text-xs text-muted font-medium mt-1">{t.storageExplorer.used}</span>
               </div>
             </div>
 
             <div className="text-center mt-6 mb-8">
-              <h3 className="font-bold text-foreground text-[15px]">75 GB of 100 GB</h3>
+              <h3 className="font-bold text-foreground text-[15px]">{t.storageExplorer.usedOfText(usedGb, totalGb)}</h3>
             </div>
 
             <div className="flex flex-col gap-3 mb-8">
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#2563eb]"></div>
-                  <span className="text-foreground font-medium">Documents</span>
+                  <span className="text-foreground font-medium">{t.storageExplorer.documents}</span>
                 </div>
-                <span className="text-muted font-medium">45.0 GB</span>
+                <span className="text-muted font-medium">{user?.plan === 'pro' ? '45.0 GB' : '1.2 GB'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#0d9488]"></div>
-                  <span className="text-foreground font-medium">Images</span>
+                  <span className="text-foreground font-medium">{t.storageExplorer.images}</span>
                 </div>
-                <span className="text-muted font-medium">20.5 GB</span>
+                <span className="text-muted font-medium">{user?.plan === 'pro' ? '20.5 GB' : '0.8 GB'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1] dark:bg-slate-700"></div>
-                  <span className="text-foreground font-medium">Other</span>
+                  <span className="text-foreground font-medium">{t.storageExplorer.other}</span>
                 </div>
-                <span className="text-muted font-medium">9.5 GB</span>
+                <span className="text-muted font-medium">{user?.plan === 'pro' ? '9.5 GB' : '0.4 GB'}</span>
               </div>
             </div>
 
             <div className="bg-[#f8fafc] dark:bg-slate-900 rounded-lg p-4 text-center border border-slate-100 dark:border-slate-800">
-              <h4 className="font-bold text-sm text-foreground">Need more space?</h4>
+              <h4 className="font-bold text-sm text-foreground">{t.storageExplorer.needMoreSpace}</h4>
               <p className="text-[11px] text-muted mt-1.5 mb-4 leading-relaxed">
-                Upgrade to Pro for 1TB of storage and advanced AI tools.
+                {t.storageExplorer.upgradeDesc}
               </p>
               <Button 
                 onClick={() => setIsPlanModalOpen(true)}
                 variant="secondary" 
                 className="w-full bg-white dark:bg-slate-950 text-primary dark:text-blue-400 border border-primary/20 dark:border-blue-900/40 hover:bg-primary/5 dark:hover:bg-blue-950/30 h-9 text-sm transition-colors"
               >
-                View Plans
+                {t.storageExplorer.viewPlans}
               </Button>
             </div>
           </CardContent>
@@ -506,37 +549,37 @@ export function StorageExplorerPage() {
       <Modal 
         isOpen={isPlanModalOpen} 
         onClose={() => setIsPlanModalOpen(false)}
-        title="Upgrade to Pro"
-        description="Choose the right plan to expand your storage and AI capabilities."
+        title={t.storageExplorer.upgradeModalTitle}
+        description={t.storageExplorer.upgradeModalDesc}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
           <Card className="border-border dark:border-slate-800 flex flex-col shadow-none">
             <CardContent className="p-6 flex-1 flex flex-col">
-              <h3 className="font-bold text-lg mb-2 text-foreground">Basic</h3>
-              <div className="text-3xl font-bold mb-4 text-foreground">$0<span className="text-sm font-normal text-muted">/mo</span></div>
+              <h3 className="font-bold text-lg mb-2 text-foreground">{t.storageExplorer.basic}</h3>
+              <div className="text-3xl font-bold mb-4 text-foreground">$0<span className="text-sm font-normal text-muted">{t.storageExplorer.mo}</span></div>
               <ul className="space-y-3 mb-6 flex-1">
-                <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> 100 GB Storage</li>
-                <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> Basic AI Tools</li>
-                <li className="flex items-center gap-2 text-sm text-muted opacity-50 dark:text-slate-600"><CheckCircle2 className="size-4 text-slate-300 dark:text-slate-700"/> Priority Support</li>
+                <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> {t.storageExplorer.storageItem(user?.plan === 'pro' ? '50 GB' : '10 GB')}</li>
+                <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> {t.storageExplorer.basicAiTools}</li>
+                <li className="flex items-center gap-2 text-sm text-muted opacity-50 dark:text-slate-600"><CheckCircle2 className="size-4 text-slate-300 dark:text-slate-700"/> {t.storageExplorer.prioritySupport}</li>
               </ul>
-              <Button variant="secondary" className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-none" onClick={() => setIsPlanModalOpen(false)}>Current Plan</Button>
+              <Button variant="secondary" className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-none" onClick={() => setIsPlanModalOpen(false)}>{t.storageExplorer.currentPlan}</Button>
             </CardContent>
           </Card>
 
           <Card className="border-primary dark:border-blue-500 bg-primary/[0.03] dark:bg-blue-950/10 flex flex-col relative overflow-hidden shadow-sm">
-            <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg">POPULAR</div>
+            <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg">{t.storageExplorer.popular}</div>
             <CardContent className="p-6 flex-1 flex flex-col">
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-bold text-lg text-primary dark:text-blue-400">Pro</h3>
+                <h3 className="font-bold text-lg text-primary dark:text-blue-400">{t.storageExplorer.pro}</h3>
                 <Zap className="size-4 text-primary fill-primary/20 dark:text-blue-400 dark:fill-blue-400/20" />
               </div>
-              <div className="text-3xl font-bold mb-4 text-foreground">$9.99<span className="text-sm font-normal text-muted">/mo</span></div>
+              <div className="text-3xl font-bold mb-4 text-foreground">$9.99<span className="text-sm font-normal text-muted">{t.storageExplorer.mo}</span></div>
               <ul className="space-y-3 mb-6 flex-1">
-                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> 1 TB Storage</li>
-                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> Advanced AI Summarization</li>
-                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> Priority Support</li>
+                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> {t.storageExplorer.storageItem('1 TB')}</li>
+                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> {t.storageExplorer.advSummarization}</li>
+                <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> {t.storageExplorer.prioritySupport}</li>
               </ul>
-              <Button className="w-full bg-primary hover:bg-primary/90 text-white" onClick={() => setIsPlanModalOpen(false)}>Upgrade Now</Button>
+              <Button className="w-full bg-primary hover:bg-primary/90 text-white" onClick={() => setIsPlanModalOpen(false)}>{t.storageExplorer.upgradeNow}</Button>
             </CardContent>
           </Card>
         </div>

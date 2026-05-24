@@ -13,6 +13,7 @@ import {
   CheckCircle,
   X,
 } from 'lucide-react'
+import { AppFooter } from '@/components/shared/AppFooter'
 
 /* ─────────────────────────────────────────────
    Data
@@ -133,7 +134,7 @@ export function HelpCenterPage() {
       <header className="w-full bg-white border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3.5">
-            <img src="/logo.png" alt="AI Study Hub Logo" className="w-[54px] h-[54px] object-contain" />
+            <img src="/logo.png" alt="AI Study Hub Logo" className="w-[68px] h-[68px] object-contain" />
             <span className="text-2xl font-bold text-primary tracking-tight">AI Study Hub</span>
           </Link>
           <Link
@@ -152,7 +153,7 @@ export function HelpCenterPage() {
         <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-indigo-500/25 rounded-full blur-[120px] pointer-events-none"></div>
         
         <div className="relative z-10 max-w-[800px] mx-auto">
-          <h2 className="text-4xl md:text-[52px] font-serif font-bold mb-5 tracking-tight text-white drop-shadow-sm">
+          <h2 className="text-4xl md:text-[52px] font-heading font-bold mb-5 tracking-tight text-white drop-shadow-sm">
             How can we help you?
           </h2>
           <p className="text-base md:text-lg text-slate-300 mb-10 max-w-xl mx-auto leading-relaxed font-medium">
@@ -388,102 +389,7 @@ export function HelpCenterPage() {
         )}
       </main>
 
-      {/* ── Footer ── */}
-      <footer className="w-full bg-[#0B132B] text-slate-300 pt-16 pb-8 px-6 mt-auto border-t border-slate-800">
-        <div className="max-w-[1000px] mx-auto">
-          {/* Main Footer Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
-            
-            {/* Column 1: Brand Info */}
-            <div className="flex flex-col gap-4 text-left">
-              <div className="flex items-center gap-2.5">
-                <img src="/logo.png" alt="AI Study Hub Logo" className="w-[44px] h-[44px] object-contain animate-pulse" />
-                <span className="text-xl font-bold text-white tracking-tight">AI Study Hub</span>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed font-semibold">
-                Khơi mở tiềm năng - Dẫn đầu công nghệ. Nền tảng học tập thông minh tích hợp trí tuệ nhân tạo toàn diện cho sinh viên đại học.
-              </p>
-            </div>
-
-            {/* Column 2: Về AI Study Hub */}
-            <div className="flex flex-col gap-3 text-left">
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-1.5">
-                Về AI Study Hub
-              </h4>
-              <ul className="flex flex-col gap-2 text-xs font-semibold list-none pl-0">
-                <li>
-                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
-                    Giới thiệu dự án
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
-                    Bảng giá nâng cấp (Pro)
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
-                    Điều khoản & Bảo mật
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
-                    Trung tâm hỗ trợ (FAQ)
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 3: Giải pháp học tập */}
-            <div className="flex flex-col gap-3 text-left">
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-1.5">
-                Giải pháp học tập
-              </h4>
-              <ul className="flex flex-col gap-2 text-xs font-semibold list-none pl-0">
-                <li>
-                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
-                    Trợ lý học tập AI
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
-                    Tóm tắt tài liệu tự động
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors no-underline">
-                    Lưu trữ đám mây an toàn
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 4: Đơn vị phát triển */}
-            <div className="flex flex-col gap-3 text-left">
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-1.5">
-                Đơn vị phát triển
-              </h4>
-              <div className="flex flex-col gap-2 text-[10px] leading-relaxed text-slate-400 font-semibold">
-                <p className="text-xs font-bold text-white leading-snug uppercase">
-                  AI Study Hub Team
-                </p>
-                <p>Email: <span className="text-slate-300 font-bold">contact@aistudyhub.com</span></p>
-                <p>Sản phẩm: Hệ sinh thái học tập AI Study Hub.</p>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Bottom Footer Section */}
-          <div className="border-t border-slate-800/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] font-semibold text-slate-500">
-            <p>© 2026 AI Study Hub Team. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              <Link to="/" className="text-slate-500 hover:text-blue-400 no-underline transition-colors">Trang chủ</Link>
-              <a href="#" className="text-slate-500 hover:text-blue-400 no-underline transition-colors">Liên hệ</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   )
 }

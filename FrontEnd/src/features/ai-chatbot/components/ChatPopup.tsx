@@ -94,7 +94,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
   }
 
   return (
-    <div className="fixed bottom-[85px] right-[20px] z-50 flex h-[450px] max-h-[calc(100vh-115px)] w-[360px] flex-col overflow-hidden rounded-2xl border border-border/50 bg-white shadow-2xl transition-all duration-300">
+    <div className="fixed bottom-[85px] right-[20px] z-50 flex h-[450px] max-h-[calc(100vh-115px)] w-[360px] flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl transition-all duration-300 text-slate-900 dark:text-slate-100">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/50 bg-[#3155F6] p-4 text-white">
         <div className="flex items-center gap-3">
@@ -115,7 +115,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-slate-50">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-slate-50 dark:bg-slate-950">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -125,7 +125,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
             )}
           >
             {msg.sender === 'bot' && (
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] border border-[#3155f6]/10">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30">
                 <Bot className="size-4 text-[#3155F6]" />
               </div>
             )}
@@ -133,14 +133,14 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
               className={cn(
                 "rounded-2xl p-3 text-[14px] leading-relaxed shadow-sm whitespace-pre-line",
                 msg.sender === 'user'
-                  ? "bg-[#3155F6] text-white rounded-tr-none"
-                  : "bg-white text-[#434655] border border-border/60 rounded-tl-none"
+                  ? "bg-blue-600 text-white rounded-tr-none"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-tl-none"
               )}
             >
               {msg.attachment && (
                 <div className={cn(
                   "mb-2 flex items-center gap-2 rounded-lg p-2 text-xs font-medium",
-                  msg.sender === 'user' ? "bg-white/20" : "bg-slate-100"
+                  msg.sender === 'user' ? "bg-white/20" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
                 )}>
                   <FileIcon className="size-4 shrink-0" />
                   <span className="truncate">{msg.attachment.name}</span>
@@ -152,10 +152,10 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
         ))}
         {isTyping && (
           <div className="flex items-start gap-2 max-w-[85%]">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] border border-[#3155f6]/10">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30">
               <Bot className="size-4 text-[#3155F6]" />
             </div>
-            <div className="rounded-2xl rounded-tl-none p-3 text-[14px] bg-white text-[#737686] border border-border/60 flex items-center gap-2">
+            <div className="rounded-2xl rounded-tl-none p-3 text-[14px] bg-slate-100 dark:bg-slate-800 text-[#737686] dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center gap-2">
               <Loader2 className="size-4 animate-spin text-[#3155F6]" />
               <span>Thinking...</span>
             </div>
@@ -165,9 +165,9 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-border/50 bg-white p-3">
+      <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
         {selectedFile && (
-          <div className="mb-2 flex items-center justify-between rounded-lg border border-[#3155F6]/20 bg-[#e5eeff]/50 px-3 py-2 text-sm text-[#3155F6]">
+          <div className="mb-2 flex items-center justify-between rounded-lg border border-[#3155F6]/20 dark:border-blue-900/30 bg-[#e5eeff]/50 dark:bg-blue-950/30 px-3 py-2 text-sm text-[#3155F6] dark:text-blue-400">
             <div className="flex items-center gap-2 overflow-hidden">
               <FileIcon className="size-4 shrink-0" />
               <span className="truncate font-medium">{selectedFile.name}</span>
@@ -180,7 +180,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
             </button>
           </div>
         )}
-        <div className="flex items-end gap-2 rounded-xl border border-border/60 bg-slate-50 p-2 focus-within:border-[#3155F6]/40 focus-within:ring-1 focus-within:ring-[#3155F6]/40">
+        <div className="flex items-end gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2 focus-within:border-[#3155F6]/40 focus-within:ring-1 focus-within:ring-[#3155F6]/40">
           <input 
             type="file" 
             className="hidden" 
@@ -195,7 +195,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors"
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
             title="Attach File"
           >
             <Paperclip className="size-4.5" />
@@ -205,7 +205,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="max-h-[100px] min-h-[36px] w-full resize-none bg-transparent py-1.5 text-[14px] outline-none"
+            className="max-h-[100px] min-h-[36px] w-full resize-none bg-transparent py-1.5 text-[14px] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none"
             rows={1}
           />
           <button

@@ -241,42 +241,42 @@ export function ShareModal({
       />
 
       {/* Modal Card */}
-      <div className="bg-white rounded-[32px] shadow-2xl p-[32px] w-full max-w-[660px] relative z-10 overflow-visible animate-in fade-in zoom-in-95 duration-200 text-slate-800">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[32px] shadow-2xl p-[32px] w-full max-w-[660px] relative z-10 overflow-visible animate-in fade-in zoom-in-95 duration-200 text-slate-800 dark:text-slate-100">
         {showSettings ? (
           <>
             {/* Settings Header */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setShowSettings(false)}
-                  className="text-[#737686] hover:text-[#0b1c30] p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="text-[#737686] dark:text-slate-400 hover:text-[#0b1c30] dark:hover:text-slate-100 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   aria-label="Back to main share menu"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <h2 className="text-xl md:text-2xl font-bold text-[#0b1c30]">
+                <h2 className="text-xl md:text-2xl font-bold text-[#0b1c30] dark:text-slate-100">
                   Cài đặt chia sẻ
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="text-[#737686] hover:text-[#0b1c30] p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                className="text-[#737686] dark:text-slate-400 hover:text-[#0b1c30] dark:hover:text-slate-100 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Settings Items */}
-            <div className="space-y-6 mb-8 pt-2">
+            <div className="space-y-6 mb-8 pt-2 text-left">
               {/* Setting 1: Editors can change permissions and share */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <label htmlFor="editors-can-share-checkbox" className="text-sm font-bold text-[#0b1c30] block cursor-pointer select-none">
+                  <label htmlFor="editors-can-share-checkbox" className="text-sm font-bold text-[#0b1c30] dark:text-slate-200 block cursor-pointer select-none">
                     Người chỉnh sửa có thể thay đổi các quyền và chia sẻ
                   </label>
-                  <span className="text-xs text-slate-550 block mt-1 leading-normal">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 block mt-1 leading-normal">
                     Nếu tắt, chỉ chủ sở hữu mới có thể thay đổi cài đặt bảo mật và thêm người dùng mới.
                   </span>
                 </div>
@@ -290,7 +290,7 @@ export function ShareModal({
                       setSuccessMessage('Đã cập nhật cài đặt chia sẻ.')
                       setTimeout(() => setSuccessMessage(''), 2000)
                     }}
-                    className="w-5 h-5 rounded border-slate-350 text-[#3155F6] focus:ring-[#3155F6] cursor-pointer"
+                    className="w-5 h-5 rounded border-slate-300 dark:border-slate-700 text-[#3155F6] focus:ring-[#3155F6] dark:bg-slate-950 cursor-pointer"
                   />
                 </div>
               </div>
@@ -298,10 +298,10 @@ export function ShareModal({
               {/* Setting 2: Viewers can see download, print, copy option */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <label htmlFor="viewers-can-download-checkbox" className="text-sm font-bold text-[#0b1c30] block cursor-pointer select-none">
+                  <label htmlFor="viewers-can-download-checkbox" className="text-sm font-bold text-[#0b1c30] dark:text-slate-200 block cursor-pointer select-none">
                     Người xem và người nhận xét có thể thấy tùy chọn tải xuống, in và sao chép
                   </label>
-                  <span className="text-xs text-slate-550 block mt-1 leading-normal">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 block mt-1 leading-normal">
                     Nếu tắt, những người có quyền xem/nhận xét sẽ không thể sao chép văn bản, tải hoặc in tài liệu này.
                   </span>
                 </div>
@@ -315,7 +315,7 @@ export function ShareModal({
                       setSuccessMessage('Đã cập nhật cài đặt chia sẻ.')
                       setTimeout(() => setSuccessMessage(''), 2000)
                     }}
-                    className="w-5 h-5 rounded border-slate-350 text-[#3155F6] focus:ring-[#3155F6] cursor-pointer"
+                    className="w-5 h-5 rounded border-slate-300 dark:border-slate-700 text-[#3155F6] focus:ring-[#3155F6] dark:bg-slate-950 cursor-pointer"
                   />
                 </div>
               </div>
@@ -329,7 +329,7 @@ export function ShareModal({
             )}
 
             {/* Settings Footer */}
-            <div className="flex items-center justify-end border-t border-slate-100 pt-6">
+            <div className="flex items-center justify-end border-t border-slate-100 dark:border-slate-800 pt-6">
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
@@ -343,21 +343,21 @@ export function ShareModal({
           <>
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl md:text-2xl font-bold text-[#0b1c30] truncate pr-4">
+              <h2 className="text-xl md:text-2xl font-bold text-[#0b1c30] dark:text-slate-100 truncate pr-4">
                 {displayTitle}
               </h2>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setShowSettings(true)}
-                  className="text-[#737686] hover:text-[#0b1c30] p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer animate-press"
+                  className="text-[#737686] dark:text-slate-400 hover:text-[#0b1c30] dark:hover:text-slate-100 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer animate-press"
                 >
                   <Settings className="w-5 h-5" />
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-[#737686] hover:text-[#0b1c30] p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="text-[#737686] dark:text-slate-400 hover:text-[#0b1c30] dark:hover:text-slate-100 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -374,7 +374,7 @@ export function ShareModal({
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 hover:border-slate-300 focus:border-[#3155F6] rounded-[20px] text-sm text-[#0b1c30] placeholder-slate-400 transition-colors focus:ring-1 focus:ring-[#3155F6] focus:outline-none"
+                  className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 hover:border-slate-300 focus:border-[#3155F6] rounded-[20px] text-sm text-[#0b1c30] dark:text-slate-100 placeholder-slate-400 dark:placeholder:text-slate-500 transition-colors focus:ring-1 focus:ring-[#3155F6] focus:outline-none"
                 />
               </div>
 
@@ -383,14 +383,14 @@ export function ShareModal({
                 <button
                   type="button"
                   onClick={() => setOpenDropdownId(openDropdownId === 'invite' ? null : 'invite')}
-                  className="inline-flex items-center justify-between gap-1 bg-white hover:bg-slate-50 border border-slate-200 text-[#434655] px-4 py-3 rounded-[20px] text-sm font-semibold transition-all cursor-pointer min-w-[130px]"
+                  className="inline-flex items-center justify-between gap-1 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-[#434655] dark:text-slate-300 px-4 py-3 rounded-[20px] text-sm font-semibold transition-all cursor-pointer min-w-[130px]"
                 >
                   <span>{invitePermission}</span>
                   <ChevronDown className="w-4 h-4 text-slate-500" />
                 </button>
 
                 {openDropdownId === 'invite' && (
-                  <div className="absolute right-0 mt-2 w-[160px] bg-white border border-slate-100 rounded-[12px] shadow-lg py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="absolute right-0 mt-2 w-[160px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-xl py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150">
                     {(['Người xem', 'Người nhận xét', 'Người chỉnh sửa'] as const).map((role) => (
                       <button
                         key={role}
@@ -402,8 +402,8 @@ export function ShareModal({
                         className={cn(
                           "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between font-semibold",
                           invitePermission === role
-                            ? "bg-[#E8EEFF]/60 text-[#3155F6]"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                            ? "bg-[#E8EEFF]/60 text-[#3155F6] dark:bg-blue-950/40 dark:text-blue-400"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
                         )}
                       >
                         <span>{role}</span>
@@ -418,7 +418,7 @@ export function ShareModal({
               <button
                 type="button"
                 onClick={handleAddUser}
-                className="flex items-center justify-center bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] p-3 rounded-full transition-all cursor-pointer shrink-0"
+                className="flex items-center justify-center bg-[#E8EEFF] dark:bg-slate-800 hover:bg-[#D4E5FF] dark:hover:bg-slate-700 text-[#3155F6] dark:text-blue-400 p-3 rounded-full transition-all cursor-pointer shrink-0"
               >
                 <UserPlus className="w-5 h-5" />
               </button>
@@ -451,21 +451,21 @@ export function ShareModal({
                         {renderAvatar(user)}
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-[#0b1c30]">{user.name}</span>
+                            <span className="text-sm font-bold text-[#0b1c30] dark:text-slate-100">{user.name}</span>
                             {isOwner && (
-                              <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-[4px] tracking-wide uppercase shrink-0">
+                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-[4px] tracking-wide uppercase shrink-0">
                                 CHỦ SỞ HỮU
                               </span>
                             )}
                           </div>
-                          <span className="text-xs text-slate-500 block truncate">{user.email}</span>
+                          <span className="text-xs text-slate-550 dark:text-slate-450 block truncate">{user.email}</span>
                         </div>
                       </div>
 
                       {/* Permission Dropdown/Label */}
                       <div className="shrink-0">
                         {isOwner ? (
-                          <span className="text-sm text-slate-500 font-semibold pr-2">
+                          <span className="text-sm text-slate-550 dark:text-slate-450 font-semibold pr-2">
                             Chủ sở hữu
                           </span>
                         ) : (
@@ -474,7 +474,7 @@ export function ShareModal({
                               type="button"
                               id={`dropdown-trigger-${user.id}`}
                               onClick={() => setOpenDropdownId(openDropdownId === user.id ? null : user.id)}
-                              className="inline-flex items-center justify-between gap-1 bg-white hover:bg-slate-50 border border-slate-200 text-[#434655] px-3.5 py-2 rounded-[20px] text-sm font-semibold transition-all cursor-pointer min-w-[130px]"
+                              className="inline-flex items-center justify-between gap-1 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-[#434655] dark:text-slate-350 px-3.5 py-2 rounded-[20px] text-sm font-semibold transition-all cursor-pointer min-w-[130px]"
                             >
                               <span>{user.permission}</span>
                               <ChevronDown className="w-4 h-4 text-slate-500" />
@@ -483,7 +483,7 @@ export function ShareModal({
                             {openDropdownId === user.id && (
                               <div
                                 id={`dropdown-container-${user.id}`}
-                                className="absolute right-0 mt-2 w-[180px] bg-white border border-slate-100 rounded-[12px] shadow-lg py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+                                className="absolute right-0 mt-2 w-[180px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-xl py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
                               >
                                 {([
                                   { value: 'Người xem', label: 'Người xem' },
@@ -498,10 +498,10 @@ export function ShareModal({
                                     className={cn(
                                       "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between font-semibold",
                                       opt.isDanger
-                                        ? "text-red-500 hover:bg-red-50"
+                                        ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
                                         : user.permission === opt.value
-                                        ? "bg-[#E8EEFF]/60 text-[#3155F6]"
-                                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                        ? "bg-[#E8EEFF]/60 text-[#3155F6] dark:bg-blue-950/40 dark:text-blue-400"
+                                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
                                     )}
                                   >
                                     <span>{opt.label}</span>
@@ -520,7 +520,7 @@ export function ShareModal({
             </div>
 
             {/* Section 2: General Access */}
-            <div className="border-t border-slate-100 pt-6 mb-8">
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-6 mb-8">
               <h3 className="text-xs font-bold text-slate-400 tracking-wider mb-4 uppercase">
                 Quyền truy cập chung
               </h3>
@@ -528,11 +528,11 @@ export function ShareModal({
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+            <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-6">
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="inline-flex items-center gap-2 bg-white hover:bg-[#F4F7FE] border border-slate-200 text-[#3155F6] px-5 py-3 rounded-full text-sm font-bold transition-all shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 hover:bg-[#F4F7FE] dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-[#3155F6] dark:text-blue-400 px-5 py-3 rounded-full text-sm font-bold transition-all shadow-sm cursor-pointer"
               >
                 <Copy className="w-4 h-4" />
                 <span>Sao chép đường liên kết</span>
@@ -565,12 +565,16 @@ function GeneralAccessControl({ openDropdownId, setOpenDropdownId }: GeneralAcce
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (openDropdownId === 'general' && dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenDropdownId(null)
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        if (openDropdownId === 'general') {
+          setOpenDropdownId(null)
+        }
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
   }, [openDropdownId, setOpenDropdownId])
 
   const isRestricted = generalAccess === 'restricted'
@@ -578,7 +582,7 @@ function GeneralAccessControl({ openDropdownId, setOpenDropdownId }: GeneralAcce
   return (
     <div className="flex items-start gap-4">
       {/* Icon Circle */}
-      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-600">
+      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-400">
         {isRestricted ? <Lock className="w-5 h-5" /> : <Globe className="w-5 h-5 text-emerald-600" />}
       </div>
 
@@ -588,7 +592,7 @@ function GeneralAccessControl({ openDropdownId, setOpenDropdownId }: GeneralAcce
             type="button"
             id="general-dropdown-trigger"
             onClick={() => setOpenDropdownId(openDropdownId === 'general' ? null : 'general')}
-            className="inline-flex items-center gap-1 font-bold text-slate-800 text-sm hover:bg-slate-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 px-2 py-1 rounded-lg transition-colors cursor-pointer"
           >
             <span>{isRestricted ? 'Bị hạn chế' : 'Bất kỳ ai có đường liên kết'}</span>
             <ChevronDown className="w-4 h-4 text-slate-500" />
@@ -597,7 +601,7 @@ function GeneralAccessControl({ openDropdownId, setOpenDropdownId }: GeneralAcce
           {openDropdownId === 'general' && (
             <div
               id="general-dropdown-container"
-              className="absolute left-2 top-full mt-1 w-[240px] bg-white border border-slate-100 rounded-[12px] shadow-lg py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+              className="absolute left-2 top-full mt-1 w-[240px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-xl py-1 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
             >
               {[
                 { value: 'restricted', label: 'Bị hạn chế' },
@@ -613,8 +617,8 @@ function GeneralAccessControl({ openDropdownId, setOpenDropdownId }: GeneralAcce
                   className={cn(
                     "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between font-semibold",
                     generalAccess === opt.value
-                      ? "bg-[#E8EEFF]/60 text-[#3155F6]"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-[#E8EEFF]/60 text-[#3155F6] dark:bg-blue-950/40 dark:text-blue-400"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
                   )}
                 >
                   <span>{opt.label}</span>
@@ -625,7 +629,7 @@ function GeneralAccessControl({ openDropdownId, setOpenDropdownId }: GeneralAcce
           )}
         </div>
         
-        <p className="text-xs text-slate-500 mt-1 leading-normal font-normal">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-normal font-normal">
           {isRestricted
             ? 'Chỉ những người được thêm mới có thể mở bằng đường liên kết này'
             : 'Bất kỳ ai trên Internet có đường liên kết đều có thể xem'}
@@ -634,4 +638,5 @@ function GeneralAccessControl({ openDropdownId, setOpenDropdownId }: GeneralAcce
     </div>
   )
 }
+
 

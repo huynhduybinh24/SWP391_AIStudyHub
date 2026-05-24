@@ -3,7 +3,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Times New Roman', Times, serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
   --color-primary: #2563eb;
   --color-primary-dark: #2653eb;
   --color-surface: #f8f9ff;
@@ -40,6 +41,10 @@
 
   body {
     @apply font-sans antialiased text-slate-900 bg-[#f5f7fb] transition-colors duration-300;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
   }
 
   .dark {

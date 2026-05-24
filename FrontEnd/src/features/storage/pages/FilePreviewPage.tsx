@@ -22,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Avatar } from '@/components/ui/Avatar'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
+import { useTranslation } from '@/context/LanguageContext'
 
 const getFilePreviewPageContent = (pageNum: number) => {
   if (pageNum === 1) {
@@ -61,6 +62,7 @@ const getFilePreviewPageContent = (pageNum: number) => {
 }
 
 export function FilePreviewPage() {
+  const { t } = useTranslation()
   const [zoom, setZoom] = useState(100)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -120,13 +122,13 @@ export function FilePreviewPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-foreground mb-4 transition-colors"
         >
           <ArrowLeft className="size-4" />
-          Back to Storage Explorer
+          {t.filePreview.backToExplorer}
         </Link>
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <h1 className="text-[32px] font-bold text-foreground leading-tight">File Preview</h1>
+            <h1 className="text-[32px] font-bold text-foreground leading-tight">{t.filePreview.title}</h1>
             <p className="text-muted mt-2 text-sm">
-              Preview, download, share, or analyze your cloud file.
+              {t.filePreview.subtitle}
             </p>
           </div>
           <div className="flex gap-3">
@@ -136,7 +138,7 @@ export function FilePreviewPage() {
               className="gap-2 h-9 px-4 text-sm font-medium transition-colors shadow-sm text-[#3155F6] border-slate-200 hover:bg-slate-50 bg-white"
             >
               <Share2 className="size-4" />
-              Share Access
+              {t.filePreview.shareAccess}
             </Button>
             <Button 
               onClick={handleDownload}
@@ -154,7 +156,7 @@ export function FilePreviewPage() {
               ) : (
                 <Download className="size-4" />
               )}
-              {isDownloading ? 'Downloading...' : isDownloaded ? 'Downloaded' : 'Download PDF'}
+              {isDownloading ? t.filePreview.downloading : isDownloaded ? t.filePreview.downloaded : t.filePreview.downloadPdf}
             </Button>
           </div>
         </div>
@@ -171,9 +173,9 @@ export function FilePreviewPage() {
             </div>
             <div className="flex items-center gap-4 text-muted text-sm font-medium">
               <div className="hidden sm:flex items-center gap-3">
-                <button onClick={handleZoomOut} className="hover:text-foreground transition-colors p-1" title="Zoom Out"><ZoomOut className="size-4" /></button>
+                <button onClick={handleZoomOut} className="hover:text-foreground transition-colors p-1" title={t.fileViewer.zoomOut}><ZoomOut className="size-4" /></button>
                 <span className="w-12 text-center select-none">{zoom}%</span>
-                <button onClick={handleZoomIn} className="hover:text-foreground transition-colors p-1" title="Zoom In"><ZoomIn className="size-4" /></button>
+                <button onClick={handleZoomIn} className="hover:text-foreground transition-colors p-1" title={t.fileViewer.zoomIn}><ZoomIn className="size-4" /></button>
               </div>
               <div className="hidden sm:block w-px h-4 bg-border dark:bg-slate-800"></div>
               <div className="flex items-center gap-2">
@@ -184,7 +186,9 @@ export function FilePreviewPage() {
                 >
                   <ChevronLeft className="size-4" />
                 </button>
-                <span className="select-none min-w-[70px] text-center">Page {currentPage} / {totalPages}</span>
+                <span className="select-none min-w-[70px] text-center">
+                  {t.filePreview.pageText(currentPage, totalPages)}
+                </span>
                 <button 
                   onClick={handleNextPage} 
                   disabled={currentPage === totalPages}
@@ -194,7 +198,7 @@ export function FilePreviewPage() {
                 </button>
               </div>
               <div className="hidden sm:block w-px h-4 bg-border dark:bg-slate-800"></div>
-              <button onClick={() => setIsFullscreen(!isFullscreen)} className="hover:text-foreground transition-colors p-1 hidden sm:block" title="Toggle Fullscreen">
+              <button onClick={() => setIsFullscreen(!isFullscreen)} className="hover:text-foreground transition-colors p-1 hidden sm:block" title={t.fileViewer.fullscreenViewer}>
                 {isFullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
               </button>
             </div>
@@ -211,7 +215,9 @@ export function FilePreviewPage() {
               </h2>
               <div className="flex justify-between items-center mb-6 mt-2">
                 <p className="text-[#3b82f6] text-[11px] font-bold tracking-widest uppercase">{pageContent.subtitle}</p>
-                <span className="text-[11px] text-muted font-bold bg-slate-100 px-2 py-1 rounded">PAGE {currentPage}</span>
+                <span className="text-[11px] text-muted font-bold bg-slate-100 px-2 py-1 rounded">
+                  {t.fileViewer.page} {currentPage}
+                </span>
               </div>
               
               {pageContent.showBrainImage && (
@@ -234,32 +240,34 @@ export function FilePreviewPage() {
         {/* Right Details Panel */}
         <Card className="w-full lg:w-[320px] shrink-0 border-border dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm lg:sticky lg:top-6">
           <CardContent className="p-6">
-            <h3 className="font-bold text-foreground text-lg mb-6">File Details</h3>
+            <h3 className="font-bold text-foreground text-lg mb-6">{t.filePreview.fileDetails}</h3>
             
             <div className="flex flex-col gap-5 mb-8">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted font-medium">Type</span>
-                <span className="text-[10px] font-bold bg-[#e5eeff] dark:bg-blue-950/40 text-[#2563eb] dark:text-blue-400 px-2 py-1 rounded">PDF DOCUMENT</span>
+                <span className="text-muted font-medium">{t.filePreview.type}</span>
+                <span className="text-[10px] font-bold bg-[#e5eeff] dark:bg-blue-950/40 text-[#2563eb] dark:text-blue-400 px-2 py-1 rounded">
+                  {t.filePreview.pdfDocument}
+                </span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted font-medium">Size</span>
+                <span className="text-muted font-medium">{t.filePreview.size}</span>
                 <span className="font-semibold text-foreground text-right">4.2 MB</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted font-medium">Uploaded</span>
+                <span className="text-muted font-medium">{t.filePreview.uploaded}</span>
                 <span className="font-semibold text-foreground text-right">Oct 24, 2024</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted font-medium">Owner</span>
+                <span className="text-muted font-medium">{t.filePreview.owner}</span>
                 <div className="flex items-center gap-2">
                   <Avatar src="/avatar.svg" name="Me" className="size-6 border border-border dark:border-slate-800" />
-                  <span className="font-semibold text-foreground">Me</span>
+                  <span className="font-semibold text-foreground">{t.filePreview.you}</span>
                 </div>
               </div>
             </div>
 
             <div>
-              <h4 className="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">TAGS</h4>
+              <h4 className="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">{t.filePreview.tags}</h4>
               <div className="flex flex-wrap gap-2">
                 {tags.map(tag => (
                   <span key={tag} className="group px-3 py-1 bg-[#e5eeff] dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-[#2563eb] dark:text-blue-400 text-xs font-medium rounded-full flex items-center gap-1.5 cursor-default transition-colors">
@@ -281,14 +289,14 @@ export function FilePreviewPage() {
                     }}
                     autoFocus
                     className="px-3 py-1 text-xs border border-blue-200 dark:border-blue-900/50 rounded-full focus:outline-none focus:border-[#2563eb] dark:focus:border-blue-500 w-24 bg-white dark:bg-slate-800 text-foreground"
-                    placeholder="New tag..."
+                    placeholder={t.filePreview.newTagPlaceholder}
                   />
                 ) : (
                   <button 
                     onClick={() => setIsAddingTag(true)}
                     className="px-3 py-1 border border-dashed border-slate-300 dark:border-slate-700 hover:border-[#2563eb] dark:hover:border-blue-500 text-muted hover:text-[#2563eb] dark:hover:text-blue-400 text-xs font-medium rounded-full flex items-center gap-1 transition-colors outline-none"
                   >
-                    <Plus className="size-3" /> Add
+                    <Plus className="size-3" /> {t.filePreview.addTag}
                   </button>
                 )}
               </div>
@@ -300,14 +308,14 @@ export function FilePreviewPage() {
       <Modal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
-        title="Share Access"
-        description="Share this file with your study group or copy the link."
+        title={t.filePreview.shareAccess}
+        description={t.filePreview.shareModalDesc}
         className="max-w-md"
       >
         <div className="flex flex-col gap-4 mt-2">
           {/* Link Section */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Share Link</label>
+            <label className="text-sm font-medium text-foreground">{t.filePreview.shareLink}</label>
             <div className="flex items-center gap-2">
               <input 
                 type="text" 
@@ -327,27 +335,27 @@ export function FilePreviewPage() {
                 }`}
               >
                 {isLinkCopied ? <Check className="size-4 mr-1.5" /> : <Share2 className="size-4 mr-1.5" />}
-                {isLinkCopied ? 'Copied!' : 'Copy'}
+                {isLinkCopied ? t.filePreview.copied : t.filePreview.copy}
               </Button>
             </div>
-            <p className="text-xs text-muted">Anyone with this link can view and download the file.</p>
+            <p className="text-xs text-muted">{t.filePreview.shareLinkDesc}</p>
           </div>
 
           <div className="h-px bg-border my-2"></div>
 
           {/* Access List */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">People with access</label>
+            <label className="text-sm font-medium text-foreground">{t.filePreview.peopleWithAccess}</label>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar src="/avatar.svg" name="Me" className="size-10" />
                 <div>
-                  <p className="text-[15px] font-bold text-slate-900">You</p>
+                  <p className="text-[15px] font-bold text-slate-900">{t.filePreview.you}</p>
                   <p className="text-sm text-slate-500">alex.rivera@example.com</p>
                 </div>
               </div>
-              <span className="text-sm font-medium text-slate-500 pr-2">Owner</span>
+              <span className="text-sm font-medium text-slate-500 pr-2">{t.sharedFolder.owner}</span>
             </div>
 
             <div className="flex items-center justify-between">
@@ -362,9 +370,9 @@ export function FilePreviewPage() {
               </div>
               <div className="relative group">
                 <select className="appearance-none w-24 h-[34px] pl-3 pr-8 bg-[#f8fafc] hover:bg-slate-100 border border-slate-200 text-slate-700 text-[13px] font-medium rounded-lg focus:outline-none focus:border-[#3155F6] focus:ring-1 focus:ring-[#3155F6] cursor-pointer transition-colors">
-                  <option>Viewer</option>
-                  <option selected>Editor</option>
-                  <option>Remove</option>
+                  <option>{t.filePreview.viewer}</option>
+                  <option selected>{t.filePreview.editor}</option>
+                  <option>{t.filePreview.remove}</option>
                 </select>
                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-slate-500 pointer-events-none group-hover:text-slate-700 transition-colors" />
               </div>
