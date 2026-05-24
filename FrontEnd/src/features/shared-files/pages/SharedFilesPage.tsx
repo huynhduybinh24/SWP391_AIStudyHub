@@ -186,7 +186,8 @@ export function SharedFilesPage() {
       totalPages: 42,
       description: 'Comprehensive study guide and midterm summary for General Biology 101, containing cellular respiration diagrams, metabolic pathway notes, and mitosis stages.',
       tags: ['CellBiology', 'KrebsCycle'],
-      previewContent: 'Biology 101 Midterm Notes preview content.'
+      previewContent: 'Biology 101 Midterm Notes preview content.',
+      url: ''
     },
     {
       id: 'file-2',
@@ -198,7 +199,8 @@ export function SharedFilesPage() {
       size: '15.8 MB',
       description: 'Group assets folder containing images, mock data, design specifications, and reference links.',
       tags: ['GroupProject', 'Assets'],
-      previewContent: 'Folder contents: assets, design specifications.'
+      previewContent: 'Folder contents: assets, design specifications.',
+      url: ''
     },
     {
       id: 'file-3',
@@ -211,7 +213,8 @@ export function SharedFilesPage() {
       totalPages: 10,
       description: 'Tabulated values of raw experimental logs, voltage sweeps, and resistance indexes from the electromagnetism laboratory session.',
       tags: ['Physics', 'LabData'],
-      previewContent: 'Voltage, Current, Resistance sweep tables.'
+      previewContent: 'Voltage, Current, Resistance sweep tables.',
+      url: ''
     }
   ])
 
@@ -605,7 +608,7 @@ export function SharedFilesPage() {
     setModals(prev => ({ ...prev, rename: false }))
   }
 
-  const handlePermissionConfirm = (newPermission: 'Editor' | 'Commenter' | 'Viewer') => {
+  const handlePermissionConfirm = (newPermission: 'View Only' | 'Viewer' | 'Editor' | 'Owner') => {
     if (!selectedFile) return
     setFiles(prev =>
       prev.map(f => (f.id === selectedFile.id ? { ...f, permission: newPermission } : f))
