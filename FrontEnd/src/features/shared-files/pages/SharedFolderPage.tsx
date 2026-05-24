@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft,
   Share2,
   User,
   Calendar,
@@ -31,6 +30,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 import { ShareAccessModal } from '@/components/shared/share-access/ShareAccessModal'
 import type { Collaborator as ShareAccessCollab } from '@/components/shared/share-access/ShareAccessModal'
+import BackButton from '@/components/shared/BackButton'
 
 export type SharedFolderFile = {
   id: string
@@ -474,15 +474,10 @@ The combined research indicates a strong correlation between multivariable biolo
     <div className="w-full space-y-6 select-none pb-12 animate-fade-in text-slate-800 dark:text-slate-200">
       {/* 1. Header Back Button */}
       <div className="flex items-center justify-between text-left">
-        <button
-          type="button"
-          onClick={handleBackToNotifications}
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors cursor-pointer focus-visible:outline-none focus:outline-none"
-          aria-label={t.sharedFolder.backToNotifications}
-        >
-          <ArrowLeft size={18} strokeWidth={2} />
-          <span>{t.sharedFolder.backToNotifications}</span>
-        </button>
+        <BackButton
+          label={t.sharedFolder.backToNotifications || "Back to Notifications"}
+          to="/dashboard/notifications?tab=shared-files"
+        />
       </div>
 
       {/* 2. Page Title & Action Block */}

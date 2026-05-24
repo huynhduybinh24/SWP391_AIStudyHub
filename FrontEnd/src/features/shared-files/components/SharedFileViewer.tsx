@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
-import { ArrowLeft } from 'lucide-react'
 import { FileViewer } from '@/components/shared/file-viewer/FileViewer'
 import { SharedFile } from './SharedFilesTable'
 import { useTranslation } from '@/context/LanguageContext'
+import BackButton from '@/components/shared/BackButton'
 
 interface SharedFileViewerProps {
   file: SharedFile
@@ -39,15 +39,10 @@ export function SharedFileViewer({
   }, [])
 
   const backLink = (
-    <button
-      type="button"
-      onClick={onBack}
-      className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors cursor-pointer"
-      aria-label="Back to Shared Files"
-    >
-      <ArrowLeft size={18} strokeWidth={2} />
-      <span>{t.fileViewer.backToShared}</span>
-    </button>
+    <BackButton
+      label={t.fileViewer.backToShared || "Back to Share Files"}
+      to="/dashboard/shared-files"
+    />
   )
 
   // Map file categories or subject if present (e.g. from file tags or names)

@@ -92,6 +92,7 @@ export const router = createBrowserRouter([
           { path: 'chat', element: <ChatPage /> },
           { path: 'shared', element: <SharedFilesPage /> },
           { path: 'shared/file/:fileId', element: <SharedFilesPage /> },
+          { path: 'shared-files', element: <SharedFilesPage /> },
           { path: 'shared-files/file/:fileId', element: <SharedFilesPage /> },
           { path: 'shared-files/research-materials', element: <SharedFolderPage /> },
           { path: 'storage', element: <CloudStoragePage /> },
