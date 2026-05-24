@@ -37,6 +37,7 @@ import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { PricingPage } from '@/features/upgrade/pages/PricingPage'
 import { CheckoutPage } from '@/features/upgrade/pages/CheckoutPage'
 import { StudyPlansPage } from '@/features/study-plans/pages/StudyPlansPage'
+import { AdminPartnershipRequestsPage } from '@/features/admin/pages/AdminPartnershipRequestsPage'
 
 import { ScrollToTop } from '@/components/shared/ScrollToTop'
 import { Outlet } from 'react-router-dom'
@@ -125,11 +126,17 @@ export const router = createBrowserRouter([
               { path: 'checkout', element: <CheckoutPage /> },
               { path: 'quizzes', element: <QuizzesPage /> },
               ...(DEV_SKIP_AUTH
-                ? [{ path: 'admin', element: <AdminDashboardPage /> }]
+                ? [
+                    { path: 'admin', element: <AdminDashboardPage /> },
+                    { path: 'admin/partnership-requests', element: <AdminPartnershipRequestsPage /> }
+                  ]
                 : [
                     {
                       element: <RoleRoute allowedRoles={['admin']} />,
-                      children: [{ path: 'admin', element: <AdminDashboardPage /> }],
+                      children: [
+                        { path: 'admin', element: <AdminDashboardPage /> },
+                        { path: 'admin/partnership-requests', element: <AdminPartnershipRequestsPage /> }
+                      ],
                     },
                   ]),
             ],
