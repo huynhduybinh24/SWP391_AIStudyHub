@@ -8,65 +8,46 @@ export const AIChatbotIcon = ({ className, ...props }: any) => (
     <defs>
       <linearGradient id="bot-head-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
         <stop offset="0%" stopColor="#ffffff" />
-        <stop offset="80%" stopColor="#e5ebf5" />
-        <stop offset="100%" stopColor="#c7d2e8" />
+        <stop offset="100%" stopColor="#e2e8f0" />
       </linearGradient>
       <linearGradient id="bot-visor-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#1a1c29" />
-        <stop offset="100%" stopColor="#0a0c13" />
+        <stop offset="0%" stopColor="#0f172a" />
+        <stop offset="100%" stopColor="#1e293b" />
       </linearGradient>
       <linearGradient id="bot-ear-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#4ca3ff" />
-        <stop offset="100%" stopColor="#1b63f2" />
+        <stop offset="0%" stopColor="#3b82f6" />
+        <stop offset="100%" stopColor="#2563eb" />
       </linearGradient>
       <filter id="head-shadow" x="-10%" y="-10%" width="120%" height="130%">
-        <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="#001845" floodOpacity="0.4" />
+        <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.1" />
       </filter>
-      <filter id="eye-glow" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="3" result="blur" />
+      <filter id="eye-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="2" result="blur" />
         <feComposite in="SourceGraphic" in2="blur" operator="over" />
-      </filter>
-      <filter id="visor-inner-shadow">
-        <feOffset dx="0" dy="2"/>
-        <feGaussianBlur stdDeviation="2" result="offset-blur"/>
-        <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
-        <feFlood floodColor="black" floodOpacity="0.8" result="color"/>
-        <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
-        <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
       </filter>
     </defs>
 
-    {/* Background Tech Details (faint circuits) */}
-    <path d="M 20 50 L 10 50 L 10 40" fill="none" stroke="#60a5fa" strokeWidth="0.5" opacity="0.3" />
-    <path d="M 80 60 L 90 60 L 90 70" fill="none" stroke="#60a5fa" strokeWidth="0.5" opacity="0.3" />
-    <circle cx="10" cy="40" r="1.5" fill="#60a5fa" opacity="0.4" />
-    <circle cx="90" cy="70" r="1.5" fill="#60a5fa" opacity="0.4" />
-    <circle cx="30" cy="85" r="1" fill="#60a5fa" opacity="0.5" />
-    <circle cx="70" cy="20" r="1" fill="#60a5fa" opacity="0.5" />
+    {/* Background Tech Details (simplified) */}
+    <circle cx="20" cy="50" r="1" fill="#93c5fd" opacity="0.5" />
+    <circle cx="80" cy="50" r="1" fill="#93c5fd" opacity="0.5" />
 
     {/* Antenna Base & Rod */}
-    <rect x="48" y="22" width="4" height="12" fill="#cbd5e1" />
-    <circle cx="50" cy="22" r="5" fill="url(#bot-ear-gradient)" filter="url(#eye-glow)" />
+    <rect x="48" y="24" width="4" height="10" fill="#94a3b8" />
+    <circle cx="50" cy="22" r="4.5" fill="url(#bot-ear-gradient)" />
 
     {/* Ears */}
-    <rect x="18" y="45" width="10" height="26" rx="4" fill="url(#bot-ear-gradient)" />
-    <rect x="72" y="45" width="10" height="26" rx="4" fill="url(#bot-ear-gradient)" />
+    <rect x="20" y="46" width="8" height="22" rx="4" fill="url(#bot-ear-gradient)" />
+    <rect x="72" y="46" width="8" height="22" rx="4" fill="url(#bot-ear-gradient)" />
 
     {/* Main Head */}
-    <rect x="23" y="32" width="54" height="42" rx="16" fill="url(#bot-head-gradient)" filter="url(#head-shadow)" />
+    <rect x="24" y="34" width="52" height="40" rx="14" fill="url(#bot-head-gradient)" filter="url(#head-shadow)" />
 
     {/* Visor */}
-    <rect x="30" y="40" width="40" height="24" rx="10" fill="url(#bot-visor-gradient)" filter="url(#visor-inner-shadow)" />
+    <rect x="32" y="42" width="36" height="20" rx="8" fill="url(#bot-visor-gradient)" />
 
     {/* Glowing Eyes */}
-    <rect x="38" y="45" width="8" height="12" rx="4" fill="#00ffff" filter="url(#eye-glow)" />
-    <rect x="54" y="45" width="8" height="12" rx="4" fill="#00ffff" filter="url(#eye-glow)" />
-
-    {/* Visor Accent Brackets */}
-    <path d="M 34 44 L 34 42 L 36 42" fill="none" stroke="#00ffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M 34 60 L 34 62 L 36 62" fill="none" stroke="#00ffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M 66 44 L 66 42 L 64 42" fill="none" stroke="#00ffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M 66 60 L 66 62 L 64 62" fill="none" stroke="#00ffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="38" y="47" width="7" height="10" rx="3.5" fill="#38bdf8" filter="url(#eye-glow)" />
+    <rect x="55" y="47" width="7" height="10" rx="3.5" fill="#38bdf8" filter="url(#eye-glow)" />
   </svg>
 )
 
@@ -80,24 +61,24 @@ export function FloatingAssistantButton() {
 
   return (
     <>
-      <div className="fixed bottom-[20px] right-[20px] z-20">
+      <div className="fixed bottom-[24px] right-[24px] z-50">
         <button
           onClick={handleToggle}
           aria-label="Open AI Chatbot"
-          className="relative size-16 md:size-20 rounded-full bg-gradient-to-br from-blue-400 via-blue-600 to-indigo-700 shadow-[0_8px_30px_rgba(37,99,235,0.4)] transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_40px_rgba(37,99,235,0.6)] group p-0 border-none outline-none flex items-center justify-center cursor-pointer"
+          className="relative size-[60px] md:size-[68px] rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-blue-500/40 group flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-blue-500/20 active:scale-95"
         >
-          {/* Glass Bubble Effect */}
-          <div className="absolute inset-0 rounded-full border-[1.5px] border-white/40 shadow-[inset_0_0_20px_rgba(255,255,255,0.4)] pointer-events-none" />
+          {/* Glass Effect Overlay */}
+          <div className="absolute inset-0 rounded-full border border-white/20 pointer-events-none" />
           
-          {/* Inner ambient glow */}
-          <div className="absolute inset-0 rounded-full bg-blue-400/20 shadow-[inset_0_0_15px_rgba(0,240,255,0.3)] pointer-events-none" />
+          {/* Subtle Inner Glow */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
           
-          {/* 3D Icon */}
-          <AIChatbotIcon className="w-[85%] h-[85%] relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" />
+          {/* AI Icon */}
+          <AIChatbotIcon className="w-[75%] h-[75%] relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-sm" />
 
-          {/* 3D Green Online Indicator */}
-          <div className="absolute -top-1 -right-1 z-20 flex size-6 md:size-7 items-center justify-center rounded-full bg-white/20 backdrop-blur-md shadow-[0_4px_10px_rgba(0,0,0,0.2)]">
-            <div className="size-4 md:size-5 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 border-[2px] border-white/90 shadow-[inset_0_2px_4px_rgba(255,255,255,0.5)]" />
+          {/* Minimal Online Indicator */}
+          <div className="absolute top-0 right-0 z-20 flex size-4 md:size-[18px] items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800">
+            <div className="size-2 md:size-2.5 rounded-full bg-emerald-500" />
           </div>
         </button>
       </div>
