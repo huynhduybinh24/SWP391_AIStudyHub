@@ -790,7 +790,7 @@ export function ChatPage() {
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.summarizeRecentNotes)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer active:scale-[0.98]"
                     >
                       <span className="truncate">{t.aiChatbot.summarizeRecentNotes}</span>
                       <FileText className="size-4 opacity-70 shrink-0 text-blue-500" />
@@ -798,7 +798,7 @@ export function ChatPage() {
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.explainQuantum)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer active:scale-[0.98]"
                     >
                       <span className="truncate">{t.aiChatbot.explainQuantum}</span>
                       <FlaskConical className="size-4 opacity-70 shrink-0 text-blue-500" />
@@ -806,7 +806,7 @@ export function ChatPage() {
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.generateQuiz)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer active:scale-[0.98]"
                     >
                       <span className="truncate">{t.aiChatbot.generateQuiz}</span>
                       <FileQuestion className="size-4 opacity-70 shrink-0 text-blue-500" />
@@ -814,7 +814,7 @@ export function ChatPage() {
                     <button
                       type="button"
                       onClick={() => handleSend("Create a study plan")}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer active:scale-[0.98]"
                     >
                       <span className="truncate">Create a study plan</span>
                       <Loader2 className="size-4 opacity-70 shrink-0 text-blue-500" />
