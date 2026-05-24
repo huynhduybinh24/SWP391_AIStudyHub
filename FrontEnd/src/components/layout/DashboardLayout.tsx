@@ -20,7 +20,7 @@ export function DashboardLayout() {
       {/* Mobile Sidebar Backdrop Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-[#0b1c30]/40 backdrop-blur-sm z-40 md:hidden cursor-pointer"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden cursor-pointer"
           onClick={() => setSidebarOpen(false)}
         />
       )}
