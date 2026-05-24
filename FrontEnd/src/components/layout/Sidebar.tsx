@@ -1,14 +1,12 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
-import { Zap, X, User, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Zap, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
-import { useProfileStore } from '@/features/profile/stores/profileStore'
-import { ConfirmLogoutModal } from '@/components/layout/ConfirmLogoutModal'
 
 function isNavActive(pathname: string, path: string) {
   if (pathname.startsWith('/dashboard/shared-files')) {
@@ -129,8 +127,6 @@ export function Sidebar() {
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed)
   const user = useAuthStore((s) => s.user)
   const { t } = useTranslation()
-  const { profile } = useProfileStore()
-  const [logoutModalOpen, setLogoutModalOpen] = useState(false)
 
   const getSidebarLabel = (label: string) => {
     switch (label.toLowerCase()) {
@@ -166,14 +162,14 @@ export function Sidebar() {
     <>
       <aside
         className={cn(
-          "flex h-screen flex-col justify-between border-r bg-white text-slate-900 border-slate-200 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-800 py-5 sticky top-0 left-0 z-50 select-none transition-all duration-300 ease-in-out overflow-x-hidden",
+          "flex h-screen flex-col justify-between border-r bg-white text-slate-900 border-slate-200 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-800 py-5 sticky top-0 left-0 z-50 select-none transition-all duration-300 ease-in-out overflow-y-hidden overflow-x-hidden",
           isSidebarCollapsed ? "w-[72px] px-4" : "w-[240px] px-4",
           // Mobile drawer states
           "max-md:fixed max-md:h-full max-md:w-[240px] max-md:translate-x-0 max-md:px-4 max-md:py-5",
           sidebarOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full"
         )}
       >
-        <div className="flex flex-col gap-0 flex-1 min-h-0">
+        <div className="flex flex-col gap-0 w-full">
           {/* Logo and Brand */}
           <div className={cn(
             "flex items-center shrink-0 border-b border-slate-200 dark:border-slate-800 transition-all duration-300 pb-4 mb-5 overflow-hidden w-full min-w-0",
@@ -272,9 +268,7 @@ export function Sidebar() {
           </div>
 
           {/* Navigation list */}
-          <nav className={cn(
-            "flex-1 overflow-y-auto overflow-x-hidden flex flex-col pr-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent gap-2"
-          )}>
+          <nav className="flex flex-col gap-2 pr-1">
             {mainNavItems.map((item) => (
               <SidebarLink
                 key={item.path}
@@ -330,61 +324,8 @@ export function Sidebar() {
               )}
             </Link>
           </PortalTooltip>
-
-          {/* Footer / Profile Section Wrapper */}
-          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col w-full">
-            {/* User Profile Card */}
-            <PortalTooltip content={`${profile.name} (${user?.email})`} disabled={!isSidebarCollapsed}>
-              <div className={cn(
-                "flex items-center gap-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shrink-0 relative transition-all duration-200 overflow-hidden",
-                isSidebarCollapsed 
-                  ? "w-10 h-10 mx-auto justify-center p-0 border-none bg-transparent dark:bg-transparent rounded-full" 
-                  : "p-3 w-full max-w-full rounded-2xl",
-                "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:justify-center md:max-lg:p-0 md:max-lg:border-none md:max-lg:bg-transparent md:max-lg:dark:bg-transparent md:max-lg:rounded-full"
-              )}>
-                <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-800">
-                  {profile.avatarUrl ? (
-                    <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
-                  ) : (
-                    <User className="size-5 text-slate-400" />
-                  )}
-                </div>
-                {!isSidebarCollapsed && (
-                  <div className="min-w-0 flex-1 md:max-lg:hidden text-left animate-fade-in overflow-hidden">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate leading-tight">
-                      {profile.name}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-none mt-1">
-                      {user?.email}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </PortalTooltip>
-
-            {/* Logout Button */}
-            <PortalTooltip content={t.sidebar.logout} disabled={!isSidebarCollapsed}>
-              <button
-                type="button"
-                onClick={() => setLogoutModalOpen(true)}
-                className={cn(
-                  "mt-3 flex items-center gap-3 rounded-xl text-[15px] font-bold transition-all duration-200 no-underline select-none text-left cursor-pointer w-full max-w-full overflow-hidden hover:bg-red-50 text-red-600 dark:hover:bg-red-500/10 dark:text-red-400 relative shrink-0 h-11",
-                  isSidebarCollapsed 
-                    ? "w-10 h-10 mx-auto justify-center p-0 rounded-2xl" 
-                    : "px-3",
-                  "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:justify-center md:max-lg:p-0 md:max-lg:mt-3"
-                )}
-              >
-                <LogOut className="size-5 shrink-0 text-red-500 dark:text-red-400" />
-                {!isSidebarCollapsed && <span className="md:max-lg:hidden block truncate animate-fade-in min-w-0 flex-1 text-left">{t.sidebar.logout}</span>}
-              </button>
-            </PortalTooltip>
-          </div>
         </div>
       </aside>
-
-      {/* Confirm Logout Modal */}
-      <ConfirmLogoutModal isOpen={logoutModalOpen} onClose={() => setLogoutModalOpen(false)} />
     </>
   )
 }
