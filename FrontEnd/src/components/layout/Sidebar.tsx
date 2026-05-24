@@ -217,14 +217,14 @@ export function Sidebar() {
             {/* Expanded Header (Desktop expanded / Mobile always) */}
             {!isSidebarCollapsed ? (
               <>
-                <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
+                              <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
                   <img
                     src="/logo.png"
                     alt="LumiEdu"
-                    className="w-8 h-8 shrink-0 object-contain"
+                    className="w-11 h-11 shrink-0 object-contain"
                   />
                   <div className="flex flex-col justify-center animate-fade-in whitespace-nowrap overflow-hidden min-w-0 text-left">
-                    <h1 className="text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                    <h1 className="text-[15px] font-bold leading-tight text-blue-600 dark:text-blue-400 tracking-tight truncate">
                       LumiEdu
                     </h1>
                     <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
@@ -250,10 +250,10 @@ export function Sidebar() {
                   <img
                     src="/logo.png"
                     alt="LumiEdu"
-                    className="w-8 h-8 shrink-0 object-contain"
+                    className="w-11 h-11 shrink-0 object-contain"
                   />
                   <div className="flex flex-col justify-center whitespace-nowrap overflow-hidden min-w-0 text-left">
-                    <h1 className="text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                    <h1 className="text-[15px] font-bold leading-tight text-blue-600 dark:text-blue-400 tracking-tight truncate">
                       LumiEdu
                     </h1>
                     <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">

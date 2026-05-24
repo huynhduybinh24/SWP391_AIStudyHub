@@ -271,7 +271,7 @@ export function SharedFolderPage() {
   }
 
   // Synthesis detail helper values
-  const synthesisReportContent = `=== AI STUDY HUB - RESEARCH SYNTHESIS REPORT ===
+  const synthesisReportContent = `=== LUMIEDU - RESEARCH SYNTHESIS REPORT ===
 Folder Name: Group Project: Research Materials
 Total Workspace Files: 12 files • 218 MB
 
