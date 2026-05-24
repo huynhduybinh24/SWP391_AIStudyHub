@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from '@/context/LanguageContext'
 import {
   ArrowLeft,
   Clock,
@@ -129,6 +130,7 @@ const PresentationsIcon = () => (
 )
 
 export function SearchResultsPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { documents, showToast } = useOutletContext<DocumentsLayoutContext>()
@@ -214,9 +216,9 @@ export function SearchResultsPage() {
       
       // Visual feedback via premium toast system
       if (!isCurrentlyBookmarked) {
-        showToast('Document successfully bookmarked!')
+        showToast(t.searchResultsPage.toastBookmarkAdded)
       } else {
-        showToast('Bookmark removed.')
+        showToast(t.searchResultsPage.toastBookmarkRemoved)
       }
       return updated
     })
@@ -228,13 +230,13 @@ export function SearchResultsPage() {
       const shareUrl = `${window.location.origin}/dashboard/documents`
       navigator.clipboard.writeText(shareUrl)
         .then(() => {
-          showToast(`Copied shareable link for "${title}" to clipboard!`)
+          showToast(t.searchResultsPage.toastShareSuccess(title))
         })
         .catch(() => {
-          showToast('Failed to copy link to clipboard.')
+          showToast(t.searchResultsPage.toastShareError)
         })
     } else {
-      showToast('Clipboard sharing not supported on this browser.')
+      showToast(t.searchResultsPage.toastShareNotSupported)
     }
   }
 
@@ -303,28 +305,32 @@ export function SearchResultsPage() {
           className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-[#3155F6] transition-colors focus:outline-none"
         >
           <ArrowLeft className="h-4.5 w-4.5 shrink-0 stroke-[2.2]" />
-          Back to Documents
+          {t.searchResultsPage.backToDocs}
         </button>
       </div>
 
       {/* 2. Page Header Block */}
       <div className="space-y-2 pt-1">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-[38px] leading-tight">
-          {searchedDocuments.length} Results for "{keyword || 'All Documents'}"
+          {t.searchResultsPage.resultsCount(searchedDocuments.length, keyword || t.common.all)}
         </h1>
         
         {/* Search History Row */}
         <div className="flex items-center gap-2 text-[13px] text-slate-500 font-medium">
           <Clock className="h-4 w-4 text-slate-400 shrink-0" />
-          <span className="font-semibold text-slate-500">Search history:</span>
+          <span className="font-semibold text-slate-500">{t.searchResultsPage.searchHistory}</span>
           <div className="flex flex-wrap items-center gap-1.5 ml-1">
-            {['Psychology', 'Brain', 'Biology'].map((historyItem, index) => (
-              <span key={historyItem} className="flex items-center">
+            {[
+              { key: 'Psychology', label: t.searchResultsPage.historyPsychology },
+              { key: 'Brain', label: t.searchResultsPage.historyBrain },
+              { key: 'Biology', label: t.searchResultsPage.historyBiology }
+            ].map((item, index) => (
+              <span key={item.key} className="flex items-center">
                 <button
-                  onClick={() => handleHistorySearch(historyItem)}
+                  onClick={() => handleHistorySearch(item.key)}
                   className="text-slate-500 hover:text-[#3155F6] hover:underline transition-colors"
                 >
-                  {historyItem}
+                  {item.label}
                 </button>
                 {index < 2 && <span className="text-slate-400 mx-1">,</span>}
               </span>
@@ -342,13 +348,13 @@ export function SearchResultsPage() {
           {/* Section: Subject */}
           <div className="space-y-4">
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              SUBJECT
+              {t.searchResultsPage.subject}
             </h3>
             <div className="space-y-3.5">
               {[
-                { id: 'NEUROSCIENCE', name: 'Neuroscience', count: neuroCount },
-                { id: 'BIOLOGY', name: 'Biology', count: bioCount },
-                { id: 'PSYCHOLOGY', name: 'Psychology', count: psychCount }
+                { id: 'NEUROSCIENCE', name: t.searchResultsPage.subjects.neuroscience, count: neuroCount },
+                { id: 'BIOLOGY', name: t.searchResultsPage.subjects.biology, count: bioCount },
+                { id: 'PSYCHOLOGY', name: t.searchResultsPage.subjects.psychology, count: psychCount }
               ].map(subj => {
                 const isChecked = selectedSubjects.includes(subj.id)
                 return (
@@ -384,13 +390,13 @@ export function SearchResultsPage() {
           {/* Section: File Type */}
           <div className="space-y-4 pt-1">
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              FILE TYPE
+              {t.searchResultsPage.fileType}
             </h3>
             <div className="space-y-3.5">
               {[
-                { id: 'pdf', name: 'PDF', icon: <PDFIcon /> },
-                { id: 'notes', name: 'Lecture Notes', icon: <LectureNotesIcon /> },
-                { id: 'presentations', name: 'Presentations', icon: <PresentationsIcon /> }
+                { id: 'pdf', name: t.searchResultsPage.fileTypes.pdf, icon: <PDFIcon /> },
+                { id: 'notes', name: t.searchResultsPage.fileTypes.notes, icon: <LectureNotesIcon /> },
+                { id: 'presentations', name: t.searchResultsPage.fileTypes.presentations, icon: <PresentationsIcon /> }
               ].map(type => {
                 const isChecked = selectedFileTypes.includes(type.id)
                 return (
@@ -416,7 +422,7 @@ export function SearchResultsPage() {
           {/* Section: Date Added */}
           <div className="space-y-4 pt-1">
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              DATE ADDED
+              {t.searchResultsPage.dateAdded}
             </h3>
             
             <div className="relative">
@@ -425,9 +431,9 @@ export function SearchResultsPage() {
                 onChange={(e) => setDateFilter(e.target.value)}
                 className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-4.5 py-3 pr-10 text-[14px] font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3155F6]/20 cursor-pointer shadow-2xs transition-all"
               >
-                <option value="Last 7 Days">Last 7 Days</option>
-                <option value="Last 30 Days">Last 30 Days</option>
-                <option value="All Time">All Time</option>
+                <option value="Last 7 Days">{t.searchResultsPage.dateOptions.last7Days}</option>
+                <option value="Last 30 Days">{t.searchResultsPage.dateOptions.last30Days}</option>
+                <option value="All Time">{t.searchResultsPage.dateOptions.allTime}</option>
               </select>
               <ChevronDown className="absolute right-4 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-slate-400 pointer-events-none stroke-[2]" />
             </div>
@@ -443,9 +449,9 @@ export function SearchResultsPage() {
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EBF1FF] text-[#3155F6]">
                 <Sparkles className="h-6 w-6" />
               </div>
-              <h3 className="mt-4 text-[17px] font-extrabold text-slate-900">No matches found</h3>
+              <h3 className="mt-4 text-[17px] font-extrabold text-slate-900">{t.searchResultsPage.noMatches}</h3>
               <p className="mt-2 text-sm text-slate-500 max-w-sm font-medium">
-                No documents in search match the selected filters. Try updating your subject or format checklists.
+                {t.searchResultsPage.noMatchesSub}
               </p>
               <button
                 onClick={() => {
@@ -455,17 +461,22 @@ export function SearchResultsPage() {
                 }}
                 className="mt-6 rounded-xl text-sm font-bold border border-slate-200 bg-white px-5 py-2.5 text-slate-700 hover:bg-slate-50 hover:text-[#3155F6] transition-all"
               >
-                Reset Filter Choices
+                {t.searchResultsPage.resetFilters}
               </button>
             </div>
           ) : (
             /* Match results list */
             filteredDocuments.map(doc => {
-              const details = DOCUMENT_DETAILS[doc.id] || {
-                label: 'STUDY GUIDE',
-                description: `This high-fidelity study material on ${doc.title || doc.fileName} has been indexed by our AI system. It outlines core academic structures, experimental data definitions, and diagnostic review procedures to elevate comprehension and test performance.`,
-                tags: [`#${doc.subject.toLowerCase()}`, '#exam-prep', '#study-notes']
-              }
+              const translatedDetails = t.searchResultsPage.documentDetails[doc.id as keyof typeof t.searchResultsPage.documentDetails]
+              const details = translatedDetails || (DOCUMENT_DETAILS[doc.id] ? {
+                label: DOCUMENT_DETAILS[doc.id].label,
+                description: DOCUMENT_DETAILS[doc.id].description,
+                tags: DOCUMENT_DETAILS[doc.id].tags
+              } : {
+                label: t.searchResultsPage.defaultLabel,
+                description: t.searchResultsPage.defaultDesc(doc.title || doc.fileName),
+                tags: [`#${t.searchResultsPage.subjects[doc.subject.toLowerCase() as keyof typeof t.searchResultsPage.subjects]?.toLowerCase() || doc.subject.toLowerCase()}`, ...t.searchResultsPage.defaultTags]
+              })
               const isBookmarked = bookmarkedDocs[doc.id] || false
 
               return (
@@ -481,7 +492,7 @@ export function SearchResultsPage() {
                       {/* AI Generated Pill */}
                       <span className="flex items-center gap-1.5 rounded-md bg-[#EBF1FF] px-2.5 py-1 text-[10px] font-extrabold tracking-wider text-[#3155F6]">
                         <Sparkles className="h-3 w-3 text-[#3155F6] fill-[#3155F6]/10" />
-                        AI GENERATED
+                        {t.searchResultsPage.aiGenerated}
                       </span>
                       {/* Label */}
                       <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">
@@ -497,14 +508,14 @@ export function SearchResultsPage() {
                           "text-slate-400 hover:text-[#3155F6] transition-all duration-200 focus:outline-none",
                           isBookmarked ? "text-[#3155F6]" : "text-slate-400"
                         )}
-                        title="Bookmark document"
+                        title={t.searchResultsPage.bookmarkTooltip}
                       >
                         <Bookmark className={cn("h-[20px] w-[20px]", isBookmarked && "fill-[#3155F6] stroke-[#3155F6]")} />
                       </button>
                       <button
                         onClick={(e) => handleShare(doc.title || doc.fileName, e)}
                         className="text-slate-400 hover:text-[#3155F6] transition-all duration-200 focus:outline-none"
-                        title="Share document link"
+                        title={t.searchResultsPage.shareTooltip}
                       >
                         <Share2 className="h-[20px] w-[20px]" />
                       </button>
