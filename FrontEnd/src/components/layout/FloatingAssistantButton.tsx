@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { ChatPopup } from '@/features/ai-chatbot/components/ChatPopup'
 import { useUiStore } from '@/stores/uiStore'
-import { useToast } from '@/components/ui/Toast'
 import { AnimatePresence } from 'framer-motion'
 
 export const AIChatbotIcon = ({ className, ...props }: any) => (
@@ -74,14 +73,9 @@ export const AIChatbotIcon = ({ className, ...props }: any) => (
 export function FloatingAssistantButton() {
   const isChatPopupOpen = useUiStore((s) => s.isChatPopupOpen)
   const setChatPopupOpen = useUiStore((s) => s.setChatPopupOpen)
-  const toast = useToast()
 
   const handleToggle = () => {
-    const nextState = !isChatPopupOpen
-    setChatPopupOpen(nextState)
-    if (nextState) {
-      toast.success('AI Assistant connected 👋')
-    }
+    setChatPopupOpen(!isChatPopupOpen)
   }
 
   return (
