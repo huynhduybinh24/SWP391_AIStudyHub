@@ -698,9 +698,9 @@ export function SharedFilesPage() {
       if (filterLower === 'folder') {
         matchesType = file.type === 'folder'
       } else if (filterLower === 'doc') {
-        matchesType = file.type === 'doc' || file.type === 'docx' || file.type === 'pdf'
+        matchesType = file.type === 'docx' || file.type === 'pdf'
       } else if (filterLower === 'spreadsheet') {
-        matchesType = file.type === 'spreadsheet' || file.type === 'xlsx'
+        matchesType = file.type === 'xlsx'
       } else {
         matchesType = file.type === filterLower
       }
