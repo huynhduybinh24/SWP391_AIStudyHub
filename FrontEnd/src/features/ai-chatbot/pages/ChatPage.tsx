@@ -786,30 +786,38 @@ export function ChatPage() {
                   </h2>
 
                   {/* Suggestion Prompt Chips */}
-                  <div className="flex flex-col gap-3 w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.summarizeRecentNotes)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-5 py-4 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.summarizeRecentNotes}</span>
-                      <FileText className="size-4 opacity-70 shrink-0" />
+                      <FileText className="size-4 opacity-70 shrink-0 text-blue-500" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.explainQuantum)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-5 py-4 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.explainQuantum}</span>
-                      <FlaskConical className="size-4 opacity-70 shrink-0" />
+                      <FlaskConical className="size-4 opacity-70 shrink-0 text-blue-500" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.generateQuiz)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-5 py-4 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
                     >
                       <span className="truncate">{t.aiChatbot.generateQuiz}</span>
-                      <FileQuestion className="size-4 opacity-70 shrink-0" />
+                      <FileQuestion className="size-4 opacity-70 shrink-0 text-blue-500" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSend("Create a study plan")}
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer"
+                    >
+                      <span className="truncate">Create a study plan</span>
+                      <Loader2 className="size-4 opacity-70 shrink-0 text-blue-500" />
                     </button>
                   </div>
                 </div>
@@ -818,7 +826,7 @@ export function ChatPage() {
                 /* ==================================================
                     2B. ACTIVE MESSAGES LIST
                    ================================================== */
-                <div className="flex-1 overflow-y-auto max-h-[500px] pr-2 flex flex-col gap-6 pt-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+                <div className="flex-1 overflow-y-auto max-h-[500px] pl-2 pr-3 flex flex-col gap-6 pt-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
                   {messages.map((msg, index) => {
                     const isUser = msg.role === 'user'
 
@@ -829,8 +837,8 @@ export function ChatPage() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ duration: 0.2 }}
                         className={cn(
-                          "flex items-start gap-3.5 transition-all duration-300 w-full group",
-                          isUser ? "flex-row-reverse" : "flex-row"
+                          "flex items-start gap-2.5 transition-all duration-300 w-full group max-w-[92%]",
+                          isUser ? "flex-row-reverse ml-auto" : "flex-row"
                         )}
                       >
                         {/* Avatar */}
@@ -845,7 +853,7 @@ export function ChatPage() {
                         )}
 
                         {/* Content Container */}
-                        <div className="max-w-[80%] flex flex-col gap-1.5 items-stretch">
+                        <div className="flex-1 flex flex-col gap-1.5 items-stretch min-w-0">
                           {/* Chat Bubble */}
                           <div
                             className={cn(
@@ -909,12 +917,12 @@ export function ChatPage() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-start gap-3.5 w-full flex-row"
+                      className="flex items-start gap-2.5 w-full flex-row max-w-[92%]"
                     >
                       <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700/50">
                         <AIChatbotIcon className="size-4" />
                       </div>
-                      <div className="max-w-[80%] rounded-[20px] rounded-tl-sm px-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 flex items-center gap-1.5 h-[42px] shadow-sm">
+                      <div className="max-w-[80%] rounded-[20px] rounded-tl-sm px-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 flex items-center gap-1.5 h-[42px] shadow-sm mt-0.5">
                         <div className="size-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.3s]" />
                         <div className="size-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.15s]" />
                         <div className="size-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce" />
