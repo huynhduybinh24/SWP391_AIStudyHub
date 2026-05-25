@@ -57,7 +57,7 @@ export function WorkspaceRightPanel({
     return (
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-xs h-full flex flex-col items-center justify-center text-center select-none min-h-[380px] w-full max-w-full overflow-hidden">
         <FileText className="size-10 text-slate-300 dark:text-slate-700 mb-3 stroke-[1.5]" />
-        <h4 className="text-sm font-extrabold text-slate-750 dark:text-slate-355">No document selected</h4>
+        <h4 className="text-sm font-extrabold text-slate-700 dark:text-slate-300">No document selected</h4>
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-[200px]">Select a file from the workspace list to view summaries and activities.</p>
       </div>
     )
@@ -167,7 +167,7 @@ export function WorkspaceRightPanel({
           <button
             type="button"
             onClick={onAskAI}
-            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 h-11 rounded-2xl text-sm font-semibold text-slate-755 dark:text-slate-355 transition-all cursor-pointer shadow-xs"
+            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 h-11 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-300 transition-all cursor-pointer shadow-xs"
           >
             <div className="flex items-center gap-2">
               <MessageSquare className="size-4 text-blue-500 shrink-0" />
