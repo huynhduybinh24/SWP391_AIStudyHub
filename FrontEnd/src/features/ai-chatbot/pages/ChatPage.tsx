@@ -1,44 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
-import { 
-  FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send, 
-  Loader2, User, X, Plus, Search, Copy, RefreshCw, MoreVertical, 
-  Trash2, Edit2, Pin, MessageSquare, Check, Sparkles, FolderOpen, ArrowLeft
+import {
+  FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send,
+  Loader2, User, X, Plus, Search, Copy, RefreshCw, MoreVertical,
+  Trash2, Edit2, Pin, MessageSquare, Check, Sparkles, FolderOpen, ArrowLeft,
+  Zap, BrainCircuit, ChevronDown
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 
-const AIChatbotIcon = ({ className, ...props }: any) => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
-    <defs>
-      <linearGradient id="ai-bot-body" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#ffffff" />
-        <stop offset="1" stopColor="#e0e7ff" />
-      </linearGradient>
-      <linearGradient id="ai-bot-face" x1="6" y1="8" x2="18" y2="18" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#0f172a" />
-        <stop offset="1" stopColor="#1e293b" />
-      </linearGradient>
-      <filter id="ai-bot-glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="1.5" result="blur" />
-        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-      </filter>
-      <filter id="ai-bot-shadow" x="-10%" y="-10%" width="120%" height="120%">
-        <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.15" />
-      </filter>
-    </defs>
-    <rect x="3" y="6" width="18" height="14" rx="5" fill="url(#ai-bot-body)" filter="url(#ai-bot-shadow)" />
-    <rect x="5.5" y="8.5" width="13" height="9" rx="3" fill="url(#ai-bot-face)" />
-    <circle cx="9.5" cy="13" r="1.8" fill="#38bdf8" filter="url(#ai-bot-glow)" />
-    <circle cx="14.5" cy="13" r="1.8" fill="#38bdf8" filter="url(#ai-bot-glow)" />
-    <path d="M7.5 10.5h1.5" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
-    <path d="M15 10.5h1.5" stroke="#38bdf8" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
-    <path d="M12 6V2.5" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="12" cy="2" r="1.2" fill="#38bdf8" filter="url(#ai-bot-glow)" />
-    <path d="M3 11c-1 0-1.5 1-1.5 2s.5 2 1.5 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M21 11c1 0 1.5 1 1.5 2s-.5 2-1.5 2" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-)
+import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
@@ -150,6 +121,11 @@ export function ChatPage() {
   // --- States ---
   const [conversations, setConversations] = useState<ChatConversation[]>(initialConversations)
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+  const [selectedMode, setSelectedMode] = useState<'Instant' | 'Thinking'>('Instant')
+  const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false)
+  
+  // Ref for the model selector dropdown to close on click outside
+  const modeDropdownRef = useRef<HTMLDivElement>(null)
   const [isChatStarted, setIsChatStarted] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
@@ -157,7 +133,7 @@ export function ChatPage() {
   const [searchModalOpen, setSearchModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [pinnedConvIds, setPinnedConvIds] = useState<string[]>([])
-  
+
   // --- Selected Files State ---
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [fileError, setFileError] = useState<string | null>(null)
@@ -197,6 +173,9 @@ export function ChatPage() {
     const handleOutsideClick = (e: MouseEvent) => {
       if (attachDropdownRef.current && !attachDropdownRef.current.contains(e.target as Node)) {
         setAttachDropdownOpen(false)
+      }
+      if (modeDropdownRef.current && !modeDropdownRef.current.contains(e.target as Node)) {
+        setIsModeDropdownOpen(false)
       }
       if (activeDropdownConvId) {
         // If clicking outside history menu dots, close it
@@ -375,7 +354,7 @@ export function ChatPage() {
 
     // Save active conversation state
     let targetConvId = activeConversationId
-    
+
     if (!targetConvId) {
       // First message in a new chat: Create a new conversation
       targetConvId = `chat-${Date.now()}`
@@ -391,7 +370,7 @@ export function ChatPage() {
       setActiveConversationId(targetConvId)
     } else {
       // Update existing conversation
-      setConversations((prev) => 
+      setConversations((prev) =>
         prev.map((c) => {
           if (c.id === targetConvId) {
             return {
@@ -411,7 +390,7 @@ export function ChatPage() {
     setTimeout(() => {
       setIsTyping(false)
       let botResponse = t.aiChatbot.botResponseDefault
-      
+
       const lowerText = text.toLowerCase()
       if (lowerText.includes('summarize') || lowerText.includes('notes') || lowerText.includes('tóm tắt') || lowerText.includes('요약') || lowerText.includes('要約')) {
         botResponse = t.aiChatbot.botResponseNotes
@@ -432,7 +411,7 @@ export function ChatPage() {
       setMessages((prev) => {
         const finalMsgs = [...prev, newBotMsg]
         // Save to conversation
-        setConversations((convList) => 
+        setConversations((convList) =>
           convList.map((c) => {
             if (c.id === targetConvId) {
               return { ...c, messages: finalMsgs }
@@ -481,7 +460,7 @@ export function ChatPage() {
       // Temporarily remove assistant message from this point
       const slicedMsgs = messages.slice(0, index)
       setMessages(slicedMsgs)
-      
+
       setTimeout(() => {
         setIsTyping(false)
         const botResponse = t.aiChatbot.botResponseDefault
@@ -495,7 +474,7 @@ export function ChatPage() {
         setMessages(finalMsgs)
 
         if (activeConversationId) {
-          setConversations((prev) => 
+          setConversations((prev) =>
             prev.map((c) => {
               if (c.id === activeConversationId) {
                 return { ...c, messages: finalMsgs }
@@ -543,7 +522,7 @@ export function ChatPage() {
   const handleSaveRename = (id: string, e: React.FormEvent) => {
     e.preventDefault()
     if (!editingTitle.trim()) return
-    setConversations((prev) => 
+    setConversations((prev) =>
       prev.map((c) => {
         if (c.id === id) {
           return { ...c, title: editingTitle }
@@ -565,7 +544,7 @@ export function ChatPage() {
   })
 
   // Realtime search filter
-  const filteredConversations = conversations.filter((c) => 
+  const filteredConversations = conversations.filter((c) =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.preview.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.messages.some((m) => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -581,7 +560,7 @@ export function ChatPage() {
   return (
     <div className="flex flex-col min-h-[calc(100vh-220px)] justify-between select-none font-sans relative">
       <AnimatePresence mode="wait">
-        
+
         {/* ==================================================
             1. INITIAL START SCREEN
            ================================================== */}
@@ -611,7 +590,7 @@ export function ChatPage() {
 
             {/* Central Panel */}
             <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/70 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] p-6 md:p-8 flex flex-col gap-8 transition-colors duration-300">
-              
+
               {/* Primary Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
@@ -658,7 +637,7 @@ export function ChatPage() {
                         {/* Middle Details */}
                         <div className="flex-1 min-w-0 pr-6 text-left">
                           {isEditing ? (
-                            <form 
+                            <form
                               onSubmit={(e) => handleSaveRename(conv.id, e)}
                               className="flex items-center gap-2 mt-0.5"
                               onClick={(e) => e.stopPropagation()}
@@ -744,7 +723,7 @@ export function ChatPage() {
             </div>
           </motion.div>
         ) : (
-          
+
           /* ==================================================
               2. CHAT LAYOUT WORKSPACE
              ================================================== */
@@ -770,8 +749,8 @@ export function ChatPage() {
                 </button>
                 <div>
                   <h1 className="text-lg font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1.5">
-                    {activeConversationId 
-                      ? conversations.find(c => c.id === activeConversationId)?.title 
+                    {activeConversationId
+                      ? conversations.find(c => c.id === activeConversationId)?.title
                       : t.aiChatbot.newChat
                     }
                   </h1>
@@ -802,44 +781,52 @@ export function ChatPage() {
 
             {/* Chat Area Container */}
             <div className="flex-1 flex flex-col justify-between">
-              
+
               {/* ==================================================
                   2A. EMPTY CHAT STATE
                  ================================================== */}
               {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center max-w-[620px] mx-auto w-full">
-                  <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100/30 dark:border-blue-900/20 rounded-2xl text-blue-500 dark:text-blue-400 shadow-inner mb-5">
-                    <AIChatbotIcon className="size-9 animate-float" />
+                  <div className="p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-2xl shadow-sm mb-5">
+                    <AIChatbotIcon className="size-9 animate-float drop-shadow-sm" />
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-heading font-bold text-slate-800 dark:text-white leading-tight tracking-tight mb-8">
+                  <h2 className="text-2xl md:text-3xl font-heading font-bold text-slate-800 dark:text-slate-100 leading-tight tracking-tight mb-8">
                     {t.aiChatbot.emptyTitle}
                   </h2>
 
                   {/* Suggestion Prompt Chips */}
-                  <div className="flex flex-col gap-3 w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.summarizeRecentNotes)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer active:scale-[0.98]"
                     >
                       <span className="truncate">{t.aiChatbot.summarizeRecentNotes}</span>
-                      <FileText className="size-4 text-slate-400 shrink-0" />
+                      <FileText className="size-4 opacity-70 shrink-0 text-blue-500" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.explainQuantum)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer active:scale-[0.98]"
                     >
                       <span className="truncate">{t.aiChatbot.explainQuantum}</span>
-                      <FlaskConical className="size-4 text-slate-400 shrink-0" />
+                      <FlaskConical className="size-4 opacity-70 shrink-0 text-blue-500" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSend(t.aiChatbot.generateQuiz)}
-                      className="flex items-center justify-between gap-3 text-left w-full rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 text-sm font-bold text-[#434655] dark:text-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#3155F6]/45 dark:hover:border-blue-500/40 hover:shadow-md cursor-pointer"
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer active:scale-[0.98]"
                     >
                       <span className="truncate">{t.aiChatbot.generateQuiz}</span>
-                      <FileQuestion className="size-4 text-slate-400 shrink-0" />
+                      <FileQuestion className="size-4 opacity-70 shrink-0 text-blue-500" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSend("Create a study plan")}
+                      className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer active:scale-[0.98]"
+                    >
+                      <span className="truncate">Create a study plan</span>
+                      <Loader2 className="size-4 opacity-70 shrink-0 text-blue-500" />
                     </button>
                   </div>
                 </div>
@@ -848,7 +835,7 @@ export function ChatPage() {
                 /* ==================================================
                     2B. ACTIVE MESSAGES LIST
                    ================================================== */
-                <div className="flex-1 overflow-y-auto max-h-[500px] pr-1 flex flex-col gap-6 pt-4">
+                <div className="flex-1 overflow-y-auto max-h-[500px] pl-2 pr-3 flex flex-col gap-6 pt-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
                   {messages.map((msg, index) => {
                     const isUser = msg.role === 'user'
 
@@ -859,50 +846,48 @@ export function ChatPage() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ duration: 0.2 }}
                         className={cn(
-                          "flex items-start gap-3.5 transition-all duration-300 w-full group",
-                          isUser ? "flex-row-reverse" : "flex-row"
+                          "flex items-start gap-2.5 transition-all duration-300 w-full group max-w-[92%]",
+                          isUser ? "flex-row-reverse ml-auto" : "flex-row"
                         )}
                       >
                         {/* Avatar */}
                         {isUser ? (
-                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#3155F6] dark:bg-blue-600 border border-[#3155f6]/20 dark:border-blue-700 shadow-sm text-white">
+                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600 border border-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.4)] text-white">
                             <User className="size-4" />
                           </div>
                         ) : (
-                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30 shadow-sm text-[#3155F6] dark:text-blue-400">
+                          <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700/50">
                             <AIChatbotIcon className="size-4" />
                           </div>
                         )}
 
                         {/* Content Container */}
-                        <div className="max-w-[80%] flex flex-col gap-1.5 items-stretch">
+                        <div className="flex-1 flex flex-col gap-1.5 items-stretch min-w-0">
                           {/* Chat Bubble */}
                           <div
                             className={cn(
-                              "rounded-2xl p-4 text-[14.5px] leading-relaxed shadow-[0_2px_8px_rgba(0,0,0,0.015)] border whitespace-pre-line text-left flex flex-col gap-3",
+                              "rounded-[20px] p-4 text-[14.5px] leading-relaxed shadow-sm border whitespace-pre-line text-left flex flex-col gap-3",
                               isUser
-                                ? "bg-[#3155F6] dark:bg-blue-600 text-white border-transparent rounded-tr-none"
-                                : "bg-white dark:bg-slate-900 text-[#434655] dark:text-slate-200 border-slate-200/60 dark:border-slate-800 rounded-tl-none"
+                                ? "bg-gradient-to-tr from-blue-600 to-blue-500 text-white border-transparent rounded-tr-sm"
+                                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-100 dark:border-slate-700/50 rounded-tl-sm"
                             )}
                           >
                             {msg.content && <div>{msg.content}</div>}
-                            
-                            {/* Attached files inside user message */}
+
+                            {/* Attached files */}
                             {msg.files && msg.files.length > 0 && (
-                              <div className="flex flex-col gap-1.5 mt-1 border-t border-white/20 pt-2 shrink-0">
+                              <div className="flex flex-col gap-2 mt-2 border-t border-slate-200 dark:border-slate-700/50 pt-3 shrink-0">
                                 {msg.files.map((file, idx) => (
                                   <div
                                     key={idx}
                                     className={cn(
-                                      "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium border",
-                                      isUser
-                                        ? "bg-white/10 border-white/15 text-white"
-                                        : "bg-slate-50 border-slate-100 text-slate-700"
+                                      "flex items-center gap-2.5 rounded-xl p-3 text-[12.5px] font-medium border shadow-sm",
+                                      isUser ? "bg-white/10 border-white/20 text-white" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
                                     )}
                                   >
-                                    <FileText className="size-3.5 shrink-0 opacity-80" />
+                                    <FileText className="size-4 shrink-0 opacity-80" />
                                     <span className="truncate max-w-[200px]">{file.name}</span>
-                                    <span className="text-[10px] opacity-70 shrink-0">({file.size})</span>
+                                    <span className="text-[11px] opacity-70 shrink-0 ml-auto">{file.size}</span>
                                   </div>
                                 ))}
                               </div>
@@ -941,14 +926,15 @@ export function ChatPage() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-start gap-3.5 w-full flex-row"
+                      className="flex items-start gap-2.5 w-full flex-row max-w-[92%]"
                     >
-                      <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] dark:bg-blue-950/40 border border-[#3155f6]/10 dark:border-blue-900/30 shadow-sm text-[#3155F6] dark:text-blue-400">
+                      <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700/50">
                         <AIChatbotIcon className="size-4" />
                       </div>
-                      <div className="max-w-[80%] rounded-2xl rounded-tl-none p-4 text-[14.5px] bg-white dark:bg-slate-900 text-[#737686] dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 flex items-center gap-2">
-                        <Loader2 className="size-4 animate-spin text-[#3155F6] dark:text-blue-400" />
-                        <span>{t.aiChatbot.thinking}</span>
+                      <div className="max-w-[80%] rounded-[20px] rounded-tl-sm px-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 flex items-center gap-1.5 h-[42px] shadow-sm mt-0.5">
+                        <div className="size-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.3s]" />
+                        <div className="size-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.15s]" />
+                        <div className="size-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce" />
                       </div>
                     </motion.div>
                   )}
@@ -965,13 +951,13 @@ export function ChatPage() {
                 {selectedFiles.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2 justify-start items-center">
                     {selectedFiles.map((file, idx) => (
-                      <div 
+                      <div
                         key={idx}
                         className="flex items-center gap-2 rounded-xl border border-blue-200/50 bg-[#e5eeff]/50 dark:border-blue-900/30 dark:bg-blue-950/30 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-300 shadow-2xs"
                       >
                         <FileText className="size-3.5 shrink-0 text-blue-500" />
                         <span className="truncate max-w-[150px] font-semibold">{file.name}</span>
-                        <button 
+                        <button
                           onClick={() => handleRemoveFile(idx)}
                           className="ml-1 rounded-full p-0.5 hover:bg-blue-200 dark:hover:bg-blue-900 text-blue-400 hover:text-blue-700 transition-colors"
                         >
@@ -997,20 +983,20 @@ export function ChatPage() {
                 )}
 
                 {/* Main input composer box */}
-                <div className="rounded-2xl border-2 border-[#e5eeff] dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-[0_2px_12px_rgba(0,0,0,0.01)] transition-all focus-within:border-[#3155F6]/40 dark:focus-within:border-blue-500/40 focus-within:shadow-[0_2px_16px_rgba(49,85,246,0.04)] dark:focus-within:shadow-[0_2px_16px_rgba(59,130,246,0.08)]">
+                <div className="rounded-[24px] border border-slate-200 dark:border-slate-700/80 bg-white/60 dark:bg-slate-900/60 p-4 px-5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] backdrop-blur-xl transition-all duration-300 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-blue-400 dark:focus-within:border-blue-500/80 focus-within:shadow-[0_4px_20px_-4px_rgba(59,130,246,0.15)] z-10 relative flex flex-col gap-2">
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="min-h-[48px] max-h-[160px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-[#0b1c30] dark:text-white outline-none placeholder:text-[#737686]/60 dark:placeholder:text-slate-500 border-none p-0 focus:ring-0"
-                    placeholder={t.aiChatbot.askAnything || "Ask anything..."}
-                    rows={2}
+                    className="min-h-[24px] max-h-[160px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 border-none p-0 focus:ring-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+                    placeholder="Hỏi bất cứ điều gì..."
+                    rows={1}
                   />
 
                   {/* Actions inside composer */}
-                  <div className="mt-3 flex items-center justify-between border-t border-slate-100/50 dark:border-slate-800/50 pt-3">
+                  <div className="flex items-center justify-between pt-2">
                     
-                    {/* Add attachment & microphone */}
+                    {/* Left Actions */}
                     <div className="flex items-center gap-1.5 relative">
                       
                       {/* Plus Dropdown button */}
@@ -1018,7 +1004,7 @@ export function ChatPage() {
                         <button
                           type="button"
                           onClick={() => setAttachDropdownOpen(!attachDropdownOpen)}
-                          className="text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center"
+                          className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 size-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
                           title={t.aiChatbot.attachFiles}
                         >
                           <Plus className={cn("size-5 transition-transform", attachDropdownOpen && "rotate-45")} />
@@ -1066,35 +1052,81 @@ export function ChatPage() {
                         type="button"
                         onClick={handleMicClick}
                         className={cn(
-                          "p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5",
+                          "size-9 rounded-full transition-all cursor-pointer flex items-center justify-center gap-1.5",
                           isListening
-                            ? "bg-rose-50 border border-rose-100 text-rose-500 dark:bg-rose-950/20 dark:border-rose-900/30"
-                            : "text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            ? "bg-rose-50 text-rose-500 dark:bg-rose-500/20"
+                            : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                         )}
-                        title={t.aiChatbot.voiceInput}
+                        title={isListening ? "Stop listening" : "Start voice input"}
                       >
                         <Mic className={cn("size-5", isListening && "animate-pulse")} />
-                        {isListening && <span className="text-[10px] font-bold uppercase tracking-wider">{t.aiChatbot.listening}</span>}
                       </button>
+
+                      {/* Tức Thì / Mode Selector */}
+                      <div className="relative ml-2" ref={modeDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition-colors text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm"
+                        >
+                          {selectedMode === 'Instant' ? <Zap className="size-3.5 text-amber-500" /> : <BrainCircuit className="size-3.5 text-indigo-500" />}
+                          <span>{selectedMode === 'Instant' ? 'Tức thì' : 'Tư duy'}</span>
+                          <ChevronDown className="size-3.5 opacity-60" />
+                        </button>
+
+                        {isModeDropdownOpen && (
+                          <div className="absolute left-0 bottom-full mb-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-1.5 flex flex-col gap-1 z-30 animate-in fade-in zoom-in-95 duration-100">
+                            <button
+                              onClick={() => { setSelectedMode('Instant'); setIsModeDropdownOpen(false) }}
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-left cursor-pointer transition-colors",
+                                selectedMode === 'Instant' ? "bg-slate-50 dark:bg-slate-800" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                              )}
+                            >
+                              <div className="size-7 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center shrink-0">
+                                <Zap className="size-4 text-amber-600 dark:text-amber-400" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Tức thì</span>
+                                <span className="text-[11px] text-slate-500">Nhanh & Cơ bản</span>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => { setSelectedMode('Thinking'); setIsModeDropdownOpen(false) }}
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-left cursor-pointer transition-colors",
+                                selectedMode === 'Thinking' ? "bg-slate-50 dark:bg-slate-800" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                              )}
+                            >
+                              <div className="size-7 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shrink-0">
+                                <BrainCircuit className="size-4 text-indigo-600 dark:text-indigo-400" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Tư duy</span>
+                                <span className="text-[11px] text-slate-500">Latest • Suy luận sâu</span>
+                              </div>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Mode selector + Send Button */}
+                    {/* Mode selector + Send Button (Hidden old mode badge since moved to left) */}
                     <div className="flex items-center gap-3">
-                      {/* Instant mode badge */}
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100/50 dark:bg-blue-950/30 dark:border-blue-900/20 text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest select-none">
-                        <Sparkles className="size-3" />
-                        <span>{t.aiChatbot.instant || "Instant"}</span>
-                      </span>
-
                       {/* Send button */}
                       <button
                         type="button"
                         onClick={() => handleSend()}
-                        className="flex size-10 items-center justify-center rounded-xl bg-[#3155F6] dark:bg-blue-600 text-white shadow-sm transition-all hover:bg-[#2563eb] dark:hover:bg-blue-500 hover:scale-105 active:scale-95 cursor-pointer disabled:pointer-events-none disabled:opacity-40"
+                        className={cn(
+                          "size-9 shrink-0 flex items-center justify-center rounded-full transition-all cursor-pointer",
+                          (input.trim() || selectedFiles.length > 0)
+                            ? "bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 active:scale-95 shadow-md"
+                            : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                        )}
                         disabled={!input.trim() && selectedFiles.length === 0}
                         title={t.aiChatbot.sendMessage}
                       >
-                        <Send className="size-4.5" />
+                        <Send className="size-4 ml-0.5" />
                       </button>
                     </div>
 
