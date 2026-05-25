@@ -5,7 +5,10 @@ import { ExternalLink, Edit2, Shield, Trash2, Download, Share2 } from 'lucide-re
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 
+import { SharedFile } from './SharedFilesTable'
+
 interface FileActionsDropdownProps {
+  file: SharedFile
   isOpen: boolean
   onClose: () => void
   onOpen: () => void
@@ -18,6 +21,7 @@ interface FileActionsDropdownProps {
 }
 
 export function FileActionsDropdown({
+  file,
   isOpen,
   onClose,
   onOpen,
@@ -34,15 +38,22 @@ export function FileActionsDropdown({
   const [coords, setCoords] = useState({ top: 0, left: 0 })
   const [focusedIndex, setFocusedIndex] = useState(-1)
 
+  const isOwner = file.owner === 'me' || file.permission === 'Owner'
+  const isEditor = file.permission === 'Editor'
+  const isViewer = file.permission === 'Viewer' || file.permission === 'View Only'
+
   const updatePosition = () => {
     if (!buttonRef.current) return
     const rect = buttonRef.current.getBoundingClientRect()
     const menuWidth = 260
     
     // Estimate menu height based on rendered items
-    let numItems = 4 // Open, Rename, Change Permission, Remove Access are always present
+    let numItems = 1 // Open is always present
     if (onDownload) numItems++
-    if (onShareAccess) numItems++
+    if (onShareAccess && isOwner) numItems++
+    if (isOwner || isEditor) numItems++ // Rename
+    if (isOwner) numItems++ // Change Permission
+    if (isOwner) numItems++ // Remove Access
     const menuHeight = numItems * 44 + 20
     const gap = 8
 
@@ -167,6 +178,7 @@ export function FileActionsDropdown({
           role="menu"
           aria-orientation="vertical"
         >
+          {/* 1. OPEN (All) */}
           <button
             type="button"
             onClick={(e) => {
@@ -181,6 +193,7 @@ export function FileActionsDropdown({
             <span>{t.actionMenu.open}</span>
           </button>
           
+          {/* 2. DOWNLOAD (All) */}
           {onDownload && (
             <button
               type="button"
@@ -197,7 +210,8 @@ export function FileActionsDropdown({
             </button>
           )}
 
-          {onShareAccess && (
+          {/* 3. SHARE ACCESS (Owner only) */}
+          {onShareAccess && isOwner && (
             <button
               type="button"
               onClick={(e) => {
@@ -213,49 +227,59 @@ export function FileActionsDropdown({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onRename()
-              onClose()
-            }}
-            className={itemClass}
-            role="menuitem"
-          >
-            <Edit2 className="size-4 text-slate-400 dark:text-slate-500" />
-            <span>{t.sharedFiles.rename}</span>
-          </button>
+          {/* 4. RENAME (Owner & Editor) */}
+          {(isOwner || isEditor) && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onRename()
+                onClose()
+              }}
+              className={itemClass}
+              role="menuitem"
+            >
+              <Edit2 className="size-4 text-slate-400 dark:text-slate-500" />
+              <span>{t.sharedFiles.rename}</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onChangePermission()
-              onClose()
-            }}
-            className={itemClass}
-            role="menuitem"
-          >
-            <Shield className="size-4 text-slate-400 dark:text-slate-500" />
-            <span>{t.sharedFiles.changePermission}</span>
-          </button>
+          {/* 5. CHANGE PERMISSION (Owner only) */}
+          {isOwner && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onChangePermission()
+                onClose()
+              }}
+              className={itemClass}
+              role="menuitem"
+            >
+              <Shield className="size-4 text-slate-400 dark:text-slate-500" />
+              <span>{t.sharedFiles.changePermission}</span>
+            </button>
+          )}
           
-          <div className="h-px bg-slate-100 dark:bg-slate-800/60 my-1" />
-          
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onRemoveAccess()
-              onClose()
-            }}
-            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-[13px] font-bold text-red-600 dark:text-red-400 hover:bg-red-55/15 dark:hover:bg-red-955/20 focus-visible:bg-red-55/15 dark:focus-visible:bg-red-955/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
-            role="menuitem"
-          >
-            <Trash2 className="size-4 text-red-500 dark:text-red-400" />
-            <span>{t.sharedFiles.removeAccess}</span>
-          </button>
+          {/* 6. REMOVE ACCESS (Owner only) */}
+          {isOwner && (
+            <>
+              <div className="h-px bg-slate-100 dark:bg-slate-800/60 my-1" />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRemoveAccess()
+                  onClose()
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-[13px] font-bold text-red-600 dark:text-red-400 hover:bg-red-55/15 dark:hover:bg-red-955/20 focus-visible:bg-red-55/15 dark:focus-visible:bg-red-955/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+                role="menuitem"
+              >
+                <Trash2 className="size-4 text-red-500 dark:text-red-400" />
+                <span>{t.sharedFiles.removeAccess}</span>
+              </button>
+            </>
+          )}
         </motion.div>
       )}
     </AnimatePresence>,
