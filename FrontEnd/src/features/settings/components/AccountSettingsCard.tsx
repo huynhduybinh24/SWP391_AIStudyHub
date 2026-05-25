@@ -25,7 +25,7 @@ const accountSchema = z.object({
 type AccountFormValues = z.infer<typeof accountSchema>
 
 export function AccountSettingsCard() {
-  const { t, setLanguage } = useTranslation()
+  const { t, language, setLanguage } = useTranslation()
   const { account, updateAccount } = useSettingsStore()
   const currentUser = useAuthStore((state) => state.user)
   const currentEmail = currentUser?.email ?? 'student@university.edu'
@@ -49,17 +49,20 @@ export function AccountSettingsCard() {
       (!!profile.avatarUrl && profile.avatarUrl !== '/avatar.svg')
   })
   const [pendingAvatarRemoval, setPendingAvatarRemoval] = useState(false)
+  const [isAvatarDirty, setIsAvatarDirty] = useState(false)
 
   const handleAvatarChange = (dataUrl: string) => {
     setAvatarPreview(dataUrl)
     setHasCustomAvatar(true)
     setPendingAvatarRemoval(false)
+    setIsAvatarDirty(true)
   }
 
   const handleAvatarRemove = () => {
     setAvatarPreview(null)
     setHasCustomAvatar(false)
     setPendingAvatarRemoval(true)
+    setIsAvatarDirty(true)
   }
 
   let initialLanguage = account.language
@@ -95,41 +98,64 @@ export function AccountSettingsCard() {
 
   const handleConfirmSave = () => {
     if (!pendingData) return
-    const lang = pendingData.language as Language
-    setLanguage(lang)
-    updateAccount({
-      name: pendingData.name,
-      language: lang,
-      timezone: pendingData.timezone,
-    })
+    try {
+      const lang = pendingData.language as Language
+      setLanguage(lang)
+      updateAccount({
+        name: pendingData.name,
+        language: lang,
+        timezone: pendingData.timezone,
+      })
 
-    // ── Persist Avatar ──────────────────────────────────────────────────
-    if (pendingAvatarRemoval) {
-      // Remove custom avatar
-      localStorage.removeItem('aiStudyHubUserAvatar')
-      updateProfile({ avatarUrl: '/avatar.svg' })
-      setPendingAvatarRemoval(false)
-    } else if (avatarPreview) {
-      // Save custom avatar
-      localStorage.setItem('aiStudyHubUserAvatar', avatarPreview)
-      updateProfile({ avatarUrl: avatarPreview })
+      // ── Persist Avatar ──────────────────────────────────────────────────
+      if (isAvatarDirty) {
+        if (pendingAvatarRemoval) {
+          // Remove custom avatar
+          try {
+            localStorage.removeItem('aiStudyHubUserAvatar')
+          } catch (e) {
+            console.error('Error removing avatar from localStorage:', e)
+          }
+          updateProfile({ avatarUrl: '/avatar.svg' })
+          setPendingAvatarRemoval(false)
+        } else if (avatarPreview && avatarPreview.startsWith('data:image')) {
+          // Save custom avatar
+          try {
+            localStorage.setItem('aiStudyHubUserAvatar', avatarPreview)
+          } catch (e) {
+            console.error('Error saving avatar to localStorage:', e)
+            toast.error(language === 'vi' ? 'Không thể lưu ảnh đại diện do dung lượng lưu trữ đầy!' : 'Could not save avatar due to quota limits!')
+          }
+          updateProfile({ avatarUrl: avatarPreview })
+        }
+        setIsAvatarDirty(false)
+      }
+
+      // ── Persist Display Name ────────────────────────────────────────────
+      if (pendingData.name) {
+        try {
+          localStorage.setItem('aiStudyHubDisplayName', pendingData.name)
+        } catch (e) {
+          console.error('Error saving display name to localStorage:', e)
+        }
+      }
+
+      // Dispatch custom event so Header can react immediately
+      window.dispatchEvent(new Event('aiStudyHubProfileUpdated'))
+
+      toast.success(t.toasts.saved)
+      setSaveSuccess(true)
+      setTimeout(() => {
+        setSaveSuccess(false)
+      }, 3000)
+    } catch (error) {
+      console.error('Error inside handleConfirmSave:', error)
+      toast.error(language === 'vi' ? 'Đã xảy ra lỗi khi lưu cài đặt!' : 'An error occurred while saving settings!')
+    } finally {
+      // Force modal closure and reset state
+      setShowConfirmModal(false)
+      setPendingData(null)
     }
-
-    // ── Persist Display Name ────────────────────────────────────────────
-    if (pendingData.name) {
-      localStorage.setItem('aiStudyHubDisplayName', pendingData.name)
-    }
-
-    // Dispatch custom event so Header can react immediately
-    window.dispatchEvent(new Event('aiStudyHubProfileUpdated'))
-
-    toast.success(t.toasts.saved)
-    setSaveSuccess(true)
-    setShowConfirmModal(false)
-    setPendingData(null)
-    setTimeout(() => {
-      setSaveSuccess(false)
-    }, 3000)
   }
 
   return (

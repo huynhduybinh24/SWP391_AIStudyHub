@@ -18,6 +18,37 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [isContactSalesOpen, setIsContactSalesOpen] = useState(false)
 
+  // Dynamically load pricing configurations from localStorage (Admin updates)
+  const { proPrice, proStorage, freeStorage } = useMemo(() => {
+    let proP = 12
+    let proS = 50
+    let freeS = 10
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('aiStudyHubPackages')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          const pro = parsed.find((p: any) => p.id === 'pkg-pro')
+          const free = parsed.find((p: any) => p.id === 'pkg-free')
+          if (pro) {
+            proP = pro.priceMonthly
+            proS = pro.storageLimit
+          }
+          if (free) {
+            freeS = free.storageLimit
+          }
+        } catch (e) {
+          console.error('Error loading packages in PricingPage:', e)
+        }
+      }
+    }
+    return {
+      proPrice: `$${proP}`,
+      proStorage: `${proS}GB`,
+      freeStorage: `${freeS}GB`,
+    }
+  }, [])
+
   // Localized pricing plans recalculated on language change
   const localizedPricingPlans = useMemo<PricingPlan[]>(() => [
     {
@@ -26,7 +57,7 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
       billing: language === 'vi' ? '/tháng' : language === 'ja' ? '/月' : language === 'ko' ? '/월' : '/month',
       description: language === 'vi' ? 'Dành cho người học thông thường cần hỗ trợ cơ bản.' : language === 'ja' ? '基本的な支援が必要な一般の学習者向け。' : language === 'ko' ? '기본적인 지원이 필요한 일반 학습자용.' : 'For casual learners needing basic assistance.',
       features: [
-        language === 'vi' ? 'Dung lượng cơ bản (5GB)' : language === 'ja' ? '基本ストレージ (5GB)' : language === 'ko' ? '기본 저장 공간 (5GB)' : 'Core storage (5GB)',
+        language === 'vi' ? `Dung lượng cơ bản (${freeStorage})` : language === 'ja' ? `基本ストレージ (${freeStorage})` : language === 'ko' ? `기본 저장 공간 (${freeStorage})` : `Core storage (${freeStorage})`,
         language === 'vi' ? 'Tóm tắt AI cơ bản (10 bản/tháng)' : language === 'ja' ? '基本的なAI要約 (10回/月)' : language === 'ko' ? '기본 AI 요약 (월 10회)' : 'Basic AI summaries (10/mo)',
         language === 'vi' ? 'Kế hoạch học tập chuẩn' : language === 'ja' ? '標準的な学習計画' : language === 'ko' ? '표준 학습 kế hoạch' : 'Standard study plans',
       ],
@@ -36,14 +67,14 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
     },
     {
       name: language === 'vi' ? 'Gói Pro' : language === 'ja' ? 'プロプラン' : language === 'ko' ? '프로 요금제' : 'Pro Plan',
-      price: '$12.00',
+      price: proPrice,
       billing: language === 'vi' ? '/tháng' : language === 'ja' ? '/月' : language === 'ko' ? '/월' : '/month',
-      yearlySavingText: language === 'vi' ? 'Hoặc $120/năm (Tiết kiệm 16%)' : language === 'ja' ? 'または $120/年 (16%お得)' : language === 'ko' ? '또는 $120/연 (16% 절약)' : 'Or $120/year (Save 16%)',
+      yearlySavingText: language === 'vi' ? `Hoặc $${(parseFloat(proPrice.replace('$', '')) * 10).toFixed(0)}/năm (Tiết kiệm 16%)` : language === 'ja' ? `または $${(parseFloat(proPrice.replace('$', '')) * 10).toFixed(0)}/年 (16%お得)` : language === 'ko' ? `또는 $${(parseFloat(proPrice.replace('$', '')) * 10).toFixed(0)}/연 (16% 절약)` : `Or $${(parseFloat(proPrice.replace('$', '')) * 10).toFixed(0)}/year (Save 16%)`,
       description: language === 'vi' ? 'Dành cho sinh viên tận tâm cần các công cụ chuyên sâu.' : language === 'ja' ? '高度なツールを必要とする熱心な学生向け。' : language === 'ko' ? '심층적인 도구가 필요한 열정적인 학생용.' : 'For dedicated students requiring intensive tools.',
       features: [
         language === 'vi' ? 'Không giới hạn tóm tắt AI' : language === 'ja' ? '無制限のAI要約' : language === 'ko' ? '무제한 AI 요약' : 'Unlimited AI summaries',
         language === 'vi' ? 'Truy cập chatbot chuyên sâu' : language === 'ja' ? '詳細なチャットボットへのアクセス' : language === 'ko' ? '심층 챗봇 액세스' : 'Deep-dive chatbot access',
-        language === 'vi' ? '50GB Dung lượng đám mây' : language === 'ja' ? '50GBのクラウドストレージ' : language === 'ko' ? '50GB 클라우드 저장 공간' : '50GB Cloud storage',
+        language === 'vi' ? `${proStorage} Dung lượng đám mây` : language === 'ja' ? `${proStorage}のクラウドストレージ` : language === 'ko' ? `${proStorage} 클라우드 저장 공간` : `${proStorage} Cloud storage`,
         language === 'vi' ? 'Phân tích học tập nâng cao' : language === 'ja' ? '高度な学習分析' : language === 'ko' ? '고급 학습 분석' : 'Advanced study analytics',
         language === 'vi' ? 'Hỗ trợ ưu tiên' : language === 'ja' ? '優先サポート' : language === 'ko' ? '우선 지원' : 'Priority support',
       ],
@@ -64,7 +95,7 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
       buttonText: language === 'vi' ? 'Liên hệ kinh doanh' : language === 'ja' ? '営業へ問い合わせ' : language === 'ko' ? '영업 문의' : 'Contact Sales',
       buttonVariant: 'secondary',
     },
-  ], [language, t])
+  ], [language, t, proPrice, proStorage, freeStorage])
 
   const handleCurrentPlanClick = () => {
     toast.info(`You are currently on the ${user?.plan === 'pro' ? 'Pro' : 'Free'} Plan`)

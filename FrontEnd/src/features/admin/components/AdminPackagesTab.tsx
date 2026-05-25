@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Zap, HardDrive, Edit3, Save, TrendingUp, Users } from 'lucide-react'
+import { Zap, HardDrive, Edit3, Save, Users } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -19,41 +19,53 @@ export function AdminPackagesTab() {
   const { language } = useTranslation()
   const toast = useToast()
 
-  const [packages, setPackages] = useState<PackageItem[]>([
-    {
-      id: 'pkg-free',
-      name: 'Free Plan',
-      storageLimit: 10,
-      priceMonthly: 0,
-      usersCount: 11406,
-      perks: [
-        language === 'vi' ? 'Dung lượng lưu trữ 10 GB' : '10 GB storage limit',
-        language === 'vi' ? 'AI Chatbot trợ giúp cơ bản' : 'Basic AI Chatbot assistance',
-        language === 'vi' ? 'Chia sẻ tài liệu tối đa 3 người' : 'Share files with up to 3 members',
-        language === 'vi' ? 'Tốc độ tải xuống tiêu chuẩn' : 'Standard download speed'
-      ],
-      color: 'border-slate-200 dark:border-slate-800'
-    },
-    {
-      id: 'pkg-pro',
-      name: 'Pro Plan',
-      storageLimit: 50,
-      priceMonthly: 99000,
-      usersCount: 3842,
-      perks: [
-        language === 'vi' ? 'Dung lượng lưu trữ 50 GB' : '50 GB storage limit',
-        language === 'vi' ? 'AI Chatbot nâng cao & phân tích sâu' : 'Advanced AI chatbot & deep analysis',
-        language === 'vi' ? 'Chia sẻ tệp tin không giới hạn' : 'Unlimited file sharing',
-        language === 'vi' ? 'Tốc độ tải xuống băng thông cao' : 'High speed download bandwidth',
-        language === 'vi' ? 'Bảo mật dữ liệu nâng cao bằng AI Guard' : 'Advanced security via AI Guard'
-      ],
-      color: 'border-amber-500/30 dark:border-amber-500/20'
+  const [packages, setPackages] = useState<PackageItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('aiStudyHubPackages')
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch (e) {
+          console.error('Error loading packages from localStorage:', e)
+        }
+      }
     }
-  ])
+    return [
+      {
+        id: 'pkg-free',
+        name: 'Free Plan',
+        storageLimit: 10,
+        priceMonthly: 0,
+        usersCount: 11406,
+        perks: [
+          language === 'vi' ? 'Dung lượng lưu trữ 10 GB' : '10 GB storage limit',
+          language === 'vi' ? 'AI Chatbot trợ giúp cơ bản' : 'Basic AI Chatbot assistance',
+          language === 'vi' ? 'Chia sẻ tài liệu tối đa 3 người' : 'Share files with up to 3 members',
+          language === 'vi' ? 'Tốc độ tải xuống tiêu chuẩn' : 'Standard download speed'
+        ],
+        color: 'border-slate-200 dark:border-slate-800'
+      },
+      {
+        id: 'pkg-pro',
+        name: 'Pro Plan',
+        storageLimit: 50,
+        priceMonthly: 12,
+        usersCount: 3842,
+        perks: [
+          language === 'vi' ? 'Dung lượng lưu trữ 50 GB' : '50 GB storage limit',
+          language === 'vi' ? 'AI Chatbot nâng cao & phân tích sâu' : 'Advanced AI chatbot & deep analysis',
+          language === 'vi' ? 'Chia sẻ tệp tin không giới hạn' : 'Unlimited file sharing',
+          language === 'vi' ? 'Tốc độ tải xuống băng thông cao' : 'High speed download bandwidth',
+          language === 'vi' ? 'Bảo mật dữ liệu nâng cao bằng AI Guard' : 'Advanced security via AI Guard'
+        ],
+        color: 'border-amber-500/30 dark:border-amber-500/20'
+      }
+    ]
+  })
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editedStorage, setEditedStorage] = useState<number>(10)
-  const [editedPrice, setEditedPrice] = useState<number>(0)
+  const [editedPrice, setEditedPrice] = useState<number>(12)
 
   const handleEditClick = (pkg: PackageItem) => {
     setEditingId(pkg.id)
@@ -62,25 +74,31 @@ export function AdminPackagesTab() {
   }
 
   const handleSaveClick = (id: string) => {
-    setPackages((prev) =>
-      prev.map((pkg) =>
-        pkg.id === id
-          ? {
-              ...pkg,
-              storageLimit: editedStorage,
-              priceMonthly: editedPrice,
-              perks: pkg.perks.map((perk, i) => {
-                if (i === 0) {
-                  return language === 'vi'
-                    ? `Dung lượng lưu trữ ${editedStorage} GB`
-                    : `${editedStorage} GB storage limit`
-                }
-                return perk
-              })
-            }
-          : pkg
-      )
+    const nextPackages = packages.map((pkg) =>
+      pkg.id === id
+        ? {
+            ...pkg,
+            storageLimit: editedStorage,
+            priceMonthly: editedPrice,
+            perks: pkg.perks.map((perk, i) => {
+              if (i === 0) {
+                return language === 'vi'
+                  ? `Dung lượng lưu trữ ${editedStorage} GB`
+                  : `${editedStorage} GB storage limit`
+              }
+              return perk
+            })
+          }
+        : pkg
     )
+    setPackages(nextPackages)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('aiStudyHubPackages', JSON.stringify(nextPackages))
+      } catch (e) {
+        console.error('Error saving packages to localStorage:', e)
+      }
+    }
     setEditingId(null)
     const msg = language === 'vi' ? 'Đã lưu cấu hình gói cước thành công' : 'Package config saved successfully'
     toast.success(msg)
@@ -129,20 +147,21 @@ export function AdminPackagesTab() {
                     <div className="flex items-baseline gap-1 text-slate-800 dark:text-slate-100">
                       {isEditing ? (
                         <div className="flex items-center gap-2">
+                          <span className="text-lg font-black text-slate-700 dark:text-slate-350">$</span>
                           <input
                             type="number"
                             value={editedPrice}
-                            onChange={(e) => setEditedPrice(parseInt(e.target.value) || 0)}
+                            onChange={(e) => setEditedPrice(parseFloat(e.target.value) || 0)}
                             className="w-24 p-1.5 text-sm rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 font-bold text-slate-900 dark:text-white focus:outline-none"
                             placeholder="Price"
                           />
-                          <span className="text-xs font-bold text-slate-400">đ/tháng</span>
+                          <span className="text-xs font-bold text-slate-400">/{language === 'vi' ? 'tháng' : 'month'}</span>
                         </div>
                       ) : (
                         <>
-                          <span className="text-3xl font-black">{pkg.priceMonthly === 0 ? '0' : pkg.priceMonthly.toLocaleString()}</span>
+                          <span className="text-3xl font-black">${pkg.priceMonthly === 0 ? '0' : pkg.priceMonthly.toLocaleString()}</span>
                           <span className="text-xs font-bold text-slate-400 dark:text-slate-500 font-medium ml-1">
-                            đ/{language === 'vi' ? 'tháng' : 'month'}
+                            /{language === 'vi' ? 'tháng' : 'month'}
                           </span>
                         </>
                       )}

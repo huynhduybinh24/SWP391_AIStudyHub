@@ -166,6 +166,31 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
   )
 }
 
+const pageContainerVariants: any = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1
+    }
+  }
+}
+
+const pageItemVariants: any = {
+  hidden: { opacity: 0, y: 15 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 260,
+      damping: 26,
+      mass: 0.8
+    }
+  }
+}
+
 export function SharedFilesPage() {
   const toast = useToast()
   const { t, language } = useTranslation()
@@ -999,84 +1024,93 @@ export function SharedFilesPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      variants={pageContainerVariants}
+      initial="hidden"
+      animate="show"
       className="text-slate-900 dark:text-slate-100"
     >
       <div className="flex flex-col lg:flex-row gap-8 items-start w-full relative">
         
         <motion.div
-          layout
           className="flex-1 w-full min-w-0 overflow-hidden space-y-6"
           transition={shouldReduceMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 28, mass: 0.8 }}
         >
-          <SharedWorkspaceHeader
-            onUploadClick={() => setUploadModalOpen(true)}
-            onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
-            onAIAnalyzeClick={handleAIAnalyze}
-            isAnalyzing={isAnalyzing}
-          />
+          <motion.div variants={pageItemVariants}>
+            <SharedWorkspaceHeader
+              onUploadClick={() => setUploadModalOpen(true)}
+              onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
+              onAIAnalyzeClick={handleAIAnalyze}
+              isAnalyzing={isAnalyzing}
+            />
+          </motion.div>
 
-          <WorkspaceStatsCards
-            onViewAIReport={() => setModals(prev => ({ ...prev, aiReport: true }))}
-            onStorageCardClick={() => setModals(prev => ({ ...prev, quota: true }))}
-            onActiveCardClick={() => setModals(prev => ({ ...prev, collaborators: true }))}
-            activeCollaboratorsCount={activeCollaborators.length}
-          />
+          <motion.div variants={pageItemVariants}>
+            <WorkspaceStatsCards
+              onViewAIReport={() => setModals(prev => ({ ...prev, aiReport: true }))}
+              onStorageCardClick={() => setModals(prev => ({ ...prev, quota: true }))}
+              onActiveCardClick={() => setModals(prev => ({ ...prev, collaborators: true }))}
+              activeCollaboratorsCount={activeCollaborators.length}
+            />
+          </motion.div>
 
-          <SharedFilesTabs
-            activeTab={activeTab}
-            onChangeTab={setActiveTab}
-          />
+          <motion.div variants={pageItemVariants}>
+            <SharedFilesTabs
+              activeTab={activeTab}
+              onChangeTab={setActiveTab}
+            />
+          </motion.div>
 
-          <WorkspaceFilterBar
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            fileTypeFilter={fileTypeFilter}
-            onFileTypeChange={setFileTypeFilter}
-            sortOrder={sortOrder}
-            onSortOrderChange={setSortOrder}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            peopleFilter={peopleFilter}
-            onPeopleFilterChange={setPeopleFilter}
-            lastModifiedFilter={lastModifiedFilter}
-            onLastModifiedFilterChange={setLastModifiedFilter}
-            sourceFilter={sourceFilter}
-            onSourceFilterChange={setSourceFilter}
-          />
+          <motion.div variants={pageItemVariants}>
+            <WorkspaceFilterBar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              fileTypeFilter={fileTypeFilter}
+              onFileTypeChange={setFileTypeFilter}
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              peopleFilter={peopleFilter}
+              onPeopleFilterChange={setPeopleFilter}
+              lastModifiedFilter={lastModifiedFilter}
+              onLastModifiedFilterChange={setLastModifiedFilter}
+              sourceFilter={sourceFilter}
+              onSourceFilterChange={setSourceFilter}
+            />
+          </motion.div>
 
-          <WorkspaceFileList
-            files={filteredFiles}
-            selectedFile={selectedFile}
-            viewMode={viewMode}
-            favorites={favorites}
-            sortOrder={sortOrder}
-            onSortOrderChange={setSortOrder}
-            onSelectFile={handleSelectFile}
-            onOpenFile={handleOpenFile}
-            onStarToggle={handleStarToggle}
-            onRename={(file) => {
-              setSelectedFile(file)
-              setModals(prev => ({ ...prev, rename: true }))
-            }}
-            onChangePermission={(file) => {
-              setSelectedFile(file)
-              setModals(prev => ({ ...prev, permission: true }))
-            }}
-            onRemoveAccess={(file) => {
-              setSelectedFile(file)
-              setModals(prev => ({ ...prev, confirmDelete: true }))
-            }}
-            onDownload={handleDownload}
-            onShareAccess={(file) => {
-              setSelectedFile(file)
-              setModals(prev => ({ ...prev, share: true }))
-              const prefix = language === 'vi' ? 'Đang chia sẻ' : (language === 'ja' ? '共有中' : (language === 'ko' ? '공유 중' : 'Sharing'))
-              toast.success(`${prefix} ${file.name}`)
-            }}
-          />
+          <motion.div variants={pageItemVariants}>
+            <WorkspaceFileList
+              files={filteredFiles}
+              selectedFile={selectedFile}
+              viewMode={viewMode}
+              favorites={favorites}
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+              onSelectFile={handleSelectFile}
+              onOpenFile={handleOpenFile}
+              onStarToggle={handleStarToggle}
+              onRename={(file) => {
+                setSelectedFile(file)
+                setModals(prev => ({ ...prev, rename: true }))
+              }}
+              onChangePermission={(file) => {
+                setSelectedFile(file)
+                setModals(prev => ({ ...prev, permission: true }))
+              }}
+              onRemoveAccess={(file) => {
+                setSelectedFile(file)
+                setModals(prev => ({ ...prev, confirmDelete: true }))
+              }}
+              onDownload={handleDownload}
+              onShareAccess={(file) => {
+                setSelectedFile(file)
+                setModals(prev => ({ ...prev, share: true }))
+                const prefix = language === 'vi' ? 'Đang chia sẻ' : (language === 'ja' ? '共有中' : (language === 'ko' ? '공유 중' : 'Sharing'))
+                toast.success(`${prefix} ${file.name}`)
+              }}
+            />
+          </motion.div>
         </motion.div>
 
         {/* Right side panel */}
