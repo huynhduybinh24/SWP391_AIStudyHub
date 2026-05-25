@@ -431,7 +431,6 @@ export function ChatPage() {
     setSelectedFiles([])
     setIsChatStarted(true)
     setActiveConversationId(null)
-    toast.success(t.aiChatbot.newChatStarted || "New chat started")
   }
 
   const handleOpenConversation = (id: string) => {
@@ -442,7 +441,6 @@ export function ChatPage() {
       setIsChatStarted(true)
       setInput('')
       setSelectedFiles([])
-      toast.success(t.aiChatbot.chatOpened || "Chat opened")
     }
   }
 
