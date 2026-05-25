@@ -989,7 +989,7 @@ export function ChatPage() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     className="min-h-[24px] max-h-[160px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 border-none p-0 focus:ring-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
-                    placeholder="Hỏi bất cứ điều gì..."
+                    placeholder={t.aiChatbot.askAnything || "Ask anything..."}
                     rows={1}
                   />
 
@@ -1070,7 +1070,7 @@ export function ChatPage() {
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition-colors text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm"
                         >
                           {selectedMode === 'Instant' ? <Zap className="size-3.5 text-amber-500" /> : <BrainCircuit className="size-3.5 text-indigo-500" />}
-                          <span>{selectedMode === 'Instant' ? 'Tức thì' : 'Tư duy'}</span>
+                          <span>{selectedMode === 'Instant' ? (t.aiChatbot.instant || 'Instant') : (t.aiChatbot.thinkingMode || 'Thinking')}</span>
                           <ChevronDown className="size-3.5 opacity-60" />
                         </button>
 
@@ -1087,8 +1087,8 @@ export function ChatPage() {
                                 <Zap className="size-4 text-amber-600 dark:text-amber-400" />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Tức thì</span>
-                                <span className="text-[11px] text-slate-500">Nhanh & Cơ bản</span>
+                                <span className="text-[13px] font-semibold text-slate-900 dark:text-white">{t.aiChatbot.instant || "Instant"}</span>
+                                <span className="text-[11px] text-slate-500">{t.aiChatbot.instantDesc || "Fast & Basic"}</span>
                               </div>
                             </button>
                             <button
@@ -1102,8 +1102,8 @@ export function ChatPage() {
                                 <BrainCircuit className="size-4 text-indigo-600 dark:text-indigo-400" />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Tư duy</span>
-                                <span className="text-[11px] text-slate-500">Latest • Suy luận sâu</span>
+                                <span className="text-[13px] font-semibold text-slate-900 dark:text-white">{t.aiChatbot.thinkingMode || "Thinking"}</span>
+                                <span className="text-[11px] text-slate-500">{t.aiChatbot.thinkingDesc || "Latest • Deep Reasoning"}</span>
                               </div>
                             </button>
                           </div>
