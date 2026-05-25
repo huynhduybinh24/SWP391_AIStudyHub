@@ -558,7 +558,7 @@ export function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-220px)] justify-between select-none font-sans relative">
+    <div className="flex flex-col h-[calc(100vh-190px)] justify-between select-none font-sans relative">
       <AnimatePresence mode="wait">
 
         {/* ==================================================
@@ -571,54 +571,55 @@ export function ChatPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.3 }}
-            className="flex-1 flex flex-col items-center justify-center py-10 px-4 max-w-4xl mx-auto w-full"
+            className="flex-1 flex flex-col items-center justify-center py-4 px-4 max-w-4xl mx-auto w-full"
           >
+            <div className="w-full flex flex-col items-center">
             {/* Logo area */}
-            <div className="flex items-center gap-3.5 mb-6">
-              <div className="p-3 bg-blue-100 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-900/30 rounded-2xl text-blue-600 dark:text-blue-400 shadow-md">
-                <AIChatbotIcon className="size-8 animate-float" />
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-blue-100 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-900/30 rounded-2xl text-blue-600 dark:text-blue-400 shadow-md">
+                <AIChatbotIcon className="size-6 animate-float" />
               </div>
               <div>
-                <h1 className="text-3xl font-heading font-bold text-slate-900 dark:text-white leading-tight tracking-tight">
+                <h1 className="text-2xl font-heading font-bold text-slate-900 dark:text-white leading-tight tracking-tight">
                   {t.aiChatbot.title}
                 </h1>
-                <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 font-mono tracking-wider">
+                <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 font-mono tracking-wider">
                   {t.aiChatbot.startSubtitle}
                 </p>
               </div>
             </div>
 
             {/* Central Panel */}
-            <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/70 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] p-6 md:p-8 flex flex-col gap-8 transition-colors duration-300">
+            <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/70 dark:border-slate-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] p-5 md:p-6 flex flex-col gap-5 transition-colors duration-300">
 
               {/* Primary Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   onClick={handleStartNewChat}
-                  className="flex items-center justify-center gap-3 h-14 rounded-2xl text-white font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-98 transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-2 h-12 rounded-2xl text-white font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-98 transition-all cursor-pointer"
                 >
-                  <Plus className="size-5.5" />
+                  <Plus className="size-5" />
                   <span>{t.aiChatbot.newChat}</span>
                 </button>
                 <button
                   onClick={() => setSearchModalOpen(true)}
-                  className="flex items-center justify-center gap-3 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 font-bold border border-slate-200/50 dark:border-slate-800 active:scale-98 transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 font-bold border border-slate-200/50 dark:border-slate-800 active:scale-98 transition-all cursor-pointer"
                 >
-                  <Search className="size-5" />
+                  <Search className="size-4.5" />
                   <span>{t.aiChatbot.searchChats}</span>
                 </button>
               </div>
 
               {/* History Section */}
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <MessageSquare className="size-4.5 text-slate-400 dark:text-slate-500" />
-                  <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                  <MessageSquare className="size-4 text-slate-400 dark:text-slate-500" />
+                  <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     {t.aiChatbot.chatHistory}
                   </h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 max-h-[300px] overflow-y-auto pr-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-1">
                   {sortedConversations.map((conv) => {
                     const isPinned = pinnedConvIds.includes(conv.id)
                     const isEditing = editingConvId === conv.id
@@ -627,11 +628,11 @@ export function ChatPage() {
                       <div
                         key={conv.id}
                         onClick={() => !isEditing && handleOpenConversation(conv.id)}
-                        className="group relative flex items-start gap-3.5 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-500/20 dark:hover:border-blue-500/20 hover:shadow-md cursor-pointer transition-all duration-200"
+                        className="group relative flex items-start gap-3 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-500/20 dark:hover:border-blue-500/20 hover:shadow-md cursor-pointer transition-all duration-200"
                       >
                         {/* Icon */}
-                        <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-100/30 dark:border-blue-900/20 rounded-xl text-blue-500 dark:text-blue-400 shrink-0">
-                          <MessageSquare className="size-4.5" />
+                        <div className="p-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-100/30 dark:border-blue-900/20 rounded-xl text-blue-500 dark:text-blue-400 shrink-0">
+                          <MessageSquare className="size-4" />
                         </div>
 
                         {/* Middle Details */}
@@ -721,6 +722,7 @@ export function ChatPage() {
                 </div>
               </div>
             </div>
+            </div>
           </motion.div>
         ) : (
 
@@ -735,7 +737,7 @@ export function ChatPage() {
             className="flex-1 flex flex-col"
           >
             {/* Header / Top bar */}
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4 select-none">
+            <div className="sticky top-0 z-20 bg-[#f5f7fb] dark:bg-slate-950 pt-2 -mt-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4 select-none">
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => {
@@ -835,7 +837,7 @@ export function ChatPage() {
                 /* ==================================================
                     2B. ACTIVE MESSAGES LIST
                    ================================================== */
-                <div className="flex-1 overflow-y-auto max-h-[500px] pl-2 pr-3 flex flex-col gap-6 pt-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
+                <div className="flex-1 overflow-y-auto pl-2 pr-3 flex flex-col gap-6 pt-4 pb-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
                   {messages.map((msg, index) => {
                     const isUser = msg.role === 'user'
 
@@ -946,7 +948,7 @@ export function ChatPage() {
               {/* ==================================================
                   2C. COMPOSER BAR
                  ================================================== */}
-              <div className="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4">
+              <div className="mt-2 border-t border-slate-100 dark:border-slate-800 pt-4 shrink-0 bg-[#f5f7fb] dark:bg-slate-950 z-20 sticky bottom-0 pb-2">
                 {/* Attached files ready to upload */}
                 {selectedFiles.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2 justify-start items-center">
