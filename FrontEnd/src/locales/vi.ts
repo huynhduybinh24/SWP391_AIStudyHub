@@ -340,7 +340,14 @@ export const vi: typeof en = {
     recordingStopped: "Đã dừng ghi âm",
     promptAdded: "Đã thêm mẫu prompt",
     copy: "Sao chép phản hồi",
-    regenerate: "Tạo lại phản hồi"
+    regenerate: "Tạo lại phản hồi",
+    online: "Trực tuyến",
+    popupWelcomeTitle: "Hôm nay tôi có thể giúp gì cho bạn?",
+    popupWelcomeSub: "Hỏi tôi bất cứ điều gì về việc học của bạn hoặc chọn một gợi ý bên dưới để bắt đầu.",
+    promptStudyPlan: "Tạo kế hoạch học tập",
+    promptSummarize: "Tóm tắt tài liệu của tôi",
+    promptQuiz: "Tạo câu hỏi trắc nghiệm",
+    promptExplain: "Giải thích chủ đề này"
   },
   sharedFiles: {
     title: "Không gian chia sẻ",
