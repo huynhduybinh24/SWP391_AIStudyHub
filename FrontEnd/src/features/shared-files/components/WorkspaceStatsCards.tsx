@@ -7,12 +7,14 @@ interface WorkspaceStatsCardsProps {
   onViewAIReport: () => void
   onStorageCardClick?: () => void
   onActiveCardClick?: () => void
+  activeCollaboratorsCount?: number
 }
 
 export function WorkspaceStatsCards({
   onViewAIReport,
   onStorageCardClick,
-  onActiveCardClick
+  onActiveCardClick,
+  activeCollaboratorsCount
 }: WorkspaceStatsCardsProps) {
   const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
@@ -114,12 +116,14 @@ export function WorkspaceStatsCards({
             <div className="size-8.5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-[#0fbf7c] text-white flex items-center justify-center font-bold text-xs">S</div>
             <div className="size-8.5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-[#5f6ffc] text-white flex items-center justify-center font-bold text-xs">D</div>
             <div className="size-8.5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-450 flex items-center justify-center font-extrabold text-[10px] select-none">
-              +6
+              +{Math.max(0, (activeCollaboratorsCount ?? 8) - 2)}
             </div>
           </div>
 
           <div>
-            <span className="text-xl font-black text-slate-900 dark:text-white leading-none">8</span>
+            <span className="text-xl font-black text-slate-900 dark:text-white leading-none">
+              {activeCollaboratorsCount ?? 8}
+            </span>
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t.sharedFiles.teamMembers}</span>
           </div>
         </div>
