@@ -29,13 +29,13 @@ export function DashboardLayout() {
         <Header />
         
         {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto flex flex-col justify-between">
-          <main className="px-8 pb-10 pt-6 flex-1">
-            <div className="mx-auto max-w-[1200px]">
+        <div className={`flex-1 overflow-y-auto flex flex-col ${!isChatPage ? 'justify-between' : ''}`}>
+          <main className={`px-8 pt-6 flex-1 ${!isChatPage ? 'pb-10' : 'pb-2'}`}>
+            <div className={`mx-auto max-w-[1200px] ${isChatPage ? 'h-full' : ''}`}>
               <Outlet />
             </div>
           </main>
-          <AppFooter variant="simple" />
+          {!isChatPage && <AppFooter variant="simple" />}
         </div>
 
         {/* Interactive Floating Chatbot */}
