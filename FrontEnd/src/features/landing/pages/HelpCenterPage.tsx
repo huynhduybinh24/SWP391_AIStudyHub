@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   Mail,
@@ -90,6 +90,7 @@ const CATEGORIES = ['All', 'Getting Started', 'AI Features', 'Storage & Files', 
    Component
 ───────────────────────────────────────────── */
 export function HelpCenterPage() {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
@@ -152,12 +153,12 @@ export function HelpCenterPage() {
             <img src="/logo.png" alt="LumiEdu Logo" className="w-[68px] h-[68px] object-contain" />
             <span className="text-2xl font-bold text-primary tracking-tight">LumiEdu</span>
           </Link>
-          <Link
-            to="/"
-            className="text-sm font-semibold text-[#434655] hover:text-primary transition-colors flex items-center gap-2"
+          <button
+            onClick={() => navigate(-1)}
+            className="text-sm font-semibold text-[#434655] hover:text-primary transition-colors flex items-center gap-2 cursor-pointer bg-transparent border-none"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Home
-          </Link>
+          </button>
         </div>
       </header>
 

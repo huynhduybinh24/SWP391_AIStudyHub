@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   GraduationCap, 
@@ -87,6 +87,7 @@ const FAQS = [
 ];
 
 export function PartnershipPage() {
+  const navigate = useNavigate();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   
   // Form State
@@ -160,12 +161,12 @@ export function PartnershipPage() {
             <img src="/logo.png" alt="AI Study Hub Logo" className="w-[68px] h-[68px] object-contain" />
             <span className="text-2xl font-bold text-primary dark:text-blue-500 tracking-tight">AI Study Hub</span>
           </Link>
-          <Link
-            to="/"
-            className="text-sm font-semibold text-[#434655] dark:text-slate-300 hover:text-primary dark:hover:text-blue-400 transition-colors flex items-center gap-2"
+          <button
+            onClick={() => navigate(-1)}
+            className="text-sm font-semibold text-[#434655] dark:text-slate-300 hover:text-primary dark:hover:text-blue-400 transition-colors flex items-center gap-2 cursor-pointer bg-transparent border-none"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Home
-          </Link>
+          </button>
         </div>
       </header>
 
