@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/Button'
 import { ChatPopup } from '@/features/ai-chatbot/components/ChatPopup'
 import { useUiStore } from '@/stores/uiStore'
 import { AnimatePresence } from 'framer-motion'
@@ -61,20 +60,31 @@ export function FloatingAssistantButton() {
 
   return (
     <>
-      <div className="fixed bottom-[20px] right-[20px] z-50 flex flex-col items-end">
-        <AnimatePresence>
-          {isChatPopupOpen && <ChatPopup onClose={() => setChatPopupOpen(false)} />}
-        </AnimatePresence>
-        
-        <Button
+      <div className="fixed bottom-4 right-[20px] md:bottom-4 md:right-[24px] z-50">
+        <button
           onClick={handleToggle}
           aria-label="Open AI Chatbot"
-          size="icon"
-          className="mt-4 size-14 rounded-full bg-[#0055d4] shadow-lg hover:bg-[#004bbd] transition-all duration-300 hover:scale-105 p-0 flex items-center justify-center overflow-hidden"
+          className="relative size-[60px] md:size-[68px] rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-blue-500/40 group flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-blue-500/20 active:scale-95"
         >
-          <AIChatbotIcon className="w-8 h-8" />
-        </Button>
+          {/* Glass Effect Overlay */}
+          <div className="absolute inset-0 rounded-full border border-white/20 pointer-events-none" />
+          
+          {/* Subtle Inner Glow */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+          
+          {/* AI Icon */}
+          <AIChatbotIcon className="w-[75%] h-[75%] relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-sm" />
+
+          {/* Minimal Online Indicator */}
+          <div className="absolute top-0 right-0 z-20 flex size-4 md:size-[18px] items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800">
+            <div className="size-2 md:size-2.5 rounded-full bg-emerald-500" />
+          </div>
+        </button>
       </div>
+
+      <AnimatePresence>
+        {isChatPopupOpen && <ChatPopup onClose={() => setChatPopupOpen(false)} />}
+      </AnimatePresence>
     </>
   )
 }
