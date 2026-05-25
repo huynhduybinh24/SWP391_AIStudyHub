@@ -1,4 +1,4 @@
-import { en } from './en'
+
 
 export const ko: any = {
   common: {
