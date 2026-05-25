@@ -338,14 +338,7 @@ export const en = {
     recordingStopped: "Recording stopped",
     promptAdded: "Prompt added",
     copy: "Copy Response",
-    regenerate: "Regenerate",
-    online: "Online",
-    popupWelcomeTitle: "How can I help you today?",
-    popupWelcomeSub: "Ask me anything about your studies, or choose a prompt below to get started.",
-    promptStudyPlan: "Create my study plan",
-    promptSummarize: "Summarize my files",
-    promptQuiz: "Generate quiz questions",
-    promptExplain: "Explain this topic"
+    regenerate: "Regenerate"
   },
   sharedFiles: {
     title: "Shared Workspace",
