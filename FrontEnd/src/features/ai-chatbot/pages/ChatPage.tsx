@@ -3,8 +3,21 @@ import {
   FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send,
   Loader2, User, X, Plus, Search, Copy, RefreshCw, MoreVertical,
   Trash2, Edit2, Pin, MessageSquare, Check, Sparkles, FolderOpen, ArrowLeft,
-  Zap, BrainCircuit, ChevronDown
+  Zap, BrainCircuit, ChevronDown, Reply, Share2, CornerDownRight, Link
 } from 'lucide-react'
+
+// --- Custom Social Icons ---
+const IconX = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+  </svg>
+)
+
+const IconLinkedIn = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+  </svg>
+)
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
@@ -149,6 +162,9 @@ export function ChatPage() {
   const [activeDropdownConvId, setActiveDropdownConvId] = useState<string | null>(null)
   const [editingConvId, setEditingConvId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState("")
+  const [replyingToMessage, setReplyingToMessage] = useState<string | null>(null)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [sharingMessage, setSharingMessage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const attachDropdownRef = useRef<HTMLDivElement>(null)
 
@@ -328,7 +344,10 @@ export function ChatPage() {
 
   // --- Send Message Handler ---
   const handleSend = (textToSend?: string) => {
-    const text = (textToSend || input).trim()
+    let text = (textToSend || input).trim()
+    if (replyingToMessage && !textToSend) {
+      text = `> ${replyingToMessage}\n\n` + text
+    }
     const filesToSend = textToSend ? [] : selectedFiles
 
     if (!text && filesToSend.length === 0) return
@@ -349,6 +368,7 @@ export function ChatPage() {
     const updatedMessages = [...messages, newUserMsg]
     setMessages(updatedMessages)
     setInput('')
+    setReplyingToMessage(null)
     setSelectedFiles([])
     setFileError(null)
 
@@ -447,6 +467,15 @@ export function ChatPage() {
   const handleCopyResponse = (content: string) => {
     navigator.clipboard.writeText(content)
     toast.success(t.common.copied || "Copied!")
+  }
+
+  const handleShareResponse = (content: string) => {
+    setSharingMessage(content)
+    setShareModalOpen(true)
+  }
+
+  const handleReplyMessage = (content: string) => {
+    setReplyingToMessage(content)
   }
 
   const handleRegenerateResponse = (index: number) => {
@@ -894,28 +923,54 @@ export function ChatPage() {
                             )}
                           </div>
 
-                          {/* Message Actions (AI only) */}
-                          {!isUser && (
-                            <div className="flex items-center gap-2 ml-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => handleCopyResponse(msg.content)}
-                                className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
-                                title={t.aiChatbot.copy || "Copy response"}
-                              >
-                                <Copy className="size-3" />
-                                <span>Copy</span>
-                              </button>
-                              <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">•</span>
-                              <button
-                                onClick={() => handleRegenerateResponse(index)}
-                                className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
-                                title={t.aiChatbot.regenerate || "Regenerate"}
-                              >
-                                <RefreshCw className="size-3" />
-                                <span>Regenerate</span>
-                              </button>
-                            </div>
-                          )}
+                          {/* Message Actions */}
+                          <div className={cn(
+                            "flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity mt-1",
+                            isUser ? "mr-3 justify-end" : "ml-2"
+                          )}>
+                            <button
+                              onClick={() => handleCopyResponse(msg.content)}
+                              className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+                              title={t.aiChatbot.copy || "Copy"}
+                            >
+                              <Copy className="size-3" />
+                              <span>{t.aiChatbot.copy || "Copy"}</span>
+                            </button>
+                            
+                            {!isUser && (
+                              <>
+                                <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">•</span>
+                                <button
+                                  onClick={() => handleRegenerateResponse(index)}
+                                  className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+                                  title={t.aiChatbot.regenerate || "Regenerate"}
+                                >
+                                  <RefreshCw className="size-3" />
+                                  <span>{t.aiChatbot.regenerate || "Regenerate"}</span>
+                                </button>
+                              </>
+                            )}
+
+                            <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">•</span>
+                            <button
+                              onClick={() => handleReplyMessage(msg.content)}
+                              className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+                              title={t.common.reply || "Reply"}
+                            >
+                              <Reply className="size-3" />
+                              <span>{t.common.reply || "Reply"}</span>
+                            </button>
+
+                            <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">•</span>
+                            <button
+                              onClick={() => handleShareResponse(msg.content)}
+                              className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+                              title={t.common.share || "Share"}
+                            >
+                              <Share2 className="size-3" />
+                              <span>{t.common.share || "Share"}</span>
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     )
@@ -984,6 +1039,20 @@ export function ChatPage() {
 
                 {/* Main input composer box */}
                 <div className="rounded-[24px] border border-slate-200 dark:border-slate-700/80 bg-white/60 dark:bg-slate-900/60 p-4 px-5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] backdrop-blur-xl transition-all duration-300 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-blue-400 dark:focus-within:border-blue-500/80 focus-within:shadow-[0_4px_20px_-4px_rgba(59,130,246,0.15)] z-10 relative flex flex-col gap-2">
+                  
+                  {/* Replying To preview block */}
+                  {replyingToMessage && (
+                    <div className="mb-1 flex items-center justify-between gap-3 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl px-3 py-2 border border-slate-100 dark:border-slate-800/80">
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <CornerDownRight className="size-4 shrink-0 text-slate-400" />
+                        <span className="text-sm truncate font-medium">"{replyingToMessage}"</span>
+                      </div>
+                      <button onClick={() => setReplyingToMessage(null)} className="shrink-0 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                  )}
+
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -1196,6 +1265,56 @@ export function ChatPage() {
                 </button>
               ))
             )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Share Modal */}
+      <Modal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        title={t.common.share || "Share"}
+        className="max-w-md"
+      >
+        <div className="flex flex-col gap-8 py-6">
+          <p className="text-sm text-slate-600 dark:text-slate-300 text-center px-4 leading-relaxed font-medium">
+            {sharingMessage && sharingMessage.length > 120 ? sharingMessage.substring(0, 120) + '...' : sharingMessage}
+          </p>
+          
+          <div className="flex items-center justify-center gap-6 sm:gap-8">
+            <button className="flex flex-col items-center gap-2 group cursor-pointer" onClick={() => {
+              navigator.clipboard.writeText(sharingMessage || "")
+              toast.success(t.common.shareSuccess || "Copied link!")
+              setShareModalOpen(false)
+            }}>
+              <div className="size-14 rounded-full bg-black dark:bg-white flex items-center justify-center shadow-md hover:scale-105 transition-transform">
+                <Link className="size-6 text-white dark:text-black" />
+              </div>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Copy link</span>
+            </button>
+
+            <button className="flex flex-col items-center gap-2 group cursor-pointer" onClick={() => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(sharingMessage || ""))}>
+              <div className="size-14 rounded-full bg-black dark:bg-white flex items-center justify-center shadow-md hover:scale-105 transition-transform">
+                <IconX className="size-5 text-white dark:text-black" />
+              </div>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">X</span>
+            </button>
+
+            <button className="flex flex-col items-center gap-2 group cursor-pointer" onClick={() => window.open('https://linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(window.location.href))}>
+              <div className="size-14 rounded-full bg-black dark:bg-white flex items-center justify-center shadow-md hover:scale-105 transition-transform">
+                <IconLinkedIn className="size-5 text-white dark:text-black" />
+              </div>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">LinkedIn</span>
+            </button>
+
+            <button className="flex flex-col items-center gap-2 group cursor-pointer" onClick={() => window.open('https://reddit.com/submit?url=' + encodeURIComponent(window.location.href) + '&title=' + encodeURIComponent('Check out this response'))}>
+              <div className="size-14 rounded-full bg-black dark:bg-white flex items-center justify-center shadow-md hover:scale-105 transition-transform">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="size-6 text-white dark:text-black">
+                  <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.073 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.56 12 8 12.562 8 13.25c0 .687.56 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.562-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.688-.561-1.25-1.25-1.25zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .466c.843.84 2.484.911 2.961.911.477 0 2.105-.072 2.961-.911a.327.327 0 0 0 0-.466.327.327 0 0 0-.466 0c-.461.46-1.633.686-2.495.686-.85 0-2.022-.226-2.499-.686a.328.328 0 0 0-.231-.094z"/>
+                </svg>
+              </div>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Reddit</span>
+            </button>
           </div>
         </div>
       </Modal>
