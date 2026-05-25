@@ -433,7 +433,7 @@ export function UploadSubjectDocumentPage() {
                 placeholder={t.upload.placeholderTitle}
                 disabled={isProcessing}
                 required
-                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400 dark:bg-slate-800 dark:hover:bg-slate-750 dark:focus:bg-slate-955 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-[#2563eb]/50"
+                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400 dark:bg-slate-800 dark:hover:bg-slate-700 dark:focus:bg-slate-900 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-[#2563eb]/50"
               />
             </div>
 
@@ -462,7 +462,7 @@ export function UploadSubjectDocumentPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t.upload.placeholderDesc}
                 disabled={isProcessing}
-                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400 min-h-[100px] resize-none dark:bg-slate-800 dark:hover:bg-slate-750 dark:focus:bg-slate-955 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-[#2563eb]/50"
+                className="w-full rounded-xl border border-transparent bg-[#F0F4F9]/60 hover:bg-[#F0F4F9]/80 focus:bg-white focus:border-[#2563eb] focus:outline-none transition-all px-4 py-3 text-sm font-semibold text-[#0B1A30] placeholder:text-slate-400 min-h-[100px] resize-none dark:bg-slate-800 dark:hover:bg-slate-700 dark:focus:bg-slate-900 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-[#2563eb]/50"
               />
             </div>
 
