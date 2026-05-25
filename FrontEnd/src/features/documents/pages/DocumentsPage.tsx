@@ -1081,7 +1081,7 @@ export function DocumentsPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-5 border border-slate-200 dark:border-slate-750">
+                <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-5 border border-slate-200 dark:border-slate-700">
                   <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed">
                     {QUIZ_QUESTIONS[currentQuizQuestion].q}
                   </h4>
