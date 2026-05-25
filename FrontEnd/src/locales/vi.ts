@@ -24,6 +24,8 @@ export const vi: typeof en = {
     justNow: "Vừa xong",
     twoHoursAgo: "2 giờ trước",
     yesterday: "Hôm qua",
+    may20: "20 Thg 5",
+    may18: "18 Thg 5",
     freePlan: "Gói Miễn phí",
     proPlan: "Gói Pro",
     institutionalPlan: "Gói Tổ chức",
