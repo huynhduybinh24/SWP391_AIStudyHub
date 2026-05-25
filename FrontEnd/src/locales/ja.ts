@@ -1041,5 +1041,92 @@ export const ja: typeof en = {
     shared2hAgo: "2時間前に共有",
     sharedYesterday: "昨日共有",
     sharedOct15: "2023年10月15日に共有"
+  },
+  searchResultsPage: {
+    backToDocs: "ドキュメントに戻る",
+    resultsCount: (count: number, keyword: string) => `「${keyword}」の検索結果が${count}件見つかりました`,
+    searchHistory: "検索履歴",
+    historyPsychology: "心理学",
+    historyBrain: "脳",
+    historyBiology: "生物学",
+    subject: "科目",
+    subjects: {
+      neuroscience: "神経科学",
+      biology: "生物学",
+      psychology: "心理学"
+    },
+    fileType: "ファイルタイプ",
+    fileTypes: {
+      pdf: "PDFドキュメント",
+      notes: "講義ノート",
+      presentations: "プレゼンテーション"
+    },
+    dateAdded: "追加日",
+    dateOptions: {
+      last7Days: "過去7日間",
+      last30Days: "過去30日間",
+      allTime: "すべての期間"
+    },
+    noMatches: "一致するドキュメントはありません",
+    noMatchesSub: "フィルターに一致するドキュメントが見つかりませんでした。クエリやフィルターを調整してください。",
+    resetFilters: "フィルターをリセット",
+    aiGenerated: "AI生成",
+    bookmarkTooltip: "ブックマークに追加",
+    shareTooltip: "リンクを共有",
+    toastBookmarkAdded: "ドキュメントがブックマークに登録されました！",
+    toastBookmarkRemoved: "ブックマークを削除しました",
+    toastShareSuccess: (title: string) => `「${title}」の共有リンクをクリップボードにコピーしました！`,
+    toastShareError: "リンクをクリップボードにコピーできませんでした",
+    toastShareNotSupported: "お使いのブラウザは共有をサポートしていません",
+    defaultLabel: "学習ガイド",
+    defaultDesc: (title: string) => `この学習資料は、${title}における主要な側面と基礎概念をカバーしています。`,
+    defaultTags: ["#学習資料", "#試験対策ノート"],
+    documentDetails: {
+      'neuro-1': {
+        label: '学習ガイド',
+        description: 'この包括的な要約は、前頭葉の実行機能における役割、側頭葉の聴覚情報処理、および大脳辺縁系を接続する複雑な神経経路を含む、ヒトの脳の主要な解剖学的領域をカバーしています。',
+        tags: ['#神経解剖学', '#試験対策', '#基礎']
+      },
+      'neuro-2': {
+        label: '講義ノート',
+        description: '側頭葉および海馬複合体内における感覚統合、皮質経路、神経シグナル伝達ネットワーク、および記憶エンコーディング機構の詳細な分析。',
+        tags: ['#認知神経科学', '#講義ノート', '#脳信号']
+      },
+      'neuro-3': {
+        label: '学習ガイド',
+        description: '主要な神経伝達物質（ドーパミン、セロトニン、GABA、グルタミン酸、アセチルコリン）の経路、受容体、および行動への影響を詳細に説明する学習ガイド。',
+        tags: ['#神経伝達物質', '#試験ノート', '#生化学']
+      },
+      'neuro-4': {
+        label: '講義ノート',
+        description: '化学的および電気的シナプス、活動電位の伝播、シナプス間隙のダイナミクス、および高頻度刺激下での神経伝達物質放出機構の分析。',
+        tags: ['#シナプス', '#細胞神経科学', '#基礎']
+      },
+      'neuro-5': {
+        label: '研究論文',
+        description: '哺乳類のネオコルテックス内における構造的神経可塑性、シナプス剪定、樹状突起分岐、および経験依存的な微細構造変化に関する研究分析。',
+        tags: ['#神経可塑性', '#研究論文', '#高度']
+      },
+      'psych-1': {
+        label: '講義ノート',
+        description: '行動心理学の神経学的基盤、パブロフの古典的条件付けのメカニズム、オペラント強化経路、および認知発達理論の紹介。',
+        tags: ['#神経心理学', '#心理学基礎', '#学習']
+      },
+      'psych-2': {
+        label: '学習ガイド',
+        description: '強化スケジュール、スキナー箱モデル、行動モデリング、および正対負の条件付けにおける基礎的な神経伝達物質作用に焦点を当てた学習コンパニオン。',
+        tags: ['#行動心理学', '#条件付け', '#基礎']
+      },
+      'doc-2': {
+        label: '講義ノート',
+        description: '分子生物学経路、神経遺伝子発現、神経新生の指標、および神経組織培養に関連する細胞クローニング技術を調べる講義の概要。',
+        tags: ['#分子生物学', '#細胞シグナル伝達', '#遺伝学']
+      },
+      'doc-6': {
+        label: '研究論文',
+        description: '分子遺伝学的プロファイリング、遺伝的遺伝パターン、神経遺伝学的遺伝突然変異、およびトランスジェニック染色体マッピングを詳述した実験レポートのドラフト。',
+        tags: ['#遺伝学実験', '#レポート', '#神経遺伝学']
+      }
+    }
   }
 };

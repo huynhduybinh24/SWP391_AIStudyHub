@@ -71,7 +71,7 @@ export function UploadProgressCard({
       <button
         type="button"
         onClick={onCancel}
-        className="absolute top-4 right-4 rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
+        className="absolute top-4 right-4 rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
         aria-label="Cancel upload"
       >
         <X className="h-4 w-4" />

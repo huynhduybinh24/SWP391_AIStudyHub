@@ -601,7 +601,7 @@ export function ChatPage() {
                 </button>
                 <button
                   onClick={() => setSearchModalOpen(true)}
-                  className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 font-bold border border-slate-200/50 dark:border-slate-800 active:scale-98 transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold border border-slate-200/50 dark:border-slate-800 active:scale-98 transition-all cursor-pointer"
                 >
                   <Search className="size-4.5" />
                   <span>{t.aiChatbot.searchChats}</span>

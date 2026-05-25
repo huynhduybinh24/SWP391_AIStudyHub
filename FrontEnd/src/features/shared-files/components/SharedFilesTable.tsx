@@ -21,6 +21,13 @@ export interface SharedFile {
   timeGroup?: 'thisWeek' | 'lastWeek' | 'earlierThisYear'
   collaborators?: boolean
   url?: string
+  editHistory?: {
+    id: string
+    user: string
+    action: string
+    time: string
+    avatarBg?: string
+  }[]
 }
 
 interface SharedFilesTableProps {
@@ -187,6 +194,7 @@ export function SharedFilesTable({
                 </button>
 
                 <FileActionsDropdown
+                  file={file}
                   isOpen={activeDropdownId === file.id}
                   onClose={() => setActiveDropdownId(null)}
                   onOpen={() => onOpen(file)}

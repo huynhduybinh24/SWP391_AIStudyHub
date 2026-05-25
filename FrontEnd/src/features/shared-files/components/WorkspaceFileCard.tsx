@@ -221,6 +221,7 @@ export function WorkspaceFileCard({
               <MoreVertical className="size-4.5" />
             </button>
             <FileActionsDropdown
+              file={file}
               isOpen={isMenuOpen}
               onClose={onMenuClose}
               onOpen={onOpenFile}
@@ -275,6 +276,7 @@ export function WorkspaceFileCard({
               <MoreVertical className="size-4" />
             </button>
             <FileActionsDropdown
+              file={file}
               isOpen={isMenuOpen}
               onClose={onMenuClose}
               onOpen={onOpenFile}

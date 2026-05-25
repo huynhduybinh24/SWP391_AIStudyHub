@@ -9,7 +9,8 @@ import {
   Clock,
   Sparkles,
   ArrowUpRight,
-  ShieldAlert
+  ShieldAlert,
+  FileText
 } from 'lucide-react'
 import {
   LineChart,
@@ -69,7 +70,7 @@ const StoragePieTooltip = ({ active, payload }: any) => {
 export function AdminOverviewTab() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [activePieIndex, setActivePieIndex] = useState<number | undefined>(undefined)
   const [isMounted, setIsMounted] = useState(false)
 
@@ -197,31 +198,30 @@ export function AdminOverviewTab() {
             </div>
           </CardContent>
         </Card>
-
-        {/* KPI 4: Violating Documents */}
+        {/* KPI 4: Total Files */}
         <Card className="relative overflow-hidden group hover:shadow-lg dark:hover:border-slate-700/80 transition-all duration-300 rounded-[24px]">
           <CardContent className="p-6 flex flex-col justify-between h-full min-h-[140px]">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <p className="text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                  {t.admin.flaggedDocs}
+                  {language === 'vi' ? 'TỔNG SỐ TỆP TIN' : 'TOTAL FILES'}
                 </p>
-                <h4 className="text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
-                  18
+                <h4 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+                  84,529
                 </h4>
               </div>
-              <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
-                <ShieldAlert className="size-5" />
+              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400">
+                <FileText className="size-5" />
               </div>
             </div>
             
             <div className="mt-4 flex items-center gap-1.5 text-xs">
-              <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/10">
-                <AlertTriangle className="size-3.5" />
-                5 Urgent
+              <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10">
+                <TrendingUp className="size-3.5" />
+                +8.4%
               </span>
               <span className="text-slate-400 dark:text-slate-500 font-medium">
-                {t.admin.flaggedFilesCount} today
+                {language === 'vi' ? 'so với tháng trước' : 'vs last month'}
               </span>
             </div>
           </CardContent>

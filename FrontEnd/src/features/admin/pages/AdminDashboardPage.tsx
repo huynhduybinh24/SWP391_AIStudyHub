@@ -1,13 +1,16 @@
 import { useState } from 'react'
-import { Shield, Users, FileText, BarChart3, Settings2 } from 'lucide-react'
+import { Shield, Users, FileText, BarChart3, Bell, CreditCard } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
 import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab'
+import { AdminUsersTab } from '@/features/admin/components/AdminUsersTab'
+import { AdminPackagesTab } from '@/features/admin/components/AdminPackagesTab'
+import { AdminNotificationsTab } from '@/features/admin/components/AdminNotificationsTab'
 
-type AdminTab = 'overview' | 'users' | 'moderation'
+type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'moderation'
 
 export function AdminDashboardPage() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [activeTab, setActiveTab] = useState<AdminTab>('overview')
 
   const tabItems = [
@@ -20,6 +23,16 @@ export function AdminDashboardPage() {
       id: 'users' as AdminTab,
       label: t.admin.tabUsers,
       icon: Users
+    },
+    {
+      id: 'packages' as AdminTab,
+      label: language === 'vi' ? 'Quản lý gói cước' : 'Package Management',
+      icon: CreditCard
+    },
+    {
+      id: 'notifications' as AdminTab,
+      label: language === 'vi' ? 'Gửi thông báo' : 'Broadcast Center',
+      icon: Bell
     },
     {
       id: 'moderation' as AdminTab,
@@ -39,7 +52,7 @@ export function AdminDashboardPage() {
             </span>
             {t.admin.title}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm max-w-2xl font-medium">
+          <p className="text-slate-550 dark:text-slate-400 mt-2 text-sm max-w-2xl font-medium">
             {t.admin.subtitle}
           </p>
         </div>
@@ -80,22 +93,16 @@ export function AdminDashboardPage() {
       <div className="mt-4 transition-all duration-300 animate-fade-in">
         {activeTab === 'overview' && <AdminOverviewTab />}
         
-        {activeTab === 'users' && (
-          <div className="flex flex-col items-center justify-center py-20 text-center rounded-[32px] border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-8">
-            <div className="p-4 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 mb-4">
-              <Users className="size-8 stroke-[1.5]" />
-            </div>
-            <h3 className="text-lg font-extrabold text-slate-800 dark:text-white">
-              {t.admin.tabUsers}
-            </h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 max-w-sm font-medium">
-              Manage student profiles, roles, subscription plans, and configure authentication details.
-            </p>
-          </div>
-        )}
+        {activeTab === 'users' && <AdminUsersTab />}
+
+        {activeTab === 'packages' && <AdminPackagesTab />}
+
+        {activeTab === 'notifications' && <AdminNotificationsTab />}
 
         {activeTab === 'moderation' && <AdminDocumentsTab />}
       </div>
     </div>
   )
 }
+
+export default AdminDashboardPage
