@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
-import { Zap, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Zap, X, PanelLeftClose, PanelLeftOpen, ShieldCheck } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -197,6 +197,8 @@ export function Sidebar() {
         return t.sidebar.upgradePro
       case 'log out':
         return t.sidebar.logout
+      case 'admin panel':
+        return t.sidebar.adminPanel
       default:
         return label
     }
@@ -330,6 +332,15 @@ export function Sidebar() {
                 onClick={handleLinkClick}
               />
             ))}
+            {user?.role === 'admin' && (
+              <SidebarLink
+                to="/dashboard/admin"
+                icon={ShieldCheck}
+                label={getSidebarLabel('Admin Panel')}
+                pathname={pathname}
+                onClick={handleLinkClick}
+              />
+            )}
           </nav>
         </div>
 

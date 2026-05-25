@@ -166,7 +166,12 @@ export default function EditDocumentPage() {
   const [aiQuizAnswers, setAiQuizAnswers] = useState<Record<number, number>>({})
   const [aiQuizSubmitted, setAiQuizSubmitted] = useState(false)
   
-  const [aiDrawerChatLog, setAiDrawerChatLog] = useState<Array<{ sender: 'user' | 'ai'; text: string; timestamp: string }>>([])
+  const [aiDrawerChatLog, setAiDrawerChatLog] = useState<Array<{
+    payload?: any;
+    sender: 'user' | 'ai';
+    text: string;
+    timestamp: string;
+  }>>([])
   const [aiDrawerChatInput, setAiDrawerChatInput] = useState('')
   const [isAiDrawerTyping, setIsAiDrawerTyping] = useState(false)
   const [aiDrawerTypingText, setAiDrawerTypingText] = useState('')
