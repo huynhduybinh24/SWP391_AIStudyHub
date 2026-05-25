@@ -22,6 +22,8 @@ export const en = {
     justNow: "Just now",
     twoHoursAgo: "2 hours ago",
     yesterday: "Yesterday",
+    may20: "May 20",
+    may18: "May 18",
     freePlan: "Free Plan",
     proPlan: "Pro Plan",
     institutionalPlan: "Institutional Plan",
