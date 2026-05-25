@@ -1,6 +1,6 @@
 import { en } from './en'
 
-export const ja: typeof en = {
+export const ja: any = {
   common: {
     back: "戻る",
     cancel: "キャンセル",
