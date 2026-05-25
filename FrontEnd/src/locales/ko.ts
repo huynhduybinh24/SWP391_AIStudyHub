@@ -1040,5 +1040,92 @@ export const ko: typeof en = {
     shared2hAgo: "2시간 전 공유됨",
     sharedYesterday: "어제 공유됨",
     sharedOct15: "2023년 10월 15일 공유됨"
+  },
+  searchResultsPage: {
+    backToDocs: "문서로 돌아가기",
+    resultsCount: (count: number, keyword: string) => `"${keyword}"에 대한 검색 결과가 ${count}건 있습니다.`,
+    searchHistory: "검색 기록",
+    historyPsychology: "심리학",
+    historyBrain: "뇌",
+    historyBiology: "생물학",
+    subject: "과목",
+    subjects: {
+      neuroscience: "신경과학",
+      biology: "생물학",
+      psychology: "심리학"
+    },
+    fileType: "파일 형식",
+    fileTypes: {
+      pdf: "PDF 문서",
+      notes: "강의 노트",
+      presentations: "프레젠테이션"
+    },
+    dateAdded: "추가된 날짜",
+    dateOptions: {
+      last7Days: "지난 7일",
+      last30Days: "지난 30일",
+      allTime: "전체 기간"
+    },
+    noMatches: "일치하는 문서가 없습니다",
+    noMatchesSub: "필터와 일치하는 문서를 찾을 수 없습니다. 검색어나 필터를 조정해 보세요.",
+    resetFilters: "필터 초기화",
+    aiGenerated: "AI 생성됨",
+    bookmarkTooltip: "북마크에 추가",
+    shareTooltip: "링크 공유",
+    toastBookmarkAdded: "문서가 북마크에 성공적으로 추가되었습니다!",
+    toastBookmarkRemoved: "북마크가 제거되었습니다",
+    toastShareSuccess: (title: string) => `"${title}"의 공유 링크를 클립보드에 복사했습니다!`,
+    toastShareError: "링크를 클립보드에 복사하지 못했습니다",
+    toastShareNotSupported: "이 브라우저에서는 공유 기능이 지원되지 않습니다",
+    defaultLabel: "학습 가이드",
+    defaultDesc: (title: string) => `이 학습 자료는 ${title}의 주요 측면과 기초 개념을 다룹니다.`,
+    defaultTags: ["#학습자료", "#시험대비노트"],
+    documentDetails: {
+      'neuro-1': {
+        label: '학습 가이드',
+        description: '이 포괄적인 요약본은 전두엽의 집행 기능 역할, 측두엽의 청각 정보 처리, 변연계를 연결하는 복잡한 신경 경로 등 인간 뇌의 주요 해부학적 영역을 다룹니다.',
+        tags: ['#신경해부학', '#시험대비', '#기초']
+      },
+      'neuro-2': {
+        label: '강의 노트',
+        description: '측두엽 및 해마 복합체 내부의 감각 통합, 피질 경로, 신경 신호 전달 네트워크 및 기억 부호화 메커니즘에 대한 상세 분석.',
+        tags: ['#인지신경과학', '#강의노트', '#뇌신호']
+      },
+      'neuro-3': {
+        label: '학습 가이드',
+        description: '주요 신경전달물질(도파민, 세로토닌, GABA, 글루타메이트, 아세틸콜린)의 경로, 수용체 및 행동 영향을 상세히 설명하는 학습 가이드.',
+        tags: ['#신경전달물질', '#시험노트', '#생화학']
+      },
+      'neuro-4': {
+        label: '강의 노트',
+        description: '화학적 및 전기적 시냅스, 활동 전위 전파, 시냅스 틈새 역학, 고주파 자극 하에서의 신경전달물질 방출 메커니즘 분석.',
+        tags: ['#시냅스', '#세포신경과학', '#기초']
+      },
+      'neuro-5': {
+        label: '연구 논문',
+        description: '포유류 대뇌 피질 내의 구조적 신경 가소성, 시냅스 가지치기, 수상돌기 분지 및 경험 의존적 미세 구조 변화에 대한 연구 분석.',
+        tags: ['#신경가소성', '#연구논문', '#고급']
+      },
+      'psych-1': {
+        label: '강의 노트',
+        description: '행동 심리학의 신경학적 기초, 파블로프식 고전적 조건화 메커니즘, 조작적 강화 경로 및 인지 발달 이론 소개.',
+        tags: ['#신경심리학', '#심리학기초', '#학습']
+      },
+      'psych-2': {
+        label: '학습 가이드',
+        description: '강화 계획, 스키너 상자 모델, 행동 모델링, 긍정적 대 부정적 조건화의 기초적인 신경전달물질 작용에 초점을 맞춘 학습 동반자.',
+        tags: ['#행동심리학', '#조건화', '#기초']
+      },
+      'doc-2': {
+        label: '강의 노트',
+        description: '분자 생물학 경로, 신경 유전자 발현, 신경 발생 지표, 신경 조직 배양과 연결된 세포 클로닝 기술을 조사하는 강의 개요.',
+        tags: ['#분자생물학', '#세포신호전달', '#유전학']
+      },
+      'doc-6': {
+        label: '연구 논문',
+        description: '분자 유전학적 프로파일링, 유전적 유전 패턴, 신경유전학적 유전 돌연변이 및 형질전환 염색체 매핑을 상세히 기록한 실험실 보고서 초안.',
+        tags: ['#유전학실험', '#보고서', '#신경유전학']
+      }
+    }
   }
 };
