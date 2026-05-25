@@ -401,7 +401,7 @@ export default function DownloadDocumentPage() {
                 <Button
                   onClick={() => triggerSimulatedDownload('summary')}
                   disabled={!!activeDownloadType}
-                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 font-extrabold text-xs px-5 py-3 rounded-2xl flex items-center gap-1.5 shadow-sm active:scale-97 transition-all shrink-0 disabled:opacity-50"
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs px-5 py-3 rounded-2xl flex items-center gap-1.5 shadow-sm active:scale-97 transition-all shrink-0 disabled:opacity-50"
                 >
                   <span>Download Summary</span>
                 </Button>
@@ -421,7 +421,7 @@ export default function DownloadDocumentPage() {
                   <Button
                     onClick={() => triggerSimulatedDownload('notes')}
                     disabled={!!activeDownloadType}
-                    className="bg-[#f8fafc] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-200 font-extrabold text-xs px-5 py-3 rounded-2xl flex items-center gap-1.5 shadow-sm active:scale-97 transition-all shrink-0 disabled:opacity-50"
+                    className="bg-[#f8fafc] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs px-5 py-3 rounded-2xl flex items-center gap-1.5 shadow-sm active:scale-97 transition-all shrink-0 disabled:opacity-50"
                   >
                     <span>Download Package</span>
                     <Download className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
@@ -433,7 +433,7 @@ export default function DownloadDocumentPage() {
                   <button
                     type="button"
                     onClick={() => setIsFormatDropdownOpen(!isFormatDropdownOpen)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-300 transition-colors select-none shadow-xs"
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-300 transition-colors select-none shadow-xs"
                   >
                     <span>Format: {downloadFormat}</span>
                     <ChevronDown className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
