@@ -1060,7 +1060,7 @@ Dưới đây là tóm tắt nhanh từ trợ lý AI:
                           setEditorsCanShare(e.target.checked)
                           showToast(e.target.checked ? '✅ Người chỉnh sửa hiện có thể thay đổi quyền và chia sẻ.' : '🔒 Người chỉnh sửa không thể thay đổi quyền chia sẻ nữa.')
                         }}
-                        className="w-4.5 h-4.5 rounded border-slate-300 dark:border-slate-750 bg-white dark:bg-slate-950 text-blue-600 focus:ring-blue-500 dark:focus:ring-offset-slate-900 mt-1 cursor-pointer"
+                        className="w-4.5 h-4.5 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-blue-600 focus:ring-blue-500 dark:focus:ring-offset-slate-900 mt-1 cursor-pointer"
                       />
                       <div className="flex flex-col text-left">
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-normal">
@@ -1080,7 +1080,7 @@ Dưới đây là tóm tắt nhanh từ trợ lý AI:
                           setViewersCanDownload(e.target.checked)
                           showToast(e.target.checked ? '✅ Người xem/nhận xét có thể tải xuống, in và sao chép.' : '🔒 Đã khóa tính năng tải xuống, in và sao chép đối với người xem/nhận xét.')
                         }}
-                        className="w-4.5 h-4.5 rounded border-slate-300 dark:border-slate-750 bg-white dark:bg-slate-950 text-blue-600 focus:ring-blue-500 dark:focus:ring-offset-slate-900 mt-1 cursor-pointer"
+                        className="w-4.5 h-4.5 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-blue-600 focus:ring-blue-500 dark:focus:ring-offset-slate-900 mt-1 cursor-pointer"
                       />
                       <div className="flex flex-col text-left">
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-normal">
