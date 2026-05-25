@@ -1,4 +1,4 @@
-import { en } from './en'
+
 
 export const ja: any = {
   common: {
