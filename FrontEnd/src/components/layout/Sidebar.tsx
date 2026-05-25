@@ -93,11 +93,11 @@ function SidebarLink({ to, icon: Icon, label, pathname, onClick }: SidebarLinkPr
         onClick={onClick}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          "group relative flex items-center h-11 text-[15px] font-bold no-underline select-none transition-all duration-200 w-full min-w-0 overflow-hidden shrink-0",
+          "group relative flex items-center text-[15px] font-bold no-underline select-none transition-all duration-200 w-full min-w-0 overflow-hidden shrink-0",
           isSidebarCollapsed 
-            ? "justify-center px-2 rounded-2xl w-10 h-10 mx-auto" 
-            : "px-3 rounded-xl gap-3",
-          "md:max-lg:justify-center md:max-lg:px-2 md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:rounded-2xl",
+            ? "justify-center px-2 rounded-xl w-[38px] h-[38px] mx-auto" 
+            : "px-3 h-[42px] rounded-xl gap-2.5",
+          "md:max-lg:justify-center md:max-lg:px-2 md:max-lg:w-[38px] md:max-lg:h-[38px] md:max-lg:mx-auto md:max-lg:rounded-xl",
           active
             ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
             : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
@@ -168,6 +168,8 @@ export function Sidebar() {
         return t.sidebar.upgradePro
       case 'log out':
         return t.sidebar.logout
+      case 'admin panel':
+        return t.sidebar.adminPanel
       default:
         return label
     }
@@ -184,14 +186,14 @@ export function Sidebar() {
     <>
       <aside
         className={cn(
-          "flex h-screen flex-col justify-between border-r bg-white text-slate-900 border-slate-200 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-800 py-5 sticky top-0 left-0 z-50 select-none transition-all duration-300 ease-in-out overflow-y-hidden overflow-x-hidden",
+          "flex h-screen min-h-0 flex-col justify-between border-r bg-white text-slate-900 border-slate-200 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-800 pt-5 pb-3 sticky top-0 left-0 z-50 select-none transition-all duration-300 ease-in-out overflow-y-hidden overflow-x-hidden",
           isSidebarCollapsed ? "w-[72px] px-4" : "w-[240px] px-4",
           // Mobile drawer states
-          "max-md:fixed max-md:h-full max-md:w-[240px] max-md:translate-x-0 max-md:px-4 max-md:py-5",
+          "max-md:fixed max-md:h-full max-md:w-[240px] max-md:translate-x-0 max-md:px-4 max-md:pt-5 max-md:pb-3",
           sidebarOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full"
         )}
       >
-        <div className="flex flex-col gap-0 w-full">
+        <div className="flex flex-col gap-0 w-full flex-1 min-h-0">
           {/* Logo and Brand */}
           <div className={cn(
             "flex items-center shrink-0 border-b border-slate-200 dark:border-slate-800 transition-all duration-300 pb-4 mb-5 overflow-hidden w-full min-w-0",
@@ -202,7 +204,7 @@ export function Sidebar() {
               <div className="hidden md:flex group relative size-10 items-center justify-center mx-auto shrink-0 select-none">
                 <img
                   src="/logo.png"
-                  alt="AI Study Hub"
+                  alt="LumiEdu"
                   className="
                     size-8 transition-opacity duration-200
                     group-hover:opacity-0 group-focus-within:opacity-0 object-contain
@@ -231,18 +233,18 @@ export function Sidebar() {
             {/* Expanded Header (Desktop expanded / Mobile always) */}
             {!isSidebarCollapsed ? (
               <>
-                <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
+                              <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
                   <img
                     src="/logo.png"
-                    alt="AI Study Hub"
-                    className="w-8 h-8 shrink-0 object-contain"
+                    alt="LumiEdu"
+                    className="w-14 h-14 shrink-0 object-contain"
                   />
                   <div className="flex flex-col justify-center animate-fade-in whitespace-nowrap overflow-hidden min-w-0 text-left">
-                    <h1 className="text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
-                      AI Study Hub
+                    <h1 className="text-[21px] font-extrabold leading-tight text-blue-600 dark:text-blue-400 tracking-tight truncate">
+                      LumiEdu
                     </h1>
-                    <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                      {t.sidebar.brandSubtitle || "Focused Intelligence"}
+                    <p className="text-[9.5px] font-bold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      {t.sidebar.brandSubtitle || "Illuminate Your Learning"}
                     </p>
                   </div>
                 </Link>
@@ -263,15 +265,15 @@ export function Sidebar() {
                 <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
                   <img
                     src="/logo.png"
-                    alt="AI Study Hub"
-                    className="w-8 h-8 shrink-0 object-contain"
+                    alt="LumiEdu"
+                    className="w-14 h-14 shrink-0 object-contain"
                   />
                   <div className="flex flex-col justify-center whitespace-nowrap overflow-hidden min-w-0 text-left">
-                    <h1 className="text-[15px] font-bold leading-tight text-slate-900 dark:text-slate-100 tracking-tight truncate">
-                      AI Study Hub
+                    <h1 className="text-[21px] font-extrabold leading-tight text-blue-600 dark:text-blue-400 tracking-tight truncate">
+                      LumiEdu
                     </h1>
-                    <p className="text-[11px] font-semibold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                      {t.sidebar.brandSubtitle || "Focused Intelligence"}
+                    <p className="text-[9.5px] font-bold leading-tight text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      {t.sidebar.brandSubtitle || "Illuminate Your Learning"}
                     </p>
                   </div>
                 </Link>
@@ -290,7 +292,7 @@ export function Sidebar() {
           </div>
 
           {/* Navigation list */}
-          <nav className="flex flex-col gap-2 pr-1">
+          <nav className="flex flex-col gap-1.5 pr-1 overflow-y-auto flex-1 min-h-0 no-scrollbar">
             {mainNavItems.map((item) => (
               <SidebarLink
                 key={item.path}
@@ -301,11 +303,11 @@ export function Sidebar() {
                 onClick={handleLinkClick}
               />
             ))}
-            {user?.role?.toLowerCase() === 'admin' && (
+            {user?.role === 'admin' && (
               <SidebarLink
                 to="/dashboard/admin"
                 icon={ShieldCheck}
-                label="Admin Panel"
+                label={getSidebarLabel('Admin Panel')}
                 pathname={pathname}
                 onClick={handleLinkClick}
               />
@@ -313,12 +315,12 @@ export function Sidebar() {
           </nav>
         </div>
 
-        <div className="flex flex-col shrink-0 mt-auto overflow-hidden w-full min-w-0">
+        <div className="flex flex-col shrink-0 mt-auto overflow-visible w-full min-w-0">
           {/* Section Divider & Spacing to separate Main nav from Secondary nav */}
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4 w-full" />
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-3 mt-3 w-full" />
 
           {/* Bottom Nav items */}
-          <nav className={cn("flex flex-col overflow-x-hidden gap-2")}>
+          <nav className={cn("flex flex-col overflow-x-hidden gap-1.5")}>
             {bottomNavItems.map((item) => (
               <SidebarLink
                 key={item.path}
@@ -337,14 +339,14 @@ export function Sidebar() {
               to={user?.plan === 'pro' ? '#' : '/dashboard/upgrade'}
               onClick={user?.plan === 'pro' ? undefined : handleLinkClick}
               className={cn(
-                "mt-4 mb-4 flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 shadow-sm shrink-0 no-underline w-full max-w-full overflow-hidden",
+                "mt-2 mb-2 flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 shadow-sm shrink-0 no-underline w-full max-w-full overflow-hidden",
                 isSidebarCollapsed 
                   ? "rounded-2xl w-10 h-10 mx-auto justify-center p-0" 
                   : "rounded-2xl px-4 h-12",
                 user?.plan === 'pro' 
                   ? "bg-slate-100 text-slate-500 cursor-default dark:bg-slate-800 dark:text-slate-400" 
                   : "text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 cursor-pointer",
-                "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:rounded-2xl md:max-lg:p-0 md:max-lg:mt-4 md:max-lg:mb-4"
+                "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:rounded-2xl md:max-lg:p-0 md:max-lg:mt-2 md:max-lg:mb-2"
               )}
             >
               <Zap className={cn("size-5 shrink-0", user?.plan === 'pro' ? "text-slate-500 dark:text-slate-400" : "text-white")} strokeWidth={2.25} />

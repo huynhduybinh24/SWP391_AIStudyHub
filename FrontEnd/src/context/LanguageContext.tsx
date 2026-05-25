@@ -13,7 +13,7 @@ export const LanguageContext = createContext<LanguageContextType | undefined>(un
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('app-language')
+      const saved = localStorage.getItem('aiStudyHubLanguage') || localStorage.getItem('app-language')
       if (saved === 'vi' || saved === 'en' || saved === 'ja' || saved === 'ko') {
         return saved as Language
       }
@@ -30,6 +30,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setLanguageState(lang)
     if (typeof window !== 'undefined') {
       localStorage.setItem('app-language', lang)
+      localStorage.setItem('aiStudyHubLanguage', lang)
     }
 
     if (useSettingsStore.getState().account?.language !== lang) {
@@ -52,6 +53,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setLanguageState(mapped)
           if (typeof window !== 'undefined') {
             localStorage.setItem('app-language', mapped)
+            localStorage.setItem('aiStudyHubLanguage', mapped)
           }
         }
       }

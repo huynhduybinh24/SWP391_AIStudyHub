@@ -1,16 +1,21 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { PricingCard, type PricingPlan } from '../components/PricingCard'
 import { ContactSalesModal } from '../components/ContactSalesModal'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
+import { AppFooter } from '@/components/shared/AppFooter'
+import { POST_LOGIN_REDIRECT_KEY } from '@/features/auth/hooks/useLogin'
+import { DEV_SKIP_AUTH } from '@/config/dev'
 
-export function PricingPage() {
+export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
   const navigate = useNavigate()
   const toast = useToast()
   const { t, language } = useTranslation()
   const user = useAuthStore((state) => state.user)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [isContactSalesOpen, setIsContactSalesOpen] = useState(false)
 
   // Localized pricing plans recalculated on language change
@@ -23,7 +28,7 @@ export function PricingPage() {
       features: [
         language === 'vi' ? 'Dung lượng cơ bản (5GB)' : language === 'ja' ? '基本ストレージ (5GB)' : language === 'ko' ? '기본 저장 공간 (5GB)' : 'Core storage (5GB)',
         language === 'vi' ? 'Tóm tắt AI cơ bản (10 bản/tháng)' : language === 'ja' ? '基本的なAI要約 (10回/月)' : language === 'ko' ? '기본 AI 요약 (월 10회)' : 'Basic AI summaries (10/mo)',
-        language === 'vi' ? 'Kế hoạch học tập chuẩn' : language === 'ja' ? '標準的な学習計画' : language === 'ko' ? '표준 학습 계획' : 'Standard study plans',
+        language === 'vi' ? 'Kế hoạch học tập chuẩn' : language === 'ja' ? '標準的な学習計画' : language === 'ko' ? '표준 학습 kế hoạch' : 'Standard study plans',
       ],
       buttonText: language === 'vi' ? 'Gói Hiện tại' : language === 'ja' ? '現在のプラン' : language === 'ko' ? '현재 요금제' : 'Current Plan',
       buttonVariant: 'outline',
@@ -66,22 +71,32 @@ export function PricingPage() {
   }
 
   const handleUpgradeClick = () => {
-    navigate('/dashboard/checkout')
+    // On public pricing page: check real auth (DEV_SKIP_AUTH doesn't count as "real" login)
+    const isReallyAuthenticated = DEV_SKIP_AUTH ? false : isAuthenticated
+    const isGuest = isPublic ? !isReallyAuthenticated : !user
+
+    if (isGuest) {
+      // Store intended destination then send to login
+      sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, '/dashboard/checkout')
+      navigate('/login')
+    } else {
+      navigate('/dashboard/checkout')
+    }
   }
 
   const handleContactSalesClick = () => {
     setIsContactSalesOpen(true)
   }
 
-  return (
-    <div className="space-y-10 py-6 flex flex-col items-center select-none w-full">
+  const pricingContent = (
+    <div className={`space-y-10 py-6 flex flex-col items-center select-none w-full ${isPublic ? 'max-w-7xl mx-auto px-4 md:px-8 min-h-[60vh]' : ''}`}>
       {/* Title & Subtitle */}
       <div className="text-center space-y-4 max-w-2xl px-4">
         <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
           {language === 'vi' ? 'Chọn gói dịch vụ của bạn' : language === 'ja' ? 'プランの選択' : language === 'ko' ? '요금제 선택' : 'Choose Your Plan'}
         </h1>
         <p className="text-base text-slate-500 dark:text-slate-400 leading-relaxed">
-          {language === 'vi' ? 'Mở khóa toàn bộ tiềm năng học tập với sự trợ giúp của AI. Chọn gói dịch vụ phù hợp nhất với nhu cầu của bạn.' : language === 'ja' ? 'AIを活用して学業の可能性を最大限に引き出しましょう。学習の強度に合ったプランを選択してください。' : language === 'ko' ? 'AI 기반 학업 성취의 잠재력을 최대한 발휘해 보세요. 학습 강도에 맞는 요금제를 선택하세요.' : 'Unlock the full potential of AI-powered academic success. Choose the tier that matches your study intensity.'}
+          {language === 'vi' ? 'Mở khóa toàn bộ tiềm năng học tập với sự trợ giúp của AI. Chọn gói dịch vụ phù hợp nhất với nhu cầu của bạn.' : language === 'ja' ? 'AIを活用して学業 của 可能性を最大限に引き出しましょう。学習の強度に合ったプランを選択してください。' : language === 'ko' ? 'AI 기반 학업 성취의 잠재력을 최대한 발휘해 보세요. 학습 강도에 맞는 요금제를 선택하세요.' : 'Unlock the full potential of AI-powered academic success. Choose the tier that matches your study intensity.'}
         </p>
       </div>
 
@@ -121,6 +136,38 @@ export function PricingPage() {
       />
     </div>
   )
+
+  if (isPublic) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+        {/* Header bar */}
+        <header className="h-20 bg-white dark:bg-slate-950 border-b border-border/40 px-4 md:px-8 flex items-center justify-between sticky top-0 z-50">
+          <Link to="/" className="flex items-center gap-2.5">
+            <span className="font-extrabold text-2xl tracking-wider text-primary">LUMIEDU</span>
+          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/" className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              <span>{language === 'vi' ? 'Quay lại Trang chủ' : 'Back to Home'}</span>
+            </Link>
+            {!user && (
+              <Link to="/login" className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-xl hover:bg-[#0842A0] transition-colors">
+                {language === 'vi' ? 'Đăng nhập' : 'Login'}
+              </Link>
+            )}
+          </div>
+        </header>
+
+        <main className="flex-1 py-8 bg-slate-50 dark:bg-slate-900">
+          {pricingContent}
+        </main>
+
+        <AppFooter />
+      </div>
+    )
+  }
+
+  return pricingContent
 }
 
 export default PricingPage

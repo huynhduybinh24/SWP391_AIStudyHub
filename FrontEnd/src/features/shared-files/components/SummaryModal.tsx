@@ -78,7 +78,7 @@ export function SummaryModal({ isOpen, onClose, file }: SummaryModalProps) {
                   <span className="text-xs font-black uppercase tracking-wider">Key Syntheses</span>
                 </div>
                 <p className="text-xs text-justify font-semibold">
-                  This study sheet has been synthesized by the AI Study Hub. It extracts core definitions, weekly lecture companion notes, and exam formulas.
+                  This study sheet has been synthesized by LumiEdu. It extracts core definitions, weekly lecture companion notes, and exam formulas.
                 </p>
               </div>
 

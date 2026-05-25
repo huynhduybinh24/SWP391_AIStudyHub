@@ -20,6 +20,7 @@ export interface SharedFile {
   summary?: string
   timeGroup?: 'thisWeek' | 'lastWeek' | 'earlierThisYear'
   collaborators?: boolean
+  url?: string
 }
 
 interface SharedFilesTableProps {

@@ -57,7 +57,7 @@ export function PaymentSuccessModal({
     const filename = `receipt_${transactionId.replace('#', '')}.txt`
     const receiptText = `
 ========================================
-       ${t.upgrade.receiptHeader || 'AI STUDY HUB RECEIPT'}
+       ${t.upgrade.receiptHeader || 'LUMIEDU RECEIPT'}
 ========================================
 ${t.upgrade.transactionIdLabel || 'Transaction ID'}: ${transactionId}
 ${t.upgrade.dateLabel || 'Date'}: ${new Date().toLocaleDateString()}

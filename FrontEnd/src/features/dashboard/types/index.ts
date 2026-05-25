@@ -16,6 +16,7 @@ export interface AlertItem {
 export interface WeeklyActivityDay {
   day: string
   hours: number
+  dateStr?: string
 }
 
 export interface DashboardData {

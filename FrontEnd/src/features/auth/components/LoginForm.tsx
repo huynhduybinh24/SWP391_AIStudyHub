@@ -78,7 +78,7 @@ export function LoginForm() {
         <div className="flex flex-col items-center gap-1.5 text-center mb-6">
           <div className="flex items-center justify-center gap-3">
             <img src="/logo.png" alt="Logo" className="w-[52px] h-[52px] object-contain" />
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">AI Study Hub</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">LumiEdu</h1>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400">Welcome back. Please enter your details.</p>
         </div>

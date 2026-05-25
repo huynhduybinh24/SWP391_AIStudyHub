@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ExternalLink, Edit2, Shield, Trash2, Download, Share2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface FileActionsDropdownProps {
   isOpen: boolean
@@ -27,6 +28,7 @@ export function FileActionsDropdown({
   onRemoveAccess,
   buttonRef
 }: FileActionsDropdownProps) {
+  const { t } = useTranslation()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [openUpward, setOpenUpward] = useState(false)
   const [coords, setCoords] = useState({ top: 0, left: 0 })
@@ -176,7 +178,7 @@ export function FileActionsDropdown({
             role="menuitem"
           >
             <ExternalLink className="size-4 text-slate-400 dark:text-slate-500" />
-            <span>Open</span>
+            <span>{t.actionMenu.open}</span>
           </button>
           
           {onDownload && (
@@ -222,7 +224,7 @@ export function FileActionsDropdown({
             role="menuitem"
           >
             <Edit2 className="size-4 text-slate-400 dark:text-slate-500" />
-            <span>Rename</span>
+            <span>{t.sharedFiles.rename}</span>
           </button>
 
           <button
@@ -236,7 +238,7 @@ export function FileActionsDropdown({
             role="menuitem"
           >
             <Shield className="size-4 text-slate-400 dark:text-slate-500" />
-            <span>Change Permission</span>
+            <span>{t.sharedFiles.changePermission}</span>
           </button>
           
           <div className="h-px bg-slate-100 dark:bg-slate-800/60 my-1" />
@@ -252,7 +254,7 @@ export function FileActionsDropdown({
             role="menuitem"
           >
             <Trash2 className="size-4 text-red-500 dark:text-red-400" />
-            <span>Remove Access</span>
+            <span>{t.sharedFiles.removeAccess}</span>
           </button>
         </motion.div>
       )}
