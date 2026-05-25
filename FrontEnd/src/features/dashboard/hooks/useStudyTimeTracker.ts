@@ -1,18 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import type { DashboardData } from '../types'
 import { addTrackedSeconds, formatDateLocal } from '../utils/studyTime'
 
 export function useStudyTimeTracker() {
   const queryClient = useQueryClient()
   const lastActiveRef = useRef<number>(Date.now())
-  const todayStrRef = useRef<string>(formatDateLocal(new Date()))
 
   useEffect(() => {
-    // Keep date string fresh
-    const dateInterval = setInterval(() => {
-      todayStrRef.current = formatDateLocal(new Date())
-    }, 60000)
-
     // Event listeners to detect user activity
     const handleActivity = () => {
       lastActiveRef.current = Date.now()
@@ -33,15 +28,15 @@ export function useStudyTimeTracker() {
 
       // If user was active within the last 60 seconds
       if (inactiveDuration < 60000) {
-        const todayStr = todayStrRef.current
+        const todayStr = formatDateLocal(new Date())
         // Add 1 second of study time for today
         const updatedSeconds = addTrackedSeconds(todayStr, 1)
 
         // Update React Query Cache for real-time UI updates
-        queryClient.setQueryData<any>(['dashboard'], (oldData) => {
+        queryClient.setQueryData<DashboardData>(['dashboard'], (oldData) => {
           if (!oldData) return oldData
 
-          const updatedWeeklyActivity = oldData.weeklyActivity.map((day: any) => {
+          const updatedWeeklyActivity = oldData.weeklyActivity.map((day) => {
             if (day.dateStr === todayStr) {
               return {
                 ...day,
@@ -51,7 +46,7 @@ export function useStudyTimeTracker() {
             return day
           })
 
-          const totalWeeklyHours = updatedWeeklyActivity.reduce((acc: number, curr: any) => acc + curr.hours, 0)
+          const totalWeeklyHours = updatedWeeklyActivity.reduce((acc, curr) => acc + curr.hours, 0)
           const formattedTotalWeeklyHours = Number(totalWeeklyHours.toFixed(1))
 
           const diff = formattedTotalWeeklyHours - 12
@@ -72,7 +67,6 @@ export function useStudyTimeTracker() {
 
     // Cleanup
     return () => {
-      clearInterval(dateInterval)
       clearInterval(trackingInterval)
       events.forEach((event) => {
         window.removeEventListener(event, handleActivity)
@@ -80,4 +74,3 @@ export function useStudyTimeTracker() {
     }
   }, [queryClient])
 }
-
