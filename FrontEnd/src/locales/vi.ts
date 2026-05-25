@@ -324,6 +324,9 @@ export const vi: typeof en = {
     emptyTitle: "Bạn đang làm về cái gì?",
     askAnything: "Hỏi bất cứ điều gì...",
     instant: "Tức thì",
+    thinkingMode: "Tư duy",
+    instantDesc: "Nhanh & Cơ bản",
+    thinkingDesc: "Latest • Suy luận sâu",
     uploadFile: "Tải lên tệp",
     addFromMyDocuments: "Thêm từ Tài liệu của tôi",
     addFromSharedFiles: "Thêm từ Tập tin chia sẻ",
@@ -529,7 +532,13 @@ export const vi: typeof en = {
     emailNotifications: "Thông báo qua Email",
     pushNotifications: "Thông báo đẩy",
     emailNotificationsSub: "Nhận thông báo về hoạt động tài khoản qua email.",
-    pushNotificationsSub: "Nhận thông báo tức thì trên trình duyệt."
+    pushNotificationsSub: "Nhận thông báo tức thì trên trình duyệt.",
+    avatarLabel: "Ảnh đại diện",
+    avatarDescription: "Tải lên ảnh định dạng JPG, PNG hoặc WEBP. Tối đa 2MB.",
+    avatarChangePhoto: "Đổi ảnh",
+    avatarRemovePhoto: "Gỡ ảnh",
+    avatarInvalidType: "Chỉ hỗ trợ định dạng JPG, PNG hoặc WEBP.",
+    avatarTooLarge: "Kích thước ảnh phải nhỏ hơn 2MB."
   },
   fileViewer: {
     backToDocuments: "Quay lại tài liệu",
