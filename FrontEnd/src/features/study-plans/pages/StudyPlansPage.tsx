@@ -324,9 +324,25 @@ const LEARNING_DATA: Record<string, LearningProgressPlan> = {
       ]},
     ],
   },
+  '5': {
+    id: '5', title: 'Introduction to Astrophysics',
+    description: 'Foundational principles of stellar evolution and cosmology.',
+    isAiGenerated: false, overallProgress: 100,
+    sections: [
+      { label: 'Stellar Evolution', value: 100, lessons: [
+        { id: 'l1', title: 'Star Formation', duration: '30 min', type: 'video', completed: true },
+        { id: 'l2', title: 'Main Sequence Stars', duration: '20 min', type: 'reading', completed: true },
+      ]},
+      { label: 'Cosmology', value: 100, lessons: [
+        { id: 'l3', title: 'The Big Bang Theory', duration: '25 min', type: 'video', completed: true },
+        { id: 'l4', title: 'Dark Matter & Energy', duration: '35 min', type: 'reading', completed: true },
+      ]}
+    ]
+  },
 }
 
 // ─────────────────────────────────────────────
+
 // Mock: Curriculum data (keyed by plan id)
 // ─────────────────────────────────────────────
 
@@ -413,6 +429,21 @@ const CURRICULUM_DATA: Record<string, CurriculumPlan> = {
         ]},
     ],
   },
+  '5': {
+    id: '5', title: 'Introduction to Astrophysics', documents: 10, hoursEst: 40, difficulty: 'Medium',
+    modules: [
+      { id: 'm1', title: 'Stellar Evolution', description: 'Life cycle of stars',
+        lessons: [
+          { id: 'c1', title: 'Star Formation',        duration: '30 min', type: 'video',   status: 'completed' },
+          { id: 'c2', title: 'Main Sequence Stars',   duration: '20 min', type: 'reading', status: 'completed' },
+        ]},
+      { id: 'm2', title: 'Cosmology', description: 'The universe at large',
+        lessons: [
+          { id: 'c3', title: 'The Big Bang Theory',     duration: '25 min', type: 'video',   status: 'completed' },
+          { id: 'c4', title: 'Dark Matter & Energy', duration: '35 min', type: 'reading', status: 'completed' },
+        ]},
+    ],
+  },
   '8': {
     id: '8', title: 'Advanced Robotics', documents: 15, hoursEst: 55, difficulty: 'Hard',
     modules: [
@@ -424,6 +455,24 @@ const CURRICULUM_DATA: Record<string, CurriculumPlan> = {
       { id: 'm2', title: 'Control Systems', description: 'Feedback and automation',
         lessons: [
           { id: 'c3', title: 'PID Controllers',           duration: '30 min', type: 'video',    status: 'locked' },
+        ]},
+    ],
+  },
+  '6': {
+    id: '6', title: 'Winter Session: Deep Learning Fundamentals', documents: 8, hoursEst: 45, difficulty: 'Hard',
+    modules: [
+      { id: 'm1', title: 'Neural Networks Basics', description: 'Foundations of neural networks',
+        lessons: [
+          { id: 'c1', title: 'Introduction to NNs',        duration: '20 min', type: 'video',    status: 'locked' },
+        ]},
+    ],
+  },
+  '7': {
+    id: '7', title: 'GRE Vocabulary & Logic Track', documents: 30, hoursEst: 90, difficulty: 'Hard',
+    modules: [
+      { id: 'm1', title: 'Verbal Reasoning', description: 'Intensive verbal prep',
+        lessons: [
+          { id: 'c1', title: 'Vocabulary Basics',          duration: '20 min', type: 'reading',  status: 'locked' },
         ]},
     ],
   },
