@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import {
   FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send,
   Loader2, User, X, Plus, Search, Copy, RefreshCw, MoreVertical,
-  Trash2, Edit2, Pin, MessageSquare, Check, Sparkles, FolderOpen, ArrowLeft
+  Trash2, Edit2, Pin, MessageSquare, Check, Sparkles, FolderOpen, ArrowLeft,
+  Zap, BrainCircuit, ChevronDown
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -120,6 +121,11 @@ export function ChatPage() {
   // --- States ---
   const [conversations, setConversations] = useState<ChatConversation[]>(initialConversations)
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+  const [selectedMode, setSelectedMode] = useState<'Instant' | 'Thinking'>('Instant')
+  const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false)
+  
+  // Ref for the model selector dropdown to close on click outside
+  const modeDropdownRef = useRef<HTMLDivElement>(null)
   const [isChatStarted, setIsChatStarted] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
@@ -167,6 +173,9 @@ export function ChatPage() {
     const handleOutsideClick = (e: MouseEvent) => {
       if (attachDropdownRef.current && !attachDropdownRef.current.contains(e.target as Node)) {
         setAttachDropdownOpen(false)
+      }
+      if (modeDropdownRef.current && !modeDropdownRef.current.contains(e.target as Node)) {
+        setIsModeDropdownOpen(false)
       }
       if (activeDropdownConvId) {
         // If clicking outside history menu dots, close it
@@ -974,28 +983,28 @@ export function ChatPage() {
                 )}
 
                 {/* Main input composer box */}
-                <div className="rounded-[20px] border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 p-4 px-5 shadow-inner backdrop-blur-md transition-all duration-300 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 z-10 relative">
+                <div className="rounded-[24px] border border-slate-200 dark:border-slate-700/80 bg-white/60 dark:bg-slate-900/60 p-4 px-5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] backdrop-blur-xl transition-all duration-300 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-blue-400 dark:focus-within:border-blue-500/80 focus-within:shadow-[0_4px_20px_-4px_rgba(59,130,246,0.15)] z-10 relative flex flex-col gap-2">
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="min-h-[48px] max-h-[160px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 border-none p-0 focus:ring-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
-                    placeholder={t.aiChatbot.askAnything || "Message AI Assistant..."}
-                    rows={2}
+                    className="min-h-[24px] max-h-[160px] w-full resize-none bg-transparent text-[15px] leading-relaxed text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 border-none p-0 focus:ring-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+                    placeholder="Hỏi bất cứ điều gì..."
+                    rows={1}
                   />
 
                   {/* Actions inside composer */}
-                  <div className="mt-3 flex items-center justify-between border-t border-slate-100/50 dark:border-slate-800/50 pt-3">
-
-                    {/* Add attachment & microphone */}
+                  <div className="flex items-center justify-between pt-2">
+                    
+                    {/* Left Actions */}
                     <div className="flex items-center gap-1.5 relative">
-
+                      
                       {/* Plus Dropdown button */}
                       <div ref={attachDropdownRef}>
                         <button
                           type="button"
                           onClick={() => setAttachDropdownOpen(!attachDropdownOpen)}
-                          className="text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center"
+                          className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 size-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
                           title={t.aiChatbot.attachFiles}
                         >
                           <Plus className={cn("size-5 transition-transform", attachDropdownOpen && "rotate-45")} />
@@ -1043,35 +1052,81 @@ export function ChatPage() {
                         type="button"
                         onClick={handleMicClick}
                         className={cn(
-                          "p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5",
+                          "size-9 rounded-full transition-all cursor-pointer flex items-center justify-center gap-1.5",
                           isListening
-                            ? "bg-rose-50 border border-rose-100 text-rose-500 dark:bg-rose-950/20 dark:border-rose-900/30"
-                            : "text-[#737686] dark:text-slate-400 hover:text-[#3155F6] dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            ? "bg-rose-50 text-rose-500 dark:bg-rose-500/20"
+                            : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                         )}
-                        title={t.aiChatbot.voiceInput}
+                        title={isListening ? "Stop listening" : "Start voice input"}
                       >
                         <Mic className={cn("size-5", isListening && "animate-pulse")} />
-                        {isListening && <span className="text-[10px] font-bold uppercase tracking-wider">{t.aiChatbot.listening}</span>}
                       </button>
+
+                      {/* Tức Thì / Mode Selector */}
+                      <div className="relative ml-2" ref={modeDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition-colors text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm"
+                        >
+                          {selectedMode === 'Instant' ? <Zap className="size-3.5 text-amber-500" /> : <BrainCircuit className="size-3.5 text-indigo-500" />}
+                          <span>{selectedMode === 'Instant' ? 'Tức thì' : 'Tư duy'}</span>
+                          <ChevronDown className="size-3.5 opacity-60" />
+                        </button>
+
+                        {isModeDropdownOpen && (
+                          <div className="absolute left-0 bottom-full mb-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-1.5 flex flex-col gap-1 z-30 animate-in fade-in zoom-in-95 duration-100">
+                            <button
+                              onClick={() => { setSelectedMode('Instant'); setIsModeDropdownOpen(false) }}
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-left cursor-pointer transition-colors",
+                                selectedMode === 'Instant' ? "bg-slate-50 dark:bg-slate-800" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                              )}
+                            >
+                              <div className="size-7 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center shrink-0">
+                                <Zap className="size-4 text-amber-600 dark:text-amber-400" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Tức thì</span>
+                                <span className="text-[11px] text-slate-500">Nhanh & Cơ bản</span>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => { setSelectedMode('Thinking'); setIsModeDropdownOpen(false) }}
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-left cursor-pointer transition-colors",
+                                selectedMode === 'Thinking' ? "bg-slate-50 dark:bg-slate-800" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                              )}
+                            >
+                              <div className="size-7 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shrink-0">
+                                <BrainCircuit className="size-4 text-indigo-600 dark:text-indigo-400" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Tư duy</span>
+                                <span className="text-[11px] text-slate-500">Latest • Suy luận sâu</span>
+                              </div>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Mode selector + Send Button */}
+                    {/* Mode selector + Send Button (Hidden old mode badge since moved to left) */}
                     <div className="flex items-center gap-3">
-                      {/* Instant mode badge */}
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100/50 dark:bg-blue-950/30 dark:border-blue-900/20 text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest select-none">
-                        <Sparkles className="size-3" />
-                        <span>{t.aiChatbot.instant || "Instant"}</span>
-                      </span>
-
                       {/* Send button */}
                       <button
                         type="button"
                         onClick={() => handleSend()}
-                        className="flex size-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm transition-all hover:bg-blue-700 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:bg-blue-600 cursor-pointer"
+                        className={cn(
+                          "size-9 shrink-0 flex items-center justify-center rounded-full transition-all cursor-pointer",
+                          (input.trim() || selectedFiles.length > 0)
+                            ? "bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 active:scale-95 shadow-md"
+                            : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                        )}
                         disabled={!input.trim() && selectedFiles.length === 0}
                         title={t.aiChatbot.sendMessage}
                       >
-                        <Send className="size-4.5" />
+                        <Send className="size-4 ml-0.5" />
                       </button>
                     </div>
 

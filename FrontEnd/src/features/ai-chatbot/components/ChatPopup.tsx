@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Loader2, X, Paperclip, FileIcon } from 'lucide-react'
+import { Send, Loader2, X, Paperclip, FileIcon, Zap, BrainCircuit, ChevronDown, Mic } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUiStore } from '@/stores/uiStore'
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
@@ -25,6 +25,21 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const modeDropdownRef = useRef<HTMLDivElement>(null)
+
+  const [selectedMode, setSelectedMode] = useState<'Instant' | 'Thinking'>('Instant')
+  const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false)
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (modeDropdownRef.current && !modeDropdownRef.current.contains(e.target as Node)) {
+        setIsModeDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -217,10 +232,11 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
 
 
       {/* Input */}
-      <div className="bg-transparent p-4 pt-0 z-10">
-        <div className="relative flex flex-col rounded-[20px] border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-inner focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-400 dark:focus-within:border-blue-500 transition-all duration-300">
+      <div className="bg-transparent p-4 pt-0 z-10 shrink-0">
+        <div className="rounded-[24px] border border-slate-200 dark:border-slate-700/80 bg-white/60 dark:bg-slate-900/60 p-3 px-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] backdrop-blur-xl transition-all duration-300 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-blue-400 dark:focus-within:border-blue-500/80 focus-within:shadow-[0_4px_20px_-4px_rgba(59,130,246,0.15)] z-10 relative flex flex-col gap-2">
+          
           {selectedFile && (
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-3 py-2 text-xs font-medium bg-slate-50 dark:bg-slate-800/50 rounded-t-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-1 text-xs font-medium bg-transparent">
               <div className="flex items-center gap-2 overflow-hidden text-blue-600 dark:text-blue-400">
                 <FileIcon className="size-3.5 shrink-0" />
                 <span className="truncate">{selectedFile.name}</span>
@@ -233,40 +249,110 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
               </button>
             </div>
           )}
-          <div className="flex items-end px-2 py-2">
-            <input 
-              type="file" 
-              className="hidden" 
-              ref={fileInputRef}
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  setSelectedFile(e.target.files[0])
-                }
-                e.target.value = ''
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex size-9 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-0.5"
-              title="Attach File"
-            >
-              <Paperclip className="size-4.5" />
-            </button>
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Message AI Assistant..."
-              className="max-h-[120px] min-h-[40px] w-full resize-none bg-transparent px-2 py-2.5 text-[14px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
-              rows={1}
-            />
+          
+          <textarea
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Hỏi bất cứ điều gì..."
+            className="max-h-[120px] min-h-[24px] w-full resize-none bg-transparent px-1 py-1 text-[14px] leading-relaxed text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
+            rows={1}
+          />
+
+          {/* Actions inside composer */}
+          <div className="flex items-center justify-between pt-2">
+            
+            {/* Left Actions */}
+            <div className="flex items-center gap-1.5">
+              <input 
+                type="file" 
+                className="hidden" 
+                ref={fileInputRef}
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setSelectedFile(e.target.files[0])
+                  }
+                  e.target.value = ''
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 size-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                title="Attach File"
+              >
+                <Paperclip className="size-4.5" />
+              </button>
+
+              <button
+                type="button"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 size-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                title="Voice input"
+              >
+                <Mic className="size-4.5" />
+              </button>
+
+              {/* Tức Thì / Mode Selector */}
+              <div className="relative ml-1" ref={modeDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition-colors text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm"
+                >
+                  {selectedMode === 'Instant' ? <Zap className="size-3.5 text-amber-500" /> : <BrainCircuit className="size-3.5 text-indigo-500" />}
+                  <span>{selectedMode === 'Instant' ? 'Tức thì' : 'Tư duy'}</span>
+                  <ChevronDown className="size-3.5 opacity-60" />
+                </button>
+
+                {isModeDropdownOpen && (
+                  <div className="absolute left-0 bottom-full mb-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-1.5 flex flex-col gap-1 z-30 animate-in fade-in zoom-in-95 duration-100">
+                    <button
+                      onClick={() => { setSelectedMode('Instant'); setIsModeDropdownOpen(false) }}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-left cursor-pointer transition-colors",
+                        selectedMode === 'Instant' ? "bg-slate-50 dark:bg-slate-800" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      )}
+                    >
+                      <div className="size-7 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center shrink-0">
+                        <Zap className="size-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Tức thì</span>
+                        <span className="text-[11px] text-slate-500">Nhanh & Cơ bản</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => { setSelectedMode('Thinking'); setIsModeDropdownOpen(false) }}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-left cursor-pointer transition-colors",
+                        selectedMode === 'Thinking' ? "bg-slate-50 dark:bg-slate-800" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      )}
+                    >
+                      <div className="size-7 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shrink-0">
+                        <BrainCircuit className="size-4 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Tư duy</span>
+                        <span className="text-[11px] text-slate-500">Latest • Suy luận sâu</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Action: Send Button */}
             <button
               onClick={() => handleSend()}
               disabled={!inputText.trim() && !selectedFile}
-              className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm transition-all hover:bg-blue-700 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:bg-blue-600 mb-0.5"
+              className={cn(
+                "size-8 shrink-0 flex items-center justify-center rounded-full transition-all cursor-pointer",
+                (inputText.trim() || selectedFile)
+                  ? "bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 active:scale-95 shadow-md"
+                  : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+              )}
             >
-              <Send className="size-4" />
+              <Send className="size-3.5 ml-0.5" />
             </button>
           </div>
         </div>

@@ -732,7 +732,7 @@ export function UploadSubjectDocumentPage() {
 
       {/* Page Footer */}
       <div className="flex flex-col sm:flex-row items-center justify-between text-xs font-semibold text-[#8B98A5] pt-12 border-t border-slate-100 dark:border-slate-800 dark:text-slate-500">
-        <div>© 2024 AI Study Hub. Empowering Deep Learning.</div>
+        <div>© 2024 LumiEdu. Empowering Deep Learning.</div>
         <div className="flex items-center gap-6 mt-4 sm:mt-0">
           <a href="#" className="hover:text-[#2563eb] transition-colors">{language === 'en' ? 'Privacy Policy' : (language === 'vi' ? 'Chính sách bảo mật' : (language === 'ja' ? 'プライバシーポリシー' : '개인정보처리방침'))}</a>
           <a href="#" className="hover:text-[#2563eb] transition-colors">{language === 'en' ? 'Terms of Service' : (language === 'vi' ? 'Điều khoản dịch vụ' : (language === 'ja' ? '利用規約' : '서비스 약관'))}</a>

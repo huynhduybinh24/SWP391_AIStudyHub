@@ -25,7 +25,6 @@ import { NotificationsPage } from '@/features/notifications/pages/NotificationsP
 import { SummaryDetailPage } from '@/features/notifications/pages/SummaryDetailPage'
 import { SharedFolderPage } from '@/features/shared-files/pages/SharedFolderPage'
 import { SharedFilesPage } from '@/features/shared-files/pages/SharedFilesPage'
-import { DEV_SKIP_AUTH } from '@/config/dev'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 import { LandingPage } from '@/features/landing/pages/LandingPage'
@@ -62,7 +61,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/pricing',
-        element: <Navigate to="/dashboard/upgrade" replace />,
+        element: <PricingPage isPublic={true} />,
       },
       {
         path: '/help',
@@ -125,20 +124,10 @@ export const router = createBrowserRouter([
               { path: 'upgrade', element: <PricingPage /> },
               { path: 'checkout', element: <CheckoutPage /> },
               { path: 'quizzes', element: <QuizzesPage /> },
-              ...(DEV_SKIP_AUTH
-                ? [
-                    { path: 'admin', element: <AdminDashboardPage /> },
-                    { path: 'admin/partnership-requests', element: <AdminPartnershipRequestsPage /> }
-                  ]
-                : [
-                    {
-                      element: <RoleRoute allowedRoles={['admin']} />,
-                      children: [
-                        { path: 'admin', element: <AdminDashboardPage /> },
-                        { path: 'admin/partnership-requests', element: <AdminPartnershipRequestsPage /> }
-                      ],
-                    },
-                  ]),
+              {
+                element: <RoleRoute allowedRoles={['admin']} />,
+                children: [{ path: 'admin', element: <AdminDashboardPage /> }],
+              },
             ],
           },
         ],

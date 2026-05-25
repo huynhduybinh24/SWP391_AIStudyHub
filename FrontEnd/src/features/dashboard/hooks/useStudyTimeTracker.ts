@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { addTrackedSeconds, formatDateLocal, getTrackedSeconds } from '../utils/studyTime'
+import { useQueryClient } from '@tanstack/react-query'
+import { addTrackedSeconds, formatDateLocal } from '../utils/studyTime'
 
 export function useStudyTimeTracker() {
+  const queryClient = useQueryClient()
   const lastActiveRef = useRef<number>(Date.now())
   const todayStrRef = useRef<string>(formatDateLocal(new Date()))
 
@@ -31,8 +33,37 @@ export function useStudyTimeTracker() {
 
       // If user was active within the last 60 seconds
       if (inactiveDuration < 60000) {
+        const todayStr = todayStrRef.current
         // Add 1 second of study time for today
-        addTrackedSeconds(todayStrRef.current, 1)
+        const updatedSeconds = addTrackedSeconds(todayStr, 1)
+
+        // Update React Query Cache for real-time UI updates
+        queryClient.setQueryData<any>(['dashboard'], (oldData) => {
+          if (!oldData) return oldData
+
+          const updatedWeeklyActivity = oldData.weeklyActivity.map((day: any) => {
+            if (day.dateStr === todayStr) {
+              return {
+                ...day,
+                hours: Number((updatedSeconds / 3600).toFixed(2)),
+              }
+            }
+            return day
+          })
+
+          const totalWeeklyHours = updatedWeeklyActivity.reduce((acc: number, curr: any) => acc + curr.hours, 0)
+          const formattedTotalWeeklyHours = Number(totalWeeklyHours.toFixed(1))
+
+          const diff = formattedTotalWeeklyHours - 12
+          const weeklyTrend = diff >= 0 ? `+${diff.toFixed(1)} hrs` : `-${Math.abs(diff).toFixed(1)} hrs`
+
+          return {
+            ...oldData,
+            weeklyHours: formattedTotalWeeklyHours,
+            weeklyTrend,
+            weeklyActivity: updatedWeeklyActivity,
+          }
+        })
 
         // Dispatch a custom event to notify components that study time has changed
         window.dispatchEvent(new CustomEvent('study-time-updated'))
@@ -47,5 +78,6 @@ export function useStudyTimeTracker() {
         window.removeEventListener(event, handleActivity)
       })
     }
-  }, [])
+  }, [queryClient])
 }
+

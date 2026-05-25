@@ -17,20 +17,6 @@ export function DashboardPage() {
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false)
   const { data, isLoading, isError, error, refetch } = useDashboard()
 
-  useEffect(() => {
-    let lastRefetch = 0
-    const handleUpdate = () => {
-      const now = Date.now()
-      // Limit refetching to once every 5 seconds to keep it high performance
-      if (now - lastRefetch > 5000) {
-        lastRefetch = now
-        refetch()
-      }
-    }
-    window.addEventListener('study-time-updated', handleUpdate)
-    return () => window.removeEventListener('study-time-updated', handleUpdate)
-  }, [refetch])
-
   if (isLoading) return <LoadingOverlay label={t.common.loading} />
   if (isError || !data) {
     return (
@@ -59,7 +45,10 @@ export function DashboardPage() {
         <RecentDocuments documents={data.documents} />
         <QuickAskCard />
         <WeeklyActivityChart
-          data={data.weeklyActivity}
+          data={data.weeklyActivity.map((item, idx) => ({
+            ...item,
+            day: (t.dashboard.weekdays && t.dashboard.weekdays[idx]) || item.day
+          }))}
           totalHours={data.weeklyHours}
           trend={data.weeklyTrend}
         />

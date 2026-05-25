@@ -323,9 +323,11 @@ function NotificationCard({
       <div className="flex-grow min-w-0">
         <div className="flex items-center justify-between mb-1.5">
           <h2 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100">{finalTitle}</h2>
-          <div className="flex items-center gap-1.5 text-xs font-semibold">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737686] dark:text-slate-400">
+            <span>{formatTime(time)}</span>
             {!isRead && (
               <>
+                <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
                 <span className="text-[#3155F6] dark:text-blue-400">
                   {language === 'vi' ? 'Mới' : language === 'ja' ? '新規' : language === 'ko' ? '새로운' : 'New'}
                 </span>
