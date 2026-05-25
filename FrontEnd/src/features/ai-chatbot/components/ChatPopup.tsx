@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { useUiStore } from '@/stores/uiStore'
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 import { motion } from 'framer-motion'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface Message {
   id: string
@@ -19,6 +20,7 @@ interface ChatPopupProps {
 }
 
 export function ChatPopup({ onClose }: ChatPopupProps) {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -77,17 +79,17 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
     setIsTyping(true)
     setTimeout(() => {
       setIsTyping(false)
-      let botResponse = "I've analyzed your query. Let's break this down together!"
+      let botResponse = t.aiChatbot.botResponseDefault
       
       const lowerText = text.toLowerCase()
       if (hasFile) {
-        botResponse = "I've received your file. I am analyzing it now. Let me know if you have specific questions about its contents!"
-      } else if (lowerText.includes('summarize')) {
-        botResponse = "Here is a structured summary of your recent notes:\n\n1. Point 1\n2. Point 2\n3. Point 3"
-      } else if (lowerText.includes('quantum')) {
-        botResponse = "Quantum Mechanics is the branch of physics dealing with atomic scales..."
-      } else if (lowerText.includes('quiz')) {
-        botResponse = "Here is a quick quiz to test your understanding:\n\nWhat is X?\nA) Y\nB) Z"
+        botResponse = t.aiChatbot.botResponseDefault // Or fallback analyzer response
+      } else if (lowerText.includes('summarize') || lowerText.includes('notes') || lowerText.includes('tóm tắt') || lowerText.includes('요약') || lowerText.includes('要約')) {
+        botResponse = t.aiChatbot.botResponseNotes
+      } else if (lowerText.includes('quantum') || lowerText.includes('mechanics') || lowerText.includes('lượng tử') || lowerText.includes('양자') || lowerText.includes('量子')) {
+        botResponse = t.aiChatbot.botResponseQuantum
+      } else if (lowerText.includes('quiz') || lowerText.includes('generate') || lowerText.includes('kiểm tra') || lowerText.includes('퀴즈') || lowerText.includes('クイズ')) {
+        botResponse = t.aiChatbot.botResponseQuiz
       }
 
       setMessages((prev) => [
@@ -121,13 +123,13 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
             <AIChatbotIcon className="size-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-[15px] tracking-tight">AI Assistant</h3>
+            <h3 className="font-semibold text-[15px] tracking-tight">{t.aiChatbot.title}</h3>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="relative flex size-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40 duration-1000"></span>
                 <span className="relative inline-flex rounded-full size-2 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>
               </span>
-              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-wide uppercase">Online</p>
+              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-wide uppercase">{t.admin.activeAdminGlow || "Online"}</p>
             </div>
           </div>
         </div>
@@ -147,17 +149,17 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
               <div className="size-12 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center mb-5 shadow-sm">
                 <AIChatbotIcon className="size-6 animate-float drop-shadow-sm" />
               </div>
-              <h3 className="font-bold text-[18px] mb-2 text-slate-800 dark:text-slate-100">How can I help you today?</h3>
+              <h3 className="font-bold text-[18px] mb-2 text-slate-800 dark:text-slate-100">{t.aiChatbot.title}</h3>
               <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-8 max-w-[280px]">
-                Ask me anything about your studies, or choose a prompt below to get started.
+                {t.aiChatbot.selectSuggestion}
               </p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-[420px]">
               {[
-                { label: "Create my study plan", icon: <Loader2 className="size-3.5" /> }, // Replace with FileText if available
-                { label: "Summarize my files", icon: <FileIcon className="size-3.5" /> },
-                { label: "Generate quiz questions", icon: <Loader2 className="size-3.5" /> },
-                { label: "Explain this topic", icon: <Loader2 className="size-3.5" /> }
+                { label: t.aiChatbot.summarizeRecentNotes, icon: <FileIcon className="size-3.5" /> },
+                { label: t.aiChatbot.explainQuantum, icon: <Loader2 className="size-3.5" /> },
+                { label: t.aiChatbot.generateQuiz, icon: <Loader2 className="size-3.5" /> },
+                { label: t.sidebar.studyPlans || "Create my study plan", icon: <Loader2 className="size-3.5" /> }
               ].map((prompt, i) => (
                 <button
                   key={i}
@@ -254,7 +256,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Hỏi bất cứ điều gì..."
+            placeholder={t.aiChatbot.askAnything || "Ask anything..."}
             className="max-h-[120px] min-h-[24px] w-full resize-none bg-transparent px-1 py-1 text-[14px] leading-relaxed text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700"
             rows={1}
           />
@@ -279,7 +281,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 size-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                title="Attach File"
+                title={t.aiChatbot.attachFiles || "Attach File"}
               >
                 <Paperclip className="size-4.5" />
               </button>
@@ -287,7 +289,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
               <button
                 type="button"
                 className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 size-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                title="Voice input"
+                title={t.aiChatbot.voiceInput || "Voice input"}
               >
                 <Mic className="size-4.5" />
               </button>
@@ -300,7 +302,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition-colors text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm"
                 >
                   {selectedMode === 'Instant' ? <Zap className="size-3.5 text-amber-500" /> : <BrainCircuit className="size-3.5 text-indigo-500" />}
-                  <span>{selectedMode === 'Instant' ? 'Tức thì' : 'Tư duy'}</span>
+                  <span>{selectedMode === 'Instant' ? (t.aiChatbot.instant || 'Instant') : (t.aiChatbot.thinkingMode || 'Thinking')}</span>
                   <ChevronDown className="size-3.5 opacity-60" />
                 </button>
 
@@ -317,8 +319,8 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
                         <Zap className="size-4 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Tức thì</span>
-                        <span className="text-[11px] text-slate-500">Nhanh & Cơ bản</span>
+                        <span className="text-[13px] font-semibold text-slate-900 dark:text-white">{t.aiChatbot.instant || "Instant"}</span>
+                        <span className="text-[11px] text-slate-500">{t.aiChatbot.instantDesc || "Fast & Basic"}</span>
                       </div>
                     </button>
                     <button
@@ -332,8 +334,8 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
                         <BrainCircuit className="size-4 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[13px] font-semibold text-slate-900 dark:text-white">Tư duy</span>
-                        <span className="text-[11px] text-slate-500">Latest • Suy luận sâu</span>
+                        <span className="text-[13px] font-semibold text-slate-900 dark:text-white">{t.aiChatbot.thinkingMode || "Thinking"}</span>
+                        <span className="text-[11px] text-slate-500">{t.aiChatbot.thinkingDesc || "Latest • Deep Reasoning"}</span>
                       </div>
                     </button>
                   </div>
