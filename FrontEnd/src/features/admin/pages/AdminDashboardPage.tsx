@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Shield, Users, FileText, BarChart3, Settings2 } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
+import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab'
 
 type AdminTab = 'overview' | 'users' | 'moderation'
 
@@ -93,19 +94,7 @@ export function AdminDashboardPage() {
           </div>
         )}
 
-        {activeTab === 'moderation' && (
-          <div className="flex flex-col items-center justify-center py-20 text-center rounded-[32px] border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-8">
-            <div className="p-4 rounded-full bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 mb-4">
-              <FileText className="size-8 stroke-[1.5]" />
-            </div>
-            <h3 className="text-lg font-extrabold text-slate-800 dark:text-white">
-              {t.admin.tabDocs}
-            </h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 max-w-sm font-medium">
-              Audit public documents, inspect flags, approve uploads, and moderate community content.
-            </p>
-          </div>
-        )}
+        {activeTab === 'moderation' && <AdminDocumentsTab />}
       </div>
     </div>
   )
