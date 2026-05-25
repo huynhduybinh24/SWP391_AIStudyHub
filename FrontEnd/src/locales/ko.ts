@@ -1,6 +1,6 @@
 import { en } from './en'
 
-export const ko: typeof en = {
+export const ko: Partial<typeof en> = {
   common: {
     back: "뒤로 가기",
     cancel: "취소",
