@@ -1,6 +1,9 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/context/LanguageContext'
 import { Mail, GraduationCap } from 'lucide-react'
+import { useAuthStore } from '@/stores/authStore'
+import { DEV_SKIP_AUTH } from '@/config/dev'
+import { POST_LOGIN_REDIRECT_KEY } from '@/features/auth/hooks/useLogin'
 
 // Custom stroke-based brand SVGs for Lucide v1 compatibility
 function Github(props: React.SVGProps<SVGSVGElement>) {
@@ -76,49 +79,63 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
             >
               {t.footer.supportCenter}
             </Link>
-            <a
-              href="mailto:partnership@aistudyhub.com?subject=Partnership%20Inquiry"
+            <Link
+              to="/help?tab=contact"
               className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
             >
               {t.footer.partnershipContact}
-            </a>
+            </Link>
           </nav>
         </div>
       </footer>
     )
   }
 
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  // In DEV_SKIP_AUTH mode, treat as unauthenticated so footer links still redirect to login correctly
+  const isReallyAuthenticated = DEV_SKIP_AUTH ? false : isAuthenticated
+  const navigate = useNavigate()
+
+  const handleProtectedLink = (to: string) => {
+    if (!isReallyAuthenticated) {
+      sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, to)
+      navigate('/login')
+    } else {
+      navigate(to)
+    }
+  }
+
   // Define localized strings based on active language (vi / en / ja / ko)
   const isVi = language === 'vi'
-  
+
   const content = {
-    aboutTitle: isVi ? 'Về AI Study Hub' : 'About AI Study Hub',
+    aboutTitle: isVi ? 'Về LumiEdu' : 'About LumiEdu',
     aboutLinks: [
-      { text: isVi ? 'Giới thiệu' : 'Introduction', to: '/about' },
+      { text: isVi ? 'Giới thiệu' : 'Introduction', to: '/' },
       { text: isVi ? 'Tính năng' : 'Features', to: '/#features' },
       { text: isVi ? 'Bảng giá' : 'Pricing Plans', to: '/pricing' },
-      { text: t.footer.termsOfService, to: '/terms' },
-      { text: t.footer.privacyPolicy, to: '/privacy' },
+      { text: t.footer.termsOfService, to: '/help' },
+      { text: t.footer.privacyPolicy, to: '/help' },
     ],
     exploreTitle: isVi ? 'Tính năng & Khám phá' : 'Features & Explore',
     exploreLinks: [
-      { text: isVi ? 'Tài liệu của tôi' : 'My Documents', to: '/login' },
-      { text: isVi ? 'Trợ lý AI Chatbot' : 'AI Chatbot Assistant', to: '/login' },
-      { text: isVi ? 'Không gian chia sẻ' : 'Shared Workspace', to: '/login' },
-      { text: isVi ? 'Kế hoạch học tập' : 'Study Plans', to: '/login' },
-      { text: isVi ? 'Dung lượng đám mây' : 'Cloud Storage', to: '/login' },
-      { text: t.footer.helpCenter, to: '/help' },
+      { text: isVi ? 'Tài liệu của tôi' : 'My Documents', to: '/dashboard/documents', isProtected: true },
+      { text: isVi ? 'Trợ lý AI Chatbot' : 'AI Chatbot Assistant', to: '/dashboard/chat', isProtected: true },
+      { text: isVi ? 'Không gian chia sẻ' : 'Shared Workspace', to: '/dashboard/shared', isProtected: true },
+      { text: isVi ? 'Kế hoạch học tập' : 'Study Plans', to: '/dashboard/study-plans', isProtected: true },
+      { text: isVi ? 'Dung lượng đám mây' : 'Cloud Storage', to: '/dashboard/storage', isProtected: true },
+      { text: t.footer.helpCenter, to: '/help', isProtected: false },
     ],
-    infoTitle: isVi ? 'DỰ ÁN HỆ THỐNG HỌC TẬP THÔNG MINH' : 'INTELLIGENT LEARNING SYSTEM',
+    infoTitle: isVi ? 'NỀN TẢNG HỌC TẬP SỐ THÔNG MINH' : 'INTELLIGENT DIGITAL EDUCATION PLATFORM',
     infoItems: [
-      { label: isVi ? 'Nhóm phát triển' : 'Developed by', value: 'SWP391 Team 24' },
-      { label: isVi ? 'Lĩnh vực' : 'Sector', value: isVi ? 'AI & Giáo dục (EdTech)' : 'AI & EdTech' },
-      { label: isVi ? 'Định hướng' : 'Mission', value: isVi ? 'Tối ưu hóa học tập cá nhân' : 'Personalized Study Optimization' },
-      { label: isVi ? 'Mã số dự án' : 'Project ID', value: 'SWP391_AIStudyHub' },
-      { label: isVi ? 'Công nghệ chính' : 'Core Tech', value: 'React, TS, Tailwind, Gemini AI' },
+      {label: isVi ? 'Ban phát triển' : 'R&D Team', value: 'SWP391 Team 4' },
+      { label: isVi ? 'Hệ sinh thái' : 'Ecosystem', value: isVi ? 'AI & Giáo dục số (EdTech)' : 'AI & Digital EdTech' },
+      { label: isVi ? 'Sứ mệnh' : 'Mission', value: isVi ? 'Cá nhân hóa tri thức thế hệ mới' : 'Empowering Digital Intellect' },
+      { label: isVi ? 'Mã định danh' : 'Project ID', value: 'LumiEdu_Core_v1.0' },
+      { label: isVi ? 'Hạ tầng cốt lõi' : 'Tech Stack', value: 'React, TS, Tailwind, Gemini AI' },
     ],
     slogan: isVi ? 'Khơi nguồn tri thức — Kiến tạo tương lai' : 'Igniting knowledge — Shaping the future',
-    copyrightText: isVi ? '© 2026 AI Study Hub. Tất cả quyền được bảo lưu.' : '© 2026 AI Study Hub. All rights reserved.',
+    copyrightText: isVi ? '© 2026 LumiEdu. Tất cả quyền được bảo lưu.' : '© 2026 LumiEdu. All rights reserved.',
   }
 
   return (
@@ -157,12 +174,21 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
             <ul className="flex flex-col gap-3.5">
               {content.exploreLinks.map((link, idx) => (
                 <li key={idx}>
-                  <Link
-                    to={link.to}
-                    className="text-slate-200/90 hover:text-white text-[15px] font-medium transition-all duration-200 hover:translate-x-1 inline-block"
-                  >
-                    {link.text}
-                  </Link>
+                  {link.isProtected ? (
+                    <button
+                      onClick={() => handleProtectedLink(link.to)}
+                      className="text-slate-200/90 hover:text-white text-[15px] font-medium transition-all duration-200 hover:translate-x-1 inline-block text-left cursor-pointer bg-transparent border-none p-0"
+                    >
+                      {link.text}
+                    </button>
+                  ) : (
+                    <Link
+                      to={link.to}
+                      className="text-slate-200/90 hover:text-white text-[15px] font-medium transition-all duration-200 hover:translate-x-1 inline-block"
+                    >
+                      {link.text}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -173,18 +199,59 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
             <h4 className="text-white font-bold font-heading text-lg mb-6 pb-2 border-b border-white/10 uppercase tracking-wider">
               {content.infoTitle}
             </h4>
-            <div className="bg-blue-950/40 rounded-2xl p-5 border border-white/5 space-y-4">
-              <h5 className="font-bold text-white text-[16px] tracking-wide flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-blue-300" />
-                AI STUDY HUB
+            <div className="bg-gradient-to-br from-blue-950/70 via-indigo-950/60 to-slate-950/70 rounded-2xl p-5 border border-white/10 shadow-[0_8px_32px_0_rgba(37,99,235,0.15)] space-y-4 relative overflow-hidden group hover:border-blue-500/30 hover:shadow-[0_12px_40px_rgba(37,99,235,0.25)] hover:-translate-y-1 transition-all duration-300">
+              {/* Outer decorative glowing ring */}
+              <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all duration-300" />
+              
+              {/* Pulse status dot in corner */}
+              <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-[9px] font-bold text-emerald-400 tracking-wider uppercase select-none">Active</span>
+              </div>
+
+              <h5 className="font-extrabold text-white text-base tracking-wide flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-400/20 text-blue-300">
+                  <GraduationCap className="w-4.5 h-4.5 text-blue-300 animate-pulse" />
+                </div>
+                <span className="bg-gradient-to-r from-white via-slate-100 to-blue-200 bg-clip-text text-transparent tracking-widest uppercase font-black">
+                  LUMIEDU
+                </span>
               </h5>
-              <ul className="space-y-3 text-sm text-slate-200/95">
-                {content.infoItems.map((item, idx) => (
-                  <li key={idx} className="flex justify-between items-start gap-4">
-                    <span className="text-slate-300/80 font-medium shrink-0">{item.label}:</span>
-                    <span className="font-semibold text-right text-white">{item.value}</span>
-                  </li>
-                ))}
+              
+              <ul className="space-y-2.5 pt-1">
+                {content.infoItems.map((item, idx) => {
+                  const isTech = item.label.toLowerCase().includes('tech') || item.label.toLowerCase().includes('công nghệ')
+                  const isProject = item.label.toLowerCase().includes('project') || item.label.toLowerCase().includes('mã số')
+                  
+                  return (
+                    <li key={idx} className="flex justify-between items-center gap-4 py-1.5 border-b border-white/5 last:border-0">
+                      <span className="text-slate-300/80 text-[12px] font-semibold tracking-wide uppercase shrink-0">{item.label}</span>
+                      {isTech ? (
+                        <div className="flex flex-wrap gap-1 justify-end max-w-[190px]">
+                          {item.value.split(',').map((tech, tIdx) => (
+                            <span 
+                              key={tIdx} 
+                              className="inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20 tracking-wide uppercase shadow-xs hover:bg-blue-500/20 transition-colors"
+                            >
+                              {tech.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      ) : isProject ? (
+                        <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-slate-900/80 border border-white/10 text-cyan-300 shadow-inner">
+                          {item.value}
+                        </span>
+                      ) : (
+                        <span className="font-bold text-right text-slate-100 text-[13px] tracking-wide">
+                          {item.value}
+                        </span>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           </div>
@@ -200,10 +267,10 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
           <div className="flex flex-col items-center md:items-start text-center md:text-left gap-2.5">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20">
-                <img src="/logo.png" alt="AI Study Hub Logo" className="w-9 h-9 object-contain" />
+                <img src="/logo.png" alt="LumiEdu Logo" className="w-9 h-9 object-contain" />
               </div>
               <span className="text-xl md:text-2xl font-bold font-heading text-white tracking-tight">
-                AI Study Hub
+                LumiEdu
               </span>
             </div>
             <p className="text-slate-300/90 text-sm italic font-medium">

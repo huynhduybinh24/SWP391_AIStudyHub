@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
@@ -25,7 +25,7 @@ import ShareAccessModal, { Collaborator } from '../components/ShareAccessModal'
 import RenameFileModal from '../components/RenameFileModal'
 import ChangePermissionModal from '../components/ChangePermissionModal'
 import ConfirmRemoveAccessModal from '../components/ConfirmRemoveAccessModal'
-import CollaboratorsModal from '../components/CollaboratorsModal'
+import CollaboratorsModal, { Collaborator as ActiveCollaborator } from '../components/CollaboratorsModal'
 import AIInsightsModal from '../components/AIInsightsModal'
 import { SharedFile } from '../components/SharedFilesTable'
 import { X, HardDrive } from 'lucide-react'
@@ -169,7 +169,6 @@ export function SharedFilesPage() {
   const toast = useToast()
   const { t, language } = useTranslation()
   const user = useAuthStore((s) => s.user)
-  const navigate = useNavigate()
   const location = useLocation()
   const { fileId } = useParams<{ fileId: string }>()
 
@@ -186,7 +185,8 @@ export function SharedFilesPage() {
       totalPages: 42,
       description: 'Comprehensive study guide and midterm summary for General Biology 101, containing cellular respiration diagrams, metabolic pathway notes, and mitosis stages.',
       tags: ['CellBiology', 'KrebsCycle'],
-      previewContent: 'Biology 101 Midterm Notes preview content.'
+      previewContent: 'Biology 101 Midterm Notes preview content.',
+      url: ''
     },
     {
       id: 'file-2',
@@ -198,7 +198,8 @@ export function SharedFilesPage() {
       size: '15.8 MB',
       description: 'Group assets folder containing images, mock data, design specifications, and reference links.',
       tags: ['GroupProject', 'Assets'],
-      previewContent: 'Folder contents: assets, design specifications.'
+      previewContent: 'Folder contents: assets, design specifications.',
+      url: ''
     },
     {
       id: 'file-3',
@@ -211,7 +212,8 @@ export function SharedFilesPage() {
       totalPages: 10,
       description: 'Tabulated values of raw experimental logs, voltage sweeps, and resistance indexes from the electromagnetism laboratory session.',
       tags: ['Physics', 'LabData'],
-      previewContent: 'Voltage, Current, Resistance sweep tables.'
+      previewContent: 'Voltage, Current, Resistance sweep tables.',
+      url: ''
     }
   ])
 
@@ -242,6 +244,98 @@ export function SharedFilesPage() {
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+
+  const [activeCollaborators, setActiveCollaborators] = useState<ActiveCollaborator[]>([
+    {
+      id: '1',
+      name: 'Sarah Jenkins',
+      email: 'sarah.jenkins@example.com',
+      role: 'Owner',
+      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80'
+    },
+    {
+      id: '2',
+      name: 'David Kim',
+      email: 'david.kim@example.com',
+      role: 'Editor',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'
+    },
+    {
+      id: '3',
+      name: 'Emily Chen',
+      email: 'emily.chen@example.com',
+      role: 'View Only',
+      avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80'
+    },
+    {
+      id: '4',
+      name: 'Marcus Knight',
+      email: 'marcus@example.com',
+      role: 'Editor'
+    },
+    {
+      id: '5',
+      name: 'Emma Watson',
+      email: 'emma.watson@example.com',
+      role: 'Editor'
+    },
+    {
+      id: '6',
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      role: 'View Only'
+    },
+    {
+      id: '7',
+      name: 'Alex Chen',
+      email: 'alex.chen@example.com',
+      role: 'View Only'
+    },
+    {
+      id: '8',
+      name: 'Alex Rivera',
+      email: 'alex@example.com',
+      role: 'Owner'
+    }
+  ])
+
+  const handleUpdateCollaboratorRole = (id: string, newRole: 'Owner' | 'Editor' | 'View Only') => {
+    setActiveCollaborators(prev =>
+      prev.map(c => {
+        if (c.id === id) {
+          const updated = { ...c, role: newRole }
+          const msg = language === 'vi' 
+            ? `Đã cập nhật vai trò của ${c.name} thành ${newRole}`
+            : (language === 'ja'
+              ? `${c.name}の役割を${newRole}に更新しました`
+              : (language === 'ko'
+                ? `${c.name}의 역할을 ${newRole}(으)로 업데이트했습니다`
+                : `Updated ${c.name}'s role to ${newRole}`))
+          toast.success(msg)
+          return updated
+        }
+        return c
+      })
+    )
+  }
+
+  const handleAddNewCollaborator = (name: string, email: string, role: 'Owner' | 'Editor' | 'View Only') => {
+    const newCollab: ActiveCollaborator = {
+      id: `collab-${Date.now()}`,
+      name,
+      email,
+      role
+    }
+    setActiveCollaborators(prev => [...prev, newCollab])
+    const msg = language === 'vi'
+      ? `Đã thêm ${name} làm ${role}`
+      : (language === 'ja'
+        ? `${name}を${role}として追加しました`
+        : (language === 'ko'
+          ? `${name}님을 ${role}(으)로 추가했습니다`
+          : `Added ${name} as ${role}`))
+    toast.success(msg)
+  }
 
   const [peopleFilter, setPeopleFilter] = useState('All')
   const [lastModifiedFilter, setLastModifiedFilter] = useState('All')
@@ -605,7 +699,7 @@ export function SharedFilesPage() {
     setModals(prev => ({ ...prev, rename: false }))
   }
 
-  const handlePermissionConfirm = (newPermission: 'Editor' | 'Commenter' | 'Viewer') => {
+  const handlePermissionConfirm = (newPermission: any) => {
     if (!selectedFile) return
     setFiles(prev =>
       prev.map(f => (f.id === selectedFile.id ? { ...f, permission: newPermission } : f))
@@ -695,9 +789,9 @@ export function SharedFilesPage() {
       if (filterLower === 'folder') {
         matchesType = file.type === 'folder'
       } else if (filterLower === 'doc') {
-        matchesType = file.type === 'doc' || file.type === 'docx' || file.type === 'pdf'
+        matchesType = file.type === 'docx' || file.type === 'pdf'
       } else if (filterLower === 'spreadsheet') {
-        matchesType = file.type === 'spreadsheet' || file.type === 'xlsx'
+        matchesType = file.type === 'xlsx'
       } else {
         matchesType = file.type === filterLower
       }
@@ -776,59 +870,7 @@ export function SharedFilesPage() {
     )
   }
 
-  const collaboratorsCountList = [
-    {
-      id: '1',
-      name: 'Sarah Jenkins',
-      email: 'sarah.jenkins@example.com',
-      role: 'Owner',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80'
-    },
-    {
-      id: '2',
-      name: 'David Kim',
-      email: 'david.kim@example.com',
-      role: 'Editor',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'
-    },
-    {
-      id: '3',
-      name: 'Emily Chen',
-      email: 'emily.chen@example.com',
-      role: 'View Only',
-      avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80'
-    },
-    {
-      id: '4',
-      name: 'Marcus Knight',
-      email: 'marcus@example.com',
-      role: 'Editor'
-    },
-    {
-      id: '5',
-      name: 'Emma Watson',
-      email: 'emma.watson@example.com',
-      role: 'Editor'
-    },
-    {
-      id: '6',
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      role: 'View Only'
-    },
-    {
-      id: '7',
-      name: 'Alex Chen',
-      email: 'alex.chen@example.com',
-      role: 'View Only'
-    },
-    {
-      id: '8',
-      name: 'Alex Rivera',
-      email: 'alex@example.com',
-      role: 'Owner'
-    }
-  ]
+  // activeCollaborators state is now used instead of the static collaboratorsCountList
 
   return (
     <motion.div
@@ -855,6 +897,7 @@ export function SharedFilesPage() {
             onViewAIReport={() => setModals(prev => ({ ...prev, aiReport: true }))}
             onStorageCardClick={() => setModals(prev => ({ ...prev, quota: true }))}
             onActiveCardClick={() => setModals(prev => ({ ...prev, collaborators: true }))}
+            activeCollaboratorsCount={activeCollaborators.length}
           />
 
           <WorkspaceFilterBar
@@ -951,7 +994,9 @@ export function SharedFilesPage() {
       <CollaboratorsModal
         isOpen={modals.collaborators}
         onClose={() => setModals(prev => ({ ...prev, collaborators: false }))}
-        collaborators={collaboratorsCountList}
+        collaborators={activeCollaborators}
+        onUpdateRole={handleUpdateCollaboratorRole}
+        onAddCollaborator={handleAddNewCollaborator}
       />
 
       <AIInsightsModal

@@ -1,5 +1,101 @@
-import { PlaceholderPage } from '@/components/layout/PlaceholderPage'
+import { useState } from 'react'
+import { Shield, Users, FileText, BarChart3, Settings2 } from 'lucide-react'
+import { useTranslation } from '@/context/LanguageContext'
+import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
+import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab'
+
+type AdminTab = 'overview' | 'users' | 'moderation'
 
 export function AdminDashboardPage() {
-  return <PlaceholderPage title="Admin Dashboard" />
+  const { t } = useTranslation()
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview')
+
+  const tabItems = [
+    {
+      id: 'overview' as AdminTab,
+      label: t.admin.tabOverview,
+      icon: BarChart3
+    },
+    {
+      id: 'users' as AdminTab,
+      label: t.admin.tabUsers,
+      icon: Users
+    },
+    {
+      id: 'moderation' as AdminTab,
+      label: t.admin.tabDocs,
+      icon: FileText
+    }
+  ]
+
+  return (
+    <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
+      {/* Header section with live status */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-[32px] font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
+            <span className="p-2 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+              <Shield className="size-7" />
+            </span>
+            {t.admin.title}
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm max-w-2xl font-medium">
+            {t.admin.subtitle}
+          </p>
+        </div>
+
+        {/* Pulse live status badge */}
+        <div className="flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/25 dark:border-emerald-500/15 px-3 py-1.5 rounded-full text-xs font-bold text-emerald-600 dark:text-emerald-400 self-start md:self-center select-none shadow-sm shadow-emerald-500/5">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>{t.admin.activeAdminGlow}</span>
+        </div>
+      </div>
+
+      {/* Tabs navigation */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 w-full scroll-smooth overflow-x-auto no-scrollbar gap-2">
+        {tabItems.map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                isActive
+                  ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
+            >
+              <Icon className="size-4 stroke-[2.25]" />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Tab content renderer */}
+      <div className="mt-4 transition-all duration-300 animate-fade-in">
+        {activeTab === 'overview' && <AdminOverviewTab />}
+        
+        {activeTab === 'users' && (
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-[32px] border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-8">
+            <div className="p-4 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 mb-4">
+              <Users className="size-8 stroke-[1.5]" />
+            </div>
+            <h3 className="text-lg font-extrabold text-slate-800 dark:text-white">
+              {t.admin.tabUsers}
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 max-w-sm font-medium">
+              Manage student profiles, roles, subscription plans, and configure authentication details.
+            </p>
+          </div>
+        )}
+
+        {activeTab === 'moderation' && <AdminDocumentsTab />}
+      </div>
+    </div>
+  )
 }

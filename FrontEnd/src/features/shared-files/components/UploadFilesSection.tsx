@@ -124,7 +124,7 @@ export function UploadFilesSection({ onBack, onSave }: UploadFilesSectionProps) 
       size: fileSize,
       description: description.trim() || 'No description provided.',
       tags: selectedTags,
-      previewContent: `Preview Content of ${fileName}. Uploaded and analyzed by AI Study Hub.`,
+      previewContent: `Preview Content of ${fileName}. Uploaded and analyzed by LumiEdu.`,
       summary: `AI Quick Summary: This document covers key concepts in ${selectedSubject}. Preprocessed summary outlines primary terms, formulas, and structural study guides.`
     }
 

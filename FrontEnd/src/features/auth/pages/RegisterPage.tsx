@@ -28,7 +28,7 @@ export function RegisterPage() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 w-fit mb-8 shadow-sm">
               <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 tracking-wider uppercase">AI STUDY HUB</span>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 tracking-wider uppercase">LUMIEDU</span>
             </div>
 
             <h2 className="text-[44px] leading-[1.1] font-bold text-slate-900 dark:text-white mb-6">

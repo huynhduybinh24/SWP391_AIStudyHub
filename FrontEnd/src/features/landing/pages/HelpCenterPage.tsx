@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Mail,
@@ -22,14 +22,14 @@ const faqs = [
   {
     id: 1,
     category: 'Getting Started',
-    question: 'How do I create an account on AI Study Hub?',
+    question: 'How do I create an account on LumiEdu?',
     answer:
       'Click the "Register" button on the homepage, fill in your name, email, and password, then verify your email. Your account will be ready to use immediately after verification.',
   },
   {
     id: 2,
     category: 'Getting Started',
-    question: 'What file formats does AI Study Hub support?',
+    question: 'What file formats does LumiEdu support?',
     answer:
       'We support PDF, DOCX, PPTX, TXT, and image files (PNG, JPG). The AI works best with PDF and DOCX files as they preserve text formatting.',
   },
@@ -93,7 +93,22 @@ export function HelpCenterPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'faq' | 'guides' | 'contact'>('faq')
+  
+  const [searchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab') as 'faq' | 'guides' | 'contact' | null
+  
+  const [activeTab, setActiveTab] = useState<'faq' | 'guides' | 'contact'>(
+    (tabParam && ['faq', 'guides', 'contact'].includes(tabParam)) ? tabParam : 'faq'
+  )
+
+  useEffect(() => {
+    if (tabParam && ['faq', 'guides', 'contact'].includes(tabParam)) {
+      setActiveTab(tabParam)
+      setTimeout(() => {
+        document.getElementById('help-tabs')?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+    }
+  }, [tabParam])
 
   // Contact form state
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
@@ -134,8 +149,8 @@ export function HelpCenterPage() {
       <header className="w-full bg-white border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3.5">
-            <img src="/logo.png" alt="AI Study Hub Logo" className="w-[68px] h-[68px] object-contain" />
-            <span className="text-2xl font-bold text-primary tracking-tight">AI Study Hub</span>
+            <img src="/logo.png" alt="LumiEdu Logo" className="w-[68px] h-[68px] object-contain" />
+            <span className="text-2xl font-bold text-primary tracking-tight">LumiEdu</span>
           </Link>
           <Link
             to="/"
@@ -184,7 +199,7 @@ export function HelpCenterPage() {
       </section>
 
       {/* ── Tabs ── */}
-      <section className="w-full bg-[#F8FAFC] border-b border-border/50">
+      <section id="help-tabs" className="w-full bg-[#F8FAFC] border-b border-border/50 scroll-mt-20">
         <div className="max-w-[1000px] mx-auto px-6 flex gap-2 pt-6 pb-0">
           {(['faq', 'guides', 'contact'] as const).map((tab) => (
             <button
