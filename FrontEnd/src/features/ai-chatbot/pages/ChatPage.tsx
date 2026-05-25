@@ -556,7 +556,7 @@ export function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-190px)] justify-between select-none font-sans relative">
+    <div className="flex flex-col h-[calc(100vh-110px)] justify-between select-none font-sans relative">
       <AnimatePresence mode="wait">
 
         {/* ==================================================
