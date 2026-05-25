@@ -3,6 +3,7 @@ import { Sparkles, FileText, Send, MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SharedFile } from './SharedFilesTable'
 import { motion } from 'framer-motion'
+import { useTranslation } from '@/context/LanguageContext'
 
 export interface CommentItem {
   id: string
@@ -33,7 +34,14 @@ export function WorkspaceRightPanel({
   onGenerateQuiz,
   onAskAI
 }: WorkspaceRightPanelProps) {
+  const { language } = useTranslation()
   const [commentInput, setCommentInput] = useState('')
+  const [rightPanelTab, setRightPanelTab] = useState<'comments' | 'history'>('comments')
+
+  // Reset tab back to comments when file changes
+  React.useEffect(() => {
+    setRightPanelTab('comments')
+  }, [file?.id])
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -177,35 +185,90 @@ export function WorkspaceRightPanel({
         </div>
       </div>
 
-      {/* 5. Recent Activity Comments list */}
+      {/* 5. Recent Activity Comments list / Edit History */}
       <div className="space-y-3 border-t border-slate-100 dark:border-slate-800/80 pt-4 w-full min-w-0">
-        <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase">
-          RECENT ACTIVITY
-        </span>
+        {file && (file.owner === 'me' || file.permission === 'Owner') ? (
+          <div className="flex border-b border-slate-100 dark:border-slate-800/80 mb-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => setRightPanelTab('comments')}
+              className={cn(
+                "flex-1 pb-2 text-[10px] font-black tracking-wider uppercase border-b-2 text-center transition-all duration-200 cursor-pointer focus:outline-none",
+                rightPanelTab === 'comments'
+                  ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400 font-extrabold"
+                  : "border-transparent text-slate-400 hover:text-slate-655 dark:text-slate-500 dark:hover:text-slate-300"
+              )}
+            >
+              {language === 'vi' ? 'Bình luận' : 'Comments'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setRightPanelTab('history')}
+              className={cn(
+                "flex-1 pb-2 text-[10px] font-black tracking-wider uppercase border-b-2 text-center transition-all duration-200 cursor-pointer focus:outline-none",
+                rightPanelTab === 'history'
+                  ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400 font-extrabold"
+                  : "border-transparent text-slate-400 hover:text-slate-655 dark:text-slate-500 dark:hover:text-slate-300"
+              )}
+            >
+              {language === 'vi' ? 'Lịch sử sửa' : 'Revision History'}
+            </button>
+          </div>
+        ) : (
+          <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase block mb-3 select-none">
+            {language === 'vi' ? 'BÌNH LUẬN GẦN ĐÂY' : 'RECENT ACTIVITY'}
+          </span>
+        )}
 
-        <div className="space-y-4 max-h-[140px] overflow-y-auto scrollbar-none pr-1">
-          {comments.map((comment) => (
-            <div key={comment.id} className="flex items-start gap-3 text-xs">
-              <span className={cn("size-6 rounded-full text-white font-bold flex items-center justify-center shrink-0 text-[9px]", comment.avatarBg)}>
-                {comment.user.charAt(0)}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-1 leading-none">
-                  <span className="font-extrabold text-slate-800 dark:text-slate-205">{comment.user}</span>
-                  <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold">{comment.time}</span>
+        {rightPanelTab === 'history' && file && (file.owner === 'me' || file.permission === 'Owner') ? (
+          <div className="space-y-4 max-h-[140px] overflow-y-auto scrollbar-none pr-1">
+            {file.editHistory && file.editHistory.map((item) => (
+              <div key={item.id} className="flex items-start gap-3 text-xs text-left">
+                <span className={cn("size-6 rounded-full text-white font-bold flex items-center justify-center shrink-0 text-[9px]", item.avatarBg || "bg-blue-600")}>
+                  {item.user.charAt(0)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1 leading-none">
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200">{item.user}</span>
+                    <span className="text-[9px] text-slate-450 dark:text-slate-500 font-semibold">{item.time}</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-350 font-semibold mt-1 text-justify">
+                    {item.action}
+                  </p>
                 </div>
-                <p className="text-slate-550 dark:text-slate-400 font-semibold mt-1 text-justify">
-                  "{comment.text}"
-                </p>
               </div>
-            </div>
-          ))}
-          {comments.length === 0 && (
-            <div className="text-[10px] text-slate-400 font-semibold italic text-center py-2">
-              No recent comments.
-            </div>
-          )}
-        </div>
+            ))}
+            {(!file.editHistory || file.editHistory.length === 0) && (
+              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold italic text-center py-2 select-none">
+                {language === 'vi' ? 'Không có lịch sử chỉnh sửa.' : 'No edit history available.'}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4 max-h-[140px] overflow-y-auto scrollbar-none pr-1">
+            {comments.map((comment) => (
+              <div key={comment.id} className="flex items-start gap-3 text-xs text-left">
+                <span className={cn("size-6 rounded-full text-white font-bold flex items-center justify-center shrink-0 text-[9px]", comment.avatarBg)}>
+                  {comment.user.charAt(0)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1 leading-none">
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200">{comment.user}</span>
+                    <span className="text-[9px] text-slate-450 dark:text-slate-500 font-semibold">{comment.time}</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-350 font-semibold mt-1 text-justify">
+                    "{comment.text}"
+                  </p>
+                </div>
+              </div>
+            ))}
+            {comments.length === 0 && (
+              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold italic text-center py-2 select-none">
+                {language === 'vi' ? 'Không có bình luận gần đây.' : 'No recent comments.'}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 6. Comment Form Input Box */}
