@@ -40,19 +40,19 @@ export function ChatPage() {
       id: "chat-1",
       title: "Biology summary help",
       preview: "Summarize chapter 3 about cell biology...",
-      updatedAt: "2h ago",
+      updatedAt: t.common.justNow || "Just now",
       messages: [
         {
           id: "m1",
           role: "user",
-          content: "Summarize this biology document.",
-          createdAt: "2h ago",
+          content: "Summarize chapter 3 about cell biology.",
+          createdAt: t.common.twoHoursAgo || "2h ago",
         },
         {
           id: "m2",
           role: "assistant",
           content: "This document explains cell biology concepts, ATP production, and DNA replication stages.",
-          createdAt: "2h ago",
+          createdAt: t.common.twoHoursAgo || "2h ago",
         },
       ]
     },
@@ -60,19 +60,19 @@ export function ChatPage() {
       id: "chat-2",
       title: "Generate quiz from PDF",
       preview: "Create 10 multiple-choice questions...",
-      updatedAt: "Yesterday",
+      updatedAt: t.common.yesterday || "Yesterday",
       messages: [
         {
           id: "m3",
           role: "user",
           content: "Create 10 multiple-choice questions from the PDF.",
-          createdAt: "Yesterday",
+          createdAt: t.common.yesterday || "Yesterday",
         },
         {
           id: "m4",
           role: "assistant",
           content: "Here are some multiple-choice questions:\n\n1. What is the powerhouse of the cell?\nA) Nucleus\nB) Mitochondria\nC) Ribosome\nD) Golgi apparatus",
-          createdAt: "Yesterday",
+          createdAt: t.common.yesterday || "Yesterday",
         }
       ]
     },
@@ -80,19 +80,19 @@ export function ChatPage() {
       id: "chat-3",
       title: "Study plan for finals",
       preview: "Plan a 7-day study schedule...",
-      updatedAt: "May 20",
+      updatedAt: t.common.may20 || "May 20",
       messages: [
         {
           id: "m5",
           role: "user",
           content: "Plan a 7-day study schedule for finals.",
-          createdAt: "May 20",
+          createdAt: t.common.may20 || "May 20",
         },
         {
           id: "m6",
           role: "assistant",
           content: "Day 1: Review CS101 lecture slides.\nDay 2: Take practice quizzes for Math.\nDay 3: Focus on biology flashcards.",
-          createdAt: "May 20",
+          createdAt: t.common.may20 || "May 20",
         }
       ]
     },
@@ -100,19 +100,19 @@ export function ChatPage() {
       id: "chat-4",
       title: "Physics lab analysis",
       preview: "Explain the lab result and variables...",
-      updatedAt: "May 18",
+      updatedAt: t.common.may18 || "May 18",
       messages: [
         {
           id: "m7",
           role: "user",
           content: "Explain the physics lab result and variables.",
-          createdAt: "May 18",
+          createdAt: t.common.may18 || "May 18",
         },
         {
           id: "m8",
           role: "assistant",
           content: "The independent variable is the mass of the pendulum. The dependent variable is the period of oscillation.",
-          createdAt: "May 18",
+          createdAt: t.common.may18 || "May 18",
         }
       ]
     },
