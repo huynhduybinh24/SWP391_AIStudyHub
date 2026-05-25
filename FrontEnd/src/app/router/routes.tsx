@@ -36,6 +36,7 @@ import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { PricingPage } from '@/features/upgrade/pages/PricingPage'
 import { CheckoutPage } from '@/features/upgrade/pages/CheckoutPage'
 import { StudyPlansPage } from '@/features/study-plans/pages/StudyPlansPage'
+import { AdminPartnershipRequestsPage } from '@/features/admin/pages/AdminPartnershipRequestsPage'
 
 import { ScrollToTop } from '@/components/shared/ScrollToTop'
 import { Outlet } from 'react-router-dom'

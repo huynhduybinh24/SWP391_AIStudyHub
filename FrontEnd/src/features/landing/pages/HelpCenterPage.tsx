@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Mail,
@@ -93,7 +93,22 @@ export function HelpCenterPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'faq' | 'guides' | 'contact'>('faq')
+  
+  const [searchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab') as 'faq' | 'guides' | 'contact' | null
+  
+  const [activeTab, setActiveTab] = useState<'faq' | 'guides' | 'contact'>(
+    (tabParam && ['faq', 'guides', 'contact'].includes(tabParam)) ? tabParam : 'faq'
+  )
+
+  useEffect(() => {
+    if (tabParam && ['faq', 'guides', 'contact'].includes(tabParam)) {
+      setActiveTab(tabParam)
+      setTimeout(() => {
+        document.getElementById('help-tabs')?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+    }
+  }, [tabParam])
 
   // Contact form state
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
@@ -184,7 +199,7 @@ export function HelpCenterPage() {
       </section>
 
       {/* ── Tabs ── */}
-      <section className="w-full bg-[#F8FAFC] border-b border-border/50">
+      <section id="help-tabs" className="w-full bg-[#F8FAFC] border-b border-border/50 scroll-mt-20">
         <div className="max-w-[1000px] mx-auto px-6 flex gap-2 pt-6 pb-0">
           {(['faq', 'guides', 'contact'] as const).map((tab) => (
             <button
