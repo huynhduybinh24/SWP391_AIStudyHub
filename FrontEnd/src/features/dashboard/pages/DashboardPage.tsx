@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { LoadingOverlay } from '@/components/feedback/LoadingOverlay'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { WelcomeBanner } from '@/features/dashboard/components/WelcomeBanner'
@@ -10,20 +10,23 @@ import { WeeklyActivityChart } from '@/features/dashboard/components/WeeklyActiv
 import { RecentAlerts } from '@/features/dashboard/components/RecentAlerts'
 import { useDashboard } from '@/features/dashboard/hooks/useDashboard'
 import { CreateStudyPlanModal } from '@/features/study-plans/pages/CreateStudyPlanModal'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false)
   const { data, isLoading, isError, error, refetch } = useDashboard()
 
-  if (isLoading) return <LoadingOverlay label="Loading dashboard..." />
+  if (isLoading) return <LoadingOverlay label={t.common.loading} />
   if (isError || !data) {
     return (
       <ErrorState
-        message={error?.message ?? 'Failed to load dashboard'}
+        message={error?.message ?? t.common.error}
         onRetry={() => refetch()}
       />
     )
   }
+
 
   return (
     <div className="space-y-6">
@@ -42,7 +45,10 @@ export function DashboardPage() {
         <RecentDocuments documents={data.documents} />
         <QuickAskCard />
         <WeeklyActivityChart
-          data={data.weeklyActivity}
+          data={data.weeklyActivity.map((item, idx) => ({
+            ...item,
+            day: (t.dashboard.weekdays && t.dashboard.weekdays[idx]) || item.day
+          }))}
           totalHours={data.weeklyHours}
           trend={data.weeklyTrend}
         />
@@ -56,3 +62,4 @@ export function DashboardPage() {
     </div>
   )
 }
+

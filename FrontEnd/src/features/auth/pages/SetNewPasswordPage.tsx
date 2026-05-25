@@ -6,6 +6,7 @@ import { ArrowLeft, Lock, Eye, EyeOff, RotateCcw, CheckCircle2, Circle } from 'l
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { setNewPasswordSchema, type SetNewPasswordValues } from '@/features/auth/schemas/setNewPasswordSchema'
+import { AppFooter } from '@/components/shared/AppFooter'
 
 export function SetNewPasswordPage() {
   const navigate = useNavigate()
@@ -153,17 +154,7 @@ export function SetNewPasswordPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="w-full bg-[#F3F5F8]/80 backdrop-blur-sm border-t border-border/50 py-6 px-8 flex flex-col md:flex-row items-center justify-between text-sm text-body relative z-10">
-        <p>© 2024 AI Study Hub. All rights reserved.</p>
-        <div className="flex items-center gap-6 mt-4 md:mt-0 font-medium">
-          <Link to="/" className="hover:text-primary transition-colors">Home</Link>
-          <Link to="/" className="hover:text-primary transition-colors">Features</Link>
-          <Link to="/login" className="hover:text-primary transition-colors">Login</Link>
-          <Link to="/register" className="hover:text-primary transition-colors">Register</Link>
-          <Link to="/" className="hover:text-primary transition-colors">Help Center</Link>
-        </div>
-      </footer>
+      <AppFooter variant="simple" />
     </div>
   )
 }

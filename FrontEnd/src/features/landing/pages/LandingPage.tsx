@@ -1,10 +1,49 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, MessageSquare, Cloud, Search, Share2, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { AppFooter } from '@/components/shared/AppFooter'
 
 export function LandingPage() {
   const [activeSection, setActiveSection] = useState('home')
+
+  useEffect(() => {
+    // Custom scroll spy using IntersectionObserver
+    const sections = ['features', 'about']
+    const observerOptions = {
+      root: null,
+      rootMargin: '-30% 0px -60% 0px', // Detect section when it occupies the middle/top third of the screen
+      threshold: 0,
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id)
+        }
+      })
+    }, observerOptions)
+
+    // Observe features and about sections
+    sections.forEach((id) => {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    })
+
+    // Specialized handler to detect if we scrolled to the very top (Home)
+    const handleScroll = () => {
+      if (window.scrollY < 100) {
+        setActiveSection('home')
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
 
   const scrollToHome = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -12,13 +51,21 @@ export function LandingPage() {
   }
 
   const scrollToFeatures = () => {
-    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
-    setActiveSection('features')
+    const el = document.getElementById('features')
+    if (el) {
+      const offset = el.offsetTop - 85 // Adjust for sticky header
+      window.scrollTo({ top: offset, behavior: 'smooth' })
+      setActiveSection('features')
+    }
   }
 
   const scrollToAbout = () => {
-    document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })
-    setActiveSection('about')
+    const el = document.getElementById('about')
+    if (el) {
+      const offset = el.offsetTop - 85 // Adjust for sticky header
+      window.scrollTo({ top: offset, behavior: 'smooth' })
+      setActiveSection('about')
+    }
   }
 
   return (
@@ -27,17 +74,44 @@ export function LandingPage() {
       <header className="w-full bg-white border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
           <div 
-            className="flex items-center gap-2 cursor-pointer"
+            className="flex items-center gap-3.5 cursor-pointer"
             onClick={scrollToHome}
           >
-            <img src="/logo.png" alt="AI Study Hub Logo" className="h-8 w-auto object-contain" />
-            <h1 className="text-2xl font-bold text-primary tracking-tight">AI Study Hub</h1>
+            <img src="/logo.png" alt="LumiEdu Logo" className="w-[68px] h-[68px] object-contain" />
+            <h1 className="text-2xl font-bold text-primary tracking-tight">LumiEdu</h1>
           </div>
           
           <nav className="hidden md:flex items-center gap-8">
-            <button onClick={scrollToHome} className={`font-semibold transition-colors ${activeSection === 'home' ? 'text-primary border-b-2 border-primary pb-1' : 'text-body hover:text-foreground'}`}>Home</button>
-            <button onClick={scrollToFeatures} className={`font-semibold transition-colors ${activeSection === 'features' ? 'text-primary border-b-2 border-primary pb-1' : 'text-body hover:text-foreground'}`}>Features</button>
-            <button onClick={scrollToAbout} className={`font-semibold transition-colors ${activeSection === 'about' ? 'text-primary border-b-2 border-primary pb-1' : 'text-body hover:text-foreground'}`}>About</button>
+            <button 
+              onClick={scrollToHome} 
+              className={`font-bold text-base bg-transparent border-t-0 border-x-0 border-b-2 border-solid transition-all duration-300 pb-1 cursor-pointer ${
+                activeSection === 'home' 
+                  ? 'text-primary border-primary' 
+                  : 'text-slate-500 border-transparent hover:text-primary-dark'
+              }`}
+            >
+              Home
+            </button>
+            <button 
+              onClick={scrollToFeatures} 
+              className={`font-bold text-base bg-transparent border-t-0 border-x-0 border-b-2 border-solid transition-all duration-300 pb-1 cursor-pointer ${
+                activeSection === 'features' 
+                  ? 'text-primary border-primary' 
+                  : 'text-slate-500 border-transparent hover:text-primary-dark'
+              }`}
+            >
+              Features
+            </button>
+            <button 
+              onClick={scrollToAbout} 
+              className={`font-bold text-base bg-transparent border-t-0 border-x-0 border-b-2 border-solid transition-all duration-300 pb-1 cursor-pointer ${
+                activeSection === 'about' 
+                  ? 'text-primary border-primary' 
+                  : 'text-slate-500 border-transparent hover:text-primary-dark'
+              }`}
+            >
+              About
+            </button>
           </nav>
           
           <div className="flex items-center gap-4">
@@ -55,7 +129,7 @@ export function LandingPage() {
 
       {/* Hero Section */}
       <section className="w-full pt-20 pb-16 px-6 text-center max-w-[800px] mx-auto">
-        <h2 className="text-5xl md:text-[54px] leading-[1.15] font-serif font-bold text-[#0B1C30] mb-6">
+        <h2 className="text-5xl md:text-[54px] leading-[1.15] font-heading font-bold text-[#0B1C30] mb-6">
           Revolutionize Your Study Game with AI.
         </h2>
         <p className="text-lg md:text-xl text-[#434655] mb-10 leading-relaxed max-w-[680px] mx-auto">
@@ -79,39 +153,20 @@ export function LandingPage() {
       {/* Main Content - Split Layout */}
       <section id="features" className="w-full max-w-[1280px] mx-auto px-6 py-12 pb-24 flex flex-col lg:flex-row gap-12">
         
-        {/* Left Side: Mockup Image */}
+        {/* Left Side: Brand Logo Banner */}
         <div className="w-full lg:w-1/2 flex items-center justify-center min-h-[400px]">
-          {/* iMac Mockup Wrapper */}
-          <div className="w-full max-w-[600px] relative">
-            <div className="w-full aspect-[16/10] bg-slate-900 rounded-2xl border-[12px] border-slate-900 shadow-2xl relative overflow-hidden flex flex-col">
-              {/* Fake dashboard content inside the screen */}
-              <div className="flex-1 bg-[#1E293B] flex items-center justify-center p-8 relative">
-                {/* Decorative UI elements representing the AI dashboard */}
-                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at center, #38BDF8 0%, transparent 70%)' }}></div>
-                <div className="relative z-10 text-center">
-                  <div className="w-32 h-32 rounded-full border-4 border-[#38BDF8] mx-auto flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(56,189,248,0.5)]">
-                    <span className="text-4xl font-bold text-[#38BDF8]">AI</span>
-                  </div>
-                  <div className="flex flex-col gap-3 items-center">
-                    <div className="h-4 w-48 bg-slate-700 rounded-full"></div>
-                    <div className="h-3 w-64 bg-slate-700/50 rounded-full"></div>
-                    <div className="flex gap-4 mt-4 w-full px-8">
-                       <div className="h-16 flex-1 bg-slate-700/30 rounded-lg"></div>
-                       <div className="h-16 flex-1 bg-slate-700/30 rounded-lg"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* iMac Stand */}
-            <div className="w-1/4 h-16 bg-gradient-to-b from-slate-400 to-slate-300 mx-auto rounded-b-lg shadow-inner relative z-0" style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}></div>
-            <div className="w-1/3 h-2 bg-slate-300 mx-auto rounded-full shadow-md mt-[-2px]"></div>
+          <div className="w-full max-w-[500px] aspect-square rounded-3xl overflow-hidden shadow-xl border border-border/50 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <img 
+              src="/studyhub-logo-banner.jpg" 
+              alt="The StudyHub Brand Logo" 
+              className="w-full h-full object-cover select-none"
+            />
           </div>
         </div>
 
         {/* Right Side: Features Grid */}
         <div className="w-full lg:w-1/2 flex flex-col pt-4">
-          <h3 className="text-[28px] font-serif font-bold text-[#0B1C30] mb-8">
+          <h3 className="text-[28px] font-heading font-bold text-[#0B1C30] mb-8">
             Supercharge Your Workflow
           </h3>
           
@@ -179,8 +234,8 @@ export function LandingPage() {
       {/* About Section */}
       <section id="about" className="w-full bg-white py-20 px-6">
         <div className="max-w-[800px] mx-auto text-center">
-          <h3 className="text-3xl font-serif font-bold text-[#0B1C30] mb-6">
-            About AI Study Hub
+          <h3 className="text-3xl font-heading font-bold text-[#0B1C30] mb-6">
+            About LumiEdu
           </h3>
           <p className="text-lg text-[#434655] leading-relaxed mb-6">
             We are dedicated to transforming how university students interact with their course materials. 
@@ -189,24 +244,13 @@ export function LandingPage() {
           </p>
           <p className="text-lg text-[#434655] leading-relaxed">
             Our mission is to help you study smarter, not harder. Whether it's summarizing a 50-page thesis 
-            or finding that one specific concept buried in your lecture slides, AI Study Hub is your ultimate academic companion.
+            or finding that one specific concept buried in your lecture slides, LumiEdu is your ultimate academic companion.
           </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="w-full bg-[#F3F5F8] border-t border-border/50 py-8 px-6 mt-auto">
-        <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center justify-between text-sm text-[#434655]">
-          <p>© 2024 AI Study Hub. All rights reserved.</p>
-          <div className="flex items-center gap-6 mt-4 md:mt-0 font-medium">
-            <a href="#" className="hover:text-primary transition-colors">Home</a>
-            <a href="#" className="hover:text-primary transition-colors">Features</a>
-            <Link to="/login" className="hover:text-primary transition-colors">Login</Link>
-            <Link to="/login" className="hover:text-primary transition-colors">Register</Link>
-            <Link to="/help" className="hover:text-primary transition-colors">Help Center</Link>
-          </div>
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   )
 }

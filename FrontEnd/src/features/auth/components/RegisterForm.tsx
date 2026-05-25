@@ -86,57 +86,57 @@ export function RegisterForm() {
   const strengthLabels = ['Poor', 'Weak', 'Fair', 'Good', 'Strong']
 
   return (
-    <div className="w-full max-w-[440px] mx-auto bg-white rounded-2xl p-8 shadow-sm">
+    <div className="w-full max-w-[440px] mx-auto bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-xl text-slate-900 dark:text-slate-100">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#0B1C30] mb-2">Create an Account</h1>
-        <p className="text-[#434655] text-base">Start your journey to better grades today.</p>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Create an Account</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-base font-medium">Start your journey to better grades today.</p>
       </div>
 
       <form className="space-y-4" onSubmit={handleSubmit(({ fullName, email, password }) => registerMutation.mutate({ fullName, email, password }))}>
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-[#0B1C30]" htmlFor="fullName">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="fullName">
             Full Name
           </label>
           <Input 
             id="fullName" 
             type="text" 
             placeholder="e.g. Jane Doe"
-            startIcon={<User className="w-5 h-5 text-muted" />}
+            startIcon={<User className="w-5 h-5 text-slate-400 dark:text-slate-500" />}
             error={errors.fullName?.message} 
             {...register('fullName')} 
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-[#0B1C30]" htmlFor="email">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="email">
             Student Email
           </label>
           <Input 
             id="email" 
             type="email" 
             placeholder="jane@university.edu"
-            startIcon={<Mail className="w-5 h-5 text-muted" />}
+            startIcon={<Mail className="w-5 h-5 text-slate-400 dark:text-slate-500" />}
             error={errors.email?.message} 
             {...register('email')} 
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-[#0B1C30]" htmlFor="password">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="password">
             Password
           </label>
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            startIcon={<Lock className="w-5 h-5 text-muted" />}
+            startIcon={<Lock className="w-5 h-5 text-slate-400 dark:text-slate-500" />}
             endIcon={
               <button 
                 type="button" 
                 onClick={() => setShowPassword(!showPassword)}
-                className="focus:outline-none hover:text-foreground transition-colors"
+                className="focus:outline-none text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
               >
-                {showPassword ? <EyeOff className="w-5 h-5 text-muted" /> : <Eye className="w-5 h-5 text-muted" />}
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             }
             error={errors.password?.message}
@@ -151,33 +151,33 @@ export function RegisterForm() {
                   className={`h-1.5 flex-1 rounded-full ${
                     strength >= level 
                       ? level <= 2 ? 'bg-blue-500' : 'bg-green-500' 
-                      : 'bg-[#E5E7EB]'
+                      : 'bg-slate-200 dark:bg-slate-700'
                   }`} 
                 />
               ))}
             </div>
-            <span className="text-xs font-medium text-body w-10 text-right">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-450 w-10 text-right">
               {passwordValue ? strengthLabels[strength] : ''}
             </span>
           </div>
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-[#0B1C30]" htmlFor="confirmPassword">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="confirmPassword">
             Confirm Password
           </label>
           <Input
             id="confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
             placeholder="••••••••"
-            startIcon={<LockKeyhole className="w-5 h-5 text-muted" />}
+            startIcon={<LockKeyhole className="w-5 h-5 text-slate-400 dark:text-slate-500" />}
             endIcon={
               <button 
                 type="button" 
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="focus:outline-none hover:text-foreground transition-colors"
+                className="focus:outline-none text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
               >
-                {showConfirmPassword ? <EyeOff className="w-5 h-5 text-muted" /> : <Eye className="w-5 h-5 text-muted" />}
+                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             }
             error={errors.confirmPassword?.message}
@@ -189,8 +189,8 @@ export function RegisterForm() {
           <Checkbox 
             id="terms" 
             label={
-              <span className="text-sm text-body">
-                I agree to the <a href="#" className="text-primary hover:underline font-medium">Terms & Conditions</a>
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                I agree to the <a href="#" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold">Terms & Conditions</a>
               </span>
             }
             {...register('terms')}
@@ -206,7 +206,7 @@ export function RegisterForm() {
 
         <Button 
           type="submit" 
-          className="w-full h-11 text-base font-semibold mt-4 bg-[#3B41E3] hover:bg-[#3237c7] flex items-center justify-center gap-2" 
+          className="w-full h-11 text-base font-semibold mt-4 bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm flex items-center justify-center gap-2 rounded-xl active:scale-[0.98] transition-all" 
           disabled={registerMutation.isPending}
         >
           {registerMutation.isPending ? 'Creating Account...' : 'Create Account'}
@@ -215,48 +215,28 @@ export function RegisterForm() {
       </form>
 
       <div className="mt-8 mb-6 relative flex items-center">
-        <div className="flex-grow border-t border-border"></div>
-        <span className="flex-shrink-0 mx-4 text-xs font-bold text-muted uppercase tracking-wider">
+        <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+        <span className="flex-shrink-0 mx-4 text-xs font-bold text-slate-450 dark:text-slate-550 uppercase tracking-wider">
           Or sign up with
         </span>
-        <div className="flex-grow border-t border-border"></div>
+        <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
       </div>
 
       <div className="space-y-3">
         <Button 
           type="button" 
           variant="secondary" 
-          className="w-full h-11 bg-white border border-[#E5E7EB] hover:bg-gray-50 flex items-center justify-center gap-3 text-[#0B1C30] font-medium"
+          className="w-full h-11 bg-white border border-slate-300 hover:bg-slate-50 text-slate-900 font-semibold rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-700 flex items-center justify-center gap-3 cursor-pointer"
           onClick={() => handleRealSocialLogin('google')}
         >
           <GoogleIcon />
           Sign up with Google
         </Button>
-        <div className="flex gap-3">
-          <Button 
-            type="button" 
-            variant="secondary" 
-            className="flex-1 h-11 bg-white border border-[#E5E7EB] hover:bg-gray-50 flex items-center justify-center gap-2 text-[#0B1C30] font-medium"
-            onClick={() => handleRealSocialLogin('facebook')}
-          >
-            <FacebookIcon />
-            Facebook
-          </Button>
-          <Button 
-            type="button" 
-            variant="secondary" 
-            className="flex-1 h-11 bg-white border border-[#E5E7EB] hover:bg-gray-50 flex items-center justify-center gap-2 text-[#0B1C30] font-medium"
-            onClick={() => handleRealSocialLogin('apple')}
-          >
-            <AppleIcon />
-            Apple
-          </Button>
-        </div>
       </div>
 
-      <p className="mt-8 text-center text-[15px] text-body">
+      <p className="mt-8 text-center text-[15px] text-slate-500 dark:text-slate-400">
         Already have an account?{' '}
-        <Link to="/login" className="font-semibold text-[#3B41E3] hover:underline">
+        <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
           Login
         </Link>
       </p>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, X } from 'lucide-react'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface ExpressCheckoutModalProps {
   provider: 'apple' | 'google' | 'paypal'
@@ -8,46 +9,6 @@ interface ExpressCheckoutModalProps {
   open: boolean
   onClose: () => void
   onConfirm: () => void
-}
-
-const providerConfigs = {
-  apple: {
-    title: 'Apple Pay',
-    color: 'bg-black text-white dark:bg-white dark:text-black hover:bg-slate-900 dark:hover:bg-slate-100',
-    confirmText: 'Confirm Apple Pay',
-    infoLabel: 'Payment Method Info',
-    infoValue: 'Device Wallet (Apple Pay Default)',
-    icon: (
-      <svg className="size-8 fill-current text-slate-900 dark:text-white" viewBox="0 0 24 24">
-        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.2.67-2.92 1.49-.62.71-1.16 1.85-1.01 2.96 1.12.09 2.27-.57 2.94-1.39z" />
-      </svg>
-    ),
-  },
-  google: {
-    title: 'Google Pay',
-    color: 'bg-black text-white dark:bg-white dark:text-black hover:bg-slate-900 dark:hover:bg-slate-100',
-    confirmText: 'Confirm Google Pay',
-    infoLabel: 'Google Pay Account',
-    infoValue: 'alex.rivera@example.com',
-    icon: (
-      <div className="flex items-center gap-1.5 select-none font-bold">
-        <span className="text-3xl font-extrabold text-[#4285F4]">G</span>
-        <span className="text-2xl font-bold text-slate-800 dark:text-slate-200">Pay</span>
-      </div>
-    ),
-  },
-  paypal: {
-    title: 'PayPal',
-    color: 'bg-[#ffc439] hover:bg-[#f2b522] text-[#003087] shadow-sm shadow-[#ffc439]/15',
-    confirmText: 'Continue with PayPal',
-    infoLabel: 'PayPal Account',
-    infoValue: 'alex.rivera@example.com',
-    icon: (
-      <span className="text-2xl italic font-black tracking-tight text-[#003087] select-none">
-        PayPal
-      </span>
-    ),
-  },
 }
 
 export function ExpressCheckoutModal({
@@ -59,6 +20,48 @@ export function ExpressCheckoutModal({
 }: ExpressCheckoutModalProps) {
   const [isConfirming, setIsConfirming] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation()
+
+  const providerConfigs = {
+    apple: {
+      title: 'Apple Pay',
+      color: 'bg-black text-white dark:bg-white dark:text-black hover:bg-slate-900 dark:hover:bg-slate-100',
+      confirmText: `${t.upgrade.confirmPayment} (Apple Pay)`,
+      infoLabel: t.upgrade.paymentMethodLabel,
+      infoValue: t.upgrade.deviceWalletApplePay,
+      icon: (
+        <svg className="size-8 fill-current text-slate-900 dark:text-white" viewBox="0 0 24 24">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.2.67-2.92 1.49-.62.71-1.16 1.85-1.01 2.96 1.12.09 2.27-.57 2.94-1.39z" />
+        </svg>
+      ),
+    },
+    google: {
+      title: 'Google Pay',
+      color: 'bg-black text-white dark:bg-white dark:text-black hover:bg-slate-900 dark:hover:bg-slate-100',
+      confirmText: `${t.upgrade.confirmPayment} (Google Pay)`,
+      infoLabel: t.upgrade.paymentMethodLabel,
+      infoValue: 'alex.rivera@example.com',
+      icon: (
+        <div className="flex items-center gap-1.5 select-none font-bold">
+          <span className="text-3xl font-extrabold text-[#4285F4]">G</span>
+          <span className="text-2xl font-bold text-slate-800 dark:text-slate-200">Pay</span>
+        </div>
+      ),
+    },
+    paypal: {
+      title: 'PayPal',
+      color: 'bg-[#ffc439] hover:bg-[#f2b522] text-[#003087] shadow-sm shadow-[#ffc439]/15',
+      confirmText: `${t.upgrade.confirmPayment} (PayPal)`,
+      infoLabel: t.upgrade.paymentMethodLabel,
+      infoValue: 'alex.rivera@example.com',
+      icon: (
+        <span className="text-2xl italic font-black tracking-tight text-[#003087] select-none">
+          PayPal
+        </span>
+      ),
+    },
+  }
+
   const config = providerConfigs[provider]
 
   useEffect(() => {
@@ -154,7 +157,7 @@ export function ExpressCheckoutModal({
             <button
               onClick={onClose}
               disabled={isConfirming}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
               aria-label="Close modal"
             >
               <X className="size-4" />
@@ -169,24 +172,24 @@ export function ExpressCheckoutModal({
                 id="express-modal-title"
                 className="text-xl font-extrabold text-slate-900 dark:text-white"
               >
-                Express Checkout with {config.title}
+                {t.upgrade.expressCheckout} ({config.title})
               </h2>
             </div>
 
             {/* Billing details info box */}
-            <div className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-850 rounded-2xl p-4 mb-6 space-y-3.5">
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-                <span>Plan Selected</span>
-                <span className="text-slate-850 dark:text-slate-200 font-bold">Pro Plan (Annual)</span>
+            <div className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-6 space-y-3.5">
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-550 dark:text-slate-400">
+                <span>{t.upgrade.planSelected}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold">{t.upgrade.proPlanAnnual}</span>
               </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-850" />
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <div className="h-px bg-slate-100 dark:bg-slate-800" />
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-550 dark:text-slate-400">
                 <span>{config.infoLabel}</span>
-                <span className="text-slate-850 dark:text-slate-200 font-bold">{config.infoValue}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold">{config.infoValue}</span>
               </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-850" />
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-                <span>Total Amount</span>
+              <div className="h-px bg-slate-100 dark:bg-slate-800" />
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-550 dark:text-slate-400">
+                <span>{t.upgrade.totalAmount}</span>
                 <span className="text-[#2563eb] dark:text-blue-400 font-extrabold text-base">
                   ${amount.toFixed(2)}
                 </span>
@@ -203,7 +206,7 @@ export function ExpressCheckoutModal({
                 {isConfirming ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
-                    Processing...
+                    {t.upgrade.processing}
                   </>
                 ) : (
                   config.confirmText
@@ -212,9 +215,9 @@ export function ExpressCheckoutModal({
               <button
                 onClick={onClose}
                 disabled={isConfirming}
-                className="w-full h-12 border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-400 font-bold rounded-xl flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-850 transition-all cursor-pointer select-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                className="w-full h-12 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold rounded-xl flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer select-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
               >
-                Cancel
+                {t.common.cancel}
               </button>
             </div>
           </motion.div>

@@ -694,7 +694,18 @@ const QUIZ_QUESTIONS = [
 export function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>(() => {
     const saved = localStorage.getItem('ai_study_hub_documents')
-    return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as DocumentItem[]
+        return parsed.map(doc => ({
+          ...doc,
+          uploadedDateObj: new Date(doc.uploadedDateObj)
+        }))
+      } catch (e) {
+        return INITIAL_DOCUMENTS
+      }
+    }
+    return INITIAL_DOCUMENTS
   })
 
   useEffect(() => {
@@ -877,7 +888,7 @@ export function DocumentsPage() {
         const db = getDocContent(selectedDocForChat)
         aiText += `tôi đã tạo nhanh các flashcard ôn tập sau:\n\n` + db.flashcards.map((fc, idx) => `Thẻ ${idx+1}:\n- Câu hỏi: ${fc.q}\n- Trả lời: ${fc.a}`).join('\n\n')
       } else if (lowerText.includes('trắc nghiệm') || lowerText.includes('đố') || lowerText.includes('quiz')) {
-        aiText += `đây là 1 câu hỏi ôn tập nhanh cho bạn:\n\n**Câu hỏi**: Đâu là khái niệm cốt lõi được định nghĩa ở mục 1.1 của tài liệu này?\n\n*Gợi ý*: Trả lời trực tiếp để tôi kiểm tra xem bạn đã nắm vững kiến thức chưa!`
+        aiText += `đây là 1 câu hỏi ôn tập nhanh cho bạn:\n\nCâu hỏi: Đâu là khái niệm cốt lõi được định nghĩa ở mục 1.1 của tài liệu này?\n\n*Gợi ý*: Trả lời trực tiếp để tôi kiểm tra xem bạn đã nắm vững kiến thức chưa!`
       } else {
         aiText += `tôi ghi nhận câu hỏi về "${textToSend}". Đây là chủ đề cốt lõi thuộc phần nghiên cứu chuyên ngành ${selectedDocForChat.subject.toLowerCase()}.\n\nTheo dữ liệu phân tích, nội dung này liên quan chặt chẽ đến phương pháp luận tổng quát ở chương đầu. Bạn cần tôi trích xuất thêm chi tiết ở mục nào không?`
       }
@@ -901,7 +912,7 @@ export function DocumentsPage() {
 
     setTimeout(() => {
       const db = getDocContent(doc)
-      const textContent = `=== AI STUDY HUB - WORKSPACE DOCUMENT ===\nDocument ID: ${doc.id}\nTitle: ${doc.title || doc.fileName}\nSubject: ${doc.subject}\nFile Size: ${doc.size}\nUpload Info: ${doc.uploadedAt}\n\n=== DOCUMENT PREVIEW ===\n${db.previewText}\n\n=== AI GENERATED SUMMARY ===\n${db.summaryBullets.join('\n')}\n`
+      const textContent = `=== LUMIEDU - WORKSPACE DOCUMENT ===\nDocument ID: ${doc.id}\nTitle: ${doc.title || doc.fileName}\nSubject: ${doc.subject}\nFile Size: ${doc.size}\nUpload Info: ${doc.uploadedAt}\n\n=== DOCUMENT PREVIEW ===\n${db.previewText}\n\n=== AI GENERATED SUMMARY ===\n${db.summaryBullets.join('\n')}\n`
       
       const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' })
       const url = URL.createObjectURL(blob)
@@ -972,14 +983,14 @@ export function DocumentsPage() {
     switch (status) {
       case 'ANALYZED':
         return (
-          <span className="flex items-center gap-1 rounded-md border border-blue-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-blue-600 shadow-xs transition-all duration-300">
+          <span className="flex items-center gap-1 rounded-md border border-blue-200 dark:border-blue-900 bg-white dark:bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400 shadow-xs transition-all duration-300">
             <Sparkles className="h-3 w-3 animate-pulse text-blue-500" />
             ANALYZED
           </span>
         )
       case 'PENDING':
         return (
-          <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+          <span className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
             PENDING
           </span>
         )
@@ -992,7 +1003,7 @@ export function DocumentsPage() {
       case 'QUEUED':
       default:
         return (
-          <span className="rounded-md border border-gray-100 bg-gray-50 px-2 py-0.5 text-[10px] font-semibold text-gray-400">
+          <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
             QUEUED
           </span>
         )
@@ -1070,8 +1081,8 @@ export function DocumentsPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-slate-50 p-5 border border-slate-200">
-                  <h4 className="text-base font-extrabold text-slate-800 leading-relaxed">
+                <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-5 border border-slate-200 dark:border-slate-700">
+                  <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed">
                     {QUIZ_QUESTIONS[currentQuizQuestion].q}
                   </h4>
                 </div>
@@ -1085,15 +1096,15 @@ export function DocumentsPage() {
                     let optionClass = "flex items-center justify-between w-full p-4 rounded-xl border text-left font-semibold text-sm transition-all duration-200 focus:outline-none ";
                     
                     if (!hasAnswered) {
-                      optionClass += "border-slate-200 bg-white hover:border-[#2563eb]/50 hover:bg-[#2563eb]/5 text-slate-700";
+                      optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2563eb]/50 hover:bg-[#2563eb]/5 text-slate-700 dark:text-slate-350";
                     } else if (isSelected) {
                       optionClass += isCorrect 
-                        ? "border-emerald-500 bg-emerald-50/50 text-emerald-800" 
-                        : "border-rose-500 bg-rose-50/50 text-rose-800";
+                        ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350" 
+                        : "border-rose-500 bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-350";
                     } else if (isCorrect) {
-                      optionClass += "border-emerald-500 bg-emerald-50/50 text-emerald-800";
+                      optionClass += "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350";
                     } else {
-                      optionClass += "border-slate-200 bg-white text-slate-400 opacity-60";
+                      optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-650 opacity-60";
                     }
 
                     return (
@@ -1111,10 +1122,10 @@ export function DocumentsPage() {
                         <div className="flex items-center gap-3">
                           <span className={cn(
                             "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold border transition-colors",
-                            !hasAnswered && (isSelected ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-slate-50 border-slate-200 text-slate-400"),
+                            !hasAnswered && (isSelected ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-550"),
                             hasAnswered && isCorrect && "bg-emerald-500 text-white border-emerald-500",
                             hasAnswered && isSelected && !isCorrect && "bg-rose-500 text-white border-rose-500",
-                            hasAnswered && !isSelected && !isCorrect && "bg-slate-100 border-slate-200 text-slate-400"
+                            hasAnswered && !isSelected && !isCorrect && "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500"
                           )}>
                             {String.fromCharCode(65 + idx)}
                           </span>
@@ -1142,8 +1153,8 @@ export function DocumentsPage() {
                 </div>
 
                 {selectedQuizAnswer !== null && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4.5 text-xs text-amber-900 leading-relaxed flex gap-3.5 animate-fade-in shadow-xs">
-                    <div className="bg-amber-100 rounded-lg p-2 text-amber-700 h-fit shrink-0">
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20 p-4.5 text-xs text-amber-900 dark:text-amber-300 leading-relaxed flex gap-3.5 animate-fade-in shadow-xs">
+                    <div className="bg-amber-100 dark:bg-amber-900/40 rounded-lg p-2 text-amber-700 dark:text-amber-400 h-fit shrink-0">
                       <svg className="h-4.5 w-4.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
                         <path d="M9 18h6" />
@@ -1152,7 +1163,7 @@ export function DocumentsPage() {
                     </div>
                     <div className="space-y-1">
                       <p className="font-extrabold">AI Tip & Explanation:</p>
-                      <p className="font-medium text-amber-800">{QUIZ_QUESTIONS[currentQuizQuestion].explain}</p>
+                      <p className="font-medium text-amber-800 dark:text-amber-350">{QUIZ_QUESTIONS[currentQuizQuestion].explain}</p>
                     </div>
                   </div>
                 )}
@@ -1184,7 +1195,7 @@ export function DocumentsPage() {
             ) : (
               <div className="py-6 text-center space-y-6 animate-fade-in">
                 <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
-                  <div className="absolute h-full w-full rounded-full border-4 border-slate-100" />
+                  <div className="absolute h-full w-full rounded-full border-4 border-slate-100 dark:border-slate-800" />
                   <div 
                     className="absolute h-full w-full rounded-full border-4 border-emerald-500 border-t-transparent"
                     style={{ 
@@ -1192,18 +1203,18 @@ export function DocumentsPage() {
                       transition: 'transform 1.5s ease-out'
                     }}
                   />
-                  <span className="text-3xl font-black text-slate-800">{quizScore}/{QUIZ_QUESTIONS.length}</span>
+                  <span className="text-3xl font-black text-slate-800 dark:text-slate-100">{quizScore}/{QUIZ_QUESTIONS.length}</span>
                 </div>
 
                 <div className="space-y-2 max-w-sm mx-auto">
-                  <h4 className="text-xl font-extrabold text-slate-800 leading-tight">
+                  <h4 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
                     {quizScore === QUIZ_QUESTIONS.length 
                       ? "Excellent Mastery!" 
                       : quizScore >= 2 
                         ? "Great Achievement!" 
                         : "Keep Studying!"}
                   </h4>
-                  <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
                     {quizScore === QUIZ_QUESTIONS.length 
                       ? "Perfect Score! You have successfully mastered Creational, Structural, and Behavioral patterns." 
                       : quizScore >= 2 
@@ -1254,7 +1265,7 @@ export function DocumentsPage() {
           {isUploading ? (
             <div className="py-8 text-center space-y-6">
               <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
-                <div className="absolute h-full w-full rounded-full border-4 border-slate-100" />
+                <div className="absolute h-full w-full rounded-full border-4 border-slate-100 dark:border-slate-800" />
                 <div
                   className="absolute h-full w-full rounded-full border-4 border-[#2563eb] border-t-transparent animate-spin"
                   style={{ animationDuration: '1.2s' }}
@@ -1262,22 +1273,22 @@ export function DocumentsPage() {
                 <span className="text-xl font-black text-[#2563eb]">{uploadProgress}%</span>
               </div>
               <div className="space-y-2 max-w-sm mx-auto">
-                <h4 className="text-base font-bold text-slate-800 animate-pulse">
+                <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 animate-pulse">
                   {uploadStepMsg}
                 </h4>
-                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                   <div
                     className="bg-[#2563eb] h-1.5 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
-                <p className="text-xs text-slate-400">Please keep this window open while AI processes your document</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Please keep this window open while AI processes your document</p>
               </div>
             </div>
           ) : (
             <>
-              <div className="space-y-1.5">
-                <label htmlFor="doc-title-input" className="text-sm font-bold text-slate-700">
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="doc-title-input" className="text-sm font-bold text-slate-700 dark:text-slate-300">
                   Document Title (Optional)
                 </label>
                 <Input
@@ -1288,14 +1299,14 @@ export function DocumentsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-left">
                 <div className="space-y-1.5">
-                  <label htmlFor="subject-select" className="text-sm font-bold text-slate-700">Subject</label>
+                  <label htmlFor="subject-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">Subject</label>
                   <select
                     id="subject-select"
                     value={newDocSubject}
                     onChange={(e) => setNewDocSubject(e.target.value as any)}
-                    className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-3 pr-10 text-base text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
+                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
                     <option value="GENERAL">General/Other</option>
                     <option value="MATHEMATICS">Mathematics</option>
@@ -1308,12 +1319,12 @@ export function DocumentsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="type-select" className="text-sm font-bold text-slate-700">File Type</label>
+                  <label htmlFor="type-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">File Type</label>
                   <select
                     id="type-select"
                     value={newDocType}
                     onChange={(e) => setNewDocType(e.target.value as any)}
-                    className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-3 pr-10 text-base text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
+                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
                     <option value="pdf">PDF File (.pdf)</option>
                     <option value="word">Word Document (.docx)</option>
@@ -1324,8 +1335,8 @@ export function DocumentsPage() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold text-slate-700">Document File</label>
+              <div className="space-y-1.5 text-left">
+                <label className="text-sm font-bold text-slate-700 dark:text-slate-350">Document File</label>
                 <div
                   onClick={() => {
                     const input = document.createElement('input')
@@ -1343,27 +1354,27 @@ export function DocumentsPage() {
                     input.click()
                   }}
                   className={cn(
-                    'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center cursor-pointer transition-all duration-300',
+                    'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-8 text-center cursor-pointer transition-all duration-300',
                     selectedFile
-                      ? 'border-blue-500 bg-blue-50/20'
-                      : 'hover:border-blue-500/50 hover:bg-slate-50'
+                      ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20'
+                      : 'hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 bg-slate-50/30'
                   )}
                 >
                   <div className={cn(
                     'flex h-12 w-12 items-center justify-center rounded-full shadow-xs transition-colors',
-                    selectedFile ? 'bg-[#2563eb] text-white' : 'bg-blue-50 text-[#2563eb]'
+                    selectedFile ? 'bg-[#2563eb] text-white' : 'bg-blue-50 dark:bg-slate-800 text-[#2563eb] dark:text-blue-400'
                   )}>
                     <CloudUpload className="h-6 w-6" />
                   </div>
                   {selectedFile ? (
                     <div className="mt-4">
-                      <p className="text-sm font-bold text-slate-800">{selectedFile.name}</p>
-                      <p className="text-xs text-slate-400 mt-1">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to process</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedFile.name}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to process</p>
                     </div>
                   ) : (
                     <div className="mt-4">
-                      <p className="text-sm font-bold text-slate-800">Drag and drop your document here</p>
-                      <p className="text-xs text-slate-400 mt-1">or click to browse your folders (PDF, DOCX, TXT, PNG, PPTX up to 50MB)</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Drag and drop your document here</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">or click to browse your folders (PDF, DOCX, TXT, PNG, PPTX up to 50MB)</p>
                     </div>
                   )}
                 </div>
@@ -1396,17 +1407,17 @@ export function DocumentsPage() {
 
       {/* AI Quick Chat Drawer */}
       {isChatDrawerOpen && selectedDocForChat && (
-        <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white border-l border-slate-200 shadow-2xl animate-slide-in-right">
-          <div className="flex items-center justify-between border-b border-slate-200 p-4 bg-slate-50">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-[#2563eb]">
+        <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl animate-slide-in-right">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-850 p-4 bg-slate-50 dark:bg-slate-850">
+            <div className="flex items-center gap-3 text-left">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-[#2563eb] dark:text-blue-400">
                 <Sparkles className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h3 className="truncate text-sm font-bold text-slate-800">
+                <h3 className="truncate text-sm font-bold text-slate-800 dark:text-slate-100">
                   AI Study Assistant
                 </h3>
-                <p className="truncate text-xs text-slate-400 font-medium">
+                <p className="truncate text-xs text-slate-400 dark:text-slate-500 font-medium">
                   Document: {selectedDocForChat.title || selectedDocForChat.fileName}
                 </p>
               </div>
@@ -1414,29 +1425,29 @@ export function DocumentsPage() {
             
             <button
               onClick={() => setIsChatDrawerOpen(false)}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-all"
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-250 transition-all cursor-pointer"
               aria-label="Close Chat"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 dark:bg-slate-950">
             {(documentChats[selectedDocForChat.id] || []).map((msg, index) => (
               <div
                 key={index}
                 className={cn(
-                  'flex max-w-[85%] flex-col rounded-2xl p-3.5 text-sm shadow-xs transition-all',
+                  'flex max-w-[85%] flex-col rounded-2xl p-3.5 text-sm shadow-xs transition-all text-left',
                   msg.sender === 'user'
-                    ? 'ml-auto bg-[#2563eb] text-white rounded-br-none'
-                    : 'bg-white text-slate-700 border border-slate-100 rounded-bl-none'
+                    ? 'ml-auto bg-blue-600 text-white rounded-br-none'
+                    : 'bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-800/80 rounded-bl-none'
                 )}
               >
                 <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                 <span
                   className={cn(
                     'mt-1.5 self-end text-[9px] font-semibold',
-                    msg.sender === 'user' ? 'text-blue-200' : 'text-slate-400'
+                    msg.sender === 'user' ? 'text-blue-200' : 'text-slate-400 dark:text-slate-500'
                   )}
                 >
                   {msg.time}
@@ -1445,22 +1456,22 @@ export function DocumentsPage() {
             ))}
           </div>
 
-          <div className="border-t border-slate-100 px-4 py-2 flex items-center gap-2 overflow-x-auto bg-white whitespace-nowrap scrollbar-none">
+          <div className="border-t border-slate-100 dark:border-slate-800 px-4 py-2 flex items-center gap-2 overflow-x-auto bg-white dark:bg-slate-900 whitespace-nowrap scrollbar-none">
             <button
               onClick={(e) => handleSendChatMessage(e, 'Tóm tắt tài liệu này giúp tôi')}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 hover:border-[#2563eb]/45 hover:text-[#2563eb] transition-all"
+              className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 text-xs text-slate-600 dark:text-slate-400 hover:border-blue-500/40 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
             >
               📝 Tóm tắt chính
             </button>
             <button
               onClick={(e) => handleSendChatMessage(e, 'Tạo các flashcard ôn tập')}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 hover:border-[#2563eb]/45 hover:text-[#2563eb] transition-all"
+              className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 text-xs text-slate-600 dark:text-slate-400 hover:border-blue-500/40 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
             >
               🧠 Tạo Flashcard
             </button>
             <button
               onClick={(e) => handleSendChatMessage(e, 'Trắc nghiệm đố vui kiến thức')}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 hover:border-[#2563eb]/45 hover:text-[#2563eb] transition-all"
+              className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 text-xs text-slate-600 dark:text-slate-400 hover:border-blue-500/40 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer"
             >
               ❓ Đố kiến thức
             </button>
@@ -1468,14 +1479,14 @@ export function DocumentsPage() {
 
           <form
             onSubmit={handleSendChatMessage}
-            className="border-t border-slate-200 p-4 bg-white flex items-center gap-2"
+            className="border-t border-slate-200 dark:border-slate-800 p-4 bg-white dark:bg-slate-900 flex items-center gap-2"
           >
             <input
               type="text"
               placeholder="Ask anything about this document..."
               value={newChatMessage}
               onChange={(e) => setNewChatMessage(e.target.value)}
-              className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-[#2563eb]/50 focus:bg-white focus:outline-none transition-all"
+              className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-[#2563eb]/50 focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all"
             />
             <Button
               type="submit"
@@ -1542,11 +1553,11 @@ export function DocumentsPage() {
 
             {activePreviewTab === 'preview' && (
               <div className="space-y-4">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 max-h-[350px] overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5 max-h-[350px] overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 dark:text-slate-350 whitespace-pre-wrap">
                   {getDocContent(activePreviewDoc)?.previewText}
                 </div>
-                <div className="flex justify-between items-center bg-blue-50/40 rounded-xl p-4 border border-blue-100/50">
-                  <div className="flex items-center gap-3 text-sm text-[#2563eb] font-medium">
+                <div className="flex justify-between items-center bg-blue-50/40 dark:bg-blue-950/20 rounded-xl p-4 border border-blue-100/50 dark:border-blue-900/30">
+                  <div className="flex items-center gap-3 text-sm text-[#2563eb] dark:text-blue-400 font-medium">
                     <BrainCircuit className="h-5 w-5" />
                     AI has indexed this document successfully
                   </div>
@@ -1557,7 +1568,7 @@ export function DocumentsPage() {
                       setActivePreviewDoc(null)
                       handleOpenChat(doc)
                     }}
-                    className="text-[#2563eb] hover:bg-blue-50/80 font-semibold text-sm rounded-lg"
+                    className="text-[#2563eb] dark:text-blue-400 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 font-semibold text-sm rounded-lg"
                   >
                     Discuss with AI assistant →
                   </Button>
@@ -1567,19 +1578,19 @@ export function DocumentsPage() {
 
             {activePreviewTab === 'summary' && (
               <div className="space-y-5 py-2">
-                <div className="flex gap-4 items-start bg-blue-50/30 rounded-2xl p-5 border border-blue-100/40">
-                  <div className="bg-blue-100 rounded-xl p-2.5 text-[#2563eb]">
+                <div className="flex gap-4 items-start bg-blue-50/30 dark:bg-blue-950/20 rounded-2xl p-5 border border-blue-100/40 dark:border-blue-900/30">
+                  <div className="bg-blue-100 dark:bg-blue-950/60 rounded-xl p-2.5 text-[#2563eb] dark:text-blue-400">
                     <Sparkles className="h-6 w-6 stroke-[1.8] animate-pulse" />
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-slate-800 text-[16px]">AI Executive Summary</h4>
-                    <p className="text-sm text-slate-400 mt-1">Here is a comprehensive semantic summary of the uploaded document, generated instantly by deep reading.</p>
+                    <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-[16px]">AI Executive Summary</h4>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Here is a comprehensive semantic summary of the uploaded document, generated instantly by deep reading.</p>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
                   {getDocContent(activePreviewDoc)?.summaryBullets.map((bullet, idx) => (
-                    <div key={idx} className="flex gap-3 items-start text-sm text-slate-700 leading-relaxed">
+                    <div key={idx} className="flex gap-3 items-start text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                       <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
                       <p>{bullet}</p>
                     </div>
@@ -1594,7 +1605,7 @@ export function DocumentsPage() {
                   const db = getDocContent(activePreviewDoc)
                   const currentCard = db.flashcards[activeFlashcardIndex]
 
-                  if (!currentCard) return <p className="text-sm text-slate-400">No flashcards available</p>
+                  if (!currentCard) return <p className="text-sm text-slate-400 dark:text-slate-500">No flashcards available</p>
 
                   return (
                     <>
@@ -1603,20 +1614,20 @@ export function DocumentsPage() {
                         className={cn(
                           'relative h-56 w-full max-w-lg rounded-2xl border cursor-pointer select-none shadow-xs transition-all duration-500 preserve-3d flex items-center justify-center p-8 text-center hover:shadow-md',
                           isFlashcardFlipped
-                            ? 'border-blue-200 bg-blue-50/30'
-                            : 'border-slate-200 bg-white'
+                            ? 'border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-950/20'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
                         )}
                       >
                         {isFlashcardFlipped ? (
                           <div className="space-y-3">
-                            <span className="text-[10px] uppercase tracking-widest text-[#2563eb] font-bold bg-blue-100/60 px-2 py-0.5 rounded">Answer / Mặt B</span>
-                            <p className="text-lg font-bold text-slate-800 leading-relaxed">{currentCard.a}</p>
+                            <span className="text-[10px] uppercase tracking-widest text-[#2563eb] dark:text-blue-400 font-bold bg-blue-100/60 dark:bg-blue-950/60 px-2 py-0.5 rounded">Answer / Mặt B</span>
+                            <p className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-relaxed">{currentCard.a}</p>
                           </div>
                         ) : (
                           <div className="space-y-3">
-                            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold bg-slate-50 px-2 py-0.5 rounded">Question / Mặt A</span>
-                            <p className="text-xl font-black text-slate-800 leading-relaxed">{currentCard.q}</p>
-                            <p className="text-xs text-slate-400 pt-4">Click card to reveal answer</p>
+                            <span className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded">Question / Mặt A</span>
+                            <p className="text-xl font-black text-slate-800 dark:text-slate-100 leading-relaxed">{currentCard.q}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 pt-4">Click card to reveal answer</p>
                           </div>
                         )}
                       </div>
@@ -1634,7 +1645,7 @@ export function DocumentsPage() {
                         >
                           ← Previous
                         </Button>
-                        <span className="text-sm text-slate-500 font-semibold">
+                        <span className="text-sm text-slate-500 dark:text-slate-400 font-semibold">
                           {activeFlashcardIndex + 1} / {db.flashcards.length}
                         </span>
                         <Button
@@ -1682,7 +1693,7 @@ export function DocumentsPage() {
             
             {/* Grid metrics blocks */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-border p-4 bg-white flex flex-col justify-between">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 bg-white dark:bg-slate-900 flex flex-col justify-between">
                 <span className="text-xs text-muted font-bold uppercase tracking-wider">Total Files</span>
                 <span className="text-3xl font-black text-foreground mt-2">{documents.length}</span>
                 <span className="text-[10px] text-emerald-600 font-bold mt-1 flex items-center gap-0.5">
@@ -1691,7 +1702,7 @@ export function DocumentsPage() {
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-border p-4 bg-white flex flex-col justify-between">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 bg-white dark:bg-slate-900 flex flex-col justify-between">
                 <span className="text-xs text-muted font-bold uppercase tracking-wider">Cloud Storage</span>
                 <span className="text-3xl font-black text-foreground mt-2">{totalStorageFormatted} <span className="text-sm font-semibold">MB</span></span>
                 <span className="text-[10px] text-muted font-semibold mt-1">of 100 MB maximum capacity</span>

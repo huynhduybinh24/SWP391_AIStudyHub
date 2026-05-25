@@ -74,13 +74,13 @@ export function LoginForm() {
       {/* Top subtle gradient border */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 rounded-t-2xl z-10"></div>
       
-      <div className="bg-white rounded-2xl shadow-sm border border-border p-6 pt-8">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 pt-8 shadow-xl text-slate-900 dark:text-slate-100">
         <div className="flex flex-col items-center gap-1.5 text-center mb-6">
-          <div className="flex items-center justify-center gap-2">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
-            <h1 className="text-2xl font-bold text-primary">AI Study Hub</h1>
+          <div className="flex items-center justify-center gap-3">
+            <img src="/logo.png" alt="Logo" className="w-[52px] h-[52px] object-contain" />
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">LumiEdu</h1>
           </div>
-          <p className="text-sm text-body">Welcome back. Please enter your details.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Welcome back. Please enter your details.</p>
         </div>
 
         <form
@@ -88,32 +88,32 @@ export function LoginForm() {
           onSubmit={handleSubmit((values) => login.mutate(values))}
         >
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-foreground" htmlFor="email">
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="email">
               Email address
             </label>
             <Input 
               id="email" 
               type="email" 
               placeholder="student@university.edu"
-              startIcon={<Mail className="w-5 h-5 text-muted" />}
+              startIcon={<Mail className="w-5 h-5 text-slate-400 dark:text-slate-500" />}
               error={errors.email?.message} 
               {...register('email')} 
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-foreground" htmlFor="password">
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="password">
               Password
             </label>
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
-              startIcon={<Lock className="w-5 h-5 text-muted" />}
+              startIcon={<Lock className="w-5 h-5 text-slate-400 dark:text-slate-500" />}
               endIcon={
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
-                  className="focus:outline-none hover:text-foreground transition-colors"
+                  className="focus:outline-none text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -124,8 +124,8 @@ export function LoginForm() {
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <Checkbox id="remember" label="Remember me" />
-            <Link to="/reset-password" className="text-sm font-semibold text-primary hover:underline">
+            <Checkbox id="remember" label={<span className="text-slate-650 dark:text-slate-400">Remember me</span>} />
+            <Link to="/reset-password" className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
               Forgot password?
             </Link>
           </div>
@@ -136,51 +136,34 @@ export function LoginForm() {
             </p>
           ) : null}
 
-          <Button type="submit" className="w-full h-10 text-base font-semibold mt-2" disabled={login.isPending}>
+          <Button type="submit" className="w-full h-10 text-base font-semibold mt-2 bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm rounded-xl active:scale-[0.98] transition-all" disabled={login.isPending}>
             {login.isPending ? 'Logging in...' : 'Log in'}
           </Button>
         </form>
 
         <div className="mt-6">
           <div className="relative flex items-center mb-5">
-            <div className="flex-grow border-t border-border"></div>
-            <span className="flex-shrink-0 mx-4 text-xs font-semibold text-muted uppercase tracking-wider">
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+            <span className="flex-shrink-0 mx-4 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               Or continue with
             </span>
-            <div className="flex-grow border-t border-border"></div>
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <Button 
-              type="button" 
-              variant="secondary" 
-              className="h-10"
-              onClick={() => handleRealSocialLogin('google')}
-            >
-              <GoogleIcon />
-            </Button>
-            <Button 
-              type="button" 
-              variant="secondary" 
-              className="h-10"
-              onClick={() => handleRealSocialLogin('facebook')}
-            >
-              <FacebookIcon />
-            </Button>
-            <Button 
-              type="button" 
-              variant="secondary" 
-              className="h-10"
-              onClick={() => handleRealSocialLogin('github')}
-            >
-              <GithubIcon />
-            </Button>
-          </div>
+          <Button 
+            type="button" 
+            variant="secondary" 
+            className="w-full h-11 bg-white border border-slate-300 hover:bg-slate-50 text-slate-900 font-semibold rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-700 flex items-center justify-center gap-3 cursor-pointer"
+            onClick={() => handleRealSocialLogin('google')}
+          >
+            <GoogleIcon />
+            Continue with Google
+          </Button>
         </div>
 
-        <p className="mt-6 text-center text-sm text-body">
+        <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
           Don't have an account?{' '}
-          <Link to="/register" className="font-semibold text-primary hover:underline">
+          <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
             Register
           </Link>
         </p>

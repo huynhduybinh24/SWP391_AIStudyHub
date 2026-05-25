@@ -1,0 +1,299 @@
+import React, { useState } from 'react'
+import { Sparkles, FileText, Send, MessageSquare } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { SharedFile } from './SharedFilesTable'
+import { motion } from 'framer-motion'
+import { useTranslation } from '@/context/LanguageContext'
+
+export interface CommentItem {
+  id: string
+  user: string
+  text: string
+  time: string
+  avatarBg: string
+}
+
+interface WorkspaceRightPanelProps {
+  file: SharedFile | null
+  comments: CommentItem[]
+  onAddComment: (text: string) => void
+  onRegenerateSummary: () => void
+  isRegenerating: boolean
+  onOpenFullSummary: () => void
+  onGenerateQuiz: () => void
+  onAskAI: () => void
+}
+
+export function WorkspaceRightPanel({
+  file,
+  comments,
+  onAddComment,
+  onRegenerateSummary,
+  isRegenerating,
+  onOpenFullSummary,
+  onGenerateQuiz,
+  onAskAI
+}: WorkspaceRightPanelProps) {
+  const { language } = useTranslation()
+  const [commentInput, setCommentInput] = useState('')
+  const [rightPanelTab, setRightPanelTab] = useState<'comments' | 'history'>('comments')
+
+  // Reset tab back to comments when file changes
+  React.useEffect(() => {
+    setRightPanelTab('comments')
+  }, [file?.id])
+
+  const handleCommentSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!commentInput.trim() || !file) return
+    onAddComment(commentInput.trim())
+    setCommentInput('')
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (commentInput.trim() && file) {
+        onAddComment(commentInput.trim())
+        setCommentInput('')
+      }
+    }
+  }
+
+  // Render empty state if no file is selected
+  if (!file) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-xs h-full flex flex-col items-center justify-center text-center select-none min-h-[380px] w-full max-w-full overflow-hidden">
+        <FileText className="size-10 text-slate-300 dark:text-slate-700 mb-3 stroke-[1.5]" />
+        <h4 className="text-sm font-extrabold text-slate-700 dark:text-slate-300">No document selected</h4>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-[200px]">Select a file from the workspace list to view summaries and activities.</p>
+      </div>
+    )
+  }
+
+  return (
+    <motion.div
+      key={file.id}
+      initial={{ opacity: 0, y: 8, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.99 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 shadow-sm space-y-4 text-left select-none w-full max-w-full overflow-hidden"
+    >
+      
+      {/* 1. Preview Container Box */}
+      <div className="w-full h-[140px] rounded-3xl bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-4 text-slate-400 dark:text-slate-600 border border-slate-200/40 dark:border-slate-850 shadow-inner min-w-0">
+        <FileText className="size-8 stroke-[1.5] mb-2 text-slate-350 dark:text-slate-700" />
+        <span className="text-[10px] font-black tracking-widest uppercase select-none">
+          PREVIEW NOT AVAILABLE
+        </span>
+      </div>
+
+      {/* 2. File Title Info */}
+      <div className="space-y-1 w-full min-w-0">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug break-words">
+          {file.name}
+        </h3>
+        <p className="text-xs text-slate-400 dark:text-slate-500">
+          Shared with 3 people &bull; {file.size}
+        </p>
+      </div>
+
+      {/* 3. AI Quick Summary Card */}
+      <div className="bg-blue-50/20 dark:bg-slate-850/30 border border-blue-100/30 dark:border-slate-800 rounded-2xl p-4.5 space-y-3 relative overflow-hidden w-full min-w-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+            <Sparkles className="size-4 animate-pulse shrink-0" />
+            <span className="text-[9px] font-black tracking-wider uppercase">AI QUICK SUMMARY</span>
+          </div>
+          <button
+            type="button"
+            onClick={onRegenerateSummary}
+            disabled={isRegenerating}
+            className="text-[9px] font-black tracking-wider uppercase text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-350 cursor-pointer disabled:opacity-50"
+          >
+            {isRegenerating ? 'REGENERATING...' : 'REGENERATE'}
+          </button>
+        </div>
+
+        {isRegenerating ? (
+          <div className="space-y-2 py-2">
+            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-md animate-pulse w-full" />
+            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-md animate-pulse w-5/6" />
+            <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-md animate-pulse w-4/6" />
+          </div>
+        ) : (
+          <p className="text-sm text-slate-600 dark:text-slate-355 leading-relaxed font-semibold text-justify line-clamp-4">
+            {file.summary || (file.name.includes('Biology')
+              ? 'This document covers the fundamental principles of cellular biology, ATP production, and DNA replication stages. Key focus on Mitochondria and Krebs cycle.'
+              : file.description || 'This file provides critical guidelines and data updates for team sync meetings. Details can be expanded via the full summary AI tool.')}
+          </p>
+        )}
+
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 pt-1 select-none">
+          {file.tags.map(t => (
+            <span
+              key={t}
+              className="text-[9px] font-black bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-850 px-2 py-0.5 rounded-md"
+            >
+              #{t.replace('#', '')}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* 4. Quick AI Actions Panel */}
+      <div className="space-y-2.5 w-full min-w-0">
+        <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase">
+          QUICK AI ACTIONS
+        </span>
+        
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={onOpenFullSummary}
+            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 h-11 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-xs"
+          >
+            <div className="flex items-center gap-2">
+              <FileText className="size-4 text-slate-400 shrink-0" />
+              <span>Full Summary</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onGenerateQuiz}
+            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 h-11 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-xs"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-indigo-400 shrink-0" />
+              <span>Generate Quiz</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onAskAI}
+            className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 h-11 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-300 transition-all cursor-pointer shadow-xs"
+          >
+            <div className="flex items-center gap-2">
+              <MessageSquare className="size-4 text-blue-500 shrink-0" />
+              <span>Ask AI anything...</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* 5. Recent Activity Comments list / Edit History */}
+      <div className="space-y-3 border-t border-slate-100 dark:border-slate-800/80 pt-4 w-full min-w-0">
+        {file && (file.owner === 'me' || file.permission === 'Owner') ? (
+          <div className="flex border-b border-slate-100 dark:border-slate-800/80 mb-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => setRightPanelTab('comments')}
+              className={cn(
+                "flex-1 pb-2 text-[10px] font-black tracking-wider uppercase border-b-2 text-center transition-all duration-200 cursor-pointer focus:outline-none",
+                rightPanelTab === 'comments'
+                  ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400 font-extrabold"
+                  : "border-transparent text-slate-400 hover:text-slate-655 dark:text-slate-500 dark:hover:text-slate-300"
+              )}
+            >
+              {language === 'vi' ? 'Bình luận' : 'Comments'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setRightPanelTab('history')}
+              className={cn(
+                "flex-1 pb-2 text-[10px] font-black tracking-wider uppercase border-b-2 text-center transition-all duration-200 cursor-pointer focus:outline-none",
+                rightPanelTab === 'history'
+                  ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400 font-extrabold"
+                  : "border-transparent text-slate-400 hover:text-slate-655 dark:text-slate-500 dark:hover:text-slate-300"
+              )}
+            >
+              {language === 'vi' ? 'Lịch sử sửa' : 'Revision History'}
+            </button>
+          </div>
+        ) : (
+          <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase block mb-3 select-none">
+            {language === 'vi' ? 'BÌNH LUẬN GẦN ĐÂY' : 'RECENT ACTIVITY'}
+          </span>
+        )}
+
+        {rightPanelTab === 'history' && file && (file.owner === 'me' || file.permission === 'Owner') ? (
+          <div className="space-y-4 max-h-[140px] overflow-y-auto scrollbar-none pr-1">
+            {file.editHistory && file.editHistory.map((item) => (
+              <div key={item.id} className="flex items-start gap-3 text-xs text-left">
+                <span className={cn("size-6 rounded-full text-white font-bold flex items-center justify-center shrink-0 text-[9px]", item.avatarBg || "bg-blue-600")}>
+                  {item.user.charAt(0)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1 leading-none">
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200">{item.user}</span>
+                    <span className="text-[9px] text-slate-450 dark:text-slate-500 font-semibold">{item.time}</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-350 font-semibold mt-1 text-justify">
+                    {item.action}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {(!file.editHistory || file.editHistory.length === 0) && (
+              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold italic text-center py-2 select-none">
+                {language === 'vi' ? 'Không có lịch sử chỉnh sửa.' : 'No edit history available.'}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4 max-h-[140px] overflow-y-auto scrollbar-none pr-1">
+            {comments.map((comment) => (
+              <div key={comment.id} className="flex items-start gap-3 text-xs text-left">
+                <span className={cn("size-6 rounded-full text-white font-bold flex items-center justify-center shrink-0 text-[9px]", comment.avatarBg)}>
+                  {comment.user.charAt(0)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1 leading-none">
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200">{comment.user}</span>
+                    <span className="text-[9px] text-slate-450 dark:text-slate-500 font-semibold">{comment.time}</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-350 font-semibold mt-1 text-justify">
+                    "{comment.text}"
+                  </p>
+                </div>
+              </div>
+            ))}
+            {comments.length === 0 && (
+              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold italic text-center py-2 select-none">
+                {language === 'vi' ? 'Không có bình luận gần đây.' : 'No recent comments.'}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 6. Comment Form Input Box */}
+      <form onSubmit={handleCommentSubmit} className="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full border-t border-slate-100 dark:border-slate-800/85 pt-4 shrink-0 overflow-hidden">
+        <input
+          type="text"
+          placeholder="Add a comment..."
+          value={commentInput}
+          onChange={(e) => setCommentInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          aria-label="Add a comment"
+          className="flex-1 min-w-0 w-full h-11 rounded-2xl border bg-white border-slate-200 text-slate-900 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 px-4 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 font-semibold"
+        />
+        <button
+          type="submit"
+          disabled={!commentInput.trim()}
+          className="h-11 w-11 bg-blue-600 hover:bg-blue-750 disabled:opacity-40 text-white rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
+          aria-label="Submit comment"
+        >
+          <Send className="size-4" />
+        </button>
+      </form>
+
+    </motion.div>
+  )
+}
+
+export default WorkspaceRightPanel

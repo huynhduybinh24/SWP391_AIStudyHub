@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 export interface PricingPlan {
   name: string
@@ -30,6 +31,7 @@ export function PricingCard({
   onUpgradeClick,
   onContactSalesClick,
 }: PricingCardProps) {
+  const { t } = useTranslation()
   const isPro = plan.popular
 
   const handleButtonClick = () => {
@@ -62,7 +64,7 @@ export function PricingCard({
       {/* Most Popular Badge */}
       {isPro && (
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#3155F6] text-white text-[10px] font-extrabold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-sm whitespace-nowrap z-20">
-          Most Popular
+          {t.upgrade.popular}
         </div>
       )}
 
@@ -79,7 +81,7 @@ export function PricingCard({
               {plan.price}
             </span>
             {plan.billing && (
-              <span className="text-sm font-semibold text-slate-450 dark:text-slate-400">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                 {plan.billing}
               </span>
             )}
@@ -113,11 +115,11 @@ export function PricingCard({
                   <Check className="size-3" strokeWidth={3.5} />
                 </div>
               ) : (
-                <div className="flex size-5 shrink-0 items-center justify-center text-slate-400 dark:text-slate-555 mt-0.5">
+                <div className="flex size-5 shrink-0 items-center justify-center text-slate-400 dark:text-slate-500 mt-0.5">
                   <Check className="size-4" strokeWidth={2.5} />
                 </div>
               )}
-              <span className="text-sm font-semibold text-slate-600 dark:text-slate-350 leading-snug">
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300 leading-snug">
                 {feature}
               </span>
             </li>
@@ -131,7 +133,7 @@ export function PricingCard({
           <button
             type="button"
             onClick={handleButtonClick}
-            className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3.5 px-4 text-sm font-bold text-slate-400 dark:text-slate-500 transition-colors cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-850"
+            className="w-full rounded-2xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3.5 px-4 text-sm font-bold text-slate-400 dark:text-slate-500 transition-colors cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800"
             aria-label="Current Plan activated"
           >
             {plan.buttonText}

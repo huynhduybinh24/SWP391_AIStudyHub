@@ -3,10 +3,12 @@ import { motion, type Variants } from 'framer-motion'
 import { Edit2 } from 'lucide-react'
 import { ProfileCard } from '../components/ProfileCard'
 import { LinkedAccounts } from '../components/LinkedAccounts'
-import { StatisticsCard } from '../components/StatisticsCard'
+import { StatisticsSection } from '../components/StatisticsSection'
 import { EditProfileModal } from '../components/EditProfileModal'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function ProfilePage() {
+  const { t, language } = useTranslation()
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   // Stagger Container animations
@@ -43,10 +45,10 @@ export function ProfilePage() {
       >
         <div>
           <h1 className="text-3xl font-extrabold text-[#0b1c30] dark:text-white tracking-tight">
-            My Profile
+            {t.profile.title}
           </h1>
           <p className="text-sm font-medium text-slate-400 dark:text-slate-500 mt-1">
-            Manage your academic identity and study preferences.
+            {language === 'vi' ? 'Quản lý thông tin học tập và tùy chọn học tập của bạn.' : language === 'ja' ? '学問的アイデンティティと学習設定を管理します。' : language === 'ko' ? '학업 정보 및 학습 설정을 관리하세요.' : 'Manage your academic identity and study preferences.'}
           </p>
         </div>
         <button
@@ -54,7 +56,7 @@ export function ProfilePage() {
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#3155F6] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#2563eb] active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-[#3155F6]/10 shrink-0 self-start sm:self-auto"
         >
           <Edit2 className="size-4" />
-          Edit Profile
+          {language === 'vi' ? 'Sửa Hồ sơ' : language === 'ja' ? 'プロフィールを編集' : language === 'ko' ? '프로필 편집' : 'Edit Profile'}
         </button>
       </motion.div>
 
@@ -68,7 +70,7 @@ export function ProfilePage() {
         {/* Right Column: Linked Accounts & Stats */}
         <motion.div variants={itemVariants} className="lg:col-span-5 space-y-6">
           <LinkedAccounts />
-          <StatisticsCard />
+          <StatisticsSection />
         </motion.div>
       </div>
 

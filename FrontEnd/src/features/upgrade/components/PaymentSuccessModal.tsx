@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Download, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface PaymentSuccessModalProps {
   isOpen: boolean
@@ -23,6 +24,10 @@ export function PaymentSuccessModal({
 }: PaymentSuccessModalProps) {
   const navigate = useNavigate()
   const toast = useToast()
+  const { t } = useTranslation()
+
+  const displayPlanName = planName === 'Pro Plan (Annual)' ? t.upgrade.proPlanAnnual : planName
+  const displayPaymentMethod = paymentMethod === 'Credit Card' ? t.upgrade.creditCard : paymentMethod
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -48,20 +53,20 @@ export function PaymentSuccessModal({
   const handleDownloadReceipt = (e: React.MouseEvent) => {
     e.preventDefault()
     // Simulated receipt generation / download
-    toast.success('Receipt downloaded')
+    toast.success(t.upgrade.receiptDownloaded || 'Receipt downloaded')
     const filename = `receipt_${transactionId.replace('#', '')}.txt`
     const receiptText = `
 ========================================
-           AI STUDY HUB RECEIPT
+       ${t.upgrade.receiptHeader || 'LUMIEDU RECEIPT'}
 ========================================
-Transaction ID: ${transactionId}
-Date: ${new Date().toLocaleDateString()}
-Plan upgraded: ${planName}
-Payment Method: ${paymentMethod}
-Total Paid: ${amount}
-Status: SUCCESSFUL
+${t.upgrade.transactionIdLabel || 'Transaction ID'}: ${transactionId}
+${t.upgrade.dateLabel || 'Date'}: ${new Date().toLocaleDateString()}
+${t.upgrade.planUpgradedLabel || 'Plan upgraded'}: ${displayPlanName}
+${t.upgrade.paymentMethodLabel || 'Payment Method'}: ${displayPaymentMethod}
+${t.upgrade.totalPaidLabel || 'Total Paid'}: ${amount}
+${t.upgrade.statusLabel || 'Status'}: ${t.upgrade.statusValue || 'SUCCESSFUL'}
 ========================================
-Thank you for your purchase!
+${t.upgrade.thankYou || 'Thank you for your purchase!'}
     `.trim()
 
     const blob = new Blob([receiptText], { type: 'text/plain' })
@@ -102,7 +107,7 @@ Thank you for your purchase!
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               aria-label="Close modal"
             >
               <X className="size-4" />
@@ -123,39 +128,39 @@ Thank you for your purchase!
               id="success-modal-title"
               className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2"
             >
-              Payment Successful!
+              {t.upgrade.paymentSuccess}
             </h2>
 
             {/* Subtitle */}
             <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 max-w-sm">
-              Welcome to AI Study Hub Pro. Your account has been upgraded successfully.
+              {t.upgrade.welcomePro}
             </p>
 
             {/* Info Table Box */}
-            <div className="w-full bg-slate-50/80 dark:bg-slate-950/50 rounded-2xl p-5 mb-8 border border-slate-100 dark:border-slate-850 space-y-4">
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-650 dark:text-slate-400">
-                <span>Plan</span>
-                <span className="text-slate-850 dark:text-slate-200 font-bold">{planName}</span>
+            <div className="w-full bg-slate-50/80 dark:bg-slate-950/50 rounded-2xl p-5 mb-8 border border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
+                <span>{t.upgrade.planSelected}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold">{displayPlanName}</span>
               </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-850 w-full" />
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-650 dark:text-slate-400">
-                <span>Transaction ID</span>
-                <span className="text-slate-850 dark:text-slate-200 font-mono font-bold">
+              <div className="h-px bg-slate-100 dark:bg-slate-800 w-full" />
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
+                <span>{t.upgrade.transactionIdLabel}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-mono font-bold">
                   {transactionId}
                 </span>
               </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-850 w-full" />
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-650 dark:text-slate-400">
-                <span>Amount</span>
+              <div className="h-px bg-slate-100 dark:bg-slate-800 w-full" />
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
+                <span>{t.upgrade.totalAmount}</span>
                 <span className="text-[#2563eb] dark:text-blue-400 font-extrabold text-sm">
                   {amount}
                 </span>
               </div>
-              <div className="h-px bg-slate-100 dark:bg-slate-850 w-full" />
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-650 dark:text-slate-400">
-                <span>Payment Method</span>
-                <span className="text-slate-850 dark:text-slate-200 font-bold">
-                  {paymentMethod}
+              <div className="h-px bg-slate-100 dark:bg-slate-800 w-full" />
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-600 dark:text-slate-400">
+                <span>{t.upgrade.paymentMethodLabel}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold">
+                  {displayPaymentMethod}
                 </span>
               </div>
             </div>
@@ -165,16 +170,16 @@ Thank you for your purchase!
               onClick={handleGoToDashboard}
               className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white py-3.5 px-4 rounded-xl font-bold flex items-center justify-center transition-all cursor-pointer shadow-md shadow-[#2563eb]/15 hover:shadow-lg hover:shadow-[#2563eb]/20 active:scale-[0.98]"
             >
-              Go to Dashboard
+              {t.upgrade.goToDashboard}
             </button>
 
             <a
               href="#"
               onClick={handleDownloadReceipt}
-              className="mt-4 text-xs font-bold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              className="mt-4 text-xs font-bold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="size-3.5" />
-              Download Receipt
+              {t.upgrade.downloadReceipt}
             </a>
           </motion.div>
         </div>

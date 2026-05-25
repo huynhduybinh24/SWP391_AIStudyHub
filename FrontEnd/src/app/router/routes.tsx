@@ -9,6 +9,8 @@ import SubjectCategoryPage from '@/features/documents/pages/SubjectCategoryPage'
 import { UploadSubjectDocumentPage } from '@/features/documents/pages/UploadSubjectDocumentPage'
 import { SearchResultsPage } from '@/features/documents/pages/SearchResultsPage'
 import DocumentDetailPage from '@/features/documents/pages/DocumentDetailPage'
+import EditDocumentPage from '@/features/documents/pages/EditDocumentPage'
+import DownloadDocumentPage from '@/features/documents/pages/DownloadDocumentPage'
 import { UploadPage } from '@/features/documents/pages/UploadPage'
 import { ChatPage } from '@/features/ai-chatbot/pages/ChatPage'
 import { QuizzesPage } from '@/features/quizzes/pages/QuizzesPage'
@@ -22,7 +24,7 @@ import { StorageAnalyticsPage } from '@/features/storage/pages/StorageAnalyticsP
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage'
 import { SummaryDetailPage } from '@/features/notifications/pages/SummaryDetailPage'
 import { SharedFolderPage } from '@/features/shared-files/pages/SharedFolderPage'
-import { DEV_SKIP_AUTH } from '@/config/dev'
+import { SharedFilesPage } from '@/features/shared-files/pages/SharedFilesPage'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 import { LandingPage } from '@/features/landing/pages/LandingPage'
@@ -34,83 +36,103 @@ import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { PricingPage } from '@/features/upgrade/pages/PricingPage'
 import { CheckoutPage } from '@/features/upgrade/pages/CheckoutPage'
 import { StudyPlansPage } from '@/features/study-plans/pages/StudyPlansPage'
+import { AdminPartnershipRequestsPage } from '@/features/admin/pages/AdminPartnershipRequestsPage'
+
+import { ScrollToTop } from '@/components/shared/ScrollToTop'
+import { Outlet } from 'react-router-dom'
+
+function RootLayout() {
+  return (
+    <>
+      <ScrollToTop />
+      <Outlet />
+    </>
+  )
+}
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <LandingPage />,
-  },
-  {
-    path: '/pricing',
-    element: <Navigate to="/dashboard/upgrade" replace />,
-  },
-  {
-    path: '/help',
-    element: <HelpCenterPage />,
-  },
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/register',
-    element: <RegisterPage />,
-  },
-  {
-    path: '/reset-password',
-    element: <ResetPasswordPage />,
-  },
-  {
-    path: '/set-new-password',
-    element: <SetNewPasswordPage />,
-  },
-  {
-    path: '/dashboard',
-    element: <ProtectedRoute />,
+    element: <RootLayout />,
     children: [
       {
-        element: <DashboardLayout />,
+        index: true,
+        element: <LandingPage />,
+      },
+      {
+        path: '/pricing',
+        element: <PricingPage isPublic={true} />,
+      },
+      {
+        path: '/help',
+        element: <HelpCenterPage />,
+      },
+      {
+        path: '/login',
+        element: <LoginPage />,
+      },
+      {
+        path: '/register',
+        element: <RegisterPage />,
+      },
+      {
+        path: '/reset-password',
+        element: <ResetPasswordPage />,
+      },
+      {
+        path: '/set-new-password',
+        element: <SetNewPasswordPage />,
+      },
+      {
+        path: '/dashboard',
+        element: <ProtectedRoute />,
         children: [
-          { index: true, element: <DashboardPage /> },
           {
-            path: 'documents',
-            element: <DocumentsPage />,
+            element: <DashboardLayout />,
             children: [
-              { index: true, element: <MyDocumentsPage /> },
-              { path: 'subject/:subjectId', element: <SubjectCategoryPage /> },
-              { path: 'subject/:subjectId/upload', element: <UploadSubjectDocumentPage /> },
-              { path: 'search', element: <SearchResultsPage /> },
-              { path: 'document/:documentId', element: <DocumentDetailPage /> }
-            ]
+              { index: true, element: <DashboardPage /> },
+              {
+                path: 'documents',
+                element: <DocumentsPage />,
+                children: [
+                  { index: true, element: <MyDocumentsPage /> },
+                  { path: 'subject/:subjectId', element: <SubjectCategoryPage /> },
+                  { path: 'subject/:subjectId/upload', element: <UploadSubjectDocumentPage /> },
+                  { path: 'search', element: <SearchResultsPage /> },
+                  { path: 'document/:documentId', element: <DocumentDetailPage /> },
+                  { path: 'document/:documentId/edit', element: <EditDocumentPage /> },
+                  { path: 'document/:documentId/download', element: <DownloadDocumentPage /> }
+                ]
+              },
+              { path: 'upload', element: <UploadPage /> },
+              { path: 'chat', element: <ChatPage /> },
+              { path: 'shared', element: <SharedFilesPage /> },
+              { path: 'shared/file/:fileId', element: <SharedFilesPage /> },
+              { path: 'shared-files', element: <SharedFilesPage /> },
+              { path: 'shared-files/file/:fileId', element: <SharedFilesPage /> },
+              { path: 'shared-files/research-materials', element: <SharedFolderPage /> },
+              { path: 'storage', element: <CloudStoragePage /> },
+              { path: 'storage/explorer', element: <StorageExplorerPage /> },
+              { path: 'storage/explorer/preview', element: <FilePreviewPage /> },
+              { path: 'storage/cleanup', element: <StorageCleanupPage /> },
+              { path: 'storage/analytics', element: <StorageAnalyticsPage /> },
+              { path: 'notifications', element: <NotificationsPage /> },
+              { path: 'notifications/summary', element: <SummaryDetailPage /> },
+              { path: 'study-plans', element: <StudyPlansPage /> },
+              { path: 'profile', element: <ProfilePage /> },
+              { path: 'settings', element: <SettingsPage /> },
+              { path: 'upgrade', element: <PricingPage /> },
+              { path: 'checkout', element: <CheckoutPage /> },
+              { path: 'quizzes', element: <QuizzesPage /> },
+              {
+                element: <RoleRoute allowedRoles={['admin']} />,
+                children: [{ path: 'admin', element: <AdminDashboardPage /> }],
+              },
+            ],
           },
-          { path: 'upload', element: <UploadPage /> },
-          { path: 'chat', element: <ChatPage /> },
-          { path: 'shared', element: <PlaceholderPage title="Shared Files" /> },
-          { path: 'shared-files/research-materials', element: <SharedFolderPage /> },
-          { path: 'storage', element: <CloudStoragePage /> },
-          { path: 'storage/explorer', element: <StorageExplorerPage /> },
-          { path: 'storage/explorer/preview', element: <FilePreviewPage /> },
-          { path: 'storage/cleanup', element: <StorageCleanupPage /> },
-          { path: 'storage/analytics', element: <StorageAnalyticsPage /> },
-          { path: 'notifications', element: <NotificationsPage /> },
-          { path: 'notifications/summary', element: <SummaryDetailPage /> },
-          { path: 'study-plans', element: <StudyPlansPage /> },
-          { path: 'profile', element: <ProfilePage /> },
-          { path: 'settings', element: <SettingsPage /> },
-          { path: 'upgrade', element: <PricingPage /> },
-          { path: 'checkout', element: <CheckoutPage /> },
-          { path: 'quizzes', element: <QuizzesPage /> },
-          ...(DEV_SKIP_AUTH
-            ? [{ path: 'admin', element: <AdminDashboardPage /> }]
-            : [
-                {
-                  element: <RoleRoute allowedRoles={['admin']} />,
-                  children: [{ path: 'admin', element: <AdminDashboardPage /> }],
-                },
-              ]),
         ],
       },
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
-  { path: '*', element: <Navigate to="/" replace /> },
 ])
