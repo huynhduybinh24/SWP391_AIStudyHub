@@ -9,6 +9,7 @@ import { env } from '@/config/env'
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
 import WorkspaceStatsCards from '../components/WorkspaceStatsCards'
+import SharedFilesTabs from '../components/SharedFilesTabs'
 import WorkspaceFilterBar from '../components/WorkspaceFilterBar'
 import WorkspaceFileList from '../components/WorkspaceFileList'
 import WorkspaceRightPanel, { CommentItem } from '../components/WorkspaceRightPanel'
@@ -186,7 +187,11 @@ export function SharedFilesPage() {
       description: 'Comprehensive study guide and midterm summary for General Biology 101, containing cellular respiration diagrams, metabolic pathway notes, and mitosis stages.',
       tags: ['CellBiology', 'KrebsCycle'],
       previewContent: 'Biology 101 Midterm Notes preview content.',
-      url: ''
+      url: '',
+      editHistory: [
+        { id: 'h-1-1', user: 'Sarah Jenkins', action: 'Đã tạo tài liệu', time: '5 ngày trước', avatarBg: 'bg-emerald-500' },
+        { id: 'h-1-2', user: 'Sarah Jenkins', action: 'Đã chia sẻ tài liệu với bạn', time: '2 giờ trước', avatarBg: 'bg-emerald-500' }
+      ]
     },
     {
       id: 'file-2',
@@ -199,7 +204,11 @@ export function SharedFilesPage() {
       description: 'Group assets folder containing images, mock data, design specifications, and reference links.',
       tags: ['GroupProject', 'Assets'],
       previewContent: 'Folder contents: assets, design specifications.',
-      url: ''
+      url: '',
+      editHistory: [
+        { id: 'h-2-1', user: 'David Kim', action: 'Đã tạo thư mục', time: '1 tháng trước', avatarBg: 'bg-blue-500' },
+        { id: 'h-2-2', user: 'David Kim', action: 'Đã chia sẻ quyền chỉnh sửa (Editor) cho bạn', time: 'Oct 22, 2023', avatarBg: 'bg-blue-500' }
+      ]
     },
     {
       id: 'file-3',
@@ -213,7 +222,45 @@ export function SharedFilesPage() {
       description: 'Tabulated values of raw experimental logs, voltage sweeps, and resistance indexes from the electromagnetism laboratory session.',
       tags: ['Physics', 'LabData'],
       previewContent: 'Voltage, Current, Resistance sweep tables.',
-      url: ''
+      url: '',
+      editHistory: [
+        { id: 'h-3-1', user: 'Emily Chen', action: 'Đã tạo tài liệu', time: 'Oct 15, 2023', avatarBg: 'bg-purple-500' },
+        { id: 'h-3-2', user: 'Emily Chen', action: 'Đã chia sẻ quyền xem (Viewer) cho bạn', time: 'Oct 18, 2023', avatarBg: 'bg-purple-500' }
+      ]
+    },
+    {
+      id: 'file-4',
+      name: 'Chemistry 101 Lab Report.docx',
+      owner: 'me',
+      permission: 'Owner',
+      dateShared: 'Yesterday',
+      type: 'docx',
+      size: '1.8 MB',
+      description: 'My chemistry lab report shared with Sarah and David.',
+      tags: ['Chemistry', 'LabReport'],
+      previewContent: 'Chemistry lab report contents.',
+      url: '',
+      editHistory: [
+        { id: 'h-4-1', user: 'Tôi', action: 'Đã tạo tài liệu', time: '2 ngày trước', avatarBg: 'bg-indigo-600' },
+        { id: 'h-4-2', user: 'Tôi', action: 'Đã chia sẻ quyền xem cho Sarah Jenkins', time: '1 ngày trước', avatarBg: 'bg-indigo-600' },
+        { id: 'h-4-3', user: 'Tôi', action: 'Đã chia sẻ quyền chỉnh sửa cho David Kim', time: '1 ngày trước', avatarBg: 'bg-indigo-600' }
+      ]
+    },
+    {
+      id: 'file-5',
+      name: 'Math Calculus Exercises.pdf',
+      owner: 'me',
+      permission: 'Owner',
+      dateShared: '3 days ago',
+      type: 'pdf',
+      size: '3.1 MB',
+      description: 'Calculus assignment worksheet with solved exercises.',
+      tags: ['Math', 'Calculus'],
+      previewContent: 'Calculus exercises content.',
+      url: '',
+      editHistory: [
+        { id: 'h-5-1', user: 'Tôi', action: 'Đã tạo tài liệu', time: '3 ngày trước', avatarBg: 'bg-indigo-600' }
+      ]
     }
   ])
 
@@ -234,6 +281,7 @@ export function SharedFilesPage() {
 
   // Workspace Configurations
   const [selectedFile, setSelectedFile] = useState<SharedFile | null>(null)
+  const [activeTab, setActiveTab] = useState<'all' | 'with-me' | 'by-me'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [fileTypeFilter, setFileTypeFilter] = useState('All')
   const [sortOrder, setSortOrder] = useState('recent')
@@ -382,7 +430,9 @@ export function SharedFilesPage() {
       }
     ],
     'file-2': [],
-    'file-3': []
+    'file-3': [],
+    'file-4': [],
+    'file-5': []
   })
 
   // Share Access State Management
@@ -441,13 +491,47 @@ export function SharedFilesPage() {
         role: 'viewer',
         avatarBg: 'bg-[#fc9d1c]'
       }
+    ],
+    'file-4': [
+      {
+        id: 'owner',
+        name: 'Tôi',
+        email: 'binh@example.com',
+        role: 'owner',
+        avatarBg: 'bg-indigo-600'
+      },
+      {
+        id: '1',
+        name: 'Sarah Jenkins',
+        email: 'sarah@example.com',
+        role: 'viewer',
+        avatarBg: 'bg-emerald-500'
+      },
+      {
+        id: '2',
+        name: 'David Kim',
+        email: 'david@example.com',
+        role: 'editor',
+        avatarBg: 'bg-blue-500'
+      }
+    ],
+    'file-5': [
+      {
+        id: 'owner',
+        name: 'Tôi',
+        email: 'binh@example.com',
+        role: 'owner',
+        avatarBg: 'bg-indigo-600'
+      }
     ]
   })
 
   const [fileGeneralAccess, setFileGeneralAccess] = useState<Record<string, 'restricted' | 'public'>>({
     'file-1': 'restricted',
     'file-2': 'public',
-    'file-3': 'restricted'
+    'file-3': 'restricted',
+    'file-4': 'restricted',
+    'file-5': 'restricted'
   })
 
 
@@ -691,20 +775,54 @@ export function SharedFilesPage() {
 
   const handleRenameConfirm = (newName: string) => {
     if (!selectedFile) return
+    const logItem = {
+      id: `h-log-${Date.now()}`,
+      user: selectedFile.owner === 'me' ? 'Tôi' : (user?.name || 'Alex Rivera'),
+      action: language === 'vi' 
+        ? `Đã đổi tên tài liệu từ "${selectedFile.name}" thành "${newName}"` 
+        : `Renamed document from "${selectedFile.name}" to "${newName}"`,
+      time: language === 'vi' ? 'Vừa xong' : 'Just now',
+      avatarBg: selectedFile.owner === 'me' ? 'bg-indigo-600' : 'bg-blue-500'
+    }
     setFiles(prev =>
-      prev.map(f => (f.id === selectedFile.id ? { ...f, name: newName } : f))
+      prev.map(f => (f.id === selectedFile.id ? { 
+        ...f, 
+        name: newName, 
+        editHistory: [logItem, ...(f.editHistory || [])] 
+      } : f))
     )
-    setSelectedFile(prev => (prev ? { ...prev, name: newName } : null))
+    setSelectedFile(prev => (prev ? { 
+      ...prev, 
+      name: newName,
+      editHistory: [logItem, ...(prev.editHistory || [])]
+    } : null))
     toast.success(t.toasts.renameSuccess)
     setModals(prev => ({ ...prev, rename: false }))
   }
 
   const handlePermissionConfirm = (newPermission: any) => {
     if (!selectedFile) return
+    const logItem = {
+      id: `h-log-${Date.now()}`,
+      user: selectedFile.owner === 'me' ? 'Tôi' : (user?.name || 'Alex Rivera'),
+      action: language === 'vi' 
+        ? `Đã thay đổi quyền tài liệu thành ${newPermission}` 
+        : `Changed document permission to ${newPermission}`,
+      time: language === 'vi' ? 'Vừa xong' : 'Just now',
+      avatarBg: selectedFile.owner === 'me' ? 'bg-indigo-600' : 'bg-blue-500'
+    }
     setFiles(prev =>
-      prev.map(f => (f.id === selectedFile.id ? { ...f, permission: newPermission } : f))
+      prev.map(f => (f.id === selectedFile.id ? { 
+        ...f, 
+        permission: newPermission,
+        editHistory: [logItem, ...(f.editHistory || [])]
+      } : f))
     )
-    setSelectedFile(prev => (prev ? { ...prev, permission: newPermission } : null))
+    setSelectedFile(prev => (prev ? { 
+      ...prev, 
+      permission: newPermission,
+      editHistory: [logItem, ...(prev.editHistory || [])]
+    } : null))
     toast.success(t.toasts.permissionSuccess)
     setModals(prev => ({ ...prev, permission: false }))
   }
@@ -827,7 +945,14 @@ export function SharedFilesPage() {
       }
     }
 
-    return matchesSearch && matchesType && matchesPeople && matchesLastModified && matchesSource
+    let matchesTab = true
+    if (activeTab === 'with-me') {
+      matchesTab = file.owner !== 'me'
+    } else if (activeTab === 'by-me') {
+      matchesTab = file.owner === 'me'
+    }
+
+    return matchesSearch && matchesType && matchesPeople && matchesLastModified && matchesSource && matchesTab
   }).sort((a, b) => {
     const timeA = parseDate(a.dateShared)
     const timeB = parseDate(b.dateShared)
@@ -898,6 +1023,11 @@ export function SharedFilesPage() {
             onStorageCardClick={() => setModals(prev => ({ ...prev, quota: true }))}
             onActiveCardClick={() => setModals(prev => ({ ...prev, collaborators: true }))}
             activeCollaboratorsCount={activeCollaborators.length}
+          />
+
+          <SharedFilesTabs
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
           />
 
           <WorkspaceFilterBar
@@ -1044,7 +1174,7 @@ export function SharedFilesPage() {
         collaborators={selectedFile?.id ? (fileCollaborators[selectedFile.id] || [
           {
             id: 'owner',
-            name: selectedFile.owner || 'Alex Rivera',
+            name: selectedFile.owner === 'me' ? 'Tôi' : (selectedFile.owner || 'Alex Rivera'),
             email: `${(selectedFile.owner || 'alex').toLowerCase().replace(' ', '')}@example.com`,
             role: 'owner',
             avatarBg: 'bg-[#0fbf7c]'
@@ -1052,6 +1182,55 @@ export function SharedFilesPage() {
         ]) : []}
         onCollaboratorsChange={(newCollabs) => {
           if (selectedFile?.id) {
+            const oldCollabs = fileCollaborators[selectedFile.id] || []
+            let logMsg = ''
+            
+            if (newCollabs.length > oldCollabs.length) {
+              const added = newCollabs.find(nc => !oldCollabs.some(oc => oc.id === nc.id))
+              if (added) {
+                logMsg = language === 'vi' 
+                  ? `Đã thêm thành viên ${added.name} (${added.role})`
+                  : `Added collaborator ${added.name} (${added.role})`
+              }
+            } else if (newCollabs.length < oldCollabs.length) {
+              const removed = oldCollabs.find(oc => !newCollabs.some(nc => nc.id === oc.id))
+              if (removed) {
+                logMsg = language === 'vi'
+                  ? `Đã xóa quyền truy cập của ${removed.name}`
+                  : `Removed access for ${removed.name}`
+              }
+            } else {
+              const changed = newCollabs.find(nc => {
+                const oc = oldCollabs.find(o => o.id === nc.id)
+                return oc && oc.role !== nc.role
+              })
+              if (changed) {
+                logMsg = language === 'vi'
+                  ? `Đã cập nhật vai trò của ${changed.name} thành ${changed.role}`
+                  : `Updated role of ${changed.name} to ${changed.role}`
+              }
+            }
+
+            if (logMsg) {
+              const logItem = {
+                id: `h-log-${Date.now()}`,
+                user: 'Tôi',
+                action: logMsg,
+                time: language === 'vi' ? 'Vừa xong' : 'Just now',
+                avatarBg: 'bg-indigo-600'
+              }
+              setFiles(prev =>
+                prev.map(f => (f.id === selectedFile.id ? { 
+                  ...f, 
+                  editHistory: [logItem, ...(f.editHistory || [])] 
+                } : f))
+              )
+              setSelectedFile(prev => (prev ? { 
+                ...prev, 
+                editHistory: [logItem, ...(prev.editHistory || [])]
+              } : null))
+            }
+
             setFileCollaborators(prev => ({
               ...prev,
               [selectedFile.id]: newCollabs
@@ -1061,6 +1240,26 @@ export function SharedFilesPage() {
         generalAccess={selectedFile?.id ? (fileGeneralAccess[selectedFile.id] || 'restricted') : 'restricted'}
         onGeneralAccessChange={(type) => {
           if (selectedFile?.id) {
+            const logItem = {
+              id: `h-log-${Date.now()}`,
+              user: 'Tôi',
+              action: language === 'vi'
+                ? `Đã thay đổi quyền truy cập chung thành ${type === 'public' ? 'Bất kỳ ai có liên kết' : 'Hạn chế'}`
+                : `Changed general access to ${type === 'public' ? 'Anyone with link' : 'Restricted'}`,
+              time: language === 'vi' ? 'Vừa xong' : 'Just now',
+              avatarBg: 'bg-indigo-600'
+            }
+            setFiles(prev =>
+              prev.map(f => (f.id === selectedFile.id ? { 
+                ...f, 
+                editHistory: [logItem, ...(f.editHistory || [])] 
+              } : f))
+            )
+            setSelectedFile(prev => (prev ? { 
+              ...prev, 
+              editHistory: [logItem, ...(prev.editHistory || [])]
+            } : null))
+            
             setFileGeneralAccess(prev => ({
               ...prev,
               [selectedFile.id]: type

@@ -42,9 +42,9 @@ function deepMerge<T extends object>(target: T, source: object, path = '', lang 
 // Prepared translations with complete English fallback overlay
 export const translations = {
   en: rawTranslations.en,
-  vi: deepMerge(rawTranslations.vi, rawTranslations.en, '', 'vi'),
-  ja: deepMerge(rawTranslations.ja, rawTranslations.en, '', 'ja'),
-  ko: deepMerge(rawTranslations.ko, rawTranslations.en, '', 'ko'),
+  vi: deepMerge(rawTranslations.vi, rawTranslations.en, '', 'vi') as typeof en,
+  ja: deepMerge(rawTranslations.ja as any, rawTranslations.en, '', 'ja') as typeof en,
+  ko: deepMerge(rawTranslations.ko as any, rawTranslations.en, '', 'ko') as typeof en,
 }
 
 export type TranslationKey = keyof typeof en

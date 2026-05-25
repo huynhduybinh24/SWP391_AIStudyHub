@@ -78,7 +78,7 @@ export function AskAIAssistantPanel({
 
       {/* Deep scanning analysis banner & progress */}
       {isScanning ? (
-        <div className="bg-blue-50/70 border border-blue-100 dark:bg-slate-800/40 dark:border-slate-750 p-4 rounded-2xl space-y-3 animate-fade-in">
+        <div className="bg-blue-50/70 border border-blue-100 dark:bg-slate-800/40 dark:border-slate-700 p-4 rounded-2xl space-y-3 animate-fade-in">
           <div className="flex justify-between items-center text-xs font-bold text-blue-800 dark:text-blue-400">
             <span className="flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-blue-500 animate-spin" />

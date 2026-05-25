@@ -1,18 +1,31 @@
 import { motion } from 'framer-motion'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface SharedFilesTabsProps {
-  activeTab: 'with-me' | 'by-me'
-  onChangeTab: (tab: 'with-me' | 'by-me') => void
+  activeTab: 'all' | 'with-me' | 'by-me'
+  onChangeTab: (tab: 'all' | 'with-me' | 'by-me') => void
 }
 
 export function SharedFilesTabs({ activeTab, onChangeTab }: SharedFilesTabsProps) {
+  const { language } = useTranslation()
+
   const tabs = [
-    { id: 'with-me' as const, label: 'Shared With Me' },
-    { id: 'by-me' as const, label: 'Shared By Me' }
+    {
+      id: 'all' as const,
+      label: language === 'vi' ? 'Tất cả tài liệu' : (language === 'ja' ? 'すべてのファイル' : (language === 'ko' ? '모든 파일' : 'All Files'))
+    },
+    {
+      id: 'with-me' as const,
+      label: language === 'vi' ? 'Được chia sẻ với tôi' : (language === 'ja' ? '共有されたファイル' : (language === 'ko' ? '공유받은 파일' : 'Shared with me'))
+    },
+    {
+      id: 'by-me' as const,
+      label: language === 'vi' ? 'Tôi chia sẻ' : (language === 'ja' ? '自分が所有/共有' : (language === 'ko' ? '내가 공유한 파일' : 'Shared by me'))
+    }
   ]
 
   return (
-    <div className="flex border-b border-slate-200 dark:border-slate-800">
+    <div className="flex border-b border-slate-250 dark:border-slate-800">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id
         return (

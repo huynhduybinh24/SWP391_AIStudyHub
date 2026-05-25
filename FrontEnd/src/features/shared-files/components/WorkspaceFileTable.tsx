@@ -235,6 +235,7 @@ export function WorkspaceFileTable({
                           </button>
 
                           <FileActionsDropdown
+                            file={file}
                             isOpen={activeMenuId === file.id}
                             onClose={() => setActiveMenuId(null)}
                             onOpen={() => onOpenFile(file)}
