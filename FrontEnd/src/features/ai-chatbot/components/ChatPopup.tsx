@@ -5,6 +5,8 @@ import { useUiStore } from '@/stores/uiStore'
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 import { motion } from 'framer-motion'
 
+import { useTranslation } from '@/context/LanguageContext'
+
 interface Message {
   id: string
   sender: 'bot' | 'user'
@@ -19,6 +21,7 @@ interface ChatPopupProps {
 }
 
 export function ChatPopup({ onClose }: ChatPopupProps) {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -77,17 +80,17 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
     setIsTyping(true)
     setTimeout(() => {
       setIsTyping(false)
-      let botResponse = "I've analyzed your query. Let's break this down together!"
+      let botResponse = t.aiChatbot.botResponseDefault || "I've analyzed your query. Let's break this down together!"
       
       const lowerText = text.toLowerCase()
       if (hasFile) {
-        botResponse = "I've received your file. I am analyzing it now. Let me know if you have specific questions about its contents!"
-      } else if (lowerText.includes('summarize')) {
-        botResponse = "Here is a structured summary of your recent notes:\n\n1. Point 1\n2. Point 2\n3. Point 3"
-      } else if (lowerText.includes('quantum')) {
-        botResponse = "Quantum Mechanics is the branch of physics dealing with atomic scales..."
-      } else if (lowerText.includes('quiz')) {
-        botResponse = "Here is a quick quiz to test your understanding:\n\nWhat is X?\nA) Y\nB) Z"
+        botResponse = t.aiChatbot.botResponseDefault || "I've received your file. I am analyzing it now. Let me know if you have specific questions about its contents!"
+      } else if (lowerText.includes('summarize') || lowerText.includes('tóm tắt') || lowerText.includes('요약') || lowerText.includes('要約')) {
+        botResponse = t.aiChatbot.botResponseNotes || "Here is a structured summary of your recent notes:\n\n1. Point 1\n2. Point 2\n3. Point 3"
+      } else if (lowerText.includes('quantum') || lowerText.includes('lượng tử') || lowerText.includes('양자') || lowerText.includes('量子')) {
+        botResponse = t.aiChatbot.botResponseQuantum || "Quantum Mechanics is the branch of physics dealing with atomic scales..."
+      } else if (lowerText.includes('quiz') || lowerText.includes('kiểm tra') || lowerText.includes('퀴즈') || lowerText.includes('クイズ')) {
+        botResponse = t.aiChatbot.botResponseQuiz || "Here is a quick quiz to test your understanding:\n\nWhat is X?\nA) Y\nB) Z"
       }
 
       setMessages((prev) => [
