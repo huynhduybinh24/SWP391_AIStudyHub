@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { Shield, Users, FileText, BarChart3, Bell, CreditCard } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
+import { useSearchParams } from 'react-router-dom'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
 import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab'
 import { AdminUsersTab } from '@/features/admin/components/AdminUsersTab'
@@ -11,7 +11,12 @@ type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'moderatio
 
 export function AdminDashboardPage() {
   const { t, language } = useTranslation()
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = (searchParams.get('tab') as AdminTab) || 'overview'
+
+  const setActiveTab = (tab: AdminTab) => {
+    setSearchParams({ tab })
+  }
 
   const tabItems = [
     {
