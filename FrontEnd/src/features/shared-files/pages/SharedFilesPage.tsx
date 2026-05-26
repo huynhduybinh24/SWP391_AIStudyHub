@@ -16,6 +16,8 @@ import WorkspaceRightPanel, { CommentItem } from '../components/WorkspaceRightPa
 import SharedFileViewer from '../components/SharedFileViewer'
 import UploadFilesSection from '../components/UploadFilesSection'
 import SharedFilesUploadModal from '../components/SharedFilesUploadModal'
+import ReportDocumentModal from '../components/ReportDocumentModal'
+import { reportService, ReportReason } from '../services/reportService'
 
 // Modals & Overlays
 import InviteModal from '../components/InviteModal'
@@ -306,6 +308,7 @@ export function SharedFilesPage() {
 
   // Workspace Configurations
   const [selectedFile, setSelectedFile] = useState<SharedFile | null>(null)
+  const [reportFile, setReportFile] = useState<SharedFile | null>(null)
   const [activeTab, setActiveTab] = useState<'all' | 'with-me' | 'by-me'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [fileTypeFilter, setFileTypeFilter] = useState('All')
@@ -861,6 +864,33 @@ export function SharedFilesPage() {
     setModals(prev => ({ ...prev, confirmDelete: false }))
   }
 
+  const handleRemoveAccess = (file: SharedFile) => {
+    setViewingFile(file)
+    setModals(prev => ({ ...prev, confirmDelete: true }))
+  }
+
+  const handleReportSubmit = async (reason: ReportReason, description: string, evidenceLink: string) => {
+    if (!reportFile) return
+    try {
+      await reportService.createDocumentReport({
+        documentId: reportFile.id,
+        documentName: reportFile.name,
+        documentType: reportFile.type,
+        sharedBy: reportFile.owner || 'Unknown',
+        reportedBy: user?.displayName || 'Alex Rivera',
+        reportedByEmail: user?.email || 'alex@example.com',
+        reason,
+        description,
+        evidenceLink
+      })
+      toast.success(t.sharedFiles.reportSubmittedSuccessfully || 'Report submitted successfully.')
+    } catch (error) {
+      toast.error('Failed to submit report.')
+    } finally {
+      setReportFile(null)
+    }
+  }
+
   const handleStarToggle = (file: SharedFile) => {
     setFavorites(prev => {
       const isFav = prev.includes(file.id)
@@ -1098,10 +1128,7 @@ export function SharedFilesPage() {
                 setSelectedFile(file)
                 setModals(prev => ({ ...prev, permission: true }))
               }}
-              onRemoveAccess={(file) => {
-                setSelectedFile(file)
-                setModals(prev => ({ ...prev, confirmDelete: true }))
-              }}
+              onRemoveAccess={handleRemoveAccess}
               onDownload={handleDownload}
               onShareAccess={(file) => {
                 setSelectedFile(file)
@@ -1109,6 +1136,7 @@ export function SharedFilesPage() {
                 const prefix = language === 'vi' ? 'Đang chia sẻ' : (language === 'ja' ? '共有中' : (language === 'ko' ? '공유 중' : 'Sharing'))
                 toast.success(`${prefix} ${file.name}`)
               }}
+              onReport={(file) => setReportFile(file)}
             />
           </motion.div>
         </motion.div>
@@ -1146,6 +1174,17 @@ export function SharedFilesPage() {
         </AnimatePresence>
 
       </div>
+
+      <AnimatePresence>
+        {reportFile && (
+          <ReportDocumentModal
+            isOpen={!!reportFile}
+            onClose={() => setReportFile(null)}
+            onSubmit={handleReportSubmit}
+            file={reportFile}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Modals & Dialogs */}
       <QuotaDetailsModal
