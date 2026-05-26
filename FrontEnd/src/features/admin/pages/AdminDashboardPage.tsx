@@ -75,9 +75,9 @@ export function AdminDashboardPage() {
     }
   }
 
-  const handleDeleteDocument = async (documentId: string) => {
+  const handleDeleteDocument = async (documentId: string, reason?: string) => {
     try {
-      await adminService.deleteDocument(documentId)
+      await adminService.deleteDocument(documentId, reason)
       setDocuments((prev) => prev.filter((d) => d.id !== documentId))
     } catch (err: any) {
       setError(err.message)

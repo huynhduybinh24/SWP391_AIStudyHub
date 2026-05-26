@@ -19,7 +19,7 @@ export type AdminDocument = {
   fileType: "pdf" | "docx" | "pptx" | "xlsx" | "image" | "txt";
   sizeMB: number;
   uploadedAt: string;
-  status: "approved" | "pending" | "rejected";
+  status: "approved" | "pending" | "rejected" | "deleted";
   aiStatus: "not_analyzed" | "analyzing" | "analyzed" | "flagged";
   category: string;
   sharedCount: number;
@@ -33,6 +33,18 @@ export type AdminDocument = {
   unsafeContentScore: number;
   spamScore: number;
   uploadSource: "web_upload" | "api_sync" | "partner_portal";
+};
+
+export type DeletedDocumentRecord = {
+  id: string;
+  documentId: string;
+  documentName: string;
+  ownerName: string;
+  ownerEmail?: string;
+  deletedBy: string;
+  deletedAt: string;
+  reason: string;
+  noticeMessage: string;
 };
 
 export type AdminStats = {
@@ -364,11 +376,46 @@ export const updateDocument = async (
   return { ...mockDocuments[index] };
 };
 
-export const deleteDocument = async (documentId: string): Promise<{ success: boolean }> => {
+export const deleteDocument = async (documentId: string, reason?: string): Promise<{ success: boolean }> => {
   await randomDelay();
   const index = mockDocuments.findIndex((d) => d.id === documentId);
   if (index === -1) throw new Error("Document not found");
   
+  const doc = mockDocuments[index];
+
+  if (reason) {
+    const record: DeletedDocumentRecord = {
+      id: `del_${Date.now()}`,
+      documentId: doc.id,
+      documentName: doc.title,
+      ownerName: doc.ownerName,
+      ownerEmail: doc.ownerEmail,
+      deletedBy: "Admin",
+      deletedAt: new Date().toISOString(),
+      reason: reason,
+      noticeMessage: `Your document "${doc.title}" was removed by admin. Reason: ${reason}`
+    };
+
+    const existingNotices = JSON.parse(localStorage.getItem('aiStudyHubDeletedDocumentNotices') || '[]');
+    existingNotices.push(record);
+    localStorage.setItem('aiStudyHubDeletedDocumentNotices', JSON.stringify(existingNotices));
+
+    const notification = {
+      id: `notif_${Date.now()}`,
+      type: "document_deleted",
+      title: "Document removed by admin",
+      message: record.noticeMessage,
+      documentId: doc.id,
+      documentName: doc.title,
+      reason: reason,
+      createdAt: new Date().toISOString(),
+      isRead: false
+    };
+    const existingNotifs = JSON.parse(localStorage.getItem('aiStudyHubUserNotifications') || '[]');
+    existingNotifs.push(notification);
+    localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(existingNotifs));
+  }
+
   mockDocuments = mockDocuments.filter((d) => d.id !== documentId);
   return { success: true };
 };
