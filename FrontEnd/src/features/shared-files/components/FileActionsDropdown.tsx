@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ExternalLink, Edit2, Shield, Trash2, Download, Share2 } from 'lucide-react'
+import { ExternalLink, Edit2, Shield, Trash2, Download, Share2, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 
@@ -17,6 +17,7 @@ interface FileActionsDropdownProps {
   onRename: () => void
   onChangePermission: () => void
   onRemoveAccess: () => void
+  onReport?: () => void
   buttonRef: React.RefObject<HTMLButtonElement | null>
 }
 
@@ -30,6 +31,7 @@ export function FileActionsDropdown({
   onRename,
   onChangePermission,
   onRemoveAccess,
+  onReport,
   buttonRef
 }: FileActionsDropdownProps) {
   const { t } = useTranslation()
@@ -54,6 +56,7 @@ export function FileActionsDropdown({
     if (isOwner || isEditor) numItems++ // Rename
     if (isOwner) numItems++ // Change Permission
     if (isOwner) numItems++ // Remove Access
+    if (onReport && !isOwner) numItems++ // Report Document
     const menuHeight = numItems * 44 + 20
     const gap = 8
 
@@ -277,6 +280,26 @@ export function FileActionsDropdown({
               >
                 <Trash2 className="size-4 text-red-500 dark:text-red-400" />
                 <span>{t.sharedFiles.removeAccess}</span>
+              </button>
+            </>
+          )}
+
+          {/* 7. REPORT DOCUMENT (Not Owner) */}
+          {onReport && !isOwner && (
+            <>
+              <div className="h-px bg-slate-100 dark:bg-slate-800/60 my-1" />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onReport()
+                  onClose()
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-[13px] font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-55/15 dark:hover:bg-orange-955/20 focus-visible:bg-orange-55/15 dark:focus-visible:bg-orange-955/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50"
+                role="menuitem"
+              >
+                <AlertTriangle className="size-4 text-orange-500 dark:text-orange-400" />
+                <span>Report Document</span>
               </button>
             </>
           )}

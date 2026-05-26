@@ -21,6 +21,7 @@ interface WorkspaceFileListProps {
   onRemoveAccess: (file: SharedFile) => void
   onDownload: (file: SharedFile) => void
   onShareAccess: (file: SharedFile) => void
+  onReport: (file: SharedFile) => void
 }
 
 export function WorkspaceFileList({
@@ -37,7 +38,8 @@ export function WorkspaceFileList({
   onChangePermission,
   onRemoveAccess,
   onDownload,
-  onShareAccess
+  onShareAccess,
+  onReport
 }: WorkspaceFileListProps) {
   const { t } = useTranslation()
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
@@ -69,6 +71,7 @@ export function WorkspaceFileList({
           onRemoveAccess={onRemoveAccess}
           onDownload={onDownload}
           onShareAccess={onShareAccess}
+          onReport={onReport}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 transition-all duration-300 overflow-visible">
@@ -97,6 +100,7 @@ export function WorkspaceFileList({
               onRename={() => onRename(file)}
               onChangePermission={() => onChangePermission(file)}
               onRemoveAccess={() => onRemoveAccess(file)}
+              onReport={() => onReport(file)}
             />
           ))}
         </div>

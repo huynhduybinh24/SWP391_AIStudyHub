@@ -6,9 +6,11 @@ import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab
 import { AdminUsersTab } from '@/features/admin/components/AdminUsersTab'
 import { AdminPackagesTab } from '@/features/admin/components/AdminPackagesTab'
 import { AdminNotificationsTab } from '@/features/admin/components/AdminNotificationsTab'
+import { AdminReportsTab } from '@/features/admin/components/AdminReportsTab'
 import { adminService, AdminStats, AdminUser, AdminDocument } from '../services/adminService'
+import { reportService, DocumentReport } from '@/features/shared-files/services/reportService'
 
-type AdminTab = 'overview' | 'users' | 'documents'
+type AdminTab = 'overview' | 'users' | 'documents' | 'reports'
 
 export function AdminDashboardPage() {
   const { t, language } = useTranslation()
@@ -17,6 +19,7 @@ export function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [documents, setDocuments] = useState<AdminDocument[]>([])
+  const [reports, setReports] = useState<DocumentReport[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -24,10 +27,14 @@ export function AdminDashboardPage() {
     try {
       setLoading(true)
       setError(null)
-      const data = await adminService.getDashboardSummary()
+      const [data, reportsData] = await Promise.all([
+        adminService.getDashboardSummary(),
+        reportService.getDocumentReports()
+      ])
       setStats(data.stats)
       setUsers(data.users)
       setDocuments(data.documents)
+      setReports(reportsData)
     } catch (err: any) {
       setError(err.message || 'Không thể tải dữ liệu admin.')
     } finally {
@@ -93,6 +100,30 @@ export function AdminDashboardPage() {
     }
   }
 
+  const loadReportsData = async () => {
+    try {
+      const reportsData = await reportService.getDocumentReports()
+      setReports(reportsData)
+    } catch (err: any) {
+      console.error(err)
+    }
+  }
+
+  const handleMarkReportReviewed = async (id: string, note?: string) => {
+    await reportService.markReportReviewed(id, note)
+    loadReportsData()
+  }
+
+  const handleRejectReport = async (id: string, note?: string) => {
+    await reportService.rejectReport(id, note)
+    loadReportsData()
+  }
+
+  const handleRemoveReportedDocument = async (id: string, note?: string) => {
+    await reportService.removeReportedDocument(id, note)
+    loadReportsData()
+  }
+
   const tabItems = [
     {
       id: 'overview' as AdminTab,
@@ -108,6 +139,11 @@ export function AdminDashboardPage() {
       id: 'documents' as AdminTab,
       label: language === 'vi' ? 'Kiểm duyệt file' : 'File Moderation',
       icon: FileText
+    },
+    {
+      id: 'reports' as AdminTab,
+      label: language === 'vi' ? 'Báo cáo vi phạm' : 'Reports',
+      icon: AlertCircle
     }
   ]
 
@@ -206,6 +242,16 @@ export function AdminDashboardPage() {
             onDeleteDocument={handleDeleteDocument}
             onApproveDocument={handleApproveDocument}
             onRejectDocument={handleRejectDocument}
+          />
+        )}
+
+        {activeTab === 'reports' && (
+          <AdminReportsTab
+            reports={reports}
+            onRefresh={loadReportsData}
+            onMarkReviewed={handleMarkReportReviewed}
+            onRejectReport={handleRejectReport}
+            onRemoveDocument={handleRemoveReportedDocument}
           />
         )}
       </div>
