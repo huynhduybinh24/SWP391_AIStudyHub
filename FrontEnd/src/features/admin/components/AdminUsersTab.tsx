@@ -201,9 +201,12 @@ export function AdminUsersTab({
                       {/* Subscription Plan */}
                       <td className="p-4">
                         <Badge className={cn(
-                          "font-extrabold text-[10px] rounded-full px-2.5 py-0.5 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450"
+                          "font-extrabold text-[10px] rounded-full px-2.5 py-0.5 uppercase tracking-wide",
+                          u.plan === 'pro' 
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15"
+                            : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450"
                         )}>
-                          Free
+                          {u.plan === 'pro' ? 'Pro' : 'Free'}
                         </Badge>
                       </td>
 
@@ -236,12 +239,12 @@ export function AdminUsersTab({
                             className={cn(
                               "p-1.5 rounded-lg transition-all cursor-pointer",
                               u.status === 'active'
-                                ? "text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                                : "text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                                ? "text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                                : "text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/40"
                             )}
                             title={u.status === 'active' ? (language === 'vi' ? 'Khóa tài khoản' : 'Lock Account') : (language === 'vi' ? 'Mở khóa tài khoản' : 'Unlock Account')}
                           >
-                            {u.status === 'active' ? <Lock className="size-4" /> : <Unlock className="size-4" />}
+                            {u.status === 'active' ? <Unlock className="size-4" /> : <Lock className="size-4" />}
                           </button>
 
                           {/* View account info */}
@@ -331,10 +334,10 @@ export function AdminUsersTab({
                 <span className="font-bold">{selectedUser.role}</span>
               </div>
               <div>
-                <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">
+                <span className="text-slate-400 dark:text-slate-505 font-bold uppercase tracking-wider block mb-1">
                   {language === 'vi' ? 'GÓI CƯỚC' : 'PLAN'}
                 </span>
-                <span className="font-bold">Free</span>
+                <span className="font-bold capitalize">{selectedUser.plan || 'Free'}</span>
               </div>
               <div>
                 <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">
