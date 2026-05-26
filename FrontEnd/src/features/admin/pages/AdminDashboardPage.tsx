@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react'
-import { Shield, Users, FileText, BarChart3, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, Cpu } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useSearchParams } from 'react-router-dom'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
 import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab'
 import { AdminUsersTab } from '@/features/admin/components/AdminUsersTab'
+import { AdminPackagesTab } from '@/features/admin/components/AdminPackagesTab'
+import { AdminNotificationsTab } from '@/features/admin/components/AdminNotificationsTab'
+import { AdminAnalyticsTab } from '@/features/admin/components/AdminAnalyticsTab'
+import { AdminLogsTab } from '@/features/admin/components/AdminLogsTab'
+import { AdminReportsTab } from '@/features/admin/components/AdminReportsTab'
 import { adminService, AdminStats, AdminUser, AdminDocument } from '../services/adminService'
 
-type AdminTab = 'overview' | 'users' | 'documents'
+type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'documents' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation'
 
 export function AdminDashboardPage() {
   const { t, language } = useTranslation()
@@ -109,9 +114,34 @@ export function AdminDashboardPage() {
       icon: Users
     },
     {
-      id: 'documents' as AdminTab,
-      label: language === 'vi' ? 'Kiểm duyệt file' : 'File Moderation',
-      icon: FileText
+      id: 'packages' as AdminTab,
+      label: language === 'vi' ? 'Quản lý gói cước' : 'Package Management',
+      icon: CreditCard
+    },
+    {
+      id: 'notifications' as AdminTab,
+      label: language === 'vi' ? 'Gửi thông báo' : 'Notification Management',
+      icon: Bell
+    },
+    {
+      id: 'analytics' as AdminTab,
+      label: language === 'vi' ? 'Thống kê' : 'Analytics',
+      icon: TrendingUp
+    },
+    {
+      id: 'activity-logs' as AdminTab,
+      label: language === 'vi' ? 'Nhật ký hoạt động' : 'Activity Logs',
+      icon: ClipboardList
+    },
+    {
+      id: 'reports' as AdminTab,
+      label: language === 'vi' ? 'Báo cáo vi phạm' : 'Reports',
+      icon: AlertTriangle
+    },
+    {
+      id: 'ai-moderation' as AdminTab,
+      label: language === 'vi' ? 'Kiểm duyệt AI' : 'AI Moderation',
+      icon: Cpu
     }
   ]
 
@@ -171,7 +201,7 @@ export function AdminDashboardPage() {
       <div className="flex border-b border-slate-200 dark:border-slate-800 w-full scroll-smooth overflow-x-auto no-scrollbar gap-2">
         {tabItems.map((tab) => {
           const Icon = tab.icon
-          const isActive = activeTab === tab.id || (tab.id === 'ai-moderation' && activeTab === 'moderation')
+          const isActive = activeTab === tab.id || (tab.id === 'ai-moderation' && activeTab === 'documents')
           return (
             <button
               key={tab.id}
@@ -203,7 +233,27 @@ export function AdminDashboardPage() {
           />
         )}
 
-        {activeTab === 'documents' && (
+        {activeTab === 'packages' && (
+          <AdminPackagesTab />
+        )}
+
+        {activeTab === 'notifications' && (
+          <AdminNotificationsTab />
+        )}
+
+        {activeTab === 'analytics' && (
+          <AdminAnalyticsTab />
+        )}
+
+        {activeTab === 'activity-logs' && (
+          <AdminLogsTab />
+        )}
+
+        {activeTab === 'reports' && (
+          <AdminReportsTab />
+        )}
+
+        {(activeTab === 'documents' || activeTab === 'ai-moderation') && (
           <AdminDocumentsTab
             documents={documents}
             onUpdateDocument={handleUpdateDocument}
