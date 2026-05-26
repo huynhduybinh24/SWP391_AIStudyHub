@@ -22,6 +22,16 @@ export type AdminDocument = {
   aiStatus: "not_analyzed" | "analyzing" | "analyzed" | "flagged";
   category: string;
   sharedCount: number;
+  isAiGenerated: boolean;
+  aiConfidenceScore: number;
+  isFlagged: boolean;
+  bannedKeywords: string[];
+  reportCount: number;
+  aiRiskLevel: "low" | "medium" | "high";
+  plagiarismScore: number;
+  unsafeContentScore: number;
+  spamScore: number;
+  uploadSource: "web_upload" | "api_sync" | "partner_portal";
 };
 
 export type AdminStats = {
@@ -111,6 +121,16 @@ let mockDocuments: AdminDocument[] = [
     aiStatus: "analyzed",
     category: "Syllabus",
     sharedCount: 45,
+    isAiGenerated: false,
+    aiConfidenceScore: 12,
+    isFlagged: false,
+    bannedKeywords: [],
+    reportCount: 0,
+    aiRiskLevel: "low",
+    plagiarismScore: 5,
+    unsafeContentScore: 1,
+    spamScore: 2,
+    uploadSource: "web_upload",
   },
   {
     id: "d2",
@@ -124,6 +144,16 @@ let mockDocuments: AdminDocument[] = [
     aiStatus: "not_analyzed",
     category: "Research",
     sharedCount: 3,
+    isAiGenerated: true,
+    aiConfidenceScore: 78,
+    isFlagged: false,
+    bannedKeywords: [],
+    reportCount: 1,
+    aiRiskLevel: "medium",
+    plagiarismScore: 18,
+    unsafeContentScore: 15,
+    spamScore: 45,
+    uploadSource: "web_upload",
   },
   {
     id: "d3",
@@ -137,23 +167,43 @@ let mockDocuments: AdminDocument[] = [
     aiStatus: "analyzed",
     category: "Study Guide",
     sharedCount: 12,
+    isAiGenerated: false,
+    aiConfidenceScore: 4,
+    isFlagged: false,
+    bannedKeywords: [],
+    reportCount: 0,
+    aiRiskLevel: "low",
+    plagiarismScore: 10,
+    unsafeContentScore: 0,
+    spamScore: 1,
+    uploadSource: "partner_portal",
   },
   {
     id: "d4",
-    title: "Biology 101 Midterm Notes",
+    title: "Biology 101 Midterm Notes Leaked Exam",
     ownerName: "Alex Rivera",
     ownerEmail: "alex@example.com",
     fileType: "pdf",
     sizeMB: 5.1,
     uploadedAt: "2024-05-24",
     status: "pending",
-    aiStatus: "analyzing",
+    aiStatus: "flagged",
     category: "Notes",
     sharedCount: 8,
+    isAiGenerated: true,
+    aiConfidenceScore: 96,
+    isFlagged: true,
+    bannedKeywords: ["leak", "exam", "midterm"],
+    reportCount: 4,
+    aiRiskLevel: "high",
+    plagiarismScore: 85,
+    unsafeContentScore: 92,
+    spamScore: 80,
+    uploadSource: "web_upload",
   },
   {
     id: "d5",
-    title: "Literature Review",
+    title: "Literature Review Copy Paste Plagiarized",
     ownerName: "Emily R.",
     ownerEmail: "emily@example.com",
     fileType: "pdf",
@@ -163,6 +213,16 @@ let mockDocuments: AdminDocument[] = [
     aiStatus: "flagged",
     category: "Review",
     sharedCount: 0,
+    isAiGenerated: false,
+    aiConfidenceScore: 0,
+    isFlagged: true,
+    bannedKeywords: ["plagiarized", "copy"],
+    reportCount: 15,
+    aiRiskLevel: "high",
+    plagiarismScore: 98,
+    unsafeContentScore: 12,
+    spamScore: 90,
+    uploadSource: "api_sync",
   },
   {
     id: "d6",
@@ -176,6 +236,16 @@ let mockDocuments: AdminDocument[] = [
     aiStatus: "analyzed",
     category: "Data",
     sharedCount: 2,
+    isAiGenerated: false,
+    aiConfidenceScore: 2,
+    isFlagged: false,
+    bannedKeywords: [],
+    reportCount: 0,
+    aiRiskLevel: "low",
+    plagiarismScore: 2,
+    unsafeContentScore: 0,
+    spamScore: 1,
+    uploadSource: "api_sync",
   },
   {
     id: "d7",
@@ -189,6 +259,16 @@ let mockDocuments: AdminDocument[] = [
     aiStatus: "analyzed",
     category: "Outline",
     sharedCount: 1,
+    isAiGenerated: false,
+    aiConfidenceScore: 0,
+    isFlagged: false,
+    bannedKeywords: [],
+    reportCount: 0,
+    aiRiskLevel: "low",
+    plagiarismScore: 4,
+    unsafeContentScore: 0,
+    spamScore: 3,
+    uploadSource: "web_upload",
   },
   {
     id: "d8",
@@ -202,6 +282,16 @@ let mockDocuments: AdminDocument[] = [
     aiStatus: "not_analyzed",
     category: "Diagram",
     sharedCount: 5,
+    isAiGenerated: false,
+    aiConfidenceScore: 0,
+    isFlagged: false,
+    bannedKeywords: [],
+    reportCount: 0,
+    aiRiskLevel: "low",
+    plagiarismScore: 0,
+    unsafeContentScore: 0,
+    spamScore: 0,
+    uploadSource: "web_upload",
   },
 ];
 
@@ -284,7 +374,7 @@ export const approveDocument = async (documentId: string): Promise<AdminDocument
   mockDocuments[index] = {
     ...mockDocuments[index],
     status: "approved",
-    aiStatus: "analyzed",
+    aiStatus: mockDocuments[index].aiStatus === "not_analyzed" ? "analyzed" : mockDocuments[index].aiStatus,
   };
   return { ...mockDocuments[index] };
 };
@@ -299,6 +389,46 @@ export const rejectDocument = async (documentId: string): Promise<AdminDocument>
     status: "rejected",
   };
   return { ...mockDocuments[index] };
+};
+
+export const bulkApproveDocuments = async (documentIds: string[]): Promise<AdminDocument[]> => {
+  await randomDelay();
+  mockDocuments = mockDocuments.map((d) => {
+    if (documentIds.includes(d.id)) {
+      return {
+        ...d,
+        status: "approved",
+        aiStatus: d.aiStatus === "not_analyzed" ? "analyzed" : d.aiStatus,
+      };
+    }
+    return d;
+  });
+  return mockDocuments.filter((d) => documentIds.includes(d.id));
+};
+
+export const bulkRejectDocuments = async (documentIds: string[]): Promise<AdminDocument[]> => {
+  await randomDelay();
+  mockDocuments = mockDocuments.map((d) => {
+    if (documentIds.includes(d.id)) {
+      return { ...d, status: "rejected" };
+    }
+    return d;
+  });
+  return mockDocuments.filter((d) => documentIds.includes(d.id));
+};
+
+export const bulkDeleteDocuments = async (documentIds: string[]): Promise<{ success: boolean }> => {
+  await randomDelay();
+  mockDocuments = mockDocuments.filter((d) => !documentIds.includes(d.id));
+  return { success: true };
+};
+
+export const exportModerationReport = async (_documentIds: string[]): Promise<{ downloadUrl: string; filename: string }> => {
+  await randomDelay();
+  return {
+    downloadUrl: "#",
+    filename: `moderation_report_${new Date().toISOString().split("T")[0]}.csv`,
+  };
 };
 
 export const getDashboardSummary = async () => {
@@ -326,5 +456,9 @@ export const adminService = {
   deleteDocument,
   approveDocument,
   rejectDocument,
+  bulkApproveDocuments,
+  bulkRejectDocuments,
+  bulkDeleteDocuments,
+  exportModerationReport,
   getDashboardSummary,
 };
