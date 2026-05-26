@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { FileViewer } from '@/components/shared/file-viewer/FileViewer'
 import { SharedFile } from './SharedFilesTable'
-import { useTranslation } from '@/context/LanguageContext'
+
 import BackToSharedFilesButton from '@/components/shared/BackToSharedFilesButton'
 
 interface SharedFileViewerProps {
@@ -17,7 +17,7 @@ export function SharedFileViewer({
   showToast,
   onDownload
 }: SharedFileViewerProps) {
-  const { t } = useTranslation()
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
