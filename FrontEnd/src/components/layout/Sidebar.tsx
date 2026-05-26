@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
-import { Zap, X, PanelLeftClose, PanelLeftOpen, Users, CreditCard, Bell, LayoutDashboard, TrendingUp, ClipboardList, AlertTriangle, Cpu } from 'lucide-react'
+import { Zap, X, PanelLeftClose, PanelLeftOpen, Users, CreditCard, Bell, LayoutDashboard, TrendingUp, ClipboardList, AlertTriangle, Cpu, ShieldCheck } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -373,6 +373,17 @@ export function Sidebar() {
                 onClick={handleLinkClick}
               />
             ))}
+            
+            {user?.role?.toLowerCase() === 'admin' && (
+              <SidebarLink
+                to="/dashboard/admin"
+                icon={ShieldCheck}
+                label={getSidebarLabel('admin panel')}
+                pathname={pathname}
+                search={search}
+                onClick={handleLinkClick}
+              />
+            )}
           </nav>
 
           {/* Upgrade to Pro button */}

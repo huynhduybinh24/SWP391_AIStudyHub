@@ -9,8 +9,12 @@ interface RoleRouteProps {
 export function RoleRoute({ allowedRoles }: RoleRouteProps) {
   const user = useAuthStore((s) => s.user)
 
-  if (!user || !allowedRoles.some((r) => r.toLowerCase() === user.role.toLowerCase())) {
-    return <Navigate to="/" replace />
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (!allowedRoles.some((r) => r.toLowerCase() === user.role.toLowerCase())) {
+    return <Navigate to="/dashboard" replace />
   }
 
   return <Outlet />
