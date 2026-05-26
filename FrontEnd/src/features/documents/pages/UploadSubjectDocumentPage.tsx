@@ -5,11 +5,7 @@ import {
   FileText,
   X,
   Sparkles,
-  FileCheck,
-  Image as ImageIcon,
-  BookOpen,
-  FileCode,
-  Folder
+  FileCode
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -32,15 +28,7 @@ interface DocumentsLayoutContext {
   showToast: (msg: string) => void
 }
 
-const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
-  COMPSCI: { title: 'Software Engineering', courseCode: 'CS-402' },
-  MATHEMATICS: { title: 'Mathematics', courseCode: 'Calculus II' },
-  BIOLOGY: { title: 'Molecular Biology', courseCode: 'BIO-201' },
-  PHYSICS: { title: 'Physics', courseCode: 'PHY-301' },
-  PHILOSOPHY: { title: 'Philosophy', courseCode: 'PHIL-101' },
-  ECONOMICS: { title: 'Economics', courseCode: 'ECON-201' },
-  GENERAL: { title: 'General Studies', courseCode: 'GEN-101' }
-}
+
 
 const AVAILABLE_TAGS = ['Notes', 'Assignment', 'Lecture', 'Midterm', 'Final Exam']
 
@@ -50,10 +38,10 @@ export function UploadSubjectDocumentPage() {
   const { subjectId } = useParams<{ subjectId: string }>()
   const navigate = useNavigate()
   const { setDocuments, showToast } = useOutletContext<DocumentsLayoutContext>()
-  const { language, t } = useTranslation()
+  const { language, t: tRaw } = useTranslation()
+  const t = tRaw as any
 
   const activeSubjectId = (subjectId || 'GENERAL').toUpperCase()
-  const subjectInfo = SUBJECT_MAP[activeSubjectId] || SUBJECT_MAP.GENERAL
 
   // Form states
   const [docTitle, setDocTitle] = useState('History_Midterm_Notes')
@@ -227,37 +215,7 @@ export function UploadSubjectDocumentPage() {
   }
 
   // Dynamically compute the document icon for card display
-  const renderPreviewFileIcon = () => {
-    switch (fileType) {
-      case 'pdf':
-        return <FileText className="h-6 w-6 stroke-[1.8] text-rose-500" />
-      case 'word':
-        return <FileCode className="h-6 w-6 stroke-[1.8] text-blue-500" />
-      case 'text':
-        return <BookOpen className="h-6 w-6 stroke-[1.8] text-emerald-500" />
-      case 'image':
-        return <ImageIcon className="h-6 w-6 stroke-[1.8] text-sky-500" />
-      case 'slides':
-      default:
-        return <FileText className="h-6 w-6 stroke-[1.8] text-amber-500" />
-    }
-  }
 
-  const getFileTypeStyle = () => {
-    switch (fileType) {
-      case 'pdf':
-        return 'bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30'
-      case 'word':
-        return 'bg-blue-50 dark:bg-blue-955/20 border border-blue-100 dark:border-blue-900/30'
-      case 'text':
-        return 'bg-emerald-50 dark:bg-emerald-955/20 border border-emerald-100 dark:border-emerald-900/30'
-      case 'image':
-        return 'bg-sky-50 dark:bg-sky-955/20 border border-sky-100 dark:border-sky-900/30'
-      case 'slides':
-      default:
-        return 'bg-amber-50 dark:bg-amber-955/20 border border-amber-100 dark:border-amber-900/30'
-    }
-  }
 
   return (
     <div className="space-y-6 pb-12 animate-fade-in max-w-[860px] mx-auto pt-2 px-4 md:px-6">

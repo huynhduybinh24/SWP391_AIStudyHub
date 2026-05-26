@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Sparkles, AlertCircle, FileText, CheckCircle2, TrendingUp } from 'lucide-react'
+import { X, Sparkles, AlertCircle, CheckCircle2, TrendingUp } from 'lucide-react'
 
 interface AIInsightsModalProps {
   isOpen: boolean

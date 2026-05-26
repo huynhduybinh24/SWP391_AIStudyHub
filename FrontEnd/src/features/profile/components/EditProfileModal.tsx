@@ -38,7 +38,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       university: z.string().min(1, language === 'vi' ? 'Vui lòng nhập tên trường đại học' : language === 'ja' ? '大学名は必須です' : language === 'ko' ? '대학교명은 필수입니다' : 'University is required'),
       major: z.string().min(1, language === 'vi' ? 'Vui lòng nhập chuyên ngành' : language === 'ja' ? '専攻は必須です' : language === 'ko' ? '전공은 필수입니다' : 'Major is required'),
       degree: z.enum(['Bachelor', 'Master', 'PhD', 'Associate'], {
-        errorMap: () => ({ message: language === 'vi' ? 'Vui lòng chọn bằng cấp' : language === 'ja' ? '学位を選択してください' : language === 'ko' ? '학위를 선택해주세요' : 'Degree is required' })
+        message: language === 'vi' ? 'Vui lòng chọn bằng cấp' : language === 'ja' ? '学位を選択してください' : language === 'ko' ? '학위를 선택해주세요' : 'Degree is required'
       }),
     })
   }, [language])

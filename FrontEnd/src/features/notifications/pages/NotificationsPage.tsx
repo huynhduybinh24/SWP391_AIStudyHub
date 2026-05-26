@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Eye, Calendar, Layers, ExternalLink, RefreshCw, BellOff } from 'lucide-react'
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { notificationApi, Notification } from '../api/notification.api'
 import { useTranslation } from '@/context/LanguageContext'
-import { Language } from '@/locales'
+
 
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
@@ -485,7 +485,7 @@ function NotificationCard({
 }
 
 export function NotificationsPage() {
-  const navigate = useNavigate()
+
   const { t, language } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
 
