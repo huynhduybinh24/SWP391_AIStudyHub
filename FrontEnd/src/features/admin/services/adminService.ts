@@ -8,6 +8,7 @@ export type AdminUser = {
   documentsCount: number;
   storageUsedMB: number;
   avatar?: string;
+  plan?: "free" | "pro";
 };
 
 export type AdminDocument = {
@@ -55,6 +56,7 @@ let mockUsers: AdminUser[] = [
     joinedAt: "2023-01-15",
     documentsCount: 45,
     storageUsedMB: 1500,
+    plan: "pro",
   },
   {
     id: "u2",
@@ -65,6 +67,7 @@ let mockUsers: AdminUser[] = [
     joinedAt: "2023-03-22",
     documentsCount: 120,
     storageUsedMB: 5400,
+    plan: "pro",
   },
   {
     id: "u3",
@@ -75,6 +78,7 @@ let mockUsers: AdminUser[] = [
     joinedAt: "2024-01-10",
     documentsCount: 12,
     storageUsedMB: 350,
+    plan: "free",
   },
   {
     id: "u4",
@@ -85,6 +89,7 @@ let mockUsers: AdminUser[] = [
     joinedAt: "2024-02-05",
     documentsCount: 5,
     storageUsedMB: 120,
+    plan: "free",
   },
   {
     id: "u5",
@@ -95,6 +100,7 @@ let mockUsers: AdminUser[] = [
     joinedAt: "2024-03-12",
     documentsCount: 25,
     storageUsedMB: 850,
+    plan: "free",
   },
   {
     id: "u6",
@@ -105,6 +111,7 @@ let mockUsers: AdminUser[] = [
     joinedAt: "2023-08-19",
     documentsCount: 88,
     storageUsedMB: 3200,
+    plan: "free",
   },
 ];
 
