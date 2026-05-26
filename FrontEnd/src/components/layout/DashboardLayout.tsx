@@ -41,7 +41,7 @@ export function DashboardLayout() {
         </div>
 
         {/* Interactive Floating Chatbot */}
-        {!isChatPage && user?.role !== 'admin' && <FloatingAssistantButton />}
+        {!isChatPage && user?.role?.toLowerCase() !== 'admin' && <FloatingAssistantButton />}
       </div>
     </div>
   )
