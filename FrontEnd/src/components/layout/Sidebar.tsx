@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
-import { Zap, X, PanelLeftClose, PanelLeftOpen, ShieldCheck } from 'lucide-react'
+import { Zap, X, PanelLeftClose, PanelLeftOpen, Users, CreditCard, Bell, LayoutDashboard } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -9,17 +9,24 @@ import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 
-function isNavActive(pathname: string, path: string) {
+function isNavActive(pathname: string, search: string, targetPathWithQuery: string) {
+  const [targetPath, targetQuery] = targetPathWithQuery.split('?')
   if (pathname.startsWith('/dashboard/shared-files')) {
-    return path === '/dashboard/shared'
+    return targetPath === '/dashboard/shared'
   }
-  if (path === '/dashboard') {
+  if (targetPath === '/dashboard/admin') {
+    if (pathname !== '/dashboard/admin') return false
+    const currentTab = new URLSearchParams(search).get('tab') || 'overview'
+    const targetTab = new URLSearchParams(targetQuery || '').get('tab') || 'overview'
+    return currentTab === targetTab
+  }
+  if (targetPath === '/dashboard') {
     return pathname === '/dashboard' || pathname === '/dashboard/'
   }
-  if (path === '/') {
+  if (targetPath === '/') {
     return pathname === '/' || pathname === ''
   }
-  return pathname === path || pathname.startsWith(`${path}/`)
+  return pathname === targetPath || pathname.startsWith(`${targetPath}/`)
 }
 
 interface TooltipProps {
@@ -79,11 +86,12 @@ interface SidebarLinkProps {
   icon: React.ComponentType<{ className?: string; strokeWidth?: number; style?: React.CSSProperties }>
   label: string
   pathname: string
+  search?: string
   onClick?: () => void
 }
 
-function SidebarLink({ to, icon: Icon, label, pathname, onClick }: SidebarLinkProps) {
-  const active = isNavActive(pathname, to)
+function SidebarLink({ to, icon: Icon, label, pathname, search = '', onClick }: SidebarLinkProps) {
+  const active = isNavActive(pathname, search, to)
   const isSidebarCollapsed = useUiStore((s) => s.isSidebarCollapsed)
 
   return (
@@ -134,13 +142,20 @@ function SidebarLink({ to, icon: Icon, label, pathname, onClick }: SidebarLinkPr
 }
 
 export function Sidebar() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
   const isSidebarCollapsed = useUiStore((s) => s.isSidebarCollapsed)
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed)
   const user = useAuthStore((s) => s.user)
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
+
+  const adminNavItems = [
+    { label: 'Admin Dashboard', path: '/dashboard/admin?tab=overview', icon: LayoutDashboard },
+    { label: 'User Management', path: '/dashboard/admin?tab=users', icon: Users },
+    { label: 'Package Management', path: '/dashboard/admin?tab=packages', icon: CreditCard },
+    { label: 'Notification Management', path: '/dashboard/admin?tab=notifications', icon: Bell },
+  ]
 
   const getSidebarLabel = (label: string) => {
     switch (label.toLowerCase()) {
@@ -170,6 +185,14 @@ export function Sidebar() {
         return t.sidebar.logout
       case 'admin panel':
         return t.sidebar.adminPanel
+      case 'admin dashboard':
+        return language === 'vi' ? 'Tổng quan Admin' : 'Admin Dashboard'
+      case 'user management':
+        return language === 'vi' ? 'Quản lý người dùng' : 'User Management'
+      case 'package management':
+        return language === 'vi' ? 'Quản lý gói cước' : 'Package Management'
+      case 'notification management':
+        return language === 'vi' ? 'Gửi thông báo' : 'Notification Management'
       default:
         return label
     }
@@ -293,24 +316,30 @@ export function Sidebar() {
 
           {/* Navigation list */}
           <nav className="flex flex-col gap-1.5 pr-1 overflow-y-auto flex-1 min-h-0 no-scrollbar">
-            {mainNavItems.map((item) => (
-              <SidebarLink
-                key={item.path}
-                to={item.path}
-                icon={item.icon}
-                label={getSidebarLabel(item.label)}
-                pathname={pathname}
-                onClick={handleLinkClick}
-              />
-            ))}
-            {user?.role === 'admin' && (
-              <SidebarLink
-                to="/dashboard/admin"
-                icon={ShieldCheck}
-                label={getSidebarLabel('Admin Panel')}
-                pathname={pathname}
-                onClick={handleLinkClick}
-              />
+            {user?.role === 'admin' ? (
+              adminNavItems.map((item) => (
+                <SidebarLink
+                  key={item.path}
+                  to={item.path}
+                  icon={item.icon}
+                  label={getSidebarLabel(item.label)}
+                  pathname={pathname}
+                  search={search}
+                  onClick={handleLinkClick}
+                />
+              ))
+            ) : (
+              mainNavItems.map((item) => (
+                <SidebarLink
+                  key={item.path}
+                  to={item.path}
+                  icon={item.icon}
+                  label={getSidebarLabel(item.label)}
+                  pathname={pathname}
+                  search={search}
+                  onClick={handleLinkClick}
+                />
+              ))
             )}
           </nav>
         </div>
@@ -328,6 +357,7 @@ export function Sidebar() {
                 icon={item.icon}
                 label={getSidebarLabel(item.label)}
                 pathname={pathname}
+                search={search}
                 onClick={handleLinkClick}
               />
             ))}
