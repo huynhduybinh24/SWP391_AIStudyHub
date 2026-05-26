@@ -1,4 +1,3 @@
-import React from 'react';
 import { Video, Music, FileText, Eye, Download, Edit2, Trash2 } from 'lucide-react';
 import { UploadedMedia } from './mediaUploadTypes';
 

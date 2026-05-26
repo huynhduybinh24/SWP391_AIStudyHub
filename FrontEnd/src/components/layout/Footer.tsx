@@ -5,7 +5,7 @@ export function Footer() {
   const toast = useToast()
   const { t } = useTranslation()
 
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, label: string) => {
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, _label: string) => {
     e.preventDefault()
     toast.success(`${t.common.loading}`)
   }

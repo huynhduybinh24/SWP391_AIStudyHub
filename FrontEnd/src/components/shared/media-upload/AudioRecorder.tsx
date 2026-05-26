@@ -1,7 +1,6 @@
-import React, { useRef, useState } from 'react';
-import { Mic, Play, Pause, X, Trash2, Save, Square } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Mic, Play, Pause, Trash2, Save, Square } from 'lucide-react';
 import { formatTime } from './mediaUploadUtils';
-import { cn } from '@/lib/utils';
 
 interface AudioRecorderProps {
   recordingStatus: 'idle' | 'recording' | 'paused' | 'stopped';

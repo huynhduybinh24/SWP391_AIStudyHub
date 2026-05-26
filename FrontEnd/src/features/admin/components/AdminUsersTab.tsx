@@ -1,17 +1,13 @@
 import { useState, useMemo } from 'react'
 import {
-  Users,
   Search,
   Eye,
   Trash2,
   Lock,
   Unlock,
   Key,
-  ShieldCheck,
   UserCheck,
-  UserX,
-  X,
-  Database
+  UserX
 } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
@@ -20,102 +16,29 @@ import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { AdminUser } from '../services/adminService'
 
-interface SystemUser {
-  id: string
-  name: string
-  email: string
-  role: 'Admin' | 'Editor' | 'Student'
-  plan: 'Free' | 'Pro'
-  status: 'active' | 'locked'
-  storageUsed: string
-  storageLimit: string
-  uploadsCount: number
-  loginsCount: number
-  joinedAt: string
-}
-
-export function AdminUsersTab() {
+export function AdminUsersTab({
+  users,
+  onUpdateUser,
+  onDeleteUser
+}: {
+  users: AdminUser[]
+  onUpdateUser: (id: string, updates: Partial<AdminUser>) => void
+  onDeleteUser: (id: string) => void
+}) {
   const { language } = useTranslation()
   const toast = useToast()
-
-  const [users, setUsers] = useState<SystemUser[]>([
-    {
-      id: 'usr-1',
-      name: 'Ngoc Tan',
-      email: 'tan@example.com',
-      role: 'Student',
-      plan: 'Pro',
-      status: 'active',
-      storageUsed: '32.5 GB',
-      storageLimit: '50 GB',
-      uploadsCount: 142,
-      loginsCount: 382,
-      joinedAt: '2025-09-12'
-    },
-    {
-      id: 'usr-2',
-      name: 'Huynh Duy Binh',
-      email: 'binh@example.com',
-      role: 'Editor',
-      plan: 'Pro',
-      status: 'active',
-      storageUsed: '41.2 GB',
-      storageLimit: '50 GB',
-      uploadsCount: 205,
-      loginsCount: 412,
-      joinedAt: '2025-08-20'
-    },
-    {
-      id: 'usr-3',
-      name: 'Sarah Jenkins',
-      email: 'sarah.j@school.edu',
-      role: 'Student',
-      plan: 'Free',
-      status: 'active',
-      storageUsed: '8.4 GB',
-      storageLimit: '10 GB',
-      uploadsCount: 42,
-      loginsCount: 120,
-      joinedAt: '2025-10-01'
-    },
-    {
-      id: 'usr-4',
-      name: 'David Kim',
-      email: 'david.k@university.edu',
-      role: 'Student',
-      plan: 'Free',
-      status: 'locked',
-      storageUsed: '9.8 GB',
-      storageLimit: '10 GB',
-      uploadsCount: 89,
-      loginsCount: 198,
-      joinedAt: '2025-09-28'
-    },
-    {
-      id: 'usr-5',
-      name: 'System Admin Extra',
-      email: 'admin.support@lumiedu.vn',
-      role: 'Admin',
-      plan: 'Pro',
-      status: 'active',
-      storageUsed: '2.5 GB',
-      storageLimit: '50 GB',
-      uploadsCount: 12,
-      loginsCount: 840,
-      joinedAt: '2025-05-15'
-    }
-  ])
 
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
-  const [selectedUser, setSelectedUser] = useState<SystemUser | null>(null)
-  const [deleteUserConfirm, setDeleteUserConfirm] = useState<SystemUser | null>(null)
-  const [pwResetUserConfirm, setPwResetUserConfirm] = useState<SystemUser | null>(null)
-  const [editingRoleUser, setEditingRoleUser] = useState<SystemUser | null>(null)
-  const [selectedRole, setSelectedRole] = useState<'Admin' | 'Editor' | 'Student'>('Student')
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
+  const [deleteUserConfirm, setDeleteUserConfirm] = useState<AdminUser | null>(null)
+  const [pwResetUserConfirm, setPwResetUserConfirm] = useState<AdminUser | null>(null)
+  const [editingRoleUser, setEditingRoleUser] = useState<AdminUser | null>(null)
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'teacher' | 'student'>('student')
 
   // Search/Filter logic
   const filteredUsers = useMemo(() => {
@@ -132,26 +55,19 @@ export function AdminUsersTab() {
   }, [users, searchTerm, roleFilter, statusFilter])
 
   // Lock/Unlock Account Action
-  const toggleLockUser = (id: string) => {
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id === id) {
-          const nextStatus = u.status === 'active' ? 'locked' : 'active'
-          const label = nextStatus === 'active'
-            ? (language === 'vi' ? 'Đã mở khóa tài khoản thành công' : 'Account unlocked successfully')
-            : (language === 'vi' ? 'Đã khóa tài khoản thành công' : 'Account locked successfully')
-          toast.success(label)
-          return { ...u, status: nextStatus }
-        }
-        return u
-      })
-    )
+  const toggleLockUser = (id: string, currentStatus: string) => {
+    const nextStatus = currentStatus === 'active' ? 'inactive' : 'active'
+    onUpdateUser(id, { status: nextStatus })
+    const label = nextStatus === 'active'
+      ? (language === 'vi' ? 'Đã mở khóa tài khoản thành công' : 'Account unlocked successfully')
+      : (language === 'vi' ? 'Đã khóa tài khoản thành công' : 'Account locked successfully')
+    toast.success(label)
   }
 
   // Delete User Confirm Action
   const handleDeleteUser = () => {
     if (!deleteUserConfirm) return
-    setUsers((prev) => prev.filter((u) => u.id !== deleteUserConfirm.id))
+    onDeleteUser(deleteUserConfirm.id)
     const msg = language === 'vi' ? 'Đã xóa người dùng thành công' : 'User deleted successfully'
     toast.success(msg)
     setDeleteUserConfirm(null)
@@ -170,9 +86,7 @@ export function AdminUsersTab() {
   // Save Role Changes
   const handleSaveRole = () => {
     if (!editingRoleUser) return
-    setUsers((prev) =>
-      prev.map((u) => (u.id === editingRoleUser.id ? { ...u, role: selectedRole } : u))
-    )
+    onUpdateUser(editingRoleUser.id, { role: selectedRole })
     const msg = language === 'vi' 
       ? `Đã cập nhật vai trò của ${editingRoleUser.name} thành ${selectedRole}` 
       : `Updated ${editingRoleUser.name}'s role to ${selectedRole}`
@@ -205,9 +119,9 @@ export function AdminUsersTab() {
             className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold focus:outline-none"
           >
             <option value="all">{language === 'vi' ? 'Mọi vai trò' : 'All Roles'}</option>
-            <option value="Admin">Admin</option>
-            <option value="Editor">Editor</option>
-            <option value="Student">Student</option>
+            <option value="admin">Admin</option>
+            <option value="teacher">Teacher</option>
+            <option value="student">Student</option>
           </select>
 
           {/* Status Filter */}
@@ -218,7 +132,7 @@ export function AdminUsersTab() {
           >
             <option value="all">{language === 'vi' ? 'Mọi trạng thái' : 'All Status'}</option>
             <option value="active">{language === 'vi' ? 'Hoạt động' : 'Active'}</option>
-            <option value="locked">{language === 'vi' ? 'Bị khóa' : 'Locked'}</option>
+            <option value="inactive">{language === 'vi' ? 'Bị khóa/Không HĐ' : 'Inactive'}</option>
           </select>
         </div>
       </div>
@@ -276,9 +190,9 @@ export function AdminUsersTab() {
                       <td className="p-4">
                         <Badge className={cn(
                           "font-extrabold text-[10px] uppercase tracking-wider rounded-full px-2.5 py-0.5",
-                          u.role === 'Admin' && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
-                          u.role === 'Editor' && "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
-                          u.role === 'Student' && "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          u.role === 'admin' && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
+                          u.role === 'teacher' && "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
+                          u.role === 'student' && "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
                         )}>
                           {u.role}
                         </Badge>
@@ -287,17 +201,15 @@ export function AdminUsersTab() {
                       {/* Subscription Plan */}
                       <td className="p-4">
                         <Badge className={cn(
-                          "font-extrabold text-[10px] rounded-full px-2.5 py-0.5",
-                          u.plan === 'Pro' && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25",
-                          u.plan === 'Free' && "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450"
+                          "font-extrabold text-[10px] rounded-full px-2.5 py-0.5 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450"
                         )}>
-                          {u.plan}
+                          Free
                         </Badge>
                       </td>
 
                       {/* Storage used */}
                       <td className="p-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                        {u.storageUsed} / {u.storageLimit}
+                        {(u.storageUsedMB / 1024).toFixed(2)} GB / 10 GB
                       </td>
 
                       {/* Status */}
@@ -311,7 +223,7 @@ export function AdminUsersTab() {
                           <span className={cn("size-1.5 rounded-full", u.status === 'active' ? "bg-emerald-500" : "bg-rose-500")} />
                           {u.status === 'active' 
                             ? (language === 'vi' ? 'Hoạt động' : 'Active') 
-                            : (language === 'vi' ? 'Bị khóa' : 'Locked')}
+                            : (language === 'vi' ? 'Bị khóa' : 'Inactive')}
                         </Badge>
                       </td>
 
@@ -320,7 +232,7 @@ export function AdminUsersTab() {
                         <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                           {/* Toggle Lock */}
                           <button
-                            onClick={() => toggleLockUser(u.id)}
+                            onClick={() => toggleLockUser(u.id, u.status)}
                             className={cn(
                               "p-1.5 rounded-lg transition-all cursor-pointer",
                               u.status === 'active'
@@ -422,19 +334,13 @@ export function AdminUsersTab() {
                 <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">
                   {language === 'vi' ? 'GÓI CƯỚC' : 'PLAN'}
                 </span>
-                <span className="font-bold">{selectedUser.plan}</span>
+                <span className="font-bold">Free</span>
               </div>
               <div>
                 <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">
                   {language === 'vi' ? 'TỔNG TÀI LIỆU' : 'TOTAL UPLOADS'}
                 </span>
-                <span className="font-bold">{selectedUser.uploadsCount} files</span>
-              </div>
-              <div>
-                <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">
-                  {language === 'vi' ? 'LƯỢT ĐĂNG NHẬP' : 'LOGIN COUNT'}
-                </span>
-                <span className="font-bold">{selectedUser.loginsCount} times</span>
+                <span className="font-bold">{selectedUser.documentsCount} files</span>
               </div>
               <div className="col-span-2">
                 <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">
@@ -444,12 +350,12 @@ export function AdminUsersTab() {
                   <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-blue-600 dark:bg-blue-500 rounded-full" 
-                      style={{ width: `${(parseFloat(selectedUser.storageUsed) / parseFloat(selectedUser.storageLimit)) * 100}%` }}
+                      style={{ width: `${(selectedUser.storageUsedMB / 10240) * 100}%` }}
                     />
                   </div>
                   <div className="flex justify-between font-extrabold text-[10px] text-slate-450 dark:text-slate-500">
-                    <span>{selectedUser.storageUsed} {language === 'vi' ? 'đã dùng' : 'used'}</span>
-                    <span>{selectedUser.storageLimit}</span>
+                    <span>{(selectedUser.storageUsedMB / 1024).toFixed(2)} GB {language === 'vi' ? 'đã dùng' : 'used'}</span>
+                    <span>10 GB</span>
                   </div>
                 </div>
               </div>
@@ -558,7 +464,7 @@ export function AdminUsersTab() {
               {language === 'vi' ? 'Chọn vai trò mới cho:' : 'Select role for:'} <span className="font-extrabold text-slate-800 dark:text-white block mt-0.5">{editingRoleUser.name}</span>
             </p>
             <div className="space-y-2">
-              {(['Student', 'Editor', 'Admin'] as const).map((r) => (
+              {(['student', 'teacher', 'admin'] as const).map((r) => (
                 <label
                   key={r}
                   className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
@@ -580,7 +486,7 @@ export function AdminUsersTab() {
                   }`}>
                     {selectedRole === r && <div className="size-2 rounded-full bg-blue-600" />}
                   </div>
-                  <span className="text-xs font-bold">{r}</span>
+                  <span className="text-xs font-bold capitalize">{r}</span>
                 </label>
               ))}
             </div>
@@ -604,3 +510,4 @@ export function AdminUsersTab() {
     </div>
   )
 }
+

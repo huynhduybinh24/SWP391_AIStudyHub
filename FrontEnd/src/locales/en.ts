@@ -102,6 +102,7 @@ export const en = {
     toastDeleteSuccess: "Document deleted successfully",
     searchDocsPlaceholder: "Search files, uploaders...",
     noDocsModeration: "No documents require moderation at this time.",
+    noDocs: "No documents found",
     previewContentTitle: "Document Content Preview",
     docColReportAction: "View Report",
     reportModalTitle: "Violation Report Details",

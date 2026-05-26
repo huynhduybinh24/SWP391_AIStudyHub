@@ -91,10 +91,10 @@ export function FileViewer({
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
 
   // Timer references for simulations
-  const aiTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const aiTimeoutRef = useRef<any>(null)
+  const typingIntervalRef = useRef<any>(null)
+  const scanIntervalRef = useRef<any>(null)
+  const scanTimeoutRef = useRef<any>(null)
 
   // Reset scroll to top on mount, and cleanup timers on unmount
   useEffect(() => {

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import {
   FileText, FlaskConical, FileQuestion, Paperclip, Mic, Send,
   Loader2, User, X, Plus, Search, Copy, RefreshCw, MoreVertical,
-  Trash2, Edit2, Pin, MessageSquare, Check, Sparkles, FolderOpen, ArrowLeft,
+  Trash2, Edit2, Pin, MessageSquare, Check, FolderOpen, ArrowLeft,
   Zap, BrainCircuit, ChevronDown, Reply, Share2, CornerDownRight, Link
 } from 'lucide-react'
 

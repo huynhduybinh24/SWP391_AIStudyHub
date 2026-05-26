@@ -50,7 +50,7 @@ export function useMediaUpload(initialTab: MediaType = 'document') {
   // Check MediaRecorder support
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+      const supported = !!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function' && window.MediaRecorder);
       setRecorderSupported(supported);
     }
   }, []);

@@ -98,6 +98,7 @@ export const ko: any = {
     toastDeleteSuccess: "문서가 성공적으로 삭제되었습니다",
     searchDocsPlaceholder: "파일, 업로더 검색...",
     noDocsModeration: "현재 중재할 문서가 없습니다.",
+    noDocs: "문서를 찾을 수 없습니다",
     previewContentTitle: "문서 내용 미리보기",
     docColReportAction: "신고 보기",
     reportModalTitle: "위반 신고 세부 정보",
