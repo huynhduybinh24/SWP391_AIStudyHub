@@ -234,7 +234,10 @@ export function AdminDashboardPage() {
         )}
 
         {activeTab === 'packages' && (
-          <AdminPackagesTab />
+          <AdminPackagesTab
+            users={users}
+            onUpdateUser={handleUpdateUser}
+          />
         )}
 
         {activeTab === 'notifications' && (
