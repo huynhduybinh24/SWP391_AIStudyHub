@@ -20,7 +20,7 @@ export function DashboardPage() {
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false)
   const { data, isLoading, isError, error, refetch } = useDashboard()
 
-  if (user?.role === 'admin') {
+  if (user?.role?.toLowerCase() === 'admin') {
     return <Navigate to="/dashboard/admin" replace />
   }
 
