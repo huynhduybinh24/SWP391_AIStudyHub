@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { Sparkles } from 'lucide-react'
 import heroImg from '@/assets/hero.png'
