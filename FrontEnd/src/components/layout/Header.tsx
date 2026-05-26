@@ -52,7 +52,7 @@ export interface MockNotification {
   title: string
   description: string
   time: string
-  type: 'doc' | 'chat' | 'plan' | 'share'
+  type: 'doc' | 'chat' | 'plan' | 'share' | 'document_deleted'
   isRead: boolean
 }
 
@@ -71,7 +71,7 @@ export function Header() {
   const [searchResults, setSearchResults] = useState<typeof CHATBOT_SEARCH_DATA>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
-  const [notifications, setNotifications] = useState<MockNotification[]>(() => {
+  const loadNotifications = () => {
     const defaultNotifications: MockNotification[] = [
       {
         id: 'syllabus-analyzed',
@@ -107,11 +107,32 @@ export function Header() {
       },
     ]
 
+    let localNotifications: MockNotification[] = []
+    try {
+      const savedNotifs = localStorage.getItem('aiStudyHubUserNotifications')
+      if (savedNotifs) {
+        const parsed = JSON.parse(savedNotifs)
+        localNotifications = parsed.map((n: any) => ({
+          id: n.id,
+          title: n.title,
+          description: n.message,
+          time: n.time || 'Just now',
+          type: n.type,
+          isRead: n.isRead,
+          createdAt: n.createdAt
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to load user notifications:', err)
+    }
+
+    let allNotifs = [...localNotifications, ...defaultNotifications]
+
     try {
       const saved = localStorage.getItem('aiStudyHubHeaderNotificationsReadState')
       if (saved) {
         const readMap = JSON.parse(saved)
-        return defaultNotifications.map((n) => ({
+        allNotifs = allNotifs.map((n) => ({
           ...n,
           isRead: readMap[n.id] !== undefined ? readMap[n.id] : n.isRead,
         }))
@@ -119,8 +140,16 @@ export function Header() {
     } catch (err) {
       console.error('Failed to load notifications read state:', err)
     }
-    return defaultNotifications
-  })
+    return allNotifs
+  }
+
+  const [notifications, setNotifications] = useState<MockNotification[]>(loadNotifications)
+
+  useEffect(() => {
+    const handleUpdate = () => setNotifications(loadNotifications())
+    window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+    return () => window.removeEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+  }, [])
 
   // Single source of truth for all unread indicators (Bell red dot, Dropdown title badge, Item dots)
   const unreadCount = notifications.filter((n) => !n.isRead).length
@@ -128,6 +157,16 @@ export function Header() {
   const markAsRead = (id: string) => {
     setNotifications((prev) => {
       const updated = prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      
+      try {
+        const savedNotifs = localStorage.getItem('aiStudyHubUserNotifications')
+        if (savedNotifs) {
+          let parsed = JSON.parse(savedNotifs)
+          parsed = parsed.map((n: any) => n.id === id ? { ...n, isRead: true } : n)
+          localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(parsed))
+        }
+      } catch (err) {}
+
       try {
         const readMap: Record<string, boolean> = {}
         updated.forEach((n) => {
@@ -144,6 +183,16 @@ export function Header() {
   const markAllAsRead = () => {
     setNotifications((prev) => {
       const updated = prev.map((n) => ({ ...n, isRead: true }))
+      
+      try {
+        const savedNotifs = localStorage.getItem('aiStudyHubUserNotifications')
+        if (savedNotifs) {
+          let parsed = JSON.parse(savedNotifs)
+          parsed = parsed.map((n: any) => ({ ...n, isRead: true }))
+          localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(parsed))
+        }
+      } catch (err) {}
+
       try {
         const readMap: Record<string, boolean> = {}
         updated.forEach((n) => {

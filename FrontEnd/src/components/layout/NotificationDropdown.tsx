@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Bell, BookOpen, Bot, Calendar, Share2, Check } from 'lucide-react'
+import { Bell, BookOpen, Bot, Calendar, Share2, Check, AlertTriangle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/components/ui/Toast'
 import { MockNotification } from './Header'
@@ -16,13 +16,14 @@ interface NotificationDropdownProps {
 export function NotificationDropdown({ onClose, notifications, markAsRead, markAllAsRead }: NotificationDropdownProps) {
   const navigate = useNavigate()
   const toast = useToast()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   const getNotificationTitle = (title: string) => {
     if (title === 'Syllabus analyzed') return t.header.notifSyllabusTitle
     if (title === 'Study plan starting') return t.header.notifPlanTitle
     if (title === 'New shared folder') return t.header.notifShareTitle
     if (title === 'AI Summary generated') return t.header.notifSummaryTitle
+    if (title === 'Document removed by admin') return language === 'vi' ? 'Tài liệu đã bị quản trị viên xóa' : title
     return title
   }
 
@@ -31,6 +32,15 @@ export function NotificationDropdown({ onClose, notifications, markAsRead, markA
     if (desc.includes('midterm exam study plan')) return t.header.notifPlanDesc
     if (desc.includes('shared "SWE Lab materials"')) return t.header.notifShareDesc
     if (desc.includes('Summary is ready')) return t.header.notifSummaryDesc
+    if (desc.includes('was removed by admin')) {
+      if (language === 'vi') {
+        const docNameMatch = desc.match(/"([^"]+)"/)
+        const reasonMatch = desc.match(/Reason:\s*(.*)$/)
+        if (docNameMatch && reasonMatch) {
+          return `Tài liệu "${docNameMatch[1]}" của bạn đã bị quản trị viên xóa. Lý do: ${reasonMatch[1]}`
+        }
+      }
+    }
     return desc
   }
 
@@ -57,6 +67,8 @@ export function NotificationDropdown({ onClose, notifications, markAsRead, markA
         return <Calendar className="size-4 text-[#3155F6]" />
       case 'share':
         return <Share2 className="size-4 text-amber-500" />
+      case 'document_deleted':
+        return <AlertTriangle className="size-4 text-rose-500" />
       case 'chat':
       default:
         return <Bot className="size-4 text-purple-500" />
@@ -106,7 +118,11 @@ export function NotificationDropdown({ onClose, notifications, markAsRead, markA
               !item.isRead ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''
             }`}
           >
-            <div className="mt-0.5 size-7 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+            <div className={`mt-0.5 size-7 rounded-lg border flex items-center justify-center shrink-0 ${
+              item.type === 'document_deleted'
+                ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20'
+                : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+            }`}>
               {getIcon(item.type)}
             </div>
             
