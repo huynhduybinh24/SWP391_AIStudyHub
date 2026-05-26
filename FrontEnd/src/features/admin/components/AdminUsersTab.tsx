@@ -236,12 +236,12 @@ export function AdminUsersTab({
                             className={cn(
                               "p-1.5 rounded-lg transition-all cursor-pointer",
                               u.status === 'active'
-                                ? "text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                                : "text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                                ? "text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                                : "text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/40"
                             )}
                             title={u.status === 'active' ? (language === 'vi' ? 'Khóa tài khoản' : 'Lock Account') : (language === 'vi' ? 'Mở khóa tài khoản' : 'Unlock Account')}
                           >
-                            {u.status === 'active' ? <Lock className="size-4" /> : <Unlock className="size-4" />}
+                            {u.status === 'active' ? <Unlock className="size-4" /> : <Lock className="size-4" />}
                           </button>
 
                           {/* View account info */}
