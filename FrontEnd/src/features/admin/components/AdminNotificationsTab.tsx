@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Bell, Send, Trash2, ShieldAlert, Sparkles, Volume2, Info } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
-import { Card, CardContent } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 
