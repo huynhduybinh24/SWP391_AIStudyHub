@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { FileText, FileSpreadsheet, Folder, MoreVertical, Eye, Edit2, Star, Image as ImageIcon } from 'lucide-react'
+import { MoreVertical, Eye, Edit2, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SharedFile } from './SharedFilesTable'
 import { FileActionsDropdown } from './FileActionsDropdown'
@@ -228,8 +228,8 @@ export function WorkspaceFileCard({
               onDownload={onDownload}
               onShareAccess={onShareAccess}
               onRename={onRename}
-              onChangePermission={onChangePermission}
-              onRemoveAccess={onRemoveAccess}
+              onChangePermission={() => onChangePermission(file)}
+              onRemoveAccess={() => onRemoveAccess(file)}
               buttonRef={buttonRef}
             />
           </div>
@@ -283,8 +283,8 @@ export function WorkspaceFileCard({
               onDownload={onDownload}
               onShareAccess={onShareAccess}
               onRename={onRename}
-              onChangePermission={onChangePermission}
-              onRemoveAccess={onRemoveAccess}
+              onChangePermission={() => onChangePermission(file)}
+              onRemoveAccess={() => onRemoveAccess(file)}
               buttonRef={buttonRef}
             />
           </div>

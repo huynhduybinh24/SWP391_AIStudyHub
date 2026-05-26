@@ -18,9 +18,7 @@ import {
   UserPlus,
   Settings,
   Mail,
-  User,
   Link,
-  Copy,
   Send,
   RefreshCw,
   BookOpen,
@@ -1600,7 +1598,7 @@ Dưới đây là tóm tắt nhanh từ trợ lý AI:
                                         THẺ TAG ĐỀ XUẤT
                                       </span>
                                       <div className="flex flex-wrap gap-1.5 pt-0.5">
-                                        {msg.payload.tags.map(t => (
+                                        {msg.payload.tags.map((t: string) => (
                                           <span key={t} className="inline-flex rounded-md bg-blue-50 dark:bg-blue-955/20 border border-blue-100 dark:border-blue-900/40 px-2 py-0.5 text-[9px] font-black text-[#2563eb] dark:text-blue-400">
                                             #{t}
                                           </span>

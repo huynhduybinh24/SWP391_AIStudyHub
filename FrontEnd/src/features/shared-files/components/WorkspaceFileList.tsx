@@ -3,7 +3,7 @@ import { Folder } from 'lucide-react'
 import { WorkspaceFileCard } from './WorkspaceFileCard'
 import { WorkspaceFileTable } from './WorkspaceFileTable'
 import { SharedFile } from './SharedFilesTable'
-import { cn } from '@/lib/utils'
+
 import { useTranslation } from '@/context/LanguageContext'
 
 interface WorkspaceFileListProps {

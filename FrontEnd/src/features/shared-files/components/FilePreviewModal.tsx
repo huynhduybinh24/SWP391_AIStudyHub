@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X, FileText, FileSpreadsheet, Image as ImageIcon, Download, Share2, Edit3, Trash2, Eye, Calendar, User, Info, Folder
+  X, FileText, FileSpreadsheet, Download, Share2, Edit3, Trash2, Eye, Calendar, User, Info, Folder
 } from 'lucide-react'
 import { SharedFile } from './SharedFilesTable'
 
@@ -261,7 +261,7 @@ export function FilePreviewModal({
                   </span>
                   <span className="flex items-center gap-1">
                     <Eye className="size-3.5 text-emerald-500" />
-                    <span>Permission: <strong className="text-slate-700 dark:text-slate-300">{file.permissions}</strong></span>
+                    <span>Permission: <strong className="text-slate-700 dark:text-slate-300">{file.permission}</strong></span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Calendar className="size-3.5 text-indigo-500" />

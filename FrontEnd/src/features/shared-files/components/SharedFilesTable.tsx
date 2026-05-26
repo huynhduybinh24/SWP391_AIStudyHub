@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { FileText, FileSpreadsheet, Folder, MoreVertical, Eye, Edit2, Image as ImageIcon } from 'lucide-react'
+import { FileText, MoreVertical, Eye, Edit2 } from 'lucide-react'
 import { FileActionsDropdown } from './FileActionsDropdown'
 import { FileTypeIcon } from './FileTypeIcon'
 import { cn } from '@/lib/utils'

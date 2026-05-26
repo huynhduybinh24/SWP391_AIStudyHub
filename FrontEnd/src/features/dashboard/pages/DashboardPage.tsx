@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { LoadingOverlay } from '@/components/feedback/LoadingOverlay'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { WelcomeBanner } from '@/features/dashboard/components/WelcomeBanner'

@@ -27,7 +27,8 @@ export function ConfirmRemoveAccessModal({
     )
     if (focusableElements && focusableElements.length > 0) {
       // Focus on Cancel button by default
-      (focusableElements[1] || focusableElements[0] as HTMLElement).focus()
+      const elementToFocus = (focusableElements[1] || focusableElements[0]) as HTMLElement
+      elementToFocus?.focus()
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
