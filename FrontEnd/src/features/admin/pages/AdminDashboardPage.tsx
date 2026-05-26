@@ -1,4 +1,4 @@
-import { Shield, Users, FileText, BarChart3, Bell, CreditCard } from 'lucide-react'
+import { Shield, Users, BarChart3, Bell, CreditCard, TrendingUp, ClipboardList, AlertTriangle, Cpu } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useSearchParams } from 'react-router-dom'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
@@ -6,8 +6,11 @@ import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab
 import { AdminUsersTab } from '@/features/admin/components/AdminUsersTab'
 import { AdminPackagesTab } from '@/features/admin/components/AdminPackagesTab'
 import { AdminNotificationsTab } from '@/features/admin/components/AdminNotificationsTab'
+import { AdminAnalyticsTab } from '@/features/admin/components/AdminAnalyticsTab'
+import { AdminLogsTab } from '@/features/admin/components/AdminLogsTab'
+import { AdminReportsTab } from '@/features/admin/components/AdminReportsTab'
 
-type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'moderation'
+type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'moderation' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation'
 
 export function AdminDashboardPage() {
   const { t, language } = useTranslation()
@@ -40,9 +43,24 @@ export function AdminDashboardPage() {
       icon: Bell
     },
     {
-      id: 'moderation' as AdminTab,
-      label: t.admin.tabDocs,
-      icon: FileText
+      id: 'analytics' as AdminTab,
+      label: language === 'vi' ? 'Thống kê' : 'Analytics',
+      icon: TrendingUp
+    },
+    {
+      id: 'activity-logs' as AdminTab,
+      label: language === 'vi' ? 'Nhật ký hoạt động' : 'Activity Logs',
+      icon: ClipboardList
+    },
+    {
+      id: 'reports' as AdminTab,
+      label: language === 'vi' ? 'Báo cáo vi phạm' : 'Reports',
+      icon: AlertTriangle
+    },
+    {
+      id: 'ai-moderation' as AdminTab,
+      label: language === 'vi' ? 'Kiểm duyệt AI' : 'AI Moderation',
+      icon: Cpu
     }
   ]
 
@@ -52,7 +70,7 @@ export function AdminDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-[32px] font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
-            <span className="p-2 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+            <span className="p-2 rounded-2xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400">
               <Shield className="size-7" />
             </span>
             {t.admin.title}
@@ -76,7 +94,7 @@ export function AdminDashboardPage() {
       <div className="flex border-b border-slate-200 dark:border-slate-800 w-full scroll-smooth overflow-x-auto no-scrollbar gap-2">
         {tabItems.map((tab) => {
           const Icon = tab.icon
-          const isActive = activeTab === tab.id
+          const isActive = activeTab === tab.id || (tab.id === 'ai-moderation' && activeTab === 'moderation')
           return (
             <button
               key={tab.id}
@@ -104,7 +122,13 @@ export function AdminDashboardPage() {
 
         {activeTab === 'notifications' && <AdminNotificationsTab />}
 
-        {activeTab === 'moderation' && <AdminDocumentsTab />}
+        {activeTab === 'analytics' && <AdminAnalyticsTab />}
+
+        {activeTab === 'activity-logs' && <AdminLogsTab />}
+
+        {activeTab === 'reports' && <AdminReportsTab />}
+
+        {(activeTab === 'moderation' || activeTab === 'ai-moderation') && <AdminDocumentsTab />}
       </div>
     </div>
   )
