@@ -295,7 +295,7 @@ export function AdminDocumentsTab({
                   <td colSpan={7} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-650">
                       <FolderOpen className="size-10 stroke-[1.25] mb-2" />
-                      <p className="font-extrabold text-sm text-slate-700 dark:text-slate-350">{t.admin?.noDocsDocs || "No documents found"}</p>
+                      <p className="font-extrabold text-sm text-slate-700 dark:text-slate-350">{t.admin?.noDocs || "No documents found"}</p>
                       <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1">{t.admin?.noDocsModeration || "No documents match"}</p>
                     </div>
                   </td>

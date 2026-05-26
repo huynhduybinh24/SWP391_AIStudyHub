@@ -104,6 +104,7 @@ export const vi: typeof en = {
     toastDeleteSuccess: "Đã xóa tài liệu khỏi hệ thống",
     searchDocsPlaceholder: "Tìm kiếm tệp, người tải...",
     noDocsModeration: "Hiện tại không có tài liệu nào cần kiểm duyệt.",
+    noDocs: "Không tìm thấy tài liệu",
     previewContentTitle: "Bản Xem Trước Nội Dung Tài Liệu",
     docColReportAction: "Xem Báo Cáo",
     reportModalTitle: "Chi Tiết Báo Cáo Vi Phạm",
