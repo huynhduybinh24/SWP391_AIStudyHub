@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
-import { Zap, X, PanelLeftClose, PanelLeftOpen, Users, CreditCard, Bell, LayoutDashboard, TrendingUp, ClipboardList, AlertTriangle, Cpu, ShieldCheck } from 'lucide-react'
+import { Zap, X, PanelLeftClose, PanelLeftOpen, Users, CreditCard, Bell, LayoutDashboard, TrendingUp, ClipboardList, AlertTriangle, Cpu, ShieldCheck, FileText } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -153,12 +153,12 @@ export function Sidebar() {
   const adminNavItems = [
     { label: 'Admin Dashboard', path: '/dashboard/admin?tab=overview', icon: LayoutDashboard },
     { label: 'User Management', path: '/dashboard/admin?tab=users', icon: Users },
+    { label: 'Document Management', path: '/dashboard/admin?tab=ai-moderation', icon: FileText },
     { label: 'Package Management', path: '/dashboard/admin?tab=packages', icon: CreditCard },
     { label: 'Notification Management', path: '/dashboard/admin?tab=notifications', icon: Bell },
     { label: 'Analytics', path: '/dashboard/admin?tab=analytics', icon: TrendingUp },
     { label: 'Activity Logs', path: '/dashboard/admin?tab=activity-logs', icon: ClipboardList },
     { label: 'Reports', path: '/dashboard/admin?tab=reports', icon: AlertTriangle },
-    { label: 'AI Moderation', path: '/dashboard/admin?tab=ai-moderation', icon: Cpu },
   ]
 
   const getSidebarLabel = (label: string) => {
@@ -203,8 +203,8 @@ export function Sidebar() {
         return language === 'vi' ? 'Nhật ký hoạt động' : 'Activity Logs'
       case 'reports':
         return language === 'vi' ? 'Báo cáo vi phạm' : 'Reports'
-      case 'ai moderation':
-        return language === 'vi' ? 'Kiểm duyệt AI' : 'AI Moderation'
+      case 'document management':
+        return language === 'vi' ? 'Quản lý tài liệu' : 'Document Management'
       default:
         return label
     }
