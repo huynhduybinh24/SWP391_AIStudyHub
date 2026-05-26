@@ -38,6 +38,7 @@ import { StudyPlansPage } from '@/features/study-plans/pages/StudyPlansPage'
 
 import { ScrollToTop } from '@/components/shared/ScrollToTop'
 import { Outlet } from 'react-router-dom'
+import { MaintenanceGuard } from '@/components/common/MaintenanceGuard'
 
 function RootLayout() {
   return (
@@ -86,7 +87,11 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           {
-            element: <DashboardLayout />,
+            element: (
+              <MaintenanceGuard>
+                <DashboardLayout />
+              </MaintenanceGuard>
+            ),
             children: [
               { index: true, element: <DashboardPage /> },
               {

@@ -6,6 +6,7 @@ import { FloatingAssistantButton } from '@/components/layout/FloatingAssistantBu
 import { useUiStore } from '@/stores/uiStore'
 import { useStudyTimeTracker } from '@/features/dashboard/hooks/useStudyTimeTracker'
 import { useAuthStore } from '@/stores/authStore'
+import { SystemStatusBanner } from '@/components/common/SystemStatusBanner'
 
 export function DashboardLayout() {
   useStudyTimeTracker()
@@ -28,6 +29,7 @@ export function DashboardLayout() {
       )}
 
       <div className="relative flex min-w-0 flex-1 flex-col bg-[#f5f7fb] dark:bg-slate-950 transition-colors duration-300 h-full">
+        <SystemStatusBanner />
         <Header />
         
         {/* Main Content Area */}
