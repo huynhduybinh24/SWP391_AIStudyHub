@@ -5,6 +5,7 @@ import { AppFooter } from '@/components/shared/AppFooter'
 import { FloatingAssistantButton } from '@/components/layout/FloatingAssistantButton'
 import { useUiStore } from '@/stores/uiStore'
 import { useStudyTimeTracker } from '@/features/dashboard/hooks/useStudyTimeTracker'
+import { useAuthStore } from '@/stores/authStore'
 
 export function DashboardLayout() {
   useStudyTimeTracker()
@@ -12,6 +13,7 @@ export function DashboardLayout() {
   const isChatPage = location.pathname === '/dashboard/chat' || location.pathname === '/dashboard/chat/'
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
+  const user = useAuthStore((s) => s.user)
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f5f7fb] text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300 relative">
@@ -39,7 +41,7 @@ export function DashboardLayout() {
         </div>
 
         {/* Interactive Floating Chatbot */}
-        {!isChatPage && <FloatingAssistantButton />}
+        {!isChatPage && user?.role?.toLowerCase() !== 'admin' && <FloatingAssistantButton />}
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { LoadingOverlay } from '@/components/feedback/LoadingOverlay'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { WelcomeBanner } from '@/features/dashboard/components/WelcomeBanner'
@@ -11,11 +12,17 @@ import { RecentAlerts } from '@/features/dashboard/components/RecentAlerts'
 import { useDashboard } from '@/features/dashboard/hooks/useDashboard'
 import { CreateStudyPlanModal } from '@/features/study-plans/pages/CreateStudyPlanModal'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
 
 export function DashboardPage() {
   const { t } = useTranslation()
+  const user = useAuthStore((s) => s.user)
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false)
   const { data, isLoading, isError, error, refetch } = useDashboard()
+
+  if (user?.role?.toLowerCase() === 'admin') {
+    return <Navigate to="/dashboard/admin" replace />
+  }
 
   if (isLoading) return <LoadingOverlay label={t.common.loading} />
   if (isError || !data) {

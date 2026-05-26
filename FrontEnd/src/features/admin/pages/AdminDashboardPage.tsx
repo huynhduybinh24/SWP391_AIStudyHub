@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Shield, Users, FileText, BarChart3, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
+import { useSearchParams } from 'react-router-dom'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
 import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab'
 import { AdminUsersTab } from '@/features/admin/components/AdminUsersTab'
@@ -10,7 +11,12 @@ type AdminTab = 'overview' | 'users' | 'documents'
 
 export function AdminDashboardPage() {
   const { t, language } = useTranslation()
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = (searchParams.get('tab') as AdminTab) || 'overview'
+
+  const setActiveTab = (tab: AdminTab) => {
+    setSearchParams({ tab })
+  }
 
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [users, setUsers] = useState<AdminUser[]>([])
@@ -141,7 +147,7 @@ export function AdminDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-[32px] font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
-            <span className="p-2 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+            <span className="p-2 rounded-2xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400">
               <Shield className="size-7" />
             </span>
             {t.admin?.title || 'Admin Dashboard'}
@@ -165,7 +171,7 @@ export function AdminDashboardPage() {
       <div className="flex border-b border-slate-200 dark:border-slate-800 w-full scroll-smooth overflow-x-auto no-scrollbar gap-2">
         {tabItems.map((tab) => {
           const Icon = tab.icon
-          const isActive = activeTab === tab.id
+          const isActive = activeTab === tab.id || (tab.id === 'ai-moderation' && activeTab === 'moderation')
           return (
             <button
               key={tab.id}

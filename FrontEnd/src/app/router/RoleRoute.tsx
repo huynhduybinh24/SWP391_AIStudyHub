@@ -9,7 +9,7 @@ interface RoleRouteProps {
 export function RoleRoute({ allowedRoles }: RoleRouteProps) {
   const user = useAuthStore((s) => s.user)
 
-  if (!user || !allowedRoles.includes(user.role)) {
+  if (!user || !allowedRoles.some((r) => r.toLowerCase() === user.role.toLowerCase())) {
     return <Navigate to="/" replace />
   }
 
