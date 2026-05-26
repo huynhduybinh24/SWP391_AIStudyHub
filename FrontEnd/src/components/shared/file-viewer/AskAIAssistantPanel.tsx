@@ -24,7 +24,6 @@ interface AskAIAssistantPanelProps {
 }
 
 export function AskAIAssistantPanel({
-  fileName,
   chatLog,
   onSendMessage,
   isAiResponding,

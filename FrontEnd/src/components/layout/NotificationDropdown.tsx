@@ -13,7 +13,7 @@ interface NotificationDropdownProps {
   markAllAsRead: () => void
 }
 
-export function NotificationDropdown({ onClose, notifications, setNotifications, markAsRead, markAllAsRead }: NotificationDropdownProps) {
+export function NotificationDropdown({ onClose, notifications, markAsRead, markAllAsRead }: NotificationDropdownProps) {
   const navigate = useNavigate()
   const toast = useToast()
   const { t } = useTranslation()

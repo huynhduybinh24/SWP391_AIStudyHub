@@ -207,7 +207,7 @@ export function Header() {
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const [logoutModalOpen, setLogoutModalOpen] = useState(false)
 
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')

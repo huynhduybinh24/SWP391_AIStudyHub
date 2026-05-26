@@ -1,4 +1,3 @@
-import React from 'react';
 import { FileCheck, Video, Music, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaType } from './mediaUploadTypes';
