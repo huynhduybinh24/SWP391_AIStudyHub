@@ -48,12 +48,24 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'ai-study-hub-auth-v2',
       merge: (persisted, current) => {
+        const persistedState = persisted as Partial<AuthState>
+        
+        // Prevent admin session from persisting across reloads (F5)
+        if (persistedState?.user?.role?.toLowerCase() === 'admin') {
+          return {
+            ...current,
+            user: null,
+            tokens: null,
+            isAuthenticated: false,
+          }
+        }
+
         if (!DEV_SKIP_AUTH) {
-          return { ...current, ...(persisted as Partial<AuthState>) }
+          return { ...current, ...persistedState }
         }
         return {
           ...current,
-          ...(persisted as Partial<AuthState>),
+          ...persistedState,
           user: DEV_DEFAULT_USER,
           tokens: DEV_DEFAULT_TOKENS,
           isAuthenticated: true,
