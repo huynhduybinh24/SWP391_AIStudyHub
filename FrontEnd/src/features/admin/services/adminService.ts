@@ -412,8 +412,9 @@ export const deleteDocument = async (documentId: string, reason?: string): Promi
       isRead: false
     };
     const existingNotifs = JSON.parse(localStorage.getItem('aiStudyHubUserNotifications') || '[]');
-    existingNotifs.push(notification);
+    existingNotifs.unshift(notification);
     localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(existingNotifs));
+    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
   }
 
   mockDocuments = mockDocuments.filter((d) => d.id !== documentId);
