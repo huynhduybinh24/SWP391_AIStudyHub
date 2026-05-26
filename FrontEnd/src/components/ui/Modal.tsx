@@ -23,6 +23,8 @@ export const Modal = ({
   const modalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!isOpen) return
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose()
@@ -47,12 +49,19 @@ export const Modal = ({
       }
     }
 
+    document.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen, onClose])
+
+  useEffect(() => {
     if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'hidden'
-      
       // Focus the modal or the first focusable element inside it
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         if (modalRef.current) {
           const focusable = modalRef.current.querySelectorAll(
             'a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -64,13 +73,9 @@ export const Modal = ({
           }
         }
       }, 50)
+      return () => clearTimeout(timer)
     }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) return null
 
