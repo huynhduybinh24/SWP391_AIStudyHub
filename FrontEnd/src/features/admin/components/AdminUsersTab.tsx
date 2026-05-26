@@ -1,17 +1,13 @@
 import { useState, useMemo } from 'react'
 import {
-  Users,
   Search,
   Eye,
   Trash2,
   Lock,
   Unlock,
   Key,
-  ShieldCheck,
   UserCheck,
-  UserX,
-  X,
-  Database
+  UserX
 } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'

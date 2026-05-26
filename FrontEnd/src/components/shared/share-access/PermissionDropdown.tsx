@@ -153,7 +153,7 @@ export function PermissionDropdown({
               align === 'right' ? 'right-0' : 'left-0'
             )}
           >
-            {roles.map((r, index) => (
+            {roles.map((r) => (
               <div
                 key={r.value}
                 role="option"

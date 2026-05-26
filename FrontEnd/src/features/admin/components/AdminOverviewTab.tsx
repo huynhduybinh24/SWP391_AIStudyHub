@@ -3,13 +3,8 @@ import {
   Users,
   Zap,
   Database,
-  AlertTriangle,
   TrendingUp,
-  TrendingDown,
-  Clock,
   Sparkles,
-  ArrowUpRight,
-  ShieldAlert,
   FileText
 } from 'lucide-react'
 import {
@@ -24,7 +19,7 @@ import {
   Pie,
   Cell
 } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useTranslation } from '@/context/LanguageContext'
 
@@ -71,8 +66,8 @@ import { AdminStats, AdminUser, AdminDocument } from '../services/adminService'
 
 export function AdminOverviewTab({
   stats,
-  users,
-  documents
+  users: _users,
+  documents: _documents
 }: {
   stats: AdminStats | null
   users: AdminUser[]

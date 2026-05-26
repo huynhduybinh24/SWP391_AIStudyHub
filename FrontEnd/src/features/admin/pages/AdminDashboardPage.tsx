@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Shield, Users, FileText, BarChart3, Bell, CreditCard, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { Shield, Users, FileText, BarChart3, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
 import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab'
 import { AdminUsersTab } from '@/features/admin/components/AdminUsersTab'
-import { AdminPackagesTab } from '@/features/admin/components/AdminPackagesTab'
-import { AdminNotificationsTab } from '@/features/admin/components/AdminNotificationsTab'
 import { adminService, AdminStats, AdminUser, AdminDocument } from '../services/adminService'
 
 type AdminTab = 'overview' | 'users' | 'documents'

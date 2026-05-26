@@ -6,11 +6,7 @@ import {
   CheckCircle,
   Trash2,
   AlertTriangle,
-  ExternalLink,
-  ChevronLeft,
-  ChevronRight,
   ShieldCheck,
-  ShieldAlert,
   FolderOpen,
   AlertOctagon
 } from 'lucide-react'
@@ -18,7 +14,7 @@ import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { AdminDocument } from '../services/adminService'
 
@@ -48,7 +44,7 @@ export function AdminDocumentsTab({
   const [activeReportDoc, setActiveReportDoc] = useState<AdminDocument | null>(null)
   const [adminFeedback, setAdminFeedback] = useState('')
 
-  const handleMoveToPending = (id: string, feedback: string) => {
+  const handleMoveToPending = (id: string, _feedback: string) => {
     onUpdateDocument(id, { status: 'pending' })
     if (previewDoc && previewDoc.id === id) {
       setPreviewDoc((prev) => (prev ? { ...prev, status: 'pending' } : null))

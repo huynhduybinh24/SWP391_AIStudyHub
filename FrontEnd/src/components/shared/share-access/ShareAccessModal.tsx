@@ -73,9 +73,9 @@ export function ShareAccessModal({
   onShareSubmit,
   folderId,
   folderName,
-  owner,
-  type = 'file',
-  permission
+  owner: _owner,
+  type: _type = 'file',
+  permission: _permission
 }: ShareAccessModalProps) {
   const toast = useToast()
   const { t } = useTranslation()
@@ -244,13 +244,13 @@ export function ShareAccessModal({
     }
   }
 
-  const handleRemoveCollaborator = (id: string, name: string) => {
+  const handleRemoveCollaborator = (id: string, _name: string) => {
     const updated = activeCollaborators.filter(c => c.id !== id)
     updateCollaborators(updated)
     triggerToast(t.shareModal.accessRemoved)
   }
 
-  const handleChangeRole = (id: string, name: string, role: ShareRole) => {
+  const handleChangeRole = (id: string, _name: string, role: ShareRole) => {
     const updated = activeCollaborators.map(c => c.id === id ? { ...c, role } : c)
     updateCollaborators(updated)
     triggerToast(t.shareModal.permissionUpdated)
