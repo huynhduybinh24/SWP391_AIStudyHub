@@ -22,6 +22,25 @@ export const Modal = ({
 }: ModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null)
 
+  // Focus the modal or the first focusable element inside it when it opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        if (modalRef.current) {
+          const focusable = modalRef.current.querySelectorAll(
+            'a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+          if (focusable.length > 0) {
+            ;(focusable[0] as HTMLElement).focus()
+          } else {
+            modalRef.current.focus()
+          }
+        }
+      }, 50)
+    }
+  }, [isOpen])
+
+  // Keydown and body scroll lock handlers
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -50,20 +69,6 @@ export const Modal = ({
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown)
       document.body.style.overflow = 'hidden'
-      
-      // Focus the modal or the first focusable element inside it
-      setTimeout(() => {
-        if (modalRef.current) {
-          const focusable = modalRef.current.querySelectorAll(
-            'a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
-          )
-          if (focusable.length > 0) {
-            ;(focusable[0] as HTMLElement).focus()
-          } else {
-            modalRef.current.focus()
-          }
-        }
-      }, 50)
     }
 
     return () => {
