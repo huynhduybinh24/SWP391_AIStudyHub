@@ -204,6 +204,7 @@ export const ja: any = {
     searchFolder: "このフォルダ内を検索...",
     searchStudyPlans: "学習計画を検索...",
     searchPlaceholderAll: "ドキュメント、チャット、計画を検索...",
+    searchPlaceholderAdmin: "ユーザー、ドキュメント、レポート、取引、アクティビティを検索...",
     searchResults: "検索結果",
     recentSearches: "最近の検索履歴",
     trendingSearches: "急上昇ワード",

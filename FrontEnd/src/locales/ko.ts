@@ -204,6 +204,7 @@ export const ko: any = {
     searchFolder: "이 폴더에서 검색...",
     searchStudyPlans: "학습 계획 검색...",
     searchPlaceholderAll: "문서, 채팅, 계획 검색...",
+    searchPlaceholderAdmin: "사용자, 문서, 보고서, 거래, 활동 검색...",
     searchResults: "검색 결과",
     recentSearches: "최근 검색어",
     trendingSearches: "인기 검색어",

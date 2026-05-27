@@ -208,6 +208,7 @@ export const en = {
     searchFolder: "Search in this folder...",
     searchStudyPlans: "Search study plans...",
     searchPlaceholderAll: "Search documents, chats, plans...",
+    searchPlaceholderAdmin: "Search users, documents, reports, transactions, activities...",
     searchResults: "Search Results",
     recentSearches: "Recent Searches",
     trendingSearches: "Trending Searches",
