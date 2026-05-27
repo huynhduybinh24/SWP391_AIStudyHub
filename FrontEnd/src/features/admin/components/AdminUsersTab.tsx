@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Search,
   Eye,
@@ -43,6 +43,10 @@ export function AdminUsersTab({
   const [editingRoleUser, setEditingRoleUser] = useState<AdminUser | null>(null)
   const [selectedRole, setSelectedRole] = useState<'admin' | 'teacher' | 'student'>('student')
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(5) // Default to 5 rows per page to demonstrate pagination easily
+
   // Search/Filter logic
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
@@ -56,6 +60,23 @@ export function AdminUsersTab({
       return matchesSearch && matchesRole && matchesStatus
     })
   }, [users, searchTerm, roleFilter, statusFilter])
+
+  // Reset page to 1 when filters or search term changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, roleFilter, statusFilter])
+
+  const totalPages = Math.ceil(filteredUsers.length / rowsPerPage) || 1
+
+  // Slice users for the current page
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage
+    return filteredUsers.slice(startIndex, startIndex + rowsPerPage)
+  }, [filteredUsers, currentPage, rowsPerPage])
+
+  // Range numbers for pagination display label
+  const startRange = filteredUsers.length === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1
+  const endRange = Math.min(currentPage * rowsPerPage, filteredUsers.length)
 
   // Lock/Unlock Account Action
   const toggleLockUser = (id: string, currentStatus: string) => {
@@ -186,8 +207,8 @@ export function AdminUsersTab({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((u) => {
+              {paginatedUsers.length > 0 ? (
+                paginatedUsers.map((u) => {
                   const firstChar = u.name.charAt(0).toUpperCase()
                   
                   return (
@@ -326,6 +347,82 @@ export function AdminUsersTab({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-slate-200 dark:border-slate-800/60 bg-slate-50/20 dark:bg-slate-900/10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          {/* Left: Rows per page selection */}
+          <div className="flex items-center gap-2">
+            <span>{language === 'vi' ? 'Số hàng mỗi trang:' : 'Rows per page:'}</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value))
+                setCurrentPage(1)
+              }}
+              className="px-2 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
+            >
+              {[5, 10, 20, 50].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 ml-2 font-medium">
+              {language === 'vi'
+                ? `Hiển thị ${startRange} - ${endRange} trong tổng số ${filteredUsers.length}`
+                : `Showing ${startRange} - ${endRange} of ${filteredUsers.length}`}
+            </span>
+          </div>
+
+          {/* Right: Previous / Next & Page numbers */}
+          <div className="flex items-center gap-1.5">
+            {/* Previous Button */}
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className={cn(
+                "px-3 py-1.5 rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 font-bold transition-all text-xs cursor-pointer select-none",
+                currentPage === 1
+                  ? "opacity-40 cursor-not-allowed border-slate-100 dark:border-slate-850"
+                  : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95"
+              )}
+            >
+              {language === 'vi' ? 'Trước' : 'Previous'}
+            </button>
+
+            {/* Page numbers */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={cn(
+                    "h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs transition-all cursor-pointer select-none",
+                    currentPage === page
+                      ? "bg-[#3155F6] text-white border border-[#3155F6]"
+                      : "border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95"
+                  )}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className={cn(
+                "px-3 py-1.5 rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 font-bold transition-all text-xs cursor-pointer select-none",
+                currentPage === totalPages
+                  ? "opacity-40 cursor-not-allowed border-slate-100 dark:border-slate-850"
+                  : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95"
+              )}
+            >
+              {language === 'vi' ? 'Sau' : 'Next'}
+            </button>
+          </div>
         </div>
       </Card>
 
