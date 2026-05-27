@@ -447,7 +447,7 @@ export function AdminPackagesTab({
                                 const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
                                 return (
                                   <option key={p.id} value={planCode}>
-                                    {p.name} (${p.priceMonthly === 0 ? '0' : p.priceMonthly}/mo)
+                                    {p.name} (${p.priceMonthly === 0 ? '0' : p.priceMonthly}/{language === 'vi' ? 'tháng' : 'month'})
                                   </option>
                                 )
                               })}
