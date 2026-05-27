@@ -761,7 +761,16 @@ export const vi: typeof en = {
     title: "Thông báo",
     subtitle: "Xem các hoạt động gần đây và cập nhật học tập.",
     markAllAsRead: "Đánh dấu tất cả là đã đọc",
-    noNotifications: "Không có thông báo mới."
+    noNotifications: "Không có thông báo mới.",
+    detailModalTitle: "Chi tiết Thông báo",
+    detailDocName: "Tên tài liệu",
+    detailActionType: "Loại hành động",
+    detailReason: "Lý do",
+    detailAdminNote: "Ghi chú của Admin",
+    detailTime: "Thời gian",
+    actionRemoved: "Đã bị quản trị viên xóa",
+    actionRejected: "Đã bị quản trị viên từ chối",
+    noReasonProvided: "Chưa có lý do chi tiết."
   },
   studyPlans: {
     title: "Kế hoạch học tập",
@@ -1309,6 +1318,8 @@ export const vi: typeof en = {
     }
   },
   notificationManagement: {
+    title: "Quản lý thông báo",
+    subtitle: "Tạo, gửi và xem lại các thông báo hệ thống.",
     sentBroadcastHistory: "LỊCH SỬ THÔNG BÁO ĐÃ GỬI",
     broadcasts: {
       maintenanceTitle: "Bảo trì hệ thống định kỳ tháng 6/2026",

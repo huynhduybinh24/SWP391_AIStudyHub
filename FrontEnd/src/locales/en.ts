@@ -759,7 +759,16 @@ export const en = {
     title: "Notifications",
     subtitle: "View your recent activities and learning updates.",
     markAllAsRead: "Mark all as read",
-    noNotifications: "No new notifications."
+    noNotifications: "No new notifications.",
+    detailModalTitle: "Notification Details",
+    detailDocName: "Document Name",
+    detailActionType: "Action Type",
+    detailReason: "Reason",
+    detailAdminNote: "Admin Note",
+    detailTime: "Time",
+    actionRemoved: "Removed by admin",
+    actionRejected: "Rejected by admin",
+    noReasonProvided: "No reason details were provided."
   },
   studyPlans: {
     title: "Study Plans",
@@ -1306,6 +1315,8 @@ export const en = {
     }
   },
   notificationManagement: {
+    title: "Notification Management",
+    subtitle: "Create, send, and review system notifications.",
     sentBroadcastHistory: "SENT BROADCAST HISTORY",
     broadcasts: {
       maintenanceTitle: "Scheduled system maintenance for June 2026",

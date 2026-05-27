@@ -23,13 +23,13 @@ function deepMerge<T extends object>(target: T, source: object, path = '', lang 
         if (tVal && typeof tVal === 'object' && !Array.isArray(tVal)) {
           output[key] = deepMerge(tVal, sVal, currentPath, lang)
         } else {
-          if (import.meta.env.DEV) {
+          if (import.meta.env.DEV && lang === 'vi') {
             console.warn(`[i18n] Missing translation key: ${currentPath} for language: ${lang}`)
           }
           output[key] = sVal
         }
       } else if (tVal === undefined) {
-        if (import.meta.env.DEV) {
+        if (import.meta.env.DEV && lang === 'vi') {
           console.warn(`[i18n] Missing translation key: ${currentPath} for language: ${lang}`)
         }
         output[key] = sVal
