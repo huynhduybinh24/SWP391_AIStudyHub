@@ -114,8 +114,8 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
       { text: isVi ? 'Giới thiệu' : 'Introduction', to: '/' },
       { text: isVi ? 'Tính năng' : 'Features', to: '/#features' },
       { text: isVi ? 'Bảng giá' : 'Pricing Plans', to: '/pricing' },
-      { text: t.footer.termsOfService, to: '/help' },
-      { text: t.footer.privacyPolicy, to: '/help' },
+      { text: t.footer.termsOfService, to: '/terms-of-service' },
+      { text: t.footer.privacyPolicy, to: '/privacy-policy' },
     ],
     exploreTitle: isVi ? 'Tính năng & Khám phá' : 'Features & Explore',
     exploreLinks: [
