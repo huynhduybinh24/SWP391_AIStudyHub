@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react'
-import { Zap, HardDrive, Edit3, Save, Users, Search, ArrowDownCircle } from 'lucide-react'
+import { Zap, HardDrive, Edit3, Save, Users, Search, Trash2, Plus } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
 import { AdminUser } from '../services/adminService'
 import { cn } from '@/lib/utils'
 
@@ -76,6 +77,84 @@ export function AdminPackagesTab({
   const [editedStorage, setEditedStorage] = useState<number>(10)
   const [editedPrice, setEditedPrice] = useState<number>(12)
 
+  // Create Package States
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [newPkgName, setNewPkgName] = useState('')
+  const [newPkgStorage, setNewPkgStorage] = useState<number>(20)
+  const [newPkgPrice, setNewPkgPrice] = useState<number>(19)
+  const [newPkgPerks, setNewPkgPerks] = useState<string[]>([])
+  const [newPerkText, setNewPerkText] = useState('')
+
+  const handleAddPerk = () => {
+    if (!newPerkText.trim()) return
+    setNewPkgPerks((prev) => [...prev, newPerkText.trim()])
+    setNewPerkText('')
+  }
+
+  const handleRemovePerk = (index: number) => {
+    setNewPkgPerks((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const resetCreateForm = () => {
+    setNewPkgName('')
+    setNewPkgStorage(20)
+    setNewPkgPrice(19)
+    setNewPkgPerks([])
+    setNewPerkText('')
+  }
+
+  const handleCreatePackage = () => {
+    if (!newPkgName.trim()) return
+    
+    // Automatically prepend the first perk with the storage limit
+    const storagePerk = language === 'vi'
+      ? `Dung lượng lưu trữ ${newPkgStorage} GB`
+      : `${newPkgStorage} GB storage limit`
+
+    const finalPerks = [storagePerk, ...newPkgPerks]
+    
+    const newPackage: PackageItem = {
+      id: `pkg-${Date.now()}`,
+      name: newPkgName,
+      storageLimit: newPkgStorage,
+      priceMonthly: newPkgPrice,
+      usersCount: 0,
+      perks: finalPerks,
+      color: 'border-slate-200 dark:border-slate-800 hover:border-blue-500/30'
+    }
+
+    const nextPackages = [...packages, newPackage]
+    setPackages(nextPackages)
+    
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('aiStudyHubPackages', JSON.stringify(nextPackages))
+      } catch (e) {
+        console.error('Error saving packages to localStorage:', e)
+      }
+    }
+
+    setIsCreateModalOpen(false)
+    resetCreateForm()
+    
+    const msg = language === 'vi' ? 'Đã thêm gói cước mới thành công!' : 'New package created successfully!'
+    toast.success(msg)
+  }
+
+  const handleDeletePackage = (id: string) => {
+    const nextPackages = packages.filter((pkg) => pkg.id !== id)
+    setPackages(nextPackages)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('aiStudyHubPackages', JSON.stringify(nextPackages))
+      } catch (e) {
+        console.error('Error saving packages to localStorage:', e)
+      }
+    }
+    const msg = language === 'vi' ? 'Đã xóa gói cước thành công' : 'Package deleted successfully'
+    toast.success(msg)
+  }
+
   // Subscription upgrade search state
   const [userSearchTerm, setUserSearchTerm] = useState('')
 
@@ -126,29 +205,10 @@ export function AdminPackagesTab({
     )
   }, [users, userSearchTerm])
 
-  const handleToggleUserPlan = (user: AdminUser) => {
-    const isCurrentlyPro = user.plan === 'pro'
-    const nextPlan = isCurrentlyPro ? 'free' : 'pro'
-    
-    onUpdateUser(user.id, { 
-      plan: nextPlan
-    })
-
-    const msg = language === 'vi'
-      ? `Đã nâng cấp ${user.name} lên gói Pro thành công`
-      : `Successfully upgraded ${user.name} to Pro Plan`
-    
-    const downgradeMsg = language === 'vi'
-      ? `Đã hạ gói ${user.name} xuống gói Free`
-      : `Downgraded ${user.name} to Free Plan`
-
-    toast.success(isCurrentlyPro ? downgradeMsg : msg)
-  }
-
   return (
     <div className="space-y-6 select-none text-left">
       {/* Overview Cards row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {packages.map((pkg) => {
           const isPro = pkg.id === 'pkg-pro'
           const isEditing = editingId === pkg.id
@@ -242,7 +302,16 @@ export function AdminPackagesTab({
                 </div>
 
                 {/* Edit & Save Action footer */}
-                <div className="mt-6 flex justify-end">
+                <div className="mt-6 flex justify-end gap-2">
+                  {!isEditing && pkg.id !== 'pkg-free' && pkg.id !== 'pkg-pro' && (
+                    <Button
+                      onClick={() => handleDeletePackage(pkg.id)}
+                      className="bg-rose-50/50 hover:bg-rose-100 text-rose-600 dark:bg-rose-955/20 dark:hover:bg-rose-950/40 dark:text-rose-450 font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer border-none"
+                    >
+                      <Trash2 className="size-3.5" />
+                      <span>{language === 'vi' ? 'Xóa' : 'Delete'}</span>
+                    </Button>
+                  )}
                   {isEditing ? (
                     <Button
                       onClick={() => handleSaveClick(pkg.id)}
@@ -265,6 +334,26 @@ export function AdminPackagesTab({
             </Card>
           )
         })}
+
+        {/* Dashed Create Card */}
+        <Card
+          onClick={() => setIsCreateModalOpen(true)}
+          className="border-2 border-dashed border-slate-300 hover:border-blue-500 dark:border-slate-850 dark:hover:border-blue-500/80 bg-white/40 hover:bg-slate-50/50 dark:bg-slate-900/20 dark:hover:bg-slate-900/60 transition-all duration-305 rounded-[28px] flex flex-col items-center justify-center min-h-[300px] cursor-pointer group select-none animate-fade-in"
+        >
+          <div className="flex flex-col items-center text-center p-6 space-y-3">
+            <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-955/40 text-[#3155F6] group-hover:scale-110 transition-transform duration-300">
+              <Plus className="size-6" />
+            </div>
+            <h4 className="text-sm font-black text-slate-800 dark:text-white">
+              {language === 'vi' ? 'Thêm gói cước mới' : 'Add New Package'}
+            </h4>
+            <p className="text-[11px] font-semibold text-slate-450 dark:text-slate-500 max-w-[180px] leading-normal">
+              {language === 'vi' 
+                ? 'Thiết lập dung lượng, mức giá và các quyền lợi đi kèm.' 
+                : 'Configure storage space, subscription rate and custom perks.'}
+            </p>
+          </div>
+        </Card>
       </div>
 
       {/* User Plan Upgrade Section */}
@@ -307,7 +396,12 @@ export function AdminPackagesTab({
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                   {searchedUsers.length > 0 ? (
                     searchedUsers.map((u) => {
-                      const isPro = u.plan === 'pro'
+                      const currentPlanObj = packages.find(p => {
+                        const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+                        return planCode === u.plan
+                      })
+                      const currentPlanName = currentPlanObj ? currentPlanObj.name : (u.plan || 'Free')
+
                       return (
                         <tr key={u.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-850/30 transition-colors">
                           <td className="p-3 pl-5 font-bold">
@@ -322,35 +416,42 @@ export function AdminPackagesTab({
                           <td className="p-3">
                             <Badge className={cn(
                               "font-extrabold text-[9px] rounded-full px-2 py-0.5 uppercase tracking-wide shrink-0 select-none",
-                              isPro 
+                              u.plan === 'pro' 
                                 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15"
-                                : "bg-slate-100 text-slate-505 dark:bg-slate-800 dark:text-slate-450"
+                                : u.plan === 'free'
+                                ? "bg-slate-100 text-slate-505 dark:bg-slate-800 dark:text-slate-450"
+                                : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/15"
                             )}>
-                              {isPro ? 'Pro' : 'Free'}
+                              {currentPlanName}
                             </Badge>
                           </td>
                           <td className="p-3 pr-5 text-right">
-                            <Button
-                              onClick={() => handleToggleUserPlan(u)}
-                              className={cn(
-                                "font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1 ml-auto border-none",
-                                isPro 
-                                  ? "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200"
-                                  : "bg-amber-500 hover:bg-amber-650 text-white font-extrabold shadow-sm shadow-amber-500/10"
-                              )}
+                            <select
+                              value={u.plan || 'free'}
+                              onChange={(e) => {
+                                const nextPlan = e.target.value
+                                onUpdateUser(u.id, { plan: nextPlan })
+                                const chosenPlanName = packages.find(p => {
+                                  const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+                                  return planCode === nextPlan
+                                })?.name || nextPlan.toUpperCase()
+                                toast.success(
+                                  language === 'vi'
+                                    ? `Đã chuyển ${u.name} sang gói ${chosenPlanName} thành công`
+                                    : `Successfully updated ${u.name} to ${chosenPlanName} Plan`
+                                )
+                              }}
+                              className="px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer hover:border-blue-500 transition-colors ml-auto block"
                             >
-                              {isPro ? (
-                                <>
-                                  <ArrowDownCircle className="size-3" />
-                                  <span>{language === 'vi' ? 'Hạ cấp xuống Free' : 'Downgrade to Free'}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Zap className="size-3 text-white" />
-                                  <span>{language === 'vi' ? 'Nâng cấp lên Pro' : 'Upgrade to Pro'}</span>
-                                </>
-                              )}
-                            </Button>
+                              {packages.map((p) => {
+                                const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+                                return (
+                                  <option key={p.id} value={planCode}>
+                                    {p.name} (${p.priceMonthly === 0 ? '0' : p.priceMonthly}/mo)
+                                  </option>
+                                )
+                              })}
+                            </select>
                           </td>
                         </tr>
                       )
@@ -368,6 +469,132 @@ export function AdminPackagesTab({
           )}
         </div>
       </Card>
+
+      {/* ADD NEW PACKAGE MODAL */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false)
+          resetCreateForm()
+        }}
+        title={language === 'vi' ? 'Thêm gói cước mới' : 'Create New Package'}
+        className="max-w-md"
+      >
+        <div className="space-y-4 text-left py-1.5 text-xs font-semibold text-slate-705 dark:text-slate-300">
+          {/* Name */}
+          <div className="space-y-1.5">
+            <label className="text-slate-500 dark:text-slate-400 font-extrabold uppercase tracking-wide">
+              {language === 'vi' ? 'Tên gói cước:' : 'Package Name:'}
+            </label>
+            <input
+              type="text"
+              value={newPkgName}
+              onChange={(e) => setNewPkgName(e.target.value)}
+              placeholder={language === 'vi' ? 'Ví dụ: Ultimate Plan...' : 'Example: Ultimate Plan...'}
+              className="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-white font-semibold"
+            />
+          </div>
+
+          {/* Storage & Price Row */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Storage Limit */}
+            <div className="space-y-1.5">
+              <label className="text-slate-550 dark:text-slate-400 font-extrabold uppercase tracking-wide">
+                {language === 'vi' ? 'Dung lượng (GB):' : 'Storage Limit (GB):'}
+              </label>
+              <input
+                type="number"
+                value={newPkgStorage}
+                onChange={(e) => setNewPkgStorage(Math.max(1, parseInt(e.target.value) || 0))}
+                className="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-white font-bold"
+              />
+            </div>
+
+            {/* Monthly Price */}
+            <div className="space-y-1.5">
+              <label className="text-slate-550 dark:text-slate-400 font-extrabold uppercase tracking-wide">
+                {language === 'vi' ? 'Giá mỗi tháng ($):' : 'Price Monthly ($):'}
+              </label>
+              <input
+                type="number"
+                value={newPkgPrice}
+                onChange={(e) => setNewPkgPrice(Math.max(0, parseFloat(e.target.value) || 0))}
+                className="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-white font-bold"
+              />
+            </div>
+          </div>
+
+          {/* Perks list builder */}
+          <div className="space-y-2">
+            <label className="text-slate-550 dark:text-slate-400 font-extrabold uppercase tracking-wide">
+              {language === 'vi' ? 'Các tính năng / quyền lợi:' : 'Features / Perks:'}
+            </label>
+            
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newPerkText}
+                onChange={(e) => setNewPerkText(e.target.value)}
+                placeholder={language === 'vi' ? 'Thêm quyền lợi mới...' : 'Add a new perk...'}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleAddPerk()
+                  }
+                }}
+                className="flex-1 p-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white font-semibold"
+              />
+              <Button
+                onClick={handleAddPerk}
+                className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 rounded-xl font-extrabold text-xs hover:bg-slate-200 cursor-pointer border-none"
+              >
+                {language === 'vi' ? 'Thêm' : 'Add'}
+              </Button>
+            </div>
+
+            {/* List of current perks */}
+            <div className="space-y-1.5 max-h-32 overflow-y-auto scrollbar-thin pt-1">
+              {newPkgPerks.map((perk, i) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-850/50">
+                  <span className="truncate pr-2 font-medium">{perk}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePerk(i)}
+                    className="text-rose-505 hover:text-rose-650 font-bold p-0.5 cursor-pointer"
+                  >
+                    {language === 'vi' ? 'Xóa' : 'Remove'}
+                  </button>
+                </div>
+              ))}
+              {newPkgPerks.length === 0 && (
+                <p className="text-[10px] text-slate-400 italic">
+                  {language === 'vi' ? '* Chưa có tính năng nào được thêm.' : '* No features added yet.'}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <Button
+              onClick={() => {
+                setIsCreateModalOpen(false)
+                resetCreateForm()
+              }}
+              className="bg-slate-100 text-slate-655 dark:bg-slate-800 dark:text-slate-350 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer border-none"
+            >
+              {language === 'vi' ? 'Hủy' : 'Cancel'}
+            </Button>
+            <Button
+              onClick={handleCreatePackage}
+              disabled={!newPkgName.trim() || newPkgPerks.length === 0}
+              className="bg-[#3155F6] hover:bg-blue-600 text-white font-extrabold px-5 py-2.5 rounded-xl text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none shadow-md shadow-blue-500/10"
+            >
+              {language === 'vi' ? 'Tạo gói mới' : 'Create Package'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
