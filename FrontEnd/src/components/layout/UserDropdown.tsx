@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { User, Settings, LogOut } from 'lucide-react'
+import { User, Settings, LogOut, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { useProfileStore } from '@/features/profile/stores/profileStore'
@@ -10,9 +10,10 @@ import { useTranslation } from '@/context/LanguageContext'
 interface UserDropdownProps {
   onClose: () => void
   onLogoutClick?: () => void
+  onChangeUserClick?: () => void
 }
 
-export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
+export function UserDropdown({ onClose, onLogoutClick, onChangeUserClick }: UserDropdownProps) {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -67,6 +68,19 @@ export function UserDropdown({ onClose, onLogoutClick }: UserDropdownProps) {
         </div>
       </div>
       
+      <button
+        type="button"
+        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer font-medium"
+        onClick={() => {
+          if (onChangeUserClick) onChangeUserClick()
+          onClose()
+        }}
+        role="menuitem"
+      >
+        <Users className="size-4 text-muted dark:text-slate-500" />
+        {t.userMenu?.changeUser || 'Change User'}
+      </button>
+
       <button
         type="button"
         className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left cursor-pointer font-medium"

@@ -1247,5 +1247,21 @@ export const ko: any = {
         tags: ['#유전학실험', '#보고서', '#신경유전학']
       }
     }
+  },
+  userMenu: {
+    changeUser: "Change User"
+  },
+  userSwitch: {
+    title: "Change User",
+    subtitle: "Select a mock account to preview different permissions.",
+    cancel: "Cancel",
+    switch: "Switch User",
+    switched: "Switched to {name}",
+    current: "Current",
+    adminDescription: "Full access to admin dashboard and system settings.",
+    studentDescription: "Standard learner account with documents and study features.",
+    instructorDescription: "Can manage shared course materials and student collaboration.",
+    proStudentDescription: "Student account with upgraded storage and premium features."
   }
 };
+

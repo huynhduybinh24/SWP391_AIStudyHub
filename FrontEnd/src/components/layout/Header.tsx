@@ -13,6 +13,7 @@ import { UserDropdown } from '@/components/layout/UserDropdown'
 import { NotificationDropdown } from '@/components/layout/NotificationDropdown'
 import { HelpModal } from '@/components/layout/HelpModal'
 import { ConfirmLogoutModal } from '@/components/layout/ConfirmLogoutModal'
+import { ChangeUserModal } from '@/components/layout/ChangeUserModal'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
@@ -281,6 +282,68 @@ export function Header() {
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const [logoutModalOpen, setLogoutModalOpen] = useState(false)
+  const [isChangeUserOpen, setIsChangeUserOpen] = useState(false)
+
+  // Hydrate store from localStorage key aiStudyHubCurrentUser on app mount
+  useEffect(() => {
+    let savedUserStr = localStorage.getItem('aiStudyHubCurrentUser')
+    if (!savedUserStr) {
+      // Default to Alex Morgan (Admin) as default mock account
+      const defaultUser = {
+        id: 'admin-alex',
+        name: 'Alex Morgan',
+        email: 'admin@example.com',
+        role: 'admin',
+        plan: 'PRO',
+        initials: 'AM',
+        avatar: '/avatar.svg'
+      }
+      localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(defaultUser))
+      savedUserStr = JSON.stringify(defaultUser)
+    }
+
+    try {
+      const savedUser = JSON.parse(savedUserStr)
+      const authUser = useAuthStore.getState().user
+      const profile = useProfileStore.getState().profile
+      if (!authUser || authUser.email !== savedUser.email || profile.name !== savedUser.name) {
+        useAuthStore.setState({
+          user: {
+            id: savedUser.id,
+            name: savedUser.name,
+            email: savedUser.email,
+            role: savedUser.role,
+            plan: savedUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
+            avatarUrl: savedUser.avatar || '/avatar.svg',
+          },
+          isAuthenticated: true,
+        })
+        useProfileStore.setState({
+          profile: {
+            name: savedUser.name,
+            university: 'FPT University',
+            major: 'Software engineering',
+            degree: 'Bachelor',
+            avatarUrl: savedUser.avatar || '/avatar.svg',
+          }
+        })
+      }
+    } catch (e) {
+      console.error('Error synchronizing mock user from localStorage on mount:', e)
+    }
+  }, [])
+
+  // Listen to custom event to react instantly
+  useEffect(() => {
+    const handleUserChanged = () => {
+      // Zustand store update automatically triggers re-renders,
+      // but we register the listener as requested.
+    }
+    window.addEventListener('aiStudyHubUserChanged', handleUserChanged)
+    return () => {
+      window.removeEventListener('aiStudyHubUserChanged', handleUserChanged)
+    }
+  }, [])
 
   const { setTheme, resolvedTheme } = useTheme()
 
@@ -722,6 +785,7 @@ export function Header() {
                   setUserMenuOpen(false)
                   setLogoutModalOpen(true)
                 }}
+                onChangeUserClick={() => setIsChangeUserOpen(true)}
               />
             )}
           </AnimatePresence>
@@ -731,6 +795,7 @@ export function Header() {
       {/* Interactive Modals */}
       <HelpModal isOpen={helpModalOpen} onClose={() => setHelpModalOpen(false)} />
       <ConfirmLogoutModal isOpen={logoutModalOpen} onClose={() => setLogoutModalOpen(false)} />
+      <ChangeUserModal isOpen={isChangeUserOpen} onClose={() => setIsChangeUserOpen(false)} />
     </header>
   )
 }

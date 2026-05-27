@@ -1337,5 +1337,21 @@ export const vi: typeof en = {
     targetAll: "TẤT CẢ",
     targetPro: "PRO",
     recipients: "NGƯỜI NHẬN"
+  },
+  userMenu: {
+    changeUser: "Đổi người dùng"
+  },
+  userSwitch: {
+    title: "Đổi người dùng",
+    subtitle: "Chọn tài khoản mẫu để kiểm thử quyền truy cập khác nhau.",
+    cancel: "Hủy",
+    switch: "Chuyển người dùng",
+    switched: "Đã chuyển sang {name}",
+    current: "Đang dùng",
+    adminDescription: "Có toàn quyền truy cập trang quản trị và cài đặt hệ thống.",
+    studentDescription: "Tài khoản học viên tiêu chuẩn với tài liệu và tính năng học tập.",
+    instructorDescription: "Có thể quản lý tài liệu khóa học và cộng tác với học viên.",
+    proStudentDescription: "Tài khoản học viên có dung lượng nâng cấp và tính năng cao cấp."
   }
 };
+
