@@ -75,6 +75,10 @@ function NotificationCard({
   const hasDraggedRef = useRef(false)
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    const target = e.target as HTMLElement
+    if (target.closest('button') || target.closest('a') || target.closest('textarea')) {
+      return
+    }
     if (e.button !== 0 && e.pointerType === 'mouse') return
     setIsDragging(true)
     setStartX(e.clientX)
@@ -452,9 +456,10 @@ function NotificationCard({
                 onClick={(e) => {
                   e.stopPropagation()
                   e.preventDefault()
+                  console.log("[Notifications] delete clicked", id)
                   onDelete()
                 }}
-                className="text-slate-400 hover:text-rose-500 md:opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer ml-1 animate-fadeIn flex items-center justify-center shrink-0 w-8 h-8 select-none z-10"
+                className="notification-delete-button text-slate-400 hover:text-rose-500 md:opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer ml-1 animate-fadeIn flex items-center justify-center shrink-0 w-8 h-8 select-none z-30"
                 title={t.notificationsPage.deleteAriaLabel}
                 aria-label={t.notificationsPage.deleteAriaLabel}
               >
