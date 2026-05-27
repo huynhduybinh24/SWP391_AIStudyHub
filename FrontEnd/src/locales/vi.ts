@@ -210,6 +210,7 @@ export const vi: typeof en = {
     searchFolder: "Tìm kiếm trong thư mục này...",
     searchStudyPlans: "Tìm kiếm kế hoạch học tập...",
     searchPlaceholderAll: "Tìm kiếm tài liệu, trò chuyện, kế hoạch...",
+    searchPlaceholderAdmin: "Tìm người dùng, tài liệu, báo cáo, giao dịch, activity...",
     searchResults: "Kết quả tìm kiếm",
     recentSearches: "Tìm kiếm gần đây",
     trendingSearches: "Tìm kiếm phổ biến",
