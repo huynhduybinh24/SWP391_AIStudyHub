@@ -1,5 +1,5 @@
 import { useTranslation } from '@/context/LanguageContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 
 export function PrivacyPolicyPage() {
@@ -82,47 +82,55 @@ export function PrivacyPolicyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <button
-          onClick={handleBack}
-          className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-8"
-        >
-          <ArrowLeft size={20} />
-          <span className="font-medium">{content.backBtn}</span>
-        </button>
-
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 md:p-12">
-          <header className="mb-10 text-center flex flex-col items-center">
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-md">
-              <img src="/logo.png" alt="LumiEdu Logo" className="w-10 h-10 object-contain" />
-            </div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-              {content.title}
-            </h1>
-            <p className="text-lg text-slate-600 dark:text-slate-400">
-              {content.subtitle}
-            </p>
-          </header>
-
-          <div className="space-y-8">
-            {content.sections.map((section, index) => (
-              <section key={index}>
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
-                  {section.title}
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {section.text}
-                </p>
-              </section>
-            ))}
-          </div>
-
-          <footer className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-500 text-sm text-center">
-            {content.lastUpdated}
-          </footer>
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 font-sans flex flex-col">
+      {/* ── Header ── */}
+      <header className="w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
+        <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3.5">
+            <img src="/logo.png" alt="LumiEdu Logo" className="w-[68px] h-[68px] object-contain" />
+            <span className="text-2xl font-bold text-[#2563eb] dark:text-blue-400 tracking-tight">LumiEdu</span>
+          </Link>
+          <button
+            onClick={handleBack}
+            className="text-sm font-semibold text-[#434655] dark:text-slate-400 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors flex items-center gap-2 cursor-pointer bg-transparent border-none"
+          >
+            <ArrowLeft className="w-4 h-4" /> {content.backBtn}
+          </button>
         </div>
-      </div>
+      </header>
+
+      {/* ── Main Content ── */}
+      <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 md:p-12">
+            <header className="mb-10 text-center">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+                {content.title}
+              </h1>
+              <p className="text-lg text-slate-600 dark:text-slate-400">
+                {content.subtitle}
+              </p>
+            </header>
+
+            <div className="space-y-8">
+              {content.sections.map((section, index) => (
+                <section key={index}>
+                  <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
+                    {section.title}
+                  </h2>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {section.text}
+                  </p>
+                </section>
+              ))}
+            </div>
+
+            <footer className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-500 text-sm text-center">
+              {content.lastUpdated}
+            </footer>
+          </div>
+        </div>
+      </main>
     </div>
   )
 }
