@@ -10,7 +10,7 @@ import { AdminNotificationsTab } from '@/features/admin/components/AdminNotifica
 type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'moderation'
 
 export function AdminDashboardPage() {
-  const { t, language } = useTranslation()
+  const { t, language, setLanguage } = useTranslation()
   const [activeTab, setActiveTab] = useState<AdminTab>('overview')
 
   const tabItems = [
@@ -26,12 +26,12 @@ export function AdminDashboardPage() {
     },
     {
       id: 'packages' as AdminTab,
-      label: language === 'vi' ? 'Quản lý gói cước' : 'Package Management',
+      label: t.admin.tabPackages,
       icon: CreditCard
     },
     {
       id: 'notifications' as AdminTab,
-      label: language === 'vi' ? 'Gửi thông báo' : 'Broadcast Center',
+      label: t.admin.tabBroadcast,
       icon: Bell
     },
     {
@@ -57,13 +57,29 @@ export function AdminDashboardPage() {
           </p>
         </div>
 
-        {/* Pulse live status badge */}
-        <div className="flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/25 dark:border-emerald-500/15 px-3 py-1.5 rounded-full text-xs font-bold text-emerald-600 dark:text-emerald-400 self-start md:self-center select-none shadow-sm shadow-emerald-500/5">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span>{t.admin.activeAdminGlow}</span>
+        {/* Header Actions: Language select & Pulse status badge */}
+        <div className="flex items-center gap-3 self-start md:self-center">
+          <div className="relative">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as any)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-slate-800 rounded-full bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-350 focus:outline-none focus:ring-2 focus:ring-blue-500/25 cursor-pointer shadow-xs transition-all duration-200"
+              aria-label="Change language"
+            >
+              <option value="en">English (US)</option>
+              <option value="vi">Tiếng Việt</option>
+              <option value="ja">日本語</option>
+              <option value="ko">한국어</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/25 dark:border-emerald-500/15 px-3 py-1.5 rounded-full text-xs font-bold text-emerald-600 dark:text-emerald-400 select-none shadow-sm shadow-emerald-500/5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>{t.admin.activeAdminGlow}</span>
+          </div>
         </div>
       </div>
 
