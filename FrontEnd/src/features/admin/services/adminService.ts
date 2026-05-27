@@ -58,7 +58,7 @@ export type AdminStats = {
   newUsersThisWeek: number;
 };
 
-let mockUsers: AdminUser[] = [
+const DEFAULT_MOCK_USERS: AdminUser[] = [
   {
     id: "u1",
     name: "Alex Rivera",
@@ -126,6 +126,29 @@ let mockUsers: AdminUser[] = [
     plan: "free",
   },
 ];
+
+const loadUsersFromStorage = (): AdminUser[] => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('aiStudyHubUsers');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing users from localStorage', e);
+      }
+    }
+    localStorage.setItem('aiStudyHubUsers', JSON.stringify(DEFAULT_MOCK_USERS));
+  }
+  return [...DEFAULT_MOCK_USERS];
+};
+
+let mockUsers: AdminUser[] = loadUsersFromStorage();
+
+const saveUsersToStorage = (usersList: AdminUser[]) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('aiStudyHubUsers', JSON.stringify(usersList));
+  }
+};
 
 let mockDocuments: AdminDocument[] = [
   {
@@ -353,6 +376,7 @@ export const updateUser = async (
   }
   
   mockUsers[index] = { ...mockUsers[index], ...updates };
+  saveUsersToStorage(mockUsers);
   return { ...mockUsers[index] };
 };
 
@@ -367,6 +391,7 @@ export const deleteUser = async (userId: string, reason?: string): Promise<{ suc
   }
   
   mockUsers = mockUsers.filter((u) => u.id !== userId);
+  saveUsersToStorage(mockUsers);
   return { success: true };
 };
 
