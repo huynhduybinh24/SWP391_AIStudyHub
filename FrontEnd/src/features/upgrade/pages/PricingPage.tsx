@@ -13,101 +13,167 @@ import { DEV_SKIP_AUTH } from '@/config/dev'
 export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
   const navigate = useNavigate()
   const toast = useToast()
-  const { t, language } = useTranslation()
+  const { language } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [isContactSalesOpen, setIsContactSalesOpen] = useState(false)
 
-  // Dynamically load pricing configurations from localStorage (Admin updates)
-  const { proPrice, proStorage, freeStorage } = useMemo(() => {
-    let proP = 12
-    let proS = 50
-    let freeS = 10
+  // Dynamically load pricing configurations from localStorage
+  const packagesList = useMemo(() => {
+    let list = [
+      {
+        id: 'pkg-free',
+        name: language === 'vi' ? 'Gói Miễn phí' : 'Free Plan',
+        storageLimit: 10,
+        priceMonthly: 0,
+        perks: [
+          language === 'vi' ? 'Dung lượng lưu trữ 10 GB' : '10 GB storage limit',
+          language === 'vi' ? 'AI Chatbot trợ giúp cơ bản' : 'Basic AI Chatbot assistance',
+          language === 'vi' ? 'Chia sẻ tài liệu tối đa 3 người' : 'Share files with up to 3 members',
+          language === 'vi' ? 'Tốc độ tải xuống tiêu chuẩn' : 'Standard download speed'
+        ]
+      },
+      {
+        id: 'pkg-pro',
+        name: language === 'vi' ? 'Gói Pro' : 'Pro Plan',
+        storageLimit: 50,
+        priceMonthly: 12,
+        perks: [
+          language === 'vi' ? 'Dung lượng lưu trữ 50 GB' : '50 GB storage limit',
+          language === 'vi' ? 'AI Chatbot nâng cao & phân tích sâu' : 'Advanced AI chatbot & deep analysis',
+          language === 'vi' ? 'Chia sẻ tệp tin không giới hạn' : 'Unlimited file sharing',
+          language === 'vi' ? 'Tốc độ tải xuống băng thông cao' : 'High speed download bandwidth',
+          language === 'vi' ? 'Bảo mật dữ liệu nâng cao bằng AI Guard' : 'Advanced security via AI Guard'
+        ]
+      }
+    ]
+
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('aiStudyHubPackages')
       if (saved) {
         try {
           const parsed = JSON.parse(saved)
-          const pro = parsed.find((p: any) => p.id === 'pkg-pro')
-          const free = parsed.find((p: any) => p.id === 'pkg-free')
-          if (pro) {
-            proP = pro.priceMonthly
-            proS = pro.storageLimit
-          }
-          if (free) {
-            freeS = free.storageLimit
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            list = parsed.map((pkg: any) => {
+              let name = pkg.name
+              if (pkg.id === 'pkg-free') {
+                name = language === 'vi' ? 'Gói Miễn phí' : 'Free Plan'
+              } else if (pkg.id === 'pkg-pro') {
+                name = language === 'vi' ? 'Gói Pro' : 'Pro Plan'
+              }
+              return {
+                id: pkg.id,
+                name: name,
+                storageLimit: pkg.storageLimit,
+                priceMonthly: pkg.priceMonthly,
+                perks: pkg.perks || []
+              }
+            })
           }
         } catch (e) {
           console.error('Error loading packages in PricingPage:', e)
         }
       }
     }
-    return {
-      proPrice: `$${proP}`,
-      proStorage: `${proS}GB`,
-      freeStorage: `${freeS}GB`,
-    }
-  }, [])
+    return list
+  }, [language])
 
-  // Localized pricing plans recalculated on language change
-  const localizedPricingPlans = useMemo<PricingPlan[]>(() => [
-    {
-      name: language === 'vi' ? 'Gói Miễn phí' : language === 'ja' ? 'フリープラン' : language === 'ko' ? '무료 요금제' : 'Free Plan',
-      price: '$0',
-      billing: language === 'vi' ? '/tháng' : language === 'ja' ? '/月' : language === 'ko' ? '/월' : '/month',
-      description: language === 'vi' ? 'Dành cho người học thông thường cần hỗ trợ cơ bản.' : language === 'ja' ? '基本的な支援が必要な一般の学習者向け。' : language === 'ko' ? '기본적인 지원이 필요한 일반 학습자용.' : 'For casual learners needing basic assistance.',
+  // Localized pricing plans recalculated on language change and user package
+  const localizedPricingPlans = useMemo<PricingPlan[]>(() => {
+    const currentPlanCode = user?.plan || 'free'
+    
+    // Find current plan price to compare upgrade vs downgrade
+    const currentPlanItem = packagesList.find(p => {
+      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+      return planCode === currentPlanCode
+    })
+    const currentPlanPrice = currentPlanItem ? currentPlanItem.priceMonthly : 0
+
+    const plans: PricingPlan[] = packagesList.map((pkg) => {
+      const planCode = pkg.id === 'pkg-free' ? 'free' : pkg.id === 'pkg-pro' ? 'pro' : pkg.id
+      const isCurrent = currentPlanCode === planCode
+
+      // Determine localized button text
+      let buttonText = ''
+      let buttonVariant: 'outline' | 'primary' | 'secondary' = 'primary'
+      
+      if (isCurrent) {
+        buttonText = language === 'vi' ? 'Gói Hiện tại' : 'Current Plan'
+        buttonVariant = 'outline'
+      } else {
+        const isUpgrade = pkg.priceMonthly > currentPlanPrice
+        if (isUpgrade) {
+          buttonText = language === 'vi' ? 'Nâng cấp' : 'Upgrade'
+        } else {
+          buttonText = language === 'vi' ? 'Hạ gói' : 'Downgrade'
+        }
+      }
+
+      // Localize description
+      let description = ''
+      if (pkg.id === 'pkg-free') {
+        description = language === 'vi' ? 'Dành cho người học thông thường cần hỗ trợ cơ bản.' : 'For casual learners needing basic assistance.'
+      } else if (pkg.id === 'pkg-pro') {
+        description = language === 'vi' ? 'Dành cho sinh viên tận tâm cần các công cụ chuyên sâu.' : 'For dedicated students requiring intensive tools.'
+      } else {
+        description = language === 'vi' ? 'Gói cước đặc biệt được thiết kế cho nhu cầu của bạn.' : 'Special plan tailored to your needs.'
+      }
+
+      // Pro savings text
+      let yearlySavingText = undefined
+      if (pkg.id === 'pkg-pro') {
+        yearlySavingText = language === 'vi'
+          ? `Hoặc $${(pkg.priceMonthly * 10).toFixed(0)}/năm (Tiết kiệm 16%)`
+          : `Or $${(pkg.priceMonthly * 10).toFixed(0)}/year (Save 16%)`
+      }
+
+      return {
+        name: pkg.name,
+        price: `$${pkg.priceMonthly}`,
+        billing: language === 'vi' ? '/tháng' : '/month',
+        yearlySavingText,
+        description,
+        features: pkg.perks,
+        buttonText,
+        buttonVariant,
+        popular: pkg.id === 'pkg-pro',
+        isCurrent
+      }
+    })
+
+    // Append Institutional Plan card
+    plans.push({
+      name: language === 'vi' ? 'Gói Tổ chức' : 'Institutional',
+      price: language === 'vi' ? 'Liên hệ' : 'Custom',
+      description: language === 'vi' ? 'Dành cho nhóm học tập, khoa hoặc trường đại học.' : 'For study groups, departments, or universities.',
       features: [
-        language === 'vi' ? `Dung lượng cơ bản (${freeStorage})` : language === 'ja' ? `基本ストレージ (${freeStorage})` : language === 'ko' ? `기본 저장 공간 (${freeStorage})` : `Core storage (${freeStorage})`,
-        language === 'vi' ? 'Tóm tắt AI cơ bản (10 bản/tháng)' : language === 'ja' ? '基本的なAI要約 (10回/月)' : language === 'ko' ? '기본 AI 요약 (월 10회)' : 'Basic AI summaries (10/mo)',
-        language === 'vi' ? 'Kế hoạch học tập chuẩn' : language === 'ja' ? '標準的な学習計画' : language === 'ko' ? '표준 학습 kế hoạch' : 'Standard study plans',
+        language === 'vi' ? 'Bao gồm tất cả tính năng gói Pro' : 'Everything in Pro',
+        language === 'vi' ? 'Thanh toán tập trung' : 'Centralized billing',
+        language === 'vi' ? 'Bảng điều khiển quản trị' : 'Admin dashboard',
+        language === 'vi' ? 'Trợ lý hỗ trợ riêng' : 'Dedicated success manager',
       ],
-      buttonText: language === 'vi' ? 'Gói Hiện tại' : language === 'ja' ? '現在のプラン' : language === 'ko' ? '현재 요금제' : 'Current Plan',
-      buttonVariant: 'outline',
-      isCurrent: true,
-    },
-    {
-      name: language === 'vi' ? 'Gói Pro' : language === 'ja' ? 'プロプラン' : language === 'ko' ? '프로 요금제' : 'Pro Plan',
-      price: proPrice,
-      billing: language === 'vi' ? '/tháng' : language === 'ja' ? '/月' : language === 'ko' ? '/월' : '/month',
-      yearlySavingText: language === 'vi' ? `Hoặc $${(parseFloat(proPrice.replace('$', '')) * 10).toFixed(0)}/năm (Tiết kiệm 16%)` : language === 'ja' ? `または $${(parseFloat(proPrice.replace('$', '')) * 10).toFixed(0)}/年 (16%お得)` : language === 'ko' ? `또는 $${(parseFloat(proPrice.replace('$', '')) * 10).toFixed(0)}/연 (16% 절약)` : `Or $${(parseFloat(proPrice.replace('$', '')) * 10).toFixed(0)}/year (Save 16%)`,
-      description: language === 'vi' ? 'Dành cho sinh viên tận tâm cần các công cụ chuyên sâu.' : language === 'ja' ? '高度なツールを必要とする熱心な学生向け。' : language === 'ko' ? '심층적인 도구가 필요한 열정적인 학생용.' : 'For dedicated students requiring intensive tools.',
-      features: [
-        language === 'vi' ? 'Không giới hạn tóm tắt AI' : language === 'ja' ? '無制限のAI要約' : language === 'ko' ? '무제한 AI 요약' : 'Unlimited AI summaries',
-        language === 'vi' ? 'Truy cập chatbot chuyên sâu' : language === 'ja' ? '詳細なチャットボットへのアクセス' : language === 'ko' ? '심층 챗봇 액세스' : 'Deep-dive chatbot access',
-        language === 'vi' ? `${proStorage} Dung lượng đám mây` : language === 'ja' ? `${proStorage}のクラウドストレージ` : language === 'ko' ? `${proStorage} 클라우드 저장 공간` : `${proStorage} Cloud storage`,
-        language === 'vi' ? 'Phân tích học tập nâng cao' : language === 'ja' ? '高度な学習分析' : language === 'ko' ? '고급 학습 분석' : 'Advanced study analytics',
-        language === 'vi' ? 'Hỗ trợ ưu tiên' : language === 'ja' ? '優先サポート' : language === 'ko' ? '우선 지원' : 'Priority support',
-      ],
-      buttonText: t.sidebar.upgradePro,
-      buttonVariant: 'primary',
-      popular: true,
-    },
-    {
-      name: language === 'vi' ? 'Gói Tổ chức' : language === 'ja' ? '機関プラン' : language === 'ko' ? '기관 요금제' : 'Institutional',
-      price: language === 'vi' ? 'Liên hệ' : language === 'ja' ? 'カスタム' : language === 'ko' ? '맞춤형' : 'Custom',
-      description: language === 'vi' ? 'Dành cho nhóm học tập, khoa hoặc trường đại học.' : language === 'ja' ? '学習グループ、学部、または大学向け。' : language === 'ko' ? '스터디 그룹, 학과 또는 대학교용.' : 'For study groups, departments, or universities.',
-      features: [
-        language === 'vi' ? 'Bao gồm tất cả tính năng gói Pro' : language === 'ja' ? 'Proプランの全機能' : language === 'ko' ? 'Pro 요금제의 모든 기능 포함' : 'Everything in Pro',
-        language === 'vi' ? 'Thanh toán tập trung' : language === 'ja' ? '一括請求' : language === 'ko' ? '통합 청구' : 'Centralized billing',
-        language === 'vi' ? 'Bảng điều khiển quản trị' : language === 'ja' ? '管理者ダッシュボード' : language === 'ko' ? '관리자 대시보드' : 'Admin dashboard',
-        language === 'vi' ? 'Trợ lý hỗ trợ riêng' : language === 'ja' ? '専任のサクセスマネージャー' : language === 'ko' ? '전담 성공 매니저' : 'Dedicated success manager',
-      ],
-      buttonText: language === 'vi' ? 'Liên hệ kinh doanh' : language === 'ja' ? '営業へ問い合わせ' : language === 'ko' ? '영업 문의' : 'Contact Sales',
+      buttonText: language === 'vi' ? 'Liên hệ kinh doanh' : 'Contact Sales',
       buttonVariant: 'secondary',
-    },
-  ], [language, t, proPrice, proStorage, freeStorage])
+      isCurrent: false
+    })
+
+    return plans
+  }, [packagesList, language, user])
 
   const handleCurrentPlanClick = () => {
-    toast.info(`You are currently on the ${user?.plan === 'pro' ? 'Pro' : 'Free'} Plan`)
+    const currentPkg = packagesList.find(p => {
+      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+      return planCode === (user?.plan || 'free')
+    })
+    const name = currentPkg?.name || 'Free Plan'
+    toast.info(language === 'vi' ? `Bạn đang sử dụng ${name}` : `You are currently on the ${name}`)
   }
 
   const handleUpgradeClick = () => {
-    // On public pricing page: check real auth (DEV_SKIP_AUTH doesn't count as "real" login)
     const isReallyAuthenticated = DEV_SKIP_AUTH ? false : isAuthenticated
     const isGuest = isPublic ? !isReallyAuthenticated : !user
 
     if (isGuest) {
-      // Store intended destination then send to login
       sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, '/dashboard/checkout')
       navigate('/login')
     } else {
@@ -133,31 +199,16 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
 
       {/* Pricing Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch w-full max-w-5xl mt-6 px-4">
-        {localizedPricingPlans.map((plan, index) => {
-          let dynamicPlan = { ...plan }
-          if (plan.name === 'Free Plan') {
-            const isFree = !user || user.plan === 'free'
-            dynamicPlan.isCurrent = isFree
-            dynamicPlan.buttonText = isFree ? 'Current Plan' : 'Downgrade'
-          }
-          if (plan.name === 'Pro Plan') {
-            const isPro = user?.plan === 'pro'
-            dynamicPlan.isCurrent = isPro
-            dynamicPlan.buttonText = isPro ? 'Current Plan' : 'Upgrade to Pro'
-            dynamicPlan.buttonVariant = isPro ? 'outline' : 'primary'
-          }
-
-          return (
-            <PricingCard
-              key={dynamicPlan.name}
-              plan={dynamicPlan}
-              index={index}
-              onCurrentPlanClick={handleCurrentPlanClick}
-              onUpgradeClick={handleUpgradeClick}
-              onContactSalesClick={handleContactSalesClick}
-            />
-          )
-        })}
+        {localizedPricingPlans.map((plan, index) => (
+          <PricingCard
+            key={plan.name}
+            plan={plan}
+            index={index}
+            onCurrentPlanClick={handleCurrentPlanClick}
+            onUpgradeClick={handleUpgradeClick}
+            onContactSalesClick={handleContactSalesClick}
+          />
+        ))}
       </div>
 
       {/* Contact Sales Form Modal */}
