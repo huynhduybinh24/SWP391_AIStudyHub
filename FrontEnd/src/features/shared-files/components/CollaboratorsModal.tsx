@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Users, Mail, Plus } from 'lucide-react'
+import { X, Users, Mail, Plus, Lock } from 'lucide-react'
+import { useTranslation } from '@/context/LanguageContext'
 
 export interface Collaborator {
   id: string
@@ -15,7 +16,8 @@ interface CollaboratorsModalProps {
   onClose: () => void
   collaborators: Collaborator[]
   onUpdateRole: (id: string, newRole: 'Owner' | 'Editor' | 'View Only') => void
-  onAddCollaborator: (name: string, email: string, role: 'Owner' | 'Editor' | 'View Only') => void
+  canManage: boolean
+  onOpenAddCollaborator: () => void
 }
 
 export function CollaboratorsModal({
@@ -23,24 +25,14 @@ export function CollaboratorsModal({
   onClose,
   collaborators,
   onUpdateRole,
-  onAddCollaborator
+  canManage,
+  onOpenAddCollaborator
 }: CollaboratorsModalProps) {
+  const { language } = useTranslation()
   const modalRef = useRef<HTMLDivElement>(null)
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newEmail, setNewEmail] = useState('')
-  const [newRole, setNewRole] = useState<'Owner' | 'Editor' | 'View Only'>('View Only')
-  const [formError, setFormError] = useState('')
 
   useEffect(() => {
-    if (!isOpen) {
-      setShowAddForm(false)
-      setNewName('')
-      setNewEmail('')
-      setNewRole('View Only')
-      setFormError('')
-      return
-    }
+    if (!isOpen) return
 
     const focusableElements = modalRef.current?.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex="0"]'
@@ -77,37 +69,6 @@ export function CollaboratorsModal({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  const handleAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setFormError('')
-
-    const trimmedName = newName.trim()
-    const trimmedEmail = newEmail.trim().toLowerCase()
-
-    if (!trimmedName || !trimmedEmail) {
-      setFormError('Please fill out all fields.')
-      return
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(trimmedEmail)) {
-      setFormError('Please enter a valid email address.')
-      return
-    }
-
-    if (collaborators.some((c) => c.email.toLowerCase() === trimmedEmail)) {
-      setFormError('A collaborator with this email already exists.')
-      return
-    }
-
-    onAddCollaborator(trimmedName, trimmedEmail, newRole)
-
-    setNewName('')
-    setNewEmail('')
-    setNewRole('View Only')
-    setShowAddForm(false)
-  }
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -133,116 +94,41 @@ export function CollaboratorsModal({
           >
             <button
               onClick={onClose}
-              className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-55 dark:hover:bg-slate-800 cursor-pointer"
+              className="absolute right-6 top-6 text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               aria-label="Close dialog"
             >
               <X className="size-5" />
             </button>
 
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800/80">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 shrink-0">
                 <Users className="size-5.5" />
               </div>
               <div className="text-left">
                 <h3 id="collaborators-title" className="text-base font-bold text-slate-900 dark:text-white">
-                  Active Collaborators ({collaborators.length})
+                  {language === 'vi' ? `Thành viên hoạt động (${collaborators.length})` : `Active Collaborators (${collaborators.length})`}
                 </h3>
                 <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                  People collaborating on your shared workspace files
+                  {language === 'vi' ? 'Những người đang cộng tác trên các tệp không gian làm việc chia sẻ' : 'People collaborating on your shared workspace files'}
                 </p>
               </div>
             </div>
 
-            {/* Add Collaborator Trigger/Form */}
-            {!showAddForm ? (
+            {/* Add Collaborator Trigger */}
+            {!canManage ? (
+              <div className="w-full mb-4 py-2.5 px-4 rounded-xl text-center bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-400 dark:text-slate-550 flex items-center justify-center gap-1.5 select-none">
+                <Lock className="size-3.5 text-slate-400 dark:text-slate-500" />
+                {language === 'vi' ? 'Chỉ chủ sở hữu và quản trị viên mới có thể thêm thành viên' : 'Only owners and admins can add collaborators'}
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={() => setShowAddForm(true)}
-                className="w-full mb-4 flex items-center justify-center gap-2 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-dashed border-blue-200 dark:border-blue-800/80 transition-all py-2.5 px-4 rounded-xl text-xs font-bold cursor-pointer"
+                onClick={onOpenAddCollaborator}
+                className="w-full mb-4 flex items-center justify-center gap-2 bg-blue-50 dark:bg-blue-955/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-dashed border-blue-200 dark:border-blue-800/80 transition-all py-2.5 px-4 rounded-xl text-xs font-bold cursor-pointer"
               >
                 <Plus className="size-4" />
-                Add Collaborator
+                {language === 'vi' ? 'Thêm thành viên' : 'Add Collaborator'}
               </button>
-            ) : (
-              <form
-                onSubmit={handleAddSubmit}
-                className="mb-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 space-y-3 text-left animate-fadeIn"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">
-                    New Collaborator
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAddForm(false)
-                      setFormError('')
-                    }}
-                    className="text-slate-400 hover:text-slate-655 dark:hover:text-slate-200 text-xs font-bold cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                </div>
-
-                {formError && (
-                  <p className="text-[11px] font-bold text-red-500 bg-red-50 dark:bg-red-950/20 p-2 rounded-lg border border-red-100/50 dark:border-red-950/30">
-                    {formError}
-                  </p>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Name"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-700/80 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="email@example.com"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-700/80 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
-                    Role
-                  </label>
-                  <select
-                    value={newRole}
-                    onChange={(e) => setNewRole(e.target.value as 'Owner' | 'Editor' | 'View Only')}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-700/80 rounded-xl text-xs focus:outline-none focus:border-blue-500 text-slate-900 dark:text-white transition-colors cursor-pointer"
-                  >
-                    <option value="View Only">View Only</option>
-                    <option value="Editor">Editor</option>
-                    <option value="Owner">Owner</option>
-                  </select>
-                </div>
-
-                <div className="flex justify-end pt-1">
-                  <button
-                    type="submit"
-                    className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98]"
-                  >
-                    Add
-                  </button>
-                </div>
-              </form>
             )}
 
             <div className="max-h-[280px] overflow-y-auto pr-1 space-y-3 scrollbar-thin">
@@ -280,16 +166,17 @@ export function CollaboratorsModal({
                         <button
                           key={r}
                           type="button"
+                          disabled={!canManage}
                           onClick={() => onUpdateRole(c.id, r)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all duration-200 cursor-pointer ${
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all duration-200 ${
                             isActive
                               ? r === 'Owner'
                                 ? 'bg-blue-600 text-white shadow-sm'
                                 : r === 'Editor'
                                 ? 'bg-emerald-600 text-white shadow-sm'
-                                : 'bg-slate-655 bg-slate-600 text-white shadow-sm'
+                                : 'bg-slate-600 text-white shadow-sm'
                               : 'text-slate-550 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250 hover:bg-slate-200/40 dark:hover:bg-slate-700/40'
-                          }`}
+                          } ${!canManage ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                         >
                           {r}
                         </button>
@@ -306,7 +193,7 @@ export function CollaboratorsModal({
                 onClick={onClose}
                 className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98]"
               >
-                Close
+                {language === 'vi' ? 'Đóng' : 'Close'}
               </button>
             </div>
           </motion.div>

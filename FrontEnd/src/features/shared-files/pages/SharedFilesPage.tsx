@@ -28,6 +28,7 @@ import ChangePermissionModal from '../components/ChangePermissionModal'
 import ConfirmRemoveAccessModal from '../components/ConfirmRemoveAccessModal'
 import CollaboratorsModal, { Collaborator as ActiveCollaborator } from '../components/CollaboratorsModal'
 import AIInsightsModal from '../components/AIInsightsModal'
+import AddCollaboratorModal from '../components/AddCollaboratorModal'
 import { SharedFile } from '../components/SharedFilesTable'
 import { X, HardDrive } from 'lucide-react'
 
@@ -302,6 +303,7 @@ export function SharedFilesPage() {
     permission: false,
     share: false,
     confirmDelete: false,
+    addCollaborator: false,
   })
 
   // Workspace Configurations
@@ -1160,7 +1162,15 @@ export function SharedFilesPage() {
         onClose={() => setModals(prev => ({ ...prev, collaborators: false }))}
         collaborators={activeCollaborators}
         onUpdateRole={handleUpdateCollaboratorRole}
+        canManage={activeCollaborators.some(c => c.email.toLowerCase() === user?.email?.toLowerCase() && c.role === 'Owner') || user?.role?.toLowerCase() === 'admin'}
+        onOpenAddCollaborator={() => setModals(prev => ({ ...prev, addCollaborator: true }))}
+      />
+
+      <AddCollaboratorModal
+        isOpen={modals.addCollaborator}
+        onClose={() => setModals(prev => ({ ...prev, addCollaborator: false }))}
         onAddCollaborator={handleAddNewCollaborator}
+        collaborators={activeCollaborators}
       />
 
       <AIInsightsModal
