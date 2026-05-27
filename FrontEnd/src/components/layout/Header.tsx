@@ -59,6 +59,7 @@ export interface MockNotification {
 // ─── Header ───────────────────────────────────────────────────────────────────
 export function Header() {
   const user = useAuthStore((s) => s.user)
+  const isAdmin = user?.role?.toLowerCase() === 'admin'
   const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
@@ -360,7 +361,9 @@ export function Header() {
       >
         <Input
           placeholder={
-            pathname.startsWith('/dashboard/shared')
+            isAdmin
+              ? t.header.searchPlaceholderAdmin
+              : pathname.startsWith('/dashboard/shared')
               ? t.header.searchWorkspace
               : pathname.startsWith('/dashboard/shared-files/research-materials')
               ? t.header.searchFolder
