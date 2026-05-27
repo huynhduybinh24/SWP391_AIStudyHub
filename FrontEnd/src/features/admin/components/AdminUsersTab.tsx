@@ -52,9 +52,13 @@ export function AdminUsersTab({
   // Search/Filter logic
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
+      const searchLower = searchTerm.toLowerCase()
+      const planName = u.plan === 'pro' ? 'pro' : u.plan === 'free' ? 'free' : (u.plan || 'free').toLowerCase()
       const matchesSearch =
-        u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
+        u.name.toLowerCase().includes(searchLower) ||
+        u.email.toLowerCase().includes(searchLower) ||
+        u.role.toLowerCase().includes(searchLower) ||
+        planName.includes(searchLower)
       
       const matchesRole = roleFilter === 'all' || u.role === roleFilter
       const matchesStatus = statusFilter === 'all' || u.status === statusFilter
@@ -148,7 +152,7 @@ export function AdminUsersTab({
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
-            placeholder={language === 'vi' ? 'Tìm kiếm người dùng...' : 'Search users by name or email...'}
+            placeholder={language === 'vi' ? 'Tìm theo tên, email hoặc vai trò...' : 'Search by name, email, or role...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 font-semibold"
@@ -199,6 +203,9 @@ export function AdminUsersTab({
                 </th>
                 <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
                   {language === 'vi' ? 'Dung lượng' : 'Storage'}
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                  {language === 'vi' ? 'Hoạt động gần nhất' : 'Last Active'}
                 </th>
                 <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
                   {language === 'vi' ? 'Trạng thái' : 'Status'}
@@ -260,19 +267,47 @@ export function AdminUsersTab({
                         {(u.storageUsedMB / 1024).toFixed(2)} GB / 10 GB
                       </td>
 
+                      {/* Last Active */}
+                      <td className="p-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                        {u.isOnline 
+                          ? (language === 'vi' ? 'Đang hoạt động' : 'Active now')
+                          : (language === 'vi' ? (u.lastActiveVi || 'Không rõ') : (u.lastActiveEn || 'Unknown'))}
+                      </td>
+
                       {/* Status */}
                       <td className="p-4">
-                        <Badge className={cn(
-                          "font-extrabold text-[11px] rounded-full px-2.5 py-0.5 flex items-center gap-1.5 w-fit border",
-                          u.status === 'active' 
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/15"
-                            : "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/15"
-                        )}>
-                          <span className={cn("size-1.5 rounded-full", u.status === 'active' ? "bg-emerald-500" : "bg-rose-500")} />
-                          {u.status === 'active' 
-                            ? (language === 'vi' ? 'Hoạt động' : 'Active') 
-                            : (language === 'vi' ? 'Bị khóa' : 'Inactive')}
-                        </Badge>
+                        {(() => {
+                          const isLocked = u.status === 'inactive' || u.status === 'banned';
+                          const isOnline = u.isOnline;
+                          
+                          let badgeBg = "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400";
+                          let dotBg = "bg-slate-400";
+                          let statusLabel = "";
+
+                          if (isLocked) {
+                            badgeBg = "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/15";
+                            dotBg = "bg-rose-500";
+                            statusLabel = language === 'vi' ? 'Bị khoá' : 'Locked';
+                          } else if (isOnline) {
+                            badgeBg = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/15";
+                            dotBg = "bg-emerald-500 animate-pulse";
+                            statusLabel = 'Online';
+                          } else {
+                            badgeBg = "bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/15";
+                            dotBg = "bg-slate-400";
+                            statusLabel = 'Offline';
+                          }
+
+                          return (
+                            <Badge className={cn(
+                              "font-extrabold text-[11px] rounded-full px-2.5 py-0.5 flex items-center gap-1.5 w-fit border",
+                              badgeBg
+                            )}>
+                              <span className={cn("size-1.5 rounded-full", dotBg)} />
+                              {statusLabel}
+                            </Badge>
+                          );
+                        })()}
                       </td>
 
                       {/* Actions */}
@@ -337,7 +372,7 @@ export function AdminUsersTab({
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="py-16 text-center">
+                  <td colSpan={7} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-700">
                       <UserX className="size-10 stroke-[1.25] mb-2" />
                       <p className="font-extrabold text-sm text-slate-700 dark:text-slate-350">
