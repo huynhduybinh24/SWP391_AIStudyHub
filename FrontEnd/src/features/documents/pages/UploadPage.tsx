@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Folder, FileCheck, AlertCircle } from 'lucide-react';
+import { Sparkles, Folder, FileCheck, AlertCircle, Video as VideoIcon, Music, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/context/LanguageContext';
 import { motion } from 'framer-motion';
@@ -62,7 +62,8 @@ const INITIAL_DOCUMENTS: DocumentItem[] = [
 export function UploadPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { language, t } = useTranslation();
+  const { language, t: tRaw } = useTranslation();
+  const t = tRaw as any;
 
   const {
     activeTab,
@@ -76,7 +77,6 @@ export function UploadPage() {
     selectedTags,
     setSelectedTags,
     fileType,
-    setFileType,
     visibility,
     setVisibility,
     generateSummary,
@@ -87,7 +87,6 @@ export function UploadPage() {
     uploadedFile,
     previewUrl,
     fileName,
-    fileSize,
     uploadProgress,
     uploadComplete,
     isDragOver,
@@ -105,8 +104,7 @@ export function UploadPage() {
     handleDragLeave,
     handleDrop,
     handleFileChange,
-    clearAllState,
-    resetForm
+    clearAllState
   } = useMediaUpload('document');
 
   // Recent Uploads State

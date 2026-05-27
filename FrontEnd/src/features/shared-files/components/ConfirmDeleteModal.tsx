@@ -25,7 +25,8 @@ export function ConfirmDeleteModal({
     )
     if (focusableElements && focusableElements.length > 0) {
       // Focus on Cancel button first as a safe default
-      (focusableElements[1] || focusableElements[0] as HTMLElement).focus()
+      const elementToFocus = (focusableElements[1] || focusableElements[0]) as HTMLElement
+      elementToFocus?.focus()
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {

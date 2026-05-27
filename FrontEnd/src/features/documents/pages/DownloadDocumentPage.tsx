@@ -10,8 +10,7 @@ import {
   Calendar,
   BookOpen,
   FileText,
-  Sparkles,
-  X
+  Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -138,7 +137,7 @@ const SUBJECT_DETAILS_MOCK: Record<
     objectives: [
       'Build active recall routines for conceptual examinations.',
       'Optimize long-term recall rates using spaced retention intervals.',
-      'Simplify complex academic papers through systematic deconstruction.'
+      'Simplify complex academic academic papers through systematic deconstruction.'
     ],
     tags: ['#StudySkills', '#RecallMethod', '#AIAssistant'],
     description:
@@ -153,8 +152,7 @@ export default function DownloadDocumentPage() {
 
   const {
     documents,
-    showToast,
-    handleDownloadFile
+    showToast
   } = useOutletContext<DocumentsContextType>()
 
   // 1. Resolve active document or mock fallback

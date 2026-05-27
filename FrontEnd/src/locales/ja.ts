@@ -98,6 +98,7 @@ export const ja: any = {
     toastDeleteSuccess: "ドキュメントが正常に削除されました",
     searchDocsPlaceholder: "ファイル、アップロード者を検索...",
     noDocsModeration: "現在、モデレートが必要なドキュメントはありません。",
+    noDocs: "ドキュメントが見つかりません",
     previewContentTitle: "ドキュメントのプレビュー内容",
     docColReportAction: "報告を表示",
     reportModalTitle: "違反報告の詳細",

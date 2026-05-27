@@ -1,5 +1,5 @@
 import { HardDrive, Sparkles } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
@@ -30,7 +30,7 @@ export function WorkspaceStatsCards({
   const strokeDashoffset = circumference - (usedPercentage / 100) * circumference
 
   // Framer motion variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -41,7 +41,7 @@ export function WorkspaceStatsCards({
     }
   }
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 15 },
     show: { 
       opacity: 1, 

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
+import { useParams, useOutletContext } from 'react-router-dom'
 import BackButton from '@/components/shared/BackButton'
 import { FileViewer } from '@/components/shared/file-viewer/FileViewer'
 
@@ -86,7 +86,6 @@ const SUBJECT_DETAILS_MOCK: Record<
 
 export default function DocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>()
-  const navigate = useNavigate()
   
   const {
     documents,

@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Avatar } from '@/components/ui/Avatar'
 import { Modal } from '@/components/ui/Modal'
-import { Select } from '@/components/ui/Select'
+
 import { useTranslation } from '@/context/LanguageContext'
 
 const getFilePreviewPageContent = (pageNum: number) => {

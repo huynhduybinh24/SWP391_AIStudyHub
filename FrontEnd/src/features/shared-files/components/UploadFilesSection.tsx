@@ -3,7 +3,7 @@ import { Sparkles } from 'lucide-react'
 import BackToSharedFilesButton from '@/components/shared/BackToSharedFilesButton'
 import { motion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
-import { Button } from '@/components/ui/Button'
+
 import { UploadDropzone } from './UploadDropzone'
 import { UploadProgressCard } from './UploadProgressCard'
 import { FileMetadataForm } from './FileMetadataForm'
@@ -33,7 +33,7 @@ export function UploadFilesSection({ onBack, onSave }: UploadFilesSectionProps) 
 
   // AI states
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [aiInsightsGenerated, setAiInsightsGenerated] = useState(false)
+  const [_aiInsightsGenerated, setAiInsightsGenerated] = useState(false)
 
   // Progress Bar Simulation
   useEffect(() => {

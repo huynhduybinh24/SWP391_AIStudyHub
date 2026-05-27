@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
-import { Zap, X, PanelLeftClose, PanelLeftOpen, ShieldCheck } from 'lucide-react'
+import { Zap, X, PanelLeftClose, PanelLeftOpen, Users, CreditCard, Bell, LayoutDashboard, TrendingUp, ClipboardList, AlertTriangle, Cpu, ShieldCheck } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -9,17 +9,24 @@ import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 
-function isNavActive(pathname: string, path: string) {
+function isNavActive(pathname: string, search: string, targetPathWithQuery: string) {
+  const [targetPath, targetQuery] = targetPathWithQuery.split('?')
   if (pathname.startsWith('/dashboard/shared-files')) {
-    return path === '/dashboard/shared'
+    return targetPath === '/dashboard/shared'
   }
-  if (path === '/dashboard') {
+  if (targetPath === '/dashboard/admin') {
+    if (pathname !== '/dashboard/admin') return false
+    const currentTab = new URLSearchParams(search).get('tab') || 'overview'
+    const targetTab = new URLSearchParams(targetQuery || '').get('tab') || 'overview'
+    return currentTab === targetTab
+  }
+  if (targetPath === '/dashboard') {
     return pathname === '/dashboard' || pathname === '/dashboard/'
   }
-  if (path === '/') {
+  if (targetPath === '/') {
     return pathname === '/' || pathname === ''
   }
-  return pathname === path || pathname.startsWith(`${path}/`)
+  return pathname === targetPath || pathname.startsWith(`${targetPath}/`)
 }
 
 interface TooltipProps {
@@ -79,11 +86,12 @@ interface SidebarLinkProps {
   icon: React.ComponentType<{ className?: string; strokeWidth?: number; style?: React.CSSProperties }>
   label: string
   pathname: string
+  search?: string
   onClick?: () => void
 }
 
-function SidebarLink({ to, icon: Icon, label, pathname, onClick }: SidebarLinkProps) {
-  const active = isNavActive(pathname, to)
+function SidebarLink({ to, icon: Icon, label, pathname, search = '', onClick }: SidebarLinkProps) {
+  const active = isNavActive(pathname, search, to)
   const isSidebarCollapsed = useUiStore((s) => s.isSidebarCollapsed)
 
   return (
@@ -134,13 +142,24 @@ function SidebarLink({ to, icon: Icon, label, pathname, onClick }: SidebarLinkPr
 }
 
 export function Sidebar() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen)
   const isSidebarCollapsed = useUiStore((s) => s.isSidebarCollapsed)
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed)
   const user = useAuthStore((s) => s.user)
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
+
+  const adminNavItems = [
+    { label: 'Admin Dashboard', path: '/dashboard/admin?tab=overview', icon: LayoutDashboard },
+    { label: 'User Management', path: '/dashboard/admin?tab=users', icon: Users },
+    { label: 'Package Management', path: '/dashboard/admin?tab=packages', icon: CreditCard },
+    { label: 'Notification Management', path: '/dashboard/admin?tab=notifications', icon: Bell },
+    { label: 'Analytics', path: '/dashboard/admin?tab=analytics', icon: TrendingUp },
+    { label: 'Activity Logs', path: '/dashboard/admin?tab=activity-logs', icon: ClipboardList },
+    { label: 'Reports', path: '/dashboard/admin?tab=reports', icon: AlertTriangle },
+    { label: 'AI Moderation', path: '/dashboard/admin?tab=ai-moderation', icon: Cpu },
+  ]
 
   const getSidebarLabel = (label: string) => {
     switch (label.toLowerCase()) {
@@ -170,6 +189,22 @@ export function Sidebar() {
         return t.sidebar.logout
       case 'admin panel':
         return t.sidebar.adminPanel
+      case 'admin dashboard':
+        return language === 'vi' ? 'Tổng quan Admin' : 'Admin Dashboard'
+      case 'user management':
+        return language === 'vi' ? 'Quản lý người dùng' : 'User Management'
+      case 'package management':
+        return language === 'vi' ? 'Quản lý gói cước' : 'Package Management'
+      case 'notification management':
+        return language === 'vi' ? 'Gửi thông báo' : 'Notification Management'
+      case 'analytics':
+        return language === 'vi' ? 'Thống kê' : 'Analytics'
+      case 'activity logs':
+        return language === 'vi' ? 'Nhật ký hoạt động' : 'Activity Logs'
+      case 'reports':
+        return language === 'vi' ? 'Báo cáo vi phạm' : 'Reports'
+      case 'ai moderation':
+        return language === 'vi' ? 'Kiểm duyệt AI' : 'AI Moderation'
       default:
         return label
     }
@@ -233,7 +268,7 @@ export function Sidebar() {
             {/* Expanded Header (Desktop expanded / Mobile always) */}
             {!isSidebarCollapsed ? (
               <>
-                              <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
+                              <Link to={user?.role?.toLowerCase() === 'admin' ? "/dashboard/admin" : "/dashboard"} onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
                   <img
                     src="/logo.png"
                     alt="LumiEdu"
@@ -262,7 +297,7 @@ export function Sidebar() {
             ) : (
               /* Expanded Header layout visible ONLY on Mobile when collapsed */
               <div className="md:hidden flex items-center justify-between w-full min-w-0">
-                <Link to="/dashboard" onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
+                <Link to={user?.role?.toLowerCase() === 'admin' ? "/dashboard/admin" : "/dashboard"} onClick={handleLinkClick} className="flex items-center gap-2.5 no-underline shrink-0 max-w-full overflow-hidden select-none">
                   <img
                     src="/logo.png"
                     alt="LumiEdu"
@@ -293,24 +328,30 @@ export function Sidebar() {
 
           {/* Navigation list */}
           <nav className="flex flex-col gap-1.5 pr-1 overflow-y-auto flex-1 min-h-0 no-scrollbar">
-            {mainNavItems.map((item) => (
-              <SidebarLink
-                key={item.path}
-                to={item.path}
-                icon={item.icon}
-                label={getSidebarLabel(item.label)}
-                pathname={pathname}
-                onClick={handleLinkClick}
-              />
-            ))}
-            {user?.role === 'admin' && (
-              <SidebarLink
-                to="/dashboard/admin"
-                icon={ShieldCheck}
-                label={getSidebarLabel('Admin Panel')}
-                pathname={pathname}
-                onClick={handleLinkClick}
-              />
+            {user?.role?.toLowerCase() === 'admin' ? (
+              adminNavItems.map((item) => (
+                <SidebarLink
+                  key={item.path}
+                  to={item.path}
+                  icon={item.icon}
+                  label={getSidebarLabel(item.label)}
+                  pathname={pathname}
+                  search={search}
+                  onClick={handleLinkClick}
+                />
+              ))
+            ) : (
+              mainNavItems.map((item) => (
+                <SidebarLink
+                  key={item.path}
+                  to={item.path}
+                  icon={item.icon}
+                  label={getSidebarLabel(item.label)}
+                  pathname={pathname}
+                  search={search}
+                  onClick={handleLinkClick}
+                />
+              ))
             )}
           </nav>
         </div>
@@ -328,35 +369,49 @@ export function Sidebar() {
                 icon={item.icon}
                 label={getSidebarLabel(item.label)}
                 pathname={pathname}
+                search={search}
                 onClick={handleLinkClick}
               />
             ))}
+            
+            {user?.role?.toLowerCase() === 'admin' && (
+              <SidebarLink
+                to="/dashboard/admin"
+                icon={ShieldCheck}
+                label={getSidebarLabel('admin panel')}
+                pathname={pathname}
+                search={search}
+                onClick={handleLinkClick}
+              />
+            )}
           </nav>
 
           {/* Upgrade to Pro button */}
-          <PortalTooltip content={user?.plan === 'pro' ? (t.sidebar.proPlanActive || 'Pro Plan Active') : t.sidebar.upgradePro} disabled={!isSidebarCollapsed}>
-            <Link
-              to={user?.plan === 'pro' ? '#' : '/dashboard/upgrade'}
-              onClick={user?.plan === 'pro' ? undefined : handleLinkClick}
-              className={cn(
-                "mt-2 mb-2 flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 shadow-sm shrink-0 no-underline w-full max-w-full overflow-hidden",
-                isSidebarCollapsed 
-                  ? "rounded-2xl w-10 h-10 mx-auto justify-center p-0" 
-                  : "rounded-2xl px-4 h-12",
-                user?.plan === 'pro' 
-                  ? "bg-slate-100 text-slate-500 cursor-default dark:bg-slate-800 dark:text-slate-400" 
-                  : "text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 cursor-pointer",
-                "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:rounded-2xl md:max-lg:p-0 md:max-lg:mt-2 md:max-lg:mb-2"
-              )}
-            >
-              <Zap className={cn("size-5 shrink-0", user?.plan === 'pro' ? "text-slate-500 dark:text-slate-400" : "text-white")} strokeWidth={2.25} />
-              {!isSidebarCollapsed && (
-                <span className="md:max-lg:hidden block truncate animate-fade-in min-w-0">
-                  {user?.plan === 'pro' ? (t.sidebar.proPlanActive || 'Pro Plan Active') : t.sidebar.upgradePro}
-                </span>
-              )}
-            </Link>
-          </PortalTooltip>
+          {user?.role?.toLowerCase() !== 'admin' && (
+            <PortalTooltip content={user?.plan === 'pro' ? (t.sidebar.proPlanActive || 'Pro Plan Active') : t.sidebar.upgradePro} disabled={!isSidebarCollapsed}>
+              <Link
+                to={user?.plan === 'pro' ? '#' : '/dashboard/upgrade'}
+                onClick={user?.plan === 'pro' ? undefined : handleLinkClick}
+                className={cn(
+                  "mt-2 mb-2 flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 shadow-sm shrink-0 no-underline w-full max-w-full overflow-hidden",
+                  isSidebarCollapsed 
+                    ? "rounded-2xl w-10 h-10 mx-auto justify-center p-0" 
+                    : "rounded-2xl px-4 h-12",
+                  user?.plan === 'pro' 
+                    ? "bg-slate-100 text-slate-500 cursor-default dark:bg-slate-800 dark:text-slate-400" 
+                    : "text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 cursor-pointer",
+                  "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:rounded-2xl md:max-lg:p-0 md:max-lg:mt-2 md:max-lg:mb-2"
+                )}
+              >
+                <Zap className={cn("size-5 shrink-0", user?.plan === 'pro' ? "text-slate-500 dark:text-slate-400" : "text-white")} strokeWidth={2.25} />
+                {!isSidebarCollapsed && (
+                  <span className="md:max-lg:hidden block truncate animate-fade-in min-w-0">
+                    {user?.plan === 'pro' ? (t.sidebar.proPlanActive || 'Pro Plan Active') : t.sidebar.upgradePro}
+                  </span>
+                )}
+              </Link>
+            </PortalTooltip>
+          )}
         </div>
       </aside>
     </>

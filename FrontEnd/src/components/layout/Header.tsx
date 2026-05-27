@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useUiStore } from '@/stores/uiStore'
 import { useProfileStore } from '@/features/profile/stores/profileStore'
+import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { UserDropdown } from '@/components/layout/UserDropdown'
@@ -57,6 +58,7 @@ export interface MockNotification {
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 export function Header() {
+  const user = useAuthStore((s) => s.user)
   const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
@@ -207,7 +209,7 @@ export function Header() {
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const [logoutModalOpen, setLogoutModalOpen] = useState(false)
 
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
@@ -581,15 +583,17 @@ export function Header() {
         </Button>
 
         {/* Help Center */}
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Help"
-          onClick={() => setHelpModalOpen(true)}
-          className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-        >
-          <CircleHelp className="size-5 text-body dark:text-slate-400" />
-        </Button>
+        {user?.role?.toLowerCase() !== 'admin' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Help"
+            onClick={() => setHelpModalOpen(true)}
+            className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <CircleHelp className="size-5 text-body dark:text-slate-400" />
+          </Button>
+        )}
         
         {/* Notification Bell with Dropdown */}
         <div className="relative" ref={notificationRef}>

@@ -28,7 +28,7 @@ const defaultLinkedAccounts: LinkedAccount[] = [
 ]
 
 export function LinkedAccounts() {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const toast = useToast()
 
   // State Management according to specification

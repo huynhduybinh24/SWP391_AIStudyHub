@@ -81,7 +81,7 @@ const formatSize = (bytes: number) => {
 }
 
 export function CloudStoragePage() {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const user = useAuthStore((s) => s.user)

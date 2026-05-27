@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ShieldAlert, Eye, Edit2, ShieldCheck } from 'lucide-react'
+import { X, ShieldAlert, Eye, Edit2 } from 'lucide-react'
 
 interface PermissionModalProps {
   isOpen: boolean

@@ -3,13 +3,8 @@ import {
   Users,
   Zap,
   Database,
-  AlertTriangle,
   TrendingUp,
-  TrendingDown,
-  Clock,
   Sparkles,
-  ArrowUpRight,
-  ShieldAlert,
   FileText
 } from 'lucide-react'
 import {
@@ -24,7 +19,7 @@ import {
   Pie,
   Cell
 } from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useTranslation } from '@/context/LanguageContext'
 
@@ -67,7 +62,17 @@ const StoragePieTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function AdminOverviewTab() {
+import { AdminStats, AdminUser, AdminDocument } from '../services/adminService'
+
+export function AdminOverviewTab({
+  stats,
+  users: _users,
+  documents: _documents
+}: {
+  stats: AdminStats | null
+  users: AdminUser[]
+  documents: AdminDocument[]
+}) {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const { t, language } = useTranslation()
@@ -118,7 +123,7 @@ export function AdminOverviewTab() {
                   {t.admin.totalUsers}
                 </p>
                 <h4 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                  15,248
+                  {stats?.totalUsers || 0}
                 </h4>
               </div>
               <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
@@ -147,7 +152,7 @@ export function AdminOverviewTab() {
                   {t.admin.premiumUsers}
                 </p>
                 <h4 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                  3,842
+                  {stats?.activeUsers || 0}
                 </h4>
               </div>
               <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 dark:text-amber-400">
@@ -176,7 +181,7 @@ export function AdminOverviewTab() {
                   {t.admin.usedCapacity}
                 </p>
                 <h4 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                  {totalUsedStorage} TB
+                  {stats?.storageUsedGB || 0} GB
                 </h4>
               </div>
               <div className="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 shrink-0">
@@ -207,7 +212,7 @@ export function AdminOverviewTab() {
                   {language === 'vi' ? 'TỔNG SỐ TỆP TIN' : 'TOTAL FILES'}
                 </p>
                 <h4 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                  84,529
+                  {stats?.totalDocuments || 0}
                 </h4>
               </div>
               <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400">

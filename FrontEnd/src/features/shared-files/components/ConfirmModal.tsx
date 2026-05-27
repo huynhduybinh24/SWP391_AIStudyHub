@@ -33,7 +33,8 @@ export function ConfirmModal({
     )
     if (focusableElements && focusableElements.length > 0) {
       // Focus on cancel button first (safer default for confirm dialogs)
-      (focusableElements[1] || focusableElements[0] as HTMLElement).focus()
+      const elementToFocus = (focusableElements[1] || focusableElements[0]) as HTMLElement
+      elementToFocus?.focus()
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {

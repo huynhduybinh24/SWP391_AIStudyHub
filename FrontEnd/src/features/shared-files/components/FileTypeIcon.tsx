@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { FileText, FileSpreadsheet, Folder, Image as ImageIcon, Video, File, Music, Mic } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

@@ -1,6 +1,3 @@
-import React from 'react';
-import { FileText, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import TagInput from '@/features/shared-files/components/TagInput';
 
 interface MediaMetadataFormProps {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Share2,
@@ -17,7 +17,6 @@ import {
   Search,
   Check,
   Loader2,
-  X,
   FileCode,
   Music,
   Video,
@@ -40,6 +39,7 @@ export type SharedFolderFile = {
   fileTypeLabel: string
   imported?: boolean
   owner?: string
+  modifiedAt?: string
 }
 
 export type Collaborator = {
@@ -241,22 +241,13 @@ export function SharedFolderPage() {
   }, [])
 
   // Action handlers
-  const handleBackToNotifications = () => {
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: 'instant'
-    })
-    navigate('/dashboard/notifications?tab=shared-files')
-  }
-
   const handleManageAccess = () => {
     toast.success(t.sharedFolder.accessSettingsOpened || 'Access settings opened')
     setShareAccessOpen(true)
   }
 
   const handleInviteMembersClick = () => {
-    toast.success(t.sharedFolder.inviteMembersOpened || 'Invite members opened')
+    toast.success((t.sharedFolder as any).inviteMembersOpened || 'Invite members opened')
     setShareAccessOpen(true)
   }
 
@@ -552,7 +543,7 @@ The combined research indicates a strong correlation between multivariable biolo
                   type="button"
                   onClick={() => {
                     setViewMode('grid')
-                    toast.success(t.sharedFolder.gridViewEnabled || 'Grid view enabled')
+                    toast.success((t.sharedFolder as any).gridViewEnabled || 'Grid view enabled')
                   }}
                   className={cn(
                     'p-1.5 rounded transition-all cursor-pointer',
@@ -569,7 +560,7 @@ The combined research indicates a strong correlation between multivariable biolo
                   type="button"
                   onClick={() => {
                     setViewMode('list')
-                    toast.success(t.sharedFolder.listViewEnabled || 'List view enabled')
+                    toast.success((t.sharedFolder as any).listViewEnabled || 'List view enabled')
                   }}
                   className={cn(
                     'p-1.5 rounded transition-all cursor-pointer',
@@ -855,11 +846,10 @@ function CollaboratorsCard({
 }
 
 function AIInsightCard({
-  summary,
   isGenerating,
   onGenerate
 }: {
-  summary: string
+  summary?: string
   isGenerating: boolean
   onGenerate: () => void
 }) {
@@ -1122,14 +1112,13 @@ function AISynthesisModal({
   isOpen,
   onClose,
   onDownloadReport,
-  onCopySummary,
-  reportContent
+  onCopySummary
 }: {
   isOpen: boolean
   onClose: () => void
   onDownloadReport: () => void
   onCopySummary: () => void
-  reportContent: string
+  reportContent?: string
 }) {
   const { t } = useTranslation()
   return (
@@ -1479,7 +1468,7 @@ function CollaboratorDetailModal({
         <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-5 mt-6">
           {!isOwner ? (
             <Button
-              variant="destructive"
+              variant="danger"
               onClick={() => onRemoveAccess(collaborator.id)}
               className="rounded-xl font-bold text-xs bg-rose-600 hover:bg-rose-700 text-white cursor-pointer border-none"
             >

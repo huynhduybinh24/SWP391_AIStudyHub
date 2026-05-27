@@ -1,13 +1,18 @@
-import { useState } from 'react'
-import { Shield, Users, FileText, BarChart3, Bell, CreditCard } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, Cpu } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
+import { useSearchParams } from 'react-router-dom'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
 import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab'
 import { AdminUsersTab } from '@/features/admin/components/AdminUsersTab'
 import { AdminPackagesTab } from '@/features/admin/components/AdminPackagesTab'
 import { AdminNotificationsTab } from '@/features/admin/components/AdminNotificationsTab'
+import { AdminAnalyticsTab } from '@/features/admin/components/AdminAnalyticsTab'
+import { AdminLogsTab } from '@/features/admin/components/AdminLogsTab'
+import { AdminReportsTab } from '@/features/admin/components/AdminReportsTab'
+import { adminService, AdminStats, AdminUser, AdminDocument } from '../services/adminService'
 
-type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'moderation'
+type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'documents' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation'
 
 export function AdminDashboardPage() {
   const { t, language, setLanguage } = useTranslation()
@@ -16,12 +21,12 @@ export function AdminDashboardPage() {
   const tabItems = [
     {
       id: 'overview' as AdminTab,
-      label: t.admin.tabOverview,
+      label: language === 'vi' ? 'Tổng quan' : 'Overview',
       icon: BarChart3
     },
     {
       id: 'users' as AdminTab,
-      label: t.admin.tabUsers,
+      label: language === 'vi' ? 'Quản lý User' : 'Manage Users',
       icon: Users
     },
     {
@@ -35,11 +40,52 @@ export function AdminDashboardPage() {
       icon: Bell
     },
     {
-      id: 'moderation' as AdminTab,
-      label: t.admin.tabDocs,
-      icon: FileText
+      id: 'analytics' as AdminTab,
+      label: language === 'vi' ? 'Thống kê' : 'Analytics',
+      icon: TrendingUp
+    },
+    {
+      id: 'activity-logs' as AdminTab,
+      label: language === 'vi' ? 'Nhật ký hoạt động' : 'Activity Logs',
+      icon: ClipboardList
+    },
+    {
+      id: 'reports' as AdminTab,
+      label: language === 'vi' ? 'Báo cáo vi phạm' : 'Reports',
+      icon: AlertTriangle
+    },
+    {
+      id: 'ai-moderation' as AdminTab,
+      label: language === 'vi' ? 'Kiểm duyệt AI' : 'AI Moderation',
+      icon: Cpu
     }
   ]
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="size-10 text-blue-500 animate-spin mb-4" />
+        <p className="text-slate-600 dark:text-slate-400 font-medium">Đang tải dữ liệu admin...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <AlertCircle className="size-12 text-rose-500 mb-4" />
+        <p className="text-slate-800 dark:text-slate-200 font-bold mb-2">Không thể tải dữ liệu admin.</p>
+        <p className="text-slate-500 text-sm mb-6 max-w-md text-center">{error}</p>
+        <button
+          onClick={loadDashboardData}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+        >
+          <RefreshCw className="size-4" />
+          Thử lại
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
@@ -47,13 +93,13 @@ export function AdminDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-[32px] font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
-            <span className="p-2 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+            <span className="p-2 rounded-2xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400">
               <Shield className="size-7" />
             </span>
-            {t.admin.title}
+            {t.admin?.title || 'Admin Dashboard'}
           </h1>
           <p className="text-slate-550 dark:text-slate-400 mt-2 text-sm max-w-2xl font-medium">
-            {t.admin.subtitle}
+            {t.admin?.subtitle || 'Quản lý toàn bộ hệ thống'}
           </p>
         </div>
 
@@ -87,7 +133,7 @@ export function AdminDashboardPage() {
       <div className="flex border-b border-slate-200 dark:border-slate-800 w-full scroll-smooth overflow-x-auto no-scrollbar gap-2">
         {tabItems.map((tab) => {
           const Icon = tab.icon
-          const isActive = activeTab === tab.id
+          const isActive = activeTab === tab.id || (tab.id === 'ai-moderation' && activeTab === 'documents')
           return (
             <button
               key={tab.id}
@@ -107,18 +153,54 @@ export function AdminDashboardPage() {
 
       {/* Tab content renderer */}
       <div className="mt-4 transition-all duration-300 animate-fade-in">
-        {activeTab === 'overview' && <AdminOverviewTab />}
+        {activeTab === 'overview' && (
+          <AdminOverviewTab stats={stats} users={users} documents={documents} />
+        )}
         
-        {activeTab === 'users' && <AdminUsersTab />}
+        {activeTab === 'users' && (
+          <AdminUsersTab
+            users={users}
+            onUpdateUser={handleUpdateUser}
+            onDeleteUser={handleDeleteUser}
+          />
+        )}
 
-        {activeTab === 'packages' && <AdminPackagesTab />}
+        {activeTab === 'packages' && (
+          <AdminPackagesTab
+            users={users}
+            onUpdateUser={handleUpdateUser}
+          />
+        )}
 
-        {activeTab === 'notifications' && <AdminNotificationsTab />}
+        {activeTab === 'notifications' && (
+          <AdminNotificationsTab />
+        )}
 
-        {activeTab === 'moderation' && <AdminDocumentsTab />}
+        {activeTab === 'analytics' && (
+          <AdminAnalyticsTab />
+        )}
+
+        {activeTab === 'activity-logs' && (
+          <AdminLogsTab />
+        )}
+
+        {activeTab === 'reports' && (
+          <AdminReportsTab />
+        )}
+
+        {(activeTab === 'documents' || activeTab === 'ai-moderation') && (
+          <AdminDocumentsTab
+            documents={documents}
+            onUpdateDocument={handleUpdateDocument}
+            onDeleteDocument={handleDeleteDocument}
+            onApproveDocument={handleApproveDocument}
+            onRejectDocument={handleRejectDocument}
+          />
+        )}
       </div>
     </div>
   )
 }
 
 export default AdminDashboardPage
+

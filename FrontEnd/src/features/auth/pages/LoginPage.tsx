@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom'
-import { BrainCog } from 'lucide-react'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import heroImg from '@/assets/hero.png'
 import { AppFooter } from '@/components/shared/AppFooter'

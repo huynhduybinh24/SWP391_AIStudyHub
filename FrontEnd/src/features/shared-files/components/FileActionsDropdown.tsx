@@ -34,13 +34,13 @@ export function FileActionsDropdown({
 }: FileActionsDropdownProps) {
   const { t } = useTranslation()
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const [openUpward, setOpenUpward] = useState(false)
+  const [_openUpward, setOpenUpward] = useState(false)
   const [coords, setCoords] = useState({ top: 0, left: 0 })
-  const [focusedIndex, setFocusedIndex] = useState(-1)
+  const [_focusedIndex, setFocusedIndex] = useState(-1)
 
   const isOwner = file.owner === 'me' || file.permission === 'Owner'
   const isEditor = file.permission === 'Editor'
-  const isViewer = file.permission === 'Viewer' || file.permission === 'View Only'
+
 
   const updatePosition = () => {
     if (!buttonRef.current) return
