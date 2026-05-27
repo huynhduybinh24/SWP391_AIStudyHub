@@ -1307,5 +1307,18 @@ export const vi: typeof en = {
       'ai-audit': "AI Quét",
       moderation: "Duyệt tài liệu"
     }
+  },
+  notificationManagement: {
+    sentBroadcastHistory: "LỊCH SỬ THÔNG BÁO ĐÃ GỬI",
+    broadcasts: {
+      maintenanceTitle: "Bảo trì hệ thống định kỳ tháng 6/2026",
+      maintenanceMessage: "Hệ thống LumiEdu sẽ tạm thời gián đoạn vào lúc 02:00 sáng ngày 01/06/2026 để nâng cấp cụm máy chủ AI. Thời gian dự kiến kéo dài 2 giờ.",
+      proUpgradeTitle: "Nâng cấp dung lượng Pro lên 50GB hoàn toàn miễn phí",
+      proUpgradeMessage: "Tin vui! Tất cả tài khoản Pro hiện tại đã được nâng cấp dung lượng lưu trữ tối đa từ 40GB lên 50GB mà không tăng giá gói cước."
+    },
+    target: "ĐỐI TƯỢNG",
+    targetAll: "TẤT CẢ",
+    targetPro: "PRO",
+    recipients: "NGƯỜI NHẬN"
   }
 };

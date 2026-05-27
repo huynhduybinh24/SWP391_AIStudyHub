@@ -1304,5 +1304,18 @@ export const en = {
       'ai-audit': "AI Audits",
       moderation: "Moderation"
     }
+  },
+  notificationManagement: {
+    sentBroadcastHistory: "SENT BROADCAST HISTORY",
+    broadcasts: {
+      maintenanceTitle: "Scheduled system maintenance for June 2026",
+      maintenanceMessage: "LumiEdu will be temporarily unavailable at 02:00 AM on June 1, 2026 to upgrade the AI server cluster. The estimated maintenance time is 2 hours.",
+      proUpgradeTitle: "Free Pro storage upgrade to 50GB",
+      proUpgradeMessage: "Good news! All current Pro accounts have been upgraded from 40GB to 50GB of storage at no additional cost."
+    },
+    target: "TARGET",
+    targetAll: "ALL",
+    targetPro: "PRO",
+    recipients: "RECIPIENTS"
   }
 };

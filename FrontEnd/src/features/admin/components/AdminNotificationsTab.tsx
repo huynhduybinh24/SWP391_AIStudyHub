@@ -8,8 +8,10 @@ import { Badge } from '@/components/ui/Badge'
 
 interface SentNotification {
   id: string
-  title: string
-  message: string
+  title?: string
+  message?: string
+  titleKey?: keyof typeof import('@/locales/en').en.notificationManagement.broadcasts
+  messageKey?: keyof typeof import('@/locales/en').en.notificationManagement.broadcasts
   type: 'system' | 'maintenance' | 'warning' | 'promotion'
   target: 'all' | 'free' | 'pro'
   sentAt: string
@@ -17,14 +19,14 @@ interface SentNotification {
 }
 
 export function AdminNotificationsTab() {
-  const { language } = useTranslation()
+  const { language, t } = useTranslation()
   const toast = useToast()
 
   const [notifications, setNotifications] = useState<SentNotification[]>([
     {
       id: 'ntf-1',
-      title: 'Bảo trì hệ thống định kỳ tháng 6/2026',
-      message: 'Hệ thống LumiEdu sẽ tạm thời gián đoạn vào lúc 02:00 sáng ngày 01/06/2026 để nâng cấp cụm máy chủ AI. Thời gian dự kiến kéo dài 2 giờ.',
+      titleKey: 'maintenanceTitle',
+      messageKey: 'maintenanceMessage',
       type: 'maintenance',
       target: 'all',
       sentAt: '2026-05-24 10:15',
@@ -32,8 +34,8 @@ export function AdminNotificationsTab() {
     },
     {
       id: 'ntf-2',
-      title: 'Nâng cấp dung lượng Pro lên 50GB hoàn toàn miễn phí',
-      message: 'Tin vui! Tất cả tài khoản Pro hiện tại đã được nâng cấp dung lượng lưu trữ tối đa từ 40GB lên 50GB mà không tăng giá gói cước.',
+      titleKey: 'proUpgradeTitle',
+      messageKey: 'proUpgradeMessage',
       type: 'promotion',
       target: 'pro',
       sentAt: '2026-05-20 14:30',
@@ -204,7 +206,7 @@ export function AdminNotificationsTab() {
               <Volume2 className="size-4 stroke-[2.5]" />
             </div>
             <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 tracking-tight uppercase">
-              {language === 'vi' ? 'Lịch sử thông báo đã gửi' : 'Sent broadcast history'}
+              {t.notificationManagement.sentBroadcastHistory}
             </h2>
           </div>
         </div>
@@ -226,7 +228,7 @@ export function AdminNotificationsTab() {
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="font-extrabold text-[14px] text-slate-800 dark:text-white leading-tight pr-4">
-                        {ntf.title}
+                        {ntf.titleKey ? t.notificationManagement.broadcasts[ntf.titleKey] : ntf.title}
                       </h3>
                       <button
                         onClick={() => handleDeleteHistory(ntf.id)}
@@ -238,18 +240,22 @@ export function AdminNotificationsTab() {
                     </div>
 
                     <p className="text-xs font-semibold text-slate-550 dark:text-slate-400 leading-relaxed text-justify">
-                      {ntf.message}
+                      {ntf.messageKey ? t.notificationManagement.broadcasts[ntf.messageKey] : ntf.message}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                       <span>{ntf.sentAt}</span>
                       <span>•</span>
                       <Badge className="bg-slate-105 text-slate-550 dark:bg-slate-800 dark:text-slate-400 font-extrabold text-[9px] px-2 py-0 rounded-md">
-                        Target: {ntf.target.toUpperCase()}
+                        {t.notificationManagement.target}: {
+                          ntf.target === 'all' ? t.notificationManagement.targetAll :
+                          ntf.target === 'pro' ? t.notificationManagement.targetPro :
+                          ntf.target.toUpperCase()
+                        }
                       </Badge>
                       <span>•</span>
                       <span className="font-extrabold text-blue-500">
-                        {ntf.recipientsCount.toLocaleString()} recipients
+                        {ntf.recipientsCount.toLocaleString()} {t.notificationManagement.recipients}
                       </span>
                     </div>
                   </div>
