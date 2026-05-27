@@ -15,12 +15,14 @@ export function useLogin() {
     mutationFn: (values: LoginFormValues) => authService.login(values),
     onSuccess: (data) => {
       setSession(data.user, data.tokens)
-      // Priority: sessionStorage → location.state.from → /dashboard
+      // Priority: Admin -> sessionStorage → location.state.from → /dashboard
       const stored = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY)
       if (stored) sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY)
-      const from = stored
-        || (location.state as { from?: { pathname: string } })?.from?.pathname
-        || '/dashboard'
+      
+      const from = data.user.role.toLowerCase() === 'admin'
+        ? '/dashboard/admin'
+        : (stored || (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard')
+        
       navigate(from, { replace: true })
     },
   })
@@ -35,12 +37,14 @@ export function useSocialLogin() {
     mutationFn: (provider: 'google' | 'facebook' | 'github') => authService.socialLogin(provider),
     onSuccess: (data) => {
       setSession(data.user, data.tokens)
-      // Priority: sessionStorage → location.state.from → /dashboard
+      // Priority: Admin -> sessionStorage → location.state.from → /dashboard
       const stored = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY)
       if (stored) sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY)
-      const from = stored
-        || (location.state as { from?: { pathname: string } })?.from?.pathname
-        || '/dashboard'
+      
+      const from = data.user.role.toLowerCase() === 'admin'
+        ? '/dashboard/admin'
+        : (stored || (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard')
+        
       navigate(from, { replace: true })
     },
   })
