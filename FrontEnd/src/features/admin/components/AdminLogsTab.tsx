@@ -7,88 +7,91 @@ import { cn } from '@/lib/utils'
 
 interface SystemLog {
   id: string
-  event: string
+  eventKey: keyof typeof import('@/locales/en').en.activityLogs.events
   category: 'security' | 'subscription' | 'ai-audit' | 'moderation'
   performer: string
   performerEmail: string
   timestamp: string
-  details: string
+  detailsKey: keyof typeof import('@/locales/en').en.activityLogs.details
   status: 'success' | 'warning' | 'failed'
 }
 
 export function AdminLogsTab() {
-  const { language } = useTranslation()
+  const { language, t } = useTranslation()
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'security' | 'subscription' | 'ai-audit' | 'moderation'>('all')
 
-  const [logs] = useState<SystemLog[]>([
     {
       id: 'log-1',
-      event: 'Mật khẩu đã khôi phục',
+      eventKey: 'passwordRestored',
       category: 'security',
       performer: 'Admin User',
       performerEmail: 'admin@example.com',
       timestamp: '2026-05-26 12:45',
-      details: 'Khôi phục mật khẩu của người dùng David Kim (david.k@university.edu) về mặc định.',
+      detailsKey: 'passwordRestored',
       status: 'success'
     },
     {
       id: 'log-2',
-      event: 'AI Quét tệp phát hiện vi phạm',
+      eventKey: 'aiScanViolationDetected',
       category: 'ai-audit',
       performer: 'AI Guard System',
       performerEmail: 'system@lumiedu.vn',
       timestamp: '2026-05-26 11:20',
-      details: 'Tự động báo cáo tài liệu Violating_Exam_Leaks_2026.pdf nghi ngờ vi phạm bản quyền đề thi học thuật.',
+      detailsKey: 'aiScanViolationDetected',
       status: 'warning'
     },
     {
       id: 'log-3',
-      event: 'Tài khoản người dùng bị khóa',
+      eventKey: 'userAccountLocked',
       category: 'security',
       performer: 'Admin User',
       performerEmail: 'admin@example.com',
       timestamp: '2026-05-26 10:15',
-      details: 'Tài khoản david.k@university.edu bị khóa do báo cáo vi phạm nội quy lặp lại.',
+      detailsKey: 'userAccountLocked',
       status: 'success'
     },
     {
       id: 'log-4',
-      event: 'Nâng cấp gói tài khoản',
+      eventKey: 'accountPackageUpgraded',
       category: 'subscription',
       performer: 'Ngoc Tan',
       performerEmail: 'tan@example.com',
       timestamp: '2026-05-25 18:32',
-      details: 'Thanh toán thành công qua cổng Stripe nâng cấp lên gói Pro (50GB).',
+      detailsKey: 'accountPackageUpgraded',
       status: 'success'
     },
     {
       id: 'log-5',
-      event: 'Phê duyệt tài liệu',
+      eventKey: 'documentApproved',
       category: 'moderation',
       performer: 'Admin User',
       performerEmail: 'admin@example.com',
       timestamp: '2026-05-25 14:02',
-      details: 'Duyệt tài liệu Neuroscience Fall Syllabus 2024 sạch sau khi kiểm duyệt.',
+      detailsKey: 'documentApproved',
       status: 'success'
     },
     {
       id: 'log-6',
-      event: 'Phát sóng thông báo toàn hệ thống',
+      eventKey: 'systemNotificationBroadcast',
       category: 'moderation',
       performer: 'Admin User',
       performerEmail: 'admin@example.com',
       timestamp: '2026-05-24 10:15',
-      details: 'Gửi thông báo bảo trì nâng cấp máy chủ AI tháng 6 tới 15,248 học sinh.',
+      detailsKey: 'systemNotificationBroadcast',
       status: 'success'
     },
     {
       id: 'log-7',
-      event: 'Giao dịch thanh toán thất bại',
+      eventKey: 'paymentTransactionFailed',
       category: 'subscription',
       performer: 'Sarah Jenkins',
       performerEmail: 'sarah.j@school.edu',
       timestamp: '2026-05-23 09:44',
+      detailsKey: 'paymentTransactionFailed',
+      status: 'failed'
+    }
+  ])tamp: '2026-05-23 09:44',
       details: 'Thẻ tín dụng hết hạn hoặc số dư không đủ khi tự động gia hạn gói cước Pro.',
       status: 'failed'
     }
@@ -97,8 +100,8 @@ export function AdminLogsTab() {
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
       const matchesSearch =
-        log.event.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.activityLogs.events[log.eventKey].toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.activityLogs.details[log.detailsKey].toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.performer.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.performerEmail.toLowerCase().includes(searchTerm.toLowerCase())
 
@@ -118,7 +121,7 @@ export function AdminLogsTab() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={language === 'vi' ? 'Tìm kiếm nhật ký...' : 'Search activity logs...'}
+            placeholder={t.activityLogs.searchPlaceholder}
             className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 font-semibold"
           />
         </div>
@@ -128,11 +131,11 @@ export function AdminLogsTab() {
           {(['all', 'security', 'subscription', 'ai-audit', 'moderation'] as const).map((cat) => {
             const getLabel = () => {
               switch (cat) {
-                case 'all': return language === 'vi' ? 'Tất cả' : 'All Logs'
-                case 'security': return language === 'vi' ? 'Bảo mật' : 'Security'
-                case 'subscription': return language === 'vi' ? 'Gói Pro' : 'Billing'
-                case 'ai-audit': return language === 'vi' ? 'AI Quét' : 'AI Audits'
-                case 'moderation': return language === 'vi' ? 'Duyệt tài liệu' : 'Moderation'
+                case 'all': return t.activityLogs.filters.all
+                case 'security': return t.activityLogs.filters.security
+                case 'subscription': return t.activityLogs.filters.subscription
+                case 'ai-audit': return t.activityLogs.filters['ai-audit']
+                case 'moderation': return t.activityLogs.filters.moderation
               }
             }
             const isActive = categoryFilter === cat
@@ -159,12 +162,12 @@ export function AdminLogsTab() {
           <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800">
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pl-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{language === 'vi' ? 'Sự kiện' : 'Event'}</th>
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{language === 'vi' ? 'Phân loại' : 'Category'}</th>
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{language === 'vi' ? 'Thực hiện' : 'Performer'}</th>
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{language === 'vi' ? 'Chi tiết' : 'Details'}</th>
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{language === 'vi' ? 'Thời gian' : 'Timestamp'}</th>
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pr-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{language === 'vi' ? 'Trạng thái' : 'Status'}</th>
+                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pl-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{t.activityLogs.columns.event}</th>
+                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{t.activityLogs.columns.category}</th>
+                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{t.activityLogs.columns.performer}</th>
+                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{t.activityLogs.columns.details}</th>
+                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{t.activityLogs.columns.timestamp}</th>
+                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pr-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">{t.activityLogs.columns.status}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
@@ -187,7 +190,7 @@ export function AdminLogsTab() {
                       className="hover:bg-slate-100/70 dark:hover:bg-slate-800/40 even:bg-slate-50/40 dark:even:bg-slate-900/20 transition-all duration-200 group"
                     >
                       <td className="p-4 pl-6 font-extrabold text-slate-800 dark:text-slate-200">
-                        {log.event}
+                        {t.activityLogs.events[log.eventKey]}
                       </td>
 
                       <td className="p-4">
@@ -198,7 +201,7 @@ export function AdminLogsTab() {
                           log.category === 'subscription' && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
                           log.category === 'moderation' && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
                         )}>
-                          {log.category.toUpperCase()}
+                          {t.activityLogs.categories[log.category]}
                         </Badge>
                       </td>
 
@@ -209,8 +212,8 @@ export function AdminLogsTab() {
                         </div>
                       </td>
 
-                      <td className="p-4 text-xs text-slate-550 dark:text-slate-400 leading-normal max-w-[280px] truncate" title={log.details}>
-                        {log.details}
+                      <td className="p-4 text-xs text-slate-550 dark:text-slate-400 leading-normal max-w-[280px] truncate" title={t.activityLogs.details[log.detailsKey]}>
+                        {t.activityLogs.details[log.detailsKey]}
                       </td>
 
                       <td className="p-4 text-slate-500 dark:text-slate-400 text-xs font-semibold">
@@ -226,7 +229,7 @@ export function AdminLogsTab() {
                             log.status === 'warning' && "text-amber-500",
                             log.status === 'failed' && "text-rose-500"
                           )}>
-                            {log.status}
+                            {t.activityLogs.status[log.status]}
                           </span>
                         </div>
                       </td>
@@ -239,7 +242,7 @@ export function AdminLogsTab() {
                     <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-700">
                       <ClipboardList className="size-10 stroke-[1.25] mb-2" />
                       <p className="font-extrabold text-sm text-slate-700 dark:text-slate-350">
-                        {language === 'vi' ? 'Không tìm thấy nhật ký hoạt động nào' : 'No activity logs found'}
+                        {t.activityLogs.noLogsFound}
                       </p>
                     </div>
                   </td>

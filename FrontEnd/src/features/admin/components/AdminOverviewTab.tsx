@@ -46,15 +46,15 @@ const StoragePieTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload
     return (
-      <div className="bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-md text-white px-3.5 py-2.5 rounded-2xl text-xs font-semibold shadow-xl border border-white/10 flex flex-col gap-1 select-none animate-fade-in">
+      <div className="bg-slate-900 dark:bg-slate-950 text-white px-4 py-3 rounded-[12px] shadow-xl border border-white/10 flex flex-col gap-1.5 select-none animate-fade-in min-w-[180px] z-[100]">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: data.color }} />
-          <span className="font-bold text-white text-[13px]">{data.name}</span>
+          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: data.color }} />
+          <span className="font-bold text-white text-[13px] leading-tight">{data.name}</span>
         </div>
-        <div className="text-[11px] text-slate-400 pl-4 font-medium">
-          <span>{data.value} TB</span>
-          <span className="mx-1.5">•</span>
-          <span className="text-emerald-400">{data.percentage}%</span>
+        <div className="text-[12px] text-slate-300 pl-4.5 font-medium flex items-center mt-0.5">
+          <span>{data.value} GB</span>
+          <span className="mx-2 text-slate-500">•</span>
+          <span className="text-emerald-400 font-bold">{data.percentage}%</span>
         </div>
       </div>
     )
@@ -333,7 +333,12 @@ export function AdminOverviewTab({
               {isMounted && (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Tooltip content={<StoragePieTooltip />} />
+                    <Tooltip 
+                      content={<StoragePieTooltip />} 
+                      offset={35}
+                      wrapperStyle={{ zIndex: 100, pointerEvents: 'none' }}
+                      allowEscapeViewBox={{ x: true, y: true }}
+                    />
                     <Pie
                       data={storageData}
                       innerRadius={55}

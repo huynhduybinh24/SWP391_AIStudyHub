@@ -1257,5 +1257,55 @@ export const vi: typeof en = {
         tags: ['#phong-thi-nghiem-di-truyen', '#bao-cao', '#di-truyen-than-kinh']
       }
     }
+  },
+  activityLogs: {
+    title: "Nhật ký hoạt động",
+    subtitle: "Theo dõi các hoạt động quan trọng của quản trị viên và hệ thống.",
+    columns: {
+      event: "Sự kiện",
+      category: "Phân loại",
+      performer: "Người thực hiện",
+      details: "Chi tiết",
+      timestamp: "Thời gian",
+      status: "Trạng thái"
+    },
+    events: {
+      passwordRestored: "Mật khẩu đã khôi phục",
+      aiScanViolationDetected: "AI Quét tệp phát hiện vi phạm",
+      userAccountLocked: "Tài khoản người dùng bị khóa",
+      accountPackageUpgraded: "Nâng cấp gói tài khoản",
+      documentApproved: "Phê duyệt tài liệu",
+      systemNotificationBroadcast: "Phát sóng thông báo toàn hệ thống",
+      paymentTransactionFailed: "Giao dịch thanh toán thất bại"
+    },
+    details: {
+      passwordRestored: "Khôi phục mật khẩu của người dùng David Kim (david.k@university.edu) về mặc định.",
+      aiScanViolationDetected: "Tự động báo cáo tài liệu Violating_Exam_Leaks_2026.pdf nghi ngờ vi phạm bản quyền đề thi học thuật.",
+      userAccountLocked: "Tài khoản david.k@university.edu bị khóa do báo cáo vi phạm nội quy lặp lại.",
+      accountPackageUpgraded: "Thanh toán thành công qua cổng Stripe nâng cấp lên gói Pro (50GB).",
+      documentApproved: "Duyệt tài liệu Neuroscience Fall Syllabus 2024 sạch sau khi kiểm duyệt.",
+      systemNotificationBroadcast: "Gửi thông báo bảo trì nâng cấp máy chủ AI tháng 6 tới 15,248 học sinh.",
+      paymentTransactionFailed: "Thẻ tín dụng hết hạn hoặc số dư không đủ khi tự động gia hạn gói cước Pro."
+    },
+    status: {
+      success: "THÀNH CÔNG",
+      warning: "CẢNH BÁO",
+      failed: "THẤT BẠI"
+    },
+    categories: {
+      security: "BẢO MẬT",
+      'ai-audit': "KIỂM TRA AI",
+      subscription: "GÓI DỊCH VỤ",
+      moderation: "KIỂM DUYỆT"
+    },
+    noLogsFound: "Không tìm thấy nhật ký hoạt động nào",
+    searchPlaceholder: "Tìm kiếm nhật ký...",
+    filters: {
+      all: "Tất cả",
+      security: "Bảo mật",
+      subscription: "Gói Pro",
+      'ai-audit': "AI Quét",
+      moderation: "Duyệt tài liệu"
+    }
   }
 };
