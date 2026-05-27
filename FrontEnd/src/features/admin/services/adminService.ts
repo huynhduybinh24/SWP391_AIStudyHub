@@ -8,7 +8,10 @@ export type AdminUser = {
   documentsCount: number;
   storageUsedMB: number;
   avatar?: string;
-  plan?: "free" | "pro";
+  plan?: string;
+  lastActiveVi?: string;
+  lastActiveEn?: string;
+  isOnline?: boolean;
 };
 
 export type AdminDocument = {
@@ -58,17 +61,20 @@ export type AdminStats = {
   newUsersThisWeek: number;
 };
 
-let mockUsers: AdminUser[] = [
+const DEFAULT_MOCK_USERS: AdminUser[] = [
   {
     id: "u1",
     name: "Alex Rivera",
     email: "alex@example.com",
-    role: "admin",
+    role: "student",
     status: "active",
     joinedAt: "2023-01-15",
     documentsCount: 45,
     storageUsedMB: 1500,
     plan: "pro",
+    lastActiveVi: "2 phút trước",
+    lastActiveEn: "2 minutes ago",
+    isOnline: true,
   },
   {
     id: "u2",
@@ -80,6 +86,9 @@ let mockUsers: AdminUser[] = [
     documentsCount: 120,
     storageUsedMB: 5400,
     plan: "pro",
+    lastActiveVi: "1 giờ trước",
+    lastActiveEn: "1 hour ago",
+    isOnline: false,
   },
   {
     id: "u3",
@@ -91,6 +100,9 @@ let mockUsers: AdminUser[] = [
     documentsCount: 12,
     storageUsedMB: 350,
     plan: "free",
+    lastActiveVi: "3 ngày trước",
+    lastActiveEn: "3 days ago",
+    isOnline: false,
   },
   {
     id: "u4",
@@ -102,6 +114,9 @@ let mockUsers: AdminUser[] = [
     documentsCount: 5,
     storageUsedMB: 120,
     plan: "free",
+    lastActiveVi: "5 ngày trước",
+    lastActiveEn: "5 days ago",
+    isOnline: false,
   },
   {
     id: "u5",
@@ -113,6 +128,9 @@ let mockUsers: AdminUser[] = [
     documentsCount: 25,
     storageUsedMB: 850,
     plan: "free",
+    lastActiveVi: "10 phút trước",
+    lastActiveEn: "10 minutes ago",
+    isOnline: true,
   },
   {
     id: "u6",
@@ -124,8 +142,54 @@ let mockUsers: AdminUser[] = [
     documentsCount: 88,
     storageUsedMB: 3200,
     plan: "free",
+    lastActiveVi: "2 tuần trước",
+    lastActiveEn: "2 weeks ago",
+    isOnline: false,
   },
 ];
+
+const loadUsersFromStorage = (): AdminUser[] => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('aiStudyHubUsers');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        
+        // If the parsed list doesn't have the new active properties, reset to DEFAULT_MOCK_USERS
+        if (parsed.length > 0 && !parsed[0].hasOwnProperty('lastActiveVi')) {
+          localStorage.setItem('aiStudyHubUsers', JSON.stringify(DEFAULT_MOCK_USERS));
+          return [...DEFAULT_MOCK_USERS];
+        }
+
+        let changed = false;
+        const updatedList = parsed.map((u: any) => {
+          if (u.email === 'alex@example.com' && u.role === 'admin') {
+            changed = true;
+            return { ...u, role: 'student' };
+          }
+          return u;
+        });
+        if (changed) {
+          localStorage.setItem('aiStudyHubUsers', JSON.stringify(updatedList));
+          return updatedList;
+        }
+        return parsed;
+      } catch (e) {
+        console.error('Error parsing users from localStorage', e);
+      }
+    }
+    localStorage.setItem('aiStudyHubUsers', JSON.stringify(DEFAULT_MOCK_USERS));
+  }
+  return [...DEFAULT_MOCK_USERS];
+};
+
+let mockUsers: AdminUser[] = loadUsersFromStorage();
+
+const saveUsersToStorage = (usersList: AdminUser[]) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('aiStudyHubUsers', JSON.stringify(usersList));
+  }
+};
 
 let mockDocuments: AdminDocument[] = [
   {
@@ -353,6 +417,7 @@ export const updateUser = async (
   }
   
   mockUsers[index] = { ...mockUsers[index], ...updates };
+  saveUsersToStorage(mockUsers);
   return { ...mockUsers[index] };
 };
 
@@ -367,6 +432,7 @@ export const deleteUser = async (userId: string, reason?: string): Promise<{ suc
   }
   
   mockUsers = mockUsers.filter((u) => u.id !== userId);
+  saveUsersToStorage(mockUsers);
   return { success: true };
 };
 

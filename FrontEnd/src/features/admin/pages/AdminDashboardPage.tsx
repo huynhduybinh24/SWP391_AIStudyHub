@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, ChevronDown, Wrench, CheckCircle, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useSearchParams } from 'react-router-dom'
+import { useAuthStore } from '@/stores/authStore'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
 import { AdminDocumentsTab } from '@/features/admin/components/AdminDocumentsTab'
 import { AdminUsersTab } from '@/features/admin/components/AdminUsersTab'
@@ -132,6 +133,19 @@ export function AdminDashboardPage() {
     try {
       const updated = await adminService.updateUser(userId, updates, reason)
       setUsers((prev) => prev.map((u) => (u.id === userId ? updated : u)))
+      
+      // Sync updated user data to useAuthStore if the updated account is the active session
+      const currentUser = useAuthStore.getState().user
+      if (currentUser && currentUser.email?.toLowerCase() === updated.email?.toLowerCase()) {
+        useAuthStore.setState({
+          user: {
+            ...currentUser,
+            plan: updated.plan as any,
+            role: updated.role as any,
+            name: updated.name,
+          }
+        })
+      }
     } catch (err: any) {
       setError(err.message)
     }
