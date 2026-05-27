@@ -1254,5 +1254,55 @@ export const en = {
         tags: ['#genetics-lab', '#report', '#neuro-genetics']
       }
     }
+  },
+  activityLogs: {
+    title: "Activity Logs",
+    subtitle: "Track important admin and system activities.",
+    columns: {
+      event: "Event",
+      category: "Category",
+      performer: "Performer",
+      details: "Details",
+      timestamp: "Timestamp",
+      status: "Status"
+    },
+    events: {
+      passwordRestored: "Password restored",
+      aiScanViolationDetected: "AI scan detected a violation",
+      userAccountLocked: "User account locked",
+      accountPackageUpgraded: "Account package upgraded",
+      documentApproved: "Document approved",
+      systemNotificationBroadcast: "System notification broadcast",
+      paymentTransactionFailed: "Payment transaction failed"
+    },
+    details: {
+      passwordRestored: "Restored the password for user David Kim (david.k@university.edu) to default.",
+      aiScanViolationDetected: "Automatically reported document Violating_Exam_Leaks_2026.pdf suspected of academic test copyright violation.",
+      userAccountLocked: "User account david.k@university.edu locked due to repeated violation reports.",
+      accountPackageUpgraded: "Payment completed successfully through Stripe for Pro package (50GB).",
+      documentApproved: "Approved document Neuroscience Fall Syllabus 2024 as clean after moderation.",
+      systemNotificationBroadcast: "Sent a system-wide notification about AI server maintenance in June to 15,248 students.",
+      paymentTransactionFailed: "Credit card expired or insufficient balance during automatic Pro subscription renewal."
+    },
+    status: {
+      success: "SUCCESS",
+      warning: "WARNING",
+      failed: "FAILED"
+    },
+    categories: {
+      security: "SECURITY",
+      'ai-audit': "AI-AUDIT",
+      subscription: "SUBSCRIPTION",
+      moderation: "MODERATION"
+    },
+    noLogsFound: "No activity logs found",
+    searchPlaceholder: "Search activity logs...",
+    filters: {
+      all: "All Logs",
+      security: "Security",
+      subscription: "Billing",
+      'ai-audit': "AI Audits",
+      moderation: "Moderation"
+    }
   }
 };
