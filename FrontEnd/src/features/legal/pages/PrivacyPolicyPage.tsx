@@ -70,22 +70,33 @@ export function PrivacyPolicyPage() {
       }
     ],
     lastUpdated: isVi ? 'Cập nhật lần cuối: 2026' : 'Last updated: 2026',
-    backBtn: isVi ? 'Quay lại' : 'Back to previous page'
+    backBtn: isVi ? 'Quay lại trang chủ' : 'Back to Home'
+  }
+
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1)
+    } else {
+      navigate('/')
+    }
   }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-8"
         >
           <ArrowLeft size={20} />
-          <span>{content.backBtn}</span>
+          <span className="font-medium">{content.backBtn}</span>
         </button>
 
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 md:p-12">
-          <header className="mb-10 text-center">
+          <header className="mb-10 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-md">
+              <img src="/logo.png" alt="LumiEdu Logo" className="w-10 h-10 object-contain" />
+            </div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
               {content.title}
             </h1>
