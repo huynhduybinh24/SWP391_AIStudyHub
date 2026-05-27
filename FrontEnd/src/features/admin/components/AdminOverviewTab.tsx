@@ -80,7 +80,8 @@ export function AdminOverviewTab({
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true)
+    const timer = setTimeout(() => setIsMounted(true), 200)
+    return () => clearTimeout(timer)
   }, [])
 
   // Line Chart Data: New registrations per day
@@ -275,7 +276,7 @@ export function AdminOverviewTab({
 
             <div className="h-[210px] w-full mt-auto relative z-10">
               {isMounted && (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={210}>
                   <LineChart data={registrationsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="lineGlow" x1="0" y1="0" x2="0" y2="1">
@@ -331,7 +332,7 @@ export function AdminOverviewTab({
           <Card className="p-6 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 shadow-lg dark:shadow-none hover:shadow-xl transition-all duration-300 rounded-[28px] h-[340px] flex flex-col justify-between">
             <div className="relative w-[160px] h-[160px] mx-auto shrink-0 flex items-center justify-center">
               {isMounted && (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={160}>
                   <PieChart>
                     <Tooltip 
                       content={<StoragePieTooltip />} 
