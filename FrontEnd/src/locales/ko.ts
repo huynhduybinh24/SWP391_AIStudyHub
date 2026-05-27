@@ -746,7 +746,13 @@ export const ko: any = {
     title: "알림",
     subtitle: "최근 활동 및 학습 업데이트 사항을 봅니다.",
     markAllAsRead: "모두 읽음으로 표시",
-    noNotifications: "새 알림이 없습니다."
+    noNotifications: "새 알림이 없습니다.",
+    deleteTitle: "Delete notification?",
+    deleteMessage: "Are you sure you want to delete this notification? This action only removes it from your notification list.",
+    deleteCancel: "Cancel",
+    deleteConfirm: "Delete",
+    deleteToast: "Notification deleted.",
+    deleteAriaLabel: "Delete notification"
   },
   studyPlans: {
     title: "학습 계획",

@@ -14,6 +14,8 @@ export interface UserNotification {
   documentId?: string;
   documentName?: string;
   reason?: string;
+  actionType?: "removed" | "rejected" | "approved" | "system";
+  adminNote?: string;
   createdAt: string;
   time?: string;
   isRead: boolean;

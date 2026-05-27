@@ -746,7 +746,13 @@ export const ja: any = {
     title: "通知",
     subtitle: "最近のアクティビティと学習の更新を表示します。",
     markAllAsRead: "すべて既読にする",
-    noNotifications: "新しい通知はありません。"
+    noNotifications: "新しい通知はありません。",
+    deleteTitle: "Delete notification?",
+    deleteMessage: "Are you sure you want to delete this notification? This action only removes it from your notification list.",
+    deleteCancel: "Cancel",
+    deleteConfirm: "Delete",
+    deleteToast: "Notification deleted.",
+    deleteAriaLabel: "Delete notification"
   },
   studyPlans: {
     title: "学習計画",

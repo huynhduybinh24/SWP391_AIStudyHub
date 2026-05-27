@@ -23,6 +23,11 @@ export interface Notification {
   actionUrl?: string;
   avatar?: string;
   buttons?: NotificationButton[];
+  reason?: string;
+  documentName?: string;
+  documentId?: string;
+  actionType?: "removed" | "rejected" | "approved" | "system";
+  adminNote?: string;
 }
 
 // Helper to get read state
@@ -68,6 +73,11 @@ const getPersistedUserNotifications = (): Notification[] => {
         time: item.time || 'Just now',
         isRead: !!item.isRead,
         description: item.message || item.description,
+        reason: item.reason,
+        documentName: item.documentName,
+        documentId: item.documentId,
+        actionType: item.actionType,
+        adminNote: item.adminNote,
       }));
     }
   } catch (err) {
@@ -256,21 +266,33 @@ export const notificationApi = {
     const persisted = getPersistedUserNotifications();
     const merged = [...persisted, ...baseData];
 
+    let deletedIds: string[] = [];
+    try {
+      const storedDeleted = localStorage.getItem('aiStudyHubDeletedNotificationIds');
+      if (storedDeleted) {
+        deletedIds = JSON.parse(storedDeleted);
+      }
+    } catch (e) {
+      console.error('Failed to parse deleted notification IDs', e);
+    }
+
+    const filteredMerged = merged.filter(item => !deletedIds.includes(item.id));
+
     switch (filter) {
       case 'unread':
-        return merged.filter(item => !item.isRead);
+        return filteredMerged.filter(item => !item.isRead);
       case 'mentions':
-        return merged.filter(item => item.id === 'emily' || item.id === 'mention-2');
+        return filteredMerged.filter(item => item.id === 'emily' || item.id === 'mention-2');
       case 'shared-files':
       case 'sharedfiles':
-        return merged.filter(item => item.id === 'shared-folder' || item.id === 'shared-doc-1');
+        return filteredMerged.filter(item => item.id === 'shared-folder' || item.id === 'shared-doc-1');
       case 'ai-updates':
       case 'aiupdates':
-        return merged.filter(item => item.id === 'ai-summary' || item.id === 'study-plan' || item.id === 'flashcards');
+        return filteredMerged.filter(item => item.id === 'ai-summary' || item.id === 'study-plan' || item.id === 'flashcards');
       case 'all':
       default:
         // By original logic, "All" shows specific 3 notifications
-        return merged.filter(item => item.type === 'document_deleted' || item.type === 'document_rejected' || item.id === 'ai-summary' || item.id === 'shared-folder' || item.id === 'all-3');
+        return filteredMerged.filter(item => item.type === 'document_deleted' || item.type === 'document_rejected' || item.id === 'ai-summary' || item.id === 'shared-folder' || item.id === 'all-3');
     }
   },
 

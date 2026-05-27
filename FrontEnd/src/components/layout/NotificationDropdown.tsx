@@ -28,27 +28,28 @@ export function NotificationDropdown({ onClose, notifications, markAsRead, markA
     return title
   }
 
-  const getNotificationDesc = (desc: string) => {
+  const getNotificationDesc = (item: MockNotification) => {
+    const desc = item.description || ''
     if (desc.includes('parsed successfully')) return t.header.notifSyllabusDesc
     if (desc.includes('midterm exam study plan')) return t.header.notifPlanDesc
     if (desc.includes('shared "SWE Lab materials"')) return t.header.notifShareDesc
     if (desc.includes('Summary is ready')) return t.header.notifSummaryDesc
-    if (desc.includes('was removed by admin')) {
-      if (language === 'vi') {
-        const docNameMatch = desc.match(/"([^"]+)"/)
-        const reasonMatch = desc.match(/Reason:\s*(.*)$/)
-        if (docNameMatch && reasonMatch) {
-          return `Tài liệu "${docNameMatch[1]}" của bạn đã bị quản trị viên xóa. Lý do: ${reasonMatch[1]}`
-        }
+    if (item.type === 'document_deleted' || item.type === 'document_rejected' || desc.includes('was removed by admin') || desc.includes('was rejected by admin')) {
+      let docNameMatch = item.documentName || ''
+      let reasonMatch = item.reason || ''
+      if (!docNameMatch || !reasonMatch) {
+        const dMatch = desc.match(/"([^"]+)"/)
+        const rMatch = desc.match(/Reason:\s*(.*)$/)
+        if (dMatch && !docNameMatch) docNameMatch = dMatch[1]
+        if (rMatch && !reasonMatch) reasonMatch = rMatch[1]
       }
-    }
-    if (desc.includes('was rejected by admin')) {
+      
+      const reasonText = reasonMatch.trim() || (language === 'vi' ? 'Chưa có lý do chi tiết.' : 'No reason details were provided.')
+      const isRemoved = item.type === 'document_deleted' || desc.includes('was removed by admin')
       if (language === 'vi') {
-        const docNameMatch = desc.match(/"([^"]+)"/)
-        const reasonMatch = desc.match(/Reason:\s*(.*)$/)
-        if (docNameMatch && reasonMatch) {
-          return `Tài liệu "${docNameMatch[1]}" của bạn đã bị quản trị viên từ chối. Lý do: ${reasonMatch[1]}`
-        }
+        return `Tài liệu "${docNameMatch || 'Không rõ'}" của bạn đã bị quản trị viên ${isRemoved ? 'xóa' : 'từ chối'}. Lý do: ${reasonText}`
+      } else {
+        return `Your document "${docNameMatch || 'Unknown'}" was ${isRemoved ? 'removed' : 'rejected'} by admin. Reason: ${reasonText}`
       }
     }
     return desc
@@ -147,8 +148,8 @@ export function NotificationDropdown({ onClose, notifications, markAsRead, markA
                   {item.time}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug line-clamp-2">
-                {getNotificationDesc(item.description)}
+              <p className="text-[11px] text-slate-550 dark:text-slate-400 mt-0.5 leading-snug line-clamp-2">
+                {getNotificationDesc(item)}
               </p>
             </div>
 

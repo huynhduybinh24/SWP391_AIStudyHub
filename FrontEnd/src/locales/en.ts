@@ -768,7 +768,13 @@ export const en = {
     detailTime: "Time",
     actionRemoved: "Removed by admin",
     actionRejected: "Rejected by admin",
-    noReasonProvided: "No reason details were provided."
+    noReasonProvided: "No reason details were provided.",
+    deleteTitle: "Delete notification?",
+    deleteMessage: "Are you sure you want to delete this notification? This action only removes it from your notification list.",
+    deleteCancel: "Cancel",
+    deleteConfirm: "Delete",
+    deleteToast: "Notification deleted.",
+    deleteAriaLabel: "Delete notification"
   },
   studyPlans: {
     title: "Study Plans",

@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff, AlertTriangle, XCircle } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff, AlertTriangle, XCircle, Trash2 } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { notificationApi, Notification } from '../api/notification.api'
 import { useTranslation } from '@/context/LanguageContext'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 
 
 // Reusable Sub-component: Notification Card
@@ -32,6 +34,9 @@ interface NotificationCardProps {
   onSendReplyClick?: (text: string) => void
   onReplyTextChange?: (text: string) => void
   onMarkRead?: () => void
+  onClick?: () => void
+  onDelete?: () => void
+  isConfirmingDelete?: boolean
 }
 
 function NotificationCard({
@@ -53,6 +58,9 @@ function NotificationCard({
   onSendReplyClick,
   onReplyTextChange,
   onMarkRead,
+  onClick,
+  onDelete,
+  isConfirmingDelete,
 }: NotificationCardProps) {
   const navigate = useNavigate()
   const { t, language } = useTranslation()
@@ -60,6 +68,55 @@ function NotificationCard({
   const [isReplied, setIsReplied] = useState(false)
   const [replyContent, setReplyContent] = useState('')
   const [showReplyInput, setShowReplyInput] = useState(false)
+
+  const [dragX, setDragX] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startX, setStartX] = useState(0)
+  const hasDraggedRef = useRef(false)
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return
+    setIsDragging(true)
+    setStartX(e.clientX)
+    hasDraggedRef.current = false
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return
+    const deltaX = e.clientX - startX
+    if (deltaX > 0) {
+      setDragX(0)
+    } else {
+      setDragX(deltaX)
+    }
+    if (Math.abs(deltaX) > 10) {
+      hasDraggedRef.current = true
+    }
+  }
+
+  useEffect(() => {
+    if (!isConfirmingDelete && dragX !== 0) {
+      setDragX(0)
+    }
+  }, [isConfirmingDelete, dragX])
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging) return
+    setIsDragging(false)
+    e.currentTarget.releasePointerCapture(e.pointerId)
+    if (dragX < -100) {
+      setDragX(-100)
+      onDelete?.()
+    } else {
+      setDragX(0)
+    }
+  }
+
+  const handlePointerCancel = () => {
+    setIsDragging(false)
+    setDragX(0)
+  }
 
   // Localize Notification contents dynamically
   const localized = (() => {
@@ -307,13 +364,42 @@ function NotificationCard({
   }
 
   return (
-    <div className={cn(
-      "border rounded-2xl p-6 shadow-sm flex gap-5 transition-all duration-200 hover:shadow-md cursor-pointer",
-      !isRead 
-        ? "bg-blue-50/20 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/50" 
-        : "bg-white dark:bg-slate-900 border-[rgba(195,198,215,0.4)] dark:border-slate-800"
-    )}
-    onClick={() => onMarkRead?.()}>
+    <div className="relative overflow-hidden w-full select-none rounded-2xl">
+      {/* Red Action Underlayer for Swipe-to-delete */}
+      <div 
+        className="absolute inset-y-0 inset-x-0 bg-gradient-to-l from-rose-600 to-rose-500 flex items-center justify-end px-8 rounded-2xl gap-2 text-white font-bold text-sm pointer-events-none"
+      >
+        <Trash2 className="w-5 h-5 animate-pulse" />
+        <span>{language === 'vi' ? 'Xóa' : 'Delete'}</span>
+      </div>
+
+      {/* Card Inner Panel */}
+      <div 
+        className={cn(
+          "group border rounded-2xl p-6 shadow-sm flex gap-5 transition-all duration-200 hover:shadow-md cursor-grab active:cursor-grabbing",
+          !isRead 
+            ? "bg-blue-50/20 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/50" 
+            : "bg-white dark:bg-slate-900 border-[rgba(195,198,215,0.4)] dark:border-slate-800"
+        )}
+        style={{
+          transform: `translateX(${dragX}px)`,
+          transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          touchAction: 'pan-y'
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onClick={(e) => {
+          if (hasDraggedRef.current) {
+            e.preventDefault()
+            e.stopPropagation()
+            return
+          }
+          onMarkRead?.()
+          onClick?.()
+        }}
+      >
       {/* Icon/Avatar Container */}
       <div className="flex-shrink-0">
         {avatar ? (
@@ -359,6 +445,21 @@ function NotificationCard({
                 </span>
                 <span className="w-2 h-2 rounded-full bg-[#3155F6] dark:bg-blue-500" />
               </>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  onDelete()
+                }}
+                className="text-slate-400 hover:text-rose-500 md:opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer ml-1 animate-fadeIn flex items-center justify-center shrink-0 w-8 h-8 select-none z-10"
+                title={t.notificationsPage.deleteAriaLabel}
+                aria-label={t.notificationsPage.deleteAriaLabel}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             )}
           </div>
         </div>
@@ -507,6 +608,7 @@ function NotificationCard({
         )}
       </div>
     </div>
+  </div>
   )
 }
 
@@ -526,6 +628,12 @@ export function NotificationsPage() {
 
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
+  const [selectedDetailNotification, setSelectedDetailNotification] = useState<Notification | null>(null)
+  const [showUndoToast, setShowUndoToast] = useState(false)
+  const [lastDeletedNotification, setLastDeletedNotification] = useState<Notification | null>(null)
+  const [undoTimeoutId, setUndoTimeoutId] = useState<any>(null)
+  const [notificationToDelete, setNotificationToDelete] = useState<Notification | null>(null)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
 
   const getTabLabel = (tab: string) => {
     switch (tab) {
@@ -574,6 +682,99 @@ export function NotificationsPage() {
     setActiveFilter(filterParam)
     fetchNotifications(filterParam)
   }, [filterParam, fetchNotifications])
+
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutId) clearTimeout(undoTimeoutId)
+    }
+  }, [undoTimeoutId])
+
+  const handleDeleteNotification = (id: string) => {
+    const targetNotif = notifications.find(n => n.id === id)
+    if (targetNotif) {
+      setNotificationToDelete(targetNotif)
+      setIsDeleteConfirmOpen(true)
+    }
+  }
+
+  const confirmDeleteNotification = () => {
+    if (!notificationToDelete) return
+
+    const targetId = notificationToDelete.id
+    setLastDeletedNotification(notificationToDelete)
+
+    // Filter out from the state
+    setNotifications(prev => prev.filter(n => n.id !== targetId))
+
+    // Save to localStorage `aiStudyHubDeletedNotificationIds`
+    try {
+      const storedDeleted = localStorage.getItem('aiStudyHubDeletedNotificationIds')
+      let deletedIds: string[] = storedDeleted ? JSON.parse(storedDeleted) : []
+      if (!deletedIds.includes(targetId)) {
+        deletedIds.push(targetId)
+        localStorage.setItem('aiStudyHubDeletedNotificationIds', JSON.stringify(deletedIds))
+      }
+    } catch (e) {
+      console.error('Failed to save deleted notification IDs', e)
+    }
+
+    // Trigger update event
+    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'))
+
+    // Display Premium Undo Toast
+    setShowUndoToast(true)
+    
+    // Clear last delete timeout
+    if (undoTimeoutId) {
+      clearTimeout(undoTimeoutId)
+    }
+    
+    const timeout = setTimeout(() => {
+      setShowUndoToast(false)
+      setLastDeletedNotification(null)
+    }, 5000)
+    setUndoTimeoutId(timeout)
+
+    // Reset delete confirmation states
+    setNotificationToDelete(null)
+    setIsDeleteConfirmOpen(false)
+  }
+
+  const cancelDeleteNotification = () => {
+    setNotificationToDelete(null)
+    setIsDeleteConfirmOpen(false)
+  }
+
+  const handleUndoDelete = () => {
+    if (!lastDeletedNotification) return
+
+    if (undoTimeoutId) {
+      clearTimeout(undoTimeoutId)
+      setUndoTimeoutId(null)
+    }
+
+    const restoredId = lastDeletedNotification.id
+
+    setNotifications(prev => {
+      if (prev.some(n => n.id === restoredId)) return prev
+      return [lastDeletedNotification, ...prev]
+    })
+
+    try {
+      const storedDeleted = localStorage.getItem('aiStudyHubDeletedNotificationIds')
+      if (storedDeleted) {
+        let deletedIds: string[] = JSON.parse(storedDeleted)
+        deletedIds = deletedIds.filter(id => id !== restoredId)
+        localStorage.setItem('aiStudyHubDeletedNotificationIds', JSON.stringify(deletedIds))
+      }
+      window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'))
+    } catch (e) {
+      console.error('Failed to restore deleted notification ID', e)
+    }
+
+    setShowUndoToast(false)
+    setLastDeletedNotification(null)
+  }
 
   const handleMarkAsRead = async (id: string) => {
     // Optimistic UI update
@@ -653,28 +854,47 @@ export function NotificationsPage() {
             </button>
           </div>
         ) : notifications.length > 0 ? (
-          notifications.map((notification) => (
-            <NotificationCard
-              key={notification.id}
-              {...notification}
-              isActiveReply={notification.id === activeReplyId}
-              replyText={replyText}
-              onMarkRead={() => handleMarkAsRead(notification.id)}
-              onReplyClick={() => {
-                if (notification.id === 'emily' || notification.id === 'all-3') {
-                  setActiveReplyId(notification.id)
-                }
-              }}
-              onCancelClick={() => {
-                setActiveReplyId(null)
-              }}
-              onSendReplyClick={() => {
-                setReplyText('')
-                setActiveReplyId(null)
-              }}
-              onReplyTextChange={(val) => setReplyText(val)}
-            />
-          ))
+          notifications.map((notification) => {
+            let cardButtons = notification.buttons;
+            if (notification.type === 'document_deleted' || notification.type === 'document_rejected') {
+              cardButtons = [{
+                text: language === 'vi' ? 'Xem chi tiết' : 'View Details',
+                variant: 'secondary' as const,
+                onClick: () => setSelectedDetailNotification(notification)
+              }];
+            }
+            
+            return (
+              <NotificationCard
+                key={notification.id}
+                {...notification}
+                buttons={cardButtons}
+                isActiveReply={notification.id === activeReplyId}
+                replyText={replyText}
+                onMarkRead={() => handleMarkAsRead(notification.id)}
+                onClick={() => {
+                  if (notification.type === 'document_deleted' || notification.type === 'document_rejected') {
+                    setSelectedDetailNotification(notification)
+                  }
+                }}
+                onReplyClick={() => {
+                  if (notification.id === 'emily' || notification.id === 'all-3') {
+                    setActiveReplyId(notification.id)
+                  }
+                }}
+                onCancelClick={() => {
+                  setActiveReplyId(null)
+                }}
+                onSendReplyClick={() => {
+                  setReplyText('')
+                  setActiveReplyId(null)
+                }}
+                onReplyTextChange={(val) => setReplyText(val)}
+                onDelete={() => handleDeleteNotification(notification.id)}
+                isConfirmingDelete={notificationToDelete?.id === notification.id}
+              />
+            )
+          })
         ) : (
           <div className="flex flex-col items-center justify-center py-24 bg-white/50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-[rgba(195,198,215,0.4)] dark:border-slate-800">
             <div className="w-16 h-16 rounded-full bg-[#F4F7FE] dark:bg-slate-800 flex items-center justify-center mb-5">
@@ -689,6 +909,130 @@ export function NotificationsPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={!!selectedDetailNotification}
+        onClose={() => setSelectedDetailNotification(null)}
+        title={t.notificationsPage.detailModalTitle}
+        className="max-w-md"
+      >
+        {selectedDetailNotification && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailDocName}:</span>
+              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                {(() => {
+                  const desc = typeof selectedDetailNotification.description === 'string' 
+                    ? selectedDetailNotification.description 
+                    : '';
+                  const match = desc.match(/"([^"]+)"/);
+                  return match ? match[1] : 'Unknown Document';
+                })()}
+              </span>
+            </div>
+            <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailActionType}:</span>
+              <span className={cn(
+                "text-sm font-semibold w-fit px-2.5 py-0.5 rounded-full",
+                selectedDetailNotification.actionType === 'removed' 
+                  ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400" 
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
+              )}>
+                {selectedDetailNotification.actionType === 'removed' ? t.notificationsPage.actionRemoved : t.notificationsPage.actionRejected}
+              </span>
+            </div>
+            <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailTime}:</span>
+              <span className="text-sm text-slate-900 dark:text-slate-300">
+                {selectedDetailNotification.time}
+              </span>
+            </div>
+            <div className="grid grid-cols-[120px_1fr] gap-2 items-start mt-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailReason}:</span>
+              <div className="text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+                {selectedDetailNotification.adminNote || (
+                  (() => {
+                    const desc = typeof selectedDetailNotification.description === 'string' 
+                      ? selectedDetailNotification.description 
+                      : '';
+                    const match = desc.match(/Reason:\s*(.*)$/);
+                    return match ? match[1] : t.notificationsPage.noReasonProvided;
+                  })()
+                )}
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setSelectedDetailNotification(null)}>
+                {t.common.close}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Confirm Delete Modal */}
+      <Modal
+        isOpen={isDeleteConfirmOpen}
+        onClose={cancelDeleteNotification}
+        title={t.notificationsPage.deleteTitle}
+        className="max-w-md"
+      >
+        <div className="space-y-6 pt-2">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/20 text-rose-500 flex-shrink-0 border border-rose-100 dark:border-rose-900/30">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-[#0b1c30] dark:text-slate-100">
+                {t.notificationsPage.deleteTitle}
+              </p>
+              <p className="text-sm text-slate-550 dark:text-slate-400 leading-relaxed font-medium">
+                {t.notificationsPage.deleteMessage}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 mt-8 border-t border-slate-100 dark:border-slate-800 pt-4">
+            <button
+              onClick={cancelDeleteNotification}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-850 dark:hover:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+            >
+              {t.notificationsPage.deleteCancel}
+            </button>
+            <button
+              onClick={confirmDeleteNotification}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/10 transition-all cursor-pointer"
+            >
+              {t.notificationsPage.deleteConfirm}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Premium Undo Toast */}
+      {showUndoToast && lastDeletedNotification && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-6 py-4 rounded-2xl shadow-2xl flex items-center justify-between gap-6 border border-slate-800 dark:border-slate-200 animate-slideUp max-w-[90vw] w-[450px]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 rounded-xl bg-slate-800 dark:bg-slate-100 flex-shrink-0">
+              <Trash2 className="w-5 h-5 text-rose-400 dark:text-rose-500" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white dark:text-slate-900 truncate">
+                {t.notificationsPage.deleteToast}
+              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5 font-medium">
+                {lastDeletedNotification.title}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleUndoDelete}
+            className="flex-shrink-0 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/10 cursor-pointer active:scale-95"
+          >
+            {language === 'vi' ? 'Hoàn tác' : 'Undo'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

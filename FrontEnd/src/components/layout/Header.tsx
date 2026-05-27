@@ -54,6 +54,11 @@ export interface MockNotification {
   time: string
   type: 'doc' | 'chat' | 'plan' | 'share' | 'document_deleted' | 'document_rejected'
   isRead: boolean
+  reason?: string
+  documentName?: string
+  documentId?: string
+  actionType?: "removed" | "rejected" | "approved" | "system"
+  adminNote?: string
 }
 
 // ─── Header ───────────────────────────────────────────────────────────────────
@@ -120,7 +125,12 @@ export function Header() {
           time: n.time || 'Just now',
           type: n.type,
           isRead: n.isRead,
-          createdAt: n.createdAt
+          createdAt: n.createdAt,
+          reason: n.reason,
+          documentName: n.documentName,
+          documentId: n.documentId,
+          actionType: n.actionType,
+          adminNote: n.adminNote
         }))
       }
     } catch (err) {
@@ -141,6 +151,19 @@ export function Header() {
     } catch (err) {
       console.error('Failed to load notifications read state:', err)
     }
+
+    let deletedIds: string[] = []
+    try {
+      const storedDeleted = localStorage.getItem('aiStudyHubDeletedNotificationIds')
+      if (storedDeleted) {
+        deletedIds = JSON.parse(storedDeleted)
+      }
+    } catch (e) {
+      console.error('Failed to parse deleted notification IDs', e)
+    }
+
+    allNotifs = allNotifs.filter((n) => !deletedIds.includes(n.id))
+
     return allNotifs
   }
 

@@ -770,7 +770,13 @@ export const vi: typeof en = {
     detailTime: "Thời gian",
     actionRemoved: "Đã bị quản trị viên xóa",
     actionRejected: "Đã bị quản trị viên từ chối",
-    noReasonProvided: "Chưa có lý do chi tiết."
+    noReasonProvided: "Chưa có lý do chi tiết.",
+    deleteTitle: "Xóa thông báo?",
+    deleteMessage: "Bạn có chắc muốn xóa thông báo này không? Hành động này chỉ xóa thông báo khỏi danh sách của bạn.",
+    deleteCancel: "Hủy",
+    deleteConfirm: "Xóa",
+    deleteToast: "Đã xóa thông báo.",
+    deleteAriaLabel: "Xóa thông báo"
   },
   studyPlans: {
     title: "Kế hoạch học tập",
