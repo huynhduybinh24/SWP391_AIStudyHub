@@ -8,7 +8,7 @@ export type AdminUser = {
   documentsCount: number;
   storageUsedMB: number;
   avatar?: string;
-  plan?: "free" | "pro";
+  plan?: string;
 };
 
 export type AdminDocument = {
