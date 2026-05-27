@@ -118,7 +118,7 @@ export function LandingPage() {
             <Link to="/login" className="text-sm font-semibold text-primary hover:underline">
               Login
             </Link>
-            <Link to="/login">
+            <Link to="/register">
               <Button className="h-10 px-6 font-semibold rounded-full">
                 Register
               </Button>
