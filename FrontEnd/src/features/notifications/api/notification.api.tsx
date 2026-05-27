@@ -1,7 +1,7 @@
 import React from 'react';
 import { Folder, Calendar, ExternalLink, Eye } from 'lucide-react';
 
-export type NotificationType = 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard' | 'document_deleted';
+export type NotificationType = 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard' | 'document_deleted' | 'document_rejected';
 
 export interface NotificationButton {
   text: string;
@@ -63,7 +63,7 @@ const getPersistedUserNotifications = (): Notification[] => {
       const parsed = JSON.parse(stored);
       return parsed.map((item: any) => ({
         id: item.id,
-        type: item.type === 'document_deleted' ? 'document_deleted' : item.type,
+        type: item.type as NotificationType,
         title: item.title,
         time: item.time || 'Just now',
         isRead: !!item.isRead,
@@ -270,7 +270,7 @@ export const notificationApi = {
       case 'all':
       default:
         // By original logic, "All" shows specific 3 notifications
-        return merged.filter(item => item.type === 'document_deleted' || item.id === 'ai-summary' || item.id === 'shared-folder' || item.id === 'all-3');
+        return merged.filter(item => item.type === 'document_deleted' || item.type === 'document_rejected' || item.id === 'ai-summary' || item.id === 'shared-folder' || item.id === 'all-3');
     }
   },
 

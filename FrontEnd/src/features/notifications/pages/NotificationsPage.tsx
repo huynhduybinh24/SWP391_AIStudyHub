@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff, AlertTriangle } from 'lucide-react'
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff, AlertTriangle, XCircle } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { notificationApi, Notification } from '../api/notification.api'
@@ -9,7 +9,7 @@ import { useTranslation } from '@/context/LanguageContext'
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
   id: string
-  type: 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard' | 'document_deleted'
+  type: 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard' | 'document_deleted' | 'document_rejected'
   title: string
   time: string
   isRead: boolean
@@ -234,22 +234,24 @@ function NotificationCard({
         ),
       }
     }
-    if (type === 'document_deleted') {
+    if (type === 'document_deleted' || type === 'document_rejected') {
       let docNameMatch = '';
       let reasonMatch = '';
-      if (typeof description === 'string' && description.includes('was removed by admin')) {
+      if (typeof description === 'string' && (description.includes('was removed by admin') || description.includes('was rejected by admin'))) {
         const dMatch = description.match(/"([^"]+)"/);
         const rMatch = description.match(/Reason:\s*(.*)$/);
         if (dMatch) docNameMatch = dMatch[1];
         if (rMatch) reasonMatch = rMatch[1];
       }
       return {
-        title: language === 'vi' ? 'Tài liệu đã bị quản trị viên xóa' : 'Document removed by admin',
+        title: type === 'document_deleted'
+          ? (language === 'vi' ? 'Tài liệu đã bị quản trị viên xóa' : 'Document removed by admin')
+          : (language === 'vi' ? 'Tài liệu đã bị quản trị viên từ chối' : 'Document rejected by admin'),
         description: (
           <>
             {language === 'vi' 
-              ? `Tài liệu "${docNameMatch}" của bạn đã bị quản trị viên xóa. Lý do: ${reasonMatch}`
-              : `Your document "${docNameMatch}" was removed by admin. Reason: ${reasonMatch}`}
+              ? `Tài liệu "${docNameMatch}" của bạn đã bị quản trị viên ${type === 'document_deleted' ? 'xóa' : 'từ chối'}. Lý do: ${reasonMatch}`
+              : `Your document "${docNameMatch}" was ${type === 'document_deleted' ? 'removed' : 'rejected'} by admin. Reason: ${reasonMatch}`}
           </>
         ),
       }
@@ -327,7 +329,7 @@ function NotificationCard({
           <div className={cn(
             "w-12 h-12 rounded-full flex items-center justify-center",
             type === 'security' ? "bg-[#FFF0F0] dark:bg-red-950/40" 
-            : type === 'document_deleted' ? "bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20"
+            : (type === 'document_deleted' || type === 'document_rejected') ? "bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20"
             : "bg-[#E8EEFF] dark:bg-blue-950/40"
           )}>
             {type === 'ai' && <Bot className="w-6 h-6 text-[#3155F6] dark:text-blue-400" />}
@@ -338,6 +340,7 @@ function NotificationCard({
             {type === 'calendar' && <Calendar className="w-6 h-6 text-[#3155F6] dark:text-blue-400" />}
             {type === 'flashcard' && <Layers className="w-6 h-6 text-[#3155F6] dark:text-blue-400" />}
             {type === 'document_deleted' && <AlertTriangle className="w-6 h-6 text-rose-500 dark:text-rose-400" />}
+            {type === 'document_rejected' && <XCircle className="w-6 h-6 text-rose-500 dark:text-rose-400" />}
           </div>
         )}
       </div>
