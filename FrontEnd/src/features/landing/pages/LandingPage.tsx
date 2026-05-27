@@ -1,11 +1,29 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ArrowRight, MessageSquare, Cloud, Search, Share2, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { AppFooter } from '@/components/shared/AppFooter'
 
 export function LandingPage() {
   const [activeSection, setActiveSection] = useState('home')
+  const location = useLocation()
+
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '')
+      const element = document.getElementById(id)
+      if (element) {
+        setTimeout(() => {
+          const offset = id === 'introduction' ? 0 : element.offsetTop - 85
+          window.scrollTo({ top: offset, behavior: 'smooth' })
+          setActiveSection(id === 'introduction' ? 'home' : id)
+        }, 100)
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      setActiveSection('home')
+    }
+  }, [location.hash])
 
   useEffect(() => {
     // Custom scroll spy using IntersectionObserver
@@ -45,45 +63,24 @@ export function LandingPage() {
     }
   }, [])
 
-  const scrollToHome = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    setActiveSection('home')
-  }
 
-  const scrollToFeatures = () => {
-    const el = document.getElementById('features')
-    if (el) {
-      const offset = el.offsetTop - 85 // Adjust for sticky header
-      window.scrollTo({ top: offset, behavior: 'smooth' })
-      setActiveSection('features')
-    }
-  }
-
-  const scrollToAbout = () => {
-    const el = document.getElementById('about')
-    if (el) {
-      const offset = el.offsetTop - 85 // Adjust for sticky header
-      window.scrollTo({ top: offset, behavior: 'smooth' })
-      setActiveSection('about')
-    }
-  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans flex flex-col">
       {/* Header */}
       <header className="w-full bg-white border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
-          <div 
+          <Link 
+            to="/#introduction"
             className="flex items-center gap-3.5 cursor-pointer"
-            onClick={scrollToHome}
           >
             <img src="/logo.png" alt="LumiEdu Logo" className="w-[68px] h-[68px] object-contain" />
             <h1 className="text-2xl font-bold text-primary tracking-tight">LumiEdu</h1>
-          </div>
+          </Link>
           
           <nav className="hidden md:flex items-center gap-8">
-            <button 
-              onClick={scrollToHome} 
+            <Link 
+              to="/#introduction"
               className={`font-bold text-base bg-transparent border-t-0 border-x-0 border-b-2 border-solid transition-all duration-300 pb-1 cursor-pointer ${
                 activeSection === 'home' 
                   ? 'text-primary border-primary' 
@@ -91,9 +88,9 @@ export function LandingPage() {
               }`}
             >
               Home
-            </button>
-            <button 
-              onClick={scrollToFeatures} 
+            </Link>
+            <Link 
+              to="/#features"
               className={`font-bold text-base bg-transparent border-t-0 border-x-0 border-b-2 border-solid transition-all duration-300 pb-1 cursor-pointer ${
                 activeSection === 'features' 
                   ? 'text-primary border-primary' 
@@ -101,9 +98,9 @@ export function LandingPage() {
               }`}
             >
               Features
-            </button>
-            <button 
-              onClick={scrollToAbout} 
+            </Link>
+            <Link 
+              to="/#about"
               className={`font-bold text-base bg-transparent border-t-0 border-x-0 border-b-2 border-solid transition-all duration-300 pb-1 cursor-pointer ${
                 activeSection === 'about' 
                   ? 'text-primary border-primary' 
@@ -111,7 +108,7 @@ export function LandingPage() {
               }`}
             >
               About
-            </button>
+            </Link>
           </nav>
           
           <div className="flex items-center gap-4">
@@ -128,7 +125,7 @@ export function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="w-full pt-20 pb-16 px-6 text-center max-w-[800px] mx-auto">
+      <section id="introduction" className="w-full pt-20 pb-16 px-6 text-center max-w-[800px] mx-auto">
         <h2 className="text-5xl md:text-[54px] leading-[1.15] font-heading font-bold text-[#0B1C30] mb-6">
           Revolutionize Your Study Game with AI.
         </h2>
@@ -141,12 +138,12 @@ export function LandingPage() {
               Get Started Free <ArrowRight className="w-5 h-5" />
             </Button>
           </Link>
-          <button 
-            onClick={scrollToFeatures}
-            className="h-12 px-8 text-base font-semibold text-[#0B57D0] bg-white border border-[#0B57D0] rounded-full hover:bg-blue-50 transition-colors"
+          <Link 
+            to="/#features"
+            className="h-12 px-8 flex items-center justify-center text-base font-semibold text-[#0B57D0] bg-white border border-[#0B57D0] rounded-full hover:bg-blue-50 transition-colors"
           >
             Explore Features
-          </button>
+          </Link>
         </div>
       </section>
 

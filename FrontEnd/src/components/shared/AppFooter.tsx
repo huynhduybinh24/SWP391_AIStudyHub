@@ -111,7 +111,7 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
   const content = {
     aboutTitle: isVi ? 'Về LumiEdu' : 'About LumiEdu',
     aboutLinks: [
-      { text: isVi ? 'Giới thiệu' : 'Introduction', to: '/' },
+      { text: isVi ? 'Giới thiệu' : 'Introduction', to: '/#introduction' },
       { text: isVi ? 'Tính năng' : 'Features', to: '/#features' },
       { text: isVi ? 'Bảng giá' : 'Pricing Plans', to: '/pricing' },
       { text: t.footer.termsOfService, to: '/terms-of-service' },
