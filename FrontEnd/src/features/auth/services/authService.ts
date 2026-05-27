@@ -41,6 +41,31 @@ export const authService = {
       const { data } = await apiClient.post<LoginResponse>('/auth/login', credentials)
       return data
     } catch {
+      // Check localStorage first for updated user list
+      if (typeof window !== 'undefined') {
+        const savedUsersStr = localStorage.getItem('aiStudyHubUsers')
+        if (savedUsersStr) {
+          try {
+            const savedUsers = JSON.parse(savedUsersStr)
+            const matchedUser = savedUsers.find((u: any) => u.email.toLowerCase() === credentials.email.toLowerCase())
+            if (matchedUser) {
+              return {
+                user: {
+                  id: matchedUser.id === 'u1' ? '1' : matchedUser.id === 'u2' ? '2' : matchedUser.id === 'u3' ? '3' : matchedUser.id,
+                  name: matchedUser.name,
+                  email: matchedUser.email,
+                  role: matchedUser.role,
+                  plan: matchedUser.plan || 'free',
+                },
+                tokens: { accessToken: `mock-${matchedUser.role}-token` },
+              }
+            }
+          } catch (e) {
+            console.error(e)
+          }
+        }
+      }
+
       const mock = MOCK_USERS[credentials.email.toLowerCase()]
       if (mock && credentials.password.length >= 6) {
         return mock
