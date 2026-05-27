@@ -305,26 +305,29 @@ export function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Tabs navigation */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 w-full scroll-smooth overflow-x-auto no-scrollbar gap-2">
-        {tabItems.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id || (tab.id === 'ai-moderation' && activeTab === 'documents')
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all duration-200 whitespace-nowrap cursor-pointer ${
-                isActive
-                  ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-              }`}
-            >
-              <Icon className="size-4 stroke-[2.25]" />
-              {tab.label}
-            </button>
-          )
-        })}
+      <div className="relative w-full border-b border-slate-200 dark:border-slate-800">
+        <div 
+          className="flex w-full scroll-smooth overflow-x-auto overflow-y-hidden whitespace-nowrap gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        >
+          {tabItems.map((tab) => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id || (tab.id === 'ai-moderation' && activeTab === 'documents')
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`shrink-0 flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                  isActive
+                    ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                <Icon className="size-4 stroke-[2.25]" />
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Tab content renderer */}
