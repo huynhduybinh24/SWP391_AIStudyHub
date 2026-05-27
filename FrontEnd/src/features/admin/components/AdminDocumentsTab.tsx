@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   FileText,
   Search,
@@ -40,7 +40,7 @@ interface DocumentItem {
 }
 
 export function AdminDocumentsTab() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const toast = useToast()
 
   // Mock list of uploaded system documents
@@ -176,6 +176,13 @@ export function AdminDocumentsTab() {
   const [deleteDoc, setDeleteDoc] = useState<DocumentItem | null>(null)
   const [activeReportDoc, setActiveReportDoc] = useState<DocumentItem | null>(null)
   const [adminFeedback, setAdminFeedback] = useState('')
+  const [deleteReason, setDeleteReason] = useState('')
+
+  useEffect(() => {
+    if (!deleteDoc) {
+      setDeleteReason('')
+    }
+  }, [deleteDoc])
 
   const handleMoveToPending = (id: string, feedback: string) => {
     setDocuments((prev) =>
@@ -225,8 +232,14 @@ export function AdminDocumentsTab() {
     if (previewDoc && previewDoc.id === deleteDoc.id) {
       setPreviewDoc(null)
     }
-    toast.success(t.admin.toastDeleteSuccess)
+    
+    const msg = language === 'vi'
+      ? `Đã xóa tài liệu "${deleteDoc.title}" và gửi phản hồi đến ${deleteDoc.uploaderEmail}: "${deleteReason}"`
+      : `Deleted document "${deleteDoc.title}" and sent feedback to ${deleteDoc.uploaderEmail}: "${deleteReason}"`
+    toast.success(msg)
+    
     setDeleteDoc(null)
+    setDeleteReason('')
   }
 
   return (
@@ -546,11 +559,11 @@ export function AdminDocumentsTab() {
       >
         {deleteDoc && (
           <div className="space-y-4">
-            <div className="flex items-start gap-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-4 rounded-2xl">
+            <div className="flex items-start gap-3 bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30 p-4 rounded-2xl">
               <AlertTriangle className="size-5 text-rose-500 shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="font-extrabold text-sm text-rose-950 dark:text-rose-200 leading-tight">
-                  Warning
+                <p className="font-extrabold text-sm text-rose-955 dark:text-rose-200 leading-tight">
+                  {language === 'vi' ? 'Cảnh báo' : 'Warning'}
                 </p>
                 <p className="text-xs font-semibold text-rose-800 dark:text-rose-350/80 leading-relaxed">
                   {t.admin.confirmDeleteDesc}
@@ -558,21 +571,45 @@ export function AdminDocumentsTab() {
               </div>
             </div>
 
-            <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-              {deleteDoc.title} ({deleteDoc.fileName})
+            <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 space-y-1">
+              <div className="truncate">
+                {language === 'vi' ? 'Tài liệu' : 'Document'}: {deleteDoc.title} ({deleteDoc.fileName})
+              </div>
+              <div className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                {language === 'vi' ? 'Người tải lên' : 'Uploader'}: {deleteDoc.uploader} ({deleteDoc.uploaderEmail})
+              </div>
+            </div>
+
+            {/* Feedback / Reason for rejection */}
+            <div className="space-y-1.5 text-left">
+              <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                {language === 'vi' ? 'Lý do từ chối & Phản hồi (Gửi cho người tải lên)' : 'Reason for rejection & Feedback (Sent to uploader)'}
+              </label>
+              <textarea
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder={
+                  language === 'vi' 
+                    ? 'Nhập lý do không duyệt (ví dụ: phát hiện đạo văn 70%, tài liệu có vấn đề...)' 
+                    : 'Enter rejection reason (e.g., 70% plagiarism detected, invalid document...)'
+                }
+                className="w-full h-24 p-3.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-650 font-medium leading-relaxed resize-none transition-all"
+                required
+              />
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <Button
                 variant="secondary"
                 onClick={() => setDeleteDoc(null)}
-                className="bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-350 dark:hover:bg-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer"
+                className="bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-355 dark:hover:bg-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer"
               >
                 {t.common.cancel || 'Cancel'}
               </Button>
               <Button
                 onClick={handleDeleteConfirm}
-                className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer shadow-md"
+                disabled={!deleteReason.trim()}
+                className="bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer shadow-md"
               >
                 {t.common.confirm || 'Confirm'}
               </Button>
