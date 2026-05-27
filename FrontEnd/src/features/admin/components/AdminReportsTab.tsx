@@ -24,54 +24,76 @@ export function AdminReportsTab() {
   const toast = useToast()
   const [selectedTicket, setSelectedTicket] = useState<ReportTicket | null>(null)
 
-  const [tickets, setTickets] = useState<ReportTicket[]>([
-    {
-      id: 'rep-1',
-      reportedFile: 'Violating_Exam_Leaks_2026.pdf',
-      reportedFileId: 'doc-4',
-      reporter: 'Sarah Jenkins',
-      reporterEmail: 'sarah.j@school.edu',
-      timestamp: '2026-05-25 10:15',
-      reason: 'Tài liệu này chứa nội dung rò rỉ đề thi cuối kỳ, vi phạm quy chế học tập nghiêm trọng.',
-      status: 'pending'
-    },
-    {
-      id: 'rep-2',
-      reportedFile: 'Unfinished_Physics_Draft.docx',
-      reportedFileId: 'doc-6',
-      reporter: 'Emma Watson',
-      reporterEmail: 'emma@example.com',
-      timestamp: '2026-05-23 09:44',
-      reason: 'Tài liệu này sao chép toàn bộ nội dung từ sách giáo trình Physics Mechanics của trường mà chưa được sự cho phép.',
-      status: 'pending'
-    },
-    {
-      id: 'rep-3',
-      reportedFile: 'Spam_Marketing_101.pdf',
-      reportedFileId: 'doc-9',
-      reporter: 'David Kim',
-      reporterEmail: 'david.kim@university.edu',
-      timestamp: '2026-05-22 14:02',
-      reason: 'Quảng cáo khóa học đa cấp không liên quan đến học thuật, làm rác không gian chung.',
-      status: 'resolved'
-    },
-    {
-      id: 'rep-4',
-      reportedFile: 'Math_Calculus_Notes.pdf',
-      reportedFileId: 'doc-10',
-      reporter: 'Huynh Duy Binh',
-      reporterEmail: 'binh@example.com',
-      timestamp: '2026-05-20 16:30',
-      reason: 'Nhầm lẫn về bản quyền, đây thực tế là tài liệu cá nhân tự biên soạn của tôi bị người khác chia sẻ lại.',
-      status: 'ignored'
-    }
-  ])
+  const [tickets, setTickets] = useState<ReportTicket[]>(() => {
+    const defaultTickets: ReportTicket[] = [
+      {
+        id: 'rep-1',
+        reportedFile: 'Violating_Exam_Leaks_2026.pdf',
+        reportedFileId: 'doc-4',
+        reporter: 'Sarah Jenkins',
+        reporterEmail: 'sarah.j@school.edu',
+        timestamp: '2026-05-25 10:15',
+        reason: 'Tài liệu này chứa nội dung rò rỉ đề thi cuối kỳ, vi phạm quy chế học tập nghiêm trọng.',
+        status: 'pending'
+      },
+      {
+        id: 'rep-2',
+        reportedFile: 'Unfinished_Physics_Draft.docx',
+        reportedFileId: 'doc-6',
+        reporter: 'Emma Watson',
+        reporterEmail: 'emma@example.com',
+        timestamp: '2026-05-23 09:44',
+        reason: 'Tài liệu này sao chép toàn bộ nội dung từ sách giáo trình Physics Mechanics của trường mà chưa được sự cho phép.',
+        status: 'pending'
+      },
+      {
+        id: 'rep-3',
+        reportedFile: 'Spam_Marketing_101.pdf',
+        reportedFileId: 'doc-9',
+        reporter: 'David Kim',
+        reporterEmail: 'david.kim@university.edu',
+        timestamp: '2026-05-22 14:02',
+        reason: 'Quảng cáo khóa học đa cấp không liên quan đến học thuật, làm rác không gian chung.',
+        status: 'resolved'
+      },
+      {
+        id: 'rep-4',
+        reportedFile: 'Math_Calculus_Notes.pdf',
+        reportedFileId: 'doc-10',
+        reporter: 'Huynh Duy Binh',
+        reporterEmail: 'binh@example.com',
+        timestamp: '2026-05-20 16:30',
+        reason: 'Nhầm lẫn về bản quyền, đây thực tế là tài liệu cá nhân tự biên soạn của tôi bị người khác chia sẻ lại.',
+        status: 'ignored'
+      }
+    ]
+
+    const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
+    const mappedLocal: ReportTicket[] = localReports.map((r: any) => ({
+      id: r.id,
+      reportedFile: r.reportedFile || 'Reported Shared Document',
+      reportedFileId: r.documentId,
+      reporter: r.reporterName || 'Student User',
+      reporterEmail: r.reporterEmail,
+      timestamp: r.reportedAt ? r.reportedAt.replace('T', ' ').substring(0, 16) : new Date().toISOString().replace('T', ' ').substring(0, 16),
+      reason: r.reason,
+      status: (r.status as 'pending' | 'resolved' | 'ignored') || 'pending'
+    }))
+
+    return [...mappedLocal, ...defaultTickets]
+  })
 
   // Resolve Action
   const handleResolve = (id: string) => {
-    setTickets((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status: 'resolved' } : t))
-    )
+    setTickets((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, status: 'resolved' as 'pending' | 'resolved' | 'ignored' } : t))
+      
+      const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
+      const updatedLocal = localReports.map((r: any) => r.id === id ? { ...r, status: 'resolved' } : r)
+      localStorage.setItem('aiStudyHubDocumentReports', JSON.stringify(updatedLocal))
+      
+      return updated
+    })
     const msg = language === 'vi' ? 'Đã giải quyết báo cáo thành công' : 'Report ticket marked as resolved'
     toast.success(msg)
     setSelectedTicket(null)
@@ -79,9 +101,15 @@ export function AdminReportsTab() {
 
   // Ignore Action
   const handleIgnore = (id: string) => {
-    setTickets((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status: 'ignored' } : t))
-    )
+    setTickets((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, status: 'ignored' as 'pending' | 'resolved' | 'ignored' } : t))
+      
+      const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
+      const updatedLocal = localReports.map((r: any) => r.id === id ? { ...r, status: 'ignored' } : r)
+      localStorage.setItem('aiStudyHubDocumentReports', JSON.stringify(updatedLocal))
+      
+      return updated
+    })
     const msg = language === 'vi' ? 'Đã bỏ qua báo cáo' : 'Report ticket ignored'
     toast.success(msg)
     setSelectedTicket(null)
@@ -141,7 +169,11 @@ export function AdminReportsTab() {
                         t.status === 'resolved' && "bg-emerald-500",
                         t.status === 'ignored' && "bg-slate-400"
                       )} />
-                      {t.status.toUpperCase()}
+                      {t.status === 'pending'
+                        ? (language === 'vi' ? 'CHỜ XỬ LÝ' : 'PENDING')
+                        : t.status === 'resolved'
+                        ? (language === 'vi' ? 'ĐÃ GIẢI QUYẾT' : 'RESOLVED')
+                        : (language === 'vi' ? 'ĐÃ BỎ QUA' : 'IGNORED')}
                     </Badge>
                   </td>
                   <td className="p-4 pr-6 text-right">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, Cpu, ChevronDown, Wrench, CheckCircle } from 'lucide-react'
+import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, ChevronDown, Wrench, CheckCircle, FileText } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useSearchParams } from 'react-router-dom'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
@@ -17,8 +17,122 @@ import { Modal } from '@/components/ui/Modal'
 type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'documents' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation'
 
 export function AdminDashboardPage() {
-  const { t, language, setLanguage } = useTranslation()
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview')
+  const { t, language } = useTranslation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = (searchParams.get('tab') as AdminTab) || 'overview'
+  
+  const toast = useToast()
+  const [systemStatus, setSystemStatus] = useState<SystemStatusState>(getSystemStatusSync())
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false)
+  const [maintenanceConfirmOpen, setMaintenanceConfirmOpen] = useState(false)
+
+  useEffect(() => {
+    const handleStatusUpdate = () => {
+      setSystemStatus(getSystemStatusSync())
+    }
+    window.addEventListener('aiStudyHubSystemStatusUpdated', handleStatusUpdate)
+    return () => window.removeEventListener('aiStudyHubSystemStatusUpdated', handleStatusUpdate)
+  }, [])
+
+  const handleStatusChange = async (status: SystemStatus) => {
+    if (status === 'maintenance') {
+      setMaintenanceConfirmOpen(true)
+      setStatusMenuOpen(false)
+      return
+    }
+    await updateSystemStatus(status)
+    toast.success('System status updated.')
+    setStatusMenuOpen(false)
+  }
+
+  const confirmMaintenance = async () => {
+    await updateSystemStatus('maintenance')
+    toast.success('System status updated.')
+    setMaintenanceConfirmOpen(false)
+  }
+
+  const setActiveTab = (tab: AdminTab) => {
+    setSearchParams({ tab })
+  }
+
+  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [users, setUsers] = useState<AdminUser[]>([])
+  const [documents, setDocuments] = useState<AdminDocument[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await adminService.getDashboardSummary()
+      setStats(data.stats)
+      setUsers(data.users)
+      setDocuments(data.documents)
+    } catch (err: any) {
+      setError(err.message || 'Không thể tải dữ liệu admin.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [])
+
+  const handleUpdateUser = async (userId: string, updates: Partial<AdminUser>, reason?: string) => {
+    try {
+      const updated = await adminService.updateUser(userId, updates, reason)
+      setUsers((prev) => prev.map((u) => (u.id === userId ? updated : u)))
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleDeleteUser = async (userId: string, reason?: string) => {
+    try {
+      await adminService.deleteUser(userId, reason)
+      setUsers((prev) => prev.filter((u) => u.id !== userId))
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleUpdateDocument = async (documentId: string, updates: Partial<AdminDocument>, reason?: string) => {
+    try {
+      const updated = await adminService.updateDocument(documentId, updates, reason)
+      setDocuments((prev) => prev.map((d) => (d.id === documentId ? updated : d)))
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleDeleteDocument = async (documentId: string, reason?: string) => {
+    try {
+      await adminService.deleteDocument(documentId, reason)
+      setDocuments((prev) => prev.filter((d) => d.id !== documentId))
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleApproveDocument = async (documentId: string) => {
+    try {
+      const updated = await adminService.approveDocument(documentId)
+      setDocuments((prev) => prev.map((d) => (d.id === documentId ? updated : d)))
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleRejectDocument = async (documentId: string, reason?: string) => {
+    try {
+      const updated = await adminService.rejectDocument(documentId, reason)
+      setDocuments((prev) => prev.map((d) => (d.id === documentId ? updated : d)))
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
 
   const tabItems = [
     {
@@ -32,13 +146,18 @@ export function AdminDashboardPage() {
       icon: Users
     },
     {
+      id: 'ai-moderation' as AdminTab,
+      label: language === 'vi' ? 'Quản lý tài liệu' : 'Document Management',
+      icon: FileText
+    },
+    {
       id: 'packages' as AdminTab,
-      label: t.admin.tabPackages,
+      label: language === 'vi' ? 'Quản lý gói cước' : 'Package Management',
       icon: CreditCard
     },
     {
       id: 'notifications' as AdminTab,
-      label: t.admin.tabBroadcast,
+      label: language === 'vi' ? 'Gửi thông báo' : 'Notification Management',
       icon: Bell
     },
     {
@@ -55,11 +174,6 @@ export function AdminDashboardPage() {
       id: 'reports' as AdminTab,
       label: language === 'vi' ? 'Báo cáo vi phạm' : 'Reports',
       icon: AlertTriangle
-    },
-    {
-      id: 'ai-moderation' as AdminTab,
-      label: language === 'vi' ? 'Kiểm duyệt AI' : 'AI Moderation',
-      icon: Cpu
     }
   ]
 
@@ -105,29 +219,89 @@ export function AdminDashboardPage() {
           </p>
         </div>
 
-        {/* Header Actions: Language select & Pulse status badge */}
-        <div className="flex items-center gap-3 self-start md:self-center">
-          <div className="relative">
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as any)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold border border-slate-200 dark:border-slate-800 rounded-full bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-350 focus:outline-none focus:ring-2 focus:ring-blue-500/25 cursor-pointer shadow-xs transition-all duration-200"
-              aria-label="Change language"
-            >
-              <option value="en">English (US)</option>
-              <option value="vi">Tiếng Việt</option>
-              <option value="ja">日本語</option>
-              <option value="ko">한국어</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/25 dark:border-emerald-500/15 px-3 py-1.5 rounded-full text-xs font-bold text-emerald-600 dark:text-emerald-400 select-none shadow-sm shadow-emerald-500/5">
+        {/* Pulse live status badge -> Dropdown Control */}
+        <div className="relative self-start md:self-center select-none">
+          <button 
+            onClick={() => setStatusMenuOpen(!statusMenuOpen)}
+            className={`flex items-center gap-2 border px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer ${
+              systemStatus.status === 'active' 
+                ? 'bg-emerald-500/10 dark:bg-emerald-500/5 border-emerald-500/25 text-emerald-600 dark:text-emerald-400' 
+                : systemStatus.status === 'maintenance'
+                ? 'bg-amber-500/10 dark:bg-amber-500/5 border-amber-500/25 text-amber-600 dark:text-amber-400'
+                : 'bg-rose-500/10 dark:bg-rose-500/5 border-rose-500/25 text-rose-600 dark:text-rose-400'
+            }`}
+          >
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                systemStatus.status === 'active' ? 'bg-emerald-400' 
+                : systemStatus.status === 'maintenance' ? 'bg-amber-400' 
+                : 'bg-rose-400'
+              }`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                systemStatus.status === 'active' ? 'bg-emerald-500' 
+                : systemStatus.status === 'maintenance' ? 'bg-amber-500' 
+                : 'bg-rose-500'
+              }`}></span>
             </span>
-            <span>{t.admin.activeAdminGlow}</span>
-          </div>
+            <span>
+              {systemStatus.status === 'active' ? (language === 'vi' ? 'Hệ thống hoạt động' : 'System Active')
+                : systemStatus.status === 'maintenance' ? (language === 'vi' ? 'Đang bảo trì' : 'Maintenance Mode')
+                : (language === 'vi' ? 'Hệ thống gặp sự cố' : 'System Incident')}
+            </span>
+            <ChevronDown className="size-3 ml-1" />
+          </button>
+
+          {statusMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 py-1 shadow-xl z-50">
+              <button
+                onClick={() => handleStatusChange('active')}
+                className="w-full text-left px-4 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-emerald-600"
+              >
+                <CheckCircle className="size-4" /> {language === 'vi' ? 'Hệ thống hoạt động' : 'System Active'}
+              </button>
+              <button
+                onClick={() => handleStatusChange('maintenance')}
+                className="w-full text-left px-4 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-amber-600"
+              >
+                <Wrench className="size-4" /> {language === 'vi' ? 'Đang bảo trì' : 'Maintenance Mode'}
+              </button>
+              <button
+                onClick={() => handleStatusChange('incident')}
+                className="w-full text-left px-4 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-rose-600"
+              >
+                <AlertTriangle className="size-4" /> {language === 'vi' ? 'Hệ thống gặp sự cố' : 'System Incident'}
+              </button>
+            </div>
+          )}
+
+          <Modal
+            isOpen={maintenanceConfirmOpen}
+            onClose={() => setMaintenanceConfirmOpen(false)}
+            title={language === 'vi' ? 'Bật chế độ bảo trì?' : 'Enable Maintenance Mode?'}
+          >
+            <div className="p-1">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 font-medium leading-relaxed">
+                {language === 'vi' ? 'Người dùng thường sẽ không thể truy cập hệ thống cho đến khi chế độ bảo trì được tắt.' : 'Regular users will not be able to access the system until maintenance mode is disabled.'}
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMaintenanceConfirmOpen(false)}
+                  className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  {language === 'vi' ? 'Hủy' : 'Cancel'}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmMaintenance}
+                  className="px-4 py-2 rounded-xl text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  <Wrench className="size-4" />
+                  {language === 'vi' ? 'Bật bảo trì' : 'Enable Maintenance'}
+                </button>
+              </div>
+            </div>
+          </Modal>
         </div>
       </div>
 

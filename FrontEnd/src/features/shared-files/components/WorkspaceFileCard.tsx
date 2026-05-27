@@ -23,6 +23,7 @@ interface WorkspaceFileCardProps {
   onRename: () => void
   onChangePermission: (file: SharedFile) => void
   onRemoveAccess: (file: SharedFile) => void
+  onReport?: () => void
 }
 
 export function WorkspaceFileCard({
@@ -41,7 +42,8 @@ export function WorkspaceFileCard({
   onShareAccess,
   onRename,
   onChangePermission,
-  onRemoveAccess
+  onRemoveAccess,
+  onReport
 }: WorkspaceFileCardProps) {
   const { t, language } = useTranslation()
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -230,6 +232,7 @@ export function WorkspaceFileCard({
               onRename={onRename}
               onChangePermission={() => onChangePermission(file)}
               onRemoveAccess={() => onRemoveAccess(file)}
+              onReport={onReport}
               buttonRef={buttonRef}
             />
           </div>
@@ -285,6 +288,7 @@ export function WorkspaceFileCard({
               onRename={onRename}
               onChangePermission={() => onChangePermission(file)}
               onRemoveAccess={() => onRemoveAccess(file)}
+              onReport={onReport}
               buttonRef={buttonRef}
             />
           </div>

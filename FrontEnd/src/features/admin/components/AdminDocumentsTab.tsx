@@ -30,25 +30,21 @@ import { Badge } from '@/components/ui/Badge'
 import { adminService, AdminDocument } from '../services/adminService'
 import { cn } from '@/lib/utils'
 
-// Types
-interface DocumentItem {
-  id: string
-  title: string
-  fileName: string
-  type: string
-  uploader: string
-  uploaderEmail: string
-  uploadedAt: string
-  size: string
-  status: 'pending' | 'approved' | 'reported'
-  description?: string
-  mockContentLines?: string[]
-  reporter?: string
-  reportReason?: string
-  adminFeedback?: string
+interface AdminDocumentsTabProps {
+  documents: AdminDocument[]
+  onUpdateDocument: (documentId: string, updates: Partial<AdminDocument>, reason?: string) => void
+  onDeleteDocument: (documentId: string, reason?: string) => void
+  onApproveDocument: (documentId: string) => void
+  onRejectDocument: (documentId: string, reason?: string) => void
 }
 
-export function AdminDocumentsTab() {
+export function AdminDocumentsTab({
+  documents,
+  onUpdateDocument,
+  onDeleteDocument,
+  onApproveDocument,
+  onRejectDocument
+}: AdminDocumentsTabProps) {
   const { t, language } = useTranslation()
   const toast = useToast()
 
@@ -74,7 +70,14 @@ export function AdminDocumentsTab() {
   const [deleteDoc, setDeleteDoc] = useState<AdminDocument | null>(null)
   const [deleteReason, setDeleteReason] = useState('')
   const [adminFeedback, setAdminFeedback] = useState('')
-  const [deleteReason, setDeleteReason] = useState('')
+
+  // Flag States
+  const [flagDocConfirm, setFlagDocConfirm] = useState<AdminDocument | null>(null)
+  const [flagReason, setFlagReason] = useState('')
+
+  // Reject States
+  const [rejectDocConfirm, setRejectDocConfirm] = useState<AdminDocument | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
 
   useEffect(() => {
     if (!deleteDoc) {
@@ -248,21 +251,75 @@ export function AdminDocumentsTab() {
   };
 
   // Moderate Actions
+  const handleToggleFlag = async (id: string, currentFlagged: boolean) => {
+    if (currentFlagged) {
+      try {
+        await adminService.updateDocument(id, {
+          isFlagged: false,
+          aiStatus: 'analyzed'
+        })
+        onUpdateDocument(id, { isFlagged: false, aiStatus: 'analyzed' })
+        toast.success(language === 'vi' ? 'Đã bỏ gắn cờ tài liệu.' : 'Flag removed.')
+      } catch (err: any) {
+        toast.error(err.message || 'Error')
+      }
+    } else {
+      const docToFlag = documents.find(d => d.id === id)
+      if (docToFlag) {
+        setFlagDocConfirm(docToFlag)
+        setFlagReason('')
+      }
+    }
+  }
+
+  const handleConfirmFlag = async () => {
+    if (!flagDocConfirm) return
+    try {
+      await adminService.updateDocument(flagDocConfirm.id, {
+        isFlagged: true,
+        aiStatus: 'flagged'
+      }, flagReason)
+      onUpdateDocument(flagDocConfirm.id, { isFlagged: true, aiStatus: 'flagged' }, flagReason)
+      const label = language === 'vi'
+        ? `Đã gắn cờ tài liệu và gửi mail cảnh báo đến ${flagDocConfirm.ownerEmail} thành công`
+        : `Document flagged and warning email sent to ${flagDocConfirm.ownerEmail} successfully`
+      toast.success(label)
+      setFlagDocConfirm(null)
+      setFlagReason('')
+    } catch (err: any) {
+      toast.error(err.message || 'Error')
+    }
+  }
+
   const handleApprove = (id: string) => {
     onApproveDocument(id)
     if (previewDoc && previewDoc.id === id) {
       setPreviewDoc((prev) => (prev ? { ...prev, status: 'approved' } : null))
     }
     toast.success(t.admin.toastApproveSuccess || 'Document approved')
-  };
+  }
   
   const handleReject = (id: string) => {
-    onRejectDocument(id)
-    if (previewDoc && previewDoc.id === id) {
+    const docToReject = documents.find(d => d.id === id)
+    if (docToReject) {
+      setRejectDocConfirm(docToReject)
+      setRejectReason('')
+    }
+  }
+
+  const handleConfirmReject = () => {
+    if (!rejectDocConfirm) return
+    onRejectDocument(rejectDocConfirm.id, rejectReason)
+    if (previewDoc && previewDoc.id === rejectDocConfirm.id) {
       setPreviewDoc((prev) => (prev ? { ...prev, status: 'rejected' } : null))
     }
-    toast.success('Document rejected')
-  };
+    const msg = language === 'vi'
+      ? `Đã từ chối tài liệu và gửi mail thông báo lý do đến ${rejectDocConfirm.ownerEmail} thành công`
+      : `Document rejected and notification email with reason sent to ${rejectDocConfirm.ownerEmail} successfully`
+    toast.success(msg)
+    setRejectDocConfirm(null)
+    setRejectReason('')
+  }
 
   const handleDeleteConfirm = () => {
     if (!deleteDoc) return;
@@ -276,8 +333,8 @@ export function AdminDocumentsTab() {
     }
     
     const msg = language === 'vi'
-      ? `Đã xóa tài liệu "${deleteDoc.title}" và gửi phản hồi đến ${deleteDoc.uploaderEmail}: "${deleteReason}"`
-      : `Deleted document "${deleteDoc.title}" and sent feedback to ${deleteDoc.uploaderEmail}: "${deleteReason}"`
+      ? `Đã xóa tài liệu "${deleteDoc.title}" và gửi phản hồi đến ${deleteDoc.ownerEmail}: "${deleteReason}"`
+      : `Deleted document "${deleteDoc.title}" and sent feedback to ${deleteDoc.ownerEmail}: "${deleteReason}"`
     toast.success(msg)
     
     setDeleteDoc(null)
@@ -1249,29 +1306,11 @@ export function AdminDocumentsTab() {
 
             <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 space-y-1">
               <div className="truncate">
-                {language === 'vi' ? 'Tài liệu' : 'Document'}: {deleteDoc.title} ({deleteDoc.fileName})
+                {language === 'vi' ? 'Tài liệu' : 'Document'}: {deleteDoc.title}
               </div>
               <div className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                {language === 'vi' ? 'Người tải lên' : 'Uploader'}: {deleteDoc.uploader} ({deleteDoc.uploaderEmail})
+                {language === 'vi' ? 'Người tải lên' : 'Uploader'}: {deleteDoc.ownerName} ({deleteDoc.ownerEmail})
               </div>
-            </div>
-
-            {/* Feedback / Reason for rejection */}
-            <div className="space-y-1.5 text-left">
-              <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-                {language === 'vi' ? 'Lý do từ chối & Phản hồi (Gửi cho người tải lên)' : 'Reason for rejection & Feedback (Sent to uploader)'}
-              </label>
-              <textarea
-                value={deleteReason}
-                onChange={(e) => setDeleteReason(e.target.value)}
-                placeholder={
-                  language === 'vi' 
-                    ? 'Nhập lý do không duyệt (ví dụ: phát hiện đạo văn 70%, tài liệu có vấn đề...)' 
-                    : 'Enter rejection reason (e.g., 70% plagiarism detected, invalid document...)'
-                }
-                className="w-full h-24 p-3.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-650 font-medium leading-relaxed resize-none transition-all"
-                required
-              />
             </div>
 
             <div className="space-y-1.5">
@@ -1282,7 +1321,7 @@ export function AdminDocumentsTab() {
                 value={deleteReason}
                 onChange={(e) => setDeleteReason(e.target.value)}
                 placeholder={language === 'vi' ? 'Giải thích lý do tài liệu này bị xóa...' : 'Explain why this document is being removed...'}
-                className="w-full h-[100px] p-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-655 font-medium leading-relaxed resize-none transition-all"
+                className="w-full h-[100px] p-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-955 dark:text-slate-100 dark:placeholder:text-slate-655 font-medium leading-relaxed resize-none transition-all"
               />
               <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-1">
                 {language === 'vi' ? 'Lý do này sẽ được hiển thị cho chủ sở hữu tài liệu.' : 'This reason will be shown to the document owner.'}
@@ -1304,10 +1343,142 @@ export function AdminDocumentsTab() {
               </Button>
               <Button
                 onClick={handleDeleteConfirm}
-                disabled={!deleteReason.trim()}
+                disabled={deleteReason.trim().length < 10}
                 className="bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer shadow-md"
               >
                 {t.common?.confirm || 'Confirm'}
+              </Button>
+            </div>
+          </div>
+        )
+      }</Modal>
+
+      {/* 3. CONFIRM FLAG DOCUMENT MODAL */}
+      <Modal
+        isOpen={!!flagDocConfirm}
+        onClose={() => {
+          setFlagDocConfirm(null)
+          setFlagReason('')
+        }}
+        title={language === 'vi' ? 'Gắn cờ vi phạm tài liệu' : 'Flag Document'}
+        className="max-w-md"
+      >
+        {flagDocConfirm && (
+          <div className="space-y-4 text-left">
+            <div className="flex gap-3 bg-amber-50 dark:bg-amber-955/10 border border-amber-100 dark:border-amber-900/30 p-3.5 rounded-xl">
+              <span className="size-2 rounded-full bg-amber-500 mt-1.5 shrink-0 animate-pulse" />
+              <p className="text-xs font-semibold text-amber-800 dark:text-amber-450 leading-normal">
+                {language === 'vi'
+                  ? 'Gắn cờ vi phạm sẽ đánh dấu tài liệu này là không an toàn. Hệ thống sẽ tạm thời ẩn tài liệu và gửi thư cảnh báo cho tác giả.'
+                  : 'Flagging will mark this document as unsafe. It will be temporarily hidden and a warning email will be sent to the owner.'}
+              </p>
+            </div>
+            
+            <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300">
+              {language === 'vi' ? 'Tài liệu' : 'Document'}: {flagDocConfirm.title}
+            </div>
+
+            {/* Flag Reason Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold text-slate-500 dark:text-slate-400">
+                {language === 'vi' ? 'Lý do cắm cờ (sẽ gửi mail cho user):' : 'Reason for flagging (will email user):'}
+              </label>
+              <textarea
+                value={flagReason}
+                onChange={(e) => setFlagReason(e.target.value)}
+                placeholder={language === 'vi' ? 'Nhập lý do cắm cờ vi phạm...' : 'Enter reason for flagging...'}
+                rows={3}
+                className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/25 dark:border-slate-800 dark:bg-slate-955 dark:text-slate-100 dark:placeholder:text-slate-500 font-semibold"
+              />
+              {flagReason.trim().length === 0 && (
+                <p className="text-[10px] text-amber-600 dark:text-amber-455 font-bold">
+                  {language === 'vi' ? '* Vui lòng nhập lý do cắm cờ.' : '* Please enter a flagging reason.'}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                onClick={() => {
+                  setFlagDocConfirm(null)
+                  setFlagReason('')
+                }}
+                className="bg-slate-100 text-slate-655 dark:bg-slate-800 dark:text-slate-350 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer"
+              >
+                {language === 'vi' ? 'Hủy' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={handleConfirmFlag}
+                disabled={flagReason.trim().length === 0}
+                className="bg-amber-600 hover:bg-amber-550 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {language === 'vi' ? 'Cắm cờ vi phạm' : 'Flag Document'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* 4. CONFIRM REJECT DOCUMENT MODAL */}
+      <Modal
+        isOpen={!!rejectDocConfirm}
+        onClose={() => {
+          setRejectDocConfirm(null)
+          setRejectReason('')
+        }}
+        title={language === 'vi' ? 'Từ chối duyệt tài liệu' : 'Reject Document'}
+        className="max-w-md"
+      >
+        {rejectDocConfirm && (
+          <div className="space-y-4 text-left">
+            <div className="flex gap-3 bg-rose-50 dark:bg-rose-955/10 border border-rose-100 dark:border-rose-900/30 p-3.5 rounded-xl">
+              <span className="size-2 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+              <p className="text-xs font-semibold text-rose-800 dark:text-rose-455 leading-normal">
+                {language === 'vi'
+                  ? 'Hành động này sẽ từ chối phê duyệt tài liệu. Tài liệu sẽ không được hiển thị cho cộng đồng và phản hồi sẽ được gửi qua email cho người tải.'
+                  : 'This action will reject approval of the document. It will not be visible to the community and feedback will be emailed to the owner.'}
+              </p>
+            </div>
+            
+            <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300">
+              {language === 'vi' ? 'Tài liệu' : 'Document'}: {rejectDocConfirm.title}
+            </div>
+
+            {/* Reject Reason Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold text-slate-500 dark:text-slate-400">
+                {language === 'vi' ? 'Lý do từ chối duyệt (sẽ gửi mail cho user):' : 'Reason for rejection (will email user):'}
+              </label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder={language === 'vi' ? 'Nhập lý do từ chối tài liệu...' : 'Enter reason for rejection...'}
+                rows={3}
+                className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-505 font-semibold"
+              />
+              {rejectReason.trim().length === 0 && (
+                <p className="text-[10px] text-rose-500 font-bold">
+                  {language === 'vi' ? '* Vui lòng nhập lý do từ chối.' : '* Please enter a rejection reason.'}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                onClick={() => {
+                  setRejectDocConfirm(null)
+                  setRejectReason('')
+                }}
+                className="bg-slate-100 text-slate-655 dark:bg-slate-800 dark:text-slate-355 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer"
+              >
+                {language === 'vi' ? 'Hủy' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={handleConfirmReject}
+                disabled={rejectReason.trim().length === 0}
+                className="bg-rose-600 hover:bg-rose-550 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {language === 'vi' ? 'Từ chối duyệt' : 'Reject Document'}
               </Button>
             </div>
           </div>

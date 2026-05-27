@@ -20,6 +20,7 @@ interface WorkspaceFileTableProps {
   onRemoveAccess: (file: SharedFile) => void
   onDownload: (file: SharedFile) => void
   onShareAccess: (file: SharedFile) => void
+  onReport?: (file: SharedFile) => void
 }
 
 export function WorkspaceFileTable({
@@ -35,7 +36,8 @@ export function WorkspaceFileTable({
   onChangePermission,
   onRemoveAccess,
   onDownload,
-  onShareAccess
+  onShareAccess,
+  onReport
 }: WorkspaceFileTableProps) {
   const { t, language } = useTranslation()
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
@@ -244,6 +246,7 @@ export function WorkspaceFileTable({
                             onRename={() => onRename(file)}
                             onChangePermission={() => onChangePermission(file)}
                             onRemoveAccess={() => onRemoveAccess(file)}
+                            onReport={onReport ? () => onReport(file) : undefined}
                             buttonRef={{ current: buttonRefs.current[file.id] } as any}
                           />
                         </td>

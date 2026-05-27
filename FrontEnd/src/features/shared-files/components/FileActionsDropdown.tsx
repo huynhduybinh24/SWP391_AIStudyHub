@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ExternalLink, Edit2, Shield, Trash2, Download, Share2 } from 'lucide-react'
+import { ExternalLink, Edit2, Shield, Trash2, Download, Share2, Flag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 
@@ -17,6 +17,7 @@ interface FileActionsDropdownProps {
   onRename: () => void
   onChangePermission: () => void
   onRemoveAccess: () => void
+  onReport?: () => void
   buttonRef: React.RefObject<HTMLButtonElement | null>
 }
 
@@ -30,9 +31,10 @@ export function FileActionsDropdown({
   onRename,
   onChangePermission,
   onRemoveAccess,
+  onReport,
   buttonRef
 }: FileActionsDropdownProps) {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [_openUpward, setOpenUpward] = useState(false)
   const [coords, setCoords] = useState({ top: 0, left: 0 })
@@ -54,6 +56,7 @@ export function FileActionsDropdown({
     if (isOwner || isEditor) numItems++ // Rename
     if (isOwner) numItems++ // Change Permission
     if (isOwner) numItems++ // Remove Access
+    if (!isOwner && onReport) numItems++ // Report
     const menuHeight = numItems * 44 + 20
     const gap = 8
 
@@ -277,6 +280,26 @@ export function FileActionsDropdown({
               >
                 <Trash2 className="size-4 text-red-500 dark:text-red-400" />
                 <span>{t.sharedFiles.removeAccess}</span>
+              </button>
+            </>
+          )}
+
+          {/* 7. REPORT FILE (Not Owner) */}
+          {!isOwner && onReport && (
+            <>
+              <div className="h-px bg-slate-100 dark:bg-slate-800/60 my-1" />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onReport()
+                  onClose()
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-[13px] font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-55/15 dark:hover:bg-amber-955/20 focus-visible:bg-amber-55/15 dark:focus-visible:bg-amber-955/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+                role="menuitem"
+              >
+                <Flag className="size-4 text-amber-500 dark:text-amber-400" />
+                <span>{language === 'vi' ? 'Báo cáo vi phạm' : 'Report Abuse'}</span>
               </button>
             </>
           )}

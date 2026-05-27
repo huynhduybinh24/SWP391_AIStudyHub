@@ -77,13 +77,6 @@ export const Modal = ({
     }
   }, [isOpen, onClose])
 
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'hidden'
-    }
-  }, [isOpen])
-
   if (!isOpen) return null
 
   return (

@@ -340,20 +340,31 @@ export const getUsers = async (): Promise<AdminUser[]> => {
 
 export const updateUser = async (
   userId: string,
-  updates: Partial<AdminUser>
+  updates: Partial<AdminUser>,
+  reason?: string
 ): Promise<AdminUser> => {
   await randomDelay();
   const index = mockUsers.findIndex((u) => u.id === userId);
   if (index === -1) throw new Error("User not found");
   
+  const user = mockUsers[index];
+  if (updates.status === 'inactive' && reason) {
+    console.log(`[Email Notification Sent] To: ${user.email} | Subject: Account Suspension Notice | Reason: ${reason}`);
+  }
+  
   mockUsers[index] = { ...mockUsers[index], ...updates };
   return { ...mockUsers[index] };
 };
 
-export const deleteUser = async (userId: string): Promise<{ success: boolean }> => {
+export const deleteUser = async (userId: string, reason?: string): Promise<{ success: boolean }> => {
   await randomDelay();
   const index = mockUsers.findIndex((u) => u.id === userId);
   if (index === -1) throw new Error("User not found");
+  
+  const user = mockUsers[index];
+  if (reason) {
+    console.log(`[Email Notification Sent] To: ${user.email} | Subject: Account Termination Notice | Reason: ${reason}`);
+  }
   
   mockUsers = mockUsers.filter((u) => u.id !== userId);
   return { success: true };
@@ -366,11 +377,17 @@ export const getDocuments = async (): Promise<AdminDocument[]> => {
 
 export const updateDocument = async (
   documentId: string,
-  updates: Partial<AdminDocument>
+  updates: Partial<AdminDocument>,
+  reason?: string
 ): Promise<AdminDocument> => {
   await randomDelay();
   const index = mockDocuments.findIndex((d) => d.id === documentId);
   if (index === -1) throw new Error("Document not found");
+  
+  const doc = mockDocuments[index];
+  if (updates.isFlagged === true && reason) {
+    console.log(`[Email Notification Sent] To: ${doc.ownerEmail} | Subject: Document Flagged Notice | Reason: ${reason}`);
+  }
   
   mockDocuments[index] = { ...mockDocuments[index], ...updates };
   return { ...mockDocuments[index] };
@@ -434,7 +451,7 @@ export const approveDocument = async (documentId: string): Promise<AdminDocument
   return { ...mockDocuments[index] };
 };
 
-export const rejectDocument = async (documentId: string): Promise<AdminDocument> => {
+export const rejectDocument = async (documentId: string, reason?: string): Promise<AdminDocument> => {
   await randomDelay();
   const index = mockDocuments.findIndex((d) => d.id === documentId);
   if (index === -1) throw new Error("Document not found");
@@ -443,6 +460,12 @@ export const rejectDocument = async (documentId: string): Promise<AdminDocument>
     ...mockDocuments[index],
     status: "rejected",
   };
+  
+  const doc = mockDocuments[index];
+  if (reason) {
+    console.log(`[Email Notification Sent] To: ${doc.ownerEmail} | Subject: Document Rejection Notice | Reason: ${reason}`);
+  }
+  
   return { ...mockDocuments[index] };
 };
 

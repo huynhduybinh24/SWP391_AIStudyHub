@@ -24,8 +24,8 @@ export function AdminUsersTab({
   onDeleteUser
 }: {
   users: AdminUser[]
-  onUpdateUser: (id: string, updates: Partial<AdminUser>) => void
-  onDeleteUser: (id: string) => void
+  onUpdateUser: (id: string, updates: Partial<AdminUser>, reason?: string) => void
+  onDeleteUser: (id: string, reason?: string) => void
 }) {
   const { language } = useTranslation()
   const toast = useToast()
@@ -36,6 +36,9 @@ export function AdminUsersTab({
 
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
   const [deleteUserConfirm, setDeleteUserConfirm] = useState<AdminUser | null>(null)
+  const [deleteReason, setDeleteReason] = useState('')
+  const [lockUserConfirm, setLockUserConfirm] = useState<AdminUser | null>(null)
+  const [lockReason, setLockReason] = useState('')
   const [pwResetUserConfirm, setPwResetUserConfirm] = useState<AdminUser | null>(null)
   const [editingRoleUser, setEditingRoleUser] = useState<AdminUser | null>(null)
   const [selectedRole, setSelectedRole] = useState<'admin' | 'teacher' | 'student'>('student')
@@ -56,21 +59,40 @@ export function AdminUsersTab({
 
   // Lock/Unlock Account Action
   const toggleLockUser = (id: string, currentStatus: string) => {
-    const nextStatus = currentStatus === 'active' ? 'inactive' : 'active'
-    onUpdateUser(id, { status: nextStatus })
-    const label = nextStatus === 'active'
-      ? (language === 'vi' ? 'Đã mở khóa tài khoản thành công' : 'Account unlocked successfully')
-      : (language === 'vi' ? 'Đã khóa tài khoản thành công' : 'Account locked successfully')
+    if (currentStatus === 'active') {
+      const userToLock = users.find((u) => u.id === id)
+      if (userToLock) {
+        setLockUserConfirm(userToLock)
+        setLockReason('')
+      }
+    } else {
+      onUpdateUser(id, { status: 'active' })
+      const label = language === 'vi' ? 'Đã mở khóa tài khoản thành công' : 'Account unlocked successfully'
+      toast.success(label)
+    }
+  }
+
+  const handleConfirmLockUser = () => {
+    if (!lockUserConfirm) return
+    onUpdateUser(lockUserConfirm.id, { status: 'inactive' }, lockReason)
+    const label = language === 'vi'
+      ? `Đã khóa tài khoản và gửi email thông báo lý do đến ${lockUserConfirm.email} thành công`
+      : `Account locked and notification email with reason sent to ${lockUserConfirm.email} successfully`
     toast.success(label)
+    setLockUserConfirm(null)
+    setLockReason('')
   }
 
   // Delete User Confirm Action
   const handleDeleteUser = () => {
     if (!deleteUserConfirm) return
-    onDeleteUser(deleteUserConfirm.id)
-    const msg = language === 'vi' ? 'Đã xóa người dùng thành công' : 'User deleted successfully'
+    onDeleteUser(deleteUserConfirm.id, deleteReason)
+    const msg = language === 'vi' 
+      ? `Đã xóa người dùng và gửi email thông báo lý do đến ${deleteUserConfirm.email} thành công` 
+      : `User deleted and notification email with reason sent to ${deleteUserConfirm.email} successfully`
     toast.success(msg)
     setDeleteUserConfirm(null)
+    setDeleteReason('')
   }
 
   // Reset Password Action
@@ -419,35 +441,129 @@ export function AdminUsersTab({
       {/* 3. CONFIRM DELETE USER MODAL */}
       <Modal
         isOpen={!!deleteUserConfirm}
-        onClose={() => setDeleteUserConfirm(null)}
+        onClose={() => {
+          setDeleteUserConfirm(null)
+          setDeleteReason('')
+        }}
         title={language === 'vi' ? 'Xóa tài khoản người dùng' : 'Delete User Account'}
-        className="max-w-sm"
+        className="max-w-md"
       >
         {deleteUserConfirm && (
           <div className="space-y-4 text-left">
             <div className="flex gap-3 bg-rose-50 dark:bg-rose-955/10 border border-rose-100 dark:border-rose-900/30 p-3.5 rounded-xl">
               <span className="size-2 rounded-full bg-rose-500 mt-1.5 shrink-0" />
-              <p className="text-xs font-semibold text-rose-800 dark:text-rose-400 leading-normal">
+              <p className="text-xs font-semibold text-rose-800 dark:text-rose-450 leading-normal">
                 {language === 'vi'
                   ? 'Hành động này không thể hoàn tác. Mọi tài liệu và cuộc hội thoại AI của người dùng này sẽ bị xóa vĩnh viễn khỏi hệ thống.'
                   : 'This action is permanent and cannot be undone. User documents and data will be deleted.'}
               </p>
             </div>
+            
             <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300">
               {deleteUserConfirm.name} ({deleteUserConfirm.email})
             </div>
+
+            {/* Deletion Reason Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold text-slate-500 dark:text-slate-400">
+                {language === 'vi' ? 'Lý do xóa tài khoản (sẽ gửi mail cho user):' : 'Reason for deletion (will email user):'}
+              </label>
+              <textarea
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder={language === 'vi' ? 'Nhập lý do xóa tài khoản...' : 'Enter reason for deletion...'}
+                rows={3}
+                className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 font-semibold"
+              />
+              {deleteReason.trim().length === 0 && (
+                <p className="text-[10px] text-rose-500 font-bold">
+                  {language === 'vi' ? '* Vui lòng nhập lý do để tiếp tục.' : '* Please enter a reason to continue.'}
+                </p>
+              )}
+            </div>
+
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <Button
-                onClick={() => setDeleteUserConfirm(null)}
+                onClick={() => {
+                  setDeleteUserConfirm(null)
+                  setDeleteReason('')
+                }}
                 className="bg-slate-100 text-slate-655 dark:bg-slate-800 dark:text-slate-350 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer"
               >
                 {language === 'vi' ? 'Hủy' : 'Cancel'}
               </Button>
               <Button
                 onClick={handleDeleteUser}
-                className="bg-rose-600 hover:bg-rose-550 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer"
+                disabled={deleteReason.trim().length === 0}
+                className="bg-rose-600 hover:bg-rose-550 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {language === 'vi' ? 'Xóa vĩnh viễn' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* 3.5. CONFIRM LOCK USER MODAL */}
+      <Modal
+        isOpen={!!lockUserConfirm}
+        onClose={() => {
+          setLockUserConfirm(null)
+          setLockReason('')
+        }}
+        title={language === 'vi' ? 'Khóa tài khoản người dùng' : 'Lock User Account'}
+        className="max-w-md"
+      >
+        {lockUserConfirm && (
+          <div className="space-y-4 text-left">
+            <div className="flex gap-3 bg-amber-50 dark:bg-amber-955/10 border border-amber-100 dark:border-amber-900/30 p-3.5 rounded-xl">
+              <span className="size-2 rounded-full bg-amber-500 mt-1.5 shrink-0 animate-pulse" />
+              <p className="text-xs font-semibold text-amber-800 dark:text-amber-450 leading-normal">
+                {language === 'vi'
+                  ? 'Tài khoản của thành viên này sẽ tạm thời bị đình chỉ. Họ sẽ không thể đăng nhập hoặc thực hiện bất kỳ hoạt động nào trên hệ thống.'
+                  : 'This user account will be suspended temporarily. They will not be able to log in or perform any actions.'}
+              </p>
+            </div>
+            
+            <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300">
+              {lockUserConfirm.name} ({lockUserConfirm.email})
+            </div>
+
+            {/* Lock Reason Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold text-slate-500 dark:text-slate-400">
+                {language === 'vi' ? 'Lý do khóa tài khoản (sẽ gửi mail cho user):' : 'Reason for suspension (will email user):'}
+              </label>
+              <textarea
+                value={lockReason}
+                onChange={(e) => setLockReason(e.target.value)}
+                placeholder={language === 'vi' ? 'Nhập lý do khóa tài khoản...' : 'Enter reason for suspension...'}
+                rows={3}
+                className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 font-semibold"
+              />
+              {lockReason.trim().length === 0 && (
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">
+                  {language === 'vi' ? '* Vui lòng nhập lý do để tiếp tục.' : '* Please enter a reason to continue.'}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                onClick={() => {
+                  setLockUserConfirm(null)
+                  setLockReason('')
+                }}
+                className="bg-slate-100 text-slate-655 dark:bg-slate-800 dark:text-slate-350 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer"
+              >
+                {language === 'vi' ? 'Hủy' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={handleConfirmLockUser}
+                disabled={lockReason.trim().length === 0}
+                className="bg-amber-600 hover:bg-amber-550 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {language === 'vi' ? 'Khóa tài khoản' : 'Suspend Account'}
               </Button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
+import { cn } from '@/lib/utils'
 
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
@@ -31,6 +32,8 @@ import AIInsightsModal from '../components/AIInsightsModal'
 import AddCollaboratorModal from '../components/AddCollaboratorModal'
 import { SharedFile } from '../components/SharedFilesTable'
 import { X, HardDrive } from 'lucide-react'
+import { Modal } from '@/components/ui/Modal'
+import { FileTypeIcon } from '../components/FileTypeIcon'
 
 // Inline Quota details view modal
 interface QuotaDetailsModalProps {
@@ -319,6 +322,11 @@ export function SharedFilesPage() {
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+
+  // Report Document States
+  const [reportDoc, setReportDoc] = useState<SharedFile | null>(null)
+  const [reportReason, setReportReason] = useState('')
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false)
 
   const [activeCollaborators, setActiveCollaborators] = useState<ActiveCollaborator[]>([
     {
@@ -1111,6 +1119,10 @@ export function SharedFilesPage() {
                 const prefix = language === 'vi' ? 'Đang chia sẻ' : (language === 'ja' ? '共有中' : (language === 'ko' ? '공유 중' : 'Sharing'))
                 toast.success(`${prefix} ${file.name}`)
               }}
+              onReport={(file) => {
+                setReportDoc(file)
+                setReportReason('')
+              }}
             />
           </motion.div>
         </motion.div>
@@ -1344,6 +1356,139 @@ export function SharedFilesPage() {
           toast.success(t.toasts?.uploadSuccess || 'File uploaded successfully')
         }}
       />
+
+      {/* Custom Report File Modal */}
+      <Modal
+        isOpen={!!reportDoc}
+        onClose={() => setReportDoc(null)}
+        title={language === 'vi' ? 'Báo cáo tài liệu vi phạm' : 'Report Document Violation'}
+        className="max-w-md"
+      >
+        {reportDoc && (
+          <div className="space-y-4 text-left">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex gap-3 text-xs text-amber-800 dark:text-amber-350 font-medium">
+              <span className="text-lg">⚠️</span>
+              <div>
+                <p className="font-extrabold text-amber-900 dark:text-amber-300 mb-1">
+                  {language === 'vi' ? 'Lưu ý kiểm duyệt' : 'Moderation Warning'}
+                </p>
+                <p className="leading-relaxed font-semibold">
+                  {language === 'vi' 
+                    ? 'Báo cáo của bạn sẽ được gửi trực tiếp đến quản trị viên hệ thống để kiểm duyệt và đưa ra quyết định xử lý (cắm cờ, từ chối, hoặc xóa tài liệu).' 
+                    : 'Your report will be forwarded to system administrators for moderation and action (flagging, rejection, or deletion).'}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
+                {language === 'vi' ? 'Tài liệu bị báo cáo' : 'Reported Document'}
+              </label>
+              <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-205 dark:border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
+                <FileTypeIcon type={reportDoc.type} className="shrink-0 size-9" />
+                <div className="min-w-0">
+                  <h4 className="text-sm font-extrabold text-slate-800 dark:text-white truncate">
+                    {reportDoc.name}
+                  </h4>
+                  <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">
+                    {language === 'vi' ? `Tải lên bởi: ${reportDoc.owner}` : `Uploaded by: ${reportDoc.owner}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
+                {language === 'vi' ? 'Lý do báo cáo vi phạm' : 'Reason for Report'}
+              </label>
+              <textarea
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                placeholder={
+                  language === 'vi'
+                    ? 'Vui lòng cung cấp lý do chi tiết (tối thiểu 10 ký tự)... Ví dụ: chứa tài liệu rò rỉ đề thi, quảng cáo spam, vi phạm bản quyền...'
+                    : 'Please provide details (minimum 10 characters)... E.g. contains exam leaks, spam, plagiarism...'
+                }
+                className="w-full h-32 px-4 py-3 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/50 dark:text-white text-sm font-semibold transition-all resize-none placeholder-slate-400"
+              />
+              <div className="flex justify-between items-center mt-1.5 px-1 font-semibold">
+                <span className={cn(
+                  "text-[10px]",
+                  reportReason.trim().length >= 10 ? "text-emerald-500 font-bold" : "text-slate-400 dark:text-slate-500"
+                )}>
+                  {language === 'vi' 
+                    ? `Độ dài: ${reportReason.trim().length}/10 ký tự` 
+                    : `Length: ${reportReason.trim().length}/10 chars`}
+                </span>
+                {reportReason.trim().length > 0 && reportReason.trim().length < 10 && (
+                  <span className="text-[10px] font-bold text-red-500">
+                    {language === 'vi' ? 'Lý do quá ngắn' : 'Reason too short'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setReportDoc(null)}
+                disabled={isSubmittingReport}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-350 dark:hover:bg-slate-700 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {language === 'vi' ? 'Hủy bỏ' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                disabled={reportReason.trim().length < 10 || isSubmittingReport}
+                onClick={async () => {
+                  setIsSubmittingReport(true)
+                  try {
+                    // Let's call the report submission logic:
+                    // 1. Create a reported ticket in localStorage
+                    const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
+                    localReports.push({
+                      id: `rep-${Date.now()}`,
+                      reportedFile: reportDoc.name,
+                      documentId: reportDoc.id,
+                      reporterName: user?.name || 'Alex Rivera',
+                      reporterEmail: user?.email || 'alex@example.com',
+                      reason: reportReason.trim(),
+                      reportedAt: new Date().toISOString()
+                    })
+                    localStorage.setItem('aiStudyHubDocumentReports', JSON.stringify(localReports))
+
+                    // 2. Dispatch event so other components know if they're listening
+                    window.dispatchEvent(new Event('aiStudyHubDocumentReportsUpdated'))
+
+                    // 3. Show beautiful notification
+                    const successMsg = language === 'vi'
+                      ? `Đã gửi báo cáo vi phạm cho tài liệu "${reportDoc.name}" tới Quản trị viên thành công!`
+                      : `Violation report for "${reportDoc.name}" successfully submitted to Administrator!`
+                    toast.success(successMsg)
+                    
+                    setReportDoc(null)
+                    setReportReason('')
+                  } catch (err) {
+                    toast.error(language === 'vi' ? 'Gửi báo cáo thất bại, vui lòng thử lại!' : 'Failed to submit report!')
+                  } finally {
+                    setIsSubmittingReport(false)
+                  }
+                }}
+                className={cn(
+                  "px-5 py-2.5 rounded-xl text-xs font-extrabold text-white transition-all shadow-md cursor-pointer",
+                  reportReason.trim().length >= 10 && !isSubmittingReport
+                    ? "bg-amber-600 hover:bg-amber-700 shadow-amber-600/10 hover:shadow-lg"
+                    : "bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-655 cursor-not-allowed shadow-none"
+                )}
+              >
+                {isSubmittingReport 
+                  ? (language === 'vi' ? 'Đang gửi...' : 'Submitting...') 
+                  : (language === 'vi' ? 'Xác nhận gửi' : 'Confirm & Submit')}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </motion.div>
   )
 }
