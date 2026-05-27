@@ -1,7 +1,7 @@
 import React from 'react';
 import { Folder, Calendar, ExternalLink, Eye } from 'lucide-react';
 
-export type NotificationType = 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard';
+export type NotificationType = 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard' | 'document_deleted';
 
 export interface NotificationButton {
   text: string;
@@ -54,6 +54,26 @@ const saveReadStateMap = (map: Record<string, boolean>) => {
   } catch (err) {
     console.error('Failed to save notification read state', err);
   }
+};
+
+const getPersistedUserNotifications = (): Notification[] => {
+  try {
+    const stored = localStorage.getItem('aiStudyHubUserNotifications');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.map((item: any) => ({
+        id: item.id,
+        type: item.type === 'document_deleted' ? 'document_deleted' : item.type,
+        title: item.title,
+        time: item.time || 'Just now',
+        isRead: !!item.isRead,
+        description: item.message || item.description,
+      }));
+    }
+  } catch (err) {
+    console.error('Failed to read aiStudyHubUserNotifications', err);
+  }
+  return [];
 };
 
 // Base mock data without isRead
@@ -233,26 +253,48 @@ export const notificationApi = {
       isRead: !!readState[item.id]
     }));
 
+    const persisted = getPersistedUserNotifications();
+    const merged = [...persisted, ...baseData];
+
     switch (filter) {
       case 'unread':
-        return baseData.filter(item => !item.isRead);
+        return merged.filter(item => !item.isRead);
       case 'mentions':
-        return baseData.filter(item => item.id === 'emily' || item.id === 'mention-2');
+        return merged.filter(item => item.id === 'emily' || item.id === 'mention-2');
       case 'shared-files':
       case 'sharedfiles':
-        return baseData.filter(item => item.id === 'shared-folder' || item.id === 'shared-doc-1');
+        return merged.filter(item => item.id === 'shared-folder' || item.id === 'shared-doc-1');
       case 'ai-updates':
       case 'aiupdates':
-        return baseData.filter(item => item.id === 'ai-summary' || item.id === 'study-plan' || item.id === 'flashcards');
+        return merged.filter(item => item.id === 'ai-summary' || item.id === 'study-plan' || item.id === 'flashcards');
       case 'all':
       default:
         // By original logic, "All" shows specific 3 notifications
-        return baseData.filter(item => item.id === 'ai-summary' || item.id === 'shared-folder' || item.id === 'all-3');
+        return merged.filter(item => item.type === 'document_deleted' || item.id === 'ai-summary' || item.id === 'shared-folder' || item.id === 'all-3');
     }
   },
 
   markAsRead: async (id: string): Promise<void> => {
     // We don't simulate delay here for snappy UI, or we can just simulate a tiny one.
+    try {
+      const stored = localStorage.getItem('aiStudyHubUserNotifications');
+      if (stored) {
+        let parsed = JSON.parse(stored);
+        let found = false;
+        parsed = parsed.map((item: any) => {
+          if (item.id === id) {
+            found = true;
+            return { ...item, isRead: true };
+          }
+          return item;
+        });
+        if (found) {
+          localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(parsed));
+          window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+        }
+      }
+    } catch (e) {}
+
     const readState = getReadStateMap();
     if (!readState[id]) {
       readState[id] = true;

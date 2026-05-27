@@ -72,6 +72,7 @@ export function AdminDocumentsTab() {
   // Modal states
   const [previewDoc, setPreviewDoc] = useState<AdminDocument | null>(null)
   const [deleteDoc, setDeleteDoc] = useState<AdminDocument | null>(null)
+  const [deleteReason, setDeleteReason] = useState('')
   const [adminFeedback, setAdminFeedback] = useState('')
   const [deleteReason, setDeleteReason] = useState('')
 
@@ -264,8 +265,12 @@ export function AdminDocumentsTab() {
   };
 
   const handleDeleteConfirm = () => {
-    if (!deleteDoc) return
-    onDeleteDocument(deleteDoc.id)
+    if (!deleteDoc) return;
+    if (deleteReason.length < 10) {
+      toast.error(language === 'vi' ? 'Vui lòng nhập lý do xóa ít nhất 10 ký tự.' : 'Please provide a deletion reason with at least 10 characters.');
+      return;
+    }
+    onDeleteDocument(deleteDoc.id, deleteReason)
     if (previewDoc && previewDoc.id === deleteDoc.id) {
       setPreviewDoc(null)
     }
@@ -1267,6 +1272,26 @@ export function AdminDocumentsTab() {
                 className="w-full h-24 p-3.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-650 font-medium leading-relaxed resize-none transition-all"
                 required
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-extrabold text-slate-455 dark:text-slate-500 uppercase tracking-widest block">
+                {language === 'vi' ? 'Lý do xóa' : 'Deletion reason'}
+              </label>
+              <textarea
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder={language === 'vi' ? 'Giải thích lý do tài liệu này bị xóa...' : 'Explain why this document is being removed...'}
+                className="w-full h-[100px] p-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-655 font-medium leading-relaxed resize-none transition-all"
+              />
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-1">
+                {language === 'vi' ? 'Lý do này sẽ được hiển thị cho chủ sở hữu tài liệu.' : 'This reason will be shown to the document owner.'}
+              </p>
+              {deleteReason.length > 0 && deleteReason.length < 10 && (
+                <p className="text-[10px] text-rose-500 font-semibold mt-1">
+                  {language === 'vi' ? 'Vui lòng nhập lý do xóa ít nhất 10 ký tự.' : 'Please provide a deletion reason with at least 10 characters.'}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
