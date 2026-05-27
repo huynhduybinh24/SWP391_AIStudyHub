@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, ChevronDown, Wrench, CheckCircle, FileText } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, ChevronDown, Wrench, CheckCircle, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useSearchParams } from 'react-router-dom'
 import { AdminOverviewTab } from '@/features/admin/components/AdminOverviewTab'
@@ -25,6 +25,54 @@ export function AdminDashboardPage() {
   const [systemStatus, setSystemStatus] = useState<SystemStatusState>(getSystemStatusSync())
   const [statusMenuOpen, setStatusMenuOpen] = useState(false)
   const [maintenanceConfirmOpen, setMaintenanceConfirmOpen] = useState(false)
+
+  const tabsRef = useRef<HTMLDivElement>(null)
+  const [showLeftArrow, setShowLeftArrow] = useState(false)
+  const [showRightArrow, setShowRightArrow] = useState(true)
+
+  const handleScroll = () => {
+    if (!tabsRef.current) return
+    const { scrollLeft, scrollWidth, clientWidth } = tabsRef.current
+    setShowLeftArrow(scrollLeft > 0)
+    // Add small tolerance (e.g. 2px) for zoom or rounding issues
+    setShowRightArrow(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 2)
+  }
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    if (!tabsRef.current) return
+    const scrollAmount = 300
+    tabsRef.current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    const el = tabsRef.current
+    if (!el) return
+    const handleNativeWheel = (e: WheelEvent) => {
+      // If we are scrolling vertically and not horizontally
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault()
+        el.scrollLeft += e.deltaY
+      }
+    }
+    el.addEventListener('wheel', handleNativeWheel, { passive: false })
+    return () => el.removeEventListener('wheel', handleNativeWheel)
+  }, [])
+
+  useEffect(() => {
+    if (tabsRef.current) {
+      const activeElement = tabsRef.current.querySelector('[data-active="true"]')
+      if (activeElement) {
+        activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+      }
+    }
+    setTimeout(handleScroll, 150)
+  }, [activeTab])
+  
+  useEffect(() => {
+    setTimeout(handleScroll, 100)
+    window.addEventListener('resize', handleScroll)
+    return () => window.removeEventListener('resize', handleScroll)
+  }, [])
 
   useEffect(() => {
     const handleStatusUpdate = () => {
@@ -306,8 +354,20 @@ export function AdminDashboardPage() {
       </div>
 
       <div className="relative w-full border-b border-slate-200 dark:border-slate-800">
+        {/* Left arrow with fade */}
+        <div className={`absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white via-white/80 to-transparent dark:from-slate-900 dark:via-slate-900/80 z-10 flex items-center transition-opacity duration-300 ${showLeftArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+          <button 
+            onClick={() => scrollTabs('left')}
+            className="ml-1 p-1.5 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+        </div>
+
         <div 
-          className="flex w-full scroll-smooth overflow-x-auto overflow-y-hidden whitespace-nowrap gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          ref={tabsRef}
+          onScroll={handleScroll}
+          className="flex w-full scroll-smooth overflow-x-auto overflow-y-hidden whitespace-nowrap gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] relative"
         >
           {tabItems.map((tab) => {
             const Icon = tab.icon
@@ -315,6 +375,7 @@ export function AdminDashboardPage() {
             return (
               <button
                 key={tab.id}
+                data-active={isActive}
                 onClick={() => setActiveTab(tab.id)}
                 className={`shrink-0 flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all duration-200 whitespace-nowrap cursor-pointer ${
                   isActive
@@ -327,6 +388,16 @@ export function AdminDashboardPage() {
               </button>
             )
           })}
+        </div>
+
+        {/* Right arrow with fade */}
+        <div className={`absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white via-white/80 to-transparent dark:from-slate-900 dark:via-slate-900/80 z-10 flex items-center justify-end transition-opacity duration-300 ${showRightArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+          <button 
+            onClick={() => scrollTabs('right')}
+            className="mr-1 p-1.5 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            <ChevronRight className="size-4" />
+          </button>
         </div>
       </div>
 
