@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Bell, BookOpen, Bot, Calendar, Share2, Check, AlertTriangle } from 'lucide-react'
+import { Bell, BookOpen, Bot, Calendar, Share2, Check, AlertTriangle, XCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/components/ui/Toast'
 import { MockNotification } from './Header'
@@ -24,6 +24,7 @@ export function NotificationDropdown({ onClose, notifications, markAsRead, markA
     if (title === 'New shared folder') return t.header.notifShareTitle
     if (title === 'AI Summary generated') return t.header.notifSummaryTitle
     if (title === 'Document removed by admin') return language === 'vi' ? 'Tài liệu đã bị quản trị viên xóa' : title
+    if (title === 'Document rejected by admin') return language === 'vi' ? 'Tài liệu đã bị quản trị viên từ chối' : title
     return title
   }
 
@@ -38,6 +39,15 @@ export function NotificationDropdown({ onClose, notifications, markAsRead, markA
         const reasonMatch = desc.match(/Reason:\s*(.*)$/)
         if (docNameMatch && reasonMatch) {
           return `Tài liệu "${docNameMatch[1]}" của bạn đã bị quản trị viên xóa. Lý do: ${reasonMatch[1]}`
+        }
+      }
+    }
+    if (desc.includes('was rejected by admin')) {
+      if (language === 'vi') {
+        const docNameMatch = desc.match(/"([^"]+)"/)
+        const reasonMatch = desc.match(/Reason:\s*(.*)$/)
+        if (docNameMatch && reasonMatch) {
+          return `Tài liệu "${docNameMatch[1]}" của bạn đã bị quản trị viên từ chối. Lý do: ${reasonMatch[1]}`
         }
       }
     }
@@ -69,6 +79,8 @@ export function NotificationDropdown({ onClose, notifications, markAsRead, markA
         return <Share2 className="size-4 text-amber-500" />
       case 'document_deleted':
         return <AlertTriangle className="size-4 text-rose-500" />
+      case 'document_rejected':
+        return <XCircle className="size-4 text-rose-500" />
       case 'chat':
       default:
         return <Bot className="size-4 text-purple-500" />
@@ -119,7 +131,7 @@ export function NotificationDropdown({ onClose, notifications, markAsRead, markA
             }`}
           >
             <div className={`mt-0.5 size-7 rounded-lg border flex items-center justify-center shrink-0 ${
-              item.type === 'document_deleted'
+              (item.type === 'document_deleted' || item.type === 'document_rejected')
                 ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20'
                 : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
             }`}>

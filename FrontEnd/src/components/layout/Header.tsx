@@ -52,7 +52,7 @@ export interface MockNotification {
   title: string
   description: string
   time: string
-  type: 'doc' | 'chat' | 'plan' | 'share' | 'document_deleted'
+  type: 'doc' | 'chat' | 'plan' | 'share' | 'document_deleted' | 'document_rejected'
   isRead: boolean
 }
 
@@ -149,29 +149,32 @@ export function Header() {
   useEffect(() => {
     const handleUpdate = () => setNotifications(loadNotifications())
     window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
-    return () => window.removeEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+    window.addEventListener('storage', handleUpdate)
+    return () => {
+      window.removeEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+      window.removeEventListener('storage', handleUpdate)
+    }
   }, [])
 
   // Single source of truth for all unread indicators (Bell red dot, Dropdown title badge, Item dots)
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
   const markAsRead = (id: string) => {
+    if (id.startsWith('usr-ntf-')) {
+      import('@/features/notifications/services/userNotificationService').then((m) => {
+        m.userNotificationService.markUserNotificationAsRead(id)
+      })
+    }
+    
     setNotifications((prev) => {
       const updated = prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       
       try {
-        const savedNotifs = localStorage.getItem('aiStudyHubUserNotifications')
-        if (savedNotifs) {
-          let parsed = JSON.parse(savedNotifs)
-          parsed = parsed.map((n: any) => n.id === id ? { ...n, isRead: true } : n)
-          localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(parsed))
-        }
-      } catch (err) {}
-
-      try {
         const readMap: Record<string, boolean> = {}
         updated.forEach((n) => {
-          readMap[n.id] = n.isRead
+          if (!n.id.startsWith('usr-ntf-')) {
+            readMap[n.id] = n.isRead
+          }
         })
         localStorage.setItem('aiStudyHubHeaderNotificationsReadState', JSON.stringify(readMap))
       } catch (err) {
@@ -182,22 +185,19 @@ export function Header() {
   }
 
   const markAllAsRead = () => {
+    import('@/features/notifications/services/userNotificationService').then((m) => {
+      m.userNotificationService.markAllUserNotificationsAsRead()
+    })
+    
     setNotifications((prev) => {
       const updated = prev.map((n) => ({ ...n, isRead: true }))
       
       try {
-        const savedNotifs = localStorage.getItem('aiStudyHubUserNotifications')
-        if (savedNotifs) {
-          let parsed = JSON.parse(savedNotifs)
-          parsed = parsed.map((n: any) => ({ ...n, isRead: true }))
-          localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(parsed))
-        }
-      } catch (err) {}
-
-      try {
         const readMap: Record<string, boolean> = {}
         updated.forEach((n) => {
-          readMap[n.id] = n.isRead
+          if (!n.id.startsWith('usr-ntf-')) {
+            readMap[n.id] = n.isRead
+          }
         })
         localStorage.setItem('aiStudyHubHeaderNotificationsReadState', JSON.stringify(readMap))
       } catch (err) {
