@@ -7,7 +7,9 @@ import {
   Unlock,
   Key,
   UserCheck,
-  UserX
+  UserX,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
@@ -382,13 +384,14 @@ export function AdminUsersTab({
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
               className={cn(
-                "px-3 py-1.5 rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 font-bold transition-all text-xs cursor-pointer select-none",
+                "h-8 w-8 rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 flex items-center justify-center font-bold transition-all text-xs cursor-pointer select-none",
                 currentPage === 1
                   ? "opacity-40 cursor-not-allowed border-slate-100 dark:border-slate-850"
                   : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95"
               )}
+              title={language === 'vi' ? 'Trang trước' : 'Previous page'}
             >
-              {language === 'vi' ? 'Trước' : 'Previous'}
+              <ChevronLeft className="h-4 w-4" />
             </button>
 
             {/* Page numbers */}
@@ -414,13 +417,14 @@ export function AdminUsersTab({
               onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
               className={cn(
-                "px-3 py-1.5 rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 font-bold transition-all text-xs cursor-pointer select-none",
+                "h-8 w-8 rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 flex items-center justify-center font-bold transition-all text-xs cursor-pointer select-none",
                 currentPage === totalPages
                   ? "opacity-40 cursor-not-allowed border-slate-100 dark:border-slate-850"
                   : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95"
               )}
+              title={language === 'vi' ? 'Trang sau' : 'Next page'}
             >
-              {language === 'vi' ? 'Sau' : 'Next'}
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         </div>
