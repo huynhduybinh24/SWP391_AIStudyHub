@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   FileText,
   Search,
@@ -50,7 +51,14 @@ export function AdminDocumentsTab({
   const toast = useToast()
 
   // Filter & Search states
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchParams] = useSearchParams()
+  const keywordParam = searchParams.get('keyword') || ''
+  const [searchTerm, setSearchTerm] = useState(keywordParam)
+
+  useEffect(() => {
+    setSearchTerm(keywordParam)
+  }, [keywordParam])
+
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [aiRiskFilter, setAiRiskFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all')
   const [plagiarismFilter, setPlagiarismFilter] = useState<'all' | 'plagiarized' | 'clean'>('all')
