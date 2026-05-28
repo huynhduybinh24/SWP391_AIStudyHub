@@ -1,22 +1,13 @@
-<<<<<<< HEAD
-import { useState, useEffect, useCallback } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff, AlertTriangle, Sparkles } from 'lucide-react'
-=======
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff, AlertTriangle, XCircle, Trash2 } from 'lucide-react'
->>>>>>> 85675351f463828a5567fd32fc62c0f0cfa098e2
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff, AlertTriangle, Sparkles, XCircle, Trash2 } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { notificationApi, Notification } from '../api/notification.api'
 import { getCurrentUser } from '../services/userNotificationService'
 import { useTranslation } from '@/context/LanguageContext'
-<<<<<<< HEAD
 import { realtimeNotificationManager } from '../services/notificationRealtime'
-
-=======
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
->>>>>>> 85675351f463828a5567fd32fc62c0f0cfa098e2
 
 
 // Reusable Sub-component: Notification Card
