@@ -272,7 +272,7 @@ export function AdminUsersTab({
 
                       {/* Storage used */}
                       <td className="p-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                        {(u.storageUsedMB / 1024).toFixed(2)} GB / 10 GB
+                        {(u.storageUsedMB / 1024).toFixed(2)} GB / {u.plan === 'pro' ? 50 : 10} GB
                       </td>
 
                       {/* Last Active */}
@@ -519,12 +519,12 @@ export function AdminUsersTab({
                   <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-blue-600 dark:bg-blue-500 rounded-full" 
-                      style={{ width: `${(selectedUser.storageUsedMB / 10240) * 100}%` }}
+                      style={{ width: `${(selectedUser.storageUsedMB / (selectedUser.plan === 'pro' ? 51200 : 10240)) * 100}%` }}
                     />
                   </div>
                   <div className="flex justify-between font-extrabold text-[10px] text-slate-450 dark:text-slate-500">
                     <span>{(selectedUser.storageUsedMB / 1024).toFixed(2)} GB {language === 'vi' ? 'đã dùng' : 'used'}</span>
-                    <span>10 GB</span>
+                    <span>{selectedUser.plan === 'pro' ? 50 : 10} GB</span>
                   </div>
                 </div>
               </div>
