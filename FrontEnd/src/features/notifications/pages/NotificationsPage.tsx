@@ -682,8 +682,8 @@ export function NotificationsPage() {
     }
   }
 
-  const fetchNotifications = useCallback(async (filter: string) => {
-    setLoading(true)
+  const fetchNotifications = useCallback(async (filter: string, showSilent: boolean = false) => {
+    if (!showSilent) setLoading(true)
     setError(null)
     try {
       const data = await notificationApi.getNotifications(filter)
@@ -691,7 +691,7 @@ export function NotificationsPage() {
     } catch (err) {
       setError(language === 'vi' ? 'Không thể tải thông báo' : language === 'ja' ? '通知の取得に失敗しました' : language === 'ko' ? '알림을 가져오는 데 실패했습니다' : 'Failed to fetch notifications')
     } finally {
-      setLoading(false)
+      if (!showSilent) setLoading(false)
     }
   }, [language])
 
@@ -715,7 +715,7 @@ export function NotificationsPage() {
 
   useEffect(() => {
     const handleUserChanged = () => {
-      fetchNotifications(filterParam)
+      fetchNotifications(filterParam, true)
     }
     window.addEventListener('aiStudyHubUserChanged', handleUserChanged)
     window.addEventListener('aiStudyHubNotificationsUpdated', handleUserChanged)
@@ -913,7 +913,7 @@ export function NotificationsPage() {
         ) : notifications.length > 0 ? (
           notifications.map((notification) => {
             let cardButtons = notification.buttons;
-            if (notification.type === 'document_deleted' || notification.type === 'document_rejected') {
+            if (!cardButtons || cardButtons.length === 0) {
               cardButtons = [{
                 text: language === 'vi' ? 'Xem chi tiết' : 'View Details',
                 variant: 'secondary' as const,
@@ -930,9 +930,7 @@ export function NotificationsPage() {
                 replyText={replyText}
                 onMarkRead={() => handleMarkAsRead(notification.id)}
                 onClick={() => {
-                  if (notification.type === 'document_deleted' || notification.type === 'document_rejected') {
-                    setSelectedDetailNotification(notification)
-                  }
+                  setSelectedDetailNotification(notification)
                 }}
                 onReplyClick={() => {
                   if (notification.id === 'emily' || notification.id === 'all-3') {
@@ -970,56 +968,79 @@ export function NotificationsPage() {
       <Modal
         isOpen={!!selectedDetailNotification}
         onClose={() => setSelectedDetailNotification(null)}
-        title={t.notificationsPage.detailModalTitle}
+        title={selectedDetailNotification?.title || t.notificationsPage.detailModalTitle}
         className="max-w-md"
       >
         {selectedDetailNotification && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailDocName}:</span>
-              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                {(() => {
-                  const desc = typeof selectedDetailNotification.description === 'string' 
-                    ? selectedDetailNotification.description 
-                    : '';
-                  const match = desc.match(/"([^"]+)"/);
-                  return match ? match[1] : 'Unknown Document';
-                })()}
-              </span>
-            </div>
-            <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailActionType}:</span>
-              <span className={cn(
-                "text-sm font-semibold w-fit px-2.5 py-0.5 rounded-full",
-                selectedDetailNotification.actionType === 'removed' 
-                  ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400" 
-                  : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
-              )}>
-                {selectedDetailNotification.actionType === 'removed' ? t.notificationsPage.actionRemoved : t.notificationsPage.actionRejected}
-              </span>
-            </div>
-            <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
-              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailTime}:</span>
-              <span className="text-sm text-slate-900 dark:text-slate-300">
-                {selectedDetailNotification.time}
-              </span>
-            </div>
-            <div className="grid grid-cols-[120px_1fr] gap-2 items-start mt-2 border-t border-slate-100 dark:border-slate-800 pt-4">
-              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailReason}:</span>
-              <div className="text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                {selectedDetailNotification.adminNote || (
-                  (() => {
-                    const desc = typeof selectedDetailNotification.description === 'string' 
-                      ? selectedDetailNotification.description 
-                      : '';
-                    const match = desc.match(/Reason:\s*(.*)$/);
-                    return match ? match[1] : t.notificationsPage.noReasonProvided;
-                  })()
+          <div className="space-y-4 pt-2">
+            {selectedDetailNotification.type === 'system' || !selectedDetailNotification.actionType ? (
+              // System / General Notification Details
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Message Details</span>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-350 leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    {selectedDetailNotification.description}
+                  </p>
+                </div>
+                {selectedDetailNotification.adminNote && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">Feedback / Reason</span>
+                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-450 bg-rose-50 dark:bg-rose-950/20 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/10">
+                      {selectedDetailNotification.adminNote}
+                    </p>
+                  </div>
                 )}
               </div>
+            ) : (
+              // Document Rejection / Deletion Details
+              <div className="space-y-3">
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailDocName}:</span>
+                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {selectedDetailNotification.documentName || (() => {
+                      const desc = typeof selectedDetailNotification.description === 'string' 
+                        ? selectedDetailNotification.description 
+                        : '';
+                      const match = desc.match(/"([^"]+)"/);
+                      return match ? match[1] : 'Unknown Document';
+                    })()}
+                  </span>
+                </div>
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailActionType}:</span>
+                  <span className={cn(
+                    "text-sm font-semibold w-fit px-2.5 py-0.5 rounded-full",
+                    selectedDetailNotification.actionType === 'removed' 
+                      ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400" 
+                      : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
+                  )}>
+                    {selectedDetailNotification.actionType === 'removed' ? t.notificationsPage.actionRemoved : t.notificationsPage.actionRejected}
+                  </span>
+                </div>
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-start mt-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+                  <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailReason}:</span>
+                  <div className="text-sm text-slate-700 dark:text-slate-350 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+                    {selectedDetailNotification.adminNote || (
+                      (() => {
+                        const desc = typeof selectedDetailNotification.description === 'string' 
+                          ? selectedDetailNotification.description 
+                          : '';
+                        const match = desc.match(/Reason:\s*(.*)$/);
+                        return match ? match[1] : t.notificationsPage.noReasonProvided;
+                      })()
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-[120px_1fr] gap-2 items-start text-xs text-slate-400 mt-2">
+              <span>{t.notificationsPage.detailTime}:</span>
+              <span>{selectedDetailNotification.time}</span>
             </div>
+            
             <div className="mt-6 flex justify-end">
-              <Button onClick={() => setSelectedDetailNotification(null)}>
+              <Button onClick={() => setSelectedDetailNotification(null)} className="cursor-pointer">
                 {t.common.close}
               </Button>
             </div>

@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   History,
   XCircle,
-  Calendar
+  Calendar,
+  Shield
 } from 'lucide-react';
 import { AppFooter } from '@/components/shared/AppFooter';
 import { partnershipService } from '@/services/partnershipService';
@@ -94,10 +95,28 @@ const FAQS = [
   }
 ];
 
+const ORGANIZATIONS_SUGGESTIONS = [
+  'FPT University (FPTU)',
+  'Hanoi University of Science and Technology (HUST)',
+  'Vietnam National University (VNU)',
+  'Foreign Trade University (FTU)',
+  'Ton Duc Thang University (TDTU)',
+  'RMIT University Vietnam',
+  'National Economics University (NEU)',
+  'Ho Chi Minh City University of Technology (HCMUT)',
+  'Hanoi University (HANU)',
+  'University of Economics HCMC (UEH)',
+  'University of Science HCMC (HCMUS)',
+  'Ho Chi Minh City University of Education (HCMUE)',
+  'Da Nang University',
+  'Can Tho University'
+];
+
 export function PartnershipPage() {
   const navigate = useNavigate();
   const { language } = useTranslation();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
   const currentUser = useAuthStore((state) => state.user);
   
@@ -113,6 +132,7 @@ export function PartnershipPage() {
   // User Requests list & loading state
   const [userRequests, setUserRequests] = useState<any[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'rejected'>('all');
 
   const fetchUserRequests = async () => {
     if (currentUser?.email) {
@@ -135,6 +155,7 @@ export function PartnershipPage() {
   // Determine if form is blocked: blocked if any request is NOT rejected (i.e. Pending or Approved)
   const activeRequest = userRequests.find(req => req.status === 'Pending' || req.status === 'Approved');
   const isFormBlocked = !!activeRequest;
+  const isAdmin = currentUser?.role?.toLowerCase() === 'admin';
 
   // Pre-fill form when currentUser is available
   useEffect(() => {
@@ -185,16 +206,6 @@ export function PartnershipPage() {
     try {
       await partnershipService.submitRequest(form);
       setIsSuccess(true);
-      
-      // If logged-in user is a teacher and matches the submitted email, update their store state!
-      if (currentUser && currentUser.email?.toLowerCase() === form.email.toLowerCase() && currentUser.role?.toLowerCase() === 'teacher') {
-        useAuthStore.setState({
-          user: {
-            ...currentUser,
-            plan: 'pro'
-          }
-        });
-      }
 
       setForm({
         fullName: '',
@@ -294,7 +305,28 @@ export function PartnershipPage() {
           {/* Left Column: Form */}
           <section id="partnership-form" className="lg:col-span-7">
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 md:p-10 shadow-sm flex flex-col gap-8">
-              {isFormBlocked ? (
+              {isAdmin ? (
+                <div className="flex flex-col items-center justify-center text-center py-12 px-6">
+                  <div className="w-20 h-20 bg-blue-50 dark:bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
+                    <Shield className="size-10 text-blue-600 animate-pulse" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
+                    {language === 'vi' ? 'Trang quản lý Hợp tác' : 'Partnership Management'}
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md leading-relaxed font-medium">
+                    {language === 'vi'
+                      ? 'Bạn đang truy cập với quyền Quản trị viên. Hãy nhấn nút bên dưới để chuyển đến Trang quản trị của Admin nhằm xem và duyệt các biểu mẫu hợp tác từ Giáo viên.'
+                      : 'You are logged in as an Administrator. Click the button below to go to the Admin Dashboard to read, manage, and approve teacher partnership requests.'}
+                  </p>
+                  <button 
+                    onClick={() => navigate('/dashboard/admin?tab=partnership-requests')}
+                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center gap-2 border-none"
+                  >
+                    <Shield className="w-5 h-5" />
+                    {language === 'vi' ? 'Đi tới Trang quản trị (Duyệt biểu mẫu)' : 'Go to Admin Dashboard (Approve Forms)'}
+                  </button>
+                </div>
+              ) : isFormBlocked ? (
                 <div>
                   <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
                     {language === 'vi' ? 'Trạng thái yêu cầu Hợp tác' : 'Partnership Request Status'}
@@ -351,8 +383,32 @@ export function PartnershipPage() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Submit a Request</h3>
-                  <p className="text-slate-600 dark:text-slate-400 mb-8">Fill out the form below and our team will get back to you shortly.</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                        {language === 'vi' ? 'Gửi biểu mẫu Hợp tác' : 'Submit a Request'}
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm">
+                        {language === 'vi' ? 'Điền vào biểu mẫu bên dưới và chúng tôi sẽ liên hệ lại với bạn.' : 'Fill out the form below and our team will get back to you shortly.'}
+                      </p>
+                    </div>
+                    {userRequests.some(r => r.status === 'Rejected') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHistoryFilter('rejected');
+                          const historyEl = document.getElementById('rejected-history-section');
+                          if (historyEl) {
+                            historyEl.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }}
+                        className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-red-650 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 rounded-xl transition-all border border-red-200 dark:border-red-900/30 cursor-pointer shadow-sm shadow-red-500/5 active:scale-[0.98] shrink-0 self-start sm:self-center"
+                      >
+                        <History className="w-3.5 h-3.5" />
+                        {language === 'vi' ? 'Đơn bị từ chối' : 'Rejected Forms'}
+                      </button>
+                    )}
+                  </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
@@ -379,16 +435,56 @@ export function PartnershipPage() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="relative">
                     <label className="block text-sm font-semibold text-slate-900 dark:text-slate-200 mb-2">Organization / Company</label>
                     <input
                       type="text"
                       placeholder="University of Science, Acme Corp, etc."
                       value={form.organization}
-                      onChange={(e) => setForm({...form, organization: e.target.value})}
+                      onChange={(e) => {
+                        setForm({...form, organization: e.target.value});
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => {
+                        // Small timeout to allow suggestion click event to register
+                        setTimeout(() => setShowSuggestions(false), 200);
+                      }}
                       className={`w-full h-12 px-4 rounded-xl border bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors ${errors.organization ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
                     />
                     {errors.organization && <p className="text-xs text-red-500 mt-1.5">{errors.organization}</p>}
+
+                    {/* Autocomplete Suggestions Dropdown */}
+                    {showSuggestions && (
+                      (() => {
+                        const val = form.organization.toLowerCase().trim();
+                        const matches = val 
+                          ? ORGANIZATIONS_SUGGESTIONS.filter(item => 
+                              item.toLowerCase().includes(val)
+                            )
+                          : ORGANIZATIONS_SUGGESTIONS;
+
+                        if (matches.length === 0) return null;
+
+                        return (
+                          <div className="absolute z-50 left-0 right-0 mt-1.5 max-h-56 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl animate-fade-in divide-y divide-slate-100 dark:divide-slate-800 no-scrollbar">
+                            {matches.map((item, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  setForm({...form, organization: item});
+                                  setShowSuggestions(false);
+                                }}
+                                className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors"
+                              >
+                                {item}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()
+                    )}
                   </div>
 
                   <div>
@@ -438,72 +534,98 @@ export function PartnershipPage() {
 
               {/* Submitted Request History */}
               {userRequests.length > 0 && (
-                <div className="border-t border-slate-100 dark:border-slate-800 pt-8 mt-4">
-                  <div className="flex items-center gap-2 mb-6">
-                    <History className="w-5 h-5 text-slate-500" />
-                    <h4 className="text-lg font-bold text-slate-900 dark:text-white">
-                      {language === 'vi' ? 'Lịch sử yêu cầu Hợp tác' : 'Partnership Request History'}
-                    </h4>
+                <div id="rejected-history-section" className="border-t border-slate-100 dark:border-slate-800 pt-8 mt-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div className="flex items-center gap-2">
+                      <History className="w-5 h-5 text-slate-500" />
+                      <h4 className="text-lg font-bold text-slate-900 dark:text-white">
+                        {language === 'vi' ? 'Lịch sử biểu mẫu Hợp tác' : 'Partnership Request History'}
+                      </h4>
+                    </div>
+                    {userRequests.some(r => r.status === 'Rejected') && (
+                      <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl gap-1 border border-slate-200/40 dark:border-slate-800/40 self-start sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => setHistoryFilter('all')}
+                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all border-none cursor-pointer ${historyFilter === 'all' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'bg-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-400'}`}
+                        >
+                          {language === 'vi' ? 'Tất cả' : 'All'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setHistoryFilter('rejected')}
+                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all border-none cursor-pointer ${historyFilter === 'rejected' ? 'bg-red-500 text-white shadow-sm' : 'bg-transparent text-red-500 hover:text-red-600 dark:hover:text-red-400'}`}
+                        >
+                          {language === 'vi' ? 'Đã từ chối' : 'Rejected'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex flex-col gap-4 max-h-[450px] overflow-y-auto pr-1">
-                    {userRequests.map((req) => (
-                      <div 
-                        key={req.id} 
-                        className="p-5 border border-slate-150 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors flex flex-col gap-3"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div>
-                            <span className="text-[11px] font-bold text-slate-400 block mb-0.5 uppercase tracking-wide">
-                              {language === 'vi' ? 'Loại đối tác' : 'Partnership Type'}
-                            </span>
-                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                              {req.partnershipType}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {req.status === 'Pending' && (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-100 dark:border-amber-500/10">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                {language === 'vi' ? 'Đang chờ duyệt' : 'Pending'}
+                    {userRequests
+                      .filter(req => historyFilter === 'all' || req.status === 'Rejected')
+                      .map((req) => (
+                        <div 
+                          key={req.id} 
+                          className={`p-5 border rounded-2xl transition-all duration-200 flex flex-col gap-3 ${
+                            req.status === 'Rejected' 
+                              ? 'border-red-100 dark:border-red-950/30 bg-red-50/10 dark:bg-red-950/5 hover:bg-red-50/20 dark:hover:bg-red-950/10 shadow-sm shadow-red-500/2'
+                              : 'border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-900'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                              <span className="text-[11px] font-bold text-slate-400 block mb-0.5 uppercase tracking-wide">
+                                {language === 'vi' ? 'Loại đối tác' : 'Partnership Type'}
                               </span>
-                            )}
-                            {req.status === 'Approved' && (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400 border border-green-100 dark:border-green-500/10">
-                                <CheckCircle className="size-3.5" />
-                                {language === 'vi' ? 'Đã duyệt' : 'Approved'}
+                              <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                {req.partnershipType}
                               </span>
-                            )}
-                            {req.status === 'Rejected' && (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400 border border-red-100 dark:border-red-500/10">
-                                <XCircle className="size-3.5" />
-                                {language === 'vi' ? 'Đã từ chối' : 'Rejected'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                          <p className="font-semibold text-slate-700 dark:text-slate-300 mb-1">{language === 'vi' ? 'Nội dung tin nhắn:' : 'Message Content:'}</p>
-                          <p className="italic bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 whitespace-pre-wrap">{req.message}</p>
-                        </div>
-
-                        {req.status === 'Rejected' && req.rejectReason && (
-                          <div className="bg-red-50/50 dark:bg-red-950/10 border border-red-100 dark:border-red-950/20 p-3.5 rounded-xl flex items-start gap-2.5">
-                            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                            <div className="text-xs text-red-700 dark:text-red-400 font-medium">
-                              <span className="font-bold">{language === 'vi' ? 'Lý do từ chối: ' : 'Reason for rejection: '}</span>
-                              {req.rejectReason}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {req.status === 'Pending' && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-100 dark:border-amber-500/10">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                  {language === 'vi' ? 'Đang chờ duyệt' : 'Pending'}
+                                </span>
+                              )}
+                              {req.status === 'Approved' && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400 border border-green-100 dark:border-green-500/10">
+                                  <CheckCircle className="size-3.5" />
+                                  {language === 'vi' ? 'Đã duyệt' : 'Approved'}
+                                </span>
+                              )}
+                              {req.status === 'Rejected' && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-750 dark:bg-red-500/20 dark:text-red-400 border border-red-200 dark:border-red-500/20 shadow-sm shadow-red-500/10">
+                                  <XCircle className="size-3.5" />
+                                  {language === 'vi' ? 'Đã từ chối' : 'Rejected'}
+                                </span>
+                              )}
                             </div>
                           </div>
-                        )}
 
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-semibold justify-end border-t border-slate-100 dark:border-slate-800 pt-2.5 mt-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {new Date(req.createdAt).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US')}
+                          <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            <p className="font-semibold text-slate-700 dark:text-slate-300 mb-1">{language === 'vi' ? 'Nội dung tin nhắn:' : 'Message Content:'}</p>
+                            <p className="italic bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 whitespace-pre-wrap">{req.message}</p>
+                          </div>
+
+                          {req.status === 'Rejected' && req.rejectReason && (
+                            <div className="bg-red-50 dark:bg-red-950/20 border border-red-100/60 dark:border-red-950/40 p-3.5 rounded-xl flex items-start gap-2.5 shadow-sm shadow-red-500/2">
+                              <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                              <div className="text-xs text-red-800 dark:text-red-400 font-medium">
+                                <span className="font-bold">{language === 'vi' ? 'Lý do từ chối: ' : 'Reason for rejection: '}</span>
+                                {req.rejectReason}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-semibold justify-end border-t border-slate-100 dark:border-slate-800 pt-2.5 mt-1">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {new Date(req.createdAt).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US')}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               )}
