@@ -12,11 +12,18 @@ import {
   ChevronDown,
   ChevronUp,
   Mail,
-  Loader2
+  Loader2,
+  AlertCircle,
+  AlertTriangle,
+  History,
+  XCircle,
+  Calendar
 } from 'lucide-react';
 import { AppFooter } from '@/components/shared/AppFooter';
 import { partnershipService } from '@/services/partnershipService';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from '@/context/LanguageContext';
+import { cn } from '@/lib/utils';
 
 const PARTNERSHIP_TYPES = [
   {
@@ -89,6 +96,7 @@ const FAQS = [
 
 export function PartnershipPage() {
   const navigate = useNavigate();
+  const { language } = useTranslation();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   
   const currentUser = useAuthStore((state) => state.user);
@@ -101,6 +109,32 @@ export function PartnershipPage() {
     partnershipType: '',
     message: ''
   });
+
+  // User Requests list & loading state
+  const [userRequests, setUserRequests] = useState<any[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+
+  const fetchUserRequests = async () => {
+    if (currentUser?.email) {
+      setLoadingRequests(true);
+      try {
+        const data = await partnershipService.getUserRequests(currentUser.email);
+        setUserRequests(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingRequests(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchUserRequests();
+  }, [currentUser]);
+
+  // Determine if form is blocked: blocked if any request is NOT rejected (i.e. Pending or Approved)
+  const activeRequest = userRequests.find(req => req.status === 'Pending' || req.status === 'Approved');
+  const isFormBlocked = !!activeRequest;
 
   // Pre-fill form when currentUser is available
   useEffect(() => {
@@ -135,6 +169,10 @@ export function PartnershipPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isFormBlocked) {
+      alert(language === 'vi' ? 'Bạn đang có một yêu cầu hợp tác chưa hoàn thành. Không thể gửi thêm.' : 'You have an active partnership request. Cannot submit another one.');
+      return;
+    }
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -165,6 +203,9 @@ export function PartnershipPage() {
         partnershipType: '',
         message: ''
       });
+      
+      // Refetch user requests immediately so the block/status takes effect!
+      fetchUserRequests();
     } catch (error) {
       console.error('Failed to submit partnership request', error);
       alert('Something went wrong. Please try again later.');
@@ -252,11 +293,47 @@ export function PartnershipPage() {
           
           {/* Left Column: Form */}
           <section id="partnership-form" className="lg:col-span-7">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 md:p-10 shadow-sm">
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Submit a Request</h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-8">Fill out the form below and our team will get back to you shortly.</p>
-              
-              {isSuccess ? (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 md:p-10 shadow-sm flex flex-col gap-8">
+              {isFormBlocked ? (
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                    {language === 'vi' ? 'Trạng thái yêu cầu Hợp tác' : 'Partnership Request Status'}
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-400 mb-6">
+                    {language === 'vi' ? 'Bạn đang có một yêu cầu hợp tác đang được xử lý hoặc đã kích hoạt.' : 'You have an active or processed partnership request in the system.'}
+                  </p>
+                  
+                  {activeRequest.status === 'Pending' ? (
+                    <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-6 flex items-start gap-4">
+                      <AlertTriangle className="w-8 h-8 text-amber-500 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-lg font-bold text-amber-800 dark:text-amber-300 mb-1">
+                          {language === 'vi' ? 'Đang chờ phê duyệt' : 'Pending Review'}
+                        </h4>
+                        <p className="text-sm text-amber-700 dark:text-amber-400/90 leading-relaxed">
+                          {language === 'vi'
+                            ? 'Đơn gửi hợp tác của bạn đã được tiếp nhận và đang chờ quản trị viên phê duyệt. Để tránh gửi trùng lặp hoặc spam, bạn không thể gửi thêm yêu cầu mới lúc này.'
+                            : 'Your partnership request has been received and is currently pending administrator approval. To prevent duplicate submissions or spam, you cannot submit a new request at this time.'}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-2xl p-6 flex items-start gap-4">
+                      <CheckCircle className="w-8 h-8 text-green-500 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-lg font-bold text-green-800 dark:text-green-300 mb-1">
+                          {language === 'vi' ? 'Đã phê duyệt thành công! 🎉' : 'Approved Successfully! 🎉'}
+                        </h4>
+                        <p className="text-sm text-green-700 dark:text-green-400/90 leading-relaxed">
+                          {language === 'vi'
+                            ? 'Chúc mừng! Đơn hợp tác giáo viên của bạn đã được phê duyệt. Tài khoản của bạn đã được nâng cấp lên gói PRO miễn phí với 50 GB dung lượng lưu trữ.'
+                            : 'Congratulations! Your teacher partnership request has been approved. Your account has been upgraded to a PRO subscription with 50 GB storage for free.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : isSuccess ? (
                 <div className="flex flex-col items-center justify-center text-center py-12 px-6">
                   <div className="w-20 h-20 bg-green-50 dark:bg-green-500/10 rounded-full flex items-center justify-center mb-6">
                     <CheckCircle className="size-10 text-green-500" />
@@ -274,6 +351,9 @@ export function PartnershipPage() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Submit a Request</h3>
+                  <p className="text-slate-600 dark:text-slate-400 mb-8">Fill out the form below and our team will get back to you shortly.</p>
+                  
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-semibold text-slate-900 dark:text-slate-200 mb-2">Full Name</label>
@@ -342,7 +422,7 @@ export function PartnershipPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full h-12 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full h-12 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {isSubmitting ? (
                       <>
@@ -354,6 +434,78 @@ export function PartnershipPage() {
                     )}
                   </button>
                 </form>
+              )}
+
+              {/* Submitted Request History */}
+              {userRequests.length > 0 && (
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-8 mt-4">
+                  <div className="flex items-center gap-2 mb-6">
+                    <History className="w-5 h-5 text-slate-500" />
+                    <h4 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {language === 'vi' ? 'Lịch sử yêu cầu Hợp tác' : 'Partnership Request History'}
+                    </h4>
+                  </div>
+                  
+                  <div className="flex flex-col gap-4 max-h-[450px] overflow-y-auto pr-1">
+                    {userRequests.map((req) => (
+                      <div 
+                        key={req.id} 
+                        className="p-5 border border-slate-150 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors flex flex-col gap-3"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-400 block mb-0.5 uppercase tracking-wide">
+                              {language === 'vi' ? 'Loại đối tác' : 'Partnership Type'}
+                            </span>
+                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                              {req.partnershipType}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {req.status === 'Pending' && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-100 dark:border-amber-500/10">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                {language === 'vi' ? 'Đang chờ duyệt' : 'Pending'}
+                              </span>
+                            )}
+                            {req.status === 'Approved' && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400 border border-green-100 dark:border-green-500/10">
+                                <CheckCircle className="size-3.5" />
+                                {language === 'vi' ? 'Đã duyệt' : 'Approved'}
+                              </span>
+                            )}
+                            {req.status === 'Rejected' && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400 border border-red-100 dark:border-red-500/10">
+                                <XCircle className="size-3.5" />
+                                {language === 'vi' ? 'Đã từ chối' : 'Rejected'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                          <p className="font-semibold text-slate-700 dark:text-slate-300 mb-1">{language === 'vi' ? 'Nội dung tin nhắn:' : 'Message Content:'}</p>
+                          <p className="italic bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 whitespace-pre-wrap">{req.message}</p>
+                        </div>
+
+                        {req.status === 'Rejected' && req.rejectReason && (
+                          <div className="bg-red-50/50 dark:bg-red-950/10 border border-red-100 dark:border-red-950/20 p-3.5 rounded-xl flex items-start gap-2.5">
+                            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                            <div className="text-xs text-red-700 dark:text-red-400 font-medium">
+                              <span className="font-bold">{language === 'vi' ? 'Lý do từ chối: ' : 'Reason for rejection: '}</span>
+                              {req.rejectReason}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-semibold justify-end border-t border-slate-100 dark:border-slate-800 pt-2.5 mt-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {new Date(req.createdAt).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           </section>

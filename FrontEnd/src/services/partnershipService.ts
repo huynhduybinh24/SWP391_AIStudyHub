@@ -50,6 +50,15 @@ export const partnershipService = {
   },
 
   /**
+   * Get all partnership requests submitted by a specific user email
+   */
+  async getUserRequests(email: string): Promise<PartnershipRequest[]> {
+    await delay(300); // Simulate network latency
+    const requests = getStoredRequests();
+    return requests.filter(req => req.email?.toLowerCase() === email?.toLowerCase());
+  },
+
+  /**
    * Update the status of a request
    */
   async updateStatus(id: string, status: PartnershipStatus, rejectReason?: string): Promise<PartnershipRequest | null> {
