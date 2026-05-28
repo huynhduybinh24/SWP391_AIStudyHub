@@ -95,12 +95,12 @@ export function RegisterForm() {
     : (language === 'ja' ? '例：山田 太郎' : (language === 'ko' ? '예: 홍길동' : 'e.g. Jane Doe'))
 
   const emailLabel = language === 'vi'
-    ? 'Email học sinh/sinh viên'
-    : (language === 'ja' ? 'メールアドレス' : (language === 'ko' ? '이메일 주소' : 'Student Email'))
+    ? 'Địa chỉ Email'
+    : (language === 'ja' ? 'メールアドレス' : (language === 'ko' ? '이메일 주소' : 'Email Address'))
 
   const emailPlaceholder = language === 'vi'
-    ? 'example@university.edu'
-    : (language === 'ja' ? 'example@university.edu' : (language === 'ko' ? 'example@university.edu' : 'jane@university.edu'))
+    ? 'example@example.com'
+    : (language === 'ja' ? 'example@example.com' : (language === 'ko' ? 'example@example.com' : 'jane@example.com'))
 
   const passwordLabel = language === 'vi'
     ? 'Mật khẩu'
