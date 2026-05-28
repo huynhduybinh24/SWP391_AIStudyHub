@@ -17,6 +17,7 @@ export interface PartnershipRequest {
   partnershipType: PartnershipType | string;
   message: string;
   status: PartnershipStatus;
+  rejectReason?: string;
   createdAt: string;
   updatedAt: string;
 }
