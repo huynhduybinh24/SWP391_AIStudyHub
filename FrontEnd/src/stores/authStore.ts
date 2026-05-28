@@ -31,8 +31,19 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       ...initialAuth,
-      setSession: (user, tokens) =>
-        set({ user, tokens, isAuthenticated: true }),
+      setSession: (user, tokens) => {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            plan: user.plan || 'free',
+            avatar: user.avatarUrl || '/avatar.svg'
+          }))
+        }
+        set({ user, tokens, isAuthenticated: true })
+      },
       logout: () => {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('aiStudyHubCurrentUser')
