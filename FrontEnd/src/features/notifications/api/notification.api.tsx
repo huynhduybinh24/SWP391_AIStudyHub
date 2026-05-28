@@ -2,7 +2,21 @@ import React from 'react';
 import { Folder, Calendar, ExternalLink, Eye } from 'lucide-react';
 import { getCurrentUser } from '../services/userNotificationService';
 
-export type NotificationType = 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard' | 'document_deleted' | 'document_rejected';
+export type NotificationType = 
+  | 'ai' 
+  | 'folder' 
+  | 'mention' 
+  | 'security' 
+  | 'document' 
+  | 'calendar' 
+  | 'flashcard' 
+  | 'document_deleted' 
+  | 'document_rejected' 
+  | 'document_removed' 
+  | 'document_approved' 
+  | 'system' 
+  | 'shared_file' 
+  | 'ai_update';
 
 export interface NotificationButton {
   text: string;

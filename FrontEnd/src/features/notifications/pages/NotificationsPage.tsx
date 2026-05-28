@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff, AlertTriangle, Sparkles, XCircle, Trash2 } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { notificationApi, Notification } from '../api/notification.api'
+import { notificationApi, Notification, NotificationType } from '../api/notification.api'
 import { getCurrentUser } from '../services/userNotificationService'
 import { useTranslation } from '@/context/LanguageContext'
 import { realtimeNotificationManager } from '../services/notificationRealtime'
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/Button'
 // Reusable Sub-component: Notification Card
 interface NotificationCardProps {
   id: string
-  type: 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard' | 'document_deleted' | 'document_rejected'
+  type: NotificationType
   title: string
   time: string
   isRead: boolean
@@ -984,48 +984,32 @@ export function NotificationsPage() {
         className="max-w-md"
       >
         {selectedDetailNotification && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailDocName}:</span>
-              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                {selectedDetailNotification.documentName || (() => {
-                  const desc = typeof selectedDetailNotification.description === 'string' 
-                    ? selectedDetailNotification.description 
-                    : '';
-                  const match = desc.match(/"([^"]+)"/);
-                  return match ? match[1] : 'Unknown Document';
-                })()}
-              </span>
-            </div>
-            <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailActionType}:</span>
-              <span className={cn(
-                "text-sm font-semibold w-fit px-2.5 py-0.5 rounded-full",
-                selectedDetailNotification.actionType === 'removed' 
-                  ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400" 
-                  : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
-              )}>
-                {selectedDetailNotification.actionType === 'removed' ? t.notificationsPage.actionRemoved : t.notificationsPage.actionRejected}
-              </span>
-            </div>
-            <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
-              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailTime}:</span>
-              <span className="text-sm text-slate-900 dark:text-slate-300">
-                {selectedDetailNotification.time}
-              </span>
-            </div>
-            <div className="grid grid-cols-[120px_1fr] gap-2 items-start mt-2 border-t border-slate-100 dark:border-slate-800 pt-4">
-              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailReason}:</span>
-              <div className="text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                {selectedDetailNotification.reason?.trim() || selectedDetailNotification.adminNote?.trim() || (
-                  (() => {
-                    const desc = typeof selectedDetailNotification.description === 'string' 
-                      ? selectedDetailNotification.description 
-                      : '';
-                    const match = desc.match(/Reason:\s*(.*)$/);
-                    return match ? match[1].trim() : t.notificationsPage.noReasonProvided;
-                  })()
+          <div className="space-y-4 pt-2">
+            {selectedDetailNotification.type === 'system' || !selectedDetailNotification.actionType ? (
+              // System / General Notification Details
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    {language === 'vi' ? 'Chi tiết thông báo' : 'Message Details'}
+                  </span>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-355 leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    {selectedDetailNotification.description}
+                  </p>
+                </div>
+                {selectedDetailNotification.adminNote && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">
+                      {language === 'vi' ? 'Ý kiến phản hồi / Lý do' : 'Feedback / Reason'}
+                    </span>
+                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-455 bg-rose-50 dark:bg-rose-955/20 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/10">
+                      {selectedDetailNotification.adminNote}
+                    </p>
+                  </div>
                 )}
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-start text-xs text-slate-450 dark:text-slate-500 mt-2">
+                  <span>{t.notificationsPage.detailTime}:</span>
+                  <span>{selectedDetailNotification.time}</span>
+                </div>
               </div>
             ) : (
               // Document Rejection / Deletion Details
@@ -1056,24 +1040,23 @@ export function NotificationsPage() {
                 <div className="grid grid-cols-[120px_1fr] gap-2 items-start mt-2 border-t border-slate-100 dark:border-slate-800 pt-4">
                   <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailReason}:</span>
                   <div className="text-sm text-slate-700 dark:text-slate-350 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                    {selectedDetailNotification.adminNote || (
+                    {selectedDetailNotification.reason?.trim() || selectedDetailNotification.adminNote?.trim() || (
                       (() => {
                         const desc = typeof selectedDetailNotification.description === 'string' 
                           ? selectedDetailNotification.description 
                           : '';
                         const match = desc.match(/Reason:\s*(.*)$/);
-                        return match ? match[1] : t.notificationsPage.noReasonProvided;
+                        return match ? match[1]?.trim() || t.notificationsPage.noReasonProvided : t.notificationsPage.noReasonProvided;
                       })()
                     )}
                   </div>
                 </div>
+                <div className="grid grid-cols-[120px_1fr] gap-2 items-start text-xs text-slate-400 mt-2">
+                  <span>{t.notificationsPage.detailTime}:</span>
+                  <span>{selectedDetailNotification.time}</span>
+                </div>
               </div>
             )}
-            
-            <div className="grid grid-cols-[120px_1fr] gap-2 items-start text-xs text-slate-400 mt-2">
-              <span>{t.notificationsPage.detailTime}:</span>
-              <span>{selectedDetailNotification.time}</span>
-            </div>
             
             <div className="mt-6 flex justify-end">
               <Button onClick={() => setSelectedDetailNotification(null)} className="cursor-pointer">
