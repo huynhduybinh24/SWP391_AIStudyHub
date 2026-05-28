@@ -49,13 +49,13 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
         </div>
 
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={onClose} className="rounded-xl border border-border dark:border-slate-800">
+          <Button variant="secondary" onClick={onClose} className="rounded-xl border border-border dark:border-slate-800 cursor-pointer">
             {t.common.cancel}
           </Button>
           <Button
             variant="danger"
             onClick={handleConfirmLogout}
-            className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-semibold"
+            className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-semibold cursor-pointer"
           >
             {t.sidebar.logoutConfirmTitle || "Confirm Log Out"}
           </Button>

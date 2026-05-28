@@ -68,8 +68,7 @@ export function AccountSettingsCard() {
   let initialLanguage = account.language
   if (initialLanguage === 'English (US)') initialLanguage = 'en'
   else if (initialLanguage === 'Vietnamese') initialLanguage = 'vi'
-  else if (initialLanguage === 'Japanese') initialLanguage = 'ja'
-  else if (initialLanguage === 'Korean') initialLanguage = 'ko'
+  else initialLanguage = 'en'
 
   const {
     register,
@@ -214,8 +213,6 @@ export function AccountSettingsCard() {
             >
               <option value="en">English</option>
               <option value="vi">Tiếng Việt</option>
-              <option value="ja">日本語</option>
-              <option value="ko">한국어</option>
             </Select>
           </div>
 
@@ -302,10 +299,6 @@ export function AccountSettingsCard() {
                     {pendingData?.language !== initialLanguage
                       ? (pendingData?.language === 'vi'
                         ? 'Bạn có chắc muốn cập nhật thông tin và đổi ngôn ngữ hiển thị sang Tiếng Việt không?'
-                        : pendingData?.language === 'ja'
-                        ? '日本語に変更し,設定を保存してもよろしいですか？'
-                        : pendingData?.language === 'ko'
-                        ? '한국어로 변경하고 설정을 저장하시겠습니까?'
                         : 'Are you sure you want to save changes and switch your display language to English?')
                       : (pendingData?.language === 'vi'
                         ? 'Bạn có chắc chắn muốn lưu lại các thay đổi thiết lập tài khoản này không?'

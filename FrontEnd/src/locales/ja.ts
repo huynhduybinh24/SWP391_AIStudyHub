@@ -92,6 +92,11 @@ export const ja: any = {
     actionPreview: "プレビュー",
     actionApprove: "承認",
     actionDelete: "削除",
+    actionReject: "却下",
+    actionFlag: "ドキュメントにフラグを立てる",
+    actionRemoveFlag: "フラグを削除",
+    actionDownload: "ファイルをダウンロード",
+    toastDownloadSimulate: "\"{filename}\" のダウンロードをシミュレートしています",
     confirmDeleteTitle: "ドキュメントの永久削除",
     confirmDeleteDesc: "このドキュメントをシステムから完全に削除してもよろしいですか？この操作は取り消せません。",
     toastApproveSuccess: "ドキュメントが正常に承認されました",
@@ -204,6 +209,7 @@ export const ja: any = {
     searchFolder: "このフォルダ内を検索...",
     searchStudyPlans: "学習計画を検索...",
     searchPlaceholderAll: "ドキュメント、チャット、計画を検索...",
+    searchPlaceholderAdmin: "ユーザー、ドキュメント、レポート、取引、アクティビティを検索...",
     searchResults: "検索結果",
     recentSearches: "最近の検索履歴",
     trendingSearches: "急上昇ワード",
@@ -745,7 +751,13 @@ export const ja: any = {
     title: "通知",
     subtitle: "最近のアクティビティと学習の更新を表示します。",
     markAllAsRead: "すべて既読にする",
-    noNotifications: "新しい通知はありません。"
+    noNotifications: "新しい通知はありません。",
+    deleteTitle: "Delete notification?",
+    deleteMessage: "Are you sure you want to delete this notification? This action only removes it from your notification list.",
+    deleteCancel: "Cancel",
+    deleteConfirm: "Delete",
+    deleteToast: "Notification deleted.",
+    deleteAriaLabel: "Delete notification"
   },
   studyPlans: {
     title: "学習計画",
@@ -1241,5 +1253,21 @@ export const ja: any = {
         tags: ['#遺伝学実験', '#レポート', '#神経遺伝学']
       }
     }
+  },
+  userMenu: {
+    changeUser: "Change User"
+  },
+  userSwitch: {
+    title: "Change User",
+    subtitle: "Select a mock account to preview different permissions.",
+    cancel: "Cancel",
+    switch: "Switch User",
+    switched: "Switched to {name}",
+    current: "Current",
+    adminDescription: "Full access to admin dashboard and system settings.",
+    studentDescription: "Standard learner account with documents and study features.",
+    instructorDescription: "Can manage shared course materials and student collaboration.",
+    proStudentDescription: "Student account with upgraded storage and premium features."
   }
 };
+

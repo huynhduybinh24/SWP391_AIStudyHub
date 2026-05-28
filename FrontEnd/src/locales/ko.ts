@@ -92,6 +92,11 @@ export const ko: any = {
     actionPreview: "미리보기",
     actionApprove: "승인",
     actionDelete: "삭제",
+    actionReject: "거절",
+    actionFlag: "문서 플래그 지정",
+    actionRemoveFlag: "플래그 제거",
+    actionDownload: "파일 다운로드",
+    toastDownloadSimulate: "\"{filename}\" 다운로드 시뮬레이션 중",
     confirmDeleteTitle: "문서 영구 삭제",
     confirmDeleteDesc: "이 문서를 시스템에서 완전히 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
     toastApproveSuccess: "문서가 성공적으로 승인되었습니다",
@@ -204,6 +209,7 @@ export const ko: any = {
     searchFolder: "이 폴더에서 검색...",
     searchStudyPlans: "학습 계획 검색...",
     searchPlaceholderAll: "문서, 채팅, 계획 검색...",
+    searchPlaceholderAdmin: "사용자, 문서, 보고서, 거래, 활동 검색...",
     searchResults: "검색 결과",
     recentSearches: "최근 검색어",
     trendingSearches: "인기 검색어",
@@ -745,7 +751,13 @@ export const ko: any = {
     title: "알림",
     subtitle: "최근 활동 및 학습 업데이트 사항을 봅니다.",
     markAllAsRead: "모두 읽음으로 표시",
-    noNotifications: "새 알림이 없습니다."
+    noNotifications: "새 알림이 없습니다.",
+    deleteTitle: "Delete notification?",
+    deleteMessage: "Are you sure you want to delete this notification? This action only removes it from your notification list.",
+    deleteCancel: "Cancel",
+    deleteConfirm: "Delete",
+    deleteToast: "Notification deleted.",
+    deleteAriaLabel: "Delete notification"
   },
   studyPlans: {
     title: "학습 계획",
@@ -1240,5 +1252,21 @@ export const ko: any = {
         tags: ['#유전학실험', '#보고서', '#신경유전학']
       }
     }
+  },
+  userMenu: {
+    changeUser: "Change User"
+  },
+  userSwitch: {
+    title: "Change User",
+    subtitle: "Select a mock account to preview different permissions.",
+    cancel: "Cancel",
+    switch: "Switch User",
+    switched: "Switched to {name}",
+    current: "Current",
+    adminDescription: "Full access to admin dashboard and system settings.",
+    studentDescription: "Standard learner account with documents and study features.",
+    instructorDescription: "Can manage shared course materials and student collaboration.",
+    proStudentDescription: "Student account with upgraded storage and premium features."
   }
 };
+

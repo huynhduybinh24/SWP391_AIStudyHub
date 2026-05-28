@@ -20,7 +20,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
@@ -99,6 +99,12 @@ export function CloudStoragePage() {
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
   const [trashSize, setTrashSize] = useState(!user || user.plan === 'free' ? 0.3 : 1.2)
   const [tempSize, setTempSize] = useState(!user || user.plan === 'free' ? 0.1 : 0.6)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 200)
+    return () => clearTimeout(timer)
+  }, [])
 
   const recentUploadsSizeGB = useMemo(() => {
     const totalBytes = uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0)
@@ -332,23 +338,25 @@ export function CloudStoragePage() {
           {/* Usage Circle Chart Card */}
           <Card className="flex flex-col items-center text-center p-6 pb-8">
             <div className="w-[160px] h-[160px] relative mt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    innerRadius={62}
-                    outerRadius={80}
-                    startAngle={90}
-                    endAngle={-270}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              {isMounted && (
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      innerRadius={62}
+                      outerRadius={80}
+                      startAngle={90}
+                      endAngle={-270}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
               <div className="absolute inset-0 flex items-center justify-center flex-col">
                 <span className="text-4xl font-bold text-foreground">{usedPercentage}%</span>
               </div>
