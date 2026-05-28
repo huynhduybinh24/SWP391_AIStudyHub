@@ -79,13 +79,38 @@ export const authService = {
       const { data } = await apiClient.post<LoginResponse>('/auth/register', credentials)
       return data
     } catch {
+      const newUserId = Math.random().toString(36).substr(2, 9)
+      const userRole = credentials.role || 'student'
+      
+      // Save to localStorage so they show up on admin dashboard immediately
+      if (typeof window !== 'undefined') {
+        const savedUsersStr = localStorage.getItem('aiStudyHubUsers')
+        const currentUsers = savedUsersStr ? JSON.parse(savedUsersStr) : []
+        const newUserRecord = {
+          id: `u-${newUserId}`,
+          name: credentials.fullName,
+          email: credentials.email,
+          role: userRole,
+          status: 'active',
+          joinedAt: new Date().toISOString().split('T')[0],
+          documentsCount: 0,
+          storageUsedMB: 0,
+          plan: 'free',
+          lastActiveVi: 'Vừa xong',
+          lastActiveEn: 'Just now',
+          isOnline: true,
+        }
+        currentUsers.push(newUserRecord)
+        localStorage.setItem('aiStudyHubUsers', JSON.stringify(currentUsers))
+      }
+
       // Mock successful registration
       return {
         user: {
-          id: Math.random().toString(36).substr(2, 9),
+          id: newUserId,
           name: credentials.fullName,
           email: credentials.email,
-          role: 'student',
+          role: userRole,
           plan: 'free',
         },
         tokens: { accessToken: 'mock-registered-token' },
