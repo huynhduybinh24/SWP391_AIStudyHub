@@ -224,6 +224,11 @@ export function AdminDashboardPage() {
       icon: Bell
     },
     {
+      id: 'partnership-requests' as AdminTab,
+      label: language === 'vi' ? 'Yêu cầu Hợp tác' : 'Partnership Requests',
+      icon: Handshake
+    },
+    {
       id: 'analytics' as AdminTab,
       label: language === 'vi' ? 'Thống kê' : 'Analytics',
       icon: TrendingUp
@@ -237,11 +242,6 @@ export function AdminDashboardPage() {
       id: 'reports' as AdminTab,
       label: language === 'vi' ? 'Báo cáo vi phạm' : 'Reports',
       icon: AlertTriangle
-    },
-    {
-      id: 'partnership-requests' as AdminTab,
-      label: language === 'vi' ? 'Yêu cầu Hợp tác' : 'Partnership Requests',
-      icon: Handshake
     }
   ]
 

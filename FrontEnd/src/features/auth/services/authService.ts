@@ -47,17 +47,26 @@ export const authService = {
         if (savedUsersStr) {
           try {
             const savedUsers = JSON.parse(savedUsersStr)
-            const matchedUser = savedUsers.find((u: any) => u.email.toLowerCase() === credentials.email.toLowerCase())
+            const matchedUser = savedUsers.find((u: any) => 
+              u.email && u.email.toLowerCase() === credentials.email.toLowerCase()
+            )
             if (matchedUser) {
-              return {
-                user: {
-                  id: matchedUser.id === 'u1' ? '1' : matchedUser.id === 'u2' ? '2' : matchedUser.id === 'u3' ? '3' : matchedUser.id,
-                  name: matchedUser.name,
-                  email: matchedUser.email,
-                  role: matchedUser.role,
-                  plan: matchedUser.plan || 'free',
-                },
-                tokens: { accessToken: `mock-${matchedUser.role}-token` },
+              // Verify password if registered. Default mock accounts accept >= 6 chars.
+              const isPasswordValid = matchedUser.password 
+                ? matchedUser.password === credentials.password 
+                : credentials.password.length >= 6;
+
+              if (isPasswordValid) {
+                return {
+                  user: {
+                    id: matchedUser.id === 'u1' ? '1' : matchedUser.id === 'u2' ? '2' : matchedUser.id === 'u3' ? '3' : matchedUser.id,
+                    name: matchedUser.name,
+                    email: matchedUser.email,
+                    role: matchedUser.role,
+                    plan: matchedUser.plan || 'free',
+                  },
+                  tokens: { accessToken: `mock-${matchedUser.role}-token` },
+                }
               }
             }
           } catch (e) {
@@ -91,7 +100,7 @@ export const authService = {
       if (savedUsersStr) {
         try {
           const savedUsers = JSON.parse(savedUsersStr)
-          if (savedUsers.some((u: any) => u.email?.toLowerCase() === emailLower)) {
+          if (savedUsers.some((u: any) => u.email && u.email.toLowerCase() === emailLower)) {
             emailExists = true
           }
         } catch (e) {
@@ -103,7 +112,7 @@ export const authService = {
     if (emailExists) {
       throw new Error('email_already_exists')
     }
-
+ 
     try {
       const { data } = await apiClient.post<LoginResponse>('/auth/register', credentials)
       return data
@@ -127,6 +136,7 @@ export const authService = {
           lastActiveVi: 'Vừa xong',
           lastActiveEn: 'Just now',
           isOnline: true,
+          password: credentials.password,
         }
         currentUsers.push(newUserRecord)
         localStorage.setItem('aiStudyHubUsers', JSON.stringify(currentUsers))
