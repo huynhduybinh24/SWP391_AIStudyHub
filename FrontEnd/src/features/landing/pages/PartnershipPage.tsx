@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { AppFooter } from '@/components/shared/AppFooter';
 import { partnershipService } from '@/services/partnershipService';
+import { useAuthStore } from '@/stores/authStore';
 
 const PARTNERSHIP_TYPES = [
   {

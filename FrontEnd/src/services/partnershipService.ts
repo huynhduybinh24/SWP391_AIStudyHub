@@ -38,6 +38,33 @@ export const partnershipService = {
     requests.unshift(newRequest); // Add to the top
     saveStoredRequests(requests);
 
+    // If the sender's email belongs to a user with role 'teacher', automatically upgrade them to Pro plan
+    if (typeof window !== 'undefined') {
+      const savedUsers = localStorage.getItem('aiStudyHubUsers');
+      if (savedUsers) {
+        try {
+          const users = JSON.parse(savedUsers);
+          let changed = false;
+          const updatedUsers = users.map((u: any) => {
+            if (u.email?.toLowerCase() === payload.email?.toLowerCase() && u.role?.toLowerCase() === 'teacher') {
+              if (u.plan !== 'pro') {
+                changed = true;
+                return { ...u, plan: 'pro' };
+              }
+            }
+            return u;
+          });
+          if (changed) {
+            localStorage.setItem('aiStudyHubUsers', JSON.stringify(updatedUsers));
+            window.dispatchEvent(new Event('storage'));
+            window.dispatchEvent(new Event('aiStudyHubUsersUpdated'));
+          }
+        } catch (e) {
+          console.error('Error upgrading teacher to pro', e);
+        }
+      }
+    }
+
     return newRequest;
   },
 
