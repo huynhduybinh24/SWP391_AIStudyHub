@@ -1,4 +1,5 @@
 import { useToastStore } from '@/stores/toastStore';
+import { getCurrentUser } from '@/features/notifications/services/userNotificationService';
 
 export type NotificationType = 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard' | 'document_deleted';
 
@@ -195,7 +196,9 @@ class NotificationRealtimeManager {
 
   private persistNotification(notif: RealtimeNotification) {
     try {
-      const stored = localStorage.getItem('aiStudyHubUserNotifications');
+      const userEmail = getCurrentUser().email;
+      const key = `aiStudyHubUserNotifications:${userEmail}`;
+      const stored = localStorage.getItem(key);
       let currentNotifs = stored ? JSON.parse(stored) : [];
       
       // Map to correct storage keys
@@ -216,7 +219,7 @@ class NotificationRealtimeManager {
         currentNotifs = currentNotifs.slice(0, 50);
       }
 
-      localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(currentNotifs));
+      localStorage.setItem(key, JSON.stringify(currentNotifs));
     } catch (err) {
       console.error('[Realtime] Failed to persist notification:', err);
     }
