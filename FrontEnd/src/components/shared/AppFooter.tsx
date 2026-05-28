@@ -266,7 +266,7 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
           {/* Brand & Slogan */}
           <div className="flex flex-col items-center md:items-start text-center md:text-left gap-2.5">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-white/10">
                 <img src="/logo.png" alt="LumiEdu Logo" className="w-9 h-9 object-contain" />
               </div>
               <span className="text-xl md:text-2xl font-bold font-heading text-white tracking-tight">
