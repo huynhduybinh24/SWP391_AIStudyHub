@@ -41,11 +41,48 @@ export const useAuthStore = create<AuthState>()(
             plan: user.plan || 'free',
             avatar: user.avatarUrl || '/avatar.svg'
           }))
+
+          // Automatically register this logged-in account in device login history
+          try {
+            const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
+            let list = stored ? JSON.parse(stored) : []
+            if (!Array.isArray(list)) list = []
+            
+            if (!list.some((u: any) => u.email?.toLowerCase() === user.email?.toLowerCase())) {
+              list.push({
+                id: `u-${user.id}`,
+                name: user.name,
+                email: user.email,
+                role: user.role === 'admin' ? 'admin' : user.role === 'teacher' || user.role === 'instructor' ? 'instructor' : 'student',
+                plan: (user.plan || 'free').toUpperCase() as 'FREE' | 'PRO',
+                initials: user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'US',
+                description: `Tài khoản đăng nhập hệ thống ngày ${new Date().toLocaleDateString('vi-VN')}`,
+                remembered: false // Require password by default
+              })
+              localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(list))
+            }
+          } catch (e) {
+            console.error('Failed to sync login session to logged-in accounts list:', e)
+          }
         }
         set({ user, tokens, isAuthenticated: true })
       },
       logout: () => {
         if (typeof window !== 'undefined') {
+          // If the logged out user was an admin, clear the admin database states & history too!
+          const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser')
+          if (activeUserStr) {
+            try {
+              const activeUser = JSON.parse(activeUserStr)
+              if (activeUser?.role?.toLowerCase() === 'admin') {
+                localStorage.removeItem('mock_partnership_requests')
+                localStorage.removeItem('mock_sent_emails')
+                localStorage.removeItem('aiStudyHubSystemStatus') // Resets status
+              }
+            } catch (e) {
+              console.error(e)
+            }
+          }
           localStorage.removeItem('aiStudyHubCurrentUser')
         }
         if (DEV_SKIP_AUTH) {
@@ -64,11 +101,25 @@ export const useAuthStore = create<AuthState>()(
       merge: (persisted, current) => {
         const persistedState = persisted as Partial<AuthState>
         
-        // Restore mock user from localStorage if it exists to persist on reload
+        // Restore mock user from localStorage if it exists to persist on reload (except Admin)
         const savedMockUserStr = typeof window !== 'undefined' ? localStorage.getItem('aiStudyHubCurrentUser') : null
         if (savedMockUserStr) {
           try {
             const savedUser = JSON.parse(savedMockUserStr)
+            
+            // Kick admin back to login on reload (F5 reload protection)
+            if (savedUser?.role?.toLowerCase() === 'admin') {
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('aiStudyHubCurrentUser')
+              }
+              return {
+                ...current,
+                user: null,
+                tokens: null,
+                isAuthenticated: false,
+              }
+            }
+
             const userObj = {
               id: savedUser.id,
               name: savedUser.name,
@@ -88,8 +139,11 @@ export const useAuthStore = create<AuthState>()(
           }
         }
 
-        // Prevent admin session from persisting across reloads (F5) (only if not mock user)
+        // Prevent admin session from persisting across reloads (F5) (fallback safeguard)
         if (persistedState?.user?.role?.toLowerCase() === 'admin') {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('aiStudyHubCurrentUser')
+          }
           return {
             ...current,
             user: null,

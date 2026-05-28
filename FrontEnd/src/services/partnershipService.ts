@@ -8,7 +8,47 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const getStoredRequests = (): PartnershipRequest[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data || data === '[]') {
+      const initialRequests: PartnershipRequest[] = [
+        {
+          id: "mock-req-1",
+          fullName: "Sarah Jenkins",
+          email: "sarah@example.com",
+          organization: "LUMIedu High School",
+          partnershipType: "School Collaboration",
+          message: "We would like to partner to deploy the AI Study Hub for all our science students and create integrated flashcard decks for neuroscience classes.",
+          status: "Pending",
+          createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "mock-req-2",
+          fullName: "Marcus Knight",
+          email: "marcus@example.com",
+          organization: "Marcus Math Academy",
+          partnershipType: "Business Partnership",
+          message: "Requesting API integration access to feed our students' study plan directly into the LUMIedu smart assistant dashboard.",
+          status: "Rejected",
+          rejectReason: "We do not support external commercial API sync connections under this partnership program at this time.",
+          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "mock-req-3",
+          fullName: "Alex Rivera",
+          email: "alex@example.com",
+          organization: "Rivera Biology Labs",
+          partnershipType: "Content Contribution",
+          message: "Contributing 100+ annotated diagrams of cell anatomy and advanced neuroscience materials to the open public library.",
+          status: "Approved",
+          createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+        }
+      ];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialRequests));
+      return initialRequests;
+    }
+    return JSON.parse(data);
   } catch (error) {
     console.error('Failed to parse partnership requests from localStorage', error);
     return [];
@@ -111,6 +151,32 @@ export const partnershipService = {
             localStorage.setItem('aiStudyHubUsers', JSON.stringify(updatedUsers));
             window.dispatchEvent(new Event('storage'));
             window.dispatchEvent(new Event('aiStudyHubUsersUpdated'));
+
+            // Sync active user store session if it's the approved teacher!
+            try {
+              const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser');
+              if (activeUserStr) {
+                const activeUser = JSON.parse(activeUserStr);
+                if (activeUser.email?.toLowerCase() === email?.toLowerCase()) {
+                  activeUser.plan = status === 'Approved' ? 'pro' : 'free';
+                  localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(activeUser));
+                  
+                  // Dynamically require or update Zustand state if window is active
+                  const { useAuthStore } = await import('@/stores/authStore');
+                  const currentAuth = useAuthStore.getState().user;
+                  if (currentAuth) {
+                    useAuthStore.setState({
+                      user: {
+                        ...currentAuth,
+                        plan: status === 'Approved' ? 'pro' : 'free'
+                      }
+                    });
+                  }
+                }
+              }
+            } catch (err) {
+              console.error('Error syncing active auth session in partnershipService', err);
+            }
           }
         } catch (e) {
           console.error('Error upgrading/downgrading teacher plan in localStorage', e);
