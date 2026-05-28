@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff, AlertTriangle } from 'lucide-react'
+import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, FileText, Calendar, Layers, RefreshCw, BellOff, AlertTriangle, Sparkles } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { notificationApi, Notification } from '../api/notification.api'
 import { useTranslation } from '@/context/LanguageContext'
+import { realtimeNotificationManager } from '../services/notificationRealtime'
+
 
 
 // Reusable Sub-component: Notification Card
@@ -588,16 +590,29 @@ export function NotificationsPage() {
             {t.notificationsPage.subtitle}
           </p>
         </div>
-        <button
-          onClick={() => fetchNotifications(activeFilter)}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-[rgba(195,198,215,0.4)] dark:border-slate-800 rounded-xl text-sm font-semibold text-[#434655] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer"
-        >
-          <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-          <span className="hidden sm:inline">
-            {language === 'vi' ? 'Làm mới' : language === 'ja' ? '更新' : language === 'ko' ? '새로고침' : 'Refresh'}
-          </span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => realtimeNotificationManager.injectSimulatedNotification()}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-indigo-500/10 dark:shadow-none hover:shadow-lg transition-all cursor-pointer border-none"
+          >
+            <Sparkles className="w-4 h-4 text-white" />
+            <span className="hidden sm:inline">
+              {language === 'vi' ? 'Giả lập thông báo' : language === 'ja' ? '通知をシミュレート' : language === 'ko' ? '알림 시뮬레이션' : 'Simulate alert'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => fetchNotifications(activeFilter)}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-[rgba(195,198,215,0.4)] dark:border-slate-800 rounded-xl text-sm font-semibold text-[#434655] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+            <span className="hidden sm:inline">
+              {language === 'vi' ? 'Làm mới' : language === 'ja' ? '更新' : language === 'ko' ? '새로고침' : 'Refresh'}
+            </span>
+          </button>
+        </div>
+
       </div>
 
       {/* Filter Tabs */}
