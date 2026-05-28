@@ -182,7 +182,19 @@ export function Header() {
       const savedNotifs = localStorage.getItem(`aiStudyHubUserNotifications:${userEmail}`)
       if (savedNotifs) {
         const parsed = JSON.parse(savedNotifs)
-        localNotifications = parsed.map((n: any) => ({
+        
+        // Filter out notifications older than 7 days
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const validList = parsed.filter((n: any) => {
+          const timestamp = n.createdAt ? new Date(n.createdAt).getTime() : Date.now();
+          return timestamp >= sevenDaysAgo;
+        });
+
+        if (validList.length !== parsed.length) {
+          localStorage.setItem(`aiStudyHubUserNotifications:${userEmail}`, JSON.stringify(validList));
+        }
+
+        localNotifications = validList.map((n: any) => ({
           id: n.id,
           title: n.title,
           description: n.message,
