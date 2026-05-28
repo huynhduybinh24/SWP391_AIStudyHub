@@ -1,3 +1,5 @@
+import { userNotificationService } from '@/features/notifications/services/userNotificationService';
+
 export type AdminUser = {
   id: string;
   name: string;
@@ -512,23 +514,16 @@ export const deleteDocument = async (documentId: string, reason?: string): Promi
     existingNotices.push(record);
     localStorage.setItem('aiStudyHubDeletedDocumentNotices', JSON.stringify(existingNotices));
 
-    const notification = {
-      id: `usr-ntf-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    userNotificationService.addUserNotification({
+      targetUserEmail: doc.ownerEmail || 'binh@example.com',
       type: "document_deleted",
       title: "Document removed by admin",
       message: record.noticeMessage,
       documentId: doc.id,
       documentName: doc.title,
       reason: reason,
-      createdAt: new Date().toISOString(),
-      isRead: false
-    };
-    const userNotificationsKey = `aiStudyHubUserNotifications:${doc.ownerEmail || 'binh@example.com'}`;
-    const existingNotifs = JSON.parse(localStorage.getItem(userNotificationsKey) || '[]');
-    const filteredNotifs = existingNotifs.filter((n: any) => !(n.type === notification.type && n.documentId === notification.documentId && n.reason === notification.reason));
-    filteredNotifs.unshift(notification);
-    localStorage.setItem(userNotificationsKey, JSON.stringify(filteredNotifs));
-    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+      actionType: "removed"
+    });
   }
 
   mockDocuments = mockDocuments.filter((d) => d.id !== documentId);
@@ -562,23 +557,16 @@ export const rejectDocument = async (documentId: string, reason?: string): Promi
   if (reason) {
     console.log(`[Email Notification Sent] To: ${doc.ownerEmail} | Subject: Document Rejection Notice | Reason: ${reason}`);
     
-    const notification = {
-      id: `usr-ntf-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    userNotificationService.addUserNotification({
+      targetUserEmail: doc.ownerEmail || 'binh@example.com',
       type: "document_rejected",
       title: "Document rejected by admin",
       message: `Your document "${doc.title}" was rejected by admin. Reason: ${reason}`,
       documentId: doc.id,
       documentName: doc.title,
       reason: reason,
-      createdAt: new Date().toISOString(),
-      isRead: false
-    };
-    const userNotificationsKey = `aiStudyHubUserNotifications:${doc.ownerEmail || 'binh@example.com'}`;
-    const existingNotifs = JSON.parse(localStorage.getItem(userNotificationsKey) || '[]');
-    const filteredNotifs = existingNotifs.filter((n: any) => !(n.type === notification.type && n.documentId === notification.documentId && n.reason === notification.reason));
-    filteredNotifs.unshift(notification);
-    localStorage.setItem(userNotificationsKey, JSON.stringify(filteredNotifs));
-    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+      actionType: "rejected"
+    });
   }
   
   return { ...mockDocuments[index] };

@@ -1,4 +1,5 @@
 import { useToastStore } from '@/stores/toastStore';
+import { getCurrentUser } from '@/features/notifications/services/userNotificationService';
 
 export type NotificationType = 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard' | 'document_deleted';
 
@@ -238,17 +239,7 @@ class NotificationRealtimeManager {
 
   private persistNotification(notif: RealtimeNotification) {
     try {
-      let userEmail = 'admin@example.com';
-      if (typeof window !== 'undefined') {
-        const currentUserStr = localStorage.getItem('aiStudyHubCurrentUser');
-        if (currentUserStr) {
-          try {
-            const user = JSON.parse(currentUserStr);
-            if (user?.email) userEmail = user.email;
-          } catch (e) {}
-        }
-      }
-
+      const userEmail = getCurrentUser().email;
       const key = `aiStudyHubUserNotifications:${userEmail}`;
       const stored = localStorage.getItem(key);
       let currentNotifs = stored ? JSON.parse(stored) : [];

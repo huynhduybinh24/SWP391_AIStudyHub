@@ -29,6 +29,7 @@ export interface Notification {
   documentId?: string;
   actionType?: "removed" | "rejected" | "approved" | "system";
   adminNote?: string;
+  targetUserEmail?: string;
 }
 
 // Helper to get read state
@@ -97,6 +98,7 @@ const getPersistedUserNotifications = (): Notification[] => {
         documentId: item.documentId,
         actionType: item.actionType,
         adminNote: item.adminNote,
+        targetUserEmail: item.targetUserEmail,
       }));
     }
   } catch (err) {
@@ -314,10 +316,10 @@ export const notificationApi = {
     const persisted = getPersistedUserNotifications();
     const merged = [...persisted, ...baseData];
 
+    const currentUser = getCurrentUser();
     let deletedIds: string[] = [];
     try {
-      const userEmail = getCurrentUser().email;
-      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`);
+      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${currentUser.email}`);
       if (storedDeleted) {
         deletedIds = JSON.parse(storedDeleted);
       }
@@ -325,7 +327,31 @@ export const notificationApi = {
       console.error('Failed to parse deleted notification IDs', e);
     }
 
-    const filteredMerged = merged.filter(item => !deletedIds.includes(item.id));
+    const filteredMerged = merged.filter(item => {
+      // 1. If it's deleted, filter out
+      if (deletedIds.includes(item.id)) return false;
+
+      // 2. targetUserEmail check
+      if (item.targetUserEmail && item.targetUserEmail.toLowerCase() !== currentUser.email.toLowerCase()) {
+        return false;
+      }
+
+      // 3. Admin safety filters
+      if (currentUser.role === 'admin') {
+        const typeStr = item.type || '';
+        if (typeStr === 'document_deleted' || typeStr === 'document_rejected' || typeStr === 'document_removed') {
+          if (!item.targetUserEmail || item.targetUserEmail.toLowerCase() !== currentUser.email.toLowerCase()) {
+            return false;
+          }
+        }
+        const descStr = typeof item.description === 'string' ? item.description : '';
+        if ((descStr.startsWith('Your document') || descStr.startsWith('Tài liệu')) && !item.targetUserEmail) {
+          return false;
+        }
+      }
+
+      return true;
+    });
 
     switch (filter) {
       case 'unread':

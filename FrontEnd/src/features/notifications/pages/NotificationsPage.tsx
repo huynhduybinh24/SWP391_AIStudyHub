@@ -39,6 +39,8 @@ interface NotificationCardProps {
   onClick?: () => void
   onDelete?: () => void
   isConfirmingDelete?: boolean
+  reason?: string
+  documentName?: string
 }
 
 function NotificationCard({
@@ -63,6 +65,8 @@ function NotificationCard({
   onClick,
   onDelete,
   isConfirmingDelete,
+  reason,
+  documentName,
 }: NotificationCardProps) {
   const navigate = useNavigate()
   const { t, language } = useTranslation()
@@ -316,14 +320,22 @@ function NotificationCard({
       }
     }
     if (type === 'document_deleted' || type === 'document_rejected') {
-      let docNameMatch = '';
-      let reasonMatch = '';
-      if (typeof description === 'string' && (description.includes('was removed by admin') || description.includes('was rejected by admin'))) {
-        const dMatch = description.match(/"([^"]+)"/);
-        const rMatch = description.match(/Reason:\s*(.*)$/);
-        if (dMatch) docNameMatch = dMatch[1];
-        if (rMatch) reasonMatch = rMatch[1];
-      }
+      const docName = documentName || (() => {
+        if (typeof description === 'string') {
+          const dMatch = description.match(/"([^"]+)"/);
+          return dMatch ? dMatch[1] : '';
+        }
+        return '';
+      })() || 'Unknown Document';
+
+      const reasonText = reason?.trim() || (() => {
+        if (typeof description === 'string') {
+          const rMatch = description.match(/Reason:\s*(.*)$/);
+          return rMatch ? rMatch[1].trim() : '';
+        }
+        return '';
+      })() || (language === 'vi' ? 'Chưa có lý do chi tiết.' : 'No reason details were provided.');
+
       return {
         title: type === 'document_deleted'
           ? (language === 'vi' ? 'Tài liệu đã bị quản trị viên xóa' : 'Document removed by admin')
@@ -331,8 +343,8 @@ function NotificationCard({
         description: (
           <>
             {language === 'vi' 
-              ? `Tài liệu "${docNameMatch}" của bạn đã bị quản trị viên ${type === 'document_deleted' ? 'xóa' : 'từ chối'}. Lý do: ${reasonMatch}`
-              : `Your document "${docNameMatch}" was ${type === 'document_deleted' ? 'removed' : 'rejected'} by admin. Reason: ${reasonMatch}`}
+              ? `Tài liệu "${docName}" của bạn đã bị quản trị viên ${type === 'document_deleted' ? 'xóa' : 'từ chối'}. Lý do: ${reasonText}`
+              : `Your document "${docName}" was ${type === 'document_deleted' ? 'removed' : 'rejected'} by admin. Reason: ${reasonText}`}
           </>
         ),
       }
@@ -972,23 +984,47 @@ export function NotificationsPage() {
         className="max-w-md"
       >
         {selectedDetailNotification && (
-          <div className="space-y-4 pt-2">
-            {selectedDetailNotification.type === 'system' || !selectedDetailNotification.actionType ? (
-              // System / General Notification Details
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Message Details</span>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-350 leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                    {selectedDetailNotification.description}
-                  </p>
-                </div>
-                {selectedDetailNotification.adminNote && (
-                  <div className="space-y-1">
-                    <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">Feedback / Reason</span>
-                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-450 bg-rose-50 dark:bg-rose-950/20 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/10">
-                      {selectedDetailNotification.adminNote}
-                    </p>
-                  </div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailDocName}:</span>
+              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                {selectedDetailNotification.documentName || (() => {
+                  const desc = typeof selectedDetailNotification.description === 'string' 
+                    ? selectedDetailNotification.description 
+                    : '';
+                  const match = desc.match(/"([^"]+)"/);
+                  return match ? match[1] : 'Unknown Document';
+                })()}
+              </span>
+            </div>
+            <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailActionType}:</span>
+              <span className={cn(
+                "text-sm font-semibold w-fit px-2.5 py-0.5 rounded-full",
+                selectedDetailNotification.actionType === 'removed' 
+                  ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400" 
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
+              )}>
+                {selectedDetailNotification.actionType === 'removed' ? t.notificationsPage.actionRemoved : t.notificationsPage.actionRejected}
+              </span>
+            </div>
+            <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailTime}:</span>
+              <span className="text-sm text-slate-900 dark:text-slate-300">
+                {selectedDetailNotification.time}
+              </span>
+            </div>
+            <div className="grid grid-cols-[120px_1fr] gap-2 items-start mt-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailReason}:</span>
+              <div className="text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+                {selectedDetailNotification.reason?.trim() || selectedDetailNotification.adminNote?.trim() || (
+                  (() => {
+                    const desc = typeof selectedDetailNotification.description === 'string' 
+                      ? selectedDetailNotification.description 
+                      : '';
+                    const match = desc.match(/Reason:\s*(.*)$/);
+                    return match ? match[1].trim() : t.notificationsPage.noReasonProvided;
+                  })()
                 )}
               </div>
             ) : (

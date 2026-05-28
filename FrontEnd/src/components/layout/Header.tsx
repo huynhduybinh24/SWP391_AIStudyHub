@@ -89,6 +89,7 @@ export interface MockNotification {
   documentId?: string
   actionType?: "removed" | "rejected" | "approved" | "system"
   adminNote?: string
+  targetUserEmail?: string
 }
 
 // ─── Header ───────────────────────────────────────────────────────────────────
@@ -206,7 +207,8 @@ export function Header() {
           documentName: n.documentName,
           documentId: n.documentId,
           actionType: n.actionType,
-          adminNote: n.adminNote
+          adminNote: n.adminNote,
+          targetUserEmail: n.targetUserEmail
         }))
       }
     } catch (err) {
@@ -238,7 +240,28 @@ export function Header() {
       console.error('Failed to parse deleted notification IDs', e)
     }
 
-    allNotifs = allNotifs.filter((n) => !deletedIds.includes(n.id))
+    allNotifs = allNotifs.filter((n) => {
+      if (deletedIds.includes(n.id)) return false;
+
+      if (n.targetUserEmail && n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
+        return false;
+      }
+
+      if (userRole === 'admin') {
+        const typeStr = n.type || '';
+        if (typeStr === 'document_deleted' || typeStr === 'document_rejected' || typeStr === 'document_removed') {
+          if (!n.targetUserEmail || n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
+            return false;
+          }
+        }
+        const descStr = typeof n.description === 'string' ? n.description : '';
+        if ((descStr.startsWith('Your document') || descStr.startsWith('Tài liệu')) && !n.targetUserEmail) {
+          return false;
+        }
+      }
+
+      return true;
+    })
 
     return allNotifs
   }
