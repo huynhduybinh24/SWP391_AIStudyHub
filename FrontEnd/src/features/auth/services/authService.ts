@@ -79,6 +79,31 @@ export const authService = {
     if (userRole === 'admin') {
       throw new Error('Admin registration is not allowed. Admin accounts can only be retrieved from the database.')
     }
+    
+    // Check if email already exists in mock list or localStorage to throw duplicate error
+    const emailLower = credentials.email.toLowerCase()
+    let emailExists = false
+    
+    if (MOCK_USERS[emailLower]) {
+      emailExists = true
+    } else if (typeof window !== 'undefined') {
+      const savedUsersStr = localStorage.getItem('aiStudyHubUsers')
+      if (savedUsersStr) {
+        try {
+          const savedUsers = JSON.parse(savedUsersStr)
+          if (savedUsers.some((u: any) => u.email?.toLowerCase() === emailLower)) {
+            emailExists = true
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      }
+    }
+    
+    if (emailExists) {
+      throw new Error('email_already_exists')
+    }
+
     try {
       const { data } = await apiClient.post<LoginResponse>('/auth/register', credentials)
       return data
