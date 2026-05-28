@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, ChevronDown, Wrench, CheckCircle, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, ChevronDown, Wrench, CheckCircle, FileText, ChevronLeft, ChevronRight, Handshake } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
@@ -11,11 +11,12 @@ import { AdminNotificationsTab } from '@/features/admin/components/AdminNotifica
 import { AdminAnalyticsTab } from '@/features/admin/components/AdminAnalyticsTab'
 import { AdminLogsTab } from '@/features/admin/components/AdminLogsTab'
 import { AdminReportsTab } from '@/features/admin/components/AdminReportsTab'
+import { AdminPartnershipRequestsPage } from '@/features/admin/pages/AdminPartnershipRequestsPage'
 import { adminService, AdminStats, AdminUser, AdminDocument } from '../services/adminService'
 import { getSystemStatusSync, updateSystemStatus, SystemStatus, SystemStatusState } from '@/features/admin/services/systemStatusService'
 import { useToast } from '@/components/ui/Toast'
 import { Modal } from '@/components/ui/Modal'
-type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'documents' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation'
+type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'documents' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation' | 'partnership-requests'
 
 export function AdminDashboardPage() {
   const { t, language } = useTranslation()
@@ -236,6 +237,11 @@ export function AdminDashboardPage() {
       id: 'reports' as AdminTab,
       label: language === 'vi' ? 'Báo cáo vi phạm' : 'Reports',
       icon: AlertTriangle
+    },
+    {
+      id: 'partnership-requests' as AdminTab,
+      label: language === 'vi' ? 'Yêu cầu Hợp tác' : 'Partnership Requests',
+      icon: Handshake
     }
   ]
 
@@ -450,6 +456,10 @@ export function AdminDashboardPage() {
 
         {activeTab === 'reports' && (
           <AdminReportsTab />
+        )}
+
+        {activeTab === 'partnership-requests' && (
+          <AdminPartnershipRequestsPage />
         )}
 
         {(activeTab === 'documents' || activeTab === 'ai-moderation') && (
