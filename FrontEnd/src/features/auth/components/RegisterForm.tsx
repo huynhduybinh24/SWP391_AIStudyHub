@@ -72,24 +72,100 @@ export function RegisterForm() {
   }
 
   const strength = getPasswordStrength(passwordValue)
-  const strengthLabels = ['Poor', 'Weak', 'Fair', 'Good', 'Strong']
+  const strengthLabels = language === 'vi'
+    ? ['Kém', 'Yếu', 'Trung bình', 'Tốt', 'Mạnh']
+    : (language === 'ja' ? ['弱い', 'やや弱い', '普通', '良い', '強い'] : (language === 'ko' ? ['취약', '약함', '보통', '좋음', '강함'] : ['Poor', 'Weak', 'Fair', 'Good', 'Strong']))
+
+  const selectedRole = watch('role')
+
+  const titleText = language === 'vi' 
+    ? 'Tạo tài khoản' 
+    : (language === 'ja' ? 'アカウント作成' : (language === 'ko' ? '계정 만들기' : 'Create an Account'))
+
+  const subtitleText = language === 'vi'
+    ? 'Bắt đầu hành trình nâng cao kết quả học tập của bạn ngay hôm nay.'
+    : (language === 'ja' ? '学業向上への旅を今すぐ始めましょう。' : (language === 'ko' ? '오늘부터 학업 성적 향상을 위한 여정을 시작하세요.' : 'Start your journey to better grades today.'))
+
+  const fullNameLabel = language === 'vi'
+    ? 'Họ và tên'
+    : (language === 'ja' ? 'フルネーム' : (language === 'ko' ? '성함' : 'Full Name'))
+
+  const fullNamePlaceholder = language === 'vi'
+    ? 'Ví dụ: Nguyễn Văn A'
+    : (language === 'ja' ? '例：山田 太郎' : (language === 'ko' ? '예: 홍길동' : 'e.g. Jane Doe'))
+
+  const emailLabel = language === 'vi'
+    ? 'Email học sinh/sinh viên'
+    : (language === 'ja' ? 'メールアドレス' : (language === 'ko' ? '이메일 주소' : 'Student Email'))
+
+  const emailPlaceholder = language === 'vi'
+    ? 'example@university.edu'
+    : (language === 'ja' ? 'example@university.edu' : (language === 'ko' ? 'example@university.edu' : 'jane@university.edu'))
+
+  const passwordLabel = language === 'vi'
+    ? 'Mật khẩu'
+    : (language === 'ja' ? 'パスワード' : (language === 'ko' ? '비밀번호' : 'Password'))
+
+  const confirmPasswordLabel = language === 'vi'
+    ? 'Xác nhận mật khẩu'
+    : (language === 'ja' ? 'パスワードの確認' : (language === 'ko' ? '비밀번호 확인' : 'Confirm Password'))
+
+  const occupationLabel = language === 'vi' 
+    ? 'Vai trò / Công việc' 
+    : (language === 'ja' ? '役職 / 職業' : (language === 'ko' ? '역할 / 직업' : 'Role / Occupation'))
+
+  const studentLabel = language === 'vi' 
+    ? 'Học sinh' 
+    : (language === 'ja' ? '学生' : (language === 'ko' ? '학생' : 'Student'))
+
+  const teacherLabel = language === 'vi' 
+    ? 'Giáo viên' 
+    : (language === 'ja' ? '教師' : (language === 'ko' ? '교사' : 'Teacher'))
+
+  const agreeText = language === 'vi'
+    ? 'Tôi đồng ý với các'
+    : (language === 'ja' ? '利用規約に同意する' : (language === 'ko' ? '이용약관에 동의합니다' : 'I agree to the'))
+
+  const termsText = language === 'vi'
+    ? 'Điều khoản & Điều kiện'
+    : (language === 'ja' ? '利用規約' : (language === 'ko' ? '이용약관' : 'Terms & Conditions'))
+
+  const createAccountButtonText = registerMutation.isPending
+    ? (language === 'vi' ? 'Đang tạo tài khoản...' : (language === 'ja' ? 'アカウント作成中...' : (language === 'ko' ? '계정 생성 중...' : 'Creating Account...')))
+    : (language === 'vi' ? 'Đăng ký tài khoản' : (language === 'ja' ? 'アカウントを作成' : (language === 'ko' ? '계정 만들기' : 'Create Account')))
+
+  const orText = language === 'vi'
+    ? 'Hoặc đăng ký bằng'
+    : (language === 'ja' ? 'または以下で登録' : (language === 'ko' ? '또는 다음으로 가입' : 'Or sign up with'))
+
+  const googleText = language === 'vi'
+    ? 'Đăng ký bằng Google'
+    : (language === 'ja' ? 'Googleで登録' : (language === 'ko' ? 'Google로 가입' : 'Sign up with Google'))
+
+  const alreadyText = language === 'vi'
+    ? 'Đã có tài khoản?'
+    : (language === 'ja' ? 'すでにアカウントをお持ちですか？' : (language === 'ko' ? '이미 계정이 있으신가요?' : 'Already have an account?'))
+
+  const loginText = language === 'vi'
+    ? 'Đăng nhập'
+    : (language === 'ja' ? 'ログイン' : (language === 'ko' ? '로그인' : 'Login'))
 
   return (
     <div className="w-full max-w-[440px] mx-auto bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-xl text-slate-900 dark:text-slate-100">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Create an Account</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-base font-medium">Start your journey to better grades today.</p>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{titleText}</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-base font-medium">{subtitleText}</p>
       </div>
 
-      <form className="space-y-4" onSubmit={handleSubmit(({ fullName, email, password }) => registerMutation.mutate({ fullName, email, password }))}>
+      <form className="space-y-4" onSubmit={handleSubmit(({ fullName, email, password, role }) => registerMutation.mutate({ fullName, email, password, role }))}>
         <div>
           <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="fullName">
-            Full Name
+            {fullNameLabel}
           </label>
           <Input 
             id="fullName" 
             type="text" 
-            placeholder="e.g. Jane Doe"
+            placeholder={fullNamePlaceholder}
             startIcon={<User className="w-5 h-5 text-slate-400 dark:text-slate-500" />}
             error={errors.fullName?.message} 
             {...register('fullName')} 
@@ -98,12 +174,12 @@ export function RegisterForm() {
 
         <div>
           <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="email">
-            Student Email
+            {emailLabel}
           </label>
           <Input 
             id="email" 
             type="email" 
-            placeholder="jane@university.edu"
+            placeholder={emailPlaceholder}
             startIcon={<Mail className="w-5 h-5 text-slate-400 dark:text-slate-500" />}
             error={errors.email?.message} 
             {...register('email')} 
@@ -111,8 +187,42 @@ export function RegisterForm() {
         </div>
 
         <div>
+          <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+            {occupationLabel}
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setValue('role', 'student')}
+              className={cn(
+                "flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-bold transition-all gap-1.5 cursor-pointer relative overflow-hidden select-none",
+                selectedRole === 'student'
+                  ? "border-[#3155F6] bg-blue-50/50 text-[#3155F6] dark:bg-blue-950/20 dark:border-blue-500 shadow-sm"
+                  : "border-slate-200 dark:border-slate-800 bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900"
+              )}
+            >
+              <GraduationCap className="size-5" />
+              <span>{studentLabel}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setValue('role', 'teacher')}
+              className={cn(
+                "flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-bold transition-all gap-1.5 cursor-pointer relative overflow-hidden select-none",
+                selectedRole === 'teacher'
+                  ? "border-[#3155F6] bg-blue-50/50 text-[#3155F6] dark:bg-blue-950/20 dark:border-blue-500 shadow-sm"
+                  : "border-slate-200 dark:border-slate-800 bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900"
+              )}
+            >
+              <Briefcase className="size-5" />
+              <span>{teacherLabel}</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
           <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="password">
-            Password
+            {passwordLabel}
           </label>
           <Input
             id="password"
@@ -153,7 +263,7 @@ export function RegisterForm() {
 
         <div>
           <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="confirmPassword">
-            Confirm Password
+            {confirmPasswordLabel}
           </label>
           <Input
             id="confirmPassword"
@@ -179,7 +289,7 @@ export function RegisterForm() {
             id="terms" 
             label={
               <span className="text-sm text-slate-600 dark:text-slate-400">
-                I agree to the <a href="#" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold">Terms & Conditions</a>
+                {agreeText} <a href="#" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold">{termsText}</a>
               </span>
             }
             {...register('terms')}
@@ -198,7 +308,7 @@ export function RegisterForm() {
           className="w-full h-11 text-base font-semibold mt-4 bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm flex items-center justify-center gap-2 rounded-xl active:scale-[0.98] transition-all" 
           disabled={registerMutation.isPending}
         >
-          {registerMutation.isPending ? 'Creating Account...' : 'Create Account'}
+          {createAccountButtonText}
           {!registerMutation.isPending && <ArrowRight className="w-5 h-5" />}
         </Button>
       </form>
@@ -206,7 +316,7 @@ export function RegisterForm() {
       <div className="mt-8 mb-6 relative flex items-center">
         <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
         <span className="flex-shrink-0 mx-4 text-xs font-bold text-slate-450 dark:text-slate-550 uppercase tracking-wider">
-          Or sign up with
+          {orText}
         </span>
         <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
       </div>
@@ -219,15 +329,17 @@ export function RegisterForm() {
           onClick={() => handleRealSocialLogin('google')}
         >
           <GoogleIcon />
-          Sign up with Google
+          {googleText}
         </Button>
       </div>
 
       <p className="mt-8 text-center text-[15px] text-slate-500 dark:text-slate-400">
-        Already have an account?{' '}
+        {alreadyText}{' '}
         <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
-          Login
+          {loginText}
         </Link>
+      </p>
+    </div> </Link>
       </p>
     </div>
   )
