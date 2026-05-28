@@ -19,14 +19,40 @@ export interface UserNotification {
   createdAt: string;
   time?: string;
   isRead: boolean;
+  targetUserEmail?: string;
 }
 
-const STORAGE_KEY = 'aiStudyHubUserNotifications';
+export const getCurrentUser = () => {
+  if (typeof window === 'undefined') {
+    return { id: 'admin', email: 'admin@example.com', role: 'admin', name: 'Alex Morgan' };
+  }
+  const data = localStorage.getItem('aiStudyHubCurrentUser');
+  if (!data) {
+    return { id: 'admin', email: 'admin@example.com', role: 'admin', name: 'Alex Morgan' };
+  }
+  try {
+    const user = JSON.parse(data);
+    return {
+      id: user.id || user.email || 'admin',
+      email: user.email || 'admin@example.com',
+      role: (user.role || 'admin').toLowerCase(),
+      name: user.name || 'Alex Morgan',
+    };
+  } catch (e) {
+    return { id: 'admin', email: 'admin@example.com', role: 'admin', name: 'Alex Morgan' };
+  }
+};
+
+const getNotificationStorageKey = (email: string) => {
+  return `aiStudyHubUserNotifications:${email}`;
+};
 
 export const userNotificationService = {
-  getUserNotifications(): UserNotification[] {
+  getUserNotifications(email?: string): UserNotification[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
+      const targetEmail = email || getCurrentUser().email;
+      const key = getNotificationStorageKey(targetEmail);
+      const data = localStorage.getItem(key);
       if (!data) return [];
       return JSON.parse(data);
     } catch (error) {
@@ -35,16 +61,28 @@ export const userNotificationService = {
     }
   },
 
-  saveUserNotifications(notifications: UserNotification[]): void {
+  saveUserNotifications(notifications: UserNotification[], email?: string): void {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
+      const targetEmail = email || getCurrentUser().email;
+      const key = getNotificationStorageKey(targetEmail);
+      localStorage.setItem(key, JSON.stringify(notifications));
     } catch (error) {
       console.error('Failed to save user notifications to localStorage', error);
     }
   },
 
-  addUserNotification(notification: Omit<UserNotification, "id" | "createdAt" | "isRead" | "time">): UserNotification {
-    const notifications = this.getUserNotifications();
+  addUserNotification(notification: Omit<UserNotification, "id" | "createdAt" | "isRead" | "time"> & { targetUserEmail?: string }): UserNotification {
+    const targetEmail = notification.targetUserEmail || getCurrentUser().email;
+    const notifications = this.getUserNotifications(targetEmail);
+    
+    // Deduplicate: remove older duplicate notifications (type, documentId, reason) to avoid spam
+    const filteredNotifications = notifications.filter(n => {
+      const isDuplicate = n.type === notification.type &&
+                          n.documentId === notification.documentId &&
+                          n.reason === notification.reason;
+      return !isDuplicate;
+    });
+
     const newNotification: UserNotification = {
       ...notification,
       id: `usr-ntf-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -53,25 +91,28 @@ export const userNotificationService = {
       isRead: false
     };
 
-    const updatedNotifications = [newNotification, ...notifications];
-    this.saveUserNotifications(updatedNotifications);
+    const updatedNotifications = [newNotification, ...filteredNotifications];
+    this.saveUserNotifications(updatedNotifications, targetEmail);
     window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
     return newNotification;
   },
 
-  markUserNotificationAsRead(id: string): void {
-    const notifications = this.getUserNotifications();
+  markUserNotificationAsRead(id: string, email?: string): void {
+    const targetEmail = email || getCurrentUser().email;
+    const notifications = this.getUserNotifications(targetEmail);
     const updatedNotifications = notifications.map(n => 
       n.id === id ? { ...n, isRead: true } : n
     );
-    this.saveUserNotifications(updatedNotifications);
+    this.saveUserNotifications(updatedNotifications, targetEmail);
     window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
   },
 
-  markAllUserNotificationsAsRead(): void {
-    const notifications = this.getUserNotifications();
+  markAllUserNotificationsAsRead(email?: string): void {
+    const targetEmail = email || getCurrentUser().email;
+    const notifications = this.getUserNotifications(targetEmail);
     const updatedNotifications = notifications.map(n => ({ ...n, isRead: true }));
-    this.saveUserNotifications(updatedNotifications);
+    this.saveUserNotifications(updatedNotifications, targetEmail);
     window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
   }
 };
+

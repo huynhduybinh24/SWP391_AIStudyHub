@@ -3,6 +3,7 @@ import { Bot, Folder, ArrowRight, AtSign, Reply as ReplyIcon, Shield, Send, File
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { notificationApi, Notification } from '../api/notification.api'
+import { getCurrentUser } from '../services/userNotificationService'
 import { useTranslation } from '@/context/LanguageContext'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -293,6 +294,24 @@ function NotificationCard({
             {language === 'vi' ? '.' : ''}
           </>
         ),
+      }
+    }
+    if (id === 'new-report-submitted') {
+      return {
+        title: language === 'vi' ? 'Có báo cáo mới' : language === 'ja' ? '新しい報告が送信されました' : language === 'ko' ? '새 보고서 제출됨' : 'New report submitted',
+        description: language === 'vi' ? 'Một người dùng đã báo cáo tài liệu vì đạo văn.' : language === 'ja' ? 'ユーザーがドキュメント의 盗用を報告しました。' : language === 'ko' ? '사용자가 표절로 문서를 신고했습니다.' : 'A user reported a document for plagiarism.',
+      }
+    }
+    if (id === 'ai-audit-flagged') {
+      return {
+        title: language === 'vi' ? 'AI phát hiện tài liệu đáng ngờ' : language === 'ja' ? 'AI監査フラグ検出' : language === 'ko' ? 'AI 심사 플래그 감지됨' : 'AI audit flagged a document',
+        description: language === 'vi' ? 'AI Guard đã phát hiện vi phạm chính sách tiềm ẩn.' : language === 'ja' ? 'AI Guardが潜在的なポリシー違反を検出しました。' : language === 'ko' ? 'AI Guard가 잠재적인 정책 위반을 감지했습니다.' : 'AI Guard detected a potential policy violation.',
+      }
+    }
+    if (id === 'system-status-updated') {
+      return {
+        title: language === 'vi' ? 'Trạng thái hệ thống đã cập nhật' : language === 'ja' ? 'システムステータス更新' : language === 'ko' ? '시스템 상태 업데이트됨' : 'System status updated',
+        description: language === 'vi' ? 'Chế độ bảo trì hoặc trạng thái sự cố đã được thay đổi.' : language === 'ja' ? 'メンテナンスモードまたはインシデントステータスが変更されました。' : language === 'ko' ? '유지 관리 모드 또는 장애 상태가 변경되었습니다.' : 'Maintenance mode or incident status was changed.',
       }
     }
     if (type === 'document_deleted' || type === 'document_rejected') {
@@ -689,6 +708,18 @@ export function NotificationsPage() {
   }, [filterParam, fetchNotifications])
 
   useEffect(() => {
+    const handleUserChanged = () => {
+      fetchNotifications(filterParam)
+    }
+    window.addEventListener('aiStudyHubUserChanged', handleUserChanged)
+    window.addEventListener('aiStudyHubNotificationsUpdated', handleUserChanged)
+    return () => {
+      window.removeEventListener('aiStudyHubUserChanged', handleUserChanged)
+      window.removeEventListener('aiStudyHubNotificationsUpdated', handleUserChanged)
+    }
+  }, [filterParam, fetchNotifications])
+
+  useEffect(() => {
     return () => {
       if (undoTimeoutId) clearTimeout(undoTimeoutId)
     }
@@ -713,11 +744,12 @@ export function NotificationsPage() {
 
     // Save to localStorage `aiStudyHubDeletedNotificationIds`
     try {
-      const storedDeleted = localStorage.getItem('aiStudyHubDeletedNotificationIds')
+      const userEmail = getCurrentUser().email;
+      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`)
       let deletedIds: string[] = storedDeleted ? JSON.parse(storedDeleted) : []
       if (!deletedIds.includes(targetId)) {
         deletedIds.push(targetId)
-        localStorage.setItem('aiStudyHubDeletedNotificationIds', JSON.stringify(deletedIds))
+        localStorage.setItem(`aiStudyHubDeletedNotificationIds:${userEmail}`, JSON.stringify(deletedIds))
       }
     } catch (e) {
       console.error('Failed to save deleted notification IDs', e)
@@ -766,11 +798,12 @@ export function NotificationsPage() {
     })
 
     try {
-      const storedDeleted = localStorage.getItem('aiStudyHubDeletedNotificationIds')
+      const userEmail = getCurrentUser().email;
+      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`)
       if (storedDeleted) {
         let deletedIds: string[] = JSON.parse(storedDeleted)
         deletedIds = deletedIds.filter(id => id !== restoredId)
-        localStorage.setItem('aiStudyHubDeletedNotificationIds', JSON.stringify(deletedIds))
+        localStorage.setItem(`aiStudyHubDeletedNotificationIds:${userEmail}`, JSON.stringify(deletedIds))
       }
       window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'))
     } catch (e) {

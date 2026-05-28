@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { UserDropdown } from '@/components/layout/UserDropdown'
 import { NotificationDropdown } from '@/components/layout/NotificationDropdown'
+import { getCurrentUser } from '@/features/notifications/services/userNotificationService'
 import { HelpModal } from '@/components/layout/HelpModal'
 import { ConfirmLogoutModal } from '@/components/layout/ConfirmLogoutModal'
 import { ChangeUserModal } from '@/components/layout/ChangeUserModal'
@@ -66,7 +67,7 @@ export interface MockNotification {
 export function Header() {
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role?.toLowerCase() === 'admin'
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
   const [searchParams] = useSearchParams()
@@ -79,44 +80,78 @@ export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   const loadNotifications = () => {
-    const defaultNotifications: MockNotification[] = [
-      {
-        id: 'syllabus-analyzed',
-        title: 'Syllabus analyzed',
-        description: 'Your CS101 Syllabus was parsed successfully by AI.',
-        time: '5m ago',
-        type: 'doc',
-        isRead: false,
-      },
-      {
-        id: 'study-plan-starting',
-        title: 'Study plan starting',
-        description: 'Your midterm exam study plan starts tomorrow.',
-        time: '1h ago',
-        type: 'plan',
-        isRead: false,
-      },
-      {
-        id: 'new-shared-folder',
-        title: 'New shared folder',
-        description: 'Duy Binh shared "SWE Lab materials" with you.',
-        time: '3h ago',
-        type: 'share',
-        isRead: true,
-      },
-      {
-        id: 'ai-summary-generated',
-        title: 'AI Summary generated',
-        description: 'Summary is ready for Chapter 4: Computer Networking.',
-        time: '1d ago',
-        type: 'chat',
-        isRead: true,
-      },
-    ]
+    const currentUser = getCurrentUser();
+    const userRole = currentUser.role;
+    const userEmail = currentUser.email;
+
+    let defaultNotifications: MockNotification[] = [];
+    if (userRole === 'admin') {
+      defaultNotifications = [
+        {
+          id: 'new-report-submitted',
+          title: language === 'vi' ? 'Có báo cáo mới' : 'New report submitted',
+          description: language === 'vi' ? 'Một người dùng đã báo cáo tài liệu vì đạo văn.' : 'A user reported a document for plagiarism.',
+          time: '10m ago',
+          type: 'doc',
+          isRead: false,
+        },
+        {
+          id: 'ai-audit-flagged',
+          title: language === 'vi' ? 'AI phát hiện tài liệu đáng ngờ' : 'AI audit flagged a document',
+          description: language === 'vi' ? 'AI Guard đã phát hiện vi phạm chính sách tiềm ẩn.' : 'AI Guard detected a potential policy violation.',
+          time: '1h ago',
+          type: 'chat',
+          isRead: false,
+        },
+        {
+          id: 'system-status-updated',
+          title: language === 'vi' ? 'Trạng thái hệ thống đã cập nhật' : 'System status updated',
+          description: language === 'vi' ? 'Chế độ bảo trì hoặc trạng thái sự cố đã được thay đổi.' : 'Maintenance mode or incident status was changed.',
+          time: '3h ago',
+          type: 'plan',
+          isRead: true,
+        }
+      ];
+    } else {
+      defaultNotifications = [
+        {
+          id: 'syllabus-analyzed',
+          title: 'Syllabus analyzed',
+          description: 'Your CS101 Syllabus was parsed successfully by AI.',
+          time: '5m ago',
+          type: 'doc',
+          isRead: false,
+        },
+        {
+          id: 'study-plan-starting',
+          title: 'Study plan starting',
+          description: 'Your midterm exam study plan starts tomorrow.',
+          time: '1h ago',
+          type: 'plan',
+          isRead: false,
+        },
+        {
+          id: 'new-shared-folder',
+          title: 'New shared folder',
+          description: 'Duy Binh shared "SWE Lab materials" with you.',
+          time: '3h ago',
+          type: 'share',
+          isRead: true,
+        },
+        {
+          id: 'ai-summary-generated',
+          title: 'AI Summary generated',
+          description: 'Summary is ready for Chapter 4: Computer Networking.',
+          time: '1d ago',
+          type: 'chat',
+          isRead: true,
+        },
+      ];
+    }
 
     let localNotifications: MockNotification[] = []
     try {
-      const savedNotifs = localStorage.getItem('aiStudyHubUserNotifications')
+      const savedNotifs = localStorage.getItem(`aiStudyHubUserNotifications:${userEmail}`)
       if (savedNotifs) {
         const parsed = JSON.parse(savedNotifs)
         localNotifications = parsed.map((n: any) => ({
@@ -141,7 +176,7 @@ export function Header() {
     let allNotifs = [...localNotifications, ...defaultNotifications]
 
     try {
-      const saved = localStorage.getItem('aiStudyHubHeaderNotificationsReadState')
+      const saved = localStorage.getItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`)
       if (saved) {
         const readMap = JSON.parse(saved)
         allNotifs = allNotifs.map((n) => ({
@@ -155,7 +190,7 @@ export function Header() {
 
     let deletedIds: string[] = []
     try {
-      const storedDeleted = localStorage.getItem('aiStudyHubDeletedNotificationIds')
+      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`)
       if (storedDeleted) {
         deletedIds = JSON.parse(storedDeleted)
       }
@@ -173,9 +208,11 @@ export function Header() {
   useEffect(() => {
     const handleUpdate = () => setNotifications(loadNotifications())
     window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+    window.addEventListener('aiStudyHubUserChanged', handleUpdate)
     window.addEventListener('storage', handleUpdate)
     return () => {
       window.removeEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+      window.removeEventListener('aiStudyHubUserChanged', handleUpdate)
       window.removeEventListener('storage', handleUpdate)
     }
   }, [])
@@ -184,9 +221,10 @@ export function Header() {
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
   const markAsRead = (id: string) => {
+    const userEmail = getCurrentUser().email
     if (id.startsWith('usr-ntf-')) {
       import('@/features/notifications/services/userNotificationService').then((m) => {
-        m.userNotificationService.markUserNotificationAsRead(id)
+        m.userNotificationService.markUserNotificationAsRead(id, userEmail)
       })
     }
     
@@ -200,7 +238,7 @@ export function Header() {
             readMap[n.id] = n.isRead
           }
         })
-        localStorage.setItem('aiStudyHubHeaderNotificationsReadState', JSON.stringify(readMap))
+        localStorage.setItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`, JSON.stringify(readMap))
       } catch (err) {
         console.error('Failed to save notifications read state:', err)
       }
@@ -209,8 +247,9 @@ export function Header() {
   }
 
   const markAllAsRead = () => {
+    const userEmail = getCurrentUser().email
     import('@/features/notifications/services/userNotificationService').then((m) => {
-      m.userNotificationService.markAllUserNotificationsAsRead()
+      m.userNotificationService.markAllUserNotificationsAsRead(userEmail)
     })
     
     setNotifications((prev) => {
@@ -223,7 +262,7 @@ export function Header() {
             readMap[n.id] = n.isRead
           }
         })
-        localStorage.setItem('aiStudyHubHeaderNotificationsReadState', JSON.stringify(readMap))
+        localStorage.setItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`, JSON.stringify(readMap))
       } catch (err) {
         console.error('Failed to save notifications read state:', err)
       }
