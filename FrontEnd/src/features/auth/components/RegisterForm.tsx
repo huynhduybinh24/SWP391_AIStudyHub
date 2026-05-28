@@ -339,8 +339,6 @@ export function RegisterForm() {
           {loginText}
         </Link>
       </p>
-    </div> </Link>
-      </p>
     </div>
   )
 }
