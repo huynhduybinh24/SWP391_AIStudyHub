@@ -12,7 +12,11 @@ export function useRegister() {
     mutationFn: (values: RegisterCredentials) => authService.register(values),
     onSuccess: (data) => {
       setSession(data.user, data.tokens)
-      navigate('/dashboard', { replace: true })
+      if (data.user.role?.toLowerCase() === 'teacher') {
+        navigate('/dashboard/admin', { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
     },
   })
 }
