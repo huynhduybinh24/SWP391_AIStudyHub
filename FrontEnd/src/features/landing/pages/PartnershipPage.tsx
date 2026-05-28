@@ -91,6 +91,8 @@ export function PartnershipPage() {
   const navigate = useNavigate();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   
+  const currentUser = useAuthStore((state) => state.user);
+  
   // Form State
   const [form, setForm] = useState({
     fullName: '',
@@ -99,6 +101,17 @@ export function PartnershipPage() {
     partnershipType: '',
     message: ''
   });
+
+  // Pre-fill form when currentUser is available
+  useEffect(() => {
+    if (currentUser) {
+      setForm((prev) => ({
+        ...prev,
+        fullName: prev.fullName || currentUser.name || '',
+        email: prev.email || currentUser.email || '',
+      }));
+    }
+  }, [currentUser]);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,6 +147,17 @@ export function PartnershipPage() {
     try {
       await partnershipService.submitRequest(form);
       setIsSuccess(true);
+      
+      // If logged-in user is a teacher and matches the submitted email, update their store state!
+      if (currentUser && currentUser.email?.toLowerCase() === form.email.toLowerCase() && currentUser.role?.toLowerCase() === 'teacher') {
+        useAuthStore.setState({
+          user: {
+            ...currentUser,
+            plan: 'pro'
+          }
+        });
+      }
+
       setForm({
         fullName: '',
         email: '',
