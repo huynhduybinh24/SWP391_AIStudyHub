@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Mail, Lock, Eye, EyeOff, User, LockKeyhole, ArrowRight } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, LockKeyhole, ArrowRight, GraduationCap, Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { registerSchema, type RegisterFormValues } from '@/features/auth/schemas/registerSchema'
 import { useRegister } from '@/features/auth/hooks/useRegister'
+import { useTranslation } from '@/context/LanguageContext'
+import { cn } from '@/lib/utils'
 
 // Social Login Icon Components
 function GoogleIcon() {
@@ -28,15 +30,17 @@ export function RegisterForm() {
   const registerMutation = useRegister()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const { language } = useTranslation()
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { fullName: '', email: '', password: '', confirmPassword: '', terms: false },
+    defaultValues: { fullName: '', email: '', password: '', confirmPassword: '', role: 'student', terms: false },
   })
 
   const passwordValue = watch('password')
