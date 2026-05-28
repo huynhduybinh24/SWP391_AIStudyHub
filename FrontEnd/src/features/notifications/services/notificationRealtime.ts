@@ -145,6 +145,13 @@ class NotificationRealtimeManager {
   }
 
   private handleIncomingNotification(data: any) {
+    if (typeof window !== 'undefined') {
+      const currentUser = localStorage.getItem('aiStudyHubCurrentUser');
+      if (!currentUser) {
+        return; // Skip notifications if user is not logged in
+      }
+    }
+
     const newNotif: RealtimeNotification = {
       id: data.id || `realtime-${Date.now()}`,
       type: data.type || 'ai',
