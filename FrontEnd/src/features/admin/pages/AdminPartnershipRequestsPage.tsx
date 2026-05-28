@@ -23,6 +23,8 @@ export function AdminPartnershipRequestsPage() {
   
   const [selectedRequest, setSelectedRequest] = useState<PartnershipRequest | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showRejectInput, setShowRejectInput] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
   useEffect(() => {
     fetchRequests();
@@ -40,10 +42,10 @@ export function AdminPartnershipRequestsPage() {
     }
   };
 
-  const handleUpdateStatus = async (id: string, newStatus: PartnershipStatus) => {
+  const handleUpdateStatus = async (id: string, newStatus: PartnershipStatus, reason?: string) => {
     setIsUpdating(true);
     try {
-      const updated = await partnershipService.updateStatus(id, newStatus);
+      const updated = await partnershipService.updateStatus(id, newStatus, reason);
       if (updated) {
         setRequests(requests.map(req => req.id === id ? updated : req));
         if (selectedRequest?.id === id) {
@@ -54,6 +56,8 @@ export function AdminPartnershipRequestsPage() {
       console.error('Failed to update status', error);
     } finally {
       setIsUpdating(false);
+      setShowRejectInput(false);
+      setRejectReason('');
     }
   };
 
@@ -229,42 +233,99 @@ export function AdminPartnershipRequestsPage() {
                   {selectedRequest.message}
                 </div>
               </div>
+
+              {selectedRequest.rejectReason && (
+                <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 p-5 rounded-2xl animate-in fade-in duration-250">
+                  <div className="text-xs font-bold text-rose-700 dark:text-rose-450 uppercase tracking-wider mb-2">Rejection Reason</div>
+                  <div className="text-rose-900 dark:text-rose-200 text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                    {selectedRequest.rejectReason}
+                  </div>
+                </div>
+              )}
               
               <div className="text-xs text-slate-400 flex items-center gap-1.5 mt-2">
                 <Calendar className="w-3.5 h-3.5" />
                 Submitted on {new Date(selectedRequest.createdAt).toLocaleString()}
               </div>
+
+              {showRejectInput && (
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Rejection Reason
+                  </label>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Provide a detailed explanation. This reason will be dispatched to the applicant's notification inbox and email address.
+                  </p>
+                  <textarea
+                    rows={3}
+                    placeholder="e.g., The provided educational organization details could not be verified."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 resize-none font-medium font-medium"
+                    disabled={isUpdating}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Modal Footer Actions */}
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 flex justify-end gap-3">
-              <button 
-                onClick={() => setSelectedRequest(null)}
-                className="px-5 py-2.5 rounded-xl font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
-                disabled={isUpdating}
-              >
-                Close
-              </button>
-              
-              {selectedRequest.status !== 'Rejected' && (
-                <button 
-                  onClick={() => handleUpdateStatus(selectedRequest.id, 'Rejected')}
-                  disabled={isUpdating}
-                  className="px-5 py-2.5 rounded-xl font-semibold bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 transition-colors disabled:opacity-50"
-                >
-                  Reject
-                </button>
-              )}
-              
-              {selectedRequest.status !== 'Approved' && (
-                <button 
-                  onClick={() => handleUpdateStatus(selectedRequest.id, 'Approved')}
-                  disabled={isUpdating}
-                  className="px-5 py-2.5 rounded-xl font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-                >
-                  {isUpdating ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> : null}
-                  Approve Partnership
-                </button>
+              {showRejectInput ? (
+                <>
+                  <button 
+                    onClick={() => {
+                      setShowRejectInput(false);
+                      setRejectReason('');
+                    }}
+                    className="px-5 py-2.5 rounded-xl font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                    disabled={isUpdating}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => handleUpdateStatus(selectedRequest.id, 'Rejected', rejectReason)}
+                    disabled={isUpdating || !rejectReason.trim()}
+                    className="px-5 py-2.5 rounded-xl font-semibold bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isUpdating ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> : null}
+                    Confirm Rejection
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => {
+                      setSelectedRequest(null);
+                      setShowRejectInput(false);
+                      setRejectReason('');
+                    }}
+                    className="px-5 py-2.5 rounded-xl font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                    disabled={isUpdating}
+                  >
+                    Close
+                  </button>
+                  
+                  {selectedRequest.status !== 'Rejected' && (
+                    <button 
+                      onClick={() => setShowRejectInput(true)}
+                      disabled={isUpdating}
+                      className="px-5 py-2.5 rounded-xl font-semibold bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 transition-colors disabled:opacity-50"
+                    >
+                      Reject
+                    </button>
+                  )}
+                  
+                  {selectedRequest.status !== 'Approved' && (
+                    <button 
+                      onClick={() => handleUpdateStatus(selectedRequest.id, 'Approved')}
+                      disabled={isUpdating}
+                      className="px-5 py-2.5 rounded-xl font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isUpdating ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> : null}
+                      Approve Partnership
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
