@@ -761,7 +761,22 @@ export const vi: typeof en = {
     title: "Thông báo",
     subtitle: "Xem các hoạt động gần đây và cập nhật học tập.",
     markAllAsRead: "Đánh dấu tất cả là đã đọc",
-    noNotifications: "Không có thông báo mới."
+    noNotifications: "Không có thông báo mới.",
+    detailModalTitle: "Chi tiết Thông báo",
+    detailDocName: "Tên tài liệu",
+    detailActionType: "Loại hành động",
+    detailReason: "Lý do",
+    detailAdminNote: "Ghi chú của Admin",
+    detailTime: "Thời gian",
+    actionRemoved: "Đã bị quản trị viên xóa",
+    actionRejected: "Đã bị quản trị viên từ chối",
+    noReasonProvided: "Chưa có lý do chi tiết.",
+    deleteTitle: "Xóa thông báo?",
+    deleteMessage: "Bạn có chắc muốn xóa thông báo này không? Hành động này chỉ xóa thông báo khỏi danh sách của bạn.",
+    deleteCancel: "Hủy",
+    deleteConfirm: "Xóa",
+    deleteToast: "Đã xóa thông báo.",
+    deleteAriaLabel: "Xóa thông báo"
   },
   studyPlans: {
     title: "Kế hoạch học tập",
@@ -1309,6 +1324,8 @@ export const vi: typeof en = {
     }
   },
   notificationManagement: {
+    title: "Quản lý thông báo",
+    subtitle: "Tạo, gửi và xem lại các thông báo hệ thống.",
     sentBroadcastHistory: "LỊCH SỬ THÔNG BÁO ĐÃ GỬI",
     broadcasts: {
       maintenanceTitle: "Bảo trì hệ thống định kỳ tháng 6/2026",
@@ -1320,5 +1337,21 @@ export const vi: typeof en = {
     targetAll: "TẤT CẢ",
     targetPro: "PRO",
     recipients: "NGƯỜI NHẬN"
+  },
+  userMenu: {
+    changeUser: "Đổi người dùng"
+  },
+  userSwitch: {
+    title: "Đổi người dùng",
+    subtitle: "Chọn tài khoản mẫu để kiểm thử quyền truy cập khác nhau.",
+    cancel: "Hủy",
+    switch: "Chuyển người dùng",
+    switched: "Đã chuyển sang {name}",
+    current: "Đang dùng",
+    adminDescription: "Có toàn quyền truy cập trang quản trị và cài đặt hệ thống.",
+    studentDescription: "Tài khoản học viên tiêu chuẩn với tài liệu và tính năng học tập.",
+    instructorDescription: "Có thể quản lý tài liệu khóa học và cộng tác với học viên.",
+    proStudentDescription: "Tài khoản học viên có dung lượng nâng cấp và tính năng cao cấp."
   }
 };
+

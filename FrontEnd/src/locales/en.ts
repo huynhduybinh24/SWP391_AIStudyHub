@@ -759,7 +759,22 @@ export const en = {
     title: "Notifications",
     subtitle: "View your recent activities and learning updates.",
     markAllAsRead: "Mark all as read",
-    noNotifications: "No new notifications."
+    noNotifications: "No new notifications.",
+    detailModalTitle: "Notification Details",
+    detailDocName: "Document Name",
+    detailActionType: "Action Type",
+    detailReason: "Reason",
+    detailAdminNote: "Admin Note",
+    detailTime: "Time",
+    actionRemoved: "Removed by admin",
+    actionRejected: "Rejected by admin",
+    noReasonProvided: "No reason details were provided.",
+    deleteTitle: "Delete notification?",
+    deleteMessage: "Are you sure you want to delete this notification? This action only removes it from your notification list.",
+    deleteCancel: "Cancel",
+    deleteConfirm: "Delete",
+    deleteToast: "Notification deleted.",
+    deleteAriaLabel: "Delete notification"
   },
   studyPlans: {
     title: "Study Plans",
@@ -1306,6 +1321,8 @@ export const en = {
     }
   },
   notificationManagement: {
+    title: "Notification Management",
+    subtitle: "Create, send, and review system notifications.",
     sentBroadcastHistory: "SENT BROADCAST HISTORY",
     broadcasts: {
       maintenanceTitle: "Scheduled system maintenance for June 2026",
@@ -1317,5 +1334,21 @@ export const en = {
     targetAll: "ALL",
     targetPro: "PRO",
     recipients: "RECIPIENTS"
+  },
+  userMenu: {
+    changeUser: "Change User"
+  },
+  userSwitch: {
+    title: "Change User",
+    subtitle: "Select a mock account to preview different permissions.",
+    cancel: "Cancel",
+    switch: "Switch User",
+    switched: "Switched to {name}",
+    current: "Current",
+    adminDescription: "Full access to admin dashboard and system settings.",
+    studentDescription: "Standard learner account with documents and study features.",
+    instructorDescription: "Can manage shared course materials and student collaboration.",
+    proStudentDescription: "Student account with upgraded storage and premium features."
   }
 };
+

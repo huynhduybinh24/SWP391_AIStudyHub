@@ -746,7 +746,13 @@ export const ko: any = {
     title: "알림",
     subtitle: "최근 활동 및 학습 업데이트 사항을 봅니다.",
     markAllAsRead: "모두 읽음으로 표시",
-    noNotifications: "새 알림이 없습니다."
+    noNotifications: "새 알림이 없습니다.",
+    deleteTitle: "Delete notification?",
+    deleteMessage: "Are you sure you want to delete this notification? This action only removes it from your notification list.",
+    deleteCancel: "Cancel",
+    deleteConfirm: "Delete",
+    deleteToast: "Notification deleted.",
+    deleteAriaLabel: "Delete notification"
   },
   studyPlans: {
     title: "학습 계획",
@@ -1241,5 +1247,21 @@ export const ko: any = {
         tags: ['#유전학실험', '#보고서', '#신경유전학']
       }
     }
+  },
+  userMenu: {
+    changeUser: "Change User"
+  },
+  userSwitch: {
+    title: "Change User",
+    subtitle: "Select a mock account to preview different permissions.",
+    cancel: "Cancel",
+    switch: "Switch User",
+    switched: "Switched to {name}",
+    current: "Current",
+    adminDescription: "Full access to admin dashboard and system settings.",
+    studentDescription: "Standard learner account with documents and study features.",
+    instructorDescription: "Can manage shared course materials and student collaboration.",
+    proStudentDescription: "Student account with upgraded storage and premium features."
   }
 };
+

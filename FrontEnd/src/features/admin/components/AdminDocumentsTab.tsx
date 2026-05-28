@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { adminService, AdminDocument } from '../services/adminService'
+import { userNotificationService } from '@/features/notifications/services/userNotificationService'
 import { cn } from '@/lib/utils'
 
 interface AdminDocumentsTabProps {
@@ -313,6 +314,18 @@ export function AdminDocumentsTab({
     if (previewDoc && previewDoc.id === rejectDocConfirm.id) {
       setPreviewDoc((prev) => (prev ? { ...prev, status: 'rejected' } : null))
     }
+
+    const finalRejectReason = rejectReason.trim() || "No reason provided by admin.";
+    userNotificationService.addUserNotification({
+      type: "document_rejected",
+      title: "Document rejected by admin",
+      message: `Your document "${rejectDocConfirm.title}" was rejected by admin. Reason: ${finalRejectReason}`,
+      documentId: rejectDocConfirm.id,
+      documentName: rejectDocConfirm.title,
+      reason: finalRejectReason,
+      actionType: "rejected"
+    })
+
     const msg = language === 'vi'
       ? `Đã từ chối tài liệu và gửi mail thông báo lý do đến ${rejectDocConfirm.ownerEmail} thành công`
       : `Document rejected and notification email with reason sent to ${rejectDocConfirm.ownerEmail} successfully`
@@ -331,6 +344,17 @@ export function AdminDocumentsTab({
     if (previewDoc && previewDoc.id === deleteDoc.id) {
       setPreviewDoc(null)
     }
+
+    const finalDeleteReason = deleteReason.trim() || "No reason provided by admin.";
+    userNotificationService.addUserNotification({
+      type: "document_deleted",
+      title: "Document removed by admin",
+      message: `Your document "${deleteDoc.title}" was removed by admin. Reason: ${finalDeleteReason}`,
+      documentId: deleteDoc.id,
+      documentName: deleteDoc.title,
+      reason: finalDeleteReason,
+      actionType: "removed"
+    })
     
     const msg = language === 'vi'
       ? `Đã xóa tài liệu "${deleteDoc.title}" và gửi phản hồi đến ${deleteDoc.ownerEmail}: "${deleteReason}"`

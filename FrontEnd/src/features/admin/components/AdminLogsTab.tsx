@@ -17,10 +17,11 @@ interface SystemLog {
 }
 
 export function AdminLogsTab() {
-  const { language, t } = useTranslation()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'security' | 'subscription' | 'ai-audit' | 'moderation'>('all')
+  const { t } = useTranslation();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'security' | 'subscription' | 'ai-audit' | 'moderation'>('all');
 
+  const [logs] = useState<SystemLog[]>([
     {
       id: 'log-1',
       eventKey: 'passwordRestored',
@@ -29,7 +30,7 @@ export function AdminLogsTab() {
       performerEmail: 'admin@example.com',
       timestamp: '2026-05-26 12:45',
       detailsKey: 'passwordRestored',
-      status: 'success'
+      status: 'success',
     },
     {
       id: 'log-2',
@@ -39,7 +40,7 @@ export function AdminLogsTab() {
       performerEmail: 'system@lumiedu.vn',
       timestamp: '2026-05-26 11:20',
       detailsKey: 'aiScanViolationDetected',
-      status: 'warning'
+      status: 'warning',
     },
     {
       id: 'log-3',
@@ -49,7 +50,7 @@ export function AdminLogsTab() {
       performerEmail: 'admin@example.com',
       timestamp: '2026-05-26 10:15',
       detailsKey: 'userAccountLocked',
-      status: 'success'
+      status: 'success',
     },
     {
       id: 'log-4',
@@ -59,7 +60,7 @@ export function AdminLogsTab() {
       performerEmail: 'tan@example.com',
       timestamp: '2026-05-25 18:32',
       detailsKey: 'accountPackageUpgraded',
-      status: 'success'
+      status: 'success',
     },
     {
       id: 'log-5',
@@ -69,7 +70,7 @@ export function AdminLogsTab() {
       performerEmail: 'admin@example.com',
       timestamp: '2026-05-25 14:02',
       detailsKey: 'documentApproved',
-      status: 'success'
+      status: 'success',
     },
     {
       id: 'log-6',
@@ -79,7 +80,7 @@ export function AdminLogsTab() {
       performerEmail: 'admin@example.com',
       timestamp: '2026-05-24 10:15',
       detailsKey: 'systemNotificationBroadcast',
-      status: 'success'
+      status: 'success',
     },
     {
       id: 'log-7',
@@ -89,13 +90,9 @@ export function AdminLogsTab() {
       performerEmail: 'sarah.j@school.edu',
       timestamp: '2026-05-23 09:44',
       detailsKey: 'paymentTransactionFailed',
-      status: 'failed'
-    }
-  ])tamp: '2026-05-23 09:44',
-      details: 'Thẻ tín dụng hết hạn hoặc số dư không đủ khi tự động gia hạn gói cước Pro.',
-      status: 'failed'
-    }
-  ])
+      status: 'failed',
+    },
+  ]);
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
