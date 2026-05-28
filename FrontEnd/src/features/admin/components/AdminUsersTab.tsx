@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Search,
   Eye,
@@ -32,7 +33,14 @@ export function AdminUsersTab({
   const { language } = useTranslation()
   const toast = useToast()
 
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchParams] = useSearchParams()
+  const keywordParam = searchParams.get('keyword') || ''
+  const [searchTerm, setSearchTerm] = useState(keywordParam)
+
+  useEffect(() => {
+    setSearchTerm(keywordParam)
+  }, [keywordParam])
+
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
