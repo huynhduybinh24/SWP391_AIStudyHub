@@ -473,7 +473,11 @@ export function Header() {
     if (searchVal.trim()) {
       toast.success(t.header.toastSearchingResults(searchVal.trim()))
       const kw = encodeURIComponent(searchVal.trim())
-      if (pathname.startsWith('/dashboard/study-plans')) {
+      if (isAdmin || pathname.startsWith('/dashboard/admin')) {
+        const params = new URLSearchParams(window.location.search)
+        const currentTab = params.get('tab') || 'overview'
+        navigate(`/dashboard/admin?tab=${currentTab}&keyword=${kw}`)
+      } else if (pathname.startsWith('/dashboard/study-plans')) {
         navigate(`/dashboard/study-plans?keyword=${kw}`)
       } else if (pathname.startsWith('/dashboard/shared-files/research-materials')) {
         navigate(`/dashboard/shared-files/research-materials?keyword=${kw}`)
@@ -483,16 +487,39 @@ export function Header() {
     }
   }
 
-  const handleSuggestionClick = (term: string) => {
+  const handleSuggestionClick = (term: string, category?: string) => {
     setSearchVal(term)
     saveSearchToHistory(term)
     toast.success(t.header.toastSearchingResults(term))
-    navigate(`/dashboard/documents/search?keyword=${encodeURIComponent(term)}`)
+    
+    if (isAdmin) {
+      const lowerTerm = term.toLowerCase()
+      if (category === 'Admin Panel' || lowerTerm.includes('user') || lowerTerm.includes('moderation') || lowerTerm.includes('log') || lowerTerm.includes('status') || lowerTerm.includes('report') || lowerTerm.includes('package')) {
+        let targetTab = 'overview'
+        if (lowerTerm.includes('user')) targetTab = 'users'
+        else if (lowerTerm.includes('document') || lowerTerm.includes('moderation')) targetTab = 'documents'
+        else if (lowerTerm.includes('log')) targetTab = 'activity-logs'
+        else if (lowerTerm.includes('report')) targetTab = 'reports'
+        else if (lowerTerm.includes('package') || lowerTerm.includes('pricing')) targetTab = 'packages'
+        else if (lowerTerm.includes('status') || lowerTerm.includes('maintenance')) targetTab = 'overview'
+        
+        navigate(`/dashboard/admin?tab=${targetTab}`)
+      } else if (category && category.includes('User')) {
+        navigate(`/dashboard/admin?tab=users&keyword=${encodeURIComponent(term)}`)
+      } else if (category && (category.includes('Syllabus') || category.includes('Document') || category.includes('Notes') || category.includes('Review') || category.includes('Guide') || category.includes('Outline') || category.includes('Dataset') || category.includes('Image'))) {
+        navigate(`/dashboard/admin?tab=documents&keyword=${encodeURIComponent(term)}`)
+      } else {
+        navigate(`/dashboard/admin?keyword=${encodeURIComponent(term)}`)
+      }
+    } else {
+      navigate(`/dashboard/documents/search?keyword=${encodeURIComponent(term)}`)
+    }
     setShowSuggestions(false)
   }
 
   // Dynamic filter for autocomplete suggestions
-  const filteredTopics = SEARCH_SUGGESTION_TOPICS.filter((item) =>
+  const currentSuggestions = isAdmin ? ADMIN_SUGGESTION_TOPICS : SEARCH_SUGGESTION_TOPICS
+  const filteredTopics = currentSuggestions.filter((item) =>
     item.title.toLowerCase().includes(searchVal.toLowerCase())
   )
 
