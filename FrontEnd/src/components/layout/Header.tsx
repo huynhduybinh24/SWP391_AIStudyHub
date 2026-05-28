@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, CircleHelp, Sun, Moon, Menu, X, Search, History, TrendingUp, FileText, Sparkles, Folder, Calendar, MessageCircle } from 'lucide-react'
+import { Bell, CircleHelp, Sun, Moon, Menu, X, Search, History, TrendingUp, FileText, Sparkles, Folder, Calendar, MessageCircle, Shield, User } from 'lucide-react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
 import { Input } from '@/components/ui/Input'
@@ -33,6 +33,34 @@ const SEARCH_SUGGESTION_TOPICS: SearchSuggestion[] = [
   { id: '4', title: 'AI Chatbot Integration Architecture', category: 'Design Pattern' },
   { id: '5', title: 'Tailwind CSS V4 Utility Classes', category: 'Styling' },
   { id: '6', title: 'Data Structures and Algorithms Summary', category: 'Study Guide' },
+]
+
+const ADMIN_SUGGESTION_TOPICS: SearchSuggestion[] = [
+  // Mock Users
+  { id: 'usr-1', title: 'Huynh Duy Binh', category: 'User (Student)' },
+  { id: 'usr-2', title: 'Alex Rivera', category: 'User (Student)' },
+  { id: 'usr-3', title: 'Sarah Jenkins', category: 'User (Teacher)' },
+  { id: 'usr-4', title: 'Ngoc Tan', category: 'User (Student)' },
+  { id: 'usr-5', title: 'Marcus Knight', category: 'User (Student)' },
+  { id: 'usr-6', title: 'Emily R.', category: 'User (Teacher)' },
+
+  // Mock Documents
+  { id: 'doc-1', title: 'Advanced Neuroscience Syllabus 2024', category: 'Syllabus' },
+  { id: 'doc-2', title: 'Group Project Research Materials', category: 'Research Document' },
+  { id: 'doc-3', title: 'Organic Chemistry Study Plan', category: 'Study Guide' },
+  { id: 'doc-4', title: 'Biology 101 Midterm Notes Leaked Exam', category: 'Flagged Notes' },
+  { id: 'doc-5', title: 'Literature Review Copy Paste Plagiarized', category: 'Flagged Review' },
+  { id: 'doc-6', title: 'Data Set_V1', category: 'Dataset Document' },
+  { id: 'doc-7', title: 'Project_Outline', category: 'Outline Document' },
+  { id: 'doc-8', title: 'Brainstorming_Diagram', category: 'Image Document' },
+
+  // Admin Panels / Tabs / Settings
+  { id: 'adm-1', title: 'User Management Dashboard', category: 'Admin Panel' },
+  { id: 'adm-2', title: 'Document Moderation and Audit', category: 'Admin Panel' },
+  { id: 'adm-3', title: 'Security Logs and Auditing', category: 'Admin Panel' },
+  { id: 'adm-4', title: 'System Status and Maintenance', category: 'Admin Panel' },
+  { id: 'adm-5', title: 'User Reports and Plagiarism Claims', category: 'Admin Panel' },
+  { id: 'adm-6', title: 'Subscription Packages and Pricing', category: 'Admin Panel' },
 ]
 
 const TRENDING_TOPICS: string[] = [
