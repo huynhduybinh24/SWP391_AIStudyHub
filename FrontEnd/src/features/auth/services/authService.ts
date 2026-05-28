@@ -75,12 +75,15 @@ export const authService = {
   },
 
   async register(credentials: RegisterCredentials): Promise<LoginResponse> {
+    const userRole = credentials.role || 'student'
+    if (userRole === 'admin') {
+      throw new Error('Admin registration is not allowed. Admin accounts can only be retrieved from the database.')
+    }
     try {
       const { data } = await apiClient.post<LoginResponse>('/auth/register', credentials)
       return data
     } catch {
       const newUserId = Math.random().toString(36).substr(2, 9)
-      const userRole = credentials.role || 'student'
       
       // Save to localStorage so they show up on admin dashboard immediately
       if (typeof window !== 'undefined') {
