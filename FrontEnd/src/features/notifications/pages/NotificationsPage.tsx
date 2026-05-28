@@ -391,6 +391,7 @@ function NotificationCard({
       {/* Red Action Underlayer for Swipe-to-delete */}
       <div 
         className="absolute inset-y-0 inset-x-0 bg-gradient-to-l from-rose-600 to-rose-500 flex items-center justify-end px-8 rounded-2xl gap-2 text-white font-bold text-sm pointer-events-none"
+        style={{ display: dragX < 0 ? 'flex' : 'none' }}
       >
         <Trash2 className="w-5 h-5 animate-pulse" />
         <span>{language === 'vi' ? 'Xóa' : 'Delete'}</span>
@@ -417,6 +418,10 @@ function NotificationCard({
           if (hasDraggedRef.current) {
             e.preventDefault()
             e.stopPropagation()
+            return
+          }
+          if (dragX !== 0) {
+            setDragX(0)
             return
           }
           onMarkRead?.()
@@ -904,7 +909,7 @@ export function NotificationsPage() {
             
             return (
               <NotificationCard
-                key={notification.id}
+                key={`${activeFilter}-${notification.id}`}
                 {...notification}
                 buttons={cardButtons}
                 isActiveReply={notification.id === activeReplyId}
