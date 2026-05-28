@@ -21,7 +21,7 @@ class NotificationRealtimeManager {
   private isSimulationActive: boolean = false;
 
 
-  // List of pre-defined realistic notifications to simulate
+  // List of pre-defined realistic notifications to simulate for normal users
   private simulationPool = [
     {
       type: 'ai' as NotificationType,
@@ -53,6 +53,30 @@ class NotificationRealtimeManager {
       title: 'New Flashcards Available',
       description: '20 new flashcards have been automatically generated for "Human-Computer Interaction".',
     },
+  ];
+
+  // List of pre-defined realistic notifications to simulate for Admin users
+  private adminSimulationPool = [
+    {
+      type: 'security' as NotificationType,
+      title: 'New Partnership Request',
+      description: 'A new teacher partnership request has been submitted by Ngoc Tan (High School).',
+    },
+    {
+      type: 'security' as NotificationType,
+      title: 'New Deletion/Plagiarism Report',
+      description: 'A student reported "Intro to Biology" for plagiarism.',
+    },
+    {
+      type: 'ai' as NotificationType,
+      title: 'AI Guard Alert: Flagged Document',
+      description: 'AI Guard detected a potential policy violation in "Hacking Manual 101.pdf".',
+    },
+    {
+      type: 'calendar' as NotificationType,
+      title: 'System Health Status',
+      description: 'All AI processing pipelines are running normally.',
+    }
   ];
 
   constructor() {
@@ -146,6 +170,13 @@ class NotificationRealtimeManager {
   }
 
   private handleIncomingNotification(data: any) {
+    if (typeof window !== 'undefined') {
+      const currentUser = localStorage.getItem('aiStudyHubCurrentUser');
+      if (!currentUser) {
+        return; // Skip notifications if user is not logged in
+      }
+    }
+
     const newNotif: RealtimeNotification = {
       id: data.id || `realtime-${Date.now()}`,
       type: data.type || 'ai',
@@ -171,7 +202,19 @@ class NotificationRealtimeManager {
     title?: string,
     description?: string
   ) {
-    let mock = this.simulationPool[Math.floor(Math.random() * this.simulationPool.length)];
+    let isUserAdmin = false;
+    if (typeof window !== 'undefined') {
+      const currentUserStr = localStorage.getItem('aiStudyHubCurrentUser');
+      if (currentUserStr) {
+        try {
+          const user = JSON.parse(currentUserStr);
+          isUserAdmin = user?.role?.toLowerCase() === 'admin';
+        } catch (e) {}
+      }
+    }
+
+    const currentPool = isUserAdmin ? this.adminSimulationPool : this.simulationPool;
+    let mock = currentPool[Math.floor(Math.random() * currentPool.length)];
     if (type || title || description) {
       mock = {
         type: type || 'ai',

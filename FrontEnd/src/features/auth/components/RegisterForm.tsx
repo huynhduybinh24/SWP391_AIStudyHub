@@ -95,12 +95,12 @@ export function RegisterForm() {
     : (language === 'ja' ? '例：山田 太郎' : (language === 'ko' ? '예: 홍길동' : 'e.g. Jane Doe'))
 
   const emailLabel = language === 'vi'
-    ? 'Email học sinh/sinh viên'
-    : (language === 'ja' ? 'メールアドレス' : (language === 'ko' ? '이메일 주소' : 'Student Email'))
+    ? 'Địa chỉ Email'
+    : (language === 'ja' ? 'メールアドレス' : (language === 'ko' ? '이메일 주소' : 'Email Address'))
 
   const emailPlaceholder = language === 'vi'
-    ? 'example@university.edu'
-    : (language === 'ja' ? 'example@university.edu' : (language === 'ko' ? 'example@university.edu' : 'jane@university.edu'))
+    ? 'example@example.com'
+    : (language === 'ja' ? 'example@example.com' : (language === 'ko' ? 'example@example.com' : 'jane@example.com'))
 
   const passwordLabel = language === 'vi'
     ? 'Mật khẩu'
@@ -298,9 +298,31 @@ export function RegisterForm() {
         </div>
 
         {registerMutation.isError ? (
-          <p className="text-sm text-danger mt-2">
-            {registerMutation.error instanceof Error ? registerMutation.error.message : 'Registration failed'}
-          </p>
+          registerMutation.error instanceof Error && registerMutation.error.message === 'email_already_exists' ? (
+            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 p-4 rounded-xl flex flex-col gap-3 mt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-400 font-bold text-xs flex-shrink-0 mt-0.5">!</div>
+                <div className="flex-1 text-sm text-amber-800 dark:text-amber-200 leading-relaxed font-medium">
+                  {language === 'vi' 
+                    ? 'Email này đã tồn tại trong hệ thống. Bạn có muốn đăng nhập bằng tài khoản này không?' 
+                    : 'This email is already registered. Would you like to login instead?'}
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-[0.97]"
+                >
+                  {language === 'vi' ? 'Đăng nhập ngay' : 'Login Now'}
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-danger mt-2 font-medium">
+              {registerMutation.error instanceof Error ? registerMutation.error.message : 'Registration failed'}
+            </p>
+          )
         ) : null}
 
         <Button 

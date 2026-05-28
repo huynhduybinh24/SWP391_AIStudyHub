@@ -2,6 +2,7 @@ import { AccountSettingsCard } from '../components/AccountSettingsCard'
 import { SecurityCard } from '../components/SecurityCard'
 import { InterfaceCard } from '../components/InterfaceCard'
 import { NotificationCard } from '../components/NotificationCard'
+import { BillingSettingsCard } from '../components/BillingSettingsCard'
 import { useTranslation } from '@/context/LanguageContext'
 
 export function SettingsPage() {
@@ -21,6 +22,7 @@ export function SettingsPage() {
         {/* Left Column (takes 2 of 3 columns on large screens) */}
         <div className="lg:col-span-2 space-y-6">
           <AccountSettingsCard />
+          <BillingSettingsCard />
           <InterfaceCard />
         </div>
 

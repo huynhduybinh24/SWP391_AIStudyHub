@@ -10,7 +10,8 @@ import {
   UserCheck,
   UserX,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  TrendingDown
 } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
@@ -52,6 +53,7 @@ export function AdminUsersTab({
   const [pwResetUserConfirm, setPwResetUserConfirm] = useState<AdminUser | null>(null)
   const [editingRoleUser, setEditingRoleUser] = useState<AdminUser | null>(null)
   const [selectedRole, setSelectedRole] = useState<'admin' | 'teacher' | 'student'>('student')
+  const [downgradeUserConfirm, setDowngradeUserConfirm] = useState<AdminUser | null>(null)
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -355,6 +357,17 @@ export function AdminUsersTab({
                           >
                             <UserCheck className="size-4" />
                           </button>
+
+                          {/* Downgrade Plan (If Pro) */}
+                          {u.plan === 'pro' && (
+                            <button
+                              onClick={() => setDowngradeUserConfirm(u)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:text-slate-400 dark:hover:text-rose-400 dark:hover:bg-rose-955/20 transition-all cursor-pointer"
+                              title={language === 'vi' ? 'Hạ cấp gói xuống Free' : 'Downgrade plan to Free'}
+                            >
+                              <TrendingDown className="size-4" />
+                            </button>
+                          )}
 
                           {/* Reset Password */}
                           <button
@@ -769,6 +782,60 @@ export function AdminUsersTab({
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Downgrade Subscription Modal */}
+      <Modal
+        isOpen={!!downgradeUserConfirm}
+        onClose={() => setDowngradeUserConfirm(null)}
+        title={language === 'vi' ? 'Xác nhận hạ cấp gói thành viên' : 'Confirm Downgrade Plan'}
+        className="max-w-md"
+      >
+        <div className="space-y-6 pt-2">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex-shrink-0 border border-amber-100 dark:border-amber-900/30">
+              <TrendingDown className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-[#0b1c30] dark:text-slate-100">
+                {language === 'vi' ? 'Hạ cấp tài khoản xuống Free?' : 'Downgrade user account to Free?'}
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                {language === 'vi' 
+                  ? `Hành động này sẽ hủy kích hoạt gói PRO của ${downgradeUserConfirm?.name} và chuyển về gói FREE mặc định (10 GB dung lượng).`
+                  : `This action will immediately deactivate ${downgradeUserConfirm?.name}'s PRO package and revert them to the default FREE tier (10 GB storage).`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 mt-8 border-t border-slate-100 dark:border-slate-800 pt-4">
+            <button
+              onClick={() => setDowngradeUserConfirm(null)}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold bg-slate-50 hover:bg-slate-100 text-slate-600 dark:bg-slate-850 dark:hover:bg-slate-800 dark:text-slate-330 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+            >
+              {language === 'vi' ? 'Hủy' : 'Cancel'}
+            </button>
+            <button
+              onClick={() => {
+                if (downgradeUserConfirm) {
+                  onUpdateUser(downgradeUserConfirm.id, { plan: 'free' })
+                  // If downgraded user is stored in settings as well, clear their auto-renew dates!
+                  localStorage.removeItem(`aiStudyHubSubAutoRenew:${downgradeUserConfirm.email}`)
+                  localStorage.removeItem(`aiStudyHubSubExpiry:${downgradeUserConfirm.email}`)
+                  
+                  const msg = language === 'vi' 
+                    ? `Đã hạ gói thành viên của ${downgradeUserConfirm.name} xuống Free thành công` 
+                    : `Successfully downgraded ${downgradeUserConfirm.name}'s plan to Free`
+                  toast.success(msg)
+                  setDowngradeUserConfirm(null)
+                }
+              }}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/10 transition-all cursor-pointer"
+            >
+              {language === 'vi' ? 'Hạ gói' : 'Downgrade'}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

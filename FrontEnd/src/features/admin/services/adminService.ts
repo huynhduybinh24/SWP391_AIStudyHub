@@ -155,7 +155,7 @@ const loadUsersFromStorage = (): AdminUser[] => {
     const saved = localStorage.getItem('aiStudyHubUsers');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
+        let parsed = JSON.parse(saved);
         
         // If the parsed list doesn't have the new active properties, reset to DEFAULT_MOCK_USERS
         if (parsed.length > 0 && !parsed[0].hasOwnProperty('lastActiveVi')) {
@@ -163,7 +163,15 @@ const loadUsersFromStorage = (): AdminUser[] => {
           return [...DEFAULT_MOCK_USERS];
         }
 
+        // Ensure default mock users are always present in the list to prevent them from disappearing
         let changed = false;
+        DEFAULT_MOCK_USERS.forEach((defaultUser) => {
+          if (!parsed.some((u: any) => u.email?.toLowerCase() === defaultUser.email?.toLowerCase())) {
+            parsed.push(defaultUser);
+            changed = true;
+          }
+        });
+
         const updatedList = parsed.map((u: any) => {
           if (u.email === 'alex@example.com' && u.role === 'admin') {
             changed = true;
@@ -171,6 +179,7 @@ const loadUsersFromStorage = (): AdminUser[] => {
           }
           return u;
         });
+
         if (changed) {
           localStorage.setItem('aiStudyHubUsers', JSON.stringify(updatedList));
           return updatedList;
@@ -188,6 +197,7 @@ const loadUsersFromStorage = (): AdminUser[] => {
 let mockUsers: AdminUser[] = loadUsersFromStorage();
 
 const saveUsersToStorage = (usersList: AdminUser[]) => {
+  mockUsers = usersList;
   if (typeof window !== 'undefined') {
     localStorage.setItem('aiStudyHubUsers', JSON.stringify(usersList));
   }
@@ -385,11 +395,12 @@ const randomDelay = () => delay(Math.floor(Math.random() * 300) + 300); // 300-6
 
 export const getAdminStats = async (): Promise<AdminStats> => {
   await randomDelay();
-  const storageMB = mockUsers.reduce((sum, u) => sum + u.storageUsedMB, 0);
+  const currentUsers = loadUsersFromStorage();
+  const storageMB = currentUsers.reduce((sum, u) => sum + u.storageUsedMB, 0);
   
   return {
-    totalUsers: mockUsers.length,
-    activeUsers: mockUsers.filter((u) => u.status === "active").length,
+    totalUsers: currentUsers.length,
+    activeUsers: currentUsers.filter((u) => u.status === "active").length,
     totalDocuments: mockDocuments.length,
     pendingDocuments: mockDocuments.filter((d) => d.status === "pending").length,
     storageUsedGB: Number((storageMB / 1024).toFixed(2)),
@@ -401,7 +412,7 @@ export const getAdminStats = async (): Promise<AdminStats> => {
 
 export const getUsers = async (): Promise<AdminUser[]> => {
   await randomDelay();
-  return [...mockUsers];
+  return loadUsersFromStorage();
 };
 
 export const updateUser = async (
@@ -410,31 +421,49 @@ export const updateUser = async (
   reason?: string
 ): Promise<AdminUser> => {
   await randomDelay();
-  const index = mockUsers.findIndex((u) => u.id === userId);
+  const currentUsers = loadUsersFromStorage();
+  const index = currentUsers.findIndex((u) => u.id === userId);
   if (index === -1) throw new Error("User not found");
   
-  const user = mockUsers[index];
+  const user = currentUsers[index];
   if (updates.status === 'inactive' && reason) {
     console.log(`[Email Notification Sent] To: ${user.email} | Subject: Account Suspension Notice | Reason: ${reason}`);
   }
   
-  mockUsers[index] = { ...mockUsers[index], ...updates };
-  saveUsersToStorage(mockUsers);
-  return { ...mockUsers[index] };
+  currentUsers[index] = { ...currentUsers[index], ...updates };
+  saveUsersToStorage(currentUsers);
+  return { ...currentUsers[index] };
 };
 
 export const deleteUser = async (userId: string, reason?: string): Promise<{ success: boolean }> => {
   await randomDelay();
-  const index = mockUsers.findIndex((u) => u.id === userId);
+  const currentUsers = loadUsersFromStorage();
+  const index = currentUsers.findIndex((u) => u.id === userId);
   if (index === -1) throw new Error("User not found");
   
-  const user = mockUsers[index];
+  const user = currentUsers[index];
   if (reason) {
     console.log(`[Email Notification Sent] To: ${user.email} | Subject: Account Termination Notice | Reason: ${reason}`);
   }
   
-  mockUsers = mockUsers.filter((u) => u.id !== userId);
-  saveUsersToStorage(mockUsers);
+  // Remove from the switcher accounts registry so they disappear from the "Change User" popup modal
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('aiStudyHubLoggedInAccounts');
+      if (stored) {
+        let list = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          const updatedList = list.filter((u: any) => u.email?.toLowerCase() !== user.email?.toLowerCase());
+          localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(updatedList));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to remove deleted user from quick switcher registry:', e);
+    }
+  }
+
+  const updatedUsers = currentUsers.filter((u) => u.id !== userId);
+  saveUsersToStorage(updatedUsers);
   return { success: true };
 };
 

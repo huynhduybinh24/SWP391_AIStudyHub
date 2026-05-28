@@ -74,7 +74,19 @@ const getPersistedUserNotifications = (): Notification[] => {
     const stored = localStorage.getItem(`aiStudyHubUserNotifications:${userEmail}`);
     if (stored) {
       const parsed = JSON.parse(stored);
-      return parsed.map((item: any) => ({
+      
+      // Filter out notifications older than 7 days
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const validList = parsed.filter((item: any) => {
+        const timestamp = item.createdAt ? new Date(item.createdAt).getTime() : Date.now();
+        return timestamp >= sevenDaysAgo;
+      });
+
+      if (validList.length !== parsed.length) {
+        localStorage.setItem(`aiStudyHubUserNotifications:${userEmail}`, JSON.stringify(validList));
+      }
+
+      return validList.map((item: any) => ({
         id: item.id,
         type: item.type as NotificationType,
         title: item.title,
@@ -289,7 +301,7 @@ const getBaseNotifications = (): Omit<Notification, 'isRead'>[] => {
   ];
 };
 
-const simulateNetworkDelay = () => new Promise((resolve) => setTimeout(resolve, 800));
+const simulateNetworkDelay = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 export const notificationApi = {
   getNotifications: async (filter: string): Promise<Notification[]> => {
@@ -345,49 +357,82 @@ export const notificationApi = {
       case 'unread':
         return filteredMerged.filter(item => !item.isRead);
       case 'mentions':
-        return filteredMerged.filter(item => item.id === 'emily' || item.id === 'mention-2');
+        return filteredMerged.filter(item => item.type === 'mention' || item.id === 'emily' || item.id === 'mention-2');
       case 'shared-files':
       case 'sharedfiles':
-        return filteredMerged.filter(item => item.id === 'shared-folder' || item.id === 'shared-doc-1');
+        return filteredMerged.filter(
+          item =>
+            String(item.type) === 'shared_file' ||
+            item.type === 'folder' ||
+            item.type === 'document' ||
+            item.id === 'shared-folder' ||
+            item.id === 'shared-doc-1' ||
+            String(item.type).toLowerCase().includes('shared') ||
+            String(item.type).toLowerCase().includes('file') ||
+            String(item.type).toLowerCase().includes('folder') ||
+            String(item.type).toLowerCase().includes('document')
+        );
       case 'ai-updates':
       case 'aiupdates':
-        return filteredMerged.filter(item => item.id === 'ai-summary' || item.id === 'study-plan' || item.id === 'flashcards' || item.id === 'ai-audit-flagged');
+        return filteredMerged.filter(
+          item =>
+            String(item.type) === 'ai_update' ||
+            item.type === 'ai' ||
+            item.type === 'flashcard' ||
+            item.type === 'calendar' ||
+            String(item.type) === 'study_plan' ||
+            item.id === 'ai-summary' ||
+            item.id === 'study-plan' ||
+            item.id === 'flashcards' ||
+            item.id === 'ai-audit-flagged' ||
+            String(item.type).toLowerCase().includes('ai') ||
+            String(item.type).toLowerCase().includes('flash') ||
+            String(item.type).toLowerCase().includes('study') ||
+            String(item.type).toLowerCase().includes('quiz')
+        );
       case 'all':
       default:
-        const isUserAdmin = getCurrentUser().role === 'admin';
-        if (isUserAdmin) {
-          return filteredMerged.filter(item => item.type === 'document_deleted' || item.type === 'document_rejected' || item.id === 'new-report-submitted' || item.id === 'ai-audit-flagged' || item.id === 'system-status-updated');
-        }
-        // By original logic, "All" shows specific 3 notifications
-        return filteredMerged.filter(item => item.type === 'document_deleted' || item.type === 'document_rejected' || item.id === 'ai-summary' || item.id === 'shared-folder' || item.id === 'all-3');
+        return filteredMerged;
     }
   },
 
   markAsRead: async (id: string): Promise<void> => {
+    let changed = false;
     try {
       const userEmail = getCurrentUser().email;
       const stored = localStorage.getItem(`aiStudyHubUserNotifications:${userEmail}`);
       if (stored) {
         let parsed = JSON.parse(stored);
-        let found = false;
-        parsed = parsed.map((item: any) => {
-          if (item.id === id) {
-            found = true;
-            return { ...item, isRead: true };
+        if (Array.isArray(parsed)) {
+          parsed = parsed.map((item: any) => {
+            if (item.id === id && !item.isRead) {
+              changed = true;
+              return { ...item, isRead: true };
+            }
+            return item;
+          });
+          if (changed) {
+            localStorage.setItem(`aiStudyHubUserNotifications:${userEmail}`, JSON.stringify(parsed));
           }
-          return item;
-        });
-        if (found) {
-          localStorage.setItem(`aiStudyHubUserNotifications:${userEmail}`, JSON.stringify(parsed));
-          window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to update persisted notification read state', e);
+    }
 
-    const readState = getReadStateMap();
-    if (!readState[id]) {
-      readState[id] = true;
-      saveReadStateMap(readState);
+    try {
+      const readState = getReadStateMap();
+      if (!readState[id]) {
+        readState[id] = true;
+        saveReadStateMap(readState);
+        changed = true;
+      }
+    } catch (e) {
+      console.error('Failed to update mock notification read state', e);
+    }
+
+    if (changed) {
+      window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
     }
   }
 };
