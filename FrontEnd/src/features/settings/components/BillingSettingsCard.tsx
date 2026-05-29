@@ -280,7 +280,16 @@ export function BillingSettingsCard() {
               ) : (
                 <span className={`px-2.5 py-0.5 rounded-full font-black text-[10px] uppercase border ${
                   isAutoRenew
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 bor          {/* Action buttons */}
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/20'
+                }`}>
+                  {isAutoRenew ? (language === 'vi' ? 'Tự động gia hạn' : 'Auto Renew ON') : (language === 'vi' ? 'Tắt gia hạn' : 'Auto Renew OFF')}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Action buttons */}
           {!isTeacher && (
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
