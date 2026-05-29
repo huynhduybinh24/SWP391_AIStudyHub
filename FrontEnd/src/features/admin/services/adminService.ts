@@ -432,6 +432,72 @@ export const updateUser = async (
   
   currentUsers[index] = { ...currentUsers[index], ...updates };
   saveUsersToStorage(currentUsers);
+
+  // Sync with persistent switcher and active session stores
+  if (typeof window !== 'undefined') {
+    const email = user.email;
+    
+    // 1. Sync logged-in accounts switcher (aiStudyHubLoggedInAccounts)
+    const loggedInAccountsStr = localStorage.getItem('aiStudyHubLoggedInAccounts');
+    if (loggedInAccountsStr) {
+      try {
+        const accounts = JSON.parse(loggedInAccountsStr);
+        if (Array.isArray(accounts)) {
+          let accountsChanged = false;
+          const updatedAccounts = accounts.map((acc: any) => {
+            if (acc.email?.toLowerCase() === email?.toLowerCase()) {
+              accountsChanged = true;
+              return {
+                ...acc,
+                plan: updates.plan ? updates.plan.toUpperCase() : acc.plan,
+                role: updates.role ? (updates.role === 'teacher' ? 'instructor' : updates.role === 'admin' ? 'admin' : 'student') : acc.role
+              };
+            }
+            return acc;
+          });
+          if (accountsChanged) {
+            localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(updatedAccounts));
+            window.dispatchEvent(new Event('aiStudyHubLoggedInAccountsUpdated'));
+          }
+        }
+      } catch (e) {
+        console.error('Error updating logged-in accounts switcher in adminService', e);
+      }
+    }
+
+    // 2. Sync active user store session if it's the updated user!
+    try {
+      const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser');
+      if (activeUserStr) {
+        const activeUser = JSON.parse(activeUserStr);
+        if (activeUser.email?.toLowerCase() === email?.toLowerCase()) {
+          if (updates.plan) {
+            activeUser.plan = updates.plan.toLowerCase();
+          }
+          if (updates.role) {
+            activeUser.role = updates.role;
+          }
+          localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(activeUser));
+          
+          // Dynamically require or update Zustand state if window is active
+          const { useAuthStore } = await import('@/stores/authStore');
+          const currentAuth = useAuthStore.getState().user;
+          if (currentAuth) {
+            useAuthStore.setState({
+              user: {
+                ...currentAuth,
+                plan: updates.plan ? (updates.plan.toLowerCase() as 'free' | 'pro') : currentAuth.plan,
+                role: updates.role ? (updates.role as any) : currentAuth.role
+              }
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error syncing active auth session in adminService', err);
+    }
+  }
+
   return { ...currentUsers[index] };
 };
 
