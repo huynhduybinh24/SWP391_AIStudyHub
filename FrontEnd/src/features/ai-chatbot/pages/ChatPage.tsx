@@ -353,6 +353,17 @@ export function ChatPage() {
 
     if (!text && filesToSend.length === 0) return
 
+    // Log AI Chatbot query activity
+    logActivity({
+      eventKey: 'aiChatAssistant',
+      category: 'ai-audit',
+      status: 'success',
+      eventTextEn: 'AI Chatbot query',
+      eventTextVi: 'Truy vấn chatbot AI',
+      detailsTextEn: `Queried global AI Chatbot: '${text.length > 60 ? text.substring(0, 57) + '...' : text}'.`,
+      detailsTextVi: `Đã gửi câu hỏi chatbot AI toàn cục: '${text.length > 60 ? text.substring(0, 57) + '...' : text}'.`
+    })
+
     // Create user message object
     const userMsgId = Date.now().toString()
     const newUserMsg: ChatMessage = {
