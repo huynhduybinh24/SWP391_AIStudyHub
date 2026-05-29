@@ -280,39 +280,14 @@ export function BillingSettingsCard() {
               ) : (
                 <span className={`px-2.5 py-0.5 rounded-full font-black text-[10px] uppercase border ${
                   isAutoRenew
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-455 border-rose-500/20'
-                }`}>
-                  {isAutoRenew ? (language === 'vi' ? 'Tự động gia hạn' : 'Auto Renew ON') : (language === 'vi' ? 'Tắt gia hạn' : 'Auto Renew OFF')}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            {isTeacher ? (
-              <a
-                href={`mailto:admin@example.com?subject=${encodeURIComponent(
-                  language === 'vi'
-                    ? 'Yêu cầu gia hạn gói Pro Giảng viên'
-                    : 'Request to Renew Teacher Pro Subscription'
-                )}&body=${encodeURIComponent(
-                  language === 'vi'
-                    ? `Xin chào Admin,\n\nTôi muốn yêu cầu gia hạn thời gian sử dụng tài khoản Pro cho giảng viên.\n\nThông tin tài khoản:\n- Họ và tên: ${user?.name}\n- Email: ${user?.email}\n- Ngày hết hạn hiện tại: ${expiryDate}\n\nXin cảm ơn!`
-                    : `Dear Admin,\n\nI would like to request a renewal for my teacher Pro subscription.\n\nAccount Details:\n- Name: ${user?.name}\n- Email: ${user?.email}\n- Current Expiry Date: ${expiryDate}\n\nThank you!`
-                )}`}
-                className="flex-1 py-3 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 text-blue-600 dark:text-blue-400 no-underline cursor-pointer transition-all active:scale-[0.98]"
-              >
-                <RefreshCw className="size-3.5" />
-                {language === 'vi' ? 'Gửi email gia hạn gói Pro' : 'Send Renewal Request Email'}
-              </a>
-            ) : (
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 bor          {/* Action buttons */}
+          {!isTeacher && (
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 onClick={handleToggleAutoRenew}
                 className={`flex-1 py-3 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
                   isAutoRenew
-                    ? 'bg-rose-55 dark:bg-rose-950/20 hover:bg-rose-100 border-rose-200 dark:border-rose-900/30 text-rose-600 dark:text-rose-400'
+                    ? 'bg-rose-55 dark:bg-rose-950/20 hover:bg-rose-100 border-rose-200 dark:border-rose-900/30 text-rose-600 dark:text-rose-450'
                     : 'bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 border-blue-200 dark:border-blue-900/30 text-blue-600 dark:text-blue-405'
                 }`}
               >
@@ -328,20 +303,20 @@ export function BillingSettingsCard() {
                   </>
                 )}
               </button>
-            )}
 
-            {/* Developer Simulator Button */}
-            <button
-              onClick={handleSimulateExpiry}
-              disabled={simulating}
-              className="flex-1 py-3 px-4 rounded-xl text-xs font-black bg-slate-900 hover:bg-black text-white dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-100 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 border border-slate-750"
-            >
-              <Sparkles className={`size-3.5 text-amber-400 ${simulating && 'animate-spin'}`} />
-              {simulating
-                ? (language === 'vi' ? 'Đang mô phỏng...' : 'Simulating...')
-                : (language === 'vi' ? 'Mô phỏng hết hạn (1 tháng)' : 'Simulate 1-Month Expiry')}
-            </button>
-          </div>
+              {/* Developer Simulator Button */}
+              <button
+                onClick={handleSimulateExpiry}
+                disabled={simulating}
+                className="flex-1 py-3 px-4 rounded-xl text-xs font-black bg-slate-900 hover:bg-black text-white dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-100 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 border border-slate-750"
+              >
+                <Sparkles className={`size-3.5 text-amber-400 ${simulating && 'animate-spin'}`} />
+                {simulating
+                  ? (language === 'vi' ? 'Đang mô phỏng...' : 'Simulating...')
+                  : (language === 'vi' ? 'Mô phỏng hết hạn (1 tháng)' : 'Simulate 1-Month Expiry')}
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
@@ -381,33 +356,25 @@ export function BillingSettingsCard() {
                   <Sparkles className="size-4 text-amber-500 animate-pulse" />
                   <span>{language === 'vi' ? 'Gia hạn gói Pro Giảng viên' : 'Renew Teacher Pro Plan'}</span>
                 </div>
-                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
+                <p className="text-xs font-semibold text-slate-505 dark:text-slate-400 leading-relaxed max-w-md">
                   {language === 'vi'
-                    ? 'Gói tài trợ Giảng viên của bạn đã hết hạn. Bạn có thể gửi lại biểu mẫu xin hợp tác để Admin duyệt gia hạn tiếp, hoặc gửi thư trực tiếp cho Ban quản trị.'
-                    : 'Your Teacher partnership sponsorship has expired. You can resubmit the partnership form for renewal approval, or write an email to the admin team.'}
+                    ? 'Gói tài trợ Giảng viên của bạn đã hết hạn. Bạn có thể gửi lại biểu mẫu hợp tác để tiếp tục nhận tài trợ gói Pro miễn phí, hoặc nâng cấp thanh toán ngay.'
+                    : 'Your Teacher partnership sponsorship has expired. You can resubmit the partnership form to continue your free Pro access, or upgrade instantly via payment.'}
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
                 <Link
                   to="/partnership"
-                  className="px-5 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-750 hover:to-indigo-750 text-white shadow-md shadow-blue-550/10 hover:shadow-lg transition-all no-underline inline-block active:scale-[0.98] text-center"
+                  className="px-5 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-blue-600 to-indigo-650 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-550/10 hover:shadow-lg transition-all no-underline inline-block active:scale-[0.98] text-center"
                 >
-                  {language === 'vi' ? 'Gửi lại biểu mẫu Hợp tác' : 'Resubmit Partnership Form'}
+                  {language === 'vi' ? 'Gửi biểu mẫu' : 'Send Partnership Form'}
                 </Link>
-                <a
-                  href={`mailto:admin@example.com?subject=${encodeURIComponent(
-                    language === 'vi'
-                      ? 'Yêu cầu gia hạn gói Pro Giảng viên'
-                      : 'Request to Renew Teacher Pro Subscription'
-                  )}&body=${encodeURIComponent(
-                    language === 'vi'
-                      ? `Xin chào Admin,\n\nGói Pro đối tác giảng viên của tôi tại LUMIedu đã hết hạn. Tôi muốn gửi yêu cầu gia hạn gói này để tiếp tục sử dụng phục vụ công tác giảng dạy.\n\nThông tin tài khoản:\n- Họ và tên: ${user?.name}\n- Email: ${user?.email}\n\nXin chân thành cảm ơn!`
-                      : `Dear Admin,\n\nMy teacher Pro partnership subscription at LUMIedu has expired. I would like to request a renewal to continue using these tools for my classes.\n\nAccount Details:\n- Name: ${user?.name}\n- Email: ${user?.email}\n\nThank you very much!`
-                  )}`}
-                  className="px-5 py-3.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-200 shadow-sm transition-all no-underline inline-block active:scale-[0.98] border border-slate-200 dark:border-slate-700 text-center"
+                <Link
+                  to="/dashboard/upgrade"
+                  className="px-5 py-3.5 rounded-xl text-xs font-black bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 shadow-sm transition-all no-underline inline-block active:scale-[0.98] text-center dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 dark:border-slate-700"
                 >
-                  {language === 'vi' ? 'Gửi email gia hạn' : 'Email Admin to Renew'}
-                </a>
+                  {language === 'vi' ? 'Thanh toán' : 'Payment / Upgrade'}
+                </Link>
               </div>
             </div>
           ) : (
@@ -422,6 +389,33 @@ export function BillingSettingsCard() {
                   {language === 'vi'
                     ? 'Nâng cấp ngay hôm nay để nhận thêm 40 GB lưu trữ, tạo flashcard không giới hạn và phân tích tài liệu thông minh.'
                     : 'Upgrade today to instantly get +40 GB storage space, unlimited card creation, and deep document search AI.'}
+                </p>
+              </div>
+              <Link
+                to="/dashboard/upgrade"
+                className="w-full md:w-auto text-center px-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/10 hover:shadow-lg transition-all no-underline inline-block active:scale-[0.98]"
+              >
+                {language === 'vi' ? 'Nâng cấp lên gói PRO' : 'Upgrade to PRO Plan'}
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Subtle Tester Only Trigger Button */}
+      {isTeacher && user?.plan === 'pro' && (
+        <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+          <button
+            onClick={handleSimulateExpiry}
+            disabled={simulating}
+            className="text-[10px] text-slate-400 hover:text-red-500 font-bold bg-transparent border-none cursor-pointer transition-colors flex items-center gap-1 active:scale-[0.98] outline-none"
+          >
+            <Sparkles className="size-3 text-amber-500" />
+            {language === 'vi' ? '[Tester Only] Mô phỏng gói Giảng viên hết hạn' : '[Tester Only] Simulate Teacher Expiry'}
+          </button>
+        </div>
+      )}
+    </div>            : 'Upgrade today to instantly get +40 GB storage space, unlimited card creation, and deep document search AI.'}
                 </p>
               </div>
               <Link
