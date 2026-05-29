@@ -6,6 +6,7 @@ import { useTranslation } from '@/context/LanguageContext';
 import { motion } from 'framer-motion';
 
 import { useMediaUpload } from '@/components/shared/media-upload/useMediaUpload';
+import { logActivity } from '@/services/activityLogService';
 import { MediaUploadTabs } from '@/components/shared/media-upload/MediaUploadTabs';
 import { MediaDropzone } from '@/components/shared/media-upload/MediaDropzone';
 import { VideoPreview } from '@/components/shared/media-upload/VideoPreview';
@@ -172,6 +173,18 @@ export function UploadPage() {
       const updatedDocs = [newDoc, ...currentDocs];
 
       localStorage.setItem('ai_study_hub_documents', JSON.stringify(updatedDocs));
+      
+      // Log document upload activity
+      logActivity({
+        eventKey: 'documentUploaded',
+        category: 'moderation',
+        status: 'success',
+        eventTextEn: 'Document uploaded',
+        eventTextVi: 'Tải lên tài liệu',
+        detailsTextEn: `Uploaded document '${finalTitle}' (${finalSize}) successfully.`,
+        detailsTextVi: `Tải lên thành công tài liệu '${finalTitle}' (${finalSize}).`
+      });
+
       toast.success('Document uploaded successfully');
       setIsProcessing(false);
       navigate(`/dashboard/documents/subject/${selectedSubjectKey}`);
