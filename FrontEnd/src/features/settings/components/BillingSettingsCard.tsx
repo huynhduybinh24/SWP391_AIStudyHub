@@ -415,19 +415,6 @@ export function BillingSettingsCard() {
           </button>
         </div>
       )}
-    </div>            : 'Upgrade today to instantly get +40 GB storage space, unlimited card creation, and deep document search AI.'}
-                </p>
-              </div>
-              <Link
-                to="/dashboard/upgrade"
-                className="w-full md:w-auto text-center px-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/10 hover:shadow-lg transition-all no-underline inline-block active:scale-[0.98]"
-              >
-                {language === 'vi' ? 'Nâng cấp lên gói PRO' : 'Upgrade to PRO Plan'}
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
