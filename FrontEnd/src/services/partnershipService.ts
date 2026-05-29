@@ -132,15 +132,26 @@ export const partnershipService = {
           const users = JSON.parse(savedUsers);
           let changed = false;
           const updatedUsers = users.map((u: any) => {
-            if (u.email?.toLowerCase() === email?.toLowerCase() && u.role?.toLowerCase() === 'teacher') {
+            if (u.email?.toLowerCase() === email?.toLowerCase() && (u.role?.toLowerCase() === 'teacher' || u.role?.toLowerCase() === 'instructor')) {
               if (status === 'Approved') {
                 if (u.plan !== 'pro') {
                   changed = true;
+                  const currentLang = localStorage.getItem('language') || 'vi';
+                  const expiryDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString(
+                    currentLang === 'vi' ? 'vi-VN' : 'en-US',
+                    { year: 'numeric', month: 'long', day: 'numeric' }
+                  );
+                  localStorage.setItem(`aiStudyHubSubExpiry:${u.email}`, expiryDate);
+                  localStorage.setItem(`aiStudyHubSubAutoRenew:${u.email}`, 'false');
+                  localStorage.setItem(`aiStudyHubSubIsTeacherGranted:${u.email}`, 'true');
                   return { ...u, plan: 'pro' };
                 }
               } else if (status === 'Rejected') {
                 if (u.plan === 'pro') {
                   changed = true;
+                  localStorage.removeItem(`aiStudyHubSubExpiry:${u.email}`);
+                  localStorage.removeItem(`aiStudyHubSubAutoRenew:${u.email}`);
+                  localStorage.removeItem(`aiStudyHubSubIsTeacherGranted:${u.email}`);
                   return { ...u, plan: 'free' };
                 }
               }
@@ -187,10 +198,13 @@ export const partnershipService = {
       try {
         // Notification
         const { userNotificationService } = await import('@/features/notifications/services/userNotificationService');
+        const currentLang = localStorage.getItem('language') || 'vi';
         
         const title = status === 'Approved' ? 'Partnership Approved! 🚀' : 'Partnership Update ❌';
         const message = status === 'Approved'
-          ? 'Congratulations! Your partnership request has been approved and your account is upgraded to PRO plan with 50 GB storage.'
+          ? (currentLang === 'vi'
+              ? 'Chúc mừng! Yêu cầu hợp tác của bạn đã được phê duyệt và tài khoản giảng viên của bạn đã được nâng cấp lên gói PRO miễn phí trong 1 năm với 50 GB dung lượng. Khi hết hạn, bạn có thể gửi email cho admin để gia hạn.'
+              : 'Congratulations! Your partnership request has been approved and your teacher account is upgraded to a free PRO plan with 50 GB storage for 1 year. Upon expiration, you can email the admin to request a renewal.')
           : `We regret to inform you that your partnership request was declined. Reason: ${rejectReason || 'No reason provided.'}`;
         
         userNotificationService.addUserNotification({
@@ -209,7 +223,9 @@ export const partnershipService = {
           to: email,
           subject: status === 'Approved' ? 'Partnership Request Approved' : 'Partnership Request Update',
           body: status === 'Approved' 
-            ? `Dear ${currentRequest.fullName},\n\nWe are excited to inform you that your partnership request has been approved! Your teacher account has been upgraded to a PRO subscription with 50 GB of premium cloud storage for free.\n\nEnjoy the upgraded benefits!\n\nBest Regards,\nAI Study Hub Team`
+            ? (currentLang === 'vi'
+                ? `Kính gửi ${currentRequest.fullName},\n\nChúng tôi rất vui mừng thông báo rằng yêu cầu hợp tác của bạn đã được phê duyệt! Tài khoản giảng viên của bạn đã được nâng cấp lên gói PRO với 50 GB lưu trữ đám mây chất lượng cao hoàn toàn miễn phí trong vòng 1 năm.\n\nSau 1 năm sử dụng, bạn có thể gửi email phản hồi trực tiếp cho đội ngũ quản trị viên tại admin@example.com để gia hạn miễn phí.\n\nChúc bạn có những trải nghiệm học tập và giảng dạy tuyệt vời cùng LUMIedu!\n\nTrân trọng,\nĐội ngũ AI Study Hub`
+                : `Dear ${currentRequest.fullName},\n\nWe are excited to inform you that your partnership request has been approved! Your teacher account has been upgraded to a PRO subscription with 50 GB of premium cloud storage for free for 1 year.\n\nAfter 1 year, you can email our admin team at admin@example.com to request a free renewal.\n\nEnjoy the upgraded benefits!\n\nBest Regards,\nAI Study Hub Team`)
             : `Dear ${currentRequest.fullName},\n\nThank you for your interest in partnering with us. Unfortunately, we are unable to approve your partnership request at this time.\n\nFeedback/Reason:\n${rejectReason || 'No reason provided.'}\n\nIf you have any questions, feel free to reply to this email.\n\nBest Regards,\nAI Study Hub Team`,
           sentAt: new Date().toISOString()
         });
