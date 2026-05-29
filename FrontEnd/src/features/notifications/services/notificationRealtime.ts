@@ -1,5 +1,6 @@
 import { useToastStore } from '@/stores/toastStore';
 import { getCurrentUser } from '@/features/notifications/services/userNotificationService';
+import { useAuthStore } from '@/stores/authStore';
 
 export type NotificationType = 'ai' | 'folder' | 'mention' | 'security' | 'document' | 'calendar' | 'flashcard' | 'document_deleted';
 
@@ -171,8 +172,9 @@ class NotificationRealtimeManager {
 
   private handleIncomingNotification(data: any) {
     if (typeof window !== 'undefined') {
+      const isAuthenticated = useAuthStore.getState().isAuthenticated;
       const currentUser = localStorage.getItem('aiStudyHubCurrentUser');
-      if (!currentUser) {
+      if (!isAuthenticated || !currentUser) {
         return; // Skip notifications if user is not logged in
       }
     }
@@ -204,6 +206,10 @@ class NotificationRealtimeManager {
   ) {
     let isUserAdmin = false;
     if (typeof window !== 'undefined') {
+      const isAuthenticated = useAuthStore.getState().isAuthenticated;
+      if (!isAuthenticated) {
+        return; // Don't simulate notifications if not logged in
+      }
       const currentUserStr = localStorage.getItem('aiStudyHubCurrentUser');
       if (currentUserStr) {
         try {
