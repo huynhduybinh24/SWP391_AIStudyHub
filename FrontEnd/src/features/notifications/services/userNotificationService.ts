@@ -108,32 +108,37 @@ export const userNotificationService = {
     this.saveUserNotifications(updatedNotifications, targetEmail);
     window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
 
-    // Trigger toast if the active user is the one receiving it
+    // Trigger toast if the active user is the one receiving it and is logged in
     if (typeof window !== 'undefined') {
-      const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser');
-      if (activeUserStr) {
-        try {
-          const activeUser = JSON.parse(activeUserStr);
-          if (activeUser?.email?.toLowerCase() === targetEmail.toLowerCase()) {
-            import('@/stores/toastStore').then((m) => {
-              let toastType: 'success' | 'info' | 'warning' | 'error' = 'info';
-              if (notification.type === 'document_deleted' || notification.type === 'document_rejected') {
-                toastType = 'warning';
-              } else if (notification.type === 'document_approved') {
-                toastType = 'success';
-              }
-              const messageSummary = notification.message.length > 60 
-                ? notification.message.substring(0, 60) + '...'
-                : notification.message;
-              m.useToastStore.getState().addToast(
-                `${notification.title}: ${messageSummary}`,
-                toastType,
-                4000
-              );
-            });
-          }
-        } catch (e) {}
-      }
+      import('@/stores/authStore').then((auth) => {
+        const { isAuthenticated } = auth.useAuthStore.getState();
+        if (!isAuthenticated) return;
+
+        const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser');
+        if (activeUserStr) {
+          try {
+            const activeUser = JSON.parse(activeUserStr);
+            if (activeUser?.email?.toLowerCase() === targetEmail.toLowerCase()) {
+              import('@/stores/toastStore').then((m) => {
+                let toastType: 'success' | 'info' | 'warning' | 'error' = 'info';
+                if (notification.type === 'document_deleted' || notification.type === 'document_rejected') {
+                  toastType = 'warning';
+                } else if (notification.type === 'document_approved') {
+                  toastType = 'success';
+                }
+                const messageSummary = notification.message.length > 60 
+                  ? notification.message.substring(0, 60) + '...'
+                  : notification.message;
+                m.useToastStore.getState().addToast(
+                  `${notification.title}: ${messageSummary}`,
+                  toastType,
+                  4000
+                );
+              });
+            }
+          } catch (e) {}
+        }
+      });
     }
 
     return newNotification;
