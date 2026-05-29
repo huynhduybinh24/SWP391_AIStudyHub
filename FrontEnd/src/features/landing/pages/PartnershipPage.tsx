@@ -152,8 +152,8 @@ export function PartnershipPage() {
     fetchUserRequests();
   }, [currentUser]);
 
-  // Determine if form is blocked: blocked if any request is NOT rejected (i.e. Pending or Approved)
-  const activeRequest = userRequests.find(req => req.status === 'Pending' || req.status === 'Approved');
+  // Determine if form is blocked: blocked if any request is Pending OR (Approved AND they still have a Pro subscription)
+  const activeRequest = userRequests.find(req => req.status === 'Pending' || (req.status === 'Approved' && currentUser?.plan === 'pro'));
   const isFormBlocked = !!activeRequest;
   const isAdmin = currentUser?.role?.toLowerCase() === 'admin';
 
