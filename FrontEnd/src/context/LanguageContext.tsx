@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { translations, Language } from '@/locales'
 import { useSettingsStore } from '@/features/settings/stores/settingsStore'
+import { logActivity } from '@/services/activityLogService'
 
 interface LanguageContextType {
   language: Language
