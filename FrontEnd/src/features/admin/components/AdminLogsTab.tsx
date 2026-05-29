@@ -1,112 +1,71 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { ClipboardList, Search, ShieldAlert, CheckCircle, XCircle } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
-
-interface SystemLog {
-  id: string
-  eventKey: keyof typeof import('@/locales/en').en.activityLogs.events
-  category: 'security' | 'subscription' | 'ai-audit' | 'moderation'
-  performer: string
-  performerEmail: string
-  timestamp: string
-  detailsKey: keyof typeof import('@/locales/en').en.activityLogs.details
-  status: 'success' | 'warning' | 'failed'
-}
+import { getLogs, checkAndPurgeExpiredLogs, SystemLog } from '@/services/activityLogService'
 
 export function AdminLogsTab() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'security' | 'subscription' | 'ai-audit' | 'moderation'>('all');
+  const [logs, setLogs] = useState<SystemLog[]>(getLogs());
 
-  const [logs] = useState<SystemLog[]>([
-    {
-      id: 'log-1',
-      eventKey: 'passwordRestored',
-      category: 'security',
-      performer: 'Admin User',
-      performerEmail: 'admin@example.com',
-      timestamp: '2026-05-26 12:45',
-      detailsKey: 'passwordRestored',
-      status: 'success',
-    },
-    {
-      id: 'log-2',
-      eventKey: 'aiScanViolationDetected',
-      category: 'ai-audit',
-      performer: 'AI Guard System',
-      performerEmail: 'system@lumiedu.vn',
-      timestamp: '2026-05-26 11:20',
-      detailsKey: 'aiScanViolationDetected',
-      status: 'warning',
-    },
-    {
-      id: 'log-3',
-      eventKey: 'userAccountLocked',
-      category: 'security',
-      performer: 'Admin User',
-      performerEmail: 'admin@example.com',
-      timestamp: '2026-05-26 10:15',
-      detailsKey: 'userAccountLocked',
-      status: 'success',
-    },
-    {
-      id: 'log-4',
-      eventKey: 'accountPackageUpgraded',
-      category: 'subscription',
-      performer: 'Ngoc Tan',
-      performerEmail: 'tan@example.com',
-      timestamp: '2026-05-25 18:32',
-      detailsKey: 'accountPackageUpgraded',
-      status: 'success',
-    },
-    {
-      id: 'log-5',
-      eventKey: 'documentApproved',
-      category: 'moderation',
-      performer: 'Admin User',
-      performerEmail: 'admin@example.com',
-      timestamp: '2026-05-25 14:02',
-      detailsKey: 'documentApproved',
-      status: 'success',
-    },
-    {
-      id: 'log-6',
-      eventKey: 'systemNotificationBroadcast',
-      category: 'moderation',
-      performer: 'Admin User',
-      performerEmail: 'admin@example.com',
-      timestamp: '2026-05-24 10:15',
-      detailsKey: 'systemNotificationBroadcast',
-      status: 'success',
-    },
-    {
-      id: 'log-7',
-      eventKey: 'paymentTransactionFailed',
-      category: 'subscription',
-      performer: 'Sarah Jenkins',
-      performerEmail: 'sarah.j@school.edu',
-      timestamp: '2026-05-23 09:44',
-      detailsKey: 'paymentTransactionFailed',
-      status: 'failed',
-    },
-  ]);
+  useEffect(() => {
+    const handleLogsUpdate = () => {
+      setLogs(getLogs());
+    };
+    window.addEventListener('aiStudyHubLogsUpdated', handleLogsUpdate);
+
+    // Initial check for expired logs
+    checkAndPurgeExpiredLogs();
+
+    // Check periodically for expired logs
+    const interval = setInterval(() => {
+      checkAndPurgeExpiredLogs();
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('aiStudyHubLogsUpdated', handleLogsUpdate);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const getEventName = (log: SystemLog) => {
+    if (log.eventKey && t.activityLogs.events[log.eventKey as keyof typeof t.activityLogs.events]) {
+      return t.activityLogs.events[log.eventKey as keyof typeof t.activityLogs.events];
+    }
+    return language === 'vi'
+      ? (log.eventTextVi || log.eventTextEn || log.eventKey || '')
+      : (log.eventTextEn || log.eventTextVi || log.eventKey || '');
+  };
+
+  const getDetailsText = (log: SystemLog) => {
+    if (log.detailsKey && t.activityLogs.details[log.detailsKey as keyof typeof t.activityLogs.details]) {
+      return t.activityLogs.details[log.detailsKey as keyof typeof t.activityLogs.details];
+    }
+    return language === 'vi'
+      ? (log.detailsTextVi || log.detailsTextEn || log.detailsKey || '')
+      : (log.detailsTextEn || log.detailsTextVi || log.detailsKey || '');
+  };
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
+      const eventName = getEventName(log);
+      const detailsText = getDetailsText(log);
       const matchesSearch =
-        t.activityLogs.events[log.eventKey].toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.activityLogs.details[log.detailsKey].toLowerCase().includes(searchTerm.toLowerCase()) ||
+        eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        detailsText.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.performer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        log.performerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+        log.performerEmail.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesCategory = categoryFilter === 'all' || log.category === categoryFilter
+      const matchesCategory = categoryFilter === 'all' || log.category === categoryFilter;
 
-      return matchesSearch && matchesCategory
-    })
-  }, [logs, searchTerm, categoryFilter])
+      return matchesSearch && matchesCategory;
+    });
+  }, [logs, searchTerm, categoryFilter, language]);
+
 
   return (
     <div className="space-y-6 select-none text-left">
@@ -187,7 +146,7 @@ export function AdminLogsTab() {
                       className="hover:bg-slate-100/70 dark:hover:bg-slate-800/40 even:bg-slate-50/40 dark:even:bg-slate-900/20 transition-all duration-200 group"
                     >
                       <td className="p-4 pl-6 font-extrabold text-slate-800 dark:text-slate-200">
-                        {t.activityLogs.events[log.eventKey]}
+                        {getEventName(log)}
                       </td>
 
                       <td className="p-4">
@@ -209,8 +168,8 @@ export function AdminLogsTab() {
                         </div>
                       </td>
 
-                      <td className="p-4 text-xs text-slate-550 dark:text-slate-400 leading-normal max-w-[280px] truncate" title={t.activityLogs.details[log.detailsKey]}>
-                        {t.activityLogs.details[log.detailsKey]}
+                      <td className="p-4 text-xs text-slate-550 dark:text-slate-400 leading-normal max-w-[280px] truncate" title={getDetailsText(log)}>
+                        {getDetailsText(log)}
                       </td>
 
                       <td className="p-4 text-slate-500 dark:text-slate-400 text-xs font-semibold">
