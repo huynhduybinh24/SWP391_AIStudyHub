@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -31,6 +31,94 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const { language } = useTranslation()
+
+  const [isOtpStep, setIsOtpStep] = useState(false)
+  const [otpValues, setOtpValues] = useState<string[]>(['', '', '', '', '', ''])
+  const [otpError, setOtpError] = useState('')
+  const [resendTimer, setResendTimer] = useState(59)
+  const [tempFormData, setTempFormData] = useState<RegisterFormValues | null>(null)
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  useEffect(() => {
+    let interval: any
+    if (isOtpStep && resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1)
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [isOtpStep, resendTimer])
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (value && !/^\d+$/.test(value)) return
+
+    const newOtpValues = [...otpValues]
+    newOtpValues[index] = value.slice(-1)
+    setOtpValues(newOtpValues)
+    setOtpError('')
+
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpValues[index] && index > 0) {
+      const newOtpValues = [...otpValues]
+      newOtpValues[index - 1] = ''
+      setOtpValues(newOtpValues)
+      inputRefs.current[index - 1]?.focus()
+    }
+  }
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData('text').trim()
+    if (!/^\d{6}$/.test(pastedData)) return
+
+    const digits = pastedData.split('')
+    setOtpValues(digits)
+    setOtpError('')
+    inputRefs.current[5]?.focus()
+  }
+
+  const handleResendOtp = () => {
+    setResendTimer(59)
+    setOtpValues(['', '', '', '', '', ''])
+    setOtpError('')
+  }
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault()
+    const otpCode = otpValues.join('')
+    if (otpCode.length < 6) {
+      const err = language === 'vi' 
+        ? 'Vui lòng nhập đầy đủ mã OTP 6 chữ số.' 
+        : (language === 'ja' ? '6桁のOTPコードをすべて入力してください。' : (language === 'ko' ? '6자리 OTP 코드를 모두 입력해 주세요.' : 'Please enter the complete 6-digit OTP code.'))
+      setOtpError(err)
+      return
+    }
+
+    if (otpCode !== '123456') {
+      const err = language === 'vi' 
+        ? 'Mã OTP không chính xác. Thử lại với mã: 123456!' 
+        : (language === 'ja' ? 'OTPコードが正しくありません。123456で試してください！' : (language === 'ko' ? 'OTP 코드가 올바르지 않습니다. 123456으로 시도하세요!' : 'Incorrect OTP code. Try 123456!'))
+      setOtpError(err)
+      return
+    }
+
+    if (tempFormData) {
+      registerMutation.mutate(tempFormData)
+    }
+  }
+
+  const handleRegisterSubmit = (values: RegisterFormValues) => {
+    setTempFormData(values)
+    setIsOtpStep(true)
+    setResendTimer(59)
+    setOtpValues(['', '', '', '', '', ''])
+    setOtpError('')
+  }
 
   const {
     register,
@@ -150,6 +238,122 @@ export function RegisterForm() {
     ? 'Đăng nhập'
     : (language === 'ja' ? 'ログイン' : (language === 'ko' ? '로그인' : 'Login'))
 
+  if (isOtpStep) {
+    const otpTitle = language === 'vi' ? 'Xác minh tài khoản' : (language === 'ja' ? 'アカウント認証' : (language === 'ko' ? '계정 인증' : 'Account Verification'))
+    const otpSubtitle = language === 'vi' 
+      ? `Chúng tôi đã gửi mã xác thực OTP 6 số tới email:` 
+      : (language === 'ja' ? `ご登録のメールアドレスに6桁のOTPを送信しました：` : (language === 'ko' ? `등록하신 이메일로 6자리 OTP 코드를 발송했습니다:` : `We have sent a 6-digit verification code to:`))
+    const otpLabel = language === 'vi' ? 'Mã xác thực OTP' : (language === 'ja' ? '認証コード' : (language === 'ko' ? '인증 코드' : 'Verification Code'))
+    const otpVerifyBtn = registerMutation.isPending 
+      ? (language === 'vi' ? 'Đang kích hoạt...' : (language === 'ja' ? '有効化中...' : (language === 'ko' ? '활성화 중...' : 'Activating...')))
+      : (language === 'vi' ? 'Xác nhận & Hoàn tất' : (language === 'ja' ? '確認して完了' : (language === 'ko' ? '확인 및 완료' : 'Confirm & Complete')))
+    const otpResendText = language === 'vi' ? 'Không nhận được mã?' : (language === 'ja' ? 'コードが届きませんか？' : (language === 'ko' ? '코드를 받지 못하셨나요?' : "Didn't receive the code?"))
+    const otpResendBtn = language === 'vi' ? 'Gửi lại mã' : (language === 'ja' ? '再送信' : (language === 'ko' ? '재전송' : 'Resend Code'))
+    const otpBackBtn = language === 'vi' ? 'Quay lại chỉnh sửa' : (language === 'ja' ? '入力内容の変更' : (language === 'ko' ? '정보 수정하기' : 'Back to edit details'))
+    const otpDemoHintText = language === 'vi' 
+      ? '💡 Demo: Sử dụng mã OTP mặc định là 123456 để kích hoạt nhanh.' 
+      : (language === 'ja' ? '💡 デモ: 有効化するには 123456 を入力してください。' : (language === 'ko' ? '💡 데모: 빠른 활성화를 위해 기본 OTP 123456을 입력하세요.' : '💡 Demo: Use the default OTP code 123456 for instant activation.'))
+
+    return (
+      <div className="w-full max-w-[440px] mx-auto bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-xl text-slate-900 dark:text-slate-100 animate-in fade-in duration-300">
+        <div className="mb-6 text-center">
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/30 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-900/50">
+            <LockKeyhole className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-pulse" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{otpTitle}</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed">
+            {otpSubtitle} <br />
+            <strong className="text-slate-700 dark:text-slate-250 font-bold block mt-1">{tempFormData?.email}</strong>
+          </p>
+        </div>
+
+        <form onSubmit={handleVerifyOtp} className="space-y-6">
+          <div className="space-y-3">
+            <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-450 dark:text-slate-500 text-center">
+              {otpLabel}
+            </label>
+            <div className="flex justify-between gap-2 max-w-[320px] mx-auto">
+              {otpValues.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
+                  type="text"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  onPaste={index === 0 ? handleOtpPaste : undefined}
+                  className={cn(
+                    "w-11 h-11 md:w-12 md:h-12 text-center text-xl font-bold rounded-xl border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30",
+                    digit 
+                      ? "border-blue-600 bg-blue-50/10 dark:border-blue-500 dark:bg-blue-950/10 text-slate-900 dark:text-white"
+                      : "border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/30 text-slate-900 dark:text-slate-100",
+                    otpError && "border-danger focus-visible:ring-danger/30"
+                  )}
+                  autoFocus={index === 0}
+                />
+              ))}
+            </div>
+            {otpError && (
+              <p className="text-center text-sm font-semibold text-danger animate-in fade-in duration-200 mt-2">
+                {otpError}
+              </p>
+            )}
+          </div>
+
+          {/* Demo OTP Banner */}
+          <div className="p-3 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 rounded-2xl text-xs font-semibold text-[#3155F6] dark:text-blue-400 leading-relaxed flex items-start gap-2.5">
+            <span>{otpDemoHintText}</span>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full h-11 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm flex items-center justify-center gap-2 rounded-xl active:scale-[0.98] transition-all"
+            disabled={registerMutation.isPending}
+          >
+            {otpVerifyBtn}
+            {!registerMutation.isPending && <ArrowRight className="w-5 h-5" />}
+          </Button>
+
+          <div className="flex flex-col items-center gap-4 pt-2">
+            <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              {otpResendText}{' '}
+              {resendTimer > 0 ? (
+                <span className="text-slate-400 dark:text-slate-500 font-semibold">
+                  {language === 'vi' 
+                    ? `Gửi lại sau ${resendTimer}s` 
+                    : (language === 'ja' ? `${resendTimer}秒後に再送信可能` : (language === 'ko' ? `${resendTimer}초 후 재전송` : `Resend in ${resendTimer}s`))}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  className="font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline focus:outline-none"
+                >
+                  {otpResendBtn}
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsOtpStep(false);
+                setOtpValues(['', '', '', '', '', '']);
+                setOtpError('');
+              }}
+              className="text-xs font-bold text-slate-450 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-350 hover:underline transition-colors focus:outline-none uppercase tracking-wide"
+            >
+              {otpBackBtn}
+            </button>
+          </div>
+        </form>
+      </div>
+    )
+  }
+
   return (
     <div className="w-full max-w-[440px] mx-auto bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-xl text-slate-900 dark:text-slate-100">
       <div className="mb-6">
@@ -157,7 +361,7 @@ export function RegisterForm() {
         <p className="text-slate-500 dark:text-slate-400 text-base font-medium">{subtitleText}</p>
       </div>
 
-      <form className="space-y-4" onSubmit={handleSubmit(({ fullName, email, password, role }) => registerMutation.mutate({ fullName, email, password, role }))}>
+      <form className="space-y-4" onSubmit={handleSubmit(handleRegisterSubmit)}>
         <div>
           <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="fullName">
             {fullNameLabel}
