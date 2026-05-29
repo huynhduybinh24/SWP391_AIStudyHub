@@ -91,7 +91,7 @@ export function BillingSettingsCard() {
     setSimulating(true)
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    if (isAutoRenew) {
+    if (isAutoRenew && !isTeacher) {
       // Simulate Auto-Renewal Success
       const nextExpiry = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toLocaleDateString(
         language === 'vi' ? 'vi-VN' : 'en-US',
@@ -119,7 +119,7 @@ export function BillingSettingsCard() {
           : 'Successfully auto-renewed your Pro subscription for 1 month!'
       )
     } else {
-      // Auto-renewal is OFF -> Downgrade user to free!
+      // Auto-renewal is OFF or is a Teacher -> Downgrade user to free!
       const currentUser = useAuthStore.getState().user
       if (currentUser) {
         useAuthStore.setState({
@@ -140,15 +140,17 @@ export function BillingSettingsCard() {
         }
       }
 
-      // Also update mock database in loadUsersFromStorage if it exists
-      const storedUsers = localStorage.getItem('mock_admin_users')
+      // Also update mock database in aiStudyHubUsers
+      const storedUsers = localStorage.getItem('aiStudyHubUsers')
       if (storedUsers) {
         try {
           const parsedUsers = JSON.parse(storedUsers)
           const updatedUsers = parsedUsers.map((u: any) =>
             u.email?.toLowerCase() === userEmail.toLowerCase() ? { ...u, plan: 'free' } : u
           )
-          localStorage.setItem('mock_admin_users', JSON.stringify(updatedUsers))
+          localStorage.setItem('aiStudyHubUsers', JSON.stringify(updatedUsers))
+          window.dispatchEvent(new Event('storage'))
+          window.dispatchEvent(new Event('aiStudyHubUsersUpdated'))
         } catch (e) {}
       }
 
@@ -156,10 +158,10 @@ export function BillingSettingsCard() {
       const title = language === 'vi' ? 'Gói Pro đã hết hạn' : 'Pro Subscription Expired'
       const msg = language === 'vi'
         ? (isTeacher
-            ? 'Tài khoản Pro của bạn được tài trợ theo chương trình hợp tác giảng viên đã hết hạn. Bạn có thể viết thư cho Admin để được hỗ trợ gia hạn.'
+            ? 'Tài khoản Pro của bạn được tài trợ theo chương trình hợp tác giảng viên đã hết hạn. Bạn có thể viết thư cho Admin hoặc gửi lại biểu mẫu hợp tác để được hỗ trợ gia hạn.'
             : 'Gói Pro của bạn đã hết hạn và tính năng tự động gia hạn đã bị tắt. Tài khoản của bạn đã được chuyển về gói Miễn phí (10 GB).')
         : (isTeacher
-            ? 'Your Pro account sponsored under the teacher partnership program has expired. You can email the Admin to request a renewal.'
+            ? 'Your Pro account sponsored under the teacher partnership program has expired. You can email the Admin or resubmit the partnership form to request a renewal.'
             : 'Your Pro plan has expired with auto-renewal off. Your account has been reverted to the Free tier (10 GB).')
 
       userNotificationService.addUserNotification({
