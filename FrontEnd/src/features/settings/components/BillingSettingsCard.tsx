@@ -162,6 +162,10 @@ export function BillingSettingsCard() {
     setSimulating(false)
   }
 
+  if (user?.role?.toLowerCase() === 'admin') {
+    return null
+  }
+
   return (
     <div className="rounded-2xl border border-border bg-white dark:bg-slate-900 p-6 shadow-sm">
       {/* Title Header */}
