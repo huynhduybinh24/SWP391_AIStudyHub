@@ -48,6 +48,17 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       localStorage.setItem('aiStudyHubLanguage', normalized)
     }
 
+    // Log Settings update
+    logActivity({
+      eventKey: 'settingsUpdated',
+      category: 'security',
+      status: 'success',
+      eventTextEn: 'Language updated',
+      eventTextVi: 'Cập nhật ngôn ngữ',
+      detailsTextEn: `Changed display language to '${normalized === 'vi' ? 'Vietnamese' : 'English'}'.`,
+      detailsTextVi: `Đã đổi ngôn ngữ hiển thị thành '${normalized === 'vi' ? 'Tiếng Việt' : 'Tiếng Anh'}'.`
+    })
+
     if (useSettingsStore.getState().account?.language !== normalized) {
       useSettingsStore.getState().updateAccount({ language: normalized })
     }
