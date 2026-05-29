@@ -373,7 +373,7 @@ export function BillingSettingsCard() {
 
           {/* Upgrade prompt or Email Admin renewal link for teachers */}
           {isTeacher ? (
-            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 dark:bg-blue-500/10 p-5 flex flex-col md:flex-row justify-between items-center gap-5">
+            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 dark:bg-blue-500/10 p-5 flex flex-col md:flex-row justify-between items-center gap-5 animate-fade-in">
               <div className="space-y-1.5 text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-1.5 text-[#2563EB] dark:text-blue-400 font-extrabold text-sm">
                   <Sparkles className="size-4 text-amber-500 animate-pulse" />
@@ -381,24 +381,32 @@ export function BillingSettingsCard() {
                 </div>
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
                   {language === 'vi'
-                    ? 'Tài khoản Pro miễn phí 1 năm cho đối tác giảng viên của bạn đã hết hạn. Hãy viết email nhanh cho Admin để yêu cầu gia hạn miễn phí thêm 1 năm.'
-                    : 'Your 1-year free teacher Pro partnership has expired. Simply write a quick email to the admin team to renew for another year.'}
+                    ? 'Gói tài trợ Giảng viên của bạn đã hết hạn. Bạn có thể gửi lại biểu mẫu xin hợp tác để Admin duyệt gia hạn tiếp, hoặc gửi thư trực tiếp cho Ban quản trị.'
+                    : 'Your Teacher partnership sponsorship has expired. You can resubmit the partnership form for renewal approval, or write an email to the admin team.'}
                 </p>
               </div>
-              <a
-                href={`mailto:admin@example.com?subject=${encodeURIComponent(
-                  language === 'vi'
-                    ? 'Yêu cầu gia hạn gói Pro Giảng viên'
-                    : 'Request to Renew Teacher Pro Subscription'
-                )}&body=${encodeURIComponent(
-                  language === 'vi'
-                    ? `Xin chào Admin,\n\nGói Pro đối tác giảng viên của tôi tại LUMIedu đã hết hạn. Tôi muốn gửi yêu cầu gia hạn gói này để tiếp tục sử dụng phục vụ công tác giảng dạy.\n\nThông tin tài khoản:\n- Họ và tên: ${user?.name}\n- Email: ${user?.email}\n\nXin chân thành cảm ơn!`
-                    : `Dear Admin,\n\nMy teacher Pro partnership subscription at LUMIedu has expired. I would like to request a renewal to continue using these tools for my classes.\n\nAccount Details:\n- Name: ${user?.name}\n- Email: ${user?.email}\n\nThank you very much!`
-                )}`}
-                className="w-full md:w-auto text-center px-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/10 hover:shadow-lg transition-all no-underline inline-block active:scale-[0.98]"
-              >
-                {language === 'vi' ? 'Gửi email gia hạn gói PRO' : 'Email Admin to Renew PRO'}
-              </a>
+              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+                <Link
+                  to="/partnership"
+                  className="px-5 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-750 hover:to-indigo-750 text-white shadow-md shadow-blue-550/10 hover:shadow-lg transition-all no-underline inline-block active:scale-[0.98] text-center"
+                >
+                  {language === 'vi' ? 'Gửi lại biểu mẫu Hợp tác' : 'Resubmit Partnership Form'}
+                </Link>
+                <a
+                  href={`mailto:admin@example.com?subject=${encodeURIComponent(
+                    language === 'vi'
+                      ? 'Yêu cầu gia hạn gói Pro Giảng viên'
+                      : 'Request to Renew Teacher Pro Subscription'
+                  )}&body=${encodeURIComponent(
+                    language === 'vi'
+                      ? `Xin chào Admin,\n\nGói Pro đối tác giảng viên của tôi tại LUMIedu đã hết hạn. Tôi muốn gửi yêu cầu gia hạn gói này để tiếp tục sử dụng phục vụ công tác giảng dạy.\n\nThông tin tài khoản:\n- Họ và tên: ${user?.name}\n- Email: ${user?.email}\n\nXin chân thành cảm ơn!`
+                      : `Dear Admin,\n\nMy teacher Pro partnership subscription at LUMIedu has expired. I would like to request a renewal to continue using these tools for my classes.\n\nAccount Details:\n- Name: ${user?.name}\n- Email: ${user?.email}\n\nThank you very much!`
+                  )}`}
+                  className="px-5 py-3.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-200 shadow-sm transition-all no-underline inline-block active:scale-[0.98] border border-slate-200 dark:border-slate-700 text-center"
+                >
+                  {language === 'vi' ? 'Gửi email gia hạn' : 'Email Admin to Renew'}
+                </a>
+              </div>
             </div>
           ) : (
             /* Upgrade prompt and premium link */
