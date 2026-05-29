@@ -6,6 +6,7 @@ import {
   DEV_SKIP_AUTH,
 } from '@/config/dev'
 import type { AuthTokens, AuthUser } from '@/types/auth'
+import { logActivity, recordLogoutTime, cancelLogoutTime } from '@/services/activityLogService'
 
 interface AuthState {
   user: AuthUser | null
@@ -42,6 +43,20 @@ export const useAuthStore = create<AuthState>()(
             avatar: user.avatarUrl || '/avatar.svg'
           }))
 
+          // Cancel any scheduled log deletion since the user logged back in
+          cancelLogoutTime(user.email)
+
+          // Log user login activity
+          logActivity({
+            eventKey: 'userLoggedIn',
+            category: 'security',
+            status: 'success',
+            eventTextEn: 'User logged in',
+            eventTextVi: 'Đăng nhập hệ thống',
+            detailsTextEn: `User ${user.email} successfully logged in to the system.`,
+            detailsTextVi: `Người dùng ${user.email} đã đăng nhập thành công vào hệ thống.`
+          })
+
           // Automatically register this logged-in account in device login history
           try {
             const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
@@ -74,6 +89,21 @@ export const useAuthStore = create<AuthState>()(
           if (activeUserStr) {
             try {
               const activeUser = JSON.parse(activeUserStr)
+
+              // Record logout time for 1-hour deletion window
+              recordLogoutTime(activeUser.email)
+
+              // Log user logout activity
+              logActivity({
+                eventKey: 'userLoggedOut',
+                category: 'security',
+                status: 'success',
+                eventTextEn: 'User logged out',
+                eventTextVi: 'Đăng xuất hệ thống',
+                detailsTextEn: `User ${activeUser.email} signed out of the system.`,
+                detailsTextVi: `Người dùng ${activeUser.email} đã đăng xuất khỏi hệ thống.`
+              })
+
               if (activeUser?.role?.toLowerCase() === 'admin') {
                 localStorage.removeItem('mock_partnership_requests')
                 localStorage.removeItem('mock_sent_emails')
