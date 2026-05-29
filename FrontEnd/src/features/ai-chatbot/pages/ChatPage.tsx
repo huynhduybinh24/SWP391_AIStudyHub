@@ -21,6 +21,7 @@ const IconLinkedIn = ({ className }: { className?: string }) => (
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { logActivity } from '@/services/activityLogService'
 
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 
