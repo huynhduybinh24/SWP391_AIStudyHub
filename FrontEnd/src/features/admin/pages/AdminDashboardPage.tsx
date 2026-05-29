@@ -146,6 +146,42 @@ export function AdminDashboardPage() {
             name: updated.name,
           }
         })
+        
+        // Also persist to 'aiStudyHubCurrentUser' in localStorage so it doesn't get reverted on page reload
+        localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify({
+          id: updated.id,
+          name: updated.name,
+          email: updated.email,
+          role: updated.role,
+          plan: updated.plan || 'free',
+          avatar: updated.avatar || '/avatar.svg'
+        }))
+      }
+
+      // Sync updated plan to quick switcher accounts registry if present
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
+          if (stored) {
+            const list = JSON.parse(stored)
+            if (Array.isArray(list)) {
+              const updatedList = list.map((acc: any) => {
+                if (acc.email?.toLowerCase() === updated.email?.toLowerCase()) {
+                  return {
+                    ...acc,
+                    name: updated.name,
+                    role: updated.role === 'admin' ? 'admin' : updated.role === 'teacher' || updated.role === 'instructor' ? 'instructor' : 'student',
+                    plan: (updated.plan || 'free').toUpperCase()
+                  }
+                }
+                return acc
+              })
+              localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(updatedList))
+            }
+          }
+        } catch (e) {
+          console.error('Failed to sync updated user to quick switcher accounts list:', e)
+        }
       }
     } catch (err: any) {
       setError(err.message)
