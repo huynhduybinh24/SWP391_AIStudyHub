@@ -156,6 +156,7 @@ export function PartnershipPage() {
   const activeRequest = userRequests.find(req => req.status === 'Pending' || (req.status === 'Approved' && currentUser?.plan === 'pro'));
   const isFormBlocked = !!activeRequest;
   const isAdmin = currentUser?.role?.toLowerCase() === 'admin';
+  const isTeacher = currentUser?.role?.toLowerCase() === 'teacher' || currentUser?.role?.toLowerCase() === 'instructor';
 
   // Pre-fill form when currentUser is available
   useEffect(() => {
@@ -305,7 +306,7 @@ export function PartnershipPage() {
           {/* Left Column: Form */}
           <section id="partnership-form" className="lg:col-span-7">
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 md:p-10 shadow-sm flex flex-col gap-8">
-              {isAdmin ? (
+               {isAdmin ? (
                 <div className="flex flex-col items-center justify-center text-center py-12 px-6">
                   <div className="w-20 h-20 bg-blue-50 dark:bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
                     <Shield className="size-10 text-blue-600 animate-pulse" />
@@ -325,6 +326,58 @@ export function PartnershipPage() {
                     <Shield className="w-5 h-5" />
                     {language === 'vi' ? 'Đi tới Trang quản trị (Duyệt biểu mẫu)' : 'Go to Admin Dashboard (Approve Forms)'}
                   </button>
+                </div>
+              ) : !currentUser ? (
+                <div className="flex flex-col items-center justify-center text-center py-12 px-6">
+                  <div className="w-20 h-20 bg-blue-50 dark:bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
+                    <AlertTriangle className="size-10 text-blue-600 animate-pulse" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
+                    {language === 'vi' ? 'Yêu cầu Đăng nhập' : 'Login Required'}
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md leading-relaxed font-medium">
+                    {language === 'vi'
+                      ? 'Chương trình Hợp tác Giáo viên chỉ dành riêng cho các tài khoản là Giảng viên. Vui lòng đăng nhập bằng tài khoản Giảng viên của bạn để tiếp tục.'
+                      : 'The Teacher Partnership program is exclusively for Teacher accounts. Please log in with your Teacher account to continue.'}
+                  </p>
+                  <Link 
+                    to="/login"
+                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center gap-2 border-none no-underline"
+                  >
+                    {language === 'vi' ? 'Đăng nhập ngay' : 'Log In Now'}
+                  </Link>
+                </div>
+              ) : !isTeacher ? (
+                <div className="flex flex-col items-center justify-center text-center py-12 px-6">
+                  <div className="w-20 h-20 bg-amber-50 dark:bg-amber-500/10 rounded-full flex items-center justify-center mb-6 border border-amber-100 dark:border-amber-900/30">
+                    <GraduationCap className="size-10 text-amber-500 animate-bounce" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
+                    {language === 'vi' ? 'Quyền truy cập hạn chế' : 'Access Restricted'}
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md leading-relaxed font-medium">
+                    {language === 'vi'
+                      ? 'Chương trình Hợp tác Giáo viên chỉ dành riêng cho tài khoản Giảng viên. Tài khoản hiện tại của bạn có vai trò là Học viên.'
+                      : 'The Teacher Partnership program is exclusively for Teacher accounts. Your current account role is Student.'}
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+                    <button 
+                      onClick={() => {
+                        alert(language === 'vi' 
+                          ? 'Vui lòng sử dụng tính năng "Đổi người dùng" (Quick Switcher) ở góc trên bên phải thanh menu để chuyển sang tài khoản Giảng viên (ví dụ: Sarah Jenkins).' 
+                          : 'Please use the "Change User" (Quick Switcher) at the top right of the header to switch to a Teacher account (e.g., Sarah Jenkins).');
+                      }}
+                      className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] cursor-pointer border-none"
+                    >
+                      {language === 'vi' ? 'Chuyển sang tài khoản Giảng viên' : 'Switch to Teacher Account'}
+                    </button>
+                    <Link 
+                      to="/register"
+                      className="px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 font-bold rounded-2xl shadow-sm transition-all active:scale-[0.98] cursor-pointer no-underline text-center flex items-center justify-center border border-slate-200 dark:border-slate-700"
+                    >
+                      {language === 'vi' ? 'Đăng ký tài khoản Giảng viên' : 'Register a Teacher Account'}
+                    </Link>
+                  </div>
                 </div>
               ) : isFormBlocked ? (
                 <div>
