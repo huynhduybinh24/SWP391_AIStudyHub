@@ -170,7 +170,7 @@ export function AdminDashboardPage() {
                   return {
                     ...acc,
                     name: updated.name,
-                    role: updated.role === 'admin' ? 'admin' : updated.role === 'teacher' || updated.role === 'instructor' ? 'instructor' : 'student',
+                    role: updated.role === 'admin' ? 'admin' : updated.role === 'teacher' ? 'instructor' : 'student',
                     plan: (updated.plan || 'free').toUpperCase()
                   }
                 }
