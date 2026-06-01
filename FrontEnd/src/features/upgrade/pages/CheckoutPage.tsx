@@ -9,6 +9,7 @@ import { PaymentSuccessModal } from '../components/PaymentSuccessModal'
 import { ExpressCheckoutModal } from '../components/ExpressCheckoutModal'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
 
 export function CheckoutPage() {
   const toast = useToast()
@@ -40,6 +41,49 @@ export function CheckoutPage() {
 
   const handlePaymentSuccess = (method: 'Credit Card' | 'Apple Pay' | 'Google Pay' | 'PayPal') => {
     setPaymentMethod(method)
+
+    // Upgrade the active session user to 'pro'
+    const currentUser = useAuthStore.getState().user
+    if (currentUser) {
+      useAuthStore.setState({
+        user: {
+          ...currentUser,
+          plan: 'pro'
+        }
+      })
+      // Sync in localStorage aiStudyHubCurrentUser
+      const localUserStr = localStorage.getItem('aiStudyHubCurrentUser')
+      if (localUserStr) {
+        try {
+          const localUser = JSON.parse(localUserStr)
+          localUser.plan = 'pro'
+          localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(localUser))
+        } catch (e) {}
+      }
+
+      // Prepopulate Billing details for settings page
+      const userEmail = currentUser.email || 'user@example.com'
+      localStorage.setItem(`aiStudyHubSubAutoRenew:${userEmail}`, 'true')
+      localStorage.setItem(`aiStudyHubSubPayment:${userEmail}`, method)
+      const initialExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(
+        t.settings.accountSettings ? 'vi-VN' : 'en-US',
+        { year: 'numeric', month: 'long', day: 'numeric' }
+      )
+      localStorage.setItem(`aiStudyHubSubExpiry:${userEmail}`, initialExpiry)
+
+      // Sync plan change in admin users database
+      const storedUsers = localStorage.getItem('mock_admin_users')
+      if (storedUsers) {
+        try {
+          const parsedUsers = JSON.parse(storedUsers)
+          const updatedUsers = parsedUsers.map((u: any) =>
+            u.email?.toLowerCase() === userEmail.toLowerCase() ? { ...u, plan: 'pro' } : u
+          )
+          localStorage.setItem('mock_admin_users', JSON.stringify(updatedUsers))
+        } catch (e) {}
+      }
+    }
+
     setShowSuccessModal(true)
   }
 

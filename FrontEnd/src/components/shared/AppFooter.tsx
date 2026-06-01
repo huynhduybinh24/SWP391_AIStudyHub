@@ -63,6 +63,12 @@ interface AppFooterProps {
 
 export function AppFooter({ variant = 'full' }: AppFooterProps) {
   const { t, language } = useTranslation()
+  const user = useAuthStore((state) => state.user)
+  const isUserAdmin = user?.role?.toLowerCase() === 'admin'
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  // In DEV_SKIP_AUTH mode, treat as unauthenticated so footer links still redirect to login correctly
+  const isReallyAuthenticated = DEV_SKIP_AUTH ? false : isAuthenticated
+  const navigate = useNavigate()
 
   // Simplified variant: standard sleek light/dark footer bar
   if (variant === 'simple') {
@@ -73,28 +79,42 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
             {t.footer.copyright}
           </p>
           <nav className="flex items-center gap-6 md:pr-24">
-            <Link
-              to="/help"
-              className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              {t.footer.supportCenter}
-            </Link>
-            <Link
-              to="/help?tab=contact"
-              className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
-            >
-              {t.footer.partnershipContact}
-            </Link>
+            {isUserAdmin ? (
+              <>
+                <Link
+                  to="/dashboard/admin?tab=overview"
+                  className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  {language === 'vi' ? 'Bảng tổng quan' : 'Overview'}
+                </Link>
+                <Link
+                  to="/dashboard/admin?tab=activity-logs"
+                  className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
+                >
+                  {language === 'vi' ? 'Nhật ký hệ thống' : 'System Logs'}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/help"
+                  className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  {t.footer.supportCenter}
+                </Link>
+                <Link
+                  to="/help?tab=contact"
+                  className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
+                >
+                  {t.footer.partnershipContact}
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </footer>
     )
   }
-
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  // In DEV_SKIP_AUTH mode, treat as unauthenticated so footer links still redirect to login correctly
-  const isReallyAuthenticated = DEV_SKIP_AUTH ? false : isAuthenticated
-  const navigate = useNavigate()
 
   const handleProtectedLink = (to: string) => {
     if (!isReallyAuthenticated) {
@@ -111,21 +131,30 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
   const content = {
     aboutTitle: isVi ? 'Về LumiEdu' : 'About LumiEdu',
     aboutLinks: [
-      { text: isVi ? 'Giới thiệu' : 'Introduction', to: '/' },
+      { text: isVi ? 'Giới thiệu' : 'Introduction', to: '/#introduction' },
       { text: isVi ? 'Tính năng' : 'Features', to: '/#features' },
       { text: isVi ? 'Bảng giá' : 'Pricing Plans', to: '/pricing' },
-      { text: t.footer.termsOfService, to: '/help' },
-      { text: t.footer.privacyPolicy, to: '/help' },
+      { text: t.footer.termsOfService, to: '/terms-of-service' },
+      { text: t.footer.privacyPolicy, to: '/privacy-policy' },
     ],
     exploreTitle: isVi ? 'Tính năng & Khám phá' : 'Features & Explore',
-    exploreLinks: [
-      { text: isVi ? 'Tài liệu của tôi' : 'My Documents', to: '/dashboard/documents', isProtected: true },
-      { text: isVi ? 'Trợ lý AI Chatbot' : 'AI Chatbot Assistant', to: '/dashboard/chat', isProtected: true },
-      { text: isVi ? 'Không gian chia sẻ' : 'Shared Workspace', to: '/dashboard/shared', isProtected: true },
-      { text: isVi ? 'Kế hoạch học tập' : 'Study Plans', to: '/dashboard/study-plans', isProtected: true },
-      { text: isVi ? 'Dung lượng đám mây' : 'Cloud Storage', to: '/dashboard/storage', isProtected: true },
-      { text: t.footer.helpCenter, to: '/help', isProtected: false },
-    ],
+    exploreLinks: isUserAdmin
+      ? [
+          { text: isVi ? 'Bảng điều khiển Admin' : 'Admin Dashboard', to: '/dashboard/admin?tab=overview', isProtected: false },
+          { text: isVi ? 'Quản lý Người dùng' : 'User Management', to: '/dashboard/admin?tab=users', isProtected: false },
+          { text: isVi ? 'Kiểm duyệt Tài liệu' : 'Document Management', to: '/dashboard/admin?tab=ai-moderation', isProtected: false },
+          { text: isVi ? 'Quản lý Gói cước' : 'Package Management', to: '/dashboard/admin?tab=packages', isProtected: false },
+          { text: isVi ? 'Yêu cầu Hợp tác' : 'Partnership Requests', to: '/dashboard/admin?tab=partnership-requests', isProtected: false },
+          { text: t.footer.helpCenter, to: '/help', isProtected: false },
+        ]
+      : [
+          { text: isVi ? 'Tài liệu của tôi' : 'My Documents', to: '/dashboard/documents', isProtected: true },
+          { text: isVi ? 'Trợ lý AI Chatbot' : 'AI Chatbot Assistant', to: '/dashboard/chat', isProtected: true },
+          { text: isVi ? 'Không gian chia sẻ' : 'Shared Workspace', to: '/dashboard/shared', isProtected: true },
+          { text: isVi ? 'Kế hoạch học tập' : 'Study Plans', to: '/dashboard/study-plans', isProtected: true },
+          { text: isVi ? 'Dung lượng đám mây' : 'Cloud Storage', to: '/dashboard/storage', isProtected: true },
+          { text: t.footer.helpCenter, to: '/help', isProtected: false },
+        ],
     infoTitle: isVi ? 'NỀN TẢNG HỌC TẬP SỐ THÔNG MINH' : 'INTELLIGENT DIGITAL EDUCATION PLATFORM',
     infoItems: [
       {label: isVi ? 'Ban phát triển' : 'R&D Team', value: 'SWP391 Team 4' },
@@ -266,7 +295,7 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
           {/* Brand & Slogan */}
           <div className="flex flex-col items-center md:items-start text-center md:text-left gap-2.5">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-white/10">
                 <img src="/logo.png" alt="LumiEdu Logo" className="w-9 h-9 object-contain" />
               </div>
               <span className="text-xl md:text-2xl font-bold font-heading text-white tracking-tight">

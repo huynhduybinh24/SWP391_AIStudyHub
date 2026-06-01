@@ -35,6 +35,9 @@ import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { PricingPage } from '@/features/upgrade/pages/PricingPage'
 import { CheckoutPage } from '@/features/upgrade/pages/CheckoutPage'
 import { StudyPlansPage } from '@/features/study-plans/pages/StudyPlansPage'
+import { TermsOfServicePage } from '@/features/legal/pages/TermsOfServicePage'
+import { PrivacyPolicyPage } from '@/features/legal/pages/PrivacyPolicyPage'
+import { PartnershipPage } from '@/features/landing/pages/PartnershipPage'
 
 import { ScrollToTop } from '@/components/shared/ScrollToTop'
 import { Outlet } from 'react-router-dom'
@@ -65,6 +68,10 @@ export const router = createBrowserRouter([
       {
         path: '/help',
         element: <HelpCenterPage />,
+      },
+      {
+        path: '/partnership',
+        element: <PartnershipPage />,
       },
       {
         path: '/login',
@@ -134,6 +141,14 @@ export const router = createBrowserRouter([
             ],
           },
         ],
+      },
+      {
+        path: '/terms-of-service',
+        element: <TermsOfServicePage />,
+      },
+      {
+        path: '/privacy-policy',
+        element: <PrivacyPolicyPage />,
       },
       { path: '*', element: <Navigate to="/" replace /> },
     ],

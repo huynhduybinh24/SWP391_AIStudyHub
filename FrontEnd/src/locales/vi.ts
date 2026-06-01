@@ -98,6 +98,11 @@ export const vi: typeof en = {
     actionPreview: "Xem Trước",
     actionApprove: "Phê Duyệt",
     actionDelete: "Xóa Tệp",
+    actionReject: "Từ chối",
+    actionFlag: "Gắn cờ tài liệu",
+    actionRemoveFlag: "Gỡ gắn cờ",
+    actionDownload: "Tải xuống tệp",
+    toastDownloadSimulate: "Đang mô phỏng tải xuống \"{filename}\"",
     confirmDeleteTitle: "Xóa Tài Liệu Vĩnh Viễn",
     confirmDeleteDesc: "Bạn có chắc chắn muốn xóa tài liệu này khỏi hệ thống? Thao tác này không thể hoàn tác.",
     toastApproveSuccess: "Phê duyệt tài liệu thành công",
@@ -210,6 +215,7 @@ export const vi: typeof en = {
     searchFolder: "Tìm kiếm trong thư mục này...",
     searchStudyPlans: "Tìm kiếm kế hoạch học tập...",
     searchPlaceholderAll: "Tìm kiếm tài liệu, trò chuyện, kế hoạch...",
+    searchPlaceholderAdmin: "Tìm người dùng, tài liệu, báo cáo, giao dịch, activity...",
     searchResults: "Kết quả tìm kiếm",
     recentSearches: "Tìm kiếm gần đây",
     trendingSearches: "Tìm kiếm phổ biến",
@@ -760,7 +766,22 @@ export const vi: typeof en = {
     title: "Thông báo",
     subtitle: "Xem các hoạt động gần đây và cập nhật học tập.",
     markAllAsRead: "Đánh dấu tất cả là đã đọc",
-    noNotifications: "Không có thông báo mới."
+    noNotifications: "Không có thông báo mới.",
+    detailModalTitle: "Chi tiết Thông báo",
+    detailDocName: "Tên tài liệu",
+    detailActionType: "Loại hành động",
+    detailReason: "Lý do",
+    detailAdminNote: "Ghi chú của Admin",
+    detailTime: "Thời gian",
+    actionRemoved: "Đã bị quản trị viên xóa",
+    actionRejected: "Đã bị quản trị viên từ chối",
+    noReasonProvided: "Chưa có lý do chi tiết.",
+    deleteTitle: "Xóa thông báo?",
+    deleteMessage: "Bạn có chắc muốn xóa thông báo này không? Hành động này chỉ xóa thông báo khỏi danh sách của bạn.",
+    deleteCancel: "Hủy",
+    deleteConfirm: "Xóa",
+    deleteToast: "Đã xóa thông báo.",
+    deleteAriaLabel: "Xóa thông báo"
   },
   studyPlans: {
     title: "Kế hoạch học tập",
@@ -1256,5 +1277,86 @@ export const vi: typeof en = {
         tags: ['#phong-thi-nghiem-di-truyen', '#bao-cao', '#di-truyen-than-kinh']
       }
     }
+  },
+  activityLogs: {
+    title: "Nhật ký hoạt động",
+    subtitle: "Theo dõi các hoạt động quan trọng của quản trị viên và hệ thống.",
+    columns: {
+      event: "Sự kiện",
+      category: "Phân loại",
+      performer: "Người thực hiện",
+      details: "Chi tiết",
+      timestamp: "Thời gian",
+      status: "Trạng thái"
+    },
+    events: {
+      passwordRestored: "Mật khẩu đã khôi phục",
+      aiScanViolationDetected: "AI Quét tệp phát hiện vi phạm",
+      userAccountLocked: "Tài khoản người dùng bị khóa",
+      accountPackageUpgraded: "Nâng cấp gói tài khoản",
+      documentApproved: "Phê duyệt tài liệu",
+      systemNotificationBroadcast: "Phát sóng thông báo toàn hệ thống",
+      paymentTransactionFailed: "Giao dịch thanh toán thất bại"
+    },
+    details: {
+      passwordRestored: "Khôi phục mật khẩu của người dùng David Kim (david.k@university.edu) về mặc định.",
+      aiScanViolationDetected: "Tự động báo cáo tài liệu Violating_Exam_Leaks_2026.pdf nghi ngờ vi phạm bản quyền đề thi học thuật.",
+      userAccountLocked: "Tài khoản david.k@university.edu bị khóa do báo cáo vi phạm nội quy lặp lại.",
+      accountPackageUpgraded: "Thanh toán thành công qua cổng Stripe nâng cấp lên gói Pro (50GB).",
+      documentApproved: "Duyệt tài liệu Neuroscience Fall Syllabus 2024 sạch sau khi kiểm duyệt.",
+      systemNotificationBroadcast: "Gửi thông báo bảo trì nâng cấp máy chủ AI tháng 6 tới 15,248 học sinh.",
+      paymentTransactionFailed: "Thẻ tín dụng hết hạn hoặc số dư không đủ khi tự động gia hạn gói cước Pro."
+    },
+    status: {
+      success: "THÀNH CÔNG",
+      warning: "CẢNH BÁO",
+      failed: "THẤT BẠI"
+    },
+    categories: {
+      security: "BẢO MẬT",
+      'ai-audit': "KIỂM TRA AI",
+      subscription: "GÓI DỊCH VỤ",
+      moderation: "KIỂM DUYỆT"
+    },
+    noLogsFound: "Không tìm thấy nhật ký hoạt động nào",
+    searchPlaceholder: "Tìm kiếm nhật ký...",
+    filters: {
+      all: "Tất cả",
+      security: "Bảo mật",
+      subscription: "Gói Pro",
+      'ai-audit': "AI Quét",
+      moderation: "Duyệt tài liệu"
+    }
+  },
+  notificationManagement: {
+    title: "Quản lý thông báo",
+    subtitle: "Tạo, gửi và xem lại các thông báo hệ thống.",
+    sentBroadcastHistory: "LỊCH SỬ THÔNG BÁO ĐÃ GỬI",
+    broadcasts: {
+      maintenanceTitle: "Bảo trì hệ thống định kỳ tháng 6/2026",
+      maintenanceMessage: "Hệ thống LumiEdu sẽ tạm thời gián đoạn vào lúc 02:00 sáng ngày 01/06/2026 để nâng cấp cụm máy chủ AI. Thời gian dự kiến kéo dài 2 giờ.",
+      proUpgradeTitle: "Nâng cấp dung lượng Pro lên 50GB hoàn toàn miễn phí",
+      proUpgradeMessage: "Tin vui! Tất cả tài khoản Pro hiện tại đã được nâng cấp dung lượng lưu trữ tối đa từ 40GB lên 50GB mà không tăng giá gói cước."
+    },
+    target: "ĐỐI TƯỢNG",
+    targetAll: "TẤT CẢ",
+    targetPro: "PRO",
+    recipients: "NGƯỜI NHẬN"
+  },
+  userMenu: {
+    changeUser: "Đổi người dùng"
+  },
+  userSwitch: {
+    title: "Đổi người dùng",
+    subtitle: "Chọn tài khoản mẫu để kiểm thử quyền truy cập khác nhau.",
+    cancel: "Hủy",
+    switch: "Chuyển người dùng",
+    switched: "Đã chuyển sang {name}",
+    current: "Đang dùng",
+    adminDescription: "Có toàn quyền truy cập trang quản trị và cài đặt hệ thống.",
+    studentDescription: "Tài khoản học viên tiêu chuẩn với tài liệu và tính năng học tập.",
+    instructorDescription: "Có thể quản lý tài liệu khóa học và cộng tác với học viên.",
+    proStudentDescription: "Tài khoản học viên có dung lượng nâng cấp và tính năng cao cấp."
   }
 };
+

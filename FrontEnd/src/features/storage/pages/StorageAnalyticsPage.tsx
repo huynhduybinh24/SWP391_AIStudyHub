@@ -73,7 +73,8 @@ export function StorageAnalyticsPage() {
   }, [isPro, t])
 
   useEffect(() => {
-    setIsMounted(true)
+    const timer = setTimeout(() => setIsMounted(true), 200)
+    return () => clearTimeout(timer)
   }, [])
 
   const onPieEnter = (_: unknown, index: number) => {
@@ -184,7 +185,7 @@ export function StorageAnalyticsPage() {
           <CardContent className="p-6 pt-4 flex-1 flex flex-col min-h-0">
             <div className="w-full h-[240px] [&_.recharts-wrapper]:outline-none [&_.recharts-surface]:outline-none">
               {isMounted && (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} style={{ outline: 'none' }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f1f5f9'} />
                     <XAxis 
@@ -242,7 +243,7 @@ export function StorageAnalyticsPage() {
           <CardContent className="p-6 pt-4 flex-1 flex flex-col min-h-0">
             <div className="w-[180px] h-[180px] relative mx-auto mb-8 [&_.recharts-wrapper]:outline-none [&_.recharts-surface]:outline-none">
               {isMounted && (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={180}>
                   <PieChart style={{ outline: 'none' }}>
                     <Tooltip 
                       contentStyle={{ 

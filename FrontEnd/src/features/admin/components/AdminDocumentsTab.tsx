@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   FileText,
   Search,
@@ -28,6 +29,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { adminService, AdminDocument } from '../services/adminService'
+import { userNotificationService } from '@/features/notifications/services/userNotificationService'
 import { cn } from '@/lib/utils'
 
 interface AdminDocumentsTabProps {
@@ -49,7 +51,14 @@ export function AdminDocumentsTab({
   const toast = useToast()
 
   // Filter & Search states
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchParams] = useSearchParams()
+  const keywordParam = searchParams.get('keyword') || ''
+  const [searchTerm, setSearchTerm] = useState(keywordParam)
+
+  useEffect(() => {
+    setSearchTerm(keywordParam)
+  }, [keywordParam])
+
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [aiRiskFilter, setAiRiskFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all')
   const [plagiarismFilter, setPlagiarismFilter] = useState<'all' | 'plagiarized' | 'clean'>('all')
@@ -313,6 +322,7 @@ export function AdminDocumentsTab({
     if (previewDoc && previewDoc.id === rejectDocConfirm.id) {
       setPreviewDoc((prev) => (prev ? { ...prev, status: 'rejected' } : null))
     }
+
     const msg = language === 'vi'
       ? `Đã từ chối tài liệu và gửi mail thông báo lý do đến ${rejectDocConfirm.ownerEmail} thành công`
       : `Document rejected and notification email with reason sent to ${rejectDocConfirm.ownerEmail} successfully`
@@ -840,7 +850,7 @@ export function AdminDocumentsTab({
                                 ? "text-rose-600 bg-rose-50 dark:bg-rose-955/20 hover:bg-rose-100"
                                 : "text-slate-455 hover:text-rose-500 hover:bg-rose-50 dark:text-slate-500 dark:hover:text-rose-455"
                             )}
-                            title={doc.isFlagged ? 'Remove Flag' : 'Flag Document'}
+                            title={doc.isFlagged ? (t.admin?.actionRemoveFlag || 'Remove Flag') : (t.admin?.actionFlag || 'Flag Document')}
                           >
                             <AlertTriangle className="size-4.5" />
                           </button>
@@ -855,7 +865,7 @@ export function AdminDocumentsTab({
                               <CheckCircle className="size-4.5" />
                             </button>
                           ) : (
-                            <div className="w-7 h-7 flex items-center justify-center text-emerald-500" title="Approved">
+                            <div className="w-7 h-7 flex items-center justify-center text-emerald-500" title={t.admin?.statusApproved || 'Approved'}>
                               <ShieldCheck className="size-4.5" />
                             </div>
                           )}
@@ -865,7 +875,7 @@ export function AdminDocumentsTab({
                             <button
                               onClick={() => handleReject(doc.id)}
                               className="p-1.5 rounded-lg text-slate-505 hover:text-amber-600 hover:bg-amber-50 dark:text-slate-400 dark:hover:text-amber-450 dark:hover:bg-amber-950/40 transition-all cursor-pointer"
-                              title="Reject"
+                              title={t.admin?.actionReject || 'Reject'}
                             >
                               <XCircle className="size-4.5" />
                             </button>
@@ -873,9 +883,9 @@ export function AdminDocumentsTab({
 
                           {/* Download mock action */}
                           <button
-                            onClick={() => toast.success(`Simulating download of "${doc.title}.${doc.fileType}"`)}
+                            onClick={() => toast.success((t.admin?.toastDownloadSimulate || 'Simulating download of "{filename}"').replace('{filename}', `${doc.title}.${doc.fileType}`))}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-405 dark:hover:text-blue-450 dark:hover:bg-blue-955/20 transition-all cursor-pointer"
-                            title="Download File"
+                            title={t.admin?.actionDownload || 'Download File'}
                           >
                             <Download className="size-4.5" />
                           </button>
@@ -883,7 +893,7 @@ export function AdminDocumentsTab({
                           {/* Delete action */}
                           <button
                             onClick={() => setDeleteDoc(doc)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-505 dark:hover:text-rose-450 dark:hover:bg-rose-955/20 transition-all cursor-pointer"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-550 dark:hover:text-rose-450 dark:hover:bg-rose-955/20 transition-all cursor-pointer"
                             title={t.admin?.actionDelete || 'Delete'}
                           >
                             <Trash2 className="size-4.5" />

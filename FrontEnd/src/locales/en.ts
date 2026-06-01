@@ -96,6 +96,11 @@ export const en = {
     actionPreview: "Preview",
     actionApprove: "Approve",
     actionDelete: "Delete",
+    actionReject: "Reject",
+    actionFlag: "Flag Document",
+    actionRemoveFlag: "Remove Flag",
+    actionDownload: "Download File",
+    toastDownloadSimulate: "Simulating download of \"{filename}\"",
     confirmDeleteTitle: "Permanently Delete Document",
     confirmDeleteDesc: "Are you sure you want to delete this document from the system? This action cannot be undone.",
     toastApproveSuccess: "Document approved successfully",
@@ -208,6 +213,7 @@ export const en = {
     searchFolder: "Search in this folder...",
     searchStudyPlans: "Search study plans...",
     searchPlaceholderAll: "Search documents, chats, plans...",
+    searchPlaceholderAdmin: "Search users, documents, reports, transactions, activities...",
     searchResults: "Search Results",
     recentSearches: "Recent Searches",
     trendingSearches: "Trending Searches",
@@ -758,7 +764,22 @@ export const en = {
     title: "Notifications",
     subtitle: "View your recent activities and learning updates.",
     markAllAsRead: "Mark all as read",
-    noNotifications: "No new notifications."
+    noNotifications: "No new notifications.",
+    detailModalTitle: "Notification Details",
+    detailDocName: "Document Name",
+    detailActionType: "Action Type",
+    detailReason: "Reason",
+    detailAdminNote: "Admin Note",
+    detailTime: "Time",
+    actionRemoved: "Removed by admin",
+    actionRejected: "Rejected by admin",
+    noReasonProvided: "No reason details were provided.",
+    deleteTitle: "Delete notification?",
+    deleteMessage: "Are you sure you want to delete this notification? This action only removes it from your notification list.",
+    deleteCancel: "Cancel",
+    deleteConfirm: "Delete",
+    deleteToast: "Notification deleted.",
+    deleteAriaLabel: "Delete notification"
   },
   studyPlans: {
     title: "Study Plans",
@@ -1253,5 +1274,86 @@ export const en = {
         tags: ['#genetics-lab', '#report', '#neuro-genetics']
       }
     }
+  },
+  activityLogs: {
+    title: "Activity Logs",
+    subtitle: "Track important admin and system activities.",
+    columns: {
+      event: "Event",
+      category: "Category",
+      performer: "Performer",
+      details: "Details",
+      timestamp: "Timestamp",
+      status: "Status"
+    },
+    events: {
+      passwordRestored: "Password restored",
+      aiScanViolationDetected: "AI scan detected a violation",
+      userAccountLocked: "User account locked",
+      accountPackageUpgraded: "Account package upgraded",
+      documentApproved: "Document approved",
+      systemNotificationBroadcast: "System notification broadcast",
+      paymentTransactionFailed: "Payment transaction failed"
+    },
+    details: {
+      passwordRestored: "Restored the password for user David Kim (david.k@university.edu) to default.",
+      aiScanViolationDetected: "Automatically reported document Violating_Exam_Leaks_2026.pdf suspected of academic test copyright violation.",
+      userAccountLocked: "User account david.k@university.edu locked due to repeated violation reports.",
+      accountPackageUpgraded: "Payment completed successfully through Stripe for Pro package (50GB).",
+      documentApproved: "Approved document Neuroscience Fall Syllabus 2024 as clean after moderation.",
+      systemNotificationBroadcast: "Sent a system-wide notification about AI server maintenance in June to 15,248 students.",
+      paymentTransactionFailed: "Credit card expired or insufficient balance during automatic Pro subscription renewal."
+    },
+    status: {
+      success: "SUCCESS",
+      warning: "WARNING",
+      failed: "FAILED"
+    },
+    categories: {
+      security: "SECURITY",
+      'ai-audit': "AI-AUDIT",
+      subscription: "SUBSCRIPTION",
+      moderation: "MODERATION"
+    },
+    noLogsFound: "No activity logs found",
+    searchPlaceholder: "Search activity logs...",
+    filters: {
+      all: "All Logs",
+      security: "Security",
+      subscription: "Billing",
+      'ai-audit': "AI Audits",
+      moderation: "Moderation"
+    }
+  },
+  notificationManagement: {
+    title: "Notification Management",
+    subtitle: "Create, send, and review system notifications.",
+    sentBroadcastHistory: "SENT BROADCAST HISTORY",
+    broadcasts: {
+      maintenanceTitle: "Scheduled system maintenance for June 2026",
+      maintenanceMessage: "LumiEdu will be temporarily unavailable at 02:00 AM on June 1, 2026 to upgrade the AI server cluster. The estimated maintenance time is 2 hours.",
+      proUpgradeTitle: "Free Pro storage upgrade to 50GB",
+      proUpgradeMessage: "Good news! All current Pro accounts have been upgraded from 40GB to 50GB of storage at no additional cost."
+    },
+    target: "TARGET",
+    targetAll: "ALL",
+    targetPro: "PRO",
+    recipients: "RECIPIENTS"
+  },
+  userMenu: {
+    changeUser: "Change User"
+  },
+  userSwitch: {
+    title: "Change User",
+    subtitle: "Select a mock account to preview different permissions.",
+    cancel: "Cancel",
+    switch: "Switch User",
+    switched: "Switched to {name}",
+    current: "Current",
+    adminDescription: "Full access to admin dashboard and system settings.",
+    studentDescription: "Standard learner account with documents and study features.",
+    instructorDescription: "Can manage shared course materials and student collaboration.",
+    proStudentDescription: "Student account with upgraded storage and premium features."
   }
 };
+

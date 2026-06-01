@@ -107,7 +107,7 @@ export function WeeklyActivityChart({ data, totalHours, trend }: WeeklyActivityC
 
         {/* High-Fidelity Custom Styled Recharts Bar Chart */}
         <div className="h-[140px] w-full mt-auto relative z-10">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={140}>
             <BarChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barCategoryGap="24%">
               <defs>
                 <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">

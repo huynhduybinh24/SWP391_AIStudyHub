@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, CircleHelp, Sun, Moon, Menu, X, Search, History, TrendingUp, FileText, Sparkles, Folder, Calendar, MessageCircle } from 'lucide-react'
+import { Bell, CircleHelp, Sun, Moon, Menu, X, Search, History, TrendingUp, FileText, Sparkles, Folder, Calendar, MessageCircle, Shield, User } from 'lucide-react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Avatar } from '@/components/ui/Avatar'
 import { Input } from '@/components/ui/Input'
@@ -11,8 +11,10 @@ import { cn } from '@/lib/utils'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { UserDropdown } from '@/components/layout/UserDropdown'
 import { NotificationDropdown } from '@/components/layout/NotificationDropdown'
+import { getCurrentUser } from '@/features/notifications/services/userNotificationService'
 import { HelpModal } from '@/components/layout/HelpModal'
 import { ConfirmLogoutModal } from '@/components/layout/ConfirmLogoutModal'
+import { ChangeUserModal } from '@/components/layout/ChangeUserModal'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
@@ -31,6 +33,34 @@ const SEARCH_SUGGESTION_TOPICS: SearchSuggestion[] = [
   { id: '4', title: 'AI Chatbot Integration Architecture', category: 'Design Pattern' },
   { id: '5', title: 'Tailwind CSS V4 Utility Classes', category: 'Styling' },
   { id: '6', title: 'Data Structures and Algorithms Summary', category: 'Study Guide' },
+]
+
+const ADMIN_SUGGESTION_TOPICS: SearchSuggestion[] = [
+  // Mock Users
+  { id: 'usr-1', title: 'Huynh Duy Binh', category: 'User (Student)' },
+  { id: 'usr-2', title: 'Alex Rivera', category: 'User (Student)' },
+  { id: 'usr-3', title: 'Sarah Jenkins', category: 'User (Teacher)' },
+  { id: 'usr-4', title: 'Ngoc Tan', category: 'User (Student)' },
+  { id: 'usr-5', title: 'Marcus Knight', category: 'User (Student)' },
+  { id: 'usr-6', title: 'Emily R.', category: 'User (Teacher)' },
+
+  // Mock Documents
+  { id: 'doc-1', title: 'Advanced Neuroscience Syllabus 2024', category: 'Syllabus' },
+  { id: 'doc-2', title: 'Group Project Research Materials', category: 'Research Document' },
+  { id: 'doc-3', title: 'Organic Chemistry Study Plan', category: 'Study Guide' },
+  { id: 'doc-4', title: 'Biology 101 Midterm Notes Leaked Exam', category: 'Flagged Notes' },
+  { id: 'doc-5', title: 'Literature Review Copy Paste Plagiarized', category: 'Flagged Review' },
+  { id: 'doc-6', title: 'Data Set_V1', category: 'Dataset Document' },
+  { id: 'doc-7', title: 'Project_Outline', category: 'Outline Document' },
+  { id: 'doc-8', title: 'Brainstorming_Diagram', category: 'Image Document' },
+
+  // Admin Panels / Tabs / Settings
+  { id: 'adm-1', title: 'User Management Dashboard', category: 'Admin Panel' },
+  { id: 'adm-2', title: 'Document Moderation and Audit', category: 'Admin Panel' },
+  { id: 'adm-3', title: 'Security Logs and Auditing', category: 'Admin Panel' },
+  { id: 'adm-4', title: 'System Status and Maintenance', category: 'Admin Panel' },
+  { id: 'adm-5', title: 'User Reports and Plagiarism Claims', category: 'Admin Panel' },
+  { id: 'adm-6', title: 'Subscription Packages and Pricing', category: 'Admin Panel' },
 ]
 
 const TRENDING_TOPICS: string[] = [
@@ -52,14 +82,21 @@ export interface MockNotification {
   title: string
   description: string
   time: string
-  type: 'doc' | 'chat' | 'plan' | 'share' | 'document_deleted'
+  type: 'doc' | 'chat' | 'plan' | 'share' | 'document_deleted' | 'document_rejected'
   isRead: boolean
+  reason?: string
+  documentName?: string
+  documentId?: string
+  actionType?: "removed" | "rejected" | "approved" | "system"
+  adminNote?: string
+  targetUserEmail?: string
 }
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 export function Header() {
   const user = useAuthStore((s) => s.user)
-  const { t } = useTranslation()
+  const isAdmin = user?.role?.toLowerCase() === 'admin'
+  const { t, language } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
   const [searchParams] = useSearchParams()
@@ -72,54 +109,106 @@ export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   const loadNotifications = () => {
-    const defaultNotifications: MockNotification[] = [
-      {
-        id: 'syllabus-analyzed',
-        title: 'Syllabus analyzed',
-        description: 'Your CS101 Syllabus was parsed successfully by AI.',
-        time: '5m ago',
-        type: 'doc',
-        isRead: false,
-      },
-      {
-        id: 'study-plan-starting',
-        title: 'Study plan starting',
-        description: 'Your midterm exam study plan starts tomorrow.',
-        time: '1h ago',
-        type: 'plan',
-        isRead: false,
-      },
-      {
-        id: 'new-shared-folder',
-        title: 'New shared folder',
-        description: 'Duy Binh shared "SWE Lab materials" with you.',
-        time: '3h ago',
-        type: 'share',
-        isRead: true,
-      },
-      {
-        id: 'ai-summary-generated',
-        title: 'AI Summary generated',
-        description: 'Summary is ready for Chapter 4: Computer Networking.',
-        time: '1d ago',
-        type: 'chat',
-        isRead: true,
-      },
-    ]
+    const currentUser = getCurrentUser();
+    const userRole = currentUser.role;
+    const userEmail = currentUser.email;
+
+    let defaultNotifications: MockNotification[] = [];
+    if (userRole === 'admin') {
+      defaultNotifications = [
+        {
+          id: 'new-report-submitted',
+          title: language === 'vi' ? 'Có báo cáo mới' : 'New report submitted',
+          description: language === 'vi' ? 'Một người dùng đã báo cáo tài liệu vì đạo văn.' : 'A user reported a document for plagiarism.',
+          time: '10m ago',
+          type: 'doc',
+          isRead: false,
+        },
+        {
+          id: 'ai-audit-flagged',
+          title: language === 'vi' ? 'AI phát hiện tài liệu đáng ngờ' : 'AI audit flagged a document',
+          description: language === 'vi' ? 'AI Guard đã phát hiện vi phạm chính sách tiềm ẩn.' : 'AI Guard detected a potential policy violation.',
+          time: '1h ago',
+          type: 'chat',
+          isRead: false,
+        },
+        {
+          id: 'system-status-updated',
+          title: language === 'vi' ? 'Trạng thái hệ thống đã cập nhật' : 'System status updated',
+          description: language === 'vi' ? 'Chế độ bảo trì hoặc trạng thái sự cố đã được thay đổi.' : 'Maintenance mode or incident status was changed.',
+          time: '3h ago',
+          type: 'plan',
+          isRead: true,
+        }
+      ];
+    } else {
+      defaultNotifications = [
+        {
+          id: 'syllabus-analyzed',
+          title: 'Syllabus analyzed',
+          description: 'Your CS101 Syllabus was parsed successfully by AI.',
+          time: '5m ago',
+          type: 'doc',
+          isRead: false,
+        },
+        {
+          id: 'study-plan-starting',
+          title: 'Study plan starting',
+          description: 'Your midterm exam study plan starts tomorrow.',
+          time: '1h ago',
+          type: 'plan',
+          isRead: false,
+        },
+        {
+          id: 'new-shared-folder',
+          title: 'New shared folder',
+          description: 'Duy Binh shared "SWE Lab materials" with you.',
+          time: '3h ago',
+          type: 'share',
+          isRead: true,
+        },
+        {
+          id: 'ai-summary-generated',
+          title: 'AI Summary generated',
+          description: 'Summary is ready for Chapter 4: Computer Networking.',
+          time: '1d ago',
+          type: 'chat',
+          isRead: true,
+        },
+      ];
+    }
 
     let localNotifications: MockNotification[] = []
     try {
-      const savedNotifs = localStorage.getItem('aiStudyHubUserNotifications')
+      const savedNotifs = localStorage.getItem(`aiStudyHubUserNotifications:${userEmail}`)
       if (savedNotifs) {
         const parsed = JSON.parse(savedNotifs)
-        localNotifications = parsed.map((n: any) => ({
+        
+        // Filter out notifications older than 7 days
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const validList = parsed.filter((n: any) => {
+          const timestamp = n.createdAt ? new Date(n.createdAt).getTime() : Date.now();
+          return timestamp >= sevenDaysAgo;
+        });
+
+        if (validList.length !== parsed.length) {
+          localStorage.setItem(`aiStudyHubUserNotifications:${userEmail}`, JSON.stringify(validList));
+        }
+
+        localNotifications = validList.map((n: any) => ({
           id: n.id,
           title: n.title,
           description: n.message,
           time: n.time || 'Just now',
           type: n.type,
           isRead: n.isRead,
-          createdAt: n.createdAt
+          createdAt: n.createdAt,
+          reason: n.reason,
+          documentName: n.documentName,
+          documentId: n.documentId,
+          actionType: n.actionType,
+          adminNote: n.adminNote,
+          targetUserEmail: n.targetUserEmail
         }))
       }
     } catch (err) {
@@ -129,7 +218,7 @@ export function Header() {
     let allNotifs = [...localNotifications, ...defaultNotifications]
 
     try {
-      const saved = localStorage.getItem('aiStudyHubHeaderNotificationsReadState')
+      const saved = localStorage.getItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`)
       if (saved) {
         const readMap = JSON.parse(saved)
         allNotifs = allNotifs.map((n) => ({
@@ -140,6 +229,40 @@ export function Header() {
     } catch (err) {
       console.error('Failed to load notifications read state:', err)
     }
+
+    let deletedIds: string[] = []
+    try {
+      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`)
+      if (storedDeleted) {
+        deletedIds = JSON.parse(storedDeleted)
+      }
+    } catch (e) {
+      console.error('Failed to parse deleted notification IDs', e)
+    }
+
+    allNotifs = allNotifs.filter((n) => {
+      if (deletedIds.includes(n.id)) return false;
+
+      if (n.targetUserEmail && n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
+        return false;
+      }
+
+      if (userRole === 'admin') {
+        const typeStr = n.type || '';
+        if (typeStr === 'document_deleted' || typeStr === 'document_rejected' || typeStr === 'document_removed') {
+          if (!n.targetUserEmail || n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
+            return false;
+          }
+        }
+        const descStr = typeof n.description === 'string' ? n.description : '';
+        if ((descStr.startsWith('Your document') || descStr.startsWith('Tài liệu')) && !n.targetUserEmail) {
+          return false;
+        }
+      }
+
+      return true;
+    })
+
     return allNotifs
   }
 
@@ -148,31 +271,37 @@ export function Header() {
   useEffect(() => {
     const handleUpdate = () => setNotifications(loadNotifications())
     window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
-    return () => window.removeEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+    window.addEventListener('aiStudyHubUserChanged', handleUpdate)
+    window.addEventListener('storage', handleUpdate)
+    return () => {
+      window.removeEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+      window.removeEventListener('aiStudyHubUserChanged', handleUpdate)
+      window.removeEventListener('storage', handleUpdate)
+    }
   }, [])
 
   // Single source of truth for all unread indicators (Bell red dot, Dropdown title badge, Item dots)
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
   const markAsRead = (id: string) => {
+    const userEmail = getCurrentUser().email
+    if (id.startsWith('usr-ntf-')) {
+      import('@/features/notifications/services/userNotificationService').then((m) => {
+        m.userNotificationService.markUserNotificationAsRead(id, userEmail)
+      })
+    }
+    
     setNotifications((prev) => {
       const updated = prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       
       try {
-        const savedNotifs = localStorage.getItem('aiStudyHubUserNotifications')
-        if (savedNotifs) {
-          let parsed = JSON.parse(savedNotifs)
-          parsed = parsed.map((n: any) => n.id === id ? { ...n, isRead: true } : n)
-          localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(parsed))
-        }
-      } catch (err) {}
-
-      try {
         const readMap: Record<string, boolean> = {}
         updated.forEach((n) => {
-          readMap[n.id] = n.isRead
+          if (!n.id.startsWith('usr-ntf-')) {
+            readMap[n.id] = n.isRead
+          }
         })
-        localStorage.setItem('aiStudyHubHeaderNotificationsReadState', JSON.stringify(readMap))
+        localStorage.setItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`, JSON.stringify(readMap))
       } catch (err) {
         console.error('Failed to save notifications read state:', err)
       }
@@ -181,24 +310,22 @@ export function Header() {
   }
 
   const markAllAsRead = () => {
+    const userEmail = getCurrentUser().email
+    import('@/features/notifications/services/userNotificationService').then((m) => {
+      m.userNotificationService.markAllUserNotificationsAsRead(userEmail)
+    })
+    
     setNotifications((prev) => {
       const updated = prev.map((n) => ({ ...n, isRead: true }))
       
       try {
-        const savedNotifs = localStorage.getItem('aiStudyHubUserNotifications')
-        if (savedNotifs) {
-          let parsed = JSON.parse(savedNotifs)
-          parsed = parsed.map((n: any) => ({ ...n, isRead: true }))
-          localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(parsed))
-        }
-      } catch (err) {}
-
-      try {
         const readMap: Record<string, boolean> = {}
         updated.forEach((n) => {
-          readMap[n.id] = n.isRead
+          if (!n.id.startsWith('usr-ntf-')) {
+            readMap[n.id] = n.isRead
+          }
         })
-        localStorage.setItem('aiStudyHubHeaderNotificationsReadState', JSON.stringify(readMap))
+        localStorage.setItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`, JSON.stringify(readMap))
       } catch (err) {
         console.error('Failed to save notifications read state:', err)
       }
@@ -257,6 +384,68 @@ export function Header() {
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false)
   const [helpModalOpen, setHelpModalOpen] = useState(false)
   const [logoutModalOpen, setLogoutModalOpen] = useState(false)
+  const [isChangeUserOpen, setIsChangeUserOpen] = useState(false)
+
+  // Hydrate store from localStorage key aiStudyHubCurrentUser on app mount
+  useEffect(() => {
+    let savedUserStr = localStorage.getItem('aiStudyHubCurrentUser')
+    if (!savedUserStr) {
+      // Default to Alex Morgan (Admin) as default mock account
+      const defaultUser = {
+        id: 'admin-alex',
+        name: 'Alex Morgan',
+        email: 'admin@example.com',
+        role: 'admin',
+        plan: 'PRO',
+        initials: 'AM',
+        avatar: '/avatar.svg'
+      }
+      localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(defaultUser))
+      savedUserStr = JSON.stringify(defaultUser)
+    }
+
+    try {
+      const savedUser = JSON.parse(savedUserStr)
+      const authUser = useAuthStore.getState().user
+      const profile = useProfileStore.getState().profile
+      if (!authUser || authUser.email !== savedUser.email || profile.name !== savedUser.name) {
+        useAuthStore.setState({
+          user: {
+            id: savedUser.id,
+            name: savedUser.name,
+            email: savedUser.email,
+            role: savedUser.role,
+            plan: savedUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
+            avatarUrl: savedUser.avatar || '/avatar.svg',
+          },
+          isAuthenticated: true,
+        })
+        useProfileStore.setState({
+          profile: {
+            name: savedUser.name,
+            university: 'FPT University',
+            major: 'Software engineering',
+            degree: 'Bachelor',
+            avatarUrl: savedUser.avatar || '/avatar.svg',
+          }
+        })
+      }
+    } catch (e) {
+      console.error('Error synchronizing mock user from localStorage on mount:', e)
+    }
+  }, [])
+
+  // Listen to custom event to react instantly
+  useEffect(() => {
+    const handleUserChanged = () => {
+      // Zustand store update automatically triggers re-renders,
+      // but we register the listener as requested.
+    }
+    window.addEventListener('aiStudyHubUserChanged', handleUserChanged)
+    return () => {
+      window.removeEventListener('aiStudyHubUserChanged', handleUserChanged)
+    }
+  }, [])
 
   const { setTheme, resolvedTheme } = useTheme()
 
@@ -319,7 +508,11 @@ export function Header() {
     if (searchVal.trim()) {
       toast.success(t.header.toastSearchingResults(searchVal.trim()))
       const kw = encodeURIComponent(searchVal.trim())
-      if (pathname.startsWith('/dashboard/study-plans')) {
+      if (isAdmin || pathname.startsWith('/dashboard/admin')) {
+        const params = new URLSearchParams(window.location.search)
+        const currentTab = params.get('tab') || 'overview'
+        navigate(`/dashboard/admin?tab=${currentTab}&keyword=${kw}`)
+      } else if (pathname.startsWith('/dashboard/study-plans')) {
         navigate(`/dashboard/study-plans?keyword=${kw}`)
       } else if (pathname.startsWith('/dashboard/shared-files/research-materials')) {
         navigate(`/dashboard/shared-files/research-materials?keyword=${kw}`)
@@ -329,16 +522,39 @@ export function Header() {
     }
   }
 
-  const handleSuggestionClick = (term: string) => {
+  const handleSuggestionClick = (term: string, category?: string) => {
     setSearchVal(term)
     saveSearchToHistory(term)
     toast.success(t.header.toastSearchingResults(term))
-    navigate(`/dashboard/documents/search?keyword=${encodeURIComponent(term)}`)
+    
+    if (isAdmin) {
+      const lowerTerm = term.toLowerCase()
+      if (category === 'Admin Panel' || lowerTerm.includes('user') || lowerTerm.includes('moderation') || lowerTerm.includes('log') || lowerTerm.includes('status') || lowerTerm.includes('report') || lowerTerm.includes('package')) {
+        let targetTab = 'overview'
+        if (lowerTerm.includes('user')) targetTab = 'users'
+        else if (lowerTerm.includes('document') || lowerTerm.includes('moderation')) targetTab = 'documents'
+        else if (lowerTerm.includes('log')) targetTab = 'activity-logs'
+        else if (lowerTerm.includes('report')) targetTab = 'reports'
+        else if (lowerTerm.includes('package') || lowerTerm.includes('pricing')) targetTab = 'packages'
+        else if (lowerTerm.includes('status') || lowerTerm.includes('maintenance')) targetTab = 'overview'
+        
+        navigate(`/dashboard/admin?tab=${targetTab}`)
+      } else if (category && category.includes('User')) {
+        navigate(`/dashboard/admin?tab=users&keyword=${encodeURIComponent(term)}`)
+      } else if (category && (category.includes('Syllabus') || category.includes('Document') || category.includes('Notes') || category.includes('Review') || category.includes('Guide') || category.includes('Outline') || category.includes('Dataset') || category.includes('Image'))) {
+        navigate(`/dashboard/admin?tab=documents&keyword=${encodeURIComponent(term)}`)
+      } else {
+        navigate(`/dashboard/admin?keyword=${encodeURIComponent(term)}`)
+      }
+    } else {
+      navigate(`/dashboard/documents/search?keyword=${encodeURIComponent(term)}`)
+    }
     setShowSuggestions(false)
   }
 
   // Dynamic filter for autocomplete suggestions
-  const filteredTopics = SEARCH_SUGGESTION_TOPICS.filter((item) =>
+  const currentSuggestions = isAdmin ? ADMIN_SUGGESTION_TOPICS : SEARCH_SUGGESTION_TOPICS
+  const filteredTopics = currentSuggestions.filter((item) =>
     item.title.toLowerCase().includes(searchVal.toLowerCase())
   )
 
@@ -360,7 +576,9 @@ export function Header() {
       >
         <Input
           placeholder={
-            pathname.startsWith('/dashboard/shared')
+            isAdmin
+              ? t.header.searchPlaceholderAdmin
+              : pathname.startsWith('/dashboard/shared')
               ? t.header.searchWorkspace
               : pathname.startsWith('/dashboard/shared-files/research-materials')
               ? t.header.searchFolder
@@ -561,26 +779,36 @@ export function Header() {
                       </span>
                       <div className="space-y-0.5 mt-1">
                         {filteredTopics.length > 0 ? (
-                          filteredTopics.map((item) => (
-                            <div
-                              key={item.id}
-                              onMouseDown={(e) => {
-                                e.preventDefault()
-                                handleSuggestionClick(item.title)
-                              }}
-                              className="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
-                            >
-                              <div className="flex items-center min-w-0 flex-1 mr-2">
-                                <FileText className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
-                                <span className="truncate group-hover:text-[#3155F6] transition-colors text-left text-xs font-semibold">
-                                  {item.title}
+                          filteredTopics.map((item) => {
+                            let IconComponent = FileText
+                            if (item.category.includes('User')) {
+                              IconComponent = User
+                            } else if (item.category.includes('Admin Panel')) {
+                              IconComponent = Shield
+                            } else if (item.category.includes('Image')) {
+                              IconComponent = Folder
+                            }
+                            return (
+                              <div
+                                key={item.id}
+                                onMouseDown={(e) => {
+                                  e.preventDefault()
+                                  handleSuggestionClick(item.title, item.category)
+                                }}
+                                className="flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer group"
+                              >
+                                <div className="flex items-center min-w-0 flex-1 mr-2">
+                                  <IconComponent className="size-4 text-slate-400 mr-2.5 group-hover:text-[#3155F6] transition-colors shrink-0" />
+                                  <span className="truncate group-hover:text-[#3155F6] transition-colors text-left text-xs font-semibold">
+                                    {item.title}
+                                  </span>
+                                </div>
+                                <span className="rounded-md bg-[#F0F2FB] dark:bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">
+                                  {item.category}
                                 </span>
                               </div>
-                              <span className="rounded-md bg-[#F0F2FB] dark:bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">
-                                {item.category}
-                              </span>
-                            </div>
-                          ))
+                            )
+                          })
                         ) : (
                           <div className="flex items-center px-3 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 text-left">
                             <Sparkles className="size-3.5 mr-2 text-indigo-400 shrink-0" />
@@ -645,35 +873,37 @@ export function Header() {
         )}
         
         {/* Notification Bell with Dropdown */}
-        <div className="relative" ref={notificationRef}>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Notifications"
-            onClick={() => setNotificationMenuOpen(!notificationMenuOpen)}
-            className={cn(
-              'rounded-xl size-10 flex items-center justify-center transition-colors relative hover:bg-slate-100 dark:hover:bg-slate-800',
-              notificationMenuOpen && 'bg-[#e5eeff] text-[#3155F6] dark:bg-blue-950'
-            )}
-          >
-            <Bell className={cn('size-5', notificationMenuOpen ? 'text-[#3155F6]' : 'text-body dark:text-slate-400')} />
-            {unreadCount > 0 && (
-              <span className="absolute top-2.5 right-2.5 block h-2 w-2 rounded-full bg-[#EF4444] border border-white dark:border-slate-900" />
-            )}
-          </Button>
+        {user && (
+          <div className="relative" ref={notificationRef}>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Notifications"
+              onClick={() => setNotificationMenuOpen(!notificationMenuOpen)}
+              className={cn(
+                'rounded-xl size-10 flex items-center justify-center transition-colors relative hover:bg-slate-100 dark:hover:bg-slate-800',
+                notificationMenuOpen && 'bg-[#e5eeff] text-[#3155F6] dark:bg-blue-950'
+              )}
+            >
+              <Bell className={cn('size-5', notificationMenuOpen ? 'text-[#3155F6]' : 'text-body dark:text-slate-400')} />
+              {unreadCount > 0 && (
+                <span className="absolute top-2.5 right-2.5 block h-2 w-2 rounded-full bg-[#EF4444] border border-white dark:border-slate-900" />
+              )}
+            </Button>
 
-          <AnimatePresence>
-            {notificationMenuOpen && (
-              <NotificationDropdown
-                onClose={() => setNotificationMenuOpen(false)}
-                notifications={notifications}
-                setNotifications={setNotifications}
-                markAsRead={markAsRead}
-                markAllAsRead={markAllAsRead}
-              />
-            )}
-          </AnimatePresence>
-        </div>
+            <AnimatePresence>
+              {notificationMenuOpen && (
+                <NotificationDropdown
+                  onClose={() => setNotificationMenuOpen(false)}
+                  notifications={notifications}
+                  setNotifications={setNotifications}
+                  markAsRead={markAsRead}
+                  markAllAsRead={markAllAsRead}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* User Account Avatar with Dropdown */}
         <div className="relative flex items-center" ref={menuRef}>
@@ -696,6 +926,7 @@ export function Header() {
                   setUserMenuOpen(false)
                   setLogoutModalOpen(true)
                 }}
+                onChangeUserClick={() => setIsChangeUserOpen(true)}
               />
             )}
           </AnimatePresence>
@@ -705,6 +936,7 @@ export function Header() {
       {/* Interactive Modals */}
       <HelpModal isOpen={helpModalOpen} onClose={() => setHelpModalOpen(false)} />
       <ConfirmLogoutModal isOpen={logoutModalOpen} onClose={() => setLogoutModalOpen(false)} />
+      <ChangeUserModal isOpen={isChangeUserOpen} onClose={() => setIsChangeUserOpen(false)} />
     </header>
   )
 }

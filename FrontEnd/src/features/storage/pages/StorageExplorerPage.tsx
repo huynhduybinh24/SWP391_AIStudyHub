@@ -101,6 +101,12 @@ export function StorageExplorerPage() {
   const [showFolderDropdown, setShowFolderDropdown] = useState(false)
   const [showTypeDropdown, setShowTypeDropdown] = useState(false)
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 200)
+    return () => clearTimeout(timer)
+  }, [])
 
   const folderDropdownRef = useRef<HTMLDivElement>(null)
   const typeDropdownRef = useRef<HTMLDivElement>(null)
@@ -478,23 +484,25 @@ export function StorageExplorerPage() {
             </div>
             
             <div className="w-[180px] h-[180px] relative mx-auto">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    innerRadius={70}
-                    outerRadius={90}
-                    startAngle={90}
-                    endAngle={-270}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              {isMounted && (
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      innerRadius={70}
+                      outerRadius={90}
+                      startAngle={90}
+                      endAngle={-270}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
               <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
                 <span className="text-3xl font-bold text-foreground">{usedPercentage}%</span>
                 <span className="text-xs text-muted font-medium mt-1">{t.storageExplorer.used}</span>

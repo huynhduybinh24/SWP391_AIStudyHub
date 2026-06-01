@@ -10,31 +10,45 @@ interface LanguageContextType {
 
 export const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
+export const supportedLanguages = ['en', 'vi'] as const
+
+function normalizeLanguage(value: string | null): 'en' | 'vi' {
+  return value === 'vi' || value === 'en' ? value : 'en'
+}
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('aiStudyHubLanguage') || localStorage.getItem('app-language')
-      if (saved === 'vi' || saved === 'en' || saved === 'ja' || saved === 'ko') {
-        return saved as Language
-      }
+      let initialLanguage: 'en' | 'vi' = 'en'
       
-      const storeLang = useSettingsStore.getState().account?.language
-      if (storeLang === 'Vietnamese' || storeLang === 'vi') return 'vi'
-      if (storeLang === 'Japanese' || storeLang === 'ja') return 'ja'
-      if (storeLang === 'Korean' || storeLang === 'ko') return 'ko'
+      if (saved === 'vi' || saved === 'en') {
+        initialLanguage = saved
+      } else {
+        const storeLang = useSettingsStore.getState().account?.language
+        if (storeLang === 'Vietnamese' || storeLang === 'vi') {
+          initialLanguage = 'vi'
+        } else {
+          initialLanguage = 'en'
+        }
+        localStorage.setItem('aiStudyHubLanguage', initialLanguage)
+        localStorage.setItem('app-language', initialLanguage)
+      }
+      return initialLanguage
     }
     return 'en'
   })
 
   const setLanguage = (lang: Language) => {
-    setLanguageState(lang)
+    const normalized = normalizeLanguage(lang)
+    setLanguageState(normalized)
     if (typeof window !== 'undefined') {
-      localStorage.setItem('app-language', lang)
-      localStorage.setItem('aiStudyHubLanguage', lang)
+      localStorage.setItem('app-language', normalized)
+      localStorage.setItem('aiStudyHubLanguage', normalized)
     }
 
-    if (useSettingsStore.getState().account?.language !== lang) {
-      useSettingsStore.getState().updateAccount({ language: lang })
+    if (useSettingsStore.getState().account?.language !== normalized) {
+      useSettingsStore.getState().updateAccount({ language: normalized })
     }
   }
 
@@ -45,9 +59,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (!newLangStr) return
         let mapped: Language = 'en'
         if (newLangStr === 'Vietnamese' || newLangStr === 'vi') mapped = 'vi'
-        else if (newLangStr === 'Japanese' || newLangStr === 'ja') mapped = 'ja'
-        else if (newLangStr === 'Korean' || newLangStr === 'ko') mapped = 'ko'
         else if (newLangStr === 'English (US)' || newLangStr === 'en') mapped = 'en'
+        else mapped = 'en'
 
         if (mapped !== language) {
           setLanguageState(mapped)

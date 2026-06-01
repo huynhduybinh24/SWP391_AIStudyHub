@@ -1,3 +1,5 @@
+import { userNotificationService } from '@/features/notifications/services/userNotificationService';
+
 export type AdminUser = {
   id: string;
   name: string;
@@ -8,7 +10,10 @@ export type AdminUser = {
   documentsCount: number;
   storageUsedMB: number;
   avatar?: string;
-  plan?: "free" | "pro";
+  plan?: string;
+  lastActiveVi?: string;
+  lastActiveEn?: string;
+  isOnline?: boolean;
 };
 
 export type AdminDocument = {
@@ -58,17 +63,20 @@ export type AdminStats = {
   newUsersThisWeek: number;
 };
 
-let mockUsers: AdminUser[] = [
+const DEFAULT_MOCK_USERS: AdminUser[] = [
   {
     id: "u1",
     name: "Alex Rivera",
     email: "alex@example.com",
-    role: "admin",
+    role: "student",
     status: "active",
     joinedAt: "2023-01-15",
     documentsCount: 45,
     storageUsedMB: 1500,
     plan: "pro",
+    lastActiveVi: "2 phút trước",
+    lastActiveEn: "2 minutes ago",
+    isOnline: true,
   },
   {
     id: "u2",
@@ -80,6 +88,9 @@ let mockUsers: AdminUser[] = [
     documentsCount: 120,
     storageUsedMB: 5400,
     plan: "pro",
+    lastActiveVi: "1 giờ trước",
+    lastActiveEn: "1 hour ago",
+    isOnline: false,
   },
   {
     id: "u3",
@@ -91,6 +102,9 @@ let mockUsers: AdminUser[] = [
     documentsCount: 12,
     storageUsedMB: 350,
     plan: "free",
+    lastActiveVi: "3 ngày trước",
+    lastActiveEn: "3 days ago",
+    isOnline: false,
   },
   {
     id: "u4",
@@ -102,6 +116,9 @@ let mockUsers: AdminUser[] = [
     documentsCount: 5,
     storageUsedMB: 120,
     plan: "free",
+    lastActiveVi: "5 ngày trước",
+    lastActiveEn: "5 days ago",
+    isOnline: false,
   },
   {
     id: "u5",
@@ -113,6 +130,9 @@ let mockUsers: AdminUser[] = [
     documentsCount: 25,
     storageUsedMB: 850,
     plan: "free",
+    lastActiveVi: "10 phút trước",
+    lastActiveEn: "10 minutes ago",
+    isOnline: true,
   },
   {
     id: "u6",
@@ -124,15 +144,71 @@ let mockUsers: AdminUser[] = [
     documentsCount: 88,
     storageUsedMB: 3200,
     plan: "free",
+    lastActiveVi: "2 tuần trước",
+    lastActiveEn: "2 weeks ago",
+    isOnline: false,
   },
 ];
+
+const loadUsersFromStorage = (): AdminUser[] => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('aiStudyHubUsers');
+    if (saved) {
+      try {
+        let parsed = JSON.parse(saved);
+        
+        // If the parsed list doesn't have the new active properties, reset to DEFAULT_MOCK_USERS
+        if (parsed.length > 0 && !parsed[0].hasOwnProperty('lastActiveVi')) {
+          localStorage.setItem('aiStudyHubUsers', JSON.stringify(DEFAULT_MOCK_USERS));
+          return [...DEFAULT_MOCK_USERS];
+        }
+
+        // Ensure default mock users are always present in the list to prevent them from disappearing
+        let changed = false;
+        DEFAULT_MOCK_USERS.forEach((defaultUser) => {
+          if (!parsed.some((u: any) => u.email?.toLowerCase() === defaultUser.email?.toLowerCase())) {
+            parsed.push(defaultUser);
+            changed = true;
+          }
+        });
+
+        const updatedList = parsed.map((u: any) => {
+          if (u.email === 'alex@example.com' && u.role === 'admin') {
+            changed = true;
+            return { ...u, role: 'student' };
+          }
+          return u;
+        });
+
+        if (changed) {
+          localStorage.setItem('aiStudyHubUsers', JSON.stringify(updatedList));
+          return updatedList;
+        }
+        return parsed;
+      } catch (e) {
+        console.error('Error parsing users from localStorage', e);
+      }
+    }
+    localStorage.setItem('aiStudyHubUsers', JSON.stringify(DEFAULT_MOCK_USERS));
+  }
+  return [...DEFAULT_MOCK_USERS];
+};
+
+let mockUsers: AdminUser[] = loadUsersFromStorage();
+
+const saveUsersToStorage = (usersList: AdminUser[]) => {
+  mockUsers = usersList;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('aiStudyHubUsers', JSON.stringify(usersList));
+  }
+};
 
 let mockDocuments: AdminDocument[] = [
   {
     id: "d1",
     title: "Advanced Neuroscience Syllabus 2024",
     ownerName: "Sarah Jenkins",
-    ownerEmail: "sarah@example.com",
+    ownerEmail: "sarah@school.edu",
     fileType: "pdf",
     sizeMB: 2.4,
     uploadedAt: "2024-05-20",
@@ -319,11 +395,12 @@ const randomDelay = () => delay(Math.floor(Math.random() * 300) + 300); // 300-6
 
 export const getAdminStats = async (): Promise<AdminStats> => {
   await randomDelay();
-  const storageMB = mockUsers.reduce((sum, u) => sum + u.storageUsedMB, 0);
+  const currentUsers = loadUsersFromStorage();
+  const storageMB = currentUsers.reduce((sum, u) => sum + u.storageUsedMB, 0);
   
   return {
-    totalUsers: mockUsers.length,
-    activeUsers: mockUsers.filter((u) => u.status === "active").length,
+    totalUsers: currentUsers.length,
+    activeUsers: currentUsers.filter((u) => u.status === "active").length,
     totalDocuments: mockDocuments.length,
     pendingDocuments: mockDocuments.filter((d) => d.status === "pending").length,
     storageUsedGB: Number((storageMB / 1024).toFixed(2)),
@@ -335,7 +412,7 @@ export const getAdminStats = async (): Promise<AdminStats> => {
 
 export const getUsers = async (): Promise<AdminUser[]> => {
   await randomDelay();
-  return [...mockUsers];
+  return loadUsersFromStorage();
 };
 
 export const updateUser = async (
@@ -344,29 +421,49 @@ export const updateUser = async (
   reason?: string
 ): Promise<AdminUser> => {
   await randomDelay();
-  const index = mockUsers.findIndex((u) => u.id === userId);
+  const currentUsers = loadUsersFromStorage();
+  const index = currentUsers.findIndex((u) => u.id === userId);
   if (index === -1) throw new Error("User not found");
   
-  const user = mockUsers[index];
+  const user = currentUsers[index];
   if (updates.status === 'inactive' && reason) {
     console.log(`[Email Notification Sent] To: ${user.email} | Subject: Account Suspension Notice | Reason: ${reason}`);
   }
   
-  mockUsers[index] = { ...mockUsers[index], ...updates };
-  return { ...mockUsers[index] };
+  currentUsers[index] = { ...currentUsers[index], ...updates };
+  saveUsersToStorage(currentUsers);
+  return { ...currentUsers[index] };
 };
 
 export const deleteUser = async (userId: string, reason?: string): Promise<{ success: boolean }> => {
   await randomDelay();
-  const index = mockUsers.findIndex((u) => u.id === userId);
+  const currentUsers = loadUsersFromStorage();
+  const index = currentUsers.findIndex((u) => u.id === userId);
   if (index === -1) throw new Error("User not found");
   
-  const user = mockUsers[index];
+  const user = currentUsers[index];
   if (reason) {
     console.log(`[Email Notification Sent] To: ${user.email} | Subject: Account Termination Notice | Reason: ${reason}`);
   }
   
-  mockUsers = mockUsers.filter((u) => u.id !== userId);
+  // Remove from the switcher accounts registry so they disappear from the "Change User" popup modal
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('aiStudyHubLoggedInAccounts');
+      if (stored) {
+        let list = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          const updatedList = list.filter((u: any) => u.email?.toLowerCase() !== user.email?.toLowerCase());
+          localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(updatedList));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to remove deleted user from quick switcher registry:', e);
+    }
+  }
+
+  const updatedUsers = currentUsers.filter((u) => u.id !== userId);
+  saveUsersToStorage(updatedUsers);
   return { success: true };
 };
 
@@ -417,21 +514,16 @@ export const deleteDocument = async (documentId: string, reason?: string): Promi
     existingNotices.push(record);
     localStorage.setItem('aiStudyHubDeletedDocumentNotices', JSON.stringify(existingNotices));
 
-    const notification = {
-      id: `notif_${Date.now()}`,
+    userNotificationService.addUserNotification({
+      targetUserEmail: doc.ownerEmail || 'binh@example.com',
       type: "document_deleted",
       title: "Document removed by admin",
       message: record.noticeMessage,
       documentId: doc.id,
       documentName: doc.title,
       reason: reason,
-      createdAt: new Date().toISOString(),
-      isRead: false
-    };
-    const existingNotifs = JSON.parse(localStorage.getItem('aiStudyHubUserNotifications') || '[]');
-    existingNotifs.unshift(notification);
-    localStorage.setItem('aiStudyHubUserNotifications', JSON.stringify(existingNotifs));
-    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+      actionType: "removed"
+    });
   }
 
   mockDocuments = mockDocuments.filter((d) => d.id !== documentId);
@@ -464,6 +556,17 @@ export const rejectDocument = async (documentId: string, reason?: string): Promi
   const doc = mockDocuments[index];
   if (reason) {
     console.log(`[Email Notification Sent] To: ${doc.ownerEmail} | Subject: Document Rejection Notice | Reason: ${reason}`);
+    
+    userNotificationService.addUserNotification({
+      targetUserEmail: doc.ownerEmail || 'binh@example.com',
+      type: "document_rejected",
+      title: "Document rejected by admin",
+      message: `Your document "${doc.title}" was rejected by admin. Reason: ${reason}`,
+      documentId: doc.id,
+      documentName: doc.title,
+      reason: reason,
+      actionType: "rejected"
+    });
   }
   
   return { ...mockDocuments[index] };

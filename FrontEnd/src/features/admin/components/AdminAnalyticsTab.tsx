@@ -67,7 +67,8 @@ export function AdminAnalyticsTab() {
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true)
+    const timer = setTimeout(() => setIsMounted(true), 200)
+    return () => clearTimeout(timer)
   }, [])
 
   // Traffic / Requests data (last 6 months)
@@ -225,7 +226,7 @@ export function AdminAnalyticsTab() {
           <Card className="p-6 relative overflow-hidden bg-white/70 dark:bg-slate-900/70 border border-slate-200/50 dark:border-slate-800/50 shadow-lg dark:shadow-none hover:shadow-xl transition-all duration-300 rounded-[28px] h-[350px]">
             <div className="h-[300px] w-full relative z-10">
               {isMounted && (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={trafficData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="pvGlow" x1="0" y1="0" x2="0" y2="1">
@@ -289,7 +290,7 @@ export function AdminAnalyticsTab() {
           <Card className="p-6 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 shadow-lg dark:shadow-none hover:shadow-xl transition-all duration-300 rounded-[28px] h-[350px] flex flex-col justify-between">
             <div className="h-[280px] w-full mt-auto">
               {isMounted && (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={moduleUsageData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#e2e8f0'} />
                     <XAxis

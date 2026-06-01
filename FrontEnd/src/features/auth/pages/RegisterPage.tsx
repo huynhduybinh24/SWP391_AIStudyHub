@@ -1,11 +1,29 @@
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, ArrowLeft } from 'lucide-react'
 import heroImg from '@/assets/hero.png'
 import { AppFooter } from '@/components/shared/AppFooter'
+import { Link } from 'react-router-dom'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function RegisterPage() {
+  const { language } = useTranslation()
+  const backToHomeText = language === 'vi' 
+    ? 'Quay lại trang chủ' 
+    : (language === 'ja' ? 'ホームに戻る' : (language === 'ko' ? '홈으로 돌아가기' : 'Back to Home'))
+
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
+    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans relative">
+      {/* Return to Landing Button */}
+      <div className="absolute top-6 left-6 z-50">
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-xs font-extrabold text-slate-700 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-blue-600 dark:hover:text-blue-400 transition-all shadow-sm cursor-pointer select-none"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{backToHomeText}</span>
+        </Link>
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
         {/* Left Pane - Hero Section */}
         <div className="hidden lg:flex flex-col justify-center w-[45%] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 relative px-16 py-12 border-r border-slate-200/50 dark:border-slate-800/50">

@@ -41,6 +41,40 @@ export const authService = {
       const { data } = await apiClient.post<LoginResponse>('/auth/login', credentials)
       return data
     } catch {
+      // Check localStorage first for updated user list
+      if (typeof window !== 'undefined') {
+        const savedUsersStr = localStorage.getItem('aiStudyHubUsers')
+        if (savedUsersStr) {
+          try {
+            const savedUsers = JSON.parse(savedUsersStr)
+            const matchedUser = savedUsers.find((u: any) => 
+              u.email && u.email.toLowerCase() === credentials.email.toLowerCase()
+            )
+            if (matchedUser) {
+              // Verify password if registered. Default mock accounts accept >= 6 chars.
+              const isPasswordValid = matchedUser.password 
+                ? matchedUser.password === credentials.password 
+                : credentials.password.length >= 6;
+
+              if (isPasswordValid) {
+                return {
+                  user: {
+                    id: matchedUser.id === 'u1' ? '1' : matchedUser.id === 'u2' ? '2' : matchedUser.id === 'u3' ? '3' : matchedUser.id,
+                    name: matchedUser.name,
+                    email: matchedUser.email,
+                    role: matchedUser.role,
+                    plan: matchedUser.plan || 'free',
+                  },
+                  tokens: { accessToken: `mock-${matchedUser.role}-token` },
+                }
+              }
+            }
+          } catch (e) {
+            console.error(e)
+          }
+        }
+      }
+
       const mock = MOCK_USERS[credentials.email.toLowerCase()]
       if (mock && credentials.password.length >= 6) {
         return mock
@@ -50,17 +84,71 @@ export const authService = {
   },
 
   async register(credentials: RegisterCredentials): Promise<LoginResponse> {
+    const userRole = credentials.role || 'student'
+    if (userRole === 'admin') {
+      throw new Error('Admin registration is not allowed. Admin accounts can only be retrieved from the database.')
+    }
+    
+    // Check if email already exists in mock list or localStorage to throw duplicate error
+    const emailLower = credentials.email.toLowerCase()
+    let emailExists = false
+    
+    if (MOCK_USERS[emailLower]) {
+      emailExists = true
+    } else if (typeof window !== 'undefined') {
+      const savedUsersStr = localStorage.getItem('aiStudyHubUsers')
+      if (savedUsersStr) {
+        try {
+          const savedUsers = JSON.parse(savedUsersStr)
+          if (savedUsers.some((u: any) => u.email && u.email.toLowerCase() === emailLower)) {
+            emailExists = true
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      }
+    }
+    
+    if (emailExists) {
+      throw new Error('email_already_exists')
+    }
+ 
     try {
       const { data } = await apiClient.post<LoginResponse>('/auth/register', credentials)
       return data
     } catch {
+      const newUserId = Math.random().toString(36).substr(2, 9)
+      
+      // Save to localStorage so they show up on admin dashboard immediately
+      if (typeof window !== 'undefined') {
+        const savedUsersStr = localStorage.getItem('aiStudyHubUsers')
+        const currentUsers = savedUsersStr ? JSON.parse(savedUsersStr) : []
+        const newUserRecord = {
+          id: `u-${newUserId}`,
+          name: credentials.fullName,
+          email: credentials.email,
+          role: userRole,
+          status: 'active',
+          joinedAt: new Date().toISOString().split('T')[0],
+          documentsCount: 0,
+          storageUsedMB: 0,
+          plan: 'free',
+          lastActiveVi: 'Vừa xong',
+          lastActiveEn: 'Just now',
+          isOnline: true,
+          password: credentials.password,
+        }
+        currentUsers.push(newUserRecord)
+        localStorage.setItem('aiStudyHubUsers', JSON.stringify(currentUsers))
+      }
+
       // Mock successful registration
       return {
         user: {
-          id: Math.random().toString(36).substr(2, 9),
+          id: newUserId,
           name: credentials.fullName,
           email: credentials.email,
-          role: 'student',
+          role: userRole,
           plan: 'free',
         },
         tokens: { accessToken: 'mock-registered-token' },
