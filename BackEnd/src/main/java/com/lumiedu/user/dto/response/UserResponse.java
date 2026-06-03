@@ -19,8 +19,8 @@ public class UserResponse {
     private UserRole role;
     private AccountStatus accountStatus;
     private Boolean twoFactorEnabled;
-    private Double storageUsedMb;
-    private Double storageLimitMb;
+    private Long storageUsedMb;
+    private Long storageLimitMb;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
