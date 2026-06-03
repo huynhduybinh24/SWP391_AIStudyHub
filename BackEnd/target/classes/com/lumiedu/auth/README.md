@@ -1,20 +1,34 @@
 # Auth Module
 
-This module manages authentication and account security.
+This module manages authentication and account security for LumiEdu / AI Study Hub.
 
-Future contents:
-- Register
-- Login
-- Logout
+## Main Features
+- Register new account
+- Login account
 - Forgot password
-- Password reset token
+- Reset password
 - Change password
-- Two-factor authentication
-- Third-party account linking such as Google login
+- Link third-party accounts
+- Disconnect third-party accounts
 
-Future classes:
-- AuthController
-- AuthService
-- PasswordResetToken
-- ThirdPartyAccount
-- ProviderType enum
+## Current Scope
+This module currently provides basic authentication logic without JWT and without full Spring Security filter.
+
+Password is hashed using BCrypt.
+
+Forgot password currently returns reset token directly for development/testing.
+Later, the token should be sent through email.
+
+## Package Structure
+- entity
+- enums
+- repository
+- service
+- controller
+- dto
+- config
+
+## Important Notes
+- User entity belongs to user module.
+- Auth module depends on UserRepository.
+- JWT, refresh token, email verification, and real OAuth login will be implemented later.
