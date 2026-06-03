@@ -21,6 +21,7 @@ const IconLinkedIn = ({ className }: { className?: string }) => (
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { logActivity } from '@/services/activityLogService'
 
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 
@@ -351,6 +352,17 @@ export function ChatPage() {
     const filesToSend = textToSend ? [] : selectedFiles
 
     if (!text && filesToSend.length === 0) return
+
+    // Log AI Chatbot query activity
+    logActivity({
+      eventKey: 'aiChatAssistant',
+      category: 'ai-audit',
+      status: 'success',
+      eventTextEn: 'AI Chatbot query',
+      eventTextVi: 'Truy vấn chatbot AI',
+      detailsTextEn: `Queried global AI Chatbot: '${text.length > 60 ? text.substring(0, 57) + '...' : text}'.`,
+      detailsTextVi: `Đã gửi câu hỏi chatbot AI toàn cục: '${text.length > 60 ? text.substring(0, 57) + '...' : text}'.`
+    })
 
     // Create user message object
     const userMsgId = Date.now().toString()

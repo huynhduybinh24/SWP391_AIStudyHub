@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from '@/context/LanguageContext'
+import { logActivity } from '@/services/activityLogService'
 import {
   ArrowLeft,
   Clock,
@@ -484,12 +485,24 @@ export function SearchResultsPage() {
   }
 
   const handleDeleteDocument = async (id: string) => {
+    const targetDoc = adminDocs.find(d => d.id === id)
     try {
       await adminService.deleteDocument(id)
       setAdminDocs(prev => prev.filter(d => d.id !== id))
       if (previewDoc && previewDoc.id === id) {
         setPreviewDoc(null)
       }
+      
+      logActivity({
+        eventKey: 'documentDeleted',
+        category: 'moderation',
+        status: 'success',
+        eventTextEn: 'Admin document deleted',
+        eventTextVi: 'Admin xóa tài liệu',
+        detailsTextEn: `Admin permanently deleted document '${targetDoc?.title || id}' from global search repository.`,
+        detailsTextVi: `Admin đã xóa vĩnh viễn tài liệu '${targetDoc?.title || id}' khỏi kho lưu trữ tìm kiếm hệ thống.`
+      })
+
       toast.success(language === 'vi' ? 'Đã xóa tài liệu thành công' : 'Document deleted successfully')
     } catch (err: any) {
       toast.error(err.message || 'Error deleting document')
@@ -497,12 +510,24 @@ export function SearchResultsPage() {
   }
 
   const handleApproveDocument = async (id: string) => {
+    const targetDoc = adminDocs.find(d => d.id === id)
     try {
       const updated = await adminService.approveDocument(id)
       setAdminDocs(prev => prev.map(d => d.id === id ? updated : d))
       if (previewDoc && previewDoc.id === id) {
         setPreviewDoc(prev => prev ? { ...prev, status: 'approved', aiStatus: updated.aiStatus } : null)
       }
+
+      logActivity({
+        eventKey: 'documentApproved',
+        category: 'moderation',
+        status: 'success',
+        eventTextEn: 'Document approved',
+        eventTextVi: 'Phê duyệt tài liệu',
+        detailsTextEn: `Approved document '${targetDoc?.title || id}' for the sharing registry.`,
+        detailsTextVi: `Đã phê duyệt tài liệu '${targetDoc?.title || id}' để hiển thị công khai.`
+      })
+
       toast.success(language === 'vi' ? 'Đã phê duyệt tài liệu thành công' : 'Document approved successfully')
     } catch (err: any) {
       toast.error(err.message || 'Error approving document')
@@ -510,12 +535,24 @@ export function SearchResultsPage() {
   }
 
   const handleRejectDocument = async (id: string) => {
+    const targetDoc = adminDocs.find(d => d.id === id)
     try {
       const updated = await adminService.rejectDocument(id)
       setAdminDocs(prev => prev.map(d => d.id === id ? updated : d))
       if (previewDoc && previewDoc.id === id) {
         setPreviewDoc(prev => prev ? { ...prev, status: 'rejected' } : null)
       }
+
+      logActivity({
+        eventKey: 'documentRejected',
+        category: 'moderation',
+        status: 'success',
+        eventTextEn: 'Document rejected',
+        eventTextVi: 'Từ chối tài liệu',
+        detailsTextEn: `Rejected document '${targetDoc?.title || id}' due to system compliance policies.`,
+        detailsTextVi: `Đã từ chối tài liệu '${targetDoc?.title || id}' do vi phạm chính sách hệ thống.`
+      })
+
       toast.success(language === 'vi' ? 'Đã từ chối tài liệu' : 'Document rejected')
     } catch (err: any) {
       toast.error(err.message || 'Error rejecting document')

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
+import { logActivity } from '@/services/activityLogService'
 import {
   X,
   Send,
@@ -815,6 +816,29 @@ export function DocumentsPage() {
             setIsUploading(false)
             setUploadProgress(0)
             setIsUploadModalOpen(false)
+
+            // Log document upload
+            logActivity({
+              eventKey: 'documentUploaded',
+              category: 'moderation',
+              status: 'success',
+              eventTextEn: 'Document uploaded',
+              eventTextVi: 'Tải lên tài liệu',
+              detailsTextEn: `Uploaded document '${finalTitle}' (${finalSize}) successfully.`,
+              detailsTextVi: `Tải lên thành công tài liệu '${finalTitle}' (${finalSize}).`
+            })
+
+            // Log AI summary generated
+            logActivity({
+              eventKey: 'aiSummaryGenerated',
+              category: 'ai-audit',
+              status: 'success',
+              eventTextEn: 'AI Summary generated',
+              eventTextVi: 'Tạo tóm tắt AI',
+              detailsTextEn: `Successfully generated AI Summary for document '${finalTitle}'.`,
+              detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
+            })
+
             showToast(`Tài liệu "${finalTitle || finalFileName}" tải lên và phân tích AI thành công!`)
             
             setNewDocTitle('')
@@ -834,6 +858,18 @@ export function DocumentsPage() {
     const targetDoc = documents.find(d => d.id === id)
     if (targetDoc) {
       setDocuments((prev) => prev.filter((d) => d.id !== id))
+      
+      // Log document deletion activity
+      logActivity({
+        eventKey: 'documentDeleted',
+        category: 'moderation',
+        status: 'success',
+        eventTextEn: 'Document deleted',
+        eventTextVi: 'Xóa tài liệu',
+        detailsTextEn: `Permanently deleted document '${targetDoc.title || targetDoc.fileName}' from storage.`,
+        detailsTextVi: `Đã xóa vĩnh viễn tài liệu '${targetDoc.title || targetDoc.fileName}' khỏi kho lưu trữ.`
+      })
+
       showToast(`Đã xóa tài liệu "${targetDoc.title || targetDoc.fileName}"`)
     }
   }
@@ -863,6 +899,17 @@ export function DocumentsPage() {
     
     const textToSend = customText || newChatMessage
     if (!textToSend.trim() || !selectedDocForChat) return
+
+    // Log AI Chat Assistant query activity
+    logActivity({
+      eventKey: 'aiChatAssistant',
+      category: 'ai-audit',
+      status: 'success',
+      eventTextEn: 'AI Chat Assistant query',
+      eventTextVi: 'Truy vấn trợ lý AI',
+      detailsTextEn: `Queried AI Assistant: '${textToSend.length > 60 ? textToSend.substring(0, 57) + '...' : textToSend}'.`,
+      detailsTextVi: `Đã gửi câu hỏi trợ lý AI: '${textToSend.length > 60 ? textToSend.substring(0, 57) + '...' : textToSend}'.`
+    })
 
     const userMsg = {
       sender: 'user' as const,
@@ -1184,6 +1231,16 @@ export function DocumentsPage() {
                         setSelectedQuizAnswer(null)
                       } else {
                         setShowQuizResults(true)
+                        // Log quiz completed
+                        logActivity({
+                          eventKey: 'aiQuizGenerated',
+                          category: 'ai-audit',
+                          status: 'success',
+                          eventTextEn: 'AI Practice Quiz completed',
+                          eventTextVi: 'Hoàn thành trắc nghiệm AI',
+                          detailsTextEn: `Completed custom practice quiz with score ${quizScore + (selectedQuizAnswer === QUIZ_QUESTIONS[currentQuizQuestion].answer ? 1 : 0)}/${QUIZ_QUESTIONS.length}.`,
+                          detailsTextVi: `Đã hoàn thành bộ trắc nghiệm thực hành với điểm số ${quizScore + (selectedQuizAnswer === QUIZ_QUESTIONS[currentQuizQuestion].answer ? 1 : 0)}/${QUIZ_QUESTIONS.length}.`
+                        })
                       }
                     }}
                     className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6 py-2.5 text-sm"

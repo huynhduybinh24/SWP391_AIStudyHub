@@ -132,28 +132,24 @@ export const partnershipService = {
           const users = JSON.parse(savedUsers);
           let changed = false;
           const updatedUsers = users.map((u: any) => {
-            if (u.email?.toLowerCase() === email?.toLowerCase() && (u.role?.toLowerCase() === 'teacher' || u.role?.toLowerCase() === 'instructor')) {
+            if (u.email?.toLowerCase() === email?.toLowerCase()) {
               if (status === 'Approved') {
-                if (u.plan !== 'pro') {
-                  changed = true;
-                  const currentLang = localStorage.getItem('language') || 'vi';
-                  const expiryDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString(
-                    currentLang === 'vi' ? 'vi-VN' : 'en-US',
-                    { year: 'numeric', month: 'long', day: 'numeric' }
-                  );
-                  localStorage.setItem(`aiStudyHubSubExpiry:${u.email}`, expiryDate);
-                  localStorage.setItem(`aiStudyHubSubAutoRenew:${u.email}`, 'false');
-                  localStorage.setItem(`aiStudyHubSubIsTeacherGranted:${u.email}`, 'true');
-                  return { ...u, plan: 'pro' };
-                }
+                changed = true;
+                const currentLang = localStorage.getItem('language') || 'vi';
+                const expiryDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString(
+                  currentLang === 'vi' ? 'vi-VN' : 'en-US',
+                  { year: 'numeric', month: 'long', day: 'numeric' }
+                );
+                localStorage.setItem(`aiStudyHubSubExpiry:${u.email}`, expiryDate);
+                localStorage.setItem(`aiStudyHubSubAutoRenew:${u.email}`, 'false');
+                localStorage.setItem(`aiStudyHubSubIsTeacherGranted:${u.email}`, 'true');
+                return { ...u, plan: 'pro', role: 'teacher' };
               } else if (status === 'Rejected') {
-                if (u.plan === 'pro') {
-                  changed = true;
-                  localStorage.removeItem(`aiStudyHubSubExpiry:${u.email}`);
-                  localStorage.removeItem(`aiStudyHubSubAutoRenew:${u.email}`);
-                  localStorage.removeItem(`aiStudyHubSubIsTeacherGranted:${u.email}`);
-                  return { ...u, plan: 'free' };
-                }
+                changed = true;
+                localStorage.removeItem(`aiStudyHubSubExpiry:${u.email}`);
+                localStorage.removeItem(`aiStudyHubSubAutoRenew:${u.email}`);
+                localStorage.removeItem(`aiStudyHubSubIsTeacherGranted:${u.email}`);
+                return { ...u, plan: 'free' };
               }
             }
             return u;
@@ -162,36 +158,68 @@ export const partnershipService = {
             localStorage.setItem('aiStudyHubUsers', JSON.stringify(updatedUsers));
             window.dispatchEvent(new Event('storage'));
             window.dispatchEvent(new Event('aiStudyHubUsersUpdated'));
-
-            // Sync active user store session if it's the approved teacher!
-            try {
-              const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser');
-              if (activeUserStr) {
-                const activeUser = JSON.parse(activeUserStr);
-                if (activeUser.email?.toLowerCase() === email?.toLowerCase()) {
-                  activeUser.plan = status === 'Approved' ? 'pro' : 'free';
-                  localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(activeUser));
-                  
-                  // Dynamically require or update Zustand state if window is active
-                  const { useAuthStore } = await import('@/stores/authStore');
-                  const currentAuth = useAuthStore.getState().user;
-                  if (currentAuth) {
-                    useAuthStore.setState({
-                      user: {
-                        ...currentAuth,
-                        plan: status === 'Approved' ? 'pro' : 'free'
-                      }
-                    });
-                  }
-                }
-              }
-            } catch (err) {
-              console.error('Error syncing active auth session in partnershipService', err);
-            }
           }
         } catch (e) {
           console.error('Error upgrading/downgrading teacher plan in localStorage', e);
         }
+      }
+
+      // 2. Sync logged-in accounts switcher (aiStudyHubLoggedInAccounts)
+      const loggedInAccountsStr = localStorage.getItem('aiStudyHubLoggedInAccounts');
+      if (loggedInAccountsStr) {
+        try {
+          const accounts = JSON.parse(loggedInAccountsStr);
+          if (Array.isArray(accounts)) {
+            let accountsChanged = false;
+            const updatedAccounts = accounts.map((acc: any) => {
+              if (acc.email?.toLowerCase() === email?.toLowerCase()) {
+                accountsChanged = true;
+                return {
+                  ...acc,
+                  plan: status === 'Approved' ? 'PRO' : 'FREE',
+                  role: status === 'Approved' ? 'instructor' : acc.role
+                };
+              }
+              return acc;
+            });
+            if (accountsChanged) {
+              localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(updatedAccounts));
+              window.dispatchEvent(new Event('aiStudyHubLoggedInAccountsUpdated'));
+            }
+          }
+        } catch (e) {
+          console.error('Error updating logged-in accounts switcher', e);
+        }
+      }
+
+      // 3. Sync active user store session if it's the approved teacher!
+      try {
+        const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser');
+        if (activeUserStr) {
+          const activeUser = JSON.parse(activeUserStr);
+          if (activeUser.email?.toLowerCase() === email?.toLowerCase()) {
+            activeUser.plan = status === 'Approved' ? 'pro' : 'free';
+            if (status === 'Approved') {
+              activeUser.role = 'teacher';
+            }
+            localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(activeUser));
+            
+            // Dynamically require or update Zustand state if window is active
+            const { useAuthStore } = await import('@/stores/authStore');
+            const currentAuth = useAuthStore.getState().user;
+            if (currentAuth) {
+              useAuthStore.setState({
+                user: {
+                  ...currentAuth,
+                  plan: status === 'Approved' ? 'pro' : 'free',
+                  role: status === 'Approved' ? 'teacher' : currentAuth.role
+                }
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error syncing active auth session in partnershipService', err);
       }
 
       // 2. Dispatch mock Notification and mock Email
