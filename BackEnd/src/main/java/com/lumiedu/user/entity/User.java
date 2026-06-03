@@ -45,9 +45,9 @@ public class User extends BaseEntity {
 
     @Builder.Default
     @Column(name = "storage_used_mb")
-    private Double storageUsedMb = 0.0;
+    private Long storageUsedMb = 0L;
 
     @Builder.Default
     @Column(name = "storage_limit_mb")
-    private Double storageLimitMb = 500.0;
+    private Long storageLimitMb = 500L;
 }
