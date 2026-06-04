@@ -49,5 +49,5 @@ public class User extends BaseEntity {
 
     @Builder.Default
     @Column(name = "storage_limit_mb")
-    private Long storageLimitMb = 500L;
+    private Long storageLimitMb = 1024L;
 }

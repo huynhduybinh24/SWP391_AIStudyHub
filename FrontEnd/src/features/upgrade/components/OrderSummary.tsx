@@ -1,50 +1,65 @@
-import { Shield, CheckCircle2 } from 'lucide-react'
+import { Shield, CheckCircle2, Loader2 } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 
-interface OrderItem {
-  id: string
-  name: string
-  description: string
-  price: number
+interface OrderSummaryProps {
+  estimate?: {
+    currentPlanName: string
+    targetPlanName: string
+    targetPlanPrice: number
+    remainingDays: number
+    discountAmount: number
+    finalPrice: number
+    isUpgradeAllowed: boolean
+    message: string
+  }
+  loadingEstimate?: boolean
+  planId?: number
 }
 
-interface BillingSummary {
-  items: OrderItem[]
-  subtotal: number
-  taxRate: number
-  taxAmount: number
-  total: number
-}
-
-const mockOrderData: BillingSummary = {
-  items: [
-    {
-      id: 'pro_monthly',
-      name: 'Pro Plan',
-      description: 'Unlocks advanced AI Tutor and Analytics.',
-      price: 200000.00,
-    },
-  ],
-  subtotal: 200000.00,
-  taxRate: 0.00, // 0%
-  taxAmount: 0.00,
-  total: 200000.00,
-}
-
-export function OrderSummary() {
+export function OrderSummary({ estimate, loadingEstimate, planId = 2 }: OrderSummaryProps) {
   const { t, language } = useTranslation()
-  const { subtotal, taxAmount, total } = mockOrderData
 
-  const items = mockOrderData.items.map(item => {
-    if (item.id === 'pro_monthly') {
-      return {
-        ...item,
-        name: t.upgrade.proPlanMonthly,
-        description: t.upgrade.proPlanMonthlyDesc
-      }
-    }
-    return item
-  })
+  if (loadingEstimate) {
+    return (
+      <div className="flex flex-col justify-center items-center h-full min-h-[300px] select-none">
+        <Loader2 className="size-8 animate-spin text-indigo-650" />
+        <p className="text-xs text-slate-450 mt-3 font-semibold">
+          {language === 'vi' ? 'Đang tính toán giá trị khấu trừ...' : 'Calculating proration credits...'}
+        </p>
+      </div>
+    )
+  }
+
+  const isPremium = planId === 3
+  const planName = isPremium
+    ? (language === 'vi' ? 'Gói Premium' : 'Premium Plan')
+    : (language === 'vi' ? 'Gói Pro' : 'Pro Plan')
+
+  const planDesc = isPremium
+    ? (language === 'vi' ? 'Dung lượng 50GB, tối đa AI cao cấp nhất.' : '50GB storage limit & top-tier AI models.')
+    : (language === 'vi' ? 'Dung lượng 5GB, trợ lý học tập AI nâng cao.' : '5GB storage limit & advanced AI study tools.')
+
+  const planPrice = isPremium ? 300000 : 200000
+  
+  // Use estimate values if available, otherwise fallback
+  const subtotal = estimate ? estimate.targetPlanPrice : planPrice
+  const discountAmount = estimate ? estimate.discountAmount : 0
+  const total = estimate ? estimate.finalPrice : planPrice
+  const remainingDays = estimate ? estimate.remainingDays : 0
+
+  const perks = isPremium
+    ? [
+        language === 'vi' ? 'Dung lượng lưu trữ 50 GB' : '50 GB storage limit',
+        language === 'vi' ? 'AI thông minh cao cấp nhất (GPT-4o)' : 'Top-tier Smart AI Models (GPT-4o)',
+        language === 'vi' ? 'Báo cáo phân tích chuyên sâu hàng tuần' : 'Weekly AI In-depth Analytics Reports',
+        language === 'vi' ? 'Ưu tiên hỗ trợ 24/7' : 'Priority 24/7 Dedicated Support'
+      ]
+    : [
+        language === 'vi' ? 'Dung lượng lưu trữ 5 GB' : '5 GB storage limit',
+        language === 'vi' ? 'AI Chatbot nâng cao & phân tích sâu' : 'Advanced AI chatbot & deep analysis',
+        language === 'vi' ? 'Chia sẻ tệp tin không giới hạn' : 'Unlimited file sharing',
+        language === 'vi' ? 'Tốc độ tải xuống băng thông cao' : 'High speed download bandwidth'
+      ]
 
   return (
     <div className="flex flex-col justify-between h-full space-y-8 select-none">
@@ -53,37 +68,30 @@ export function OrderSummary() {
           {t.upgrade.orderSummary}
         </h3>
 
-        {/* Product details mapped from object array */}
+        {/* Product details */}
         <div className="space-y-4">
-          {items.map((item) => (
-            <div key={item.id} className="flex justify-between items-start gap-4 bg-slate-50/40 dark:bg-slate-900/20 p-4 rounded-xl border border-slate-100/50 dark:border-slate-800/30">
-              <div className="space-y-1">
-                <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-200">
-                  {item.name}
-                </h4>
-                <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed max-w-[240px]">
-                  {item.description}
-                </p>
-              </div>
-              <span className="text-sm font-black text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-850 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-800">
-                {item.price.toLocaleString('vi-VN')}đ
-              </span>
+          <div className="flex justify-between items-start gap-4 bg-slate-50/40 dark:bg-slate-900/20 p-4 rounded-xl border border-slate-100/50 dark:border-slate-800/30">
+            <div className="space-y-1">
+              <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-200">
+                {planName}
+              </h4>
+              <p className="text-xs text-slate-450 dark:text-slate-500 leading-relaxed max-w-[240px]">
+                {planDesc}
+              </p>
             </div>
-          ))}
+            <span className="text-sm font-black text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-850 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-800">
+              {planPrice.toLocaleString('vi-VN')}đ
+            </span>
+          </div>
         </div>
 
         {/* Features included list */}
         <div className="bg-gradient-to-br from-slate-50/50 to-indigo-50/10 dark:from-slate-900/30 dark:to-indigo-950/5 border border-slate-100 dark:border-slate-800/40 rounded-xl p-4 space-y-3">
           <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            {language === 'vi' ? 'QUYỀN LỢI TÀI KHOẢN PRO:' : 'PRO PLAN INCLUDES:'}
+            {language === 'vi' ? `QUYỀN LỢI GÓI ${planName.toUpperCase()}:` : `${planName.toUpperCase()} INCLUDES:`}
           </p>
           <div className="grid grid-cols-1 gap-2.5">
-            {[
-              language === 'vi' ? 'Trợ lý học tập AI 24/7 cao cấp' : '24/7 Advanced AI Study Tutor',
-              language === 'vi' ? 'Báo cáo & Phân tích học tập chi tiết' : 'Detailed Learning Analytics Reports',
-              language === 'vi' ? 'Không giới hạn dung lượng lưu trữ' : 'Unlimited workspace document index',
-              language === 'vi' ? 'Hỗ trợ xuất tệp ghi chú PDF/Word' : 'Smart export of study notes'
-            ].map((feat, idx) => (
+            {perks.map((feat, idx) => (
               <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-650 dark:text-slate-350">
                 <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
                 <span>{feat}</span>
@@ -98,9 +106,20 @@ export function OrderSummary() {
         {/* Calculation Details */}
         <div className="space-y-3">
           <div className="flex justify-between text-sm text-slate-550 dark:text-slate-400 font-bold">
-            <span>{t.upgrade.subtotal}</span>
+            <span>{language === 'vi' ? 'Giá trị gói mới:' : 'Target plan price:'}</span>
             <span className="text-slate-900 dark:text-slate-100 font-extrabold">{subtotal.toLocaleString('vi-VN')}đ</span>
           </div>
+          {discountAmount > 0 && (
+            <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400 font-bold">
+              <span className="flex flex-col">
+                <span>{language === 'vi' ? 'Khấu trừ gói cũ:' : 'Proration credit:'}</span>
+                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                  ({language === 'vi' ? `Còn ${remainingDays} ngày gói cũ` : `${remainingDays} days remaining`})
+                </span>
+              </span>
+              <span className="font-extrabold">-{discountAmount.toLocaleString('vi-VN')}đ</span>
+            </div>
+          )}
         </div>
 
         {/* Divider */}

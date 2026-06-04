@@ -34,7 +34,17 @@ export function AdminPackagesTab({
       const saved = localStorage.getItem('aiStudyHubPackages')
       if (saved) {
         try {
-          return JSON.parse(saved)
+          const parsed = JSON.parse(saved)
+          const hasOldData = parsed.some((p: any) => 
+            (p.id === 'pkg-free' && p.storageLimit === 10) || 
+            (p.id === 'pkg-pro' && (p.priceMonthly === 12 || p.storageLimit === 50)) ||
+            (p.id === 'pkg-enterprise' && p.priceMonthly === 2000000)
+          )
+          if (hasOldData) {
+            localStorage.removeItem('aiStudyHubPackages')
+          } else {
+            return parsed
+          }
         } catch (e) {
           console.error('Error loading packages from localStorage:', e)
         }
@@ -44,11 +54,11 @@ export function AdminPackagesTab({
       {
         id: 'pkg-free',
         name: 'Free Plan',
-        storageLimit: 10,
+        storageLimit: 1,
         priceMonthly: 0,
         usersCount: 11406,
         perks: [
-          language === 'vi' ? 'Dung lượng lưu trữ 10 GB' : '10 GB storage limit',
+          language === 'vi' ? 'Dung lượng lưu trữ 1 GB' : '1 GB storage limit',
           language === 'vi' ? 'AI Chatbot trợ giúp cơ bản' : 'Basic AI Chatbot assistance',
           language === 'vi' ? 'Chia sẻ tài liệu tối đa 3 người' : 'Share files with up to 3 members',
           language === 'vi' ? 'Tốc độ tải xuống tiêu chuẩn' : 'Standard download speed'
@@ -58,30 +68,45 @@ export function AdminPackagesTab({
       {
         id: 'pkg-pro',
         name: 'Pro Plan',
-        storageLimit: 50,
-        priceMonthly: 12,
+        storageLimit: 5,
+        priceMonthly: 200000,
         usersCount: 3842,
         perks: [
-          language === 'vi' ? 'Dung lượng lưu trữ 50 GB' : '50 GB storage limit',
+          language === 'vi' ? 'Dung lượng lưu trữ 5 GB' : '5 GB storage limit',
           language === 'vi' ? 'AI Chatbot nâng cao & phân tích sâu' : 'Advanced AI chatbot & deep analysis',
           language === 'vi' ? 'Chia sẻ tệp tin không giới hạn' : 'Unlimited file sharing',
           language === 'vi' ? 'Tốc độ tải xuống băng thông cao' : 'High speed download bandwidth',
           language === 'vi' ? 'Bảo mật dữ liệu nâng cao bằng AI Guard' : 'Advanced security via AI Guard'
         ],
-        color: 'border-amber-500/30 dark:border-amber-500/20'
+        color: 'border-amber-500/30 dark:border-amber-500/20 shadow-md shadow-amber-500/5'
+      },
+      {
+        id: 'pkg-enterprise',
+        name: 'Premium Plan',
+        storageLimit: 50,
+        priceMonthly: 300000,
+        usersCount: 1250,
+        perks: [
+          language === 'vi' ? 'Dung lượng lưu trữ 50 GB' : '50 GB storage limit',
+          language === 'vi' ? 'AI thông minh cao cấp nhất (GPT-4o)' : 'Top-tier Smart AI Models (GPT-4o)',
+          language === 'vi' ? 'Báo cáo phân tích chuyên sâu hàng tuần' : 'Weekly AI In-depth Analytics Reports',
+          language === 'vi' ? 'Tạo câu hỏi & Tải tệp không giới hạn' : 'Unlimited Quiz Creation & Document uploads',
+          language === 'vi' ? 'Ưu tiên hỗ trợ 24/7' : 'Priority 24/7 Dedicated Support'
+        ],
+        color: 'border-blue-500/30 dark:border-blue-500/20 shadow-md shadow-blue-500/5'
       }
     ]
   })
 
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editedStorage, setEditedStorage] = useState<number>(10)
-  const [editedPrice, setEditedPrice] = useState<number>(12)
+  const [editedStorage, setEditedStorage] = useState<number>(5)
+  const [editedPrice, setEditedPrice] = useState<number>(200000)
 
   // Create Package States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [newPkgName, setNewPkgName] = useState('')
-  const [newPkgStorage, setNewPkgStorage] = useState<number>(20)
-  const [newPkgPrice, setNewPkgPrice] = useState<number>(19)
+  const [newPkgStorage, setNewPkgStorage] = useState<number>(50)
+  const [newPkgPrice, setNewPkgPrice] = useState<number>(300000)
   const [newPkgPerks, setNewPkgPerks] = useState<string[]>([])
   const [newPerkText, setNewPerkText] = useState('')
 
@@ -248,21 +273,27 @@ export function AdminPackagesTab({
                     <div className="flex items-baseline gap-1 text-slate-800 dark:text-slate-100">
                       {isEditing ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-black text-slate-700 dark:text-slate-355">$</span>
                           <input
                             type="number"
                             value={editedPrice}
                             onChange={(e) => setEditedPrice(parseFloat(e.target.value) || 0)}
-                            className="w-24 p-1.5 text-sm rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 font-bold text-slate-900 dark:text-white focus:outline-none"
+                            className="w-28 p-1.5 text-sm rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 font-bold text-slate-900 dark:text-white focus:outline-none"
                             placeholder="Price"
                           />
-                          <span className="text-xs font-bold text-slate-400">/{language === 'vi' ? 'tháng' : 'month'}</span>
+                          <span className="text-sm font-black text-slate-700 dark:text-slate-355">đ</span>
+                          <span className="text-xs font-bold text-slate-400">
+                            /{pkg.id === 'pkg-enterprise' 
+                              ? (language === 'vi' ? 'năm' : 'year') 
+                              : (language === 'vi' ? 'tháng' : 'month')}
+                          </span>
                         </div>
                       ) : (
                         <>
-                          <span className="text-3xl font-black">${pkg.priceMonthly === 0 ? '0' : pkg.priceMonthly.toLocaleString()}</span>
+                          <span className="text-3xl font-black">{pkg.priceMonthly === 0 ? '0đ' : `${pkg.priceMonthly.toLocaleString('vi-VN')}đ`}</span>
                           <span className="text-xs font-bold text-slate-400 dark:text-slate-505 font-medium ml-1">
-                            /{language === 'vi' ? 'tháng' : 'month'}
+                            /{pkg.id === 'pkg-enterprise' 
+                              ? (language === 'vi' ? 'năm' : 'year') 
+                              : (language === 'vi' ? 'tháng' : 'month')}
                           </span>
                         </>
                       )}
@@ -397,7 +428,7 @@ export function AdminPackagesTab({
                   {searchedUsers.length > 0 ? (
                     searchedUsers.map((u) => {
                       const currentPlanObj = packages.find(p => {
-                        const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+                        const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'enterprise' : p.id
                         return planCode === u.plan
                       })
                       const currentPlanName = currentPlanObj ? currentPlanObj.name : (u.plan || 'Free')
@@ -437,7 +468,7 @@ export function AdminPackagesTab({
                                   const nextPlan = e.target.value
                                   onUpdateUser(u.id, { plan: nextPlan })
                                   const chosenPlanName = packages.find(p => {
-                                    const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+                                    const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'enterprise' : p.id
                                     return planCode === nextPlan
                                   })?.name || nextPlan.toUpperCase()
                                   toast.success(
@@ -449,10 +480,14 @@ export function AdminPackagesTab({
                                 className="px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer hover:border-blue-500 transition-colors ml-auto block"
                               >
                                 {packages.map((p) => {
-                                  const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+                                  const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'enterprise' : p.id
+                                  const priceStr = p.priceMonthly === 0 ? '0đ' : `${p.priceMonthly.toLocaleString('vi-VN')}đ`
+                                  const periodStr = p.id === 'pkg-enterprise'
+                                    ? (language === 'vi' ? 'năm' : 'year')
+                                    : (language === 'vi' ? 'tháng' : 'month')
                                   return (
                                     <option key={p.id} value={planCode}>
-                                      {p.name} (${p.priceMonthly === 0 ? '0' : p.priceMonthly}/{language === 'vi' ? 'tháng' : 'month'})
+                                      {p.name} ({priceStr}/{periodStr})
                                     </option>
                                   )
                                 })}
@@ -521,7 +556,7 @@ export function AdminPackagesTab({
             {/* Monthly Price */}
             <div className="space-y-1.5">
               <label className="text-slate-550 dark:text-slate-400 font-extrabold uppercase tracking-wide">
-                {language === 'vi' ? 'Giá mỗi tháng ($):' : 'Price Monthly ($):'}
+                {language === 'vi' ? 'Giá gói cước (đ):' : 'Package Price (VND):'}
               </label>
               <input
                 type="number"

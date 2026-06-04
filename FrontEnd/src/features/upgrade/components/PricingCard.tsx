@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 
 export interface PricingPlan {
+  id?: string
   name: string
   price: string
   billing?: string
@@ -20,7 +21,7 @@ interface PricingCardProps {
   plan: PricingPlan
   index: number
   onCurrentPlanClick: () => void
-  onUpgradeClick: () => void
+  onUpgradeClick: (planId: string) => void
   onContactSalesClick: () => void
 }
 
@@ -38,7 +39,7 @@ export function PricingCard({
     if (plan.isCurrent) {
       onCurrentPlanClick()
     } else if (plan.buttonVariant === 'primary') {
-      onUpgradeClick()
+      onUpgradeClick(plan.id || '2')
     } else {
       onContactSalesClick()
     }

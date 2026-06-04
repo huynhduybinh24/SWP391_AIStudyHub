@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Lock, Loader2, CreditCard, Cpu } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { OrderSummary } from '../components/OrderSummary'
@@ -10,9 +10,38 @@ import { apiClient } from '@/lib/axios'
 
 export function CheckoutPage() {
   const toast = useToast()
+  const navigate = useNavigate()
   const { t, language } = useTranslation()
   const user = useAuthStore((state) => state.user)
+  const [searchParams] = useSearchParams()
+  
+  const planIdStr = searchParams.get('planId') || '2'
+  const planId = parseInt(planIdStr, 10)
+
   const [isPaying, setIsPaying] = useState(false)
+  const [estimate, setEstimate] = useState<any>(null)
+  const [loadingEstimate, setLoadingEstimate] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    const fetchEstimate = async () => {
+      setLoadingEstimate(true)
+      try {
+        const response = await apiClient.get('/billing/upgrade-estimate', {
+          params: {
+            userId: parseInt(user.id, 10),
+            targetPlanId: planId
+          }
+        })
+        setEstimate(response.data)
+      } catch (err) {
+        console.error('Failed to load upgrade estimate:', err)
+      } finally {
+        setLoadingEstimate(false)
+      }
+    }
+    fetchEstimate()
+  }, [user, planId])
 
   const handleStripeCheckout = async () => {
     if (!user) {
@@ -23,11 +52,35 @@ export function CheckoutPage() {
     try {
       const response = await apiClient.post('/billing/checkout', {
         userId: parseInt(user.id, 10),
-        planId: 2, // Seeded Pro Plan
+        planId: planId,
         paymentMethod: 'STRIPE'
       })
       const { paymentUrl } = response.data
-      if (paymentUrl) {
+      
+      if (paymentUrl === 'FREE_UPGRADE_SUCCESS') {
+        toast.success(language === 'vi' ? 'Nâng cấp tài khoản thành công!' : 'Account upgraded successfully!')
+        
+        // Update local state and localStorage
+        const currentUser = useAuthStore.getState().user
+        if (currentUser) {
+          const newPlan = planId === 3 ? 'enterprise' : 'pro'
+          useAuthStore.setState({
+            user: {
+              ...currentUser,
+              plan: newPlan
+            }
+          })
+          const localUserStr = localStorage.getItem('aiStudyHubCurrentUser')
+          if (localUserStr) {
+            try {
+              const localUser = JSON.parse(localUserStr)
+              localUser.plan = newPlan
+              localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(localUser))
+            } catch (e) {}
+          }
+        }
+        navigate('/dashboard')
+      } else if (paymentUrl) {
         window.location.href = paymentUrl
       } else {
         toast.error(language === 'vi' ? 'Không tìm thấy link thanh toán Stripe' : 'Stripe checkout URL not found')
@@ -168,7 +221,7 @@ export function CheckoutPage() {
 
           {/* Right Column: Order Summary (5 of 12 columns) */}
           <div className="lg:col-span-5 bg-[#fafbfc]/40 dark:bg-slate-950/25 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-850/80 p-6 md:p-10">
-            <OrderSummary />
+            <OrderSummary estimate={estimate} loadingEstimate={loadingEstimate} planId={planId} />
           </div>
         </div>
       </motion.div>
