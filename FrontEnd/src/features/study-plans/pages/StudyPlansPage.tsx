@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Clock,
   MoreVertical,
@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { CreateStudyPlanModal } from '@/features/study-plans/pages/CreateStudyPlanModal'
 import { LearningProgressModal, type LearningProgressPlan } from '@/features/study-plans/pages/LearningProgressModal'
-import { CurriculumModal, type CurriculumPlan } from '@/features/study-plans/pages/CurriculumModal'
+import { CurriculumModal, type CurriculumPlan, getDocumentIdByName } from '@/features/study-plans/pages/CurriculumModal'
 import { useTranslation } from '@/context/LanguageContext'
 import { Language } from '@/locales'
 
@@ -65,6 +65,7 @@ type StudyPlan = {
   startsAt?: string
   tasks?: number
   iconType?: 'flask' | 'rocket' | 'bot' | 'cpu' | 'languages'
+  linkedDocs?: string[]
 }
 
 // Helper to localize mock plan strings
@@ -166,6 +167,7 @@ const STUDY_PLANS: StudyPlan[] = [
       title: "Schrödinger's Equation Quiz",
       time: '10:00 AM Tomorrow',
     },
+    linkedDocs: ['Giáo trình Cơ học lượng tử nâng cao.pdf']
   },
   {
     id: '2',
@@ -190,6 +192,7 @@ const STUDY_PLANS: StudyPlan[] = [
       title: 'Alkanes & Cycloalkanes',
       time: '2:00 PM Wednesday',
     },
+    linkedDocs: ['Slide bài giảng Hóa hữu cơ chương 2.pdf']
   },
   {
     id: '3',
@@ -643,6 +646,7 @@ interface CardCallbacks {
 }
 
 function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDuplicate, onArchive, onDelete }: { plan: StudyPlan, isAiTab?: boolean } & CardCallbacks) {
+  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const { t, language } = useTranslation()
 
@@ -774,6 +778,30 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 leading-relaxed line-clamp-2">
               {localizedPlanInfo.description}
             </p>
+
+            {/* Linked Documents (Teacher feedback integration) */}
+            {plan.linkedDocs && plan.linkedDocs.length > 0 && (
+              <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/60">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-450 dark:text-slate-500 mb-1.5 flex items-center gap-1.5">
+                  <Link2 className="size-3 text-indigo-500 dark:text-indigo-400" />
+                  {language === 'vi' ? 'TÀI LIỆU LIÊN KẾT' : language === 'ja' ? '関連ドキュメント' : language === 'ko' ? '연결된 문서' : 'LINKED DOCUMENTS'}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {plan.linkedDocs.map((docName, i) => (
+                    <button
+                      key={i}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigate('/dashboard/documents')
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-indigo-55/40 hover:bg-indigo-100/50 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/40 border border-indigo-100/50 dark:border-indigo-900/30 text-[11px] font-semibold text-indigo-650 dark:text-indigo-400 cursor-pointer transition-colors"
+                    >
+                      {docName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Info pills */}
             <div className="flex flex-wrap gap-2 mt-3">
@@ -1070,7 +1098,30 @@ export function StudyPlansPage() {
                 plan={plan}
                 isAiTab={activeTab === 'AI Generated'}
                 onContinue={() => setLearningPlan(LEARNING_DATA[plan.id] ?? null)}
-                onCurriculum={() => setCurriculumPlan(CURRICULUM_DATA[plan.id] ?? null)}
+                onCurriculum={() => {
+                  const baseCurriculum = CURRICULUM_DATA[plan.id] || {
+                    id: plan.id,
+                    title: plan.title,
+                    documents: plan.documents,
+                    hoursEst: plan.hoursEst,
+                    difficulty: plan.difficulty,
+                    modules: plan.segments.map((seg, sIdx) => ({
+                      id: `m-${sIdx}-${Date.now()}`,
+                      title: seg.label,
+                      description: language === 'vi' 
+                        ? `Nội dung học tập chi tiết được AI trích xuất và lên kế hoạch dựa trên tài liệu liên kết.`
+                        : `Detailed study topics compiled by AI based on your linked reference documents.`,
+                      lessons: [
+                        { id: `l-${sIdx}-1`, title: language === 'vi' ? 'Đọc và hiểu tài liệu tham khảo chính' : 'Read & Understand Core References', duration: '25 min', type: 'reading', status: 'in-progress' },
+                        { id: `l-${sIdx}-2`, title: language === 'vi' ? 'Trắc nghiệm tự luyện cùng AI' : 'AI-Assisted Practice Quiz', duration: '30 min', type: 'quiz', status: 'locked' }
+                      ]
+                    }))
+                  }
+                  setCurriculumPlan({
+                    ...baseCurriculum,
+                    linkedDocs: plan.linkedDocs
+                  })
+                }}
                 onEdit={() => setCreateOpen(true)}
                 onDuplicate={() => handleDuplicate(plan)}
                 onArchive={() => handleArchive(plan)}
@@ -1082,7 +1133,11 @@ export function StudyPlansPage() {
       </div>
 
       {/* ── Create Plan Modal ── */}
-      <CreateStudyPlanModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateStudyPlanModal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreate={(newPlan) => setPlans((prev) => [newPlan, ...prev])}
+      />
 
       {/* ── Learning Progress Modal ── */}
       <LearningProgressModal

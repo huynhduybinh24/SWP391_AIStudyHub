@@ -12,7 +12,7 @@ interface AuthState {
   user: AuthUser | null
   tokens: AuthTokens | null
   isAuthenticated: boolean
-  setSession: (user: AuthUser, tokens: AuthTokens) => void
+  setSession: (user: AuthUser, tokens: AuthTokens, isGoogle?: boolean) => void
   logout: () => void
 }
 
@@ -32,7 +32,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       ...initialAuth,
-      setSession: (user, tokens) => {
+      setSession: (user, tokens, isGoogle) => {
         if (typeof window !== 'undefined') {
           localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify({
             id: user.id,
@@ -63,7 +63,14 @@ export const useAuthStore = create<AuthState>()(
             let list = stored ? JSON.parse(stored) : []
             if (!Array.isArray(list)) list = []
             
-            if (!list.some((u: any) => u.email?.toLowerCase() === user.email?.toLowerCase())) {
+            const existingIndex = list.findIndex((u: any) => u.email?.toLowerCase() === user.email?.toLowerCase())
+            if (existingIndex !== -1) {
+              list[existingIndex].tokens = tokens // Always update/persist the tokens
+              if (isGoogle) {
+                list[existingIndex].isGoogle = true
+                list[existingIndex].remembered = true
+              }
+            } else {
               list.push({
                 id: `u-${user.id}`,
                 name: user.name,
@@ -72,10 +79,12 @@ export const useAuthStore = create<AuthState>()(
                 plan: (user.plan || 'free').toUpperCase() as 'FREE' | 'PRO',
                 initials: user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'US',
                 description: `Tài khoản đăng nhập hệ thống ngày ${new Date().toLocaleDateString('vi-VN')}`,
-                remembered: false // Require password by default
+                remembered: isGoogle ? true : false,
+                isGoogle: isGoogle || false,
+                tokens: tokens // Save tokens here!
               })
-              localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(list))
             }
+            localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(list))
           } catch (e) {
             console.error('Failed to sync login session to logged-in accounts list:', e)
           }
