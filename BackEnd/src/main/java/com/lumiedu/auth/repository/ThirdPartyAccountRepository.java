@@ -12,5 +12,4 @@ import java.util.Optional;
 public interface ThirdPartyAccountRepository extends JpaRepository<ThirdPartyAccount, Long> {
     Optional<ThirdPartyAccount> findByProviderTypeAndProviderUserId(ProviderType providerType, String providerUserId);
     List<ThirdPartyAccount> findByUserId(Long userId);
-    boolean existsByProviderTypeAndProviderUserId(ProviderType providerType, String providerUserId);
 }
