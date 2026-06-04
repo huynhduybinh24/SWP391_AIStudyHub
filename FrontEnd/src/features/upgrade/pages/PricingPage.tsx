@@ -59,10 +59,10 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
       {
         id: 'pkg-free',
         name: language === 'vi' ? 'Gói Miễn phí' : 'Free Plan',
-        storageLimit: 10,
+        storageLimit: 1,
         priceMonthly: 0,
         perks: [
-          language === 'vi' ? 'Dung lượng lưu trữ 10 GB' : '10 GB storage limit',
+          language === 'vi' ? 'Dung lượng lưu trữ 1 GB' : '1 GB storage limit',
           language === 'vi' ? 'AI Chatbot trợ giúp cơ bản' : 'Basic AI Chatbot assistance',
           language === 'vi' ? 'Chia sẻ tài liệu tối đa 3 người' : 'Share files with up to 3 members',
           language === 'vi' ? 'Tốc độ tải xuống tiêu chuẩn' : 'Standard download speed'
@@ -71,14 +71,27 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
       {
         id: 'pkg-pro',
         name: language === 'vi' ? 'Gói Pro' : 'Pro Plan',
-        storageLimit: 50,
+        storageLimit: 5,
         priceMonthly: 200000,
         perks: [
-          language === 'vi' ? 'Dung lượng lưu trữ 50 GB' : '50 GB storage limit',
+          language === 'vi' ? 'Dung lượng lưu trữ 5 GB' : '5 GB storage limit',
           language === 'vi' ? 'AI Chatbot nâng cao & phân tích sâu' : 'Advanced AI chatbot & deep analysis',
           language === 'vi' ? 'Chia sẻ tệp tin không giới hạn' : 'Unlimited file sharing',
           language === 'vi' ? 'Tốc độ tải xuống băng thông cao' : 'High speed download bandwidth',
           language === 'vi' ? 'Bảo mật dữ liệu nâng cao bằng AI Guard' : 'Advanced security via AI Guard'
+        ]
+      },
+      {
+        id: 'pkg-enterprise',
+        name: language === 'vi' ? 'Gói Premium' : 'Premium Plan',
+        storageLimit: 50,
+        priceMonthly: 300000,
+        perks: [
+          language === 'vi' ? 'Dung lượng lưu trữ 50 GB' : '50 GB storage limit',
+          language === 'vi' ? 'AI thông minh cao cấp nhất (GPT-4o)' : 'Top-tier Smart AI Models (GPT-4o)',
+          language === 'vi' ? 'Báo cáo phân tích chuyên sâu hàng tuần' : 'Weekly AI In-depth Analytics Reports',
+          language === 'vi' ? 'Tạo câu hỏi & Tải tệp không giới hạn' : 'Unlimited Quiz Creation & Document uploads',
+          language === 'vi' ? 'Ưu tiên hỗ trợ 24/7' : 'Priority 24/7 Dedicated Support'
         ]
       }
     ]
@@ -89,21 +102,32 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
         try {
           const parsed = JSON.parse(saved)
           if (Array.isArray(parsed) && parsed.length > 0) {
-            list = parsed.map((pkg: any) => {
-              let name = pkg.name
-              if (pkg.id === 'pkg-free') {
-                name = language === 'vi' ? 'Gói Miễn phí' : 'Free Plan'
-              } else if (pkg.id === 'pkg-pro') {
-                name = language === 'vi' ? 'Gói Pro' : 'Pro Plan'
-              }
-              return {
-                id: pkg.id,
-                name: name,
-                storageLimit: pkg.storageLimit,
-                priceMonthly: pkg.priceMonthly,
-                perks: pkg.perks || []
-              }
-            })
+            const hasOldData = parsed.some((p: any) => 
+              (p.id === 'pkg-free' && p.storageLimit === 10) || 
+              (p.id === 'pkg-pro' && (p.priceMonthly === 12 || p.storageLimit === 50)) ||
+              (p.id === 'pkg-enterprise' && p.priceMonthly === 2000000)
+            )
+            if (hasOldData) {
+              localStorage.removeItem('aiStudyHubPackages')
+            } else {
+              list = parsed.map((pkg: any) => {
+                let name = pkg.name
+                if (pkg.id === 'pkg-free') {
+                  name = language === 'vi' ? 'Gói Miễn phí' : 'Free Plan'
+                } else if (pkg.id === 'pkg-pro') {
+                  name = language === 'vi' ? 'Gói Pro' : 'Pro Plan'
+                } else if (pkg.id === 'pkg-enterprise') {
+                  name = language === 'vi' ? 'Gói Premium' : 'Premium Plan'
+                }
+                return {
+                  id: pkg.id,
+                  name: name,
+                  storageLimit: pkg.storageLimit,
+                  priceMonthly: pkg.priceMonthly,
+                  perks: pkg.perks || []
+                }
+              })
+            }
           }
         } catch (e) {
           console.error('Error loading packages in PricingPage:', e)
@@ -119,13 +143,13 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
     
     // Find current plan price to compare upgrade vs downgrade
     const currentPlanItem = packagesList.find(p => {
-      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'enterprise' : p.id
       return planCode === currentPlanCode
     })
     const currentPlanPrice = currentPlanItem ? currentPlanItem.priceMonthly : 0
 
     const plans: PricingPlan[] = packagesList.map((pkg) => {
-      const planCode = pkg.id === 'pkg-free' ? 'free' : pkg.id === 'pkg-pro' ? 'pro' : pkg.id
+      const planCode = pkg.id === 'pkg-free' ? 'free' : pkg.id === 'pkg-pro' ? 'pro' : pkg.id === 'pkg-enterprise' ? 'enterprise' : pkg.id
       const isCurrent = currentPlanCode === planCode
 
       // Determine localized button text
@@ -150,23 +174,23 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
         description = language === 'vi' ? 'Dành cho người học thông thường cần hỗ trợ cơ bản.' : 'For casual learners needing basic assistance.'
       } else if (pkg.id === 'pkg-pro') {
         description = language === 'vi' ? 'Dành cho sinh viên tận tâm cần các công cụ chuyên sâu.' : 'For dedicated students requiring intensive tools.'
+      } else if (pkg.id === 'pkg-enterprise') {
+        description = language === 'vi' ? 'Dành cho học viên học tập tối đa, không giới hạn.' : 'For power learners needing ultimate capabilities.'
       } else {
         description = language === 'vi' ? 'Gói cước đặc biệt được thiết kế cho nhu cầu của bạn.' : 'Special plan tailored to your needs.'
       }
 
       // Pro savings text
       let yearlySavingText = undefined
-      if (pkg.id === 'pkg-pro') {
-        yearlySavingText = language === 'vi'
-          ? `Hoặc 2.000.000đ/năm (Tiết kiệm 16%)`
-          : `Or 2,000,000 VND/year (Save 16%)`
-      }
 
       const priceStr = pkg.priceMonthly === 0
         ? (language === 'vi' ? '0đ' : '0 VND')
         : (language === 'vi' ? `${pkg.priceMonthly.toLocaleString('vi-VN')}đ` : `${pkg.priceMonthly.toLocaleString('en-US')} VND`)
 
+      const backendPlanId = pkg.id === 'pkg-free' ? '1' : pkg.id === 'pkg-pro' ? '2' : '3'
+
       return {
+        id: backendPlanId,
         name: pkg.name,
         price: priceStr,
         billing: language === 'vi' ? '/tháng' : '/month',
@@ -201,22 +225,22 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
 
   const handleCurrentPlanClick = () => {
     const currentPkg = packagesList.find(p => {
-      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'enterprise' : p.id
       return planCode === (user?.plan || 'free')
     })
-    const name = currentPkg?.name || 'Free Plan'
+    const name = currentPkg?.name || (language === 'vi' ? 'Gói Miễn phí' : 'Free Plan')
     toast.info(language === 'vi' ? `Bạn đang sử dụng ${name}` : `You are currently on the ${name}`)
   }
 
-  const handleUpgradeClick = () => {
+  const handleUpgradeClick = (planId: string) => {
     const isReallyAuthenticated = DEV_SKIP_AUTH ? false : isAuthenticated
     const isGuest = isPublic ? !isReallyAuthenticated : !user
 
     if (isGuest) {
-      sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, '/dashboard/checkout')
+      sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, `/dashboard/checkout?planId=${planId}`)
       navigate('/login')
     } else {
-      navigate('/dashboard/checkout')
+      navigate(`/dashboard/checkout?planId=${planId}`)
     }
   }
 
