@@ -71,7 +71,7 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-12 gap-6">
         <QuickActions />
-        <StorageWidget usedGb={data.storageUsedGb} totalGb={data.storageTotalGb} />
+        <StorageWidget usedMb={data.storageUsedMb} totalMb={data.storageTotalMb} />
       </div>
 
       <div className="grid grid-cols-12 gap-6">

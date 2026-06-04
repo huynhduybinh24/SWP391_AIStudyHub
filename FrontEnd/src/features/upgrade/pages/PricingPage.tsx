@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { AppFooter } from '@/components/shared/AppFooter'
 import { POST_LOGIN_REDIRECT_KEY } from '@/features/auth/hooks/useLogin'
 import { DEV_SKIP_AUTH } from '@/config/dev'
+import { apiClient } from '@/lib/axios'
 
 export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
   const navigate = useNavigate()
@@ -21,32 +22,59 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
 
   useEffect(() => {
     const status = searchParams.get('status')
-    if (status === 'success') {
-      toast.success(language === 'vi' ? 'Thanh toán qua MoMo thành công! Tài khoản đã được nâng cấp lên Pro.' : 'MoMo payment successful! Your account has been upgraded to Pro.')
-      
-      const currentUser = useAuthStore.getState().user
-      if (currentUser) {
-        useAuthStore.setState({
-          user: {
-            ...currentUser,
-            plan: 'pro'
+    const invoice = searchParams.get('invoice')
+
+    if (status === 'success' && invoice) {
+      const verifyPayment = async () => {
+        try {
+          // Call Backend API to verify Stripe session and update Database
+          const response = await apiClient.post('/billing/verify-stripe', { sessionId: invoice })
+          const backendPlan = response.data?.plan?.toLowerCase()
+          
+          let verifiedPlan: 'free' | 'pro' | 'institutional' = 'pro'
+          if (backendPlan === 'enterprise') {
+            verifiedPlan = 'institutional'
+          } else if (backendPlan === 'free') {
+            verifiedPlan = 'free'
           }
-        })
-        const localUserStr = localStorage.getItem('aiStudyHubCurrentUser')
-        if (localUserStr) {
-          try {
-            const localUser = JSON.parse(localUserStr)
-            localUser.plan = 'pro'
-            localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(localUser))
-          } catch (e) {}
+
+          toast.success(language === 'vi' 
+            ? 'Thanh toán thành công! Gói tài khoản đã được cập nhật.' 
+            : 'Payment successful! Your account plan has been updated.')
+          
+          // Update Frontend Store & LocalStorage
+          const currentUser = useAuthStore.getState().user
+          if (currentUser) {
+            useAuthStore.setState({
+              user: {
+                ...currentUser,
+                plan: verifiedPlan
+              }
+            })
+            const localUserStr = localStorage.getItem('aiStudyHubCurrentUser')
+            if (localUserStr) {
+              try {
+                const localUser = JSON.parse(localUserStr)
+                localUser.plan = verifiedPlan
+                localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(localUser))
+              } catch (e) {}
+            }
+          }
+        } catch (err) {
+          console.error("Payment verification failed:", err)
+          toast.error(language === 'vi' 
+            ? 'Xác nhận thanh toán thất bại. Vui lòng liên hệ Admin.' 
+            : 'Payment verification failed. Please contact Admin.')
+        } finally {
+          searchParams.delete('status')
+          searchParams.delete('invoice')
+          setSearchParams(searchParams)
         }
       }
       
-      searchParams.delete('status')
-      searchParams.delete('invoice')
-      setSearchParams(searchParams)
-    } else if (status === 'failed') {
-      toast.error(language === 'vi' ? 'Thanh toán qua MoMo thất bại hoặc đã bị hủy.' : 'MoMo payment failed or was cancelled.')
+      verifyPayment()
+    } else if (status === 'cancel' || status === 'failed') {
+      toast.error(language === 'vi' ? 'Thanh toán thất bại hoặc đã bị hủy.' : 'Payment failed or was cancelled.')
       searchParams.delete('status')
       searchParams.delete('invoice')
       setSearchParams(searchParams)
@@ -143,13 +171,13 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
     
     // Find current plan price to compare upgrade vs downgrade
     const currentPlanItem = packagesList.find(p => {
-      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'enterprise' : p.id
+      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'institutional' : p.id
       return planCode === currentPlanCode
     })
     const currentPlanPrice = currentPlanItem ? currentPlanItem.priceMonthly : 0
 
     const plans: PricingPlan[] = packagesList.map((pkg) => {
-      const planCode = pkg.id === 'pkg-free' ? 'free' : pkg.id === 'pkg-pro' ? 'pro' : pkg.id === 'pkg-enterprise' ? 'enterprise' : pkg.id
+      const planCode = pkg.id === 'pkg-free' ? 'free' : pkg.id === 'pkg-pro' ? 'pro' : pkg.id === 'pkg-enterprise' ? 'institutional' : pkg.id
       const isCurrent = currentPlanCode === planCode
 
       // Determine localized button text
@@ -225,7 +253,7 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
 
   const handleCurrentPlanClick = () => {
     const currentPkg = packagesList.find(p => {
-      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'enterprise' : p.id
+      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'institutional' : p.id
       return planCode === (user?.plan || 'free')
     })
     const name = currentPkg?.name || (language === 'vi' ? 'Gói Miễn phí' : 'Free Plan')

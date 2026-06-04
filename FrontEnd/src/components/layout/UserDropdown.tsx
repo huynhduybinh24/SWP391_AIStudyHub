@@ -62,7 +62,7 @@ export function UserDropdown({ onClose, onLogoutClick, onChangeUserClick }: User
                     ? 'bg-purple-50 text-purple-600 border-purple-200/20 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-900/30'
                     : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
               }`}>
-                {user?.plan === 'pro' ? 'PRO' : user?.plan === 'institutional' ? 'INST' : 'FREE'}
+                {user?.plan === 'pro' ? 'PRO' : user?.plan === 'institutional' ? 'PREMIUM' : 'FREE'}
               </span>
             )}
           </div>

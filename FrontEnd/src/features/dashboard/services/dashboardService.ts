@@ -2,12 +2,13 @@ import type { DashboardData } from '@/features/dashboard/types'
 import { getCurrentWeekDays, getTrackedSeconds, addTrackedSeconds, formatDateLocal } from '../utils/studyTime'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
+import { storageService } from '@/services/storageService'
 
 const MOCK_DASHBOARD: DashboardData = {
   pendingPlans: 3,
   newSharedDocuments: 2,
-  storageUsedGb: 75,
-  storageTotalGb: 100,
+  storageUsedMb: 75 * 1024,
+  storageTotalMb: 100 * 1024,
   weeklyHours: 14,
   weeklyTrend: '+2 hrs',
   documents: [
@@ -72,14 +73,26 @@ export const dashboardService = {
     const weeklyTrend = diff >= 0 ? `+${diff.toFixed(1)} hrs` : `-${Math.abs(diff).toFixed(1)} hrs`
 
     const user = useAuthStore.getState().user
-    const isPro = user?.plan === 'pro'
-    const storageTotalGb = isPro ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
-    const storageUsedGb = isPro ? 12.4 : 2.4
+    let storageUsedMb = 8.3
+    let storageTotalMb = (user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : (user?.plan === 'enterprise' || user?.plan === 'premium' ? env.PREMIUM_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT)) * 1024
+
+    if (user?.id) {
+      try {
+        const usage = await storageService.getStorageUsage(Number(user.id))
+        storageUsedMb = usage.storageUsedMb + 8.3
+        storageTotalMb = usage.storageLimitMb
+      } catch (e) {
+        console.error('Failed to fetch storage usage for dashboard:', e)
+        storageUsedMb = 8.3
+      }
+    } else {
+      storageUsedMb = 8.3
+    }
 
     // Update alert contents dynamically for storage
     const dynamicAlerts = MOCK_DASHBOARD.alerts.map(alert => {
       if (alert.id === '3') {
-        const percentage = Math.round((storageUsedGb / storageTotalGb) * 100)
+        const percentage = Math.round((storageUsedMb / storageTotalMb) * 100)
         return { ...alert, title: `Storage is ${percentage}% full` }
       }
       return alert
@@ -87,8 +100,8 @@ export const dashboardService = {
 
     return {
       ...MOCK_DASHBOARD,
-      storageUsedGb,
-      storageTotalGb,
+      storageUsedMb,
+      storageTotalMb,
       alerts: dynamicAlerts,
       weeklyHours: formattedTotalWeeklyHours,
       weeklyTrend,

@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { useMemo } from 'react'
 import { useTranslation } from '@/context/LanguageContext'
+import { storageService, type StorageAnalytics } from '@/services/storageService'
 
 export function StorageAnalyticsPage() {
   const navigate = useNavigate()
@@ -29,12 +30,46 @@ export function StorageAnalyticsPage() {
   const user = useAuthStore((s) => s.user)
   const isPro = user?.plan === 'pro'
   
-  const totalGb = isPro ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
-  const usedGb = isPro ? 45.2 : 2.4
+  const [analyticsData, setAnalyticsData] = useState<StorageAnalytics | null>(null)
+
+  useEffect(() => {
+    if (user?.id) {
+      storageService.getStorageAnalytics(Number(user.id))
+        .then(data => {
+          setAnalyticsData(data)
+        })
+        .catch(err => {
+          console.error("Failed to fetch storage analytics:", err)
+        })
+    }
+  }, [user?.id])
+
+  const totalGb = analyticsData 
+    ? analyticsData.limitMb / 1024 
+    : user?.plan === 'pro' 
+      ? env.PRO_STORAGE_LIMIT 
+      : user?.plan === 'enterprise' || user?.plan === 'premium'
+        ? env.PREMIUM_STORAGE_LIMIT
+        : env.FREE_STORAGE_LIMIT
+
+  const usedGb = analyticsData 
+    ? Number((analyticsData.totalUsedMb / 1024).toFixed(3)) 
+    : isPro ? 45.2 : 2.4
+
   const freeGb = Number((totalGb - usedGb).toFixed(1))
   const usedPercentage = Math.round((usedGb / totalGb) * 100)
 
   const barChartData = useMemo(() => {
+    if (analyticsData && analyticsData.snapshots.length > 0) {
+      return analyticsData.snapshots.map(s => {
+        const dateParts = s.snapshotDate.split('-');
+        const dateLabel = dateParts.length >= 3 ? `${dateParts[2]}/${dateParts[1]}` : s.snapshotDate;
+        return {
+          name: dateLabel,
+          value: Number((s.totalUsedMb / 1024).toFixed(3))
+        }
+      });
+    }
     const getLocalizedMonthName = (month: string) => {
       switch (month) {
         case 'Jan': return t.storageAnalytics.jan
@@ -54,23 +89,33 @@ export function StorageAnalyticsPage() {
       { name: getLocalizedMonthName('May'), value: isPro ? 38 : 2.2 },
       { name: getLocalizedMonthName('Jun'), value: isPro ? 45.2 : 2.4 },
     ]
-  }, [isPro, t])
+  }, [analyticsData, isPro, t])
 
   const pieChartData = useMemo(() => {
     const getPieItemName = (name: string) => {
       switch (name) {
         case 'Documents': return t.storageExplorer.documents
         case 'Media': return t.storageAnalytics.media
+        case 'Audio': return t.storageAnalytics.audio || 'Audio'
         case 'Other': return t.storageExplorer.other
         default: return name
       }
+    }
+    if (analyticsData) {
+      const breakdown = analyticsData.categoryBreakdown;
+      return [
+        { name: getPieItemName('Documents'), value: breakdown["Document"] ? breakdown["Document"] / 1024 : 0, color: '#2563eb' },
+        { name: getPieItemName('Media'), value: breakdown["Media"] ? breakdown["Media"] / 1024 : 0, color: '#0d9488' },
+        { name: getPieItemName('Audio'), value: breakdown["Audio"] ? breakdown["Audio"] / 1024 : 0, color: '#f59e0b' },
+        { name: getPieItemName('Other'), value: breakdown["Other"] ? breakdown["Other"] / 1024 : 0, color: '#8b5cf6' },
+      ].filter(item => item.value > 0);
     }
     return [
       { name: getPieItemName('Documents'), value: isPro ? 22.1 : 1.2, color: '#2563eb' },
       { name: getPieItemName('Media'), value: isPro ? 15.5 : 0.8, color: '#0d9488' },
       { name: getPieItemName('Other'), value: isPro ? 7.6 : 0.4, color: '#8b5cf6' },
     ]
-  }, [isPro, t])
+  }, [analyticsData, isPro, t])
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 200)
@@ -150,8 +195,8 @@ export function StorageAnalyticsPage() {
               </div>
             </div>
             <div>
-              <div className="text-[28px] font-bold text-foreground leading-none">1,204</div>
-              <p className="text-[11px] text-muted mt-3 font-medium">{t.storageAnalytics.thisWeekText(12)}</p>
+              <div className="text-[28px] font-bold text-foreground leading-none">{analyticsData ? analyticsData.totalFiles : '1,204'}</div>
+              <p className="text-[11px] text-muted mt-3 font-medium">{t.storageAnalytics.thisWeekText(analyticsData ? analyticsData.totalFiles : 12)}</p>
             </div>
           </CardContent>
         </Card>

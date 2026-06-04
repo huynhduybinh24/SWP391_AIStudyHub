@@ -379,31 +379,42 @@ export function Sidebar() {
           </nav>
 
           {/* Upgrade to Pro button */}
-          {user?.role?.toLowerCase() !== 'admin' && (
-            <PortalTooltip content={user?.plan === 'pro' ? (t.sidebar.proPlanActive || 'Pro Plan Active') : t.sidebar.upgradePro} disabled={!isSidebarCollapsed}>
-              <Link
-                to={user?.plan === 'pro' ? '#' : '/dashboard/upgrade'}
-                onClick={user?.plan === 'pro' ? undefined : handleLinkClick}
-                className={cn(
-                  "mt-2 mb-2 flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 shadow-sm shrink-0 no-underline w-full max-w-full overflow-hidden",
-                  isSidebarCollapsed 
-                    ? "rounded-2xl w-10 h-10 mx-auto justify-center p-0" 
-                    : "rounded-2xl px-4 h-12",
-                  user?.plan === 'pro' 
-                    ? "bg-slate-100 text-slate-500 cursor-default dark:bg-slate-800 dark:text-slate-400" 
-                    : "text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 cursor-pointer",
-                  "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:rounded-2xl md:max-lg:p-0 md:max-lg:mt-2 md:max-lg:mb-2"
-                )}
-              >
-                <Zap className={cn("size-5 shrink-0", user?.plan === 'pro' ? "text-slate-500 dark:text-slate-400" : "text-white")} strokeWidth={2.25} />
-                {!isSidebarCollapsed && (
-                  <span className="md:max-lg:hidden block truncate animate-fade-in min-w-0">
-                    {user?.plan === 'pro' ? (t.sidebar.proPlanActive || 'Pro Plan Active') : t.sidebar.upgradePro}
-                  </span>
-                )}
-              </Link>
-            </PortalTooltip>
-          )}
+          {user?.role?.toLowerCase() !== 'admin' && (() => {
+            const isPro = user?.plan === 'pro';
+            const isPremium = user?.plan === 'institutional';
+            
+            const btnLabel = isPremium
+              ? (language === 'vi' ? 'Xem các gói cước' : 'View Plans')
+              : isPro
+                ? (language === 'vi' ? 'Nâng cấp Premium' : 'Upgrade to Premium')
+                : (t.sidebar.upgradePro || 'Upgrade to Pro');
+                
+            return (
+              <PortalTooltip content={btnLabel} disabled={!isSidebarCollapsed}>
+                <Link
+                  to="/dashboard/upgrade"
+                  onClick={handleLinkClick}
+                  className={cn(
+                    "mt-2 mb-2 flex items-center justify-center gap-2 text-sm font-bold transition-all duration-200 shadow-sm shrink-0 no-underline w-full max-w-full overflow-hidden",
+                    isSidebarCollapsed 
+                      ? "rounded-2xl w-10 h-10 mx-auto justify-center p-0" 
+                      : "rounded-2xl px-4 h-12",
+                    isPremium
+                      ? "text-white bg-purple-600 hover:bg-purple-500 active:bg-purple-700 cursor-pointer"
+                      : "text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 cursor-pointer",
+                    "md:max-lg:w-10 md:max-lg:h-10 md:max-lg:mx-auto md:max-lg:rounded-2xl md:max-lg:p-0 md:max-lg:mt-2 md:max-lg:mb-2"
+                  )}
+                >
+                  <Zap className="size-5 shrink-0 text-white" strokeWidth={2.25} />
+                  {!isSidebarCollapsed && (
+                    <span className="md:max-lg:hidden block truncate animate-fade-in min-w-0">
+                      {btnLabel}
+                    </span>
+                  )}
+                </Link>
+              </PortalTooltip>
+            );
+          })()}
         </div>
       </aside>
     </>

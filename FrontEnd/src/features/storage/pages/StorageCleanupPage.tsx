@@ -2,10 +2,12 @@ import { ArrowLeft, FileText, Loader2, Video, Archive } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { useTranslation } from '@/context/LanguageContext'
+import { storageService, type StorageUsage } from '@/services/storageService'
+import { useToast } from '@/components/ui/Toast'
 
 const INITIAL_DUPLICATES = [
   {
@@ -50,12 +52,35 @@ const DEEP_ANALYSIS_FILES = [
 ]
 
 export function StorageCleanupPage() {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const user = useAuthStore((s) => s.user)
+  const isPro = user?.plan === 'pro'
+
   const [duplicates, setDuplicates] = useState(INITIAL_DUPLICATES)
   const [largeFiles, setLargeFiles] = useState(DEEP_ANALYSIS_FILES)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [hasAnalyzed, setHasAnalyzed] = useState(false)
-  const { t } = useTranslation()
-  const totalFilesFound = 24
+  const [usage, setUsage] = useState<StorageUsage | null>(null)
+  const [reclaimedInfo, setReclaimedInfo] = useState({ files: 0, spaceMb: 0 })
+
+  const fetchUsage = () => {
+    if (user?.id) {
+      storageService.getStorageUsage(Number(user.id))
+        .then(data => {
+          setUsage(data)
+        })
+        .catch(err => {
+          console.error("Failed to fetch storage usage:", err)
+        })
+    }
+  }
+
+  useEffect(() => {
+    fetchUsage()
+  }, [user?.id])
+
+  const totalFilesFound = hasAnalyzed ? 0 : 24
  
   const handleRemove = (id: string) => {
     setDuplicates(prev => prev.filter(item => item.id !== id))
@@ -65,19 +90,50 @@ export function StorageCleanupPage() {
     setLargeFiles(prev => prev.filter(item => item.id !== id))
   }
  
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
+    if (!user?.id) return
     setIsAnalyzing(true)
-    setTimeout(() => {
-      setIsAnalyzing(false)
+    try {
+      const dupResult = await storageService.runDuplicateCleanup(Number(user.id))
+      const largeResult = await storageService.runLargeCleanup(Number(user.id), 10)
+      
+      const totalFiles = dupResult.filesFound + largeResult.filesFound
+      const totalSpace = dupResult.spaceReclaimedMb + largeResult.spaceReclaimedMb
+      
+      setReclaimedInfo({ files: totalFiles, spaceMb: totalSpace })
       setHasAnalyzed(true)
-    }, 2000)
+      setDuplicates([])
+      setLargeFiles([])
+      
+      // Refresh storage usage
+      const newUsage = await storageService.getStorageUsage(Number(user.id))
+      setUsage(newUsage)
+      
+      if (totalFiles > 0) {
+        toast.success(`Dọn dẹp hoàn tất! Đã giải phóng ${totalSpace.toFixed(1)} MB từ ${totalFiles} tệp tin.`);
+      } else {
+        toast.success("Kho lưu trữ của bạn đã được tối ưu hóa, không phát hiện tệp tin thừa.");
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Có lỗi xảy ra trong quá trình dọn dẹp kho lưu trữ.")
+    } finally {
+      setIsAnalyzing(false)
+    }
   }
  
-  const user = useAuthStore((s) => s.user)
-  const isPro = user?.plan === 'pro'
-  
-  const usedGB = isPro ? 8.5 : 2.4
-  const totalGB = isPro ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
+  const usedGB = usage 
+    ? (usage.storageUsedMb + 8.3) / 1024 
+    : 8.3 / 1024
+
+  const totalGB = usage 
+    ? usage.storageLimitMb / 1024 
+    : user?.plan === 'pro' 
+      ? env.PRO_STORAGE_LIMIT 
+      : user?.plan === 'enterprise' || user?.plan === 'premium'
+        ? env.PREMIUM_STORAGE_LIMIT
+        : env.FREE_STORAGE_LIMIT
+
   const percentage = (usedGB / totalGB) * 100
 
   const getLocalizedModified = (modified: string) => {
@@ -209,7 +265,9 @@ export function StorageCleanupPage() {
             </div>
  
             <p className="text-sm text-muted mb-6 leading-relaxed">
-              {t.storageCleanup.freeUpText(isPro ? '1.2 GB' : '0.4 GB')}
+              {hasAnalyzed 
+                ? `Đã giải phóng thành công ${reclaimedInfo.spaceMb.toFixed(1)} MB từ ${reclaimedInfo.files} tệp tin.`
+                : t.storageCleanup.freeUpText(isPro ? '1.2 GB' : '0.4 GB')}
             </p>
  
             <Button 

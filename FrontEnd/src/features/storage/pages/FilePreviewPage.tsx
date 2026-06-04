@@ -260,7 +260,7 @@ export function FilePreviewPage() {
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">{t.filePreview.owner}</span>
                 <div className="flex items-center gap-2">
-                  <Avatar src="/avatar.svg" name="Me" className="size-6 border border-border dark:border-slate-800" />
+                  <Avatar src="/logo.png" name="Me" className="size-6 border border-border dark:border-slate-800" />
                   <span className="font-semibold text-foreground">{t.filePreview.you}</span>
                 </div>
               </div>
@@ -349,7 +349,7 @@ export function FilePreviewPage() {
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Avatar src="/avatar.svg" name="Me" className="size-10" />
+                <Avatar src="/logo.png" name="Me" className="size-10" />
                 <div>
                   <p className="text-[15px] font-bold text-slate-900">{t.filePreview.you}</p>
                   <p className="text-sm text-slate-500">alex.rivera@example.com</p>

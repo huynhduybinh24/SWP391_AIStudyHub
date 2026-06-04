@@ -449,7 +449,7 @@ function NotificationCard({
             alt={finalTitle}
             className="w-12 h-12 rounded-full object-cover border border-slate-100 dark:border-slate-800"
             onError={(e) => {
-              e.currentTarget.src = '/avatar.svg'
+              e.currentTarget.src = '/logo.png'
             }}
           />
         ) : (

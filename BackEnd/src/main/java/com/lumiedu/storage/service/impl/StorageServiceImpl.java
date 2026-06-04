@@ -41,6 +41,9 @@ public class StorageServiceImpl implements StorageService {
 
         double usedMb = user.getStorageUsedMb() != null ? user.getStorageUsedMb().doubleValue() : 0.0;
         double limitMb = user.getStorageLimitMb() != null ? user.getStorageLimitMb().doubleValue() : 1024.0;
+        if (user.getRole() == com.lumiedu.user.enums.UserRole.ADMIN) {
+            limitMb = 51200.0; // 50 GB
+        }
         double percentage = limitMb > 0.0 ? (usedMb * 100.0) / limitMb : 0.0;
 
         return StorageUsageResponse.builder()
