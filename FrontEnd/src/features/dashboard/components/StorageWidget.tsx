@@ -3,18 +3,22 @@ import { Card, CardTitle } from '@/components/ui/Card'
 import { useTranslation } from '@/context/LanguageContext'
 
 interface StorageWidgetProps {
-  usedMb: number
-  totalMb: number
+  usedMb?: number
+  totalMb?: number
 }
 
-export function StorageWidget({ usedMb, totalMb }: StorageWidgetProps) {
+export function StorageWidget({ usedMb = 0, totalMb = 1024 }: StorageWidgetProps) {
   const { t } = useTranslation()
-  const percent = Math.round((usedMb / totalMb) * 100)
+  
+  const safeUsedMb = usedMb ?? 0
+  const safeTotalMb = totalMb ?? 1024
+  
+  const percent = safeTotalMb > 0 ? Math.round((safeUsedMb / safeTotalMb) * 100) : 0
   const circumference = 2 * Math.PI * 28
   const offset = circumference - (percent / 100) * circumference
 
-  const displayUsed = usedMb >= 100 ? `${(usedMb / 1024).toFixed(1)} GB` : `${usedMb.toFixed(0)} MB`
-  const displayTotal = totalMb >= 1024 ? `${(totalMb / 1024).toFixed(0)} GB` : `${totalMb.toFixed(0)} MB`
+  const displayUsed = safeUsedMb >= 100 ? `${(safeUsedMb / 1024).toFixed(1)} GB` : `${safeUsedMb.toFixed(0)} MB`
+  const displayTotal = safeTotalMb >= 1024 ? `${(safeTotalMb / 1024).toFixed(0)} GB` : `${safeTotalMb.toFixed(0)} MB`
 
   return (
     <section className="col-span-4 space-y-4">
