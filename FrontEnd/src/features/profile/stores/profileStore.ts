@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { useAuthStore } from '@/stores/authStore'
+import { apiClient } from '@/lib/axios'
 
 export interface ProfileData {
   name: string
@@ -28,7 +29,7 @@ interface ProfileState {
   profile: ProfileData
   linkedAccounts: LinkedAccount[]
   statistics: ProfileStatistics
-  updateProfile: (data: Partial<ProfileData>) => void
+  updateProfile: (data: Partial<ProfileData>) => Promise<void>
   toggleAccountConnection: (id: string) => void
 }
 
@@ -52,12 +53,24 @@ export const useProfileStore = create<ProfileState>()(
         studyHours: 42,
         assignments: 8,
       },
-      updateProfile: (data) => {
+      updateProfile: async (data) => {
+        const authUser = useAuthStore.getState().user
+        if (authUser && authUser.id) {
+          try {
+            await apiClient.put(`/api/users/${authUser.id}/profile`, {
+              fullName: data.name ?? authUser.name,
+              avatarUrl: data.avatarUrl ?? authUser.avatarUrl,
+            })
+          } catch (error) {
+            console.error('Failed to update profile on backend database:', error)
+            throw error
+          }
+        }
+
         set((state) => {
           const updatedProfile = { ...state.profile, ...data }
           
           // Sync with authStore if there is an active user
-          const authUser = useAuthStore.getState().user
           if (authUser) {
             useAuthStore.setState({
               user: {
@@ -66,6 +79,16 @@ export const useProfileStore = create<ProfileState>()(
                 avatarUrl: updatedProfile.avatarUrl,
               }
             })
+
+            // Also update the local storage copy of currentUser
+            localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify({
+              id: authUser.id,
+              name: updatedProfile.name,
+              email: authUser.email,
+              role: authUser.role,
+              plan: authUser.plan || 'free',
+              avatar: updatedProfile.avatarUrl || '/avatar.svg'
+            }))
           }
           
           return { profile: updatedProfile }
