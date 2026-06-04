@@ -414,44 +414,52 @@ export function AdminPackagesTab({
                             {u.role}
                           </td>
                           <td className="p-3">
-                            <Badge className={cn(
-                              "font-extrabold text-[9px] rounded-full px-2 py-0.5 uppercase tracking-wide shrink-0 select-none",
-                              u.plan === 'pro' 
-                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15"
-                                : u.plan === 'free'
-                                ? "bg-slate-100 text-slate-505 dark:bg-slate-800 dark:text-slate-450"
-                                : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/15"
-                            )}>
-                              {currentPlanName}
-                            </Badge>
+                            {u.role !== 'admin' ? (
+                              <Badge className={cn(
+                                "font-extrabold text-[9px] rounded-full px-2 py-0.5 uppercase tracking-wide shrink-0 select-none",
+                                u.plan === 'pro' 
+                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15"
+                                  : u.plan === 'free'
+                                  ? "bg-slate-100 text-slate-505 dark:bg-slate-800 dark:text-slate-450"
+                                  : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/15"
+                              )}>
+                                {currentPlanName}
+                              </Badge>
+                            ) : (
+                              <span className="text-slate-400 dark:text-slate-600 font-bold">-</span>
+                            )}
                           </td>
                           <td className="p-3 pr-5 text-right">
-                            <select
-                              value={u.plan || 'free'}
-                              onChange={(e) => {
-                                const nextPlan = e.target.value
-                                onUpdateUser(u.id, { plan: nextPlan })
-                                const chosenPlanName = packages.find(p => {
+                            {u.role !== 'admin' ? (
+                              <select
+                                value={u.plan || 'free'}
+                                onChange={(e) => {
+                                  const nextPlan = e.target.value
+                                  onUpdateUser(u.id, { plan: nextPlan })
+                                  const chosenPlanName = packages.find(p => {
+                                    const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
+                                    return planCode === nextPlan
+                                  })?.name || nextPlan.toUpperCase()
+                                  toast.success(
+                                    language === 'vi'
+                                      ? `Đã chuyển ${u.name} sang gói ${chosenPlanName} thành công`
+                                      : `Successfully updated ${u.name} to ${chosenPlanName} Plan`
+                                  )
+                                }}
+                                className="px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer hover:border-blue-500 transition-colors ml-auto block"
+                              >
+                                {packages.map((p) => {
                                   const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
-                                  return planCode === nextPlan
-                                })?.name || nextPlan.toUpperCase()
-                                toast.success(
-                                  language === 'vi'
-                                    ? `Đã chuyển ${u.name} sang gói ${chosenPlanName} thành công`
-                                    : `Successfully updated ${u.name} to ${chosenPlanName} Plan`
-                                )
-                              }}
-                              className="px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer hover:border-blue-500 transition-colors ml-auto block"
-                            >
-                              {packages.map((p) => {
-                                const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id
-                                return (
-                                  <option key={p.id} value={planCode}>
-                                    {p.name} (${p.priceMonthly === 0 ? '0' : p.priceMonthly}/{language === 'vi' ? 'tháng' : 'month'})
-                                  </option>
-                                )
-                              })}
-                            </select>
+                                  return (
+                                    <option key={p.id} value={planCode}>
+                                      {p.name} (${p.priceMonthly === 0 ? '0' : p.priceMonthly}/{language === 'vi' ? 'tháng' : 'month'})
+                                    </option>
+                                  )
+                                })}
+                              </select>
+                            ) : (
+                              <span className="text-slate-400 dark:text-slate-600 font-bold pr-4">-</span>
+                            )}
                           </td>
                         </tr>
                       )
