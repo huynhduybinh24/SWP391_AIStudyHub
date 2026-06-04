@@ -1,1 +1,8 @@
 target/
+*.log
+.settings/
+.classpath
+.project
+.factorypath
+.vscode/
+*.class

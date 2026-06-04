@@ -128,7 +128,7 @@ export function RegisterForm() {
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { fullName: '', email: '', password: '', confirmPassword: '', role: 'student', terms: false },
+    defaultValues: { fullName: '', email: '', password: '', confirmPassword: '', role: 'user', terms: false },
   })
 
   const passwordValue = watch('password')
@@ -163,8 +163,6 @@ export function RegisterForm() {
   const strengthLabels = language === 'vi'
     ? ['Kém', 'Yếu', 'Trung bình', 'Tốt', 'Mạnh']
     : (language === 'ja' ? ['弱い', 'やや弱い', '普通', '良い', '強い'] : (language === 'ko' ? ['취약', '약함', '보통', '좋음', '강함'] : ['Poor', 'Weak', 'Fair', 'Good', 'Strong']))
-
-  const selectedRole = watch('role')
 
   const titleText = language === 'vi' 
     ? 'Tạo tài khoản' 
@@ -388,40 +386,6 @@ export function RegisterForm() {
             error={errors.email?.message} 
             {...register('email')} 
           />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
-            {occupationLabel}
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              type="button"
-              onClick={() => setValue('role', 'student')}
-              className={cn(
-                "flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-bold transition-all gap-1.5 cursor-pointer relative overflow-hidden select-none",
-                selectedRole === 'student'
-                  ? "border-[#3155F6] bg-blue-50/50 text-[#3155F6] dark:bg-blue-950/20 dark:border-blue-500 shadow-sm"
-                  : "border-slate-200 dark:border-slate-800 bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900"
-              )}
-            >
-              <GraduationCap className="size-5" />
-              <span>{studentLabel}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setValue('role', 'teacher')}
-              className={cn(
-                "flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-bold transition-all gap-1.5 cursor-pointer relative overflow-hidden select-none",
-                selectedRole === 'teacher'
-                  ? "border-[#3155F6] bg-blue-50/50 text-[#3155F6] dark:bg-blue-950/20 dark:border-blue-500 shadow-sm"
-                  : "border-slate-200 dark:border-slate-800 bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900"
-              )}
-            >
-              <Briefcase className="size-5" />
-              <span>{teacherLabel}</span>
-            </button>
-          </div>
         </div>
 
         <div>

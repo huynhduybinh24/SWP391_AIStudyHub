@@ -26,7 +26,11 @@ export function PaymentSuccessModal({
   const toast = useToast()
   const { t } = useTranslation()
 
-  const displayPlanName = planName === 'Pro Plan (Annual)' ? t.upgrade.proPlanAnnual : planName
+  const displayPlanName = planName === 'Pro Plan (Annual)'
+    ? t.upgrade.proPlanAnnual
+    : (planName === 'Pro Plan (Monthly)' || planName === 'Pro Plan')
+      ? t.upgrade.proPlanMonthly
+      : planName
   const displayPaymentMethod = paymentMethod === 'Credit Card' ? t.upgrade.creditCard : paymentMethod
 
   useEffect(() => {

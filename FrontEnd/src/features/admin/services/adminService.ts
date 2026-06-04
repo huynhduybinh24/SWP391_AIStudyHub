@@ -4,7 +4,7 @@ export type AdminUser = {
   id: string;
   name: string;
   email: string;
-  role: "student" | "teacher" | "admin";
+  role: "user" | "admin";
   status: "active" | "inactive" | "banned";
   joinedAt: string;
   documentsCount: number;
@@ -68,7 +68,7 @@ const DEFAULT_MOCK_USERS: AdminUser[] = [
     id: "u1",
     name: "Alex Rivera",
     email: "alex@example.com",
-    role: "student",
+    role: "user",
     status: "active",
     joinedAt: "2023-01-15",
     documentsCount: 45,
@@ -82,7 +82,7 @@ const DEFAULT_MOCK_USERS: AdminUser[] = [
     id: "u2",
     name: "Sarah Jenkins",
     email: "sarah@example.com",
-    role: "teacher",
+    role: "user",
     status: "active",
     joinedAt: "2023-03-22",
     documentsCount: 120,
@@ -96,7 +96,7 @@ const DEFAULT_MOCK_USERS: AdminUser[] = [
     id: "u3",
     name: "Huynh Duy Binh",
     email: "binh@example.com",
-    role: "student",
+    role: "user",
     status: "active",
     joinedAt: "2024-01-10",
     documentsCount: 12,
@@ -110,7 +110,7 @@ const DEFAULT_MOCK_USERS: AdminUser[] = [
     id: "u4",
     name: "Ngoc Tan",
     email: "tan@example.com",
-    role: "student",
+    role: "user",
     status: "inactive",
     joinedAt: "2024-02-05",
     documentsCount: 5,
@@ -124,7 +124,7 @@ const DEFAULT_MOCK_USERS: AdminUser[] = [
     id: "u5",
     name: "Marcus Knight",
     email: "marcus@example.com",
-    role: "student",
+    role: "user",
     status: "active",
     joinedAt: "2024-03-12",
     documentsCount: 25,
@@ -138,7 +138,7 @@ const DEFAULT_MOCK_USERS: AdminUser[] = [
     id: "u6",
     name: "Emily R.",
     email: "emily@example.com",
-    role: "teacher",
+    role: "user",
     status: "banned",
     joinedAt: "2023-08-19",
     documentsCount: 88,
@@ -173,9 +173,22 @@ const loadUsersFromStorage = (): AdminUser[] => {
         });
 
         const updatedList = parsed.map((u: any) => {
-          if (u.email === 'alex@example.com' && u.role === 'admin') {
+          let role = u.role;
+          let name = u.name;
+          if (role === 'student' || role === 'teacher' || role === 'instructor') {
+            role = 'user';
             changed = true;
-            return { ...u, role: 'student' };
+          }
+          if (name === 'Student User' || name === 'Instructor User') {
+            name = 'LumiEdu User';
+            changed = true;
+          }
+          if (u.email === 'alex@example.com' && role === 'admin') {
+            role = 'user';
+            changed = true;
+          }
+          if (changed) {
+            return { ...u, role, name };
           }
           return u;
         });
@@ -450,7 +463,7 @@ export const updateUser = async (
               return {
                 ...acc,
                 plan: updates.plan ? updates.plan.toUpperCase() : acc.plan,
-                role: updates.role ? (updates.role === 'teacher' ? 'instructor' : updates.role === 'admin' ? 'admin' : 'student') : acc.role
+                role: updates.role ? updates.role : acc.role
               };
             }
             return acc;

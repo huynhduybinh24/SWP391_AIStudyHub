@@ -6,6 +6,7 @@ import { useProfileStore } from '@/features/profile/stores/profileStore'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 import { Check, Shield, GraduationCap, Sparkles, Lock, Trash2, X } from 'lucide-react'
+import { authService } from '@/features/auth/services/authService'
 
 interface ChangeUserModalProps {
   isOpen: boolean
@@ -16,7 +17,7 @@ interface MockUser {
   id: string
   name: string
   email: string
-  role: 'admin' | 'student' | 'instructor'
+  role: 'admin' | 'user'
   plan: 'FREE' | 'PRO'
   avatar?: string
   initials: string
@@ -41,12 +42,50 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
   useEffect(() => {
     const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
     let list: MockUser[] = []
+    let changedInStorage = false
     
+    const virtualEmails = [
+      'admin@example.com', 
+      'binh@example.com', 
+      'sarah@school.edu', 
+      'tan@example.com', 
+      'alex@example.com', 
+      'sarah@example.com', 
+      'marcus@example.com', 
+      'emily@example.com',
+      'student@university.edu'
+    ]
+
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
         if (Array.isArray(parsed)) {
-          list = parsed
+          // Filter out old mock emails so only database-supported accounts show up
+          const filtered = parsed.filter(u => 
+            u.email && !virtualEmails.includes(u.email.toLowerCase())
+          )
+          
+          // Migrate any student/instructor role to user, rename student/instructor users
+          list = filtered.map(u => {
+            let role = u.role
+            let name = u.name
+            let initials = u.initials
+            let description = u.description
+
+            if (role === 'student' || role === 'instructor') {
+              role = 'user'
+              changedInStorage = true
+            }
+            if (name === 'Student User' || name === 'Instructor User') {
+              name = 'LumiEdu User'
+              initials = 'LU'
+              description = language === 'vi'
+                ? 'Tài khoản người dùng kết nối trực tiếp cơ sở dữ liệu.'
+                : 'User account connected directly to database.'
+              changedInStorage = true
+            }
+            return { ...u, role, name, initials, description }
+          })
         }
       } catch (e) {
         console.error('Failed to parse logged-in accounts', e)
@@ -54,97 +93,55 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
     }
     
     if (list.length === 0) {
-      // Seed initial mock switcher list
+      // Seed initial database user switcher list
       const seedList: MockUser[] = [
         {
-          id: 'admin-alex',
-          name: 'Alex Morgan',
-          email: 'admin@example.com',
+          id: '1',
+          name: 'LumiEdu User',
+          email: 'student@lumiedu.com',
+          role: 'user',
+          plan: 'FREE',
+          initials: 'LU',
+          description: language === 'vi' 
+            ? 'Tài khoản người dùng kết nối trực tiếp cơ sở dữ liệu.'
+            : 'User account connected directly to database.',
+          remembered: false
+        },
+        {
+          id: '2',
+          name: 'LumiEdu User',
+          email: 'instructor@lumiedu.com',
+          role: 'user',
+          plan: 'FREE',
+          initials: 'LU',
+          description: language === 'vi' 
+            ? 'Tài khoản người dùng kết nối trực tiếp cơ sở dữ liệu.'
+            : 'User account connected directly to database.',
+          remembered: false
+        },
+        {
+          id: '3',
+          name: 'Admin User',
+          email: 'admin@lumiedu.com',
           role: 'admin',
           plan: 'PRO',
-          initials: 'AM',
+          initials: 'AU',
           description: language === 'vi' 
-            ? 'Có toàn quyền truy cập trang quản trị và cài đặt hệ thống.'
-            : 'Full access to admin dashboard and system settings.',
-          remembered: false
-        },
-        {
-          id: 'student-duybinh',
-          name: 'Duy Binh',
-          email: 'binh@example.com',
-          role: 'student',
-          plan: 'FREE',
-          initials: 'DB',
-          description: language === 'vi'
-            ? 'Tài khoản học viên tiêu chuẩn với tài liệu và tính năng học tập.'
-            : 'Standard learner account with documents and study features.',
-          remembered: false
-        },
-        {
-          id: 'instructor-sarah',
-          name: 'Sarah Jenkins',
-          email: 'sarah@school.edu',
-          role: 'instructor',
-          plan: 'PRO',
-          initials: 'SJ',
-          description: language === 'vi'
-            ? 'Có thể quản lý tài liệu khóa học và cộng tác với học viên.'
-            : 'Can manage shared course materials and student collaboration.',
-          remembered: false
-        },
-        {
-          id: 'student-ngoctan',
-          name: 'Ngoc Tan',
-          email: 'tan@example.com',
-          role: 'student',
-          plan: 'PRO',
-          initials: 'NT',
-          description: language === 'vi'
-            ? 'Tài khoản học viên có dung lượng nâng cấp và tính năng cao cấp.'
-            : 'Student account with upgraded storage and premium features.',
+            ? 'Tài khoản quản trị viên kết nối trực tiếp cơ sở dữ liệu.'
+            : 'Admin account connected directly to database.',
           remembered: false
         }
       ]
       localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(seedList))
       list = seedList
+    } else if (changedInStorage) {
+      localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(list))
+    } else {
+      // If we filtered out old accounts, update the localStorage to be in sync
+      localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(list))
     }
 
-    // --- Self-healing cleanup ---
-    // If a user was deleted by Admin, they will no longer exist in `aiStudyHubUsers` in localStorage.
-    // We should filter them out from the switching list dynamically!
-    try {
-      const savedUsersStr = localStorage.getItem('aiStudyHubUsers')
-      if (savedUsersStr) {
-        const registeredUsers = JSON.parse(savedUsersStr)
-        if (Array.isArray(registeredUsers)) {
-          const defaultEmails = [
-            'admin@example.com', 
-            'binh@example.com', 
-            'sarah@school.edu', 
-            'tan@example.com', 
-            'alex@example.com', 
-            'sarah@example.com', 
-            'marcus@example.com', 
-            'emily@example.com'
-          ]
-          
-          const healedList = list.filter((u) => {
-            const emailLower = u.email?.toLowerCase()
-            const isValid = defaultEmails.includes(emailLower) || registeredUsers.some((regUser: any) => regUser.email?.toLowerCase() === emailLower)
-            return isValid
-          })
-
-          if (healedList.length !== list.length) {
-            localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(healedList))
-            list = healedList
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error during switcher self-healing cleanup:', err)
-    }
-
-    setMockUsers(list.slice(0, 4))
+    setMockUsers(list)
   }, [language, isOpen])
 
   // Sync selected mock user
@@ -157,7 +154,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
 
   const getTargetPassword = () => {
     if (!selectedUser) return ''
-    let pwd = selectedUser.email
+    let pwd = selectedUser.email?.toLowerCase().endsWith('@lumiedu.com') ? '123456' : selectedUser.email
 
     // 1. Search dynamically in the logged-in accounts registry (captured during login)
     const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
@@ -190,7 +187,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
   }
 
   const getPasswordForEmail = (email: string) => {
-    let pwd = email // Fallback
+    let pwd = email?.toLowerCase().endsWith('@lumiedu.com') ? '123456' : email // Fallback
     const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
     if (stored) {
       try {
@@ -263,7 +260,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
     }
   }
 
-  const executeUserSwitch = (remembered: boolean) => {
+  const executeUserSwitch = (remembered: boolean, loggedInResponse?: any) => {
     if (!selectedUser) return
 
     try {
@@ -273,29 +270,42 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
         remembered: remembered
       }
 
+      // If we have a backend response, use the real user details from the database!
+      const userToUse = loggedInResponse ? loggedInResponse.user : {
+        id: finalUser.id,
+        name: finalUser.name,
+        email: finalUser.email,
+        role: finalUser.role,
+        plan: finalUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
+        avatarUrl: finalUser.avatar || '/avatar.svg',
+      }
+      
+      const tokensToUse = loggedInResponse ? loggedInResponse.tokens : { accessToken: 'mock-db-token' }
+
       // 1. Save to localStorage current active user
-      localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(finalUser))
+      localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify({
+        id: userToUse.id,
+        name: userToUse.name,
+        email: userToUse.email,
+        role: userToUse.role,
+        plan: userToUse.plan,
+        avatar: userToUse.avatarUrl || '/avatar.svg'
+      }))
 
       // 2. Update Zustand Stores
       useAuthStore.setState({
-        user: {
-          id: finalUser.id,
-          name: finalUser.name,
-          email: finalUser.email,
-          role: finalUser.role,
-          plan: finalUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
-          avatarUrl: finalUser.avatar || '/avatar.svg',
-        },
+        user: userToUse,
+        tokens: tokensToUse,
         isAuthenticated: true,
       })
 
       useProfileStore.setState({
         profile: {
-          name: finalUser.name,
+          name: userToUse.name,
           university: 'FPT University',
           major: 'Software engineering',
           degree: 'Bachelor',
-          avatarUrl: finalUser.avatar || '/avatar.svg',
+          avatarUrl: userToUse.avatarUrl || '/avatar.svg',
         }
       })
 
@@ -304,8 +314,8 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
 
       // 4. Feedback Toast
       const textSwitched = language === 'vi' 
-        ? (t.userSwitch.switched || 'Đã chuyển sang {name}').replace('{name}', finalUser.name)
-        : (t.userSwitch.switched || 'Switched to {name}').replace('{name}', finalUser.name)
+        ? (t.userSwitch.switched || 'Đã chuyển sang {name}').replace('{name}', userToUse.name)
+        : (t.userSwitch.switched || 'Switched to {name}').replace('{name}', userToUse.name)
       toast.success(textSwitched)
       
       setShowPasswordPrompt(false)
@@ -317,7 +327,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
     }
   }
 
-  const handleSwitchUser = () => {
+  const handleSwitchUser = async () => {
     if (!selectedUser) return
 
     // Avoid switching if selected is already the currently active user
@@ -350,11 +360,18 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
 
     // Step 2: Handle target B's switch sequence
     const isRemembered = selectedUser.remembered === true
+    const savedPassword = getTargetPassword()
 
-    // If target B is already remembered, switch immediately
-    if (isRemembered) {
-      executeUserSwitch(true)
-      return
+    // If target B is already remembered and we have a saved password, switch immediately by calling backend
+    if (isRemembered && savedPassword) {
+      try {
+        const response = await authService.login({ email: selectedUser.email, password: savedPassword })
+        executeUserSwitch(true, response)
+        return
+      } catch (err) {
+        toast.error(language === 'vi' ? 'Thông tin đăng nhập cũ không khớp. Vui lòng nhập lại mật khẩu!' : 'Saved password expired. Please enter password!')
+        handleForgetPassword(selectedUser)
+      }
     }
 
     // Otherwise show target B's password prompt
@@ -365,15 +382,33 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
       return
     }
 
-    // Verify target B's password
+    // Verify target B's password using the real backend login API
     if (showPasswordPrompt) {
-      const correctPassword = getTargetPassword()
-      if (passwordInput !== correctPassword) {
-        setPasswordError(language === 'vi' ? 'Mật khẩu không chính xác!' : 'Incorrect password!')
-        toast.error(language === 'vi' ? 'Sai mật khẩu!' : 'Incorrect password!')
-        return
+      try {
+        const response = await authService.login({ email: selectedUser.email, password: passwordInput })
+        
+        // If the target user was set to remembered, save the password to local storage history
+        if (selectedUser.remembered) {
+          const storedAccs = localStorage.getItem('aiStudyHubLoggedInAccounts')
+          if (storedAccs) {
+            try {
+              const list = JSON.parse(storedAccs)
+              const updated = list.map((u: any) => {
+                if (u.email?.toLowerCase() === selectedUser.email.toLowerCase()) {
+                  return { ...u, password: passwordInput }
+                }
+                return u
+              })
+              localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(updated))
+            } catch (e) {}
+          }
+        }
+
+        executeUserSwitch(selectedUser.remembered || false, response)
+      } catch (err: any) {
+        setPasswordError(language === 'vi' ? 'Mật khẩu không chính xác hoặc lỗi hệ thống!' : 'Incorrect password or system error!')
+        toast.error(language === 'vi' ? 'Đăng nhập thất bại!' : 'Login failed!')
       }
-      executeUserSwitch(false)
     }
   }
 
@@ -486,8 +521,6 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
     switch (role) {
       case 'admin':
         return <Shield className="size-4 text-rose-500 dark:text-rose-400" />
-      case 'instructor':
-        return <Sparkles className="size-4 text-amber-500 dark:text-amber-400" />
       default:
         return <GraduationCap className="size-4 text-blue-500 dark:text-blue-400" />
     }
@@ -497,8 +530,6 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
     switch (role) {
       case 'admin':
         return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/30'
-      case 'instructor':
-        return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/30'
       default:
         return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/30'
     }

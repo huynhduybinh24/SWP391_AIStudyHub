@@ -11,12 +11,11 @@ import { AdminNotificationsTab } from '@/features/admin/components/AdminNotifica
 import { AdminAnalyticsTab } from '@/features/admin/components/AdminAnalyticsTab'
 import { AdminLogsTab } from '@/features/admin/components/AdminLogsTab'
 import { AdminReportsTab } from '@/features/admin/components/AdminReportsTab'
-import { AdminPartnershipRequestsPage } from '@/features/admin/pages/AdminPartnershipRequestsPage'
 import { adminService, AdminStats, AdminUser, AdminDocument } from '../services/adminService'
 import { getSystemStatusSync, updateSystemStatus, SystemStatus, SystemStatusState } from '@/features/admin/services/systemStatusService'
 import { useToast } from '@/components/ui/Toast'
 import { Modal } from '@/components/ui/Modal'
-type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'documents' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation' | 'partnership-requests'
+type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'documents' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation'
 
 export function AdminDashboardPage() {
   const { t, language } = useTranslation()
@@ -260,11 +259,6 @@ export function AdminDashboardPage() {
       icon: Bell
     },
     {
-      id: 'partnership-requests' as AdminTab,
-      label: language === 'vi' ? 'Yêu cầu Hợp tác' : 'Partnership Requests',
-      icon: Handshake
-    },
-    {
       id: 'analytics' as AdminTab,
       label: language === 'vi' ? 'Thống kê' : 'Analytics',
       icon: TrendingUp
@@ -492,10 +486,6 @@ export function AdminDashboardPage() {
 
         {activeTab === 'reports' && (
           <AdminReportsTab />
-        )}
-
-        {activeTab === 'partnership-requests' && (
-          <AdminPartnershipRequestsPage />
         )}
 
         {(activeTab === 'documents' || activeTab === 'ai-moderation') && (

@@ -1,100 +1,43 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Lock, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { ExpressCheckout } from '../components/ExpressCheckout'
-import { CheckoutForm } from '../components/CheckoutForm'
 import { OrderSummary } from '../components/OrderSummary'
-import { PaymentSuccessModal } from '../components/PaymentSuccessModal'
-import { ExpressCheckoutModal } from '../components/ExpressCheckoutModal'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
+import { apiClient } from '@/lib/axios'
 
 export function CheckoutPage() {
   const toast = useToast()
-  const { t } = useTranslation()
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [selectedProvider, setSelectedProvider] = useState<'apple' | 'google' | 'paypal' | null>('paypal')
-  const [paymentMethod, setPaymentMethod] = useState<'Apple Pay' | 'Google Pay' | 'PayPal' | 'Credit Card'>('PayPal')
-  
-  // Express Checkout confirmation modal states
-  const [showExpressConfirmModal, setShowExpressConfirmModal] = useState(false)
-  const [expressConfirmProvider, setExpressConfirmProvider] = useState<'apple' | 'google' | 'paypal'>('paypal')
+  const { t, language } = useTranslation()
+  const user = useAuthStore((state) => state.user)
+  const [isPaying, setIsPaying] = useState(false)
 
-  const handleSelectExpressProvider = (provider: 'apple' | 'google' | 'paypal') => {
-    const providerNames = {
-      apple: 'Apple Pay',
-      google: 'Google Pay',
-      paypal: 'PayPal',
+  const handleMoMoCheckout = async () => {
+    if (!user) {
+      toast.error(language === 'vi' ? 'Bạn cần đăng nhập để thực hiện thanh toán.' : 'Please sign in to proceed with checkout.')
+      return
     }
-
-    setSelectedProvider(provider)
-    toast.info(t.upgrade.toastProviderSelected(providerNames[provider]))
-    setExpressConfirmProvider(provider)
-    setShowExpressConfirmModal(true)
-  }
-
-  const handleClearExpressSelection = () => {
-    setSelectedProvider(null)
-  }
-
-  const handlePaymentSuccess = (method: 'Credit Card' | 'Apple Pay' | 'Google Pay' | 'PayPal') => {
-    setPaymentMethod(method)
-
-    // Upgrade the active session user to 'pro'
-    const currentUser = useAuthStore.getState().user
-    if (currentUser) {
-      useAuthStore.setState({
-        user: {
-          ...currentUser,
-          plan: 'pro'
-        }
+    setIsPaying(true)
+    try {
+      const response = await apiClient.post('/billing/checkout', {
+        userId: parseInt(user.id, 10),
+        planId: 2, // Seeded Pro Plan
+        paymentMethod: 'MOMO'
       })
-      // Sync in localStorage aiStudyHubCurrentUser
-      const localUserStr = localStorage.getItem('aiStudyHubCurrentUser')
-      if (localUserStr) {
-        try {
-          const localUser = JSON.parse(localUserStr)
-          localUser.plan = 'pro'
-          localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(localUser))
-        } catch (e) {}
+      const { paymentUrl } = response.data
+      if (paymentUrl) {
+        window.location.href = paymentUrl
+      } else {
+        toast.error(language === 'vi' ? 'Không tìm thấy link thanh toán MoMo' : 'MoMo payment URL not found')
       }
-
-      // Prepopulate Billing details for settings page
-      const userEmail = currentUser.email || 'user@example.com'
-      localStorage.setItem(`aiStudyHubSubAutoRenew:${userEmail}`, 'true')
-      localStorage.setItem(`aiStudyHubSubPayment:${userEmail}`, method)
-      const initialExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(
-        t.settings.accountSettings ? 'vi-VN' : 'en-US',
-        { year: 'numeric', month: 'long', day: 'numeric' }
-      )
-      localStorage.setItem(`aiStudyHubSubExpiry:${userEmail}`, initialExpiry)
-
-      // Sync plan change in admin users database
-      const storedUsers = localStorage.getItem('mock_admin_users')
-      if (storedUsers) {
-        try {
-          const parsedUsers = JSON.parse(storedUsers)
-          const updatedUsers = parsedUsers.map((u: any) =>
-            u.email?.toLowerCase() === userEmail.toLowerCase() ? { ...u, plan: 'pro' } : u
-          )
-          localStorage.setItem('mock_admin_users', JSON.stringify(updatedUsers))
-        } catch (e) {}
-      }
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || (language === 'vi' ? 'Lỗi kết nối tạo link thanh toán MoMo' : 'Failed to connect to MoMo gateway'))
+    } finally {
+      setIsPaying(false)
     }
-
-    setShowSuccessModal(true)
-  }
-
-  const handleExpressConfirm = () => {
-    setShowExpressConfirmModal(false)
-    const providerNames = {
-      apple: 'Apple Pay' as const,
-      google: 'Google Pay' as const,
-      paypal: 'PayPal' as const,
-    }
-    handlePaymentSuccess(providerNames[expressConfirmProvider])
   }
 
   return (
@@ -106,8 +49,8 @@ export function CheckoutPage() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-[1000px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-sm overflow-hidden"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[560px]">
-          {/* Left Column: Card Form (7 of 12 columns) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[500px]">
+          {/* Left Column: MoMo details */}
           <div className="lg:col-span-7 p-6 md:p-10 space-y-6 flex flex-col justify-between">
             <div className="space-y-6">
               {/* Back to Plans Link */}
@@ -122,34 +65,61 @@ export function CheckoutPage() {
               {/* Title & Subtitle */}
               <div className="space-y-1.5">
                 <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                  {t.upgrade.secureCheckout}
+                  {language === 'vi' ? 'Thanh toán Đơn hàng' : 'Secure Checkout'}
                 </h1>
                 <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-                  {t.upgrade.secureCheckoutDesc}
+                  {language === 'vi' ? 'Hoàn tất nâng cấp tài khoản của bạn qua cổng MoMo.' : 'Complete your upgrade using MoMo payment gateway.'}
                 </p>
               </div>
 
-              {/* Express Payment Integration */}
-              <ExpressCheckout
-                selectedProvider={selectedProvider}
-                onSelectProvider={handleSelectExpressProvider}
-              />
-
-              {/* Styled Section Divider */}
-              <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-slate-200/50 dark:border-slate-800/60" />
-                <span className="flex-shrink mx-4 text-[9px] font-black text-slate-400 dark:text-slate-400 tracking-widest uppercase">
-                  {t.upgrade.orPayWithCard}
-                </span>
-                <div className="flex-grow border-t border-slate-200/50 dark:border-slate-800/60" />
+              {/* Payment Method Details */}
+              <div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800/60 rounded-xl p-5 space-y-4">
+                <div className="flex justify-between items-center text-sm font-semibold">
+                  <span className="text-slate-500 dark:text-slate-400">
+                    {language === 'vi' ? 'Phương thức thanh toán:' : 'Payment Method:'}
+                  </span>
+                  <span className="text-[#A50064] font-black tracking-wider text-sm">
+                    MoMo
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm font-semibold">
+                  <span className="text-slate-500 dark:text-slate-400">
+                    {language === 'vi' ? 'Cổng thanh toán:' : 'Gateway:'}
+                  </span>
+                  <span className="text-slate-800 dark:text-slate-200 font-bold">
+                    MoMo Sandbox (Test Payment)
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed font-medium">
+                  {language === 'vi' 
+                    ? '* Hệ thống sẽ chuyển hướng bạn tới cổng MoMo. Bạn có thể sử dụng ứng dụng MoMo quét mã QR hoặc đăng nhập bằng tài khoản test.'
+                    : '* You will be redirected to MoMo gateway. You can use your MoMo app to scan QR code or sign in with test credentials.'}
+                </div>
               </div>
+            </div>
 
-              {/* Card Form */}
-              <CheckoutForm
-                selectedProvider={selectedProvider}
-                onFocusCard={handleClearExpressSelection}
-                onSuccess={handlePaymentSuccess}
-              />
+            {/* Pay Button */}
+            <div className="space-y-4">
+              <button
+                type="button"
+                disabled={isPaying}
+                onClick={handleMoMoCheckout}
+                className="w-full bg-[#A50064] hover:bg-[#8a0053] text-white py-4 px-4 rounded-xl font-extrabold flex items-center justify-center gap-2 select-none active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-[#A50064]/15 hover:shadow-lg disabled:pointer-events-none disabled:opacity-75 focus:outline-none"
+              >
+                {isPaying ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    {language === 'vi' ? 'Đang chuyển hướng tới MoMo...' : 'Redirecting to MoMo...'}
+                  </>
+                ) : (
+                  <>
+                    <Lock className="size-4" />
+                    <span>
+                      {language === 'vi' ? 'Thanh toán bằng MoMo' : 'Pay with MoMo'}
+                    </span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
@@ -159,25 +129,6 @@ export function CheckoutPage() {
           </div>
         </div>
       </motion.div>
-
-      {/* Payment Success Overlay Modal */}
-      <PaymentSuccessModal
-        isOpen={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        planName={t.upgrade.proPlanAnnual}
-        transactionId="#ASH-9284751"
-        amount="$132.00"
-        paymentMethod={paymentMethod}
-      />
-
-      {/* Express Payment Confirmation Modal */}
-      <ExpressCheckoutModal
-        open={showExpressConfirmModal}
-        onClose={() => setShowExpressConfirmModal(false)}
-        provider={expressConfirmProvider}
-        amount={132.00}
-        onConfirm={handleExpressConfirm}
-      />
     </div>
   )
 }

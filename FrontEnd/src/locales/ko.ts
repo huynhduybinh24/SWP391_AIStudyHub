@@ -856,6 +856,8 @@ export const ko: any = {
     sslEncrypted: "SSL 암호화 적용.",
     proPlanAnnual: "Pro 요금제 (연간)",
     proPlanAnnualDesc: "연간 결제. 고급 AI 튜터 및 분석 기능 제공.",
+    proPlanMonthly: "Pro 요금제 (월간)",
+    proPlanMonthlyDesc: "월간 결제. 고급 AI 튜터 및 분석 기능 제공.",
     creditCard: "신용카드",
     receiptDownloaded: "영수증을 다운로드했습니다",
     receiptHeader: "LUMIEDU 영수증",

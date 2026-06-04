@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/context/LanguageContext'
 import { Mail, GraduationCap } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { DEV_SKIP_AUTH } from '@/config/dev'
 import { POST_LOGIN_REDIRECT_KEY } from '@/features/auth/hooks/useLogin'
+import { ContactAdminModal } from '@/components/layout/ContactAdminModal'
 
 // Custom stroke-based brand SVGs for Lucide v1 compatibility
 function Github(props: React.SVGProps<SVGSVGElement>) {
@@ -70,49 +72,54 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
   const isReallyAuthenticated = DEV_SKIP_AUTH ? false : isAuthenticated
   const navigate = useNavigate()
 
+  const [isContactOpen, setIsContactOpen] = useState(false)
+
   // Simplified variant: standard sleek light/dark footer bar
   if (variant === 'simple') {
     return (
-      <footer className="w-full border-t bg-white text-slate-500 border-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:border-slate-800 select-none">
-        <div className="mx-auto flex max-w-[1800px] flex-col items-center justify-between gap-4 px-8 py-6 text-center md:flex-row md:text-left">
-          <p className="text-sm font-medium">
-            {t.footer.copyright}
-          </p>
-          <nav className="flex items-center gap-6 md:pr-24">
-            {isUserAdmin ? (
-              <>
-                <Link
-                  to="/dashboard/admin?tab=overview"
-                  className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  {language === 'vi' ? 'Bảng tổng quan' : 'Overview'}
-                </Link>
-                <Link
-                  to="/dashboard/admin?tab=activity-logs"
-                  className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
-                >
-                  {language === 'vi' ? 'Nhật ký hệ thống' : 'System Logs'}
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/help"
-                  className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  {t.footer.supportCenter}
-                </Link>
-                <Link
-                  to="/help?tab=contact"
-                  className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
-                >
-                  {t.footer.partnershipContact}
-                </Link>
-              </>
-            )}
-          </nav>
-        </div>
-      </footer>
+      <>
+        <footer className="w-full border-t bg-white text-slate-500 border-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:border-slate-800 select-none">
+          <div className="mx-auto flex max-w-[1800px] flex-col items-center justify-between gap-4 px-8 py-6 text-center md:flex-row md:text-left">
+            <p className="text-sm font-medium">
+              {t.footer.copyright}
+            </p>
+            <nav className="flex items-center gap-6 md:pr-24">
+              {isUserAdmin ? (
+                <>
+                  <Link
+                    to="/dashboard/admin?tab=overview"
+                    className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    {language === 'vi' ? 'Bảng tổng quan' : 'Overview'}
+                  </Link>
+                  <Link
+                    to="/dashboard/admin?tab=activity-logs"
+                    className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer"
+                  >
+                    {language === 'vi' ? 'Nhật ký hệ thống' : 'System Logs'}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/help"
+                    className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    {t.footer.supportCenter}
+                  </Link>
+                  <button
+                    onClick={() => setIsContactOpen(true)}
+                    className="text-sm font-semibold transition-colors duration-200 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 bg-transparent border-none p-0 cursor-pointer"
+                  >
+                    {t.footer.emailAdmin}
+                  </button>
+                </>
+              )}
+            </nav>
+          </div>
+        </footer>
+        <ContactAdminModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
+      </>
     )
   }
 
@@ -136,6 +143,7 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
       { text: isVi ? 'Bảng giá' : 'Pricing Plans', to: '/pricing' },
       { text: t.footer.termsOfService, to: '/terms-of-service' },
       { text: t.footer.privacyPolicy, to: '/privacy-policy' },
+      { text: t.footer.emailAdmin, to: '', isModal: true },
     ],
     exploreTitle: isVi ? 'Tính năng & Khám phá' : 'Features & Explore',
     exploreLinks: isUserAdmin
@@ -168,6 +176,7 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
   }
 
   return (
+    <>
     <footer className="w-full bg-gradient-to-br from-[#1E3A8A] via-[#1E40AF] to-[#2563EB] text-slate-100 border-t border-blue-900/40 select-none relative overflow-hidden">
       {/* Visual background accents */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -184,12 +193,21 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
             <ul className="flex flex-col gap-3.5">
               {content.aboutLinks.map((link, idx) => (
                 <li key={idx}>
-                  <Link
-                    to={link.to}
-                    className="text-slate-200/90 hover:text-white text-[15px] font-medium transition-all duration-200 hover:translate-x-1 inline-block"
-                  >
-                    {link.text}
-                  </Link>
+                  {link.isModal ? (
+                    <button
+                      onClick={() => setIsContactOpen(true)}
+                      className="text-slate-200/90 hover:text-white text-[15px] font-medium transition-all duration-200 hover:translate-x-1 inline-block text-left cursor-pointer bg-transparent border-none p-0 focus:outline-none"
+                    >
+                      {link.text}
+                    </button>
+                  ) : (
+                    <Link
+                      to={link.to || '/'}
+                      className="text-slate-200/90 hover:text-white text-[15px] font-medium transition-all duration-200 hover:translate-x-1 inline-block"
+                    >
+                      {link.text}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -349,6 +367,8 @@ export function AppFooter({ variant = 'full' }: AppFooterProps) {
 
       </div>
     </footer>
+    <ContactAdminModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
+    </>
   )
 }
 
