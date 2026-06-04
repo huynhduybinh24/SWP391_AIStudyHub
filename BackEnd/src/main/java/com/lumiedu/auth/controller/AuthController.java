@@ -181,10 +181,14 @@ public class AuthController {
 
         // Determine current plan status
         String plan = "free";
-        Optional<UserSubscription> activeSub = userSubscriptionRepository
-                .findFirstByUserIdAndStatusOrderByEndDateDesc(user.getId(), SubscriptionStatus.ACTIVE);
-        if (activeSub.isPresent()) {
-            plan = activeSub.get().getSubscriptionPlan().getPlanType().name().toLowerCase();
+        if (user.getRole() == com.lumiedu.user.enums.UserRole.ADMIN) {
+            plan = "enterprise";
+        } else {
+            Optional<UserSubscription> activeSub = userSubscriptionRepository
+                    .findFirstByUserIdAndStatusOrderByEndDateDesc(user.getId(), SubscriptionStatus.ACTIVE);
+            if (activeSub.isPresent()) {
+                plan = activeSub.get().getSubscriptionPlan().getPlanType().name().toLowerCase();
+            }
         }
 
         AuthUser authUser = AuthUser.builder()
@@ -223,10 +227,14 @@ public class AuthController {
 
         // Determine current plan status
         String plan = "free";
-        Optional<UserSubscription> activeSub = userSubscriptionRepository
-                .findFirstByUserIdAndStatusOrderByEndDateDesc(user.getId(), SubscriptionStatus.ACTIVE);
-        if (activeSub.isPresent()) {
-            plan = activeSub.get().getSubscriptionPlan().getPlanType().name().toLowerCase();
+        if (user.getRole() == com.lumiedu.user.enums.UserRole.ADMIN) {
+            plan = "enterprise";
+        } else {
+            Optional<UserSubscription> activeSub = userSubscriptionRepository
+                    .findFirstByUserIdAndStatusOrderByEndDateDesc(user.getId(), SubscriptionStatus.ACTIVE);
+            if (activeSub.isPresent()) {
+                plan = activeSub.get().getSubscriptionPlan().getPlanType().name().toLowerCase();
+            }
         }
 
         AuthUser authUser = AuthUser.builder()

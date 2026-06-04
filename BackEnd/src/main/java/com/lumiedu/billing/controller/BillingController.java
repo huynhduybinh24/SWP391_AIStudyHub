@@ -47,6 +47,13 @@ public class BillingController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/verify-stripe")
+    public ResponseEntity<Void> verifyStripeSession(@RequestBody Map<String, String> request) {
+        String sessionId = request.get("sessionId");
+        billingService.verifyAndProcessStripeSession(sessionId);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/payments/invoice/{invoiceCode}")
     public ResponseEntity<PaymentResponse> getPaymentByInvoiceCode(@PathVariable String invoiceCode) {
         return ResponseEntity.ok(billingService.getPaymentByInvoiceCode(invoiceCode));

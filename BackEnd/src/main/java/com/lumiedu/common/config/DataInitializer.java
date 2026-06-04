@@ -62,6 +62,7 @@ public class DataInitializer implements CommandLineRunner {
                     .passwordHash("123456")
                     .role(UserRole.ADMIN)
                     .accountStatus(AccountStatus.ACTIVE)
+                    .storageLimitMb(51200L)
                     .build();
 
             userRepository.saveAll(List.of(student, instructor, admin));
@@ -89,7 +90,7 @@ public class DataInitializer implements CommandLineRunner {
                     .durationDays(30)
                     .storageLimitMb(5120L) // 5GB
                     .maxDocuments(200)
-                    .aiChatLimitPerDay(100)
+                    .aiChatLimitPerDay(50)
                     .quizLimitPerDay(30)
                     .description("Gói chuyên nghiệp nâng cao trải nghiệm AI")
                     .active(true)
@@ -102,7 +103,7 @@ public class DataInitializer implements CommandLineRunner {
                     .durationDays(30)
                     .storageLimitMb(51200L) // 50GB
                     .maxDocuments(2000)
-                    .aiChatLimitPerDay(1000)
+                    .aiChatLimitPerDay(500)
                     .quizLimitPerDay(300)
                     .description("Gói doanh nghiệp, tổ chức và nhà trường")
                     .active(true)
@@ -118,9 +119,13 @@ public class DataInitializer implements CommandLineRunner {
                     freePlan.setStorageLimitMb(1024L);
                     updated = true;
                 }
+                if (freePlan.getAiChatLimitPerDay() == null || freePlan.getAiChatLimitPerDay() != 10) {
+                    freePlan.setAiChatLimitPerDay(10);
+                    updated = true;
+                }
                 if (updated) {
                     subscriptionPlanRepository.save(freePlan);
-                    System.out.println("--- Sync: Updated Free Plan storage limit to 1024MB ---");
+                    System.out.println("--- Sync: Updated Free Plan ---");
                 }
             });
 
@@ -135,9 +140,13 @@ public class DataInitializer implements CommandLineRunner {
                     proPlan.setStorageLimitMb(5120L);
                     updated = true;
                 }
+                if (proPlan.getAiChatLimitPerDay() == null || proPlan.getAiChatLimitPerDay() != 50) {
+                    proPlan.setAiChatLimitPerDay(50);
+                    updated = true;
+                }
                 if (updated) {
                     subscriptionPlanRepository.save(proPlan);
-                    System.out.println("--- Sync: Updated Pro Plan to 200k VND and 5120MB ---");
+                    System.out.println("--- Sync: Updated Pro Plan ---");
                 }
             });
 
@@ -156,9 +165,13 @@ public class DataInitializer implements CommandLineRunner {
                     enterprisePlan.setStorageLimitMb(51200L);
                     updated = true;
                 }
+                if (enterprisePlan.getAiChatLimitPerDay() == null || enterprisePlan.getAiChatLimitPerDay() != 500) {
+                    enterprisePlan.setAiChatLimitPerDay(500);
+                    updated = true;
+                }
                 if (updated) {
                     subscriptionPlanRepository.save(enterprisePlan);
-                    System.out.println("--- Sync: Updated Enterprise Plan to 300k VND, 30 days, and 51200MB ---");
+                    System.out.println("--- Sync: Updated Enterprise Plan ---");
                 }
             });
         }

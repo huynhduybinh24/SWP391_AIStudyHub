@@ -43,6 +43,9 @@ public class BillingService {
     private final UserRepository userRepository;
     private final StripeConfig stripeConfig;
 
+    @org.springframework.beans.factory.annotation.Value("${stripe.bypass-checkout:false}")
+    private boolean bypassCheckout;
+
     public List<SubscriptionPlanResponse> getActivePlans() {
         return subscriptionPlanRepository.findByActiveTrue().stream()
                 .map(this::toPlanResponse)
@@ -211,6 +214,18 @@ public class BillingService {
 
             return CheckoutResponse.builder()
                     .paymentUrl("FREE_UPGRADE_SUCCESS")
+                    .invoiceCode(invoiceCode)
+                    .build();
+        }
+
+        if (bypassCheckout) {
+            processSuccessfulPayment(invoiceCode, "MOCK_STRIPE_SESSION_" + timestamp);
+            
+            String successRedirectUrl = stripeConfig.getSuccessUrl()
+                    .replace("{CHECKOUT_SESSION_ID}", "MOCK_STRIPE_SESSION_" + timestamp);
+            
+            return CheckoutResponse.builder()
+                    .paymentUrl(successRedirectUrl)
                     .invoiceCode(invoiceCode)
                     .build();
         }
