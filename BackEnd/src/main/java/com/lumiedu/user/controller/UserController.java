@@ -64,4 +64,32 @@ public class UserController {
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("User module is running");
     }
+
+    @GetMapping("/{id}/linked-accounts")
+    public ResponseEntity<List<com.lumiedu.auth.dto.ThirdPartyAccountResponse>> getLinkedAccounts(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getLinkedAccounts(id));
+    }
+
+    @PostMapping("/{id}/linked-accounts")
+    public ResponseEntity<Void> linkThirdPartyAccount(
+            @PathVariable Long id,
+            @RequestBody LinkAccountRequest request) {
+        userService.linkThirdPartyAccount(id, request.getCode(), request.getRedirectUri(), request.getProvider());
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}/linked-accounts/{provider}")
+    public ResponseEntity<Void> unlinkThirdPartyAccount(
+            @PathVariable Long id,
+            @PathVariable String provider) {
+        userService.unlinkThirdPartyAccount(id, provider);
+        return ResponseEntity.ok().build();
+    }
+
+    @lombok.Data
+    public static class LinkAccountRequest {
+        private String code;
+        private String redirectUri;
+        private String provider;
+    }
 }

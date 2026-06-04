@@ -6,6 +6,7 @@ import { POST_LOGIN_REDIRECT_KEY } from '@/features/auth/hooks/useLogin'
 import { ShieldAlert, Loader2, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useTranslation } from '@/context/LanguageContext'
+import { apiClient } from '@/lib/api/apiClient'
 
 export function CallbackPage() {
   const [searchParams] = useSearchParams()
@@ -18,6 +19,8 @@ export function CallbackPage() {
 
   useEffect(() => {
     const code = searchParams.get('code')
+    const state = searchParams.get('state')
+    
     if (!code) {
       setStatus('error')
       setErrorMsg(
@@ -25,6 +28,40 @@ export function CallbackPage() {
           ? 'Không tìm thấy mã xác thực Google (auth code).'
           : 'Google auth code not found in redirect URL.'
       )
+      return
+    }
+
+    if (state === 'link_account') {
+      const handleGoogleLinkCallback = async () => {
+        try {
+          const redirectUri = window.location.origin + '/auth/callback'
+          const authUser = useAuthStore.getState().user
+          if (!authUser || !authUser.id) {
+            throw new Error(
+              language === 'vi' 
+                ? 'Bạn cần đăng nhập để liên kết tài khoản.' 
+                : 'You must be logged in to link accounts.'
+            )
+          }
+
+          await apiClient.post(`/users/${authUser.id}/linked-accounts`, {
+            code,
+            redirectUri,
+            provider: 'GOOGLE'
+          })
+
+          setStatus('success')
+          setTimeout(() => {
+            navigate('/dashboard/profile', { replace: true })
+          }, 1200)
+        } catch (err: any) {
+          console.error('Google link failed:', err)
+          setStatus('error')
+          setErrorMsg(err.message || (language === 'vi' ? 'Đã xảy ra lỗi khi liên kết tài khoản.' : 'An error occurred while linking account.'))
+        }
+      }
+
+      handleGoogleLinkCallback()
       return
     }
 

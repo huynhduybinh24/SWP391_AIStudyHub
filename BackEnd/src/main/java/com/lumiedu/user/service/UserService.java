@@ -15,4 +15,7 @@ public interface UserService {
     UserResponse updateUserRole(Long userId, ChangeUserRoleRequest request);
     UserResponse updateAccountStatus(Long userId, ChangeAccountStatusRequest request);
     void deleteUser(Long userId);
+    java.util.List<com.lumiedu.auth.dto.ThirdPartyAccountResponse> getLinkedAccounts(Long userId);
+    void linkThirdPartyAccount(Long userId, String code, String redirectUri, String provider);
+    void unlinkThirdPartyAccount(Long userId, String provider);
 }
