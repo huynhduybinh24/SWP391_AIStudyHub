@@ -279,7 +279,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
         email: finalUser.email,
         role: finalUser.role,
         plan: finalUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
-        avatarUrl: finalUser.avatar || '/avatar.svg',
+        avatarUrl: finalUser.avatar || '/logo.png',
       }
       
       const tokensToUse = loggedInResponse ? loggedInResponse.tokens : { accessToken: 'mock-db-token' }
@@ -291,7 +291,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
         email: userToUse.email,
         role: userToUse.role,
         plan: userToUse.plan,
-        avatar: userToUse.avatarUrl || '/avatar.svg'
+        avatar: userToUse.avatarUrl || '/logo.png'
       }))
 
       // 2. Update Zustand Stores
@@ -307,7 +307,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
           university: 'FPT University',
           major: 'Software engineering',
           degree: 'Bachelor',
-          avatarUrl: userToUse.avatarUrl || '/avatar.svg',
+          avatarUrl: userToUse.avatarUrl || '/logo.png',
         }
       })
 
@@ -348,7 +348,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
           email: selectedUser.email,
           role: selectedUser.role,
           plan: selectedUser.plan.toLowerCase() as any,
-          avatarUrl: selectedUser.avatar || '/avatar.svg',
+          avatarUrl: selectedUser.avatar || '/logo.png',
         },
         tokens: selectedUser.tokens
       })

@@ -153,7 +153,7 @@ export function AdminDashboardPage() {
           email: updated.email,
           role: updated.role,
           plan: updated.plan || 'free',
-          avatar: updated.avatar || '/avatar.svg'
+          avatar: updated.avatar || '/logo.png'
         }))
       }
 

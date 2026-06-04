@@ -398,7 +398,7 @@ export function Header() {
         role: 'admin',
         plan: 'PRO',
         initials: 'AM',
-        avatar: '/avatar.svg'
+        avatar: '/logo.png'
       }
       localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(defaultUser))
       savedUserStr = JSON.stringify(defaultUser)
@@ -416,7 +416,7 @@ export function Header() {
             email: savedUser.email,
             role: savedUser.role,
             plan: savedUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
-            avatarUrl: savedUser.avatar || '/avatar.svg',
+            avatarUrl: savedUser.avatar || '/logo.png',
           },
           isAuthenticated: true,
         })
@@ -426,7 +426,7 @@ export function Header() {
             university: 'FPT University',
             major: 'Software engineering',
             degree: 'Bachelor',
-            avatarUrl: savedUser.avatar || '/avatar.svg',
+            avatarUrl: savedUser.avatar || '/logo.png',
           }
         })
       }
