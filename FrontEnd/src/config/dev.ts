@@ -7,7 +7,7 @@ export const DEV_DEFAULT_USER: AuthUser = {
   id: '1',
   name: 'Alex Rivera',
   email: 'alex@example.com',
-  role: 'student',
+  role: 'user',
   plan: 'free',
 }
 

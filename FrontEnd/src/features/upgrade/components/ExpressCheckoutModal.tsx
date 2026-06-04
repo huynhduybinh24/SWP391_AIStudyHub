@@ -180,7 +180,7 @@ export function ExpressCheckoutModal({
             <div className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-6 space-y-3.5">
               <div className="flex justify-between items-center text-xs font-semibold text-slate-550 dark:text-slate-400">
                 <span>{t.upgrade.planSelected}</span>
-                <span className="text-slate-800 dark:text-slate-200 font-bold">{t.upgrade.proPlanAnnual}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold">{t.upgrade.proPlanMonthly}</span>
               </div>
               <div className="h-px bg-slate-100 dark:bg-slate-800" />
               <div className="flex justify-between items-center text-xs font-semibold text-slate-550 dark:text-slate-400">

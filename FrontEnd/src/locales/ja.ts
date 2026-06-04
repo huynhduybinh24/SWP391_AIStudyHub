@@ -856,6 +856,8 @@ export const ja: any = {
     sslEncrypted: "SSL暗号化。",
     proPlanAnnual: "Proプラン (年額)",
     proPlanAnnualDesc: "年額払い。高度なAIチューターと分析機能を利用可能。",
+    proPlanMonthly: "Proプラン (月額)",
+    proPlanMonthlyDesc: "月額払い。高度なAIチューターと分析機能を利用可能。",
     creditCard: "クレジットカード",
     receiptDownloaded: "領収書をダウンロードしました",
     receiptHeader: "LUMIEDU 領収書",

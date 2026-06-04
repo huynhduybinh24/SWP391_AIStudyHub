@@ -7,11 +7,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { PaymentInput } from './PaymentInput'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
+import { apiClient } from '@/lib/axios'
+import { useAuthStore } from '@/stores/authStore'
 
 interface CheckoutFormProps {
-  selectedProvider: 'apple' | 'google' | 'paypal' | null
+  selectedProvider: 'apple' | 'google' | 'paypal' | 'momo' | null
   onFocusCard: () => void
-  onSuccess: (method: 'Credit Card' | 'Apple Pay' | 'Google Pay' | 'PayPal') => void
+  onSuccess: (method: 'Credit Card' | 'Apple Pay' | 'Google Pay' | 'PayPal' | 'MoMo') => void
 }
 
 type CheckoutFormValues = {
@@ -28,6 +30,7 @@ export function CheckoutForm({
 }: CheckoutFormProps) {
   const toast = useToast()
   const { t } = useTranslation()
+  const user = useAuthStore((state) => state.user)
   const [isPaying, setIsPaying] = useState(false)
   const [showCvvHelp, setShowCvvHelp] = useState(false)
   const helpRef = useRef<HTMLDivElement>(null)
@@ -140,8 +143,31 @@ export function CheckoutForm({
       apple: 'Apple Pay',
       google: 'Google Pay',
       paypal: 'PayPal',
+      momo: 'MoMo',
     }
     const methodName = selectedProvider ? providerNames[selectedProvider] : 'PayPal'
+
+    if (selectedProvider === 'momo') {
+      try {
+        const response = await apiClient.post('/billing/checkout', {
+          userId: user ? parseInt(user.id, 10) : 1,
+          planId: 2,  // Seeded Pro Plan
+          paymentMethod: 'MOMO'
+        })
+        const { paymentUrl } = response.data
+        if (paymentUrl) {
+          window.location.href = paymentUrl
+        } else {
+          toast.error('Không tìm thấy link thanh toán MoMo')
+        }
+      } catch (err: any) {
+        console.error(err)
+        toast.error(err.message || 'Lỗi kết nối tạo link thanh toán MoMo')
+      } finally {
+        setIsPaying(false)
+      }
+      return
+    }
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -255,7 +281,7 @@ export function CheckoutForm({
         ) : (
           <>
             <Lock className="size-4" />
-            {t.upgrade.payAmountBtn('$132.00')}
+            {t.upgrade.payAmountBtn('200.000đ')}
           </>
         )}
       </button>

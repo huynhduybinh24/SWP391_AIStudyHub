@@ -34,10 +34,10 @@ import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { PricingPage } from '@/features/upgrade/pages/PricingPage'
 import { CheckoutPage } from '@/features/upgrade/pages/CheckoutPage'
+import { MockMomoPaymentPage } from '@/features/upgrade/pages/MockMomoPaymentPage'
 import { StudyPlansPage } from '@/features/study-plans/pages/StudyPlansPage'
 import { TermsOfServicePage } from '@/features/legal/pages/TermsOfServicePage'
 import { PrivacyPolicyPage } from '@/features/legal/pages/PrivacyPolicyPage'
-import { PartnershipPage } from '@/features/landing/pages/PartnershipPage'
 
 import { ScrollToTop } from '@/components/shared/ScrollToTop'
 import { Outlet } from 'react-router-dom'
@@ -70,10 +70,6 @@ export const router = createBrowserRouter([
         element: <HelpCenterPage />,
       },
       {
-        path: '/partnership',
-        element: <PartnershipPage />,
-      },
-      {
         path: '/login',
         element: <LoginPage />,
       },
@@ -88,6 +84,10 @@ export const router = createBrowserRouter([
       {
         path: '/set-new-password',
         element: <SetNewPasswordPage />,
+      },
+      {
+        path: '/mock-momo-payment',
+        element: <MockMomoPaymentPage />,
       },
       {
         path: '/dashboard',

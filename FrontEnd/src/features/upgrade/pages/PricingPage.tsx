@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { PricingCard, type PricingPlan } from '../components/PricingCard'
 import { ContactSalesModal } from '../components/ContactSalesModal'
@@ -17,6 +17,41 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [isContactSalesOpen, setIsContactSalesOpen] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const status = searchParams.get('status')
+    if (status === 'success') {
+      toast.success(language === 'vi' ? 'Thanh toán qua MoMo thành công! Tài khoản đã được nâng cấp lên Pro.' : 'MoMo payment successful! Your account has been upgraded to Pro.')
+      
+      const currentUser = useAuthStore.getState().user
+      if (currentUser) {
+        useAuthStore.setState({
+          user: {
+            ...currentUser,
+            plan: 'pro'
+          }
+        })
+        const localUserStr = localStorage.getItem('aiStudyHubCurrentUser')
+        if (localUserStr) {
+          try {
+            const localUser = JSON.parse(localUserStr)
+            localUser.plan = 'pro'
+            localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(localUser))
+          } catch (e) {}
+        }
+      }
+      
+      searchParams.delete('status')
+      searchParams.delete('invoice')
+      setSearchParams(searchParams)
+    } else if (status === 'failed') {
+      toast.error(language === 'vi' ? 'Thanh toán qua MoMo thất bại hoặc đã bị hủy.' : 'MoMo payment failed or was cancelled.')
+      searchParams.delete('status')
+      searchParams.delete('invoice')
+      setSearchParams(searchParams)
+    }
+  }, [searchParams, setSearchParams, toast, language])
 
   // Dynamically load pricing configurations from localStorage
   const packagesList = useMemo(() => {
@@ -37,7 +72,7 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
         id: 'pkg-pro',
         name: language === 'vi' ? 'Gói Pro' : 'Pro Plan',
         storageLimit: 50,
-        priceMonthly: 12,
+        priceMonthly: 200000,
         perks: [
           language === 'vi' ? 'Dung lượng lưu trữ 50 GB' : '50 GB storage limit',
           language === 'vi' ? 'AI Chatbot nâng cao & phân tích sâu' : 'Advanced AI chatbot & deep analysis',
@@ -123,13 +158,17 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
       let yearlySavingText = undefined
       if (pkg.id === 'pkg-pro') {
         yearlySavingText = language === 'vi'
-          ? `Hoặc $${(pkg.priceMonthly * 10).toFixed(0)}/năm (Tiết kiệm 16%)`
-          : `Or $${(pkg.priceMonthly * 10).toFixed(0)}/year (Save 16%)`
+          ? `Hoặc 2.000.000đ/năm (Tiết kiệm 16%)`
+          : `Or 2,000,000 VND/year (Save 16%)`
       }
+
+      const priceStr = pkg.priceMonthly === 0
+        ? (language === 'vi' ? '0đ' : '0 VND')
+        : (language === 'vi' ? `${pkg.priceMonthly.toLocaleString('vi-VN')}đ` : `${pkg.priceMonthly.toLocaleString('en-US')} VND`)
 
       return {
         name: pkg.name,
-        price: `$${pkg.priceMonthly}`,
+        price: priceStr,
         billing: language === 'vi' ? '/tháng' : '/month',
         yearlySavingText,
         description,

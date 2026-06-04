@@ -1,18 +1,22 @@
 # Billing Module
 
-This module manages subscription and payment.
+This module manages subscription plans, user subscriptions, payments, and institutional requests.
 
-Future contents:
-- SubscriptionPlan entity
-- UserSubscription entity
-- Payment entity
-- InstitutionalRequest entity
-- PaymentStatus enum
-- SubscriptionStatus enum
-- PaymentMethod enum
-
-Main features:
-- View pricing plans
+## Main Features
+- View subscription pricing plans
 - Checkout and upgrade to Pro
-- Download invoice receipt
+- Save payment transaction
+- Retrieve invoice/payment information
 - Submit institutional plan request
+
+## Current Scope
+This module currently uses mock checkout logic.
+Real VNPay/MoMo integration will be implemented later.
+
+## Package Structure
+- entity
+- enums
+- repository
+- service
+- controller
+- dto

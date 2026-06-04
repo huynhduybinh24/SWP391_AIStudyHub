@@ -68,7 +68,7 @@ export const useAuthStore = create<AuthState>()(
                 id: `u-${user.id}`,
                 name: user.name,
                 email: user.email,
-                role: user.role === 'admin' ? 'admin' : user.role === 'teacher' || user.role === 'instructor' ? 'instructor' : 'student',
+                role: user.role === 'admin' ? 'admin' : 'user',
                 plan: (user.plan || 'free').toUpperCase() as 'FREE' | 'PRO',
                 initials: user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'US',
                 description: `Tài khoản đăng nhập hệ thống ngày ${new Date().toLocaleDateString('vi-VN')}`,

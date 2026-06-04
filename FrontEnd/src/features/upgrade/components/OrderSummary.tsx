@@ -19,16 +19,16 @@ interface BillingSummary {
 const mockOrderData: BillingSummary = {
   items: [
     {
-      id: 'pro_annual',
-      name: 'Pro Plan (Annual)',
-      description: 'Billed yearly. Unlocks advanced AI Tutor and Analytics.',
-      price: 120.00,
+      id: 'pro_monthly',
+      name: 'Pro Plan',
+      description: 'Unlocks advanced AI Tutor and Analytics.',
+      price: 200000.00,
     },
   ],
-  subtotal: 120.00,
-  taxRate: 0.10, // 10%
-  taxAmount: 12.00,
-  total: 132.00,
+  subtotal: 200000.00,
+  taxRate: 0.00, // 0%
+  taxAmount: 0.00,
+  total: 200000.00,
 }
 
 export function OrderSummary() {
@@ -36,11 +36,11 @@ export function OrderSummary() {
   const { subtotal, taxAmount, total } = mockOrderData
 
   const items = mockOrderData.items.map(item => {
-    if (item.id === 'pro_annual') {
+    if (item.id === 'pro_monthly') {
       return {
         ...item,
-        name: t.upgrade.proPlanAnnual,
-        description: t.upgrade.proPlanAnnualDesc
+        name: t.upgrade.proPlanMonthly,
+        description: t.upgrade.proPlanMonthlyDesc
       }
     }
     return item
@@ -66,7 +66,7 @@ export function OrderSummary() {
                 </p>
               </div>
               <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                ${item.price.toFixed(2)}
+                {item.price.toLocaleString('vi-VN')}đ
               </span>
             </div>
           ))}
@@ -79,11 +79,11 @@ export function OrderSummary() {
         <div className="space-y-3">
           <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400 font-semibold">
             <span>{t.upgrade.subtotal}</span>
-            <span className="text-slate-800 dark:text-slate-200">${subtotal.toFixed(2)}</span>
+            <span className="text-slate-800 dark:text-slate-200">{subtotal.toLocaleString('vi-VN')}đ</span>
           </div>
           <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400 font-semibold">
             <span>{t.upgrade.tax}</span>
-            <span className="text-slate-800 dark:text-slate-200">${taxAmount.toFixed(2)}</span>
+            <span className="text-slate-800 dark:text-slate-200">{taxAmount.toLocaleString('vi-VN')}đ</span>
           </div>
         </div>
 
@@ -96,7 +96,7 @@ export function OrderSummary() {
             {t.upgrade.totalDue}
           </span>
           <span className="text-2xl font-extrabold text-[#2563eb] dark:text-blue-400">
-            ${total.toFixed(2)}
+            {total.toLocaleString('vi-VN')}đ
           </span>
         </div>
       </div>

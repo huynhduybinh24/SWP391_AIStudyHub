@@ -2,8 +2,8 @@ import { motion } from 'framer-motion'
 import { useTranslation } from '@/context/LanguageContext'
 
 interface ExpressCheckoutProps {
-  selectedProvider: 'apple' | 'google' | 'paypal' | null
-  onSelectProvider: (provider: 'apple' | 'google' | 'paypal', event?: React.MouseEvent) => void
+  selectedProvider: 'apple' | 'google' | 'paypal' | 'momo' | null
+  onSelectProvider: (provider: 'apple' | 'google' | 'paypal' | 'momo', event?: React.MouseEvent) => void
   disabled?: boolean
 }
 
@@ -14,6 +14,15 @@ export function ExpressCheckout({
 }: ExpressCheckoutProps) {
   const { t } = useTranslation()
   const providers = [
+    {
+      id: 'momo' as const,
+      name: 'MoMo',
+      ariaLabel: 'Pay with MoMo',
+      icon: (
+        <span className="text-[#A50064] font-black tracking-wider mr-1 text-[11px]">MoMo</span>
+      ),
+      label: <span className="font-extrabold text-[#A50064]">Pay</span>,
+    },
     {
       id: 'apple' as const,
       name: 'Apple Pay',
@@ -51,14 +60,19 @@ export function ExpressCheckout({
       <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
         {t.upgrade.expressCheckout}
       </span>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-2">
         {providers.map((p) => {
           const isSelected = selectedProvider === p.id
 
           // Dynamic selected / unselected styling as requested
-          const buttonStyle = isSelected
-            ? 'bg-[#fbbf24] hover:bg-[#f59e0b] border-[#d97706] text-black dark:text-black ring-2 ring-[#fbbf24]/50 shadow-sm shadow-[#fbbf24]/20 font-bold'
-            : 'bg-white hover:bg-slate-50/80 dark:bg-slate-900 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white'
+          let buttonStyle = 'bg-white hover:bg-slate-50/80 dark:bg-slate-900 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white'
+          if (isSelected) {
+            if (p.id === 'momo') {
+              buttonStyle = 'bg-[#fdf2f8] hover:bg-[#fce7f3] border-[#A50064] text-black dark:text-black ring-2 ring-[#A50064]/45 shadow-sm font-bold'
+            } else {
+              buttonStyle = 'bg-[#fbbf24] hover:bg-[#f59e0b] border-[#d97706] text-black dark:text-black ring-2 ring-[#fbbf24]/50 shadow-sm shadow-[#fbbf24]/20 font-bold'
+            }
+          }
 
           return (
             <motion.button
@@ -70,9 +84,9 @@ export function ExpressCheckout({
               whileTap={{ scale: disabled ? 1 : 0.98 }}
               aria-pressed={isSelected}
               aria-label={p.ariaLabel}
-              className={`flex h-11 items-center justify-center rounded-xl border font-bold transition-all text-sm select-none cursor-pointer disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563eb] ${buttonStyle}`}
+              className={`flex h-11 items-center justify-center rounded-xl border font-bold transition-all text-xs select-none cursor-pointer disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563eb] ${buttonStyle}`}
             >
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-0.5">
                 {p.icon}
                 {p.label}
               </span>
