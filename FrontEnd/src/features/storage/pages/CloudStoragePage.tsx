@@ -26,6 +26,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
+import { storageService, type StorageUsage } from '@/services/storageService'
 
 const formatFileTime = (time: string) => time;
 
@@ -87,43 +88,87 @@ export function CloudStoragePage() {
   const user = useAuthStore((s) => s.user)
   const toast = useToast()
   
-  const TOTAL_STORAGE_GB = user?.plan === 'pro' 
-    ? env.PRO_STORAGE_LIMIT 
-    : user?.plan === 'institutional' 
-      ? 1000 
-      : env.FREE_STORAGE_LIMIT;
-
+  const [storageData, setStorageData] = useState<StorageUsage | null>(null)
   const [uploads, setUploads] = useState(INITIAL_UPLOADS)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [baseUsedStorage, setBaseUsedStorage] = useState(!user || user.plan === 'free' ? 2.4 : 12.4)
+  const [baseUsedStorage, setBaseUsedStorage] = useState(0)
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
-  const [trashSize, setTrashSize] = useState(!user || user.plan === 'free' ? 0.3 : 1.2)
-  const [tempSize, setTempSize] = useState(!user || user.plan === 'free' ? 0.1 : 0.6)
+  const [trashSize, setTrashSize] = useState(0)
+  const [tempSize, setTempSize] = useState(0)
   const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    if (user?.id) {
+      storageService.getStorageUsage(Number(user.id))
+        .then(data => {
+          setStorageData(data)
+          setBaseUsedStorage(data.storageUsedMb / 1024.0)
+        })
+        .catch(err => {
+          console.error("Failed to fetch storage usage:", err)
+        })
+    }
+  }, [user?.id])
+
+  const TOTAL_STORAGE_GB = storageData 
+    ? storageData.storageLimitMb / 1024 
+    : user?.plan === 'pro' 
+      ? env.PRO_STORAGE_LIMIT 
+      : user?.plan === 'enterprise' || user?.plan === 'premium'
+        ? env.PREMIUM_STORAGE_LIMIT
+        : env.FREE_STORAGE_LIMIT;
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 200)
     return () => clearTimeout(timer)
   }, [])
 
-  const recentUploadsSizeGB = useMemo(() => {
-    const totalBytes = uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0)
-    return totalBytes / (1024 * 1024 * 1024)
-  }, [uploads])
+  const totalUsedMb = useMemo(() => {
+    const recentUploadsBytes = uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0)
+    const recentUploadsMb = recentUploadsBytes / (1024 * 1024)
+    return (baseUsedStorage * 1024) + recentUploadsMb
+  }, [baseUsedStorage, uploads])
 
-  const totalUsedGB = (baseUsedStorage + recentUploadsSizeGB).toFixed(1)
-  const remainingGB = (TOTAL_STORAGE_GB - parseFloat(totalUsedGB)).toFixed(1)
-  const usedPercentage = Math.round((parseFloat(totalUsedGB) / TOTAL_STORAGE_GB) * 100)
+  const totalStorageMb = TOTAL_STORAGE_GB * 1024
+  const remainingMb = Math.max(0, totalStorageMb - totalUsedMb)
+  const usedPercentage = Math.min(100, Math.round((totalUsedMb / totalStorageMb) * 100))
+
+  const displayUsedStorage = totalUsedMb >= 100 
+    ? `${(totalUsedMb / 1024).toFixed(1)} GB` 
+    : `${totalUsedMb.toFixed(0)} MB`
+
+  const displayRemaining = remainingMb >= 100 
+    ? `${(remainingMb / 1024).toFixed(1)} GB` 
+    : `${remainingMb.toFixed(0)} MB`
 
   const chartData = [
     { name: 'Used', value: usedPercentage, color: '#2563eb' },
     { name: 'Remaining', value: 100 - usedPercentage, color: isDark ? '#1e293b' : '#e5eeff' },
   ]
 
+  const formatMbOrGb = (mb: number) => {
+    return mb >= 100 ? `${(mb / 1024).toFixed(1)} GB` : `${mb.toFixed(0)} MB`
+  }
+
   const subjects = [
-    { name: 'Computer Science', size: `${(baseUsedStorage * 0.6 + recentUploadsSizeGB).toFixed(1)} GB`, progress: (baseUsedStorage * 0.6 / TOTAL_STORAGE_GB) * 100 + Math.round(recentUploadsSizeGB), color: '#2563eb' },
-    { name: 'Mathematics', size: `${(baseUsedStorage * 0.3).toFixed(1)} GB`, progress: (baseUsedStorage * 0.3 / TOTAL_STORAGE_GB) * 100, color: '#8b5cf6' },
-    { name: 'Literature', size: `${(baseUsedStorage * 0.1).toFixed(1)} GB`, progress: (baseUsedStorage * 0.1 / TOTAL_STORAGE_GB) * 100, color: '#0f766e' },
+    { 
+      name: 'Computer Science', 
+      size: formatMbOrGb((baseUsedStorage * 1024) * 0.6 + (uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0) / (1024 * 1024))), 
+      progress: Math.min(100, (((baseUsedStorage * 1024) * 0.6 + (uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0) / (1024 * 1024))) / totalStorageMb) * 100), 
+      color: '#2563eb' 
+    },
+    { 
+      name: 'Mathematics', 
+      size: formatMbOrGb((baseUsedStorage * 1024) * 0.3), 
+      progress: Math.min(100, (((baseUsedStorage * 1024) * 0.3) / totalStorageMb) * 100), 
+      color: '#8b5cf6' 
+    },
+    { 
+      name: 'Literature', 
+      size: formatMbOrGb((baseUsedStorage * 1024) * 0.1), 
+      progress: Math.min(100, (((baseUsedStorage * 1024) * 0.1) / totalStorageMb) * 100), 
+      color: '#0f766e' 
+    },
   ]
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -263,7 +308,7 @@ export function CloudStoragePage() {
               <FileText className="size-4 text-[#8b5cf6]" />
               {t.cloudStorage.usedStorage}
             </div>
-            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{totalUsedGB} GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{displayUsedStorage}</div>
           </CardContent>
         </Card>
         <Card>
@@ -272,7 +317,7 @@ export function CloudStoragePage() {
               <Cloud className="size-4 text-[#0ea5e9]" />
               {t.cloudStorage.remaining}
             </div>
-            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{remainingGB} GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{displayRemaining}</div>
           </CardContent>
         </Card>
         <Card>
@@ -363,7 +408,7 @@ export function CloudStoragePage() {
             </div>
             
             <h3 className="font-bold text-foreground text-[15px] mt-4">
-              {t.cloudStorage.usedOfText(totalUsedGB, TOTAL_STORAGE_GB)}
+              {t.cloudStorage.usedOfText(displayUsedStorage, `${TOTAL_STORAGE_GB} GB`)}
             </h3>
             <p className="text-muted text-xs mt-1.5 mb-6 max-w-[200px]">
               {t.cloudStorage.approachingLimit}

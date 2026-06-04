@@ -65,10 +65,7 @@ export function AccountSettingsCard() {
     setIsAvatarDirty(true)
   }
 
-  let initialLanguage = account.language
-  if (initialLanguage === 'English (US)') initialLanguage = 'en'
-  else if (initialLanguage === 'Vietnamese') initialLanguage = 'vi'
-  else initialLanguage = 'en'
+  const initialLanguage = language
 
   const {
     register,
@@ -85,10 +82,14 @@ export function AccountSettingsCard() {
     },
   })
 
-  // Keep the email input reactive to auth state changes
+  // Keep form inputs reactive to external state changes
   useEffect(() => {
     setValue('email', currentEmail)
   }, [currentEmail, setValue])
+
+  useEffect(() => {
+    setValue('language', language)
+  }, [language, setValue])
 
   const onSubmit = (data: AccountFormValues) => {
     setPendingData(data)
