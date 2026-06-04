@@ -59,6 +59,7 @@ class StorageServiceTests {
                 .build();
 
         testDocuments = new ArrayList<>();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
         
         // 5MB PDF
         testDocuments.add(Document.builder()
@@ -67,7 +68,8 @@ class StorageServiceTests {
                 .fileSize(5 * 1024 * 1024L)
                 .fileType("PDF")
                 .checksum("checksum-a")
-                .user(testUser)
+                .userId(testUser.getId())
+                .createdAt(now)
                 .build());
 
         // Duplicate of Doc1
@@ -77,7 +79,8 @@ class StorageServiceTests {
                 .fileSize(5 * 1024 * 1024L)
                 .fileType("PDF")
                 .checksum("checksum-a") // duplicate!
-                .user(testUser)
+                .userId(testUser.getId())
+                .createdAt(now.plusSeconds(10))
                 .build());
 
         // 12MB video (Large file!)
@@ -87,7 +90,8 @@ class StorageServiceTests {
                 .fileSize(12 * 1024 * 1024L)
                 .fileType("VIDEO")
                 .checksum("checksum-b")
-                .user(testUser)
+                .userId(testUser.getId())
+                .createdAt(now)
                 .build());
     }
 

@@ -184,7 +184,7 @@ public class DataInitializer implements CommandLineRunner {
                         .fileUrl("https://storage.lumiedu.com/files/lecture_notes_week1.pdf")
                         .fileType("PDF")
                         .checksum("5d41402abc4b2a76b9719d911017c592")
-                        .user(student)
+                        .userId(student.getId())
                         .build();
 
                 com.lumiedu.document.entity.Document doc2 = com.lumiedu.document.entity.Document.builder()
@@ -193,7 +193,7 @@ public class DataInitializer implements CommandLineRunner {
                         .fileUrl("https://storage.lumiedu.com/files/lecture_notes_week1_backup.pdf")
                         .fileType("PDF")
                         .checksum("5d41402abc4b2a76b9719d911017c592")
-                        .user(student)
+                        .userId(student.getId())
                         .build();
 
                 com.lumiedu.document.entity.Document doc3 = com.lumiedu.document.entity.Document.builder()
@@ -202,7 +202,7 @@ public class DataInitializer implements CommandLineRunner {
                         .fileUrl("https://storage.lumiedu.com/files/course_intro_video.mp4")
                         .fileType("VIDEO")
                         .checksum("7d41402abc4b2a76b9719d911017c593")
-                        .user(student)
+                        .userId(student.getId())
                         .build();
 
                 com.lumiedu.document.entity.Document doc4 = com.lumiedu.document.entity.Document.builder()
@@ -211,7 +211,7 @@ public class DataInitializer implements CommandLineRunner {
                         .fileUrl("https://storage.lumiedu.com/files/meeting_audio_record.mp3")
                         .fileType("AUDIO")
                         .checksum("8d41402abc4b2a76b9719d911017c594")
-                        .user(student)
+                        .userId(student.getId())
                         .build();
 
                 com.lumiedu.document.entity.Document doc5 = com.lumiedu.document.entity.Document.builder()
@@ -220,7 +220,7 @@ public class DataInitializer implements CommandLineRunner {
                         .fileUrl("https://storage.lumiedu.com/files/profile_picture.png")
                         .fileType("IMAGE")
                         .checksum("9d41402abc4b2a76b9719d911017c595")
-                        .user(student)
+                        .userId(student.getId())
                         .build();
 
                 documentRepository.saveAll(java.util.List.of(doc1, doc2, doc3, doc4, doc5));

@@ -2,7 +2,6 @@ package com.lumiedu.document.repository;
 
 import com.lumiedu.document.entity.Document;
 import org.springframework.data.jpa.repository.JpaRepository;
-<<<<<<< HEAD
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,6 +11,8 @@ import java.util.Optional;
 
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, Long> {
+
+    List<Document> findByUserId(Long userId);
 
     List<Document> findAllByDeletedFalse();
 
@@ -34,13 +35,4 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             @Param("fileType") String fileType,
             @Param("userId") Long userId
     );
-=======
-import org.springframework.stereotype.Repository;
-
-import java.util.List;
-
-@Repository
-public interface DocumentRepository extends JpaRepository<Document, Long> {
-    List<Document> findByUserId(Long userId);
->>>>>>> 7167afb331e078b4db90871ed7b1bca22f264d18
 }
