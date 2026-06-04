@@ -66,7 +66,7 @@ public class AuthController {
             googleId = "mock-google-id-123456";
             email = "mock.google.user@example.com";
             name = "Mock Google User";
-            avatarUrl = "/avatar.svg";
+            avatarUrl = "/logo.png";
         } else {
             try {
                 // Real OAuth2 Token Exchange
@@ -125,7 +125,7 @@ public class AuthController {
         if (tpAccountOpt.isPresent()) {
             user = tpAccountOpt.get().getUser();
             // Sync Google avatar if current avatar is empty or default
-            if (avatarUrl != null && !avatarUrl.trim().isEmpty() && (user.getAvatarUrl() == null || user.getAvatarUrl().trim().isEmpty() || "/avatar.svg".equals(user.getAvatarUrl()))) {
+            if (avatarUrl != null && !avatarUrl.trim().isEmpty() && (user.getAvatarUrl() == null || user.getAvatarUrl().trim().isEmpty() || "/logo.png".equals(user.getAvatarUrl()))) {
                 user.setAvatarUrl(avatarUrl);
                 user = userRepository.save(user);
             }
@@ -135,7 +135,7 @@ public class AuthController {
             if (existingUserOpt.isPresent()) {
                 user = existingUserOpt.get();
                 // Sync Google avatar if current avatar is empty or default
-                if (avatarUrl != null && !avatarUrl.trim().isEmpty() && (user.getAvatarUrl() == null || user.getAvatarUrl().trim().isEmpty() || "/avatar.svg".equals(user.getAvatarUrl()))) {
+                if (avatarUrl != null && !avatarUrl.trim().isEmpty() && (user.getAvatarUrl() == null || user.getAvatarUrl().trim().isEmpty() || "/logo.png".equals(user.getAvatarUrl()))) {
                     user.setAvatarUrl(avatarUrl);
                     user = userRepository.save(user);
                 }
@@ -153,7 +153,7 @@ public class AuthController {
                         .fullName(name)
                         .email(email)
                         .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString())) // Random secure password
-                        .avatarUrl(avatarUrl)
+                        .avatarUrl(avatarUrl != null && !avatarUrl.trim().isEmpty() ? avatarUrl : "/logo.png")
                         .role(com.lumiedu.user.enums.UserRole.USER)
                         .accountStatus(com.lumiedu.user.enums.AccountStatus.ACTIVE)
                         .twoFactorEnabled(false)
@@ -193,7 +193,7 @@ public class AuthController {
                 .email(user.getEmail())
                 .role(user.getRole().name().toLowerCase())
                 .plan(plan)
-                .avatarUrl(user.getAvatarUrl() != null && !user.getAvatarUrl().trim().isEmpty() ? user.getAvatarUrl() : "/avatar.svg")
+                .avatarUrl(user.getAvatarUrl() != null && !user.getAvatarUrl().trim().isEmpty() ? user.getAvatarUrl() : "/logo.png")
                 .build();
 
         AuthTokens tokens = AuthTokens.builder()
@@ -235,7 +235,7 @@ public class AuthController {
                 .email(user.getEmail())
                 .role(user.getRole().name().toLowerCase())
                 .plan(plan)
-                .avatarUrl(user.getAvatarUrl() != null ? user.getAvatarUrl() : "/avatar.svg")
+                .avatarUrl(user.getAvatarUrl() != null ? user.getAvatarUrl() : "/logo.png")
                 .build();
 
         AuthTokens tokens = AuthTokens.builder()

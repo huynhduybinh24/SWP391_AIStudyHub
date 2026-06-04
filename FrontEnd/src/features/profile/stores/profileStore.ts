@@ -41,7 +41,7 @@ export const useProfileStore = create<ProfileState>()(
         university: 'FPT University',
         major: 'Software engineering',
         degree: 'Bachelor',
-        avatarUrl: '/avatar.svg',
+        avatarUrl: '/logo.png',
       },
       linkedAccounts: [
         { id: 'google', name: 'Google', connected: true, email: 'alex.rivera@gmail.com' },
@@ -87,7 +87,7 @@ export const useProfileStore = create<ProfileState>()(
               email: authUser.email,
               role: authUser.role,
               plan: authUser.plan || 'free',
-              avatar: updatedProfile.avatarUrl || '/avatar.svg'
+              avatar: updatedProfile.avatarUrl || '/logo.png'
             }))
           }
           

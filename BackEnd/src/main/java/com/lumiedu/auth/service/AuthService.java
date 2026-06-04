@@ -33,6 +33,7 @@ public class AuthService {
                 .fullName(request.getFullName())
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .avatarUrl("/logo.png")
                 .role(UserRole.USER)
                 .accountStatus(AccountStatus.ACTIVE)
                 .twoFactorEnabled(false)

@@ -41,12 +41,12 @@ export function AccountSettingsCard() {
     const stored = localStorage.getItem('aiStudyHubUserAvatar')
     if (stored) return stored
     // If profileStore has a non-default avatar, use that
-    if (profile.avatarUrl && profile.avatarUrl !== '/avatar.svg') return profile.avatarUrl
+    if (profile.avatarUrl && profile.avatarUrl !== '/logo.png') return profile.avatarUrl
     return null
   })
   const [hasCustomAvatar, setHasCustomAvatar] = useState(() => {
     return !!localStorage.getItem('aiStudyHubUserAvatar') ||
-      (!!profile.avatarUrl && profile.avatarUrl !== '/avatar.svg')
+      (!!profile.avatarUrl && profile.avatarUrl !== '/logo.png')
   })
   const [pendingAvatarRemoval, setPendingAvatarRemoval] = useState(false)
   const [isAvatarDirty, setIsAvatarDirty] = useState(false)
@@ -116,7 +116,7 @@ export function AccountSettingsCard() {
           } catch (e) {
             console.error('Error removing avatar from localStorage:', e)
           }
-          updateProfile({ avatarUrl: '/avatar.svg' })
+          updateProfile({ avatarUrl: '/logo.png' })
           setPendingAvatarRemoval(false)
         } else if (avatarPreview && avatarPreview.startsWith('data:image')) {
           // Save custom avatar

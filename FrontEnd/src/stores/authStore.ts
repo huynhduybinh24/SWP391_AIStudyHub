@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>()(
             email: user.email,
             role: user.role,
             plan: user.plan || 'free',
-            avatar: user.avatarUrl || '/avatar.svg'
+            avatar: user.avatarUrl || '/logo.png'
           }))
 
           // Cancel any scheduled log deletion since the user logged back in
@@ -165,7 +165,7 @@ export const useAuthStore = create<AuthState>()(
               email: savedUser.email,
               role: savedUser.role,
               plan: savedUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
-              avatarUrl: savedUser.avatar || '/avatar.svg',
+              avatarUrl: savedUser.avatar || '/logo.png',
             }
             return {
               ...current,
