@@ -71,7 +71,7 @@ public class DataInitializer implements CommandLineRunner {
                     .planType(PlanType.FREE)
                     .price(BigDecimal.ZERO)
                     .durationDays(30)
-                    .storageLimitMb(500L)
+                    .storageLimitMb(1024L)
                     .maxDocuments(20)
                     .aiChatLimitPerDay(10)
                     .quizLimitPerDay(3)

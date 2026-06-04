@@ -15,6 +15,9 @@ import {
 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { useNavigate } from 'react-router-dom'
+import { useToastStore } from '@/stores/toastStore'
+import { getDocumentIdByName } from './CurriculumModal'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useTranslation } from '@/context/LanguageContext'
 import { Language } from '@/locales'
@@ -124,6 +127,8 @@ function LessonTypeIcon({ type }: { type: LessonType }) {
 
 export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
   const { t, language } = useTranslation()
+  const navigate = useNavigate()
+  const addToast = useToastStore((s) => s.addToast)
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
 
@@ -201,11 +206,38 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
 
   const handleResume = () => {
     if (!nextLesson) return
-    setCompletedIds((prev) => new Set([...prev, nextLesson.id]))
     const ownerSection = plan.sections.find((s) =>
       s.lessons.some((l) => l.id === nextLesson.id)
     )
     if (ownerSection) setExpandedSection(ownerSection.label)
+
+    if (nextLesson.type === 'reading') {
+      addToast(
+        language === 'vi'
+          ? `Đang mở bài đọc tiếp theo: ${nextLesson.title}`
+          : `Opening next reading lesson: ${nextLesson.title}`,
+        'info'
+      )
+      onClose()
+      navigate(`/dashboard/documents/document/${getDocumentIdByName(plan.title)}`)
+    } else if (nextLesson.type === 'quiz') {
+      addToast(
+        language === 'vi'
+          ? `Đang mở bài kiểm tra tiếp theo: ${nextLesson.title}`
+          : `Opening next quiz lesson: ${nextLesson.title}`,
+        'success'
+      )
+      onClose()
+      navigate('/dashboard/quizzes')
+    } else {
+      setCompletedIds((prev) => new Set([...prev, nextLesson.id]))
+      addToast(
+        language === 'vi'
+          ? `Đã hoàn thành bài học: ${nextLesson.title}`
+          : `Completed lesson: ${nextLesson.title}`,
+        'success'
+      )
+    }
   }
 
   return (
@@ -323,22 +355,65 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
                       : ''
 
                     return (
-                      <button
+                      <div
                         key={lesson.id}
-                        type="button"
-                        onClick={() => toggleLesson(lesson.id)}
                         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors text-left"
                       >
-                        {isDone
-                          ? <CheckCircle2 className="size-4 text-[#2557E8] dark:text-blue-400 shrink-0" />
-                          : <Circle       className="size-4 text-slate-300 dark:text-slate-600 shrink-0" />
-                        }
-                        <LessonTypeIcon type={lesson.type} />
-                        <span className={`flex-1 text-sm ${isDone ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
-                          {getLocalizedLessonTitle(lesson.title, language)}
-                        </span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">{localizedDuration}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleLesson(lesson.id)
+                          }}
+                          className="p-1 -m-1 rounded hover:bg-slate-200/50 dark:hover:bg-slate-700/50 cursor-pointer shrink-0 transition-colors"
+                          title={language === 'vi' ? 'Đánh dấu hoàn thành' : 'Mark as completed'}
+                        >
+                          {isDone
+                            ? <CheckCircle2 className="size-4 text-[#2557E8] dark:text-blue-400" />
+                            : <Circle       className="size-4 text-slate-300 dark:text-slate-600" />
+                          }
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (lesson.type === 'reading') {
+                              addToast(
+                                language === 'vi'
+                                  ? `Đang mở tài liệu bài học: ${lesson.title}`
+                                  : `Opening reading materials: ${lesson.title}`,
+                                'info'
+                              )
+                              onClose()
+                              navigate(`/dashboard/documents/document/${getDocumentIdByName(plan.title)}`)
+                            } else if (lesson.type === 'quiz') {
+                              addToast(
+                                language === 'vi'
+                                  ? `Đang mở bài kiểm tra tự luyện: ${lesson.title}`
+                                  : `Opening practice quiz: ${lesson.title}`,
+                                'success'
+                              )
+                              onClose()
+                              navigate('/dashboard/quizzes')
+                            } else {
+                              addToast(
+                                language === 'vi'
+                                  ? `Đã hoàn thành bài học: ${lesson.title}`
+                                  : `Completed lesson: ${lesson.title}`,
+                                'success'
+                              )
+                              toggleLesson(lesson.id)
+                            }
+                          }}
+                          className="flex-1 flex items-center gap-3 text-left focus:outline-none cursor-pointer"
+                        >
+                          <LessonTypeIcon type={lesson.type} />
+                          <span className={`flex-1 text-sm ${isDone ? 'text-slate-400 dark:text-slate-500 line-through font-medium' : 'text-slate-700 dark:text-slate-300 font-medium'}`}>
+                            {getLocalizedLessonTitle(lesson.title, language)}
+                          </span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">{localizedDuration}</span>
+                        </button>
+                      </div>
                     )
                   })}
                 </div>

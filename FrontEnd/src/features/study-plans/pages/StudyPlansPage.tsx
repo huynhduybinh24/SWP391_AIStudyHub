@@ -792,7 +792,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                       key={i}
                       onClick={(e) => {
                         e.stopPropagation()
-                        navigate('/dashboard/documents')
+                        navigate(`/dashboard/documents/document/${getDocumentIdByName(docName)}`)
                       }}
                       className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-indigo-55/40 hover:bg-indigo-100/50 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/40 border border-indigo-100/50 dark:border-indigo-900/30 text-[11px] font-semibold text-indigo-650 dark:text-indigo-400 cursor-pointer transition-colors"
                     >
