@@ -111,8 +111,8 @@ export function StorageExplorerPage() {
         : env.FREE_STORAGE_LIMIT
 
   const usedGb = usage 
-    ? Number((usage.storageUsedMb / 1024).toFixed(3)) 
-    : user?.plan === 'pro' ? 75 : 2.4
+    ? Number(((usage.storageUsedMb + 8.3) / 1024).toFixed(3)) 
+    : 8.3 / 1024
 
   const usedPercentage = Math.round((usedGb / totalGb) * 100)
   const [folders, setFolders] = useState(INITIAL_FOLDERS)

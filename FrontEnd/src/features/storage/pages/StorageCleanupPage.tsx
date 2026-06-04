@@ -123,8 +123,8 @@ export function StorageCleanupPage() {
   }
  
   const usedGB = usage 
-    ? usage.storageUsedMb / 1024 
-    : isPro ? 8.5 : 2.4
+    ? (usage.storageUsedMb + 8.3) / 1024 
+    : 8.3 / 1024
 
   const totalGB = usage 
     ? usage.storageLimitMb / 1024 
