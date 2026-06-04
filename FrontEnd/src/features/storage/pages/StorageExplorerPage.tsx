@@ -26,6 +26,7 @@ import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { useTranslation } from '@/context/LanguageContext'
+import { storageService, type StorageUsage } from '@/services/storageService'
 
 const INITIAL_FOLDERS = [
   { id: '1', name: 'Physics 101', itemsCount: 12, size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe', category: 'Study' },
@@ -87,8 +88,32 @@ export function StorageExplorerPage() {
   const user = useAuthStore((s) => s.user)
   const { t, language } = useTranslation()
   
-  const totalGb = user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
-  const usedGb = user?.plan === 'pro' ? 75 : 2.4
+  const [usage, setUsage] = useState<StorageUsage | null>(null)
+
+  useEffect(() => {
+    if (user?.id) {
+      storageService.getStorageUsage(Number(user.id))
+        .then(data => {
+          setUsage(data)
+        })
+        .catch(err => {
+          console.error("Failed to fetch storage usage:", err)
+        })
+    }
+  }, [user?.id])
+
+  const totalGb = usage 
+    ? usage.storageLimitMb / 1024 
+    : user?.plan === 'pro' 
+      ? env.PRO_STORAGE_LIMIT 
+      : user?.plan === 'enterprise' || user?.plan === 'premium'
+        ? env.PREMIUM_STORAGE_LIMIT
+        : env.FREE_STORAGE_LIMIT
+
+  const usedGb = usage 
+    ? Number((usage.storageUsedMb / 1024).toFixed(3)) 
+    : user?.plan === 'pro' ? 75 : 2.4
+
   const usedPercentage = Math.round((usedGb / totalGb) * 100)
   const [folders, setFolders] = useState(INITIAL_FOLDERS)
   const [files, setFiles] = useState(INITIAL_FILES)
