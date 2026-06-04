@@ -11,12 +11,33 @@ class LumiEduApplicationTests {
     }
 
     @Test
-    void testHash() {
-        String key = "at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa";
-        String data = "accessKey=klm05TvNBzhg7h7j&amount=200000";
-        String hash = com.lumiedu.billing.config.MomoConfig.hmacSha256(key, data);
-        System.out.println("TEST MOMO HASH RESULT: " + hash);
+    void testStripeCheckoutDirectly() {
+        try {
+            com.stripe.Stripe.apiKey = "sk_test_51TeakuEnXkUB7pNOXwsD5YHPt10gSQqOQcr7vPjpyhapEjCW6QUVP4y2n1u0uLwnuFSZ3b3cJ82exJybWO5fUoaz00u706XYh4";
+            com.stripe.param.checkout.SessionCreateParams params = com.stripe.param.checkout.SessionCreateParams.builder()
+                    .setMode(com.stripe.param.checkout.SessionCreateParams.Mode.PAYMENT)
+                    .setSuccessUrl("http://localhost:8386/success")
+                    .setCancelUrl("http://localhost:8386/cancel")
+                    .addLineItem(com.stripe.param.checkout.SessionCreateParams.LineItem.builder()
+                            .setQuantity(1L)
+                            .setPriceData(com.stripe.param.checkout.SessionCreateParams.LineItem.PriceData.builder()
+                                    .setCurrency("vnd")
+                                    .setUnitAmount(200000L)
+                                    .setProductData(com.stripe.param.checkout.SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                            .setName("Pro Plan")
+                                            .setDescription("Billed monthly")
+                                            .build())
+                                    .build())
+                            .build())
+                    .build();
+            com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.create(params);
+            System.out.println("TEST STRIPE SESSION URL: " + session.getUrl());
+        } catch (Exception e) {
+            System.out.println("TEST STRIPE ERROR: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
+
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.lumiedu.billing.repository.UserSubscriptionRepository userSubscriptionRepository;

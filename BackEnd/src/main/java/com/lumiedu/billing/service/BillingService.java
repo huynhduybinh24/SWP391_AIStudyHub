@@ -1,6 +1,6 @@
 package com.lumiedu.billing.service;
 
-import com.lumiedu.billing.config.MomoConfig;
+import com.lumiedu.billing.config.StripeConfig;
 import com.lumiedu.billing.dto.*;
 import com.lumiedu.billing.entity.InstitutionalRequest;
 import com.lumiedu.billing.entity.Payment;
@@ -16,18 +16,17 @@ import com.lumiedu.billing.repository.SubscriptionPlanRepository;
 import com.lumiedu.billing.repository.UserSubscriptionRepository;
 import com.lumiedu.user.entity.User;
 import com.lumiedu.user.repository.UserRepository;
+import com.stripe.model.Event;
+import com.stripe.model.checkout.Session;
+import com.stripe.net.ApiResource;
+import com.stripe.net.Webhook;
+import com.stripe.param.checkout.SessionCreateParams;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,7 +39,7 @@ public class BillingService {
     private final PaymentRepository paymentRepository;
     private final InstitutionalRequestRepository institutionalRequestRepository;
     private final UserRepository userRepository;
-    private final MomoConfig momoConfig;
+    private final StripeConfig stripeConfig;
 
     public List<SubscriptionPlanResponse> getActivePlans() {
         return subscriptionPlanRepository.findByActiveTrue().stream()
@@ -82,12 +81,38 @@ public class BillingService {
 
         payment = paymentRepository.save(payment);
 
-        String paymentUrl = "http://localhost:8386/mock-momo-payment?orderId=" + invoiceCode + "&amount=" + plan.getPrice().longValue();
+        try {
+            SessionCreateParams params = SessionCreateParams.builder()
+                    .setMode(SessionCreateParams.Mode.PAYMENT)
+                    .setSuccessUrl(stripeConfig.getSuccessUrl())
+                    .setCancelUrl(stripeConfig.getCancelUrl())
+                    .addLineItem(SessionCreateParams.LineItem.builder()
+                            .setQuantity(1L)
+                            .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
+                                    .setCurrency("vnd")
+                                    .setUnitAmount(plan.getPrice().longValue())
+                                    .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                            .setName(plan.getPlanName())
+                                            .setDescription(plan.getDescription())
+                                            .build())
+                                    .build())
+                            .build())
+                    .putMetadata("userId", String.valueOf(user.getId()))
+                    .putMetadata("planId", String.valueOf(plan.getId()))
+                    .putMetadata("invoiceCode", invoiceCode)
+                    .setClientReferenceId(invoiceCode)
+                    .build();
 
-        return CheckoutResponse.builder()
-                .paymentUrl(paymentUrl)
-                .invoiceCode(invoiceCode)
-                .build();
+            Session session = Session.create(params);
+            String paymentUrl = session.getUrl();
+
+            return CheckoutResponse.builder()
+                    .paymentUrl(paymentUrl)
+                    .invoiceCode(invoiceCode)
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create Stripe Checkout Session: " + e.getMessage(), e);
+        }
     }
 
     @Transactional
@@ -161,111 +186,38 @@ public class BillingService {
                 .build();
     }
 
-    private String generateMomoUrl(Payment payment) {
-        String requestId = String.valueOf(System.currentTimeMillis());
-        String orderId = payment.getInvoiceCode();
-        long amount = payment.getAmount().longValue();
-        String orderInfo = "Thanh toan don hang " + orderId;
-        String redirectUrl = momoConfig.getRedirectUrl();
-        String ipnUrl = momoConfig.getIpnUrl();
-        String requestType = "captureWallet";
-        String extraData = "";
-
-        String rawSignature = "accessKey=" + momoConfig.getAccessKey()
-                + "&amount=" + amount
-                + "&extraData=" + extraData
-                + "&ipnUrl=" + ipnUrl
-                + "&orderId=" + orderId
-                + "&orderInfo=" + orderInfo
-                + "&partnerCode=" + momoConfig.getPartnerCode()
-                + "&redirectUrl=" + redirectUrl
-                + "&requestId=" + requestId
-                + "&requestType=" + requestType;
-
-        String signature = MomoConfig.hmacSha256(momoConfig.getSecretKey(), rawSignature);
-
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("partnerCode", momoConfig.getPartnerCode());
-        requestBody.put("partnerName", "LumiEdu");
-        requestBody.put("storeId", "LumiEduStore");
-        requestBody.put("requestId", requestId);
-        requestBody.put("amount", amount);
-        requestBody.put("orderId", orderId);
-        requestBody.put("orderInfo", orderInfo);
-        requestBody.put("redirectUrl", redirectUrl);
-        requestBody.put("ipnUrl", ipnUrl);
-        requestBody.put("requestType", requestType);
-        requestBody.put("extraData", extraData);
-        requestBody.put("lang", "vi");
-        requestBody.put("signature", signature);
+    @Transactional
+    public void handleStripeWebhook(String payload, String sigHeader) {
+        String webhookSecret = stripeConfig.getWebhookSecret();
+        Event event;
 
         try {
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<Map> response = restTemplate.postForEntity(momoConfig.getPayUrl(), requestBody, Map.class);
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                Map<String, Object> body = response.getBody();
-                Object resultCodeObj = body.get("resultCode");
-                int resultCode = -1;
-                if (resultCodeObj instanceof Number) {
-                    resultCode = ((Number) resultCodeObj).intValue();
-                }
-                if (resultCode == 0) {
-                    return (String) body.get("payUrl");
-                } else {
-                    String message = (String) body.get("message");
-                    throw new RuntimeException("MoMo creation failed: " + message);
-                }
+            if ("whsec_mock_key_for_now".equals(webhookSecret) || sigHeader == null) {
+                event = ApiResource.GSON.fromJson(payload, Event.class);
             } else {
-                throw new RuntimeException("Failed to call MoMo API: " + response.getStatusCode());
+                event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error communicating with MoMo gateway: " + e.getMessage(), e);
+            throw new RuntimeException("Webhook signature verification failed: " + e.getMessage());
+        }
+
+        if ("checkout.session.completed".equals(event.getType())) {
+            Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
+            if (session != null) {
+                String invoiceCode = session.getMetadata() != null ? session.getMetadata().get("invoiceCode") : null;
+                if (invoiceCode == null) {
+                    invoiceCode = session.getClientReferenceId();
+                }
+
+                if (invoiceCode != null) {
+                    processSuccessfulPayment(invoiceCode, session.getId());
+                }
+            }
         }
     }
 
     @Transactional
-    public PaymentResponse processMomoCallback(Map<String, String> queryParams) {
-        if (!momoConfig.verifyCallback(queryParams)) {
-            throw new RuntimeException("Invalid MoMo signature");
-        }
-
-        String invoiceCode = queryParams.get("orderId");
-        Payment payment = paymentRepository.findByInvoiceCode(invoiceCode)
-                .orElseThrow(() -> new RuntimeException("Payment not found with invoice code: " + invoiceCode));
-
-        String resultCodeStr = queryParams.get("resultCode");
-        int resultCode = resultCodeStr != null ? Integer.parseInt(resultCodeStr) : -1;
-        String transId = queryParams.get("transId");
-
-        UserSubscription subscription = payment.getUserSubscription();
-
-        if (resultCode == 0) {
-            payment.setPaymentStatus(PaymentStatus.SUCCESS);
-            payment.setPaidAt(LocalDateTime.now());
-            payment.setTransactionCode("MOMO-" + transId);
-            payment.setPaymentGatewayResponse(queryParams.toString());
-
-            if (subscription != null) {
-                subscription.setStatus(SubscriptionStatus.ACTIVE);
-                userSubscriptionRepository.save(subscription);
-            }
-        } else {
-            payment.setPaymentStatus(PaymentStatus.FAILED);
-            payment.setPaymentGatewayResponse(queryParams.toString());
-
-            if (subscription != null) {
-                subscription.setStatus(SubscriptionStatus.CANCELLED);
-                userSubscriptionRepository.save(subscription);
-            }
-        }
-
-        payment = paymentRepository.save(payment);
-        return toPaymentResponse(payment);
-    }
-
-    @Transactional
-    public PaymentResponse processMomoCallbackMock(String invoiceCode) {
+    public void processSuccessfulPayment(String invoiceCode, String stripeSessionId) {
         Payment payment = paymentRepository.findByInvoiceCode(invoiceCode)
                 .orElseThrow(() -> new RuntimeException("Payment not found with invoice code: " + invoiceCode));
 
@@ -273,15 +225,13 @@ public class BillingService {
 
         payment.setPaymentStatus(PaymentStatus.SUCCESS);
         payment.setPaidAt(LocalDateTime.now());
-        payment.setTransactionCode("MOCK-MOMO-" + System.currentTimeMillis());
-        payment.setPaymentGatewayResponse("MOCK_SUCCESS_BYPASS");
+        payment.setTransactionCode("STRIPE-" + stripeSessionId);
+        payment.setPaymentGatewayResponse("STRIPE_WEBHOOK_COMPLETED");
+        paymentRepository.save(payment);
 
         if (subscription != null) {
             subscription.setStatus(SubscriptionStatus.ACTIVE);
             userSubscriptionRepository.save(subscription);
         }
-
-        payment = paymentRepository.save(payment);
-        return toPaymentResponse(payment);
     }
 }
