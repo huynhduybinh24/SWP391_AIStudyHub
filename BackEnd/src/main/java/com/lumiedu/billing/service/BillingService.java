@@ -26,7 +26,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,6 +49,97 @@ public class BillingService {
                 .collect(Collectors.toList());
     }
 
+    public UpgradeEstimateResponse getUpgradeEstimate(Long userId, Long targetPlanId) {
+        SubscriptionPlan targetPlan = subscriptionPlanRepository.findById(targetPlanId)
+                .orElseThrow(() -> new RuntimeException("Subscription plan not found with id: " + targetPlanId));
+
+        Optional<UserSubscription> activeSubOpt = userSubscriptionRepository
+                .findFirstByUserIdAndStatusOrderByEndDateDesc(userId, SubscriptionStatus.ACTIVE);
+
+        if (activeSubOpt.isEmpty()) {
+            return UpgradeEstimateResponse.builder()
+                    .currentPlanName("None (Free)")
+                    .targetPlanName(targetPlan.getPlanName())
+                    .targetPlanPrice(targetPlan.getPrice())
+                    .remainingDays(0L)
+                    .discountAmount(BigDecimal.ZERO)
+                    .finalPrice(targetPlan.getPrice())
+                    .isUpgradeAllowed(true)
+                    .message("No active subscription, full price applies.")
+                    .build();
+        }
+
+        UserSubscription activeSub = activeSubOpt.get();
+        SubscriptionPlan currentPlan = activeSub.getSubscriptionPlan();
+
+        // Check if target plan is actually an upgrade (higher price than current plan)
+        if (targetPlan.getPrice().compareTo(currentPlan.getPrice()) <= 0) {
+            return UpgradeEstimateResponse.builder()
+                    .currentPlanName(currentPlan.getPlanName())
+                    .targetPlanName(targetPlan.getPlanName())
+                    .targetPlanPrice(targetPlan.getPrice())
+                    .remainingDays(0L)
+                    .discountAmount(BigDecimal.ZERO)
+                    .finalPrice(targetPlan.getPrice())
+                    .isUpgradeAllowed(false)
+                    .message("Chỉ hỗ trợ nâng cấp lên gói có giá trị cao hơn!")
+                    .build();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(activeSub.getEndDate())) {
+            return UpgradeEstimateResponse.builder()
+                    .currentPlanName(currentPlan.getPlanName())
+                    .targetPlanName(targetPlan.getPlanName())
+                    .targetPlanPrice(targetPlan.getPrice())
+                    .remainingDays(0L)
+                    .discountAmount(BigDecimal.ZERO)
+                    .finalPrice(targetPlan.getPrice())
+                    .isUpgradeAllowed(true)
+                    .message("Current subscription has expired, full price applies.")
+                    .build();
+        }
+
+        long remainingDays = ChronoUnit.DAYS.between(now, activeSub.getEndDate());
+        if (remainingDays <= 0) {
+            return UpgradeEstimateResponse.builder()
+                    .currentPlanName(currentPlan.getPlanName())
+                    .targetPlanName(targetPlan.getPlanName())
+                    .targetPlanPrice(targetPlan.getPrice())
+                    .remainingDays(0L)
+                    .discountAmount(BigDecimal.ZERO)
+                    .finalPrice(targetPlan.getPrice())
+                    .isUpgradeAllowed(true)
+                    .message("Less than a day remaining, full price applies.")
+                    .build();
+        }
+
+        // Daily price of current plan
+        BigDecimal dailyPrice = currentPlan.getPrice().divide(
+                BigDecimal.valueOf(currentPlan.getDurationDays()),
+                2,
+                RoundingMode.HALF_UP
+        );
+        BigDecimal remainingValue = dailyPrice.multiply(BigDecimal.valueOf(remainingDays));
+
+        // Deduct remaining value from the new plan price
+        BigDecimal finalPrice = targetPlan.getPrice().subtract(remainingValue);
+        if (finalPrice.compareTo(BigDecimal.ZERO) < 0) {
+            finalPrice = BigDecimal.ZERO;
+        }
+
+        return UpgradeEstimateResponse.builder()
+                .currentPlanName(currentPlan.getPlanName())
+                .targetPlanName(targetPlan.getPlanName())
+                .targetPlanPrice(targetPlan.getPrice())
+                .remainingDays(remainingDays)
+                .discountAmount(remainingValue)
+                .finalPrice(finalPrice)
+                .isUpgradeAllowed(true)
+                .message("Upgrade estimate calculated successfully.")
+                .build();
+    }
+
     @Transactional
     public CheckoutResponse checkout(CheckoutRequest request) {
         User user = userRepository.findById(request.getUserId())
@@ -54,6 +147,19 @@ public class BillingService {
 
         SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getPlanId())
                 .orElseThrow(() -> new RuntimeException("Subscription plan not found with id: " + request.getPlanId()));
+
+        // Calculate dynamic upgrade price if they have an active plan
+        BigDecimal planPrice = plan.getPrice();
+        Optional<UserSubscription> activeSubOpt = userSubscriptionRepository
+                .findFirstByUserIdAndStatusOrderByEndDateDesc(user.getId(), SubscriptionStatus.ACTIVE);
+
+        if (activeSubOpt.isPresent()) {
+            UpgradeEstimateResponse estimate = getUpgradeEstimate(user.getId(), plan.getId());
+            if (!estimate.isUpgradeAllowed()) {
+                throw new RuntimeException(estimate.getMessage());
+            }
+            planPrice = estimate.getFinalPrice();
+        }
 
         UserSubscription userSubscription = UserSubscription.builder()
                 .user(user)
@@ -72,7 +178,7 @@ public class BillingService {
         Payment payment = Payment.builder()
                 .user(user)
                 .userSubscription(userSubscription)
-                .amount(plan.getPrice())
+                .amount(planPrice)
                 .paymentMethod(request.getPaymentMethod())
                 .paymentStatus(PaymentStatus.PENDING)
                 .transactionCode("TXN-" + timestamp)
@@ -81,12 +187,40 @@ public class BillingService {
 
         payment = paymentRepository.save(payment);
 
+        // Edge case: If upgraded price is 0 (due to large remaining credit or 0 price), bypass Stripe.
+        if (planPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            userSubscription.setStatus(SubscriptionStatus.ACTIVE);
+            userSubscriptionRepository.save(userSubscription);
+
+            payment.setPaymentStatus(PaymentStatus.SUCCESS);
+            payment.setPaidAt(LocalDateTime.now());
+            payment.setTransactionCode("FREE-UPGRADE-" + timestamp);
+            payment.setPaymentGatewayResponse("COMPLETED_BYPASS_STRIPE");
+            paymentRepository.save(payment);
+
+            // Sync User storage limit
+            user.setStorageLimitMb(plan.getStorageLimitMb());
+            userRepository.save(user);
+
+            // Mark old active plans as upgraded
+            if (activeSubOpt.isPresent()) {
+                UserSubscription oldSub = activeSubOpt.get();
+                oldSub.setStatus(SubscriptionStatus.UPGRADED);
+                userSubscriptionRepository.save(oldSub);
+            }
+
+            return CheckoutResponse.builder()
+                    .paymentUrl("FREE_UPGRADE_SUCCESS")
+                    .invoiceCode(invoiceCode)
+                    .build();
+        }
+
         try {
             System.out.println("DEBUG CHECKOUT - Starting Stripe Session creation");
             System.out.println("DEBUG CHECKOUT - API Key: " + com.stripe.Stripe.apiKey);
             System.out.println("DEBUG CHECKOUT - Success URL: " + stripeConfig.getSuccessUrl());
             System.out.println("DEBUG CHECKOUT - Cancel URL: " + stripeConfig.getCancelUrl());
-            System.out.println("DEBUG CHECKOUT - Price: " + plan.getPrice());
+            System.out.println("DEBUG CHECKOUT - Price: " + planPrice);
 
             SessionCreateParams params = SessionCreateParams.builder()
                     .setMode(SessionCreateParams.Mode.PAYMENT)
@@ -96,9 +230,9 @@ public class BillingService {
                             .setQuantity(1L)
                             .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
                                     .setCurrency("vnd")
-                                    .setUnitAmount(plan.getPrice().longValue())
+                                    .setUnitAmount(planPrice.longValue())
                                     .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                            .setName(plan.getPlanName())
+                                            .setName(plan.getPlanName() + " (Nâng cấp)")
                                             .setDescription(plan.getDescription())
                                             .build())
                                     .build())
@@ -240,8 +374,27 @@ public class BillingService {
         paymentRepository.save(payment);
 
         if (subscription != null) {
+            User user = subscription.getUser();
+            SubscriptionPlan plan = subscription.getSubscriptionPlan();
+
+            // 1. Mark existing ACTIVE subscriptions as UPGRADED
+            List<UserSubscription> activeSubs = userSubscriptionRepository.findByUserId(user.getId());
+            for (UserSubscription oldSub : activeSubs) {
+                if (oldSub.getStatus() == SubscriptionStatus.ACTIVE && !oldSub.getId().equals(subscription.getId())) {
+                    oldSub.setStatus(SubscriptionStatus.UPGRADED);
+                    userSubscriptionRepository.save(oldSub);
+                }
+            }
+
+            // 2. Activate new subscription
             subscription.setStatus(SubscriptionStatus.ACTIVE);
+            subscription.setStartDate(LocalDateTime.now());
+            subscription.setEndDate(LocalDateTime.now().plusDays(plan.getDurationDays()));
             userSubscriptionRepository.save(subscription);
+
+            // 3. Sync User storage limit
+            user.setStorageLimitMb(plan.getStorageLimitMb());
+            userRepository.save(user);
         }
     }
 }

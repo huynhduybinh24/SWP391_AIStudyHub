@@ -95,8 +95,8 @@ public class DataInitializer implements CommandLineRunner {
             SubscriptionPlan enterprisePlan = SubscriptionPlan.builder()
                     .planName("Enterprise Plan")
                     .planType(PlanType.ENTERPRISE)
-                    .price(new BigDecimal("2000000"))
-                    .durationDays(365)
+                    .price(new BigDecimal("300000"))
+                    .durationDays(30)
                     .storageLimitMb(51200L) // 50GB
                     .maxDocuments(2000)
                     .aiChatLimitPerDay(1000)
@@ -108,12 +108,54 @@ public class DataInitializer implements CommandLineRunner {
             subscriptionPlanRepository.saveAll(List.of(freePlan, proPlan, enterprisePlan));
             System.out.println("--- Seeded default subscription plans successfully ---");
         } else {
-            // Update existing Pro plan price if it was seeded with a different price
+            // Synchronize FREE plan
+            subscriptionPlanRepository.findByPlanType(PlanType.FREE).ifPresent(freePlan -> {
+                boolean updated = false;
+                if (freePlan.getStorageLimitMb() != 1024L) {
+                    freePlan.setStorageLimitMb(1024L);
+                    updated = true;
+                }
+                if (updated) {
+                    subscriptionPlanRepository.save(freePlan);
+                    System.out.println("--- Sync: Updated Free Plan storage limit to 1024MB ---");
+                }
+            });
+
+            // Synchronize PRO plan
             subscriptionPlanRepository.findByPlanType(PlanType.PRO).ifPresent(proPlan -> {
+                boolean updated = false;
                 if (proPlan.getPrice().compareTo(new BigDecimal("200000")) != 0) {
                     proPlan.setPrice(new BigDecimal("200000"));
+                    updated = true;
+                }
+                if (proPlan.getStorageLimitMb() != 5120L) {
+                    proPlan.setStorageLimitMb(5120L);
+                    updated = true;
+                }
+                if (updated) {
                     subscriptionPlanRepository.save(proPlan);
-                    System.out.println("--- Updated existing Pro Plan price to 200,000 VND ---");
+                    System.out.println("--- Sync: Updated Pro Plan to 200k VND and 5120MB ---");
+                }
+            });
+
+            // Synchronize ENTERPRISE/PREMIUM plan
+            subscriptionPlanRepository.findByPlanType(PlanType.ENTERPRISE).ifPresent(enterprisePlan -> {
+                boolean updated = false;
+                if (enterprisePlan.getPrice().compareTo(new BigDecimal("300000")) != 0) {
+                    enterprisePlan.setPrice(new BigDecimal("300000"));
+                    updated = true;
+                }
+                if (enterprisePlan.getDurationDays() != 30) {
+                    enterprisePlan.setDurationDays(30);
+                    updated = true;
+                }
+                if (enterprisePlan.getStorageLimitMb() != 51200L) {
+                    enterprisePlan.setStorageLimitMb(51200L);
+                    updated = true;
+                }
+                if (updated) {
+                    subscriptionPlanRepository.save(enterprisePlan);
+                    System.out.println("--- Sync: Updated Enterprise Plan to 300k VND, 30 days, and 51200MB ---");
                 }
             });
         }

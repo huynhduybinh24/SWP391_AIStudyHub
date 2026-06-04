@@ -26,6 +26,13 @@ public class BillingController {
         return ResponseEntity.ok(billingService.getActivePlans());
     }
 
+    @GetMapping("/upgrade-estimate")
+    public ResponseEntity<UpgradeEstimateResponse> getUpgradeEstimate(
+            @RequestParam Long userId,
+            @RequestParam Long targetPlanId) {
+        return ResponseEntity.ok(billingService.getUpgradeEstimate(userId, targetPlanId));
+    }
+
     @PostMapping("/checkout")
     public ResponseEntity<CheckoutResponse> checkout(
             @RequestBody CheckoutRequest request) {
