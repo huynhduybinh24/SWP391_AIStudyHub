@@ -1,10 +1,18 @@
 package com.lumiedu.document.entity;
 
+<<<<<<< HEAD
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
+=======
+import com.lumiedu.common.entity.BaseEntity;
+import com.lumiedu.user.entity.User;
+import jakarta.persistence.*;
+import lombok.*;
+
+>>>>>>> 7167afb331e078b4db90871ed7b1bca22f264d18
 @Entity
 @Table(name = "documents")
 @Getter
@@ -12,12 +20,17 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+<<<<<<< HEAD
 public class Document {
+=======
+public class Document extends BaseEntity {
+>>>>>>> 7167afb331e078b4db90871ed7b1bca22f264d18
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+<<<<<<< HEAD
     @Column(name = "title", nullable = false)
     private String title;
 
@@ -75,4 +88,24 @@ public class Document {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+=======
+    @Column(name = "title", nullable = false, length = 255)
+    private String title;
+
+    @Column(name = "file_size", nullable = false)
+    private Long fileSize; // size in bytes
+
+    @Column(name = "file_url", columnDefinition = "LONGTEXT")
+    private String fileUrl;
+
+    @Column(name = "file_type", nullable = false, length = 50)
+    private String fileType; // PDF, IMAGE, AUDIO, VIDEO, OTHER
+
+    @Column(name = "checksum", nullable = false, length = 64)
+    private String checksum; // hash/checksum to find duplicates
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+>>>>>>> 7167afb331e078b4db90871ed7b1bca22f264d18
 }
