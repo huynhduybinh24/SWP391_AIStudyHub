@@ -76,6 +76,7 @@ export function ProfileDashboard() {
                     <img
                       src={profile.avatarUrl}
                       alt={profile.name}
+                      referrerPolicy="no-referrer"
                       className="h-full w-full rounded-[20px] object-cover"
                     />
                   ) : (

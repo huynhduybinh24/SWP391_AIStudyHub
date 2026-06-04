@@ -49,7 +49,7 @@ export function UserDropdown({ onClose, onLogoutClick, onChangeUserClick }: User
     >
       <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-3">
         <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#E8EEFF] dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-800 overflow-hidden">
-          <img src={profile.avatarUrl} alt="Avatar" className="w-8 h-8 object-cover rounded-full" />
+          <img src={profile.avatarUrl} alt="Avatar" referrerPolicy="no-referrer" className="w-8 h-8 object-cover rounded-full" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 min-w-0">
