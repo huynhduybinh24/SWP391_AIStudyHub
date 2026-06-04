@@ -1,20 +1,30 @@
 # Auth Module
 
-This module manages authentication and account security.
+This module manages authentication for LumiEdu.
 
-Future contents:
+## Current Features
 - Register
 - Login
-- Logout
 - Forgot password
-- Password reset token
+- Reset password
 - Change password
-- Two-factor authentication
-- Third-party account linking such as Google login
+- Third-party account structure
 
-Future classes:
-- AuthController
-- AuthService
-- PasswordResetToken
-- ThirdPartyAccount
-- ProviderType enum
+## Current Scope
+This module uses BCrypt password hashing.
+JWT and full Spring Security authorization will be implemented later.
+
+## API Endpoints
+- GET /api/auth/health
+- POST /api/auth/register
+- POST /api/auth/login
+- POST /api/auth/forgot-password
+- POST /api/auth/reset-password
+- PUT /api/auth/change-password
+
+## Test Account Flow
+1. Register user:
+POST /api/auth/register
+
+2. Login user:
+POST /api/auth/login
