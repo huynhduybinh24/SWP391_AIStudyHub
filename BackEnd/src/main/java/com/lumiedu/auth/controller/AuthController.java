@@ -124,11 +124,21 @@ public class AuthController {
         User user = null;
         if (tpAccountOpt.isPresent()) {
             user = tpAccountOpt.get().getUser();
+            // Sync Google avatar if current avatar is empty or default
+            if (avatarUrl != null && !avatarUrl.trim().isEmpty() && (user.getAvatarUrl() == null || user.getAvatarUrl().trim().isEmpty() || "/avatar.svg".equals(user.getAvatarUrl()))) {
+                user.setAvatarUrl(avatarUrl);
+                user = userRepository.save(user);
+            }
         } else {
             // Find by email
             Optional<User> existingUserOpt = userRepository.findByEmail(email);
             if (existingUserOpt.isPresent()) {
                 user = existingUserOpt.get();
+                // Sync Google avatar if current avatar is empty or default
+                if (avatarUrl != null && !avatarUrl.trim().isEmpty() && (user.getAvatarUrl() == null || user.getAvatarUrl().trim().isEmpty() || "/avatar.svg".equals(user.getAvatarUrl()))) {
+                    user.setAvatarUrl(avatarUrl);
+                    user = userRepository.save(user);
+                }
                 // Create third-party account linkage
                 ThirdPartyAccount tpAccount = ThirdPartyAccount.builder()
                         .user(user)
@@ -183,7 +193,7 @@ public class AuthController {
                 .email(user.getEmail())
                 .role(user.getRole().name().toLowerCase())
                 .plan(plan)
-                .avatarUrl(user.getAvatarUrl() != null ? user.getAvatarUrl() : "/avatar.svg")
+                .avatarUrl(user.getAvatarUrl() != null && !user.getAvatarUrl().trim().isEmpty() ? user.getAvatarUrl() : "/avatar.svg")
                 .build();
 
         AuthTokens tokens = AuthTokens.builder()
