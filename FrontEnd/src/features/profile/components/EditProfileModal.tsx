@@ -118,8 +118,9 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       })
       toast.success(language === 'vi' ? 'Cập nhật hồ sơ thành công' : language === 'ja' ? 'プロフィールが正常に更新されました' : language === 'ko' ? '프로필이 성공적으로 업데이트되었습니다' : 'Profile updated successfully')
       onClose()
-    } catch (error) {
-      toast.error(language === 'vi' ? 'Không thể cập nhật hồ sơ' : language === 'ja' ? 'プロフィールの更新に失敗しました' : language === 'ko' ? '프로필 업데이트에 실패했습니다' : 'Failed to update profile')
+    } catch (error: any) {
+      const msg = error?.message || (language === 'vi' ? 'Không thể cập nhật hồ sơ' : 'Failed to update profile')
+      toast.error(msg)
     }
   }
 
@@ -128,7 +129,37 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setAvatarPreview(reader.result as string)
+        const img = new Image()
+        img.src = reader.result as string
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const maxSize = 256 // Max width/height for avatar
+          let width = img.width
+          let height = img.height
+
+          if (width > height) {
+            if (width > maxSize) {
+              height *= maxSize / width
+              width = maxSize
+            }
+          } else {
+            if (height > maxSize) {
+              width *= maxSize / height
+              height = maxSize
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height)
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7)
+            setAvatarPreview(compressedDataUrl)
+          } else {
+            setAvatarPreview(reader.result as string)
+          }
+        }
       }
       reader.readAsDataURL(file)
     }

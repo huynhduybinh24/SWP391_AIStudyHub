@@ -147,9 +147,10 @@ export function AccountSettingsCard() {
       setTimeout(() => {
         setSaveSuccess(false)
       }, 3000)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error inside handleConfirmSave:', error)
-      toast.error(language === 'vi' ? 'Đã xảy ra lỗi khi lưu cài đặt!' : 'An error occurred while saving settings!')
+      const msg = error?.message || (language === 'vi' ? 'Đã xảy ra lỗi khi lưu cài đặt!' : 'An error occurred while saving settings!')
+      toast.error(msg)
     } finally {
       // Force modal closure and reset state
       setShowConfirmModal(false)

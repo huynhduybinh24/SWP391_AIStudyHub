@@ -1,18 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { LinkedAccountCard, LinkedAccount } from './LinkedAccountCard'
 import { LinkedAccountLoginModal } from './LinkedAccountLoginModal'
 import { LinkedAccountManageModal } from './LinkedAccountManageModal'
 import { ConfirmModal } from './ConfirmModal'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { apiClient } from '@/lib/axios'
 
 const defaultLinkedAccounts: LinkedAccount[] = [
   {
     id: 'google',
     provider: 'Google',
-    email: 'alex.rivera@gmail.com',
-    connected: true,
-    connectedAt: '2024-01-12',
+    email: '',
+    connected: false,
+    connectedAt: null,
     permissions: ['Read profile', 'Access files', 'Sync data'],
     lastSync: null,
   },
@@ -30,6 +32,7 @@ const defaultLinkedAccounts: LinkedAccount[] = [
 export function LinkedAccounts() {
   const { t } = useTranslation()
   const toast = useToast()
+  const authUser = useAuthStore((s) => s.user)
 
   // State Management according to specification
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>(defaultLinkedAccounts)
@@ -38,33 +41,93 @@ export function LinkedAccounts() {
   const [manageModalOpen, setManageModalOpen] = useState(false)
   const [disconnectConfirmOpen, setDisconnectConfirmOpen] = useState(false)
 
-  // Handle opening connection login modal
+  // Fetch linked accounts from the database on mount/user change
+  useEffect(() => {
+    if (!authUser || !authUser.id) return
+
+    const fetchLinkedAccounts = async () => {
+      try {
+        const response = await apiClient.get<any[]>(`/users/${authUser.id}/linked-accounts`)
+        const googleLink = response.data.find((tp) => tp.providerType === 'GOOGLE')
+        const microsoftLink = response.data.find((tp) => tp.providerType === 'MICROSOFT')
+
+        setLinkedAccounts([
+          {
+            id: 'google',
+            provider: 'Google',
+            email: googleLink ? googleLink.providerEmail : '',
+            connected: !!googleLink,
+            connectedAt: googleLink ? googleLink.linkedAt?.split('T')[0] : null,
+            permissions: ['Read profile', 'Access files', 'Sync data'],
+            lastSync: null,
+          },
+          {
+            id: 'microsoft',
+            provider: 'Microsoft',
+            email: microsoftLink ? microsoftLink.providerEmail : '',
+            connected: !!microsoftLink,
+            connectedAt: microsoftLink ? microsoftLink.linkedAt?.split('T')[0] : null,
+            permissions: ['Read profile', 'Access files', 'Sync data'],
+            lastSync: null,
+          },
+        ])
+      } catch (err) {
+        console.error('Failed to fetch linked accounts:', err)
+      }
+    }
+
+    fetchLinkedAccounts()
+  }, [authUser])
+
+  // Handle opening connection login modal or redirecting to Google OAuth
   const handleConnectClick = (account: LinkedAccount) => {
-    setSelectedAccount(account)
-    setLoginModalOpen(true)
+    if (account.id === 'google') {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '885322210817-bh9ua0cnrt5d7ogt6950o3ipekq6kdv3.apps.googleusercontent.com'
+      const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
+      
+      if (clientId.includes('dummy')) {
+        window.location.href = `${window.location.origin}/auth/callback?code=mock-google-code-123456&state=link_account`
+        return
+      }
+      
+      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email%20profile&prompt=select_account&state=link_account`
+    } else {
+      setSelectedAccount(account)
+      setLoginModalOpen(true)
+    }
   }
 
-  // Handle connection success from login modal
-  const handleConnectSuccess = (email: string) => {
-    if (!selectedAccount) return
+  // Handle connection success from login modal (e.g. for Microsoft mock flow)
+  const handleConnectSuccess = async (email: string) => {
+    if (!selectedAccount || !authUser || !authUser.id) return
 
-    const todayStr = new Date().toISOString().split('T')[0]
+    try {
+      await apiClient.post(`/users/${authUser.id}/linked-accounts`, {
+        code: 'mock-microsoft-code',
+        redirectUri: window.location.origin + '/auth/callback',
+        provider: selectedAccount.id.toUpperCase(),
+      })
 
-    setLinkedAccounts((prev) =>
-      prev.map((acc) =>
-        acc.id === selectedAccount.id
-          ? {
-              ...acc,
-              connected: true,
-              email,
-              connectedAt: todayStr,
-              lastSync: null,
-            }
-          : acc
+      const todayStr = new Date().toISOString().split('T')[0]
+      setLinkedAccounts((prev) =>
+        prev.map((acc) =>
+          acc.id === selectedAccount.id
+            ? {
+                ...acc,
+                connected: true,
+                email,
+                connectedAt: todayStr,
+                lastSync: null,
+              }
+            : acc
+        )
       )
-    )
 
-    toast.success(t.profile.toastAccountConnected(selectedAccount.provider))
+      toast.success(t.profile.toastAccountConnected(selectedAccount.provider))
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to connect account.')
+    }
+
     setLoginModalOpen(false)
     setSelectedAccount(null)
   }
@@ -107,24 +170,31 @@ export function LinkedAccounts() {
   }
 
   // Handle confirming disconnection
-  const handleConfirmDisconnect = () => {
-    if (!selectedAccount) return
+  const handleConfirmDisconnect = async () => {
+    if (!selectedAccount || !authUser || !authUser.id) return
 
-    setLinkedAccounts((prev) =>
-      prev.map((acc) =>
-        acc.id === selectedAccount.id
-          ? {
-              ...acc,
-              connected: false,
-              email: '',
-              connectedAt: null,
-              lastSync: null,
-            }
-          : acc
+    try {
+      await apiClient.delete(`/users/${authUser.id}/linked-accounts/${selectedAccount.id.toUpperCase()}`)
+
+      setLinkedAccounts((prev) =>
+        prev.map((acc) =>
+          acc.id === selectedAccount.id
+            ? {
+                ...acc,
+                connected: false,
+                email: '',
+                connectedAt: null,
+                lastSync: null,
+              }
+            : acc
+        )
       )
-    )
 
-    toast.success(t.profile.toastAccountDisconnected(selectedAccount.provider))
+      toast.success(t.profile.toastAccountDisconnected(selectedAccount.provider))
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to disconnect account.')
+    }
+
     setDisconnectConfirmOpen(false)
     setManageModalOpen(false)
     setSelectedAccount(null)

@@ -6,7 +6,7 @@ import { POST_LOGIN_REDIRECT_KEY } from '@/features/auth/hooks/useLogin'
 import { ShieldAlert, Loader2, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useTranslation } from '@/context/LanguageContext'
-import { apiClient } from '@/lib/api/apiClient'
+import { apiClient } from '@/lib/axios'
 
 export function CallbackPage() {
   const [searchParams] = useSearchParams()
@@ -71,7 +71,7 @@ export function CallbackPage() {
         const response = await authService.googleLogin(code, redirectUri)
 
         setStatus('success')
-        setSession(response.user, response.tokens)
+        setSession(response.user, response.tokens, true)
 
         // Wait a second for user to see the success state, then redirect
         setTimeout(() => {

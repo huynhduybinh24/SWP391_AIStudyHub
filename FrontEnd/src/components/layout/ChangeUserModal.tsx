@@ -23,6 +23,8 @@ interface MockUser {
   initials: string
   description: string
   remembered?: boolean
+  isGoogle?: boolean
+  tokens?: any
 }
 
 export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
@@ -154,7 +156,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
 
   const getTargetPassword = () => {
     if (!selectedUser) return ''
-    let pwd = selectedUser.email?.toLowerCase().endsWith('@lumiedu.com') ? '123456' : selectedUser.email
+    let pwd = selectedUser.email?.toLowerCase().endsWith('@lumiedu.com') ? '123456' : ''
 
     // 1. Search dynamically in the logged-in accounts registry (captured during login)
     const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
@@ -187,7 +189,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
   }
 
   const getPasswordForEmail = (email: string) => {
-    let pwd = email?.toLowerCase().endsWith('@lumiedu.com') ? '123456' : email // Fallback
+    let pwd = email?.toLowerCase().endsWith('@lumiedu.com') ? '123456' : '' // Fallback
     const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
     if (stored) {
       try {
@@ -337,6 +339,41 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
       return
     }
 
+    // Try to switch instantly using saved session tokens if available (instant 0ms bypass)
+    if (selectedUser.tokens && selectedUser.tokens.accessToken) {
+      executeUserSwitch(selectedUser.remembered || false, {
+        user: {
+          id: selectedUser.id.startsWith('u-') ? selectedUser.id.replace('u-', '') : selectedUser.id,
+          name: selectedUser.name,
+          email: selectedUser.email,
+          role: selectedUser.role,
+          plan: selectedUser.plan.toLowerCase() as any,
+          avatarUrl: selectedUser.avatar || '/avatar.svg',
+        },
+        tokens: selectedUser.tokens
+      })
+      return
+    }
+
+    // Verify if it is a Google account
+    const savedPassword = getTargetPassword()
+    const isGoogleAccount = selectedUser.isGoogle || (!selectedUser.email?.toLowerCase().endsWith('@lumiedu.com') && !savedPassword)
+
+    if (isGoogleAccount) {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '885322210817-bh9ua0cnrt5d7ogt6950o3ipekq6kdv3.apps.googleusercontent.com'
+      const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
+      
+      toast.info(language === 'vi' ? 'Đang chuyển hướng sang Google để đăng nhập...' : 'Redirecting to Google for authentication...')
+      
+      if (clientId.includes('dummy')) {
+        window.location.href = `${window.location.origin}/auth/callback?code=mock-google-code-123456`
+        return
+      }
+      
+      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email%20profile&login_hint=${encodeURIComponent(selectedUser.email)}`
+      return
+    }
+
     // Step 1: Prompt to save the *currently logged-in* active user's credentials first (if not already asked or remembered & not admin)
     const activeEmail = authUser?.email?.toLowerCase()
     const isCurrentAdmin = authUser?.role === 'admin'
@@ -360,7 +397,6 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
 
     // Step 2: Handle target B's switch sequence
     const isRemembered = selectedUser.remembered === true
-    const savedPassword = getTargetPassword()
 
     // If target B is already remembered and we have a saved password, switch immediately by calling backend
     if (isRemembered && savedPassword) {
@@ -690,7 +726,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
                     )}
 
                     {/* Remembered Status Key Icon */}
-                    {user.remembered && (
+                    {user.remembered && !user.isGoogle && user.email?.toLowerCase().endsWith('@lumiedu.com') && (
                       <span className="absolute bottom-3 right-10 inline-flex items-center text-[10px] font-bold text-blue-500 dark:text-blue-400 scale-90" title="Đăng nhập nhanh đã lưu">
                         ⚡ {language === 'vi' ? 'Chuyển nhanh' : 'Quick'}
                       </span>
@@ -759,6 +795,12 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
                             : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
                         }`}>
                           {user.plan}
+                        </span>
+                      )}
+
+                      {(user.isGoogle || !user.email?.toLowerCase().endsWith('@lumiedu.com')) && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-450 dark:border-amber-900/30">
+                          Google
                         </span>
                       )}
                     </div>
