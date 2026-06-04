@@ -110,13 +110,17 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen])
 
-  const onSubmit = (data: ProfileFormInput) => {
-    updateProfile({
-      ...data,
-      avatarUrl: avatarPreview,
-    })
-    toast.success(language === 'vi' ? 'Cập nhật hồ sơ thành công' : language === 'ja' ? 'プロフィールが正常に更新されました' : language === 'ko' ? '프로필이 성공적으로 업데이트되었습니다' : 'Profile updated successfully')
-    onClose()
+  const onSubmit = async (data: ProfileFormInput) => {
+    try {
+      await updateProfile({
+        ...data,
+        avatarUrl: avatarPreview,
+      })
+      toast.success(language === 'vi' ? 'Cập nhật hồ sơ thành công' : language === 'ja' ? 'プロフィールが正常に更新されました' : language === 'ko' ? '프로필이 성공적으로 업데이트되었습니다' : 'Profile updated successfully')
+      onClose()
+    } catch (error) {
+      toast.error(language === 'vi' ? 'Không thể cập nhật hồ sơ' : language === 'ja' ? 'プロフィールの更新に失敗しました' : language === 'ko' ? '프로필 업데이트에 실패했습니다' : 'Failed to update profile')
+    }
   }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
