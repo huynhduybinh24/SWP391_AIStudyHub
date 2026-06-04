@@ -138,6 +138,10 @@ export function RegisterForm() {
 
     if (provider === 'google') {
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '123456789-dummy.apps.googleusercontent.com'
+      if (clientId.includes('dummy')) {
+        window.location.href = `${window.location.origin}/auth/callback?code=mock-google-code-123456`
+        return
+      }
       window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email%20profile&prompt=select_account`
     } else if (provider === 'facebook') {
       const clientId = import.meta.env.VITE_FACEBOOK_CLIENT_ID || '123456789012345'
