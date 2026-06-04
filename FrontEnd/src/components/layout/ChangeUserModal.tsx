@@ -752,13 +752,15 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
                         {user.role}
                       </span>
                       
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs ${
-                        user.plan === 'PRO'
-                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/30'
-                          : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                      }`}>
-                        {user.plan}
-                      </span>
+                      {user.role !== 'admin' && (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs ${
+                          user.plan === 'PRO'
+                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/30'
+                            : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                        }`}>
+                          {user.plan}
+                        </span>
+                      )}
                     </div>
 
                     <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed font-medium line-clamp-2">

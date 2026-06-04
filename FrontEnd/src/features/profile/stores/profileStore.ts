@@ -57,7 +57,7 @@ export const useProfileStore = create<ProfileState>()(
         const authUser = useAuthStore.getState().user
         if (authUser && authUser.id) {
           try {
-            await apiClient.put(`/api/users/${authUser.id}/profile`, {
+            await apiClient.put(`/users/${authUser.id}/profile`, {
               fullName: data.name ?? authUser.name,
               avatarUrl: data.avatarUrl ?? authUser.avatarUrl,
             })
