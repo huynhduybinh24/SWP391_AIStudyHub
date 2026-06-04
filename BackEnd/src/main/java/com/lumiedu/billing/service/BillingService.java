@@ -82,6 +82,12 @@ public class BillingService {
         payment = paymentRepository.save(payment);
 
         try {
+            System.out.println("DEBUG CHECKOUT - Starting Stripe Session creation");
+            System.out.println("DEBUG CHECKOUT - API Key: " + com.stripe.Stripe.apiKey);
+            System.out.println("DEBUG CHECKOUT - Success URL: " + stripeConfig.getSuccessUrl());
+            System.out.println("DEBUG CHECKOUT - Cancel URL: " + stripeConfig.getCancelUrl());
+            System.out.println("DEBUG CHECKOUT - Price: " + plan.getPrice());
+
             SessionCreateParams params = SessionCreateParams.builder()
                     .setMode(SessionCreateParams.Mode.PAYMENT)
                     .setSuccessUrl(stripeConfig.getSuccessUrl())
@@ -103,7 +109,9 @@ public class BillingService {
                     .setClientReferenceId(invoiceCode)
                     .build();
 
+            System.out.println("DEBUG CHECKOUT - Params built successfully");
             Session session = Session.create(params);
+            System.out.println("DEBUG CHECKOUT - Session created successfully: " + session.getUrl());
             String paymentUrl = session.getUrl();
 
             return CheckoutResponse.builder()
@@ -111,6 +119,8 @@ public class BillingService {
                     .invoiceCode(invoiceCode)
                     .build();
         } catch (Exception e) {
+            System.out.println("DEBUG CHECKOUT - Error occurred: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to create Stripe Checkout Session: " + e.getMessage(), e);
         }
     }
