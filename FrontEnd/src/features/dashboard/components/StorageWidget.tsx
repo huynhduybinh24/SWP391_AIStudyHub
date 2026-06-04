@@ -3,15 +3,18 @@ import { Card, CardTitle } from '@/components/ui/Card'
 import { useTranslation } from '@/context/LanguageContext'
 
 interface StorageWidgetProps {
-  usedGb: number
-  totalGb: number
+  usedMb: number
+  totalMb: number
 }
 
-export function StorageWidget({ usedGb, totalGb }: StorageWidgetProps) {
+export function StorageWidget({ usedMb, totalMb }: StorageWidgetProps) {
   const { t } = useTranslation()
-  const percent = Math.round((usedGb / totalGb) * 100)
+  const percent = Math.round((usedMb / totalMb) * 100)
   const circumference = 2 * Math.PI * 28
   const offset = circumference - (percent / 100) * circumference
+
+  const displayUsed = usedMb >= 100 ? `${(usedMb / 1024).toFixed(1)} GB` : `${usedMb.toFixed(0)} MB`
+  const displayTotal = totalMb >= 1024 ? `${(totalMb / 1024).toFixed(0)} GB` : `${totalMb.toFixed(0)} MB`
 
   return (
     <section className="col-span-4 space-y-4">
@@ -38,7 +41,7 @@ export function StorageWidget({ usedGb, totalGb }: StorageWidgetProps) {
         </div>
         <div>
           <p className="text-base text-body">
-            {t.dashboard.storageUsedText(usedGb, totalGb)}
+            {t.dashboard.storageUsedText(displayUsed, displayTotal)}
           </p>
           <Link to="/dashboard/storage" className="mt-2 block text-base text-primary hover:underline">
             {t.dashboard.manageStorage}

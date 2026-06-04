@@ -22,8 +22,8 @@ export interface WeeklyActivityDay {
 export interface DashboardData {
   pendingPlans: number
   newSharedDocuments: number
-  storageUsedGb: number
-  storageTotalGb: number
+  storageUsedMb: number
+  storageTotalMb: number
   weeklyHours: number
   weeklyTrend: string
   documents: DocumentItem[]
