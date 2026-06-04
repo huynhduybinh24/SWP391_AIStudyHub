@@ -6,8 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -16,47 +14,52 @@ public class AuthController {
     private final AuthService authService;
 
     @GetMapping("/health")
-    public ResponseEntity<String> healthCheck() {
+    public ResponseEntity<String> health() {
         return ResponseEntity.ok("Auth module is running");
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        try {
+            return ResponseEntity.ok(authService.register(request));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            return ResponseEntity.ok(authService.login(request));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        return ResponseEntity.ok(authService.forgotPassword(request));
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            return ResponseEntity.ok(authService.forgotPassword(request));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
-        return ResponseEntity.ok(authService.resetPassword(request));
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            return ResponseEntity.ok(authService.resetPassword(request));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 
-    @PostMapping("/change-password")
-    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest request) {
-        return ResponseEntity.ok(authService.changePassword(request));
-    }
-
-    @GetMapping("/third-party/{userId}")
-    public ResponseEntity<List<ThirdPartyAccountResponse>> getLinkedAccounts(@PathVariable Long userId) {
-        return ResponseEntity.ok(authService.getLinkedAccounts(userId));
-    }
-
-    @PostMapping("/third-party/link")
-    public ResponseEntity<ThirdPartyAccountResponse> linkThirdPartyAccount(@RequestBody LinkThirdPartyAccountRequest request) {
-        return ResponseEntity.ok(authService.linkThirdPartyAccount(request));
-    }
-
-    @DeleteMapping("/third-party/{accountId}")
-    public ResponseEntity<String> disconnectThirdPartyAccount(@PathVariable Long accountId) {
-        return ResponseEntity.ok(authService.disconnectThirdPartyAccount(accountId));
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request) {
+        try {
+            return ResponseEntity.ok(authService.changePassword(request));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 }
