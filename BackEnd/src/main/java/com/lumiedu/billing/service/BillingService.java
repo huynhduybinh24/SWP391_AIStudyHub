@@ -412,4 +412,47 @@ public class BillingService {
             userRepository.save(user);
         }
     }
+
+    @Transactional
+    public String verifyAndProcessStripeSession(String sessionId) {
+        if (sessionId == null || sessionId.trim().isEmpty()) {
+            throw new RuntimeException("Session ID cannot be empty");
+        }
+
+        // If it is a mock session from bypass mode, it has already been processed in checkout.
+        if (sessionId.startsWith("MOCK_STRIPE_SESSION_")) {
+            Payment payment = paymentRepository.findByTransactionCode("STRIPE-" + sessionId).orElse(null);
+            if (payment != null && payment.getUserSubscription() != null) {
+                return payment.getUserSubscription().getSubscriptionPlan().getPlanType().name();
+            }
+            return "PRO";
+        }
+
+        try {
+            System.out.println("Verifying Stripe Session: " + sessionId);
+            Session session = Session.retrieve(sessionId);
+            if ("paid".equals(session.getPaymentStatus())) {
+                String invoiceCode = session.getMetadata() != null ? session.getMetadata().get("invoiceCode") : null;
+                if (invoiceCode == null) {
+                    invoiceCode = session.getClientReferenceId();
+                }
+                if (invoiceCode != null) {
+                    processSuccessfulPayment(invoiceCode, sessionId);
+                    
+                    Payment payment = paymentRepository.findByInvoiceCode(invoiceCode).orElse(null);
+                    if (payment != null && payment.getUserSubscription() != null) {
+                        return payment.getUserSubscription().getSubscriptionPlan().getPlanType().name();
+                    }
+                    return "PRO";
+                } else {
+                    throw new RuntimeException("Invoice code not found in session metadata");
+                }
+            } else {
+                throw new RuntimeException("Session is not paid. Status: " + session.getPaymentStatus());
+            }
+        } catch (Exception e) {
+            System.err.println("Stripe session verification failed: " + e.getMessage());
+            throw new RuntimeException("Failed to verify Stripe session: " + e.getMessage(), e);
+        }
+    }
 }

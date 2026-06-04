@@ -48,10 +48,10 @@ public class BillingController {
     }
 
     @PostMapping("/verify-stripe")
-    public ResponseEntity<Void> verifyStripeSession(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, String>> verifyStripeSession(@RequestBody Map<String, String> request) {
         String sessionId = request.get("sessionId");
-        billingService.verifyAndProcessStripeSession(sessionId);
-        return ResponseEntity.ok().build();
+        String planType = billingService.verifyAndProcessStripeSession(sessionId);
+        return ResponseEntity.ok(Map.of("plan", planType));
     }
 
     @GetMapping("/payments/invoice/{invoiceCode}")
