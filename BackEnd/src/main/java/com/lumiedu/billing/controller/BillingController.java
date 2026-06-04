@@ -32,15 +32,12 @@ public class BillingController {
         return ResponseEntity.ok(billingService.checkout(request));
     }
 
-    @GetMapping("/momo-callback")
-    public void momoCallback(
-            @RequestParam Map<String, String> queryParams,
-            jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
-        PaymentResponse paymentResponse = billingService.processMomoCallback(queryParams);
-        String status = paymentResponse.getPaymentStatus().name();
-        String redirectUrl = "http://localhost:8386/dashboard/upgrade?status=" + status.toLowerCase()
-                + "&invoice=" + paymentResponse.getInvoiceCode();
-        response.sendRedirect(redirectUrl);
+    @PostMapping("/webhook/stripe")
+    public ResponseEntity<Void> stripeWebhook(
+            @RequestBody String payload,
+            @RequestHeader(value = "Stripe-Signature", required = false) String sigHeader) {
+        billingService.handleStripeWebhook(payload, sigHeader);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/payments/invoice/{invoiceCode}")
@@ -52,14 +49,5 @@ public class BillingController {
     public ResponseEntity<InstitutionalRequestResponse> submitInstitutionalRequest(
             @RequestBody InstitutionalRequestCreateRequest request) {
         return ResponseEntity.ok(billingService.submitInstitutionalRequest(request));
-    }
-
-    @GetMapping("/momo-callback-mock")
-    public void momoCallbackMock(
-            @RequestParam("orderId") String orderId,
-            jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
-        PaymentResponse paymentResponse = billingService.processMomoCallbackMock(orderId);
-        String redirectUrl = "http://localhost:8386/dashboard/upgrade?status=success&invoice=" + orderId;
-        response.sendRedirect(redirectUrl);
     }
 }

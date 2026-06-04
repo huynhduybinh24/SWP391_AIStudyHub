@@ -25,14 +25,15 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Safe database migration for roles
+        // Safe database migration for roles and payment methods
         try {
             jdbcTemplate.execute("ALTER TABLE users MODIFY COLUMN role VARCHAR(50) NOT NULL");
             jdbcTemplate.execute("UPDATE users SET role = 'USER' WHERE role IN ('STUDENT', 'INSTRUCTOR')");
             jdbcTemplate.execute("UPDATE users SET full_name = 'LumiEdu User' WHERE full_name = 'Student User'");
             jdbcTemplate.execute("UPDATE users SET full_name = 'LumiEdu User' WHERE full_name = 'Instructor User'");
+            jdbcTemplate.execute("ALTER TABLE payments MODIFY COLUMN payment_method VARCHAR(50) NOT NULL");
         } catch (Exception e) {
-            System.err.println("Failed to run database role migration: " + e.getMessage());
+            System.err.println("Failed to run database migration: " + e.getMessage());
         }
 
         if (userRepository.count() == 0) {
