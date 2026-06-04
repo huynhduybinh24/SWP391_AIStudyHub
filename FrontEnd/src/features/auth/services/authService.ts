@@ -12,6 +12,11 @@ export const authService = {
     return data
   },
 
+  async googleLogin(code: string, redirectUri: string): Promise<LoginResponse> {
+    const { data } = await apiClient.post<LoginResponse>('/auth/google', { code, redirectUri })
+    return data
+  },
+
   async socialLogin(provider: 'google' | 'facebook' | 'github'): Promise<LoginResponse> {
     // For social login, we can still use a mock template as third party providers are not set up in sandbox
     return {
