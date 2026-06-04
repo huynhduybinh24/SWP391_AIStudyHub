@@ -448,6 +448,17 @@ public class BillingService {
                     throw new RuntimeException("Invoice code not found in session metadata");
                 }
             } else {
+                String invoiceCode = session.getMetadata() != null ? session.getMetadata().get("invoiceCode") : null;
+                if (invoiceCode == null) {
+                    invoiceCode = session.getClientReferenceId();
+                }
+                if (invoiceCode != null) {
+                    Payment payment = paymentRepository.findByInvoiceCode(invoiceCode).orElse(null);
+                    if (payment != null && payment.getPaymentStatus() == PaymentStatus.PENDING) {
+                        payment.setPaymentStatus(PaymentStatus.FAILED);
+                        paymentRepository.save(payment);
+                    }
+                }
                 throw new RuntimeException("Session is not paid. Status: " + session.getPaymentStatus());
             }
         } catch (Exception e) {

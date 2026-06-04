@@ -73,7 +73,7 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
       }
       
       verifyPayment()
-    } else if (status === 'failed') {
+    } else if (status === 'cancel' || status === 'failed') {
       toast.error(language === 'vi' ? 'Thanh toán thất bại hoặc đã bị hủy.' : 'Payment failed or was cancelled.')
       searchParams.delete('status')
       searchParams.delete('invoice')
@@ -171,13 +171,13 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
     
     // Find current plan price to compare upgrade vs downgrade
     const currentPlanItem = packagesList.find(p => {
-      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'enterprise' : p.id
+      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'institutional' : p.id
       return planCode === currentPlanCode
     })
     const currentPlanPrice = currentPlanItem ? currentPlanItem.priceMonthly : 0
 
     const plans: PricingPlan[] = packagesList.map((pkg) => {
-      const planCode = pkg.id === 'pkg-free' ? 'free' : pkg.id === 'pkg-pro' ? 'pro' : pkg.id === 'pkg-enterprise' ? 'enterprise' : pkg.id
+      const planCode = pkg.id === 'pkg-free' ? 'free' : pkg.id === 'pkg-pro' ? 'pro' : pkg.id === 'pkg-enterprise' ? 'institutional' : pkg.id
       const isCurrent = currentPlanCode === planCode
 
       // Determine localized button text
@@ -253,7 +253,7 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
 
   const handleCurrentPlanClick = () => {
     const currentPkg = packagesList.find(p => {
-      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'enterprise' : p.id
+      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'institutional' : p.id
       return planCode === (user?.plan || 'free')
     })
     const name = currentPkg?.name || (language === 'vi' ? 'Gói Miễn phí' : 'Free Plan')
