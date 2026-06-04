@@ -30,6 +30,7 @@ import { LandingPage } from '@/features/landing/pages/LandingPage'
 import { HelpCenterPage } from '@/features/landing/pages/HelpCenterPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { SetNewPasswordPage } from '@/features/auth/pages/SetNewPasswordPage'
+import { CallbackPage } from '@/features/auth/pages/CallbackPage'
 import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { PricingPage } from '@/features/upgrade/pages/PricingPage'
@@ -75,6 +76,10 @@ export const router = createBrowserRouter([
       {
         path: '/register',
         element: <RegisterPage />,
+      },
+      {
+        path: '/auth/callback',
+        element: <CallbackPage />,
       },
       {
         path: '/reset-password',
