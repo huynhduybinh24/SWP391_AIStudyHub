@@ -1,7 +1,6 @@
 package com.lumiedu.auth.entity;
 
 import com.lumiedu.common.entity.BaseEntity;
-import com.lumiedu.auth.enums.TokenStatus;
 import com.lumiedu.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,13 +27,9 @@ public class PasswordResetToken extends BaseEntity {
     @Column(name = "token", unique = true, nullable = false)
     private String token;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private TokenStatus status;
-
     @Column(name = "expired_at", nullable = false)
     private LocalDateTime expiredAt;
 
-    @Column(name = "used_at")
-    private LocalDateTime usedAt;
+    @Column(name = "used", nullable = false)
+    private Boolean used;
 }
