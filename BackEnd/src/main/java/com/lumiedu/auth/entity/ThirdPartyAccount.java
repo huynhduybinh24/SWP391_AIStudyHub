@@ -6,12 +6,8 @@ import com.lumiedu.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Entity
-@Table(name = "third_party_accounts", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"provider_type", "provider_user_id"})
-})
+@Table(name = "third_party_accounts")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,7 +32,4 @@ public class ThirdPartyAccount extends BaseEntity {
 
     @Column(name = "provider_email", nullable = false)
     private String providerEmail;
-
-    @Column(name = "linked_at", nullable = false)
-    private LocalDateTime linkedAt;
 }
