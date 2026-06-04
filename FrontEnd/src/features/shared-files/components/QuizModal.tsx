@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, HelpCircle, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react'
+import { X, HelpCircle, CheckCircle, AlertCircle, RefreshCw, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SharedFile } from './SharedFilesTable'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface QuizModalProps {
   isOpen: boolean
@@ -20,26 +21,15 @@ interface Question {
 }
 
 export function QuizModal({ isOpen, onClose, file }: QuizModalProps) {
+  const { language } = useTranslation()
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number }>({})
   const [showResults, setShowResults] = useState(false)
+  const [customPrompt, setCustomPrompt] = useState('')
+  const [isRegenerating, setIsRegenerating] = useState(false)
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown)
-      // Reset state when opening
-      setSelectedAnswers({})
-      setShowResults(false)
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
-  if (!file) return null
-
-  // Generate mock questions based on file name
-  const getQuestions = (): Question[] => {
+  // Initial mock questions based on file name
+  const getInitialQuestions = (): Question[] => {
+    if (!file) return []
     if (file.name.includes('Biology')) {
       return [
         {
@@ -139,7 +129,137 @@ export function QuizModal({ isOpen, onClose, file }: QuizModalProps) {
     ]
   }
 
-  const questions = getQuestions()
+  const [questions, setQuestions] = useState<Question[]>([])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    if (isOpen && file) {
+      window.addEventListener('keydown', handleKeyDown)
+      setQuestions(getInitialQuestions())
+      setSelectedAnswers({})
+      setShowResults(false)
+      setCustomPrompt('')
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, file, onClose])
+
+  const handleRegenerateQuiz = () => {
+    if (!customPrompt.trim()) return
+    setIsRegenerating(true)
+    
+    // Simulate API delay for AI generation
+    setTimeout(() => {
+      const lowerPrompt = customPrompt.toLowerCase()
+      const isVi = lowerPrompt.includes('vi') || lowerPrompt.includes('dịch') || lowerPrompt.includes('tiếng')
+      
+      if (file?.name.includes('Biology')) {
+        if (isVi) {
+          setQuestions([
+            {
+              id: 1,
+              text: 'Sản phẩm chính nào được sinh ra trong Chu trình Krebs (chu trình citric acid)?',
+              options: [
+                'Glucose và O2',
+                'ATP, NADH, FADH2, và CO2',
+                'Lactic Acid và NAD+',
+                'Pyruvate và Nước'
+              ],
+              answerIndex: 1,
+              explanation: 'Chu trình Krebs xử lý axetyl-CoA để tạo ra ATP/GTP, chất mang điện tử (NADH, FADH2) và khí CO2.'
+            },
+            {
+              id: 2,
+              text: 'Quá trình Đường phân (Glycolysis) diễn ra ở đâu trong tế bào nhân thực?',
+              options: [
+                'Bên trong chất nền ti thể',
+                'Trong nhân tế bào',
+                'Trong lưới nội chất hạt',
+                'Trong bào tương (cytoplasm)'
+              ],
+              answerIndex: 3,
+              explanation: 'Đường phân là quá trình phân giải kị khí glucose xảy ra trong bào tương của tế bào.'
+            }
+          ])
+        } else {
+          setQuestions([
+            {
+              id: 1,
+              text: '[Advanced] Calculate the net ATP yield from one glucose molecule under aerobic conditions.',
+              options: ['2 ATP', '4 ATP', '30-32 ATP', '36-38 ATP'],
+              answerIndex: 2,
+              explanation: 'Aerobic respiration yields around 30 to 32 net ATP molecules per glucose molecule in eukaryotic cells.'
+            }
+          ])
+        }
+      } else if (file?.name.includes('Physics')) {
+        if (isVi) {
+          setQuestions([
+            {
+              id: 1,
+              text: 'Định luật Ohm phát biểu mối quan hệ giữa cường độ dòng điện, hiệu điện thế và điện trở như thế nào?',
+              options: [
+                'V = I / R',
+                'I = V * R',
+                'V = I * R',
+                'R = V * I'
+              ],
+              answerIndex: 2,
+              explanation: 'Định luật Ohm xác định hệ thức: Hiệu điện thế (V) bằng Cường độ dòng điện (I) nhân với Điện trở (R).'
+            }
+          ])
+        } else {
+          setQuestions([
+            {
+              id: 1,
+              text: '[Advanced] Explain the physical significance of the Maxwell-Ampere equation.',
+              options: [
+                'Defines static electric fields',
+                'Connects magnetic field circulation to both conduction current and displacement current',
+                'Specifies magnetic monopole existence',
+                'Describes thermal conduction in metals'
+              ],
+              answerIndex: 1,
+              explanation: 'The Maxwell-Ampere law states that magnetic fields can be generated by electrical currents and changing electric fields.'
+            }
+          ])
+        }
+      } else {
+        // Default
+        if (isVi) {
+          setQuestions([
+            {
+              id: 1,
+              text: 'Hành động chính được khuyến nghị cho tài liệu được chia sẻ này là gì?',
+              options: [
+                'Đọc nội dung và thảo luận với đồng nghiệp',
+                'Xuất và xóa các bản sao gốc ngay lập tức',
+                'Ngăn chặn người dùng khác sửa đổi',
+                'Bỏ qua các đề xuất tóm tắt'
+              ],
+              answerIndex: 0,
+              explanation: 'Các tài nguyên dùng chung phục vụ đọc hiểu, nghiên cứu và thảo luận nhóm.'
+            }
+          ])
+        } else {
+          setQuestions([
+            {
+              id: 1,
+              text: '[Refined] What is the primary collaboration standard for shared files?',
+              options: ['Read, tag, and discuss insights', 'Delete immediately', 'Encrypt locally only', 'Archive offline'],
+              answerIndex: 0,
+              explanation: 'Files are meant to be reviewed and discussed collaboratively.'
+            }
+          ])
+        }
+      }
+      
+      setSelectedAnswers({})
+      setShowResults(false)
+      setIsRegenerating(false)
+    }, 1500)
+  }
 
   const handleSelectOption = (questionId: number, optionIndex: number) => {
     if (showResults) return
@@ -311,6 +431,36 @@ export function QuizModal({ isOpen, onClose, file }: QuizModalProps) {
                   </div>
                 );
               })}
+
+              {/* AI Customization Prompt */}
+              <div className="mt-4 p-4.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-150 dark:border-slate-800/60 rounded-2xl space-y-2.5 select-none shrink-0">
+                <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Sparkles className="size-3.5 text-indigo-500" />
+                  {language === 'vi' ? 'Tinh chỉnh Quiz bằng AI' : 'Refine Quiz with AI'}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder={language === 'vi' ? 'Ví dụ: Dịch câu hỏi sang tiếng Việt, nâng độ khó...' : 'e.g. Translate to Vietnamese, make it harder...'}
+                    className="flex-1 px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:text-slate-200"
+                    disabled={isRegenerating}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleRegenerateQuiz}
+                    disabled={isRegenerating || !customPrompt.trim()}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs px-3.5 font-bold flex items-center gap-1.5 shrink-0 h-8 cursor-pointer select-none"
+                  >
+                    {isRegenerating ? (
+                      <RefreshCw className="size-3.5 animate-spin" />
+                    ) : (
+                      <span>{language === 'vi' ? 'Gửi' : 'Send'}</span>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
 
             {/* Footer */}

@@ -23,9 +23,18 @@ type StudyPlanFormValues = {
   endDate:     string
   priority:    'Low' | 'Medium' | 'High'
   schedule:    string[]
+  selectedDocIds: string[]
 }
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+export const MOCK_DOCUMENTS = [
+  { id: 'doc-1', name: 'Giáo trình Cơ học lượng tử nâng cao.pdf', size: '4.2 MB' },
+  { id: 'doc-2', name: 'Slide bài giảng Hóa hữu cơ chương 2.pdf', size: '1.8 MB' },
+  { id: 'doc-3', name: 'Bài tập ôn tập Vật lý đại cương.docx', size: '512 KB' },
+  { id: 'doc-4', name: 'Giáo trình Cấu trúc dữ liệu & Giải thuật.pdf', size: '6.5 MB' },
+  { id: 'doc-5', name: 'Tóm tắt tác phẩm Văn học Việt Nam.pdf', size: '2.3 MB' }
+]
 
 // AI suggestion templates per subject (raw English suggestions, mapped on request)
 const AI_SUGGESTIONS: Record<string, { title: string; description: string; schedule: string[] }> = {
@@ -42,11 +51,12 @@ const AI_SUGGESTIONS: Record<string, { title: string; description: string; sched
 interface CreateStudyPlanModalProps {
   isOpen:   boolean
   onClose:  () => void
+  onCreate?: (newPlan: any) => void
 }
 
 // ─── Component ───────────────────────────────────────────
 
-export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalProps) => {
+export const CreateStudyPlanModal = ({ isOpen, onClose, onCreate }: CreateStudyPlanModalProps) => {
   const { t, language } = useTranslation()
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -61,6 +71,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
         endDate: z.string().min(1, language === 'vi' ? 'Ngày kết thúc là bắt buộc' : language === 'ja' ? '終了日は必須です' : language === 'ko' ? '종료일은 필수입니다' : 'End date is required'),
         priority: z.enum(['Low', 'Medium', 'High']),
         schedule: z.array(z.string()).min(1, language === 'vi' ? 'Chọn ít nhất một ngày' : language === 'ja' ? '少なくとも1日を選択してください' : language === 'ko' ? '최소 하루 이상 선택하세요' : 'Select at least one day'),
+        selectedDocIds: z.array(z.string()).optional(),
       })
       .refine((d) => !d.startDate || !d.endDate || d.endDate >= d.startDate, {
         message: language === 'vi' ? 'Ngày kết thúc phải sau ngày bắt đầu' : language === 'ja' ? '終了日は開始日より後である必要があります' : language === 'ko' ? '종료일은 시작일 이후여야 합니다' : 'End date must be after start date',
@@ -86,6 +97,7 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
       endDate:     '',
       priority:    'High',
       schedule:    [],
+      selectedDocIds: [],
     },
   })
 
@@ -152,6 +164,19 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
     if (suggestion.schedule)    setValue('schedule', suggestion.schedule, { shouldValidate: true })
     setValue('priority', 'High')
 
+    // Auto-select relevant mock document based on subject
+    if (currentSubject === 'Mathematics') {
+      setValue('selectedDocIds', ['doc-3'], { shouldValidate: true })
+    } else if (currentSubject === 'Physics') {
+      setValue('selectedDocIds', ['doc-1', 'doc-3'], { shouldValidate: true })
+    } else if (currentSubject === 'Computer Science') {
+      setValue('selectedDocIds', ['doc-4'], { shouldValidate: true })
+    } else if (currentSubject === 'Literature') {
+      setValue('selectedDocIds', ['doc-5'], { shouldValidate: true })
+    } else {
+      setValue('selectedDocIds', ['doc-2'], { shouldValidate: true })
+    }
+
     // Set start date to today, end date to +30 days
     const today = new Date()
     const endDay = new Date(today)
@@ -164,7 +189,27 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
 
   // ── Submit ───────────────────────────────────────────
   const onSubmit = (data: StudyPlanFormValues) => {
-    console.log('Create Study Plan:', data)
+    const docNames = (data.selectedDocIds || []).map(id => {
+      const found = MOCK_DOCUMENTS.find(d => d.id === id)
+      return found ? found.name : ''
+    }).filter(Boolean)
+
+    if (onCreate) {
+      onCreate({
+        id: `plan-${Date.now()}`,
+        title: data.title,
+        description: data.description || '',
+        isAiGenerated: true,
+        status: 'Active',
+        documents: docNames.length,
+        hoursEst: 28,
+        difficulty: data.priority === 'High' ? 'Hard' : data.priority === 'Medium' ? 'Medium' : 'Easy',
+        overallProgress: 0,
+        segments: data.schedule.map(day => ({ label: `Lesson on ${day}`, value: 0 })),
+        themeColor: data.priority === 'High' ? 'purple' : data.priority === 'Medium' ? 'blue' : 'teal',
+        linkedDocs: docNames
+      })
+    }
     reset()
     onClose()
   }
@@ -262,6 +307,56 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
             placeholder={language === 'vi' ? 'Bạn muốn đạt được điều gì với kế hoạch học tập này?' : language === 'ja' ? 'この学習計画で何を達成したいですか？' : language === 'ko' ? '이 학습 계획을 통해 무엇을 달성하고 싶으신가요?' : 'What do you want to achieve with this study plan?'}
             {...register('description')}
             error={errors.description?.message}
+          />
+        </div>
+
+        {/* ── Linked Documents ── */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
+            {language === 'vi' ? 'Liên kết tài liệu học tập' : language === 'ja' ? '関連ドキュメントのリンク' : language === 'ko' ? '관련 문서 링크' : 'Link Reference Documents'}
+          </label>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            {language === 'vi' ? 'Chọn các giáo trình hoặc slides trong thư viện để AI bám sát lộ trình' : 'Select textbooks or lecture slides from your library for AI to build the plan on.'}
+          </p>
+          <Controller
+            control={control}
+            name="selectedDocIds"
+            render={({ field }) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto border border-slate-250/60 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/30 scrollbar-thin">
+                {MOCK_DOCUMENTS.map((doc) => {
+                  const isChecked = (field.value || []).includes(doc.id)
+                  return (
+                    <label
+                      key={doc.id}
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all select-none',
+                        isChecked
+                          ? 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          const currentValues = field.value || []
+                          field.onChange(
+                            e.target.checked
+                              ? [...currentValues, doc.id]
+                              : currentValues.filter((id) => id !== doc.id)
+                          )
+                        }}
+                        className="rounded border-slate-350 text-indigo-650 focus:ring-indigo-550 dark:border-slate-700 dark:bg-slate-900"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-slate-800 dark:text-slate-200 leading-none">{doc.name}</p>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{doc.size}</span>
+                      </div>
+                    </label>
+                  )
+                })}
+              </div>
+            )}
           />
         </div>
 

@@ -55,7 +55,37 @@ export function AvatarUploader({
     const reader = new FileReader()
     reader.onload = () => {
       const result = reader.result as string
-      onAvatarChange(result)
+      const img = new Image()
+      img.src = result
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const maxSize = 256 // Max width/height for avatar
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > maxSize) {
+            height *= maxSize / width
+            width = maxSize
+          }
+        } else {
+          if (height > maxSize) {
+            width *= maxSize / height
+            height = maxSize
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height)
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7)
+          onAvatarChange(compressedDataUrl)
+        } else {
+          onAvatarChange(result)
+        }
+      }
     }
     reader.readAsDataURL(file)
   }

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { useNavigate } from 'react-router-dom'
 import { useToastStore } from '@/stores/toastStore'
 import { useTranslation } from '@/context/LanguageContext'
 import { Language } from '@/locales'
@@ -46,6 +47,7 @@ export type CurriculumPlan = {
   hoursEst: number
   difficulty: string
   modules: CurriculumModule[]
+  linkedDocs?: string[]
 }
 
 interface Props {
@@ -53,6 +55,27 @@ interface Props {
   onClose: () => void
   onStart?: () => void
   plan: CurriculumPlan | null
+}
+
+export function getDocumentIdByName(name: string): string {
+  const n = name.toLowerCase()
+  if (n.includes('lượng tử') || n.includes('quantum') || n.includes('vật lý') || n.includes('physics')) {
+    return 'doc-3' // Introduction to Quantum Mechanics
+  }
+  if (
+    n.includes('hóa hữu cơ') ||
+    n.includes('chemistry') ||
+    n.includes('cấu trúc') ||
+    n.includes('data structures') ||
+    n.includes('design patterns') ||
+    n.includes('giải thuật')
+  ) {
+    return 'doc-design-patterns' // Design Patterns / Java
+  }
+  if (n.includes('văn học') || n.includes('philosophy') || n.includes('triết học')) {
+    return 'doc-5' // Philosophy 101 Notes
+  }
+  return 'doc-1' // Mathematics Cheat Sheet
 }
 
 // Helper to localize module titles
@@ -156,6 +179,7 @@ function StatusIcon({ status }: { status: LessonStatus }) {
 
 export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
   const { t, language } = useTranslation()
+  const navigate = useNavigate()
   const [expandedModule, setExpandedModule] = useState<string | null>(null)
   const [highlightedModule] = useState<string | null>(null)
   const activeModuleRef = useRef<HTMLDivElement | null>(null)
@@ -226,6 +250,36 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
       description={localizedTitle}
       className="max-w-2xl"
     >
+      {/* ── Linked Reference Documents ── */}
+      {plan.linkedDocs && plan.linkedDocs.length > 0 && (
+        <div className="mb-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 flex flex-col gap-1.5">
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-450 dark:text-slate-500 flex items-center gap-1.5">
+            <Link2 className="size-3.5 text-indigo-500 dark:text-indigo-400" />
+            {language === 'vi' ? 'TÀI LIỆU THAM KHẢO LIÊN KẾT' : language === 'ja' ? '関連する参照ドキュメント' : language === 'ko' ? '연결된 참조 문서' : 'LINKED REFERENCE DOCUMENTS'}
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {plan.linkedDocs.map((docName, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  addToast(
+                    language === 'vi'
+                      ? `Đang mở tài liệu chi tiết: ${docName}`
+                      : `Opening document details: ${docName}`,
+                    'info'
+                  )
+                  onClose()
+                  navigate(`/dashboard/documents/document/${getDocumentIdByName(docName)}`)
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/40 border border-indigo-100/50 dark:border-indigo-900/30 text-[11px] font-semibold text-indigo-650 dark:text-indigo-400 cursor-pointer transition-colors"
+              >
+                {docName}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Overview stats ── */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[
