@@ -36,7 +36,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         Document doc = documentRepository.findById(documentId).orElse(null);
-        String subject = doc != null ? doc.getSubject() : "GENERAL";
+        String subject = (doc != null && doc.getSubject() != null) ? doc.getSubject() : "GENERAL";
         String title = doc != null ? doc.getTitle() : "Tài liệu học tập";
 
         String summaryText = "Tài liệu này chứa nội dung quan trọng về " + subject + " liên quan đến " + title + ". "
@@ -94,7 +94,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         if (session != null && session.getDocumentId() != null) {
             Document doc = documentRepository.findById(session.getDocumentId()).orElse(null);
             if (doc != null) {
-                subject = doc.getSubject();
+                subject = doc.getSubject() != null ? doc.getSubject() : "GENERAL";
                 docName = doc.getTitle();
             }
         }
@@ -116,7 +116,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         flashcardRepository.deleteByDocumentId(documentId);
 
         Document doc = documentRepository.findById(documentId).orElse(null);
-        String subject = doc != null ? doc.getSubject() : "GENERAL";
+        String subject = (doc != null && doc.getSubject() != null) ? doc.getSubject() : "GENERAL";
 
         List<Flashcard> cards = getSampleFlashcards(documentId, subject);
         return flashcardRepository.saveAll(cards);
@@ -127,7 +127,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         quizQuestionRepository.deleteByDocumentId(documentId);
 
         Document doc = documentRepository.findById(documentId).orElse(null);
-        String subject = doc != null ? doc.getSubject() : "GENERAL";
+        String subject = (doc != null && doc.getSubject() != null) ? doc.getSubject() : "GENERAL";
 
         List<QuizQuestion> questions = getSampleQuizQuestions(documentId, subject, difficulty, customPrompt);
 
@@ -154,7 +154,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     public List<QuizQuestion> modifyQuizWithAi(Long documentId, String prompt) {
         List<QuizQuestion> existing = quizQuestionRepository.findByDocumentId(documentId);
         if (existing.isEmpty()) {
-            existing = generateQuiz(documentId, "medium", 3, "");
+            existing = generateQuiz(documentId, "medium", 10, "");
         }
 
         String lowerPrompt = prompt.toLowerCase();
@@ -204,7 +204,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     public List<QuizQuestion> getQuiz(Long documentId) {
         List<QuizQuestion> questions = quizQuestionRepository.findByDocumentId(documentId);
         if (questions.isEmpty()) {
-            return generateQuiz(documentId, "medium", 3, "");
+            return generateQuiz(documentId, "medium", 10, "");
         }
         return questions;
     }

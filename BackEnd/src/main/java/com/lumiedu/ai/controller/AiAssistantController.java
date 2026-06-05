@@ -78,7 +78,7 @@ public class AiAssistantController {
     public ResponseEntity<ApiResponse<List<QuizQuestion>>> generateQuiz(
             @RequestParam("documentId") Long documentId,
             @RequestParam(value = "difficulty", defaultValue = "medium") String difficulty,
-            @RequestParam(value = "count", defaultValue = "3") int count,
+            @RequestParam(value = "count", defaultValue = "10") int count,
             @RequestParam(value = "prompt", defaultValue = "") String prompt
     ) {
         List<QuizQuestion> questions = aiAssistantService.generateQuiz(documentId, difficulty, count, prompt);

@@ -464,7 +464,7 @@ export default function MyDocumentsPage() {
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-[#2563eb] transition-colors dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-400 cursor-pointer"
                         >
                           <BrainCircuit className="h-4 w-4 text-indigo-500" />
-                          🎯 Làm trắc nghiệm AI
+                          🎯 {t.actionMenu.practiceQuiz}
                         </button>
                         <button
                           onClick={() => handleOpenDocument(doc.id)}
@@ -592,7 +592,7 @@ export default function MyDocumentsPage() {
                             size="icon"
                             onClick={() => openQuizModal(doc)}
                             className="rounded-lg text-indigo-600 hover:bg-indigo-50/50 dark:text-indigo-400 dark:hover:bg-indigo-955/50"
-                            title="Làm trắc nghiệm AI"
+                            title={t.actionMenu.practiceQuiz}
                           >
                             <BrainCircuit className="h-4.5 w-4.5" />
                           </Button>

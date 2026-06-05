@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom'
 import { logActivity } from '@/services/activityLogService'
 import { aiService } from '@/services/aiService'
 import type { AiSummaryResponse, FlashcardResponse, QuizQuestionResponse } from '@/services/aiService'
+import { useAuthStore } from '@/stores/authStore'
+import { documentService } from '@/services/documentService'
 import {
   X,
   Send,
@@ -22,6 +24,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 // Types
 interface DocumentItem {
@@ -45,7 +48,7 @@ interface SubjectContent {
 }
 
 // Initial Mock Data
-const INITIAL_DOCUMENTS: DocumentItem[] = [
+export const INITIAL_DOCUMENTS: DocumentItem[] = [
   // Existing files
   {
     id: 'doc-design-patterns',
@@ -695,25 +698,10 @@ const QUIZ_QUESTIONS = [
 ]
 
 export function DocumentsPage() {
-  const [documents, setDocuments] = useState<DocumentItem[]>(() => {
-    const saved = localStorage.getItem('ai_study_hub_documents')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as DocumentItem[]
-        return parsed.map(doc => ({
-          ...doc,
-          uploadedDateObj: new Date(doc.uploadedDateObj)
-        }))
-      } catch (e) {
-        return INITIAL_DOCUMENTS
-      }
-    }
-    return INITIAL_DOCUMENTS
-  })
-
-  useEffect(() => {
-    localStorage.setItem('ai_study_hub_documents', JSON.stringify(documents))
-  }, [documents])
+  const { t } = useTranslation()
+  const user = useAuthStore(state => state.user)
+  const userId = Number(user?.id || 1)
+  const [documents, setDocuments] = useState<DocumentItem[]>([])
 
   // Quiz Modal States
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false)
@@ -721,6 +709,62 @@ export function DocumentsPage() {
   const [selectedQuizAnswer, setSelectedQuizAnswer] = useState<number | null>(null)
   const [quizScore, setQuizScore] = useState(0)
   const [showQuizResults, setShowQuizResults] = useState(false)
+
+  // Practice Quiz Modal States & Handlers
+  const [selectedDocForQuiz, setSelectedDocForQuiz] = useState<DocumentItem | null>(null)
+  const [quizQuestionsForModal, setQuizQuestionsForModal] = useState<QuizQuestionResponse[]>([])
+  const [isLoadingQuizForModal, setIsLoadingQuizForModal] = useState(false)
+  const [isModifyingQuizForModal, setIsModifyingQuizForModal] = useState(false)
+  const [quizPromptForModal, setQuizPromptForModal] = useState('')
+
+  const handleOpenQuizModal = async (doc?: DocumentItem) => {
+    const targetDoc = doc || documents[0]
+    if (!targetDoc) {
+      showToast('Vui lòng tải lên tài liệu trước khi thực hành trắc nghiệm!')
+      return
+    }
+    setSelectedDocForQuiz(targetDoc)
+    setCurrentQuizQuestion(0)
+    setSelectedQuizAnswer(null)
+    setQuizScore(0)
+    setShowQuizResults(false)
+    setIsQuizModalOpen(true)
+    setIsLoadingQuizForModal(true)
+    
+    try {
+      let data = await aiService.getQuiz(targetDoc.id)
+      if (!data || data.length === 0) {
+        data = await aiService.generateQuiz(targetDoc.id)
+      }
+      setQuizQuestionsForModal(data)
+    } catch (e) {
+      console.error(e)
+      setQuizQuestionsForModal([])
+    } finally {
+      setIsLoadingQuizForModal(false)
+    }
+  }
+
+  const handleModifyQuizForModalWithPrompt = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedDocForQuiz || !quizPromptForModal.trim()) return
+    setIsModifyingQuizForModal(true)
+    try {
+      const updatedQuiz = await aiService.modifyQuizWithAi(selectedDocForQuiz.id, quizPromptForModal)
+      setQuizQuestionsForModal(updatedQuiz)
+      setQuizPromptForModal('')
+      setCurrentQuizQuestion(0)
+      setSelectedQuizAnswer(null)
+      setQuizScore(0)
+      setShowQuizResults(false)
+      showToast('Bộ đề trắc nghiệm đã được cập nhật bởi AI!')
+    } catch (err) {
+      console.error(err)
+      showToast('Không thể hiệu chỉnh bộ đề. Vui lòng thử lại!')
+    } finally {
+      setIsModifyingQuizForModal(false)
+    }
+  }
 
   // Upload Modal States
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
@@ -749,6 +793,7 @@ export function DocumentsPage() {
   const [selectedDocForChat, setSelectedDocForChat] = useState<DocumentItem | null>(null)
   const [documentChats, setDocumentChats] = useState<Record<string, Array<{ sender: 'user' | 'ai'; text: string; time: string }>>>({})
   const [newChatMessage, setNewChatMessage] = useState('')
+  const [activeChatSessionId, setActiveChatSessionId] = useState<number | null>(null)
 
   // Toast Notification States
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -777,124 +822,223 @@ export function DocumentsPage() {
     }
   }, [isToastVisible])
 
-  // simulated upload
-  const handleUploadSubmit = (e: React.FormEvent) => {
+  // Mapping functions helper for backend DocumentResponse -> DocumentItem
+  const mapMimeOrExtensionToType = (fileType: string, fileName: string): 'pdf' | 'word' | 'image' | 'text' | 'slides' => {
+    const nameLower = fileName.toLowerCase()
+    if (nameLower.endsWith('.pdf')) return 'pdf'
+    if (nameLower.endsWith('.doc') || nameLower.endsWith('.docx')) return 'word'
+    if (nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx')) return 'slides'
+    if (nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg')) return 'image'
+    if (nameLower.endsWith('.txt')) return 'text'
+    
+    const typeLower = (fileType || '').toLowerCase()
+    if (typeLower.includes('pdf')) return 'pdf'
+    if (typeLower.includes('word') || typeLower.includes('msword') || typeLower.includes('officedocument.wordprocessingml')) return 'word'
+    if (typeLower.includes('powerpoint') || typeLower.includes('officedocument.presentationml')) return 'slides'
+    if (typeLower.includes('image') || typeLower.includes('png') || typeLower.includes('jpeg')) return 'image'
+    return 'text'
+  }
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  }
+
+  const mapBackendDocToItem = (doc: any): DocumentItem => {
+    return {
+      id: String(doc.id),
+      title: doc.title,
+      fileName: doc.fileName || doc.originalFileName || 'Untitled',
+      uploadedAt: doc.createdAt ? `Uploaded ${new Date(doc.createdAt).toLocaleDateString('vi-VN')}` : 'Uploaded Just Now',
+      uploadedDateObj: doc.createdAt ? new Date(doc.createdAt) : new Date(),
+      size: doc.fileSize ? formatBytes(doc.fileSize) : '0 Bytes',
+      sizeKb: doc.fileSize ? Math.round(doc.fileSize / 1024) : 0,
+      subject: (doc.subject || 'GENERAL') as any,
+      status: 'ANALYZED',
+      type: mapMimeOrExtensionToType(doc.fileType, doc.fileName || doc.originalFileName || '')
+    }
+  }
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const backendDocs = await documentService.getAllDocuments(userId)
+        if (backendDocs) {
+          setDocuments(backendDocs.map(mapBackendDocToItem))
+        }
+      } catch (e) {
+        console.error('Failed to load documents from backend:', e)
+        showToast('Không thể tải danh sách tài liệu từ máy chủ.')
+      }
+    }
+    fetchDocuments()
+  }, [userId])
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedFile && !newDocTitle) return
+    if (!selectedFile) {
+      showToast('Vui lòng chọn một tệp tin để tải lên!')
+      return
+    }
 
     setIsUploading(true)
     setUploadProgress(5)
     setUploadStepMsg('Establishing secure connection...')
 
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev < 40) {
-          setUploadStepMsg('Uploading file chunk...')
-          return prev + Math.floor(Math.random() * 15) + 5
-        } else if (prev < 70) {
-          setUploadStepMsg('Processing text extractions...')
-          return prev + Math.floor(Math.random() * 10) + 5
-        } else if (prev < 95) {
-          setUploadStepMsg('Running AI intelligence indexing...')
-          return prev + Math.floor(Math.random() * 5) + 2
+    // Start progress simulator that stops at 90%
+    let progressVal = 5
+    const progressInterval = setInterval(() => {
+      progressVal += Math.floor(Math.random() * 10) + 2
+      if (progressVal >= 90) {
+        progressVal = 90
+        setUploadStepMsg('Waiting for AI analysis to complete...')
+        clearInterval(progressInterval)
+      } else {
+        if (progressVal < 35) {
+          setUploadStepMsg('Uploading file to cloud storage...')
+        } else if (progressVal < 65) {
+          setUploadStepMsg('Extracting text content...')
         } else {
-          clearInterval(interval)
-          setUploadStepMsg('Summarizing & building instant flashcards...')
-          
-          setTimeout(() => {
-            const finalTitle = newDocTitle || selectedFile?.name.split('.')[0] || 'Untitled Study Material'
-            const finalFileName = selectedFile?.name || `${finalTitle.toLowerCase().replace(/\s+/g, '_')}.${newDocType}`
-            const finalSize = selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB` : '1.5 MB'
-            const finalSizeKb = selectedFile ? Math.round(selectedFile.size / 1024) : 1536
-
-            const newDoc: DocumentItem = {
-              id: `doc-${Date.now()}`,
-              title: finalTitle,
-              fileName: finalFileName,
-              uploadedAt: 'Uploaded Just Now',
-              uploadedDateObj: new Date(),
-              size: finalSize,
-              sizeKb: finalSizeKb,
-              subject: newDocSubject,
-              status: 'ANALYZED',
-              type: newDocType,
-            }
-
-            setDocuments((prev) => [newDoc, ...prev])
-            setIsUploading(false)
-            setUploadProgress(0)
-            setIsUploadModalOpen(false)
-
-            // Log document upload
-            logActivity({
-              eventKey: 'documentUploaded',
-              category: 'moderation',
-              status: 'success',
-              eventTextEn: 'Document uploaded',
-              eventTextVi: 'Tải lên tài liệu',
-              detailsTextEn: `Uploaded document '${finalTitle}' (${finalSize}) successfully.`,
-              detailsTextVi: `Tải lên thành công tài liệu '${finalTitle}' (${finalSize}).`
-            })
-
-            // Log AI summary generated
-            logActivity({
-              eventKey: 'aiSummaryGenerated',
-              category: 'ai-audit',
-              status: 'success',
-              eventTextEn: 'AI Summary generated',
-              eventTextVi: 'Tạo tóm tắt AI',
-              detailsTextEn: `Successfully generated AI Summary for document '${finalTitle}'.`,
-              detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
-            })
-
-            showToast(`Tài liệu "${finalTitle || finalFileName}" tải lên và phân tích AI thành công!`)
-            
-            setNewDocTitle('')
-            setNewDocSubject('GENERAL')
-            setNewDocType('pdf')
-            setSelectedFile(null)
-          }, 1200)
-
-          return 100
+          setUploadStepMsg('Running AI semantic analysis...')
         }
-      })
-    }, 250)
+      }
+      setUploadProgress(progressVal)
+    }, 150)
+
+    try {
+      const finalTitle = newDocTitle || selectedFile.name.split('.')[0] || 'Untitled Study Material'
+      const response = await documentService.uploadDocument(
+        selectedFile,
+        finalTitle,
+        '', // description
+        newDocSubject,
+        'PRIVATE',
+        userId,
+        [] // tags
+      )
+
+      clearInterval(progressInterval)
+      setUploadProgress(100)
+      setUploadStepMsg('Finished!')
+
+      setTimeout(() => {
+        const newDocItem = mapBackendDocToItem(response)
+        setDocuments((prev) => [newDocItem, ...prev])
+        setIsUploading(false)
+        setUploadProgress(0)
+        setIsUploadModalOpen(false)
+
+        // Log document upload
+        logActivity({
+          eventKey: 'documentUploaded',
+          category: 'moderation',
+          status: 'success',
+          eventTextEn: 'Document uploaded',
+          eventTextVi: 'Tải lên tài liệu',
+          detailsTextEn: `Uploaded document '${finalTitle}' successfully.`,
+          detailsTextVi: `Tải lên thành công tài liệu '${finalTitle}'.`
+        })
+
+        // Log AI summary generated
+        logActivity({
+          eventKey: 'aiSummaryGenerated',
+          category: 'ai-audit',
+          status: 'success',
+          eventTextEn: 'AI Summary generated',
+          eventTextVi: 'Tạo tóm tắt AI',
+          detailsTextEn: `Successfully generated AI Summary for document '${finalTitle}'.`,
+          detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
+        })
+
+        showToast(`Tài liệu "${finalTitle}" tải lên và phân tích AI thành công!`)
+        
+        setNewDocTitle('')
+        setNewDocSubject('GENERAL')
+        setNewDocType('pdf')
+        setSelectedFile(null)
+      }, 500)
+    } catch (error) {
+      clearInterval(progressInterval)
+      setIsUploading(false)
+      setUploadProgress(0)
+      console.error('Failed to upload document:', error)
+      showToast('Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!')
+    }
   }
 
   // Delete Action
-  const handleDeleteDocument = (id: string) => {
+  const handleDeleteDocument = async (id: string) => {
     const targetDoc = documents.find(d => d.id === id)
     if (targetDoc) {
-      setDocuments((prev) => prev.filter((d) => d.id !== id))
-      
-      // Log document deletion activity
-      logActivity({
-        eventKey: 'documentDeleted',
-        category: 'moderation',
-        status: 'success',
-        eventTextEn: 'Document deleted',
-        eventTextVi: 'Xóa tài liệu',
-        detailsTextEn: `Permanently deleted document '${targetDoc.title || targetDoc.fileName}' from storage.`,
-        detailsTextVi: `Đã xóa vĩnh viễn tài liệu '${targetDoc.title || targetDoc.fileName}' khỏi kho lưu trữ.`
-      })
+      try {
+        await documentService.deleteDocument(id)
+        setDocuments((prev) => prev.filter((d) => d.id !== id))
+        
+        // Log document deletion activity
+        logActivity({
+          eventKey: 'documentDeleted',
+          category: 'moderation',
+          status: 'success',
+          eventTextEn: 'Document deleted',
+          eventTextVi: 'Xóa tài liệu',
+          detailsTextEn: `Permanently deleted document '${targetDoc.title || targetDoc.fileName}' from storage.`,
+          detailsTextVi: `Đã xóa vĩnh viễn tài liệu '${targetDoc.title || targetDoc.fileName}' khỏi kho lưu trữ.`
+        })
 
-      showToast(`Đã xóa tài liệu "${targetDoc.title || targetDoc.fileName}"`)
+        showToast(`Đã xóa tài liệu "${targetDoc.title || targetDoc.fileName}"`)
+      } catch (e) {
+        console.error('Failed to delete document:', e)
+        showToast('Có lỗi xảy ra khi xóa tài liệu. Vui lòng thử lại!')
+      }
     }
   }
 
   // Open Chat Drawer
-  const handleOpenChat = (doc: DocumentItem) => {
+  const handleOpenChat = async (doc: DocumentItem) => {
     setSelectedDocForChat(doc)
     setIsChatDrawerOpen(true)
-
-    if (!documentChats[doc.id]) {
-      setDocumentChats((prev) => ({
+    
+    try {
+      const session = await aiService.createOrGetChatSession(doc.id, userId)
+      setActiveChatSessionId(session.id)
+      
+      const history = await aiService.getChatHistory(session.id)
+      if (history && history.length > 0) {
+        const mappedMsgs = history.map(msg => ({
+          sender: msg.sender.toLowerCase() === 'user' ? 'user' as const : 'ai' as const,
+          text: msg.messageText,
+          time: new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }))
+        setDocumentChats(prev => ({
+          ...prev,
+          [doc.id]: mappedMsgs
+        }))
+      } else {
+        // seed welcome message
+        setDocumentChats(prev => ({
+          ...prev,
+          [doc.id]: [
+            {
+              sender: 'ai' as const,
+              text: `Xin chào! Tôi là Trợ lý học tập AI. Tôi đã phân tích hoàn chỉnh tài liệu "${doc.title || doc.fileName}" (${doc.subject}).\n\nBạn có muốn tôi tóm tắt 3 ý cốt lõi, tạo bộ câu hỏi trắc nghiệm ôn tập hay giải đáp cụ thể nội dung nào không?`,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to load chat history:', err)
+      // seed welcome message fallback
+      setDocumentChats(prev => ({
         ...prev,
         [doc.id]: [
           {
-            sender: 'ai',
+            sender: 'ai' as const,
             text: `Xin chào! Tôi là Trợ lý học tập AI. Tôi đã phân tích hoàn chỉnh tài liệu "${doc.title || doc.fileName}" (${doc.subject}).\n\nBạn có muốn tôi tóm tắt 3 ý cốt lõi, tạo bộ câu hỏi trắc nghiệm ôn tập hay giải đáp cụ thể nội dung nào không?`,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         ]
       }))
@@ -902,7 +1046,7 @@ export function DocumentsPage() {
   }
 
   // Chat message send
-  const handleSendChatMessage = (e: React.FormEvent, customText?: string) => {
+  const handleSendChatMessage = async (e: React.FormEvent, customText?: string) => {
     if (e) e.preventDefault()
     
     const textToSend = customText || newChatMessage
@@ -932,55 +1076,60 @@ export function DocumentsPage() {
 
     if (!customText) setNewChatMessage('')
 
-    setTimeout(() => {
-      let aiText = `Dựa vào tài liệu "${selectedDocForChat.title || selectedDocForChat.fileName}", `
-      const lowerText = textToSend.toLowerCase()
-
-      if (lowerText.includes('tóm tắt') || lowerText.includes('summarize')) {
-        const db = getDocContent(selectedDocForChat)
-        aiText += `tôi xin tóm tắt các ý chính như sau:\n\n` + db.summaryBullets.map((bullet) => `• ${bullet}`).join('\n')
-      } else if (lowerText.includes('flashcard') || lowerText.includes('thẻ')) {
-        const db = getDocContent(selectedDocForChat)
-        aiText += `tôi đã tạo nhanh các flashcard ôn tập sau:\n\n` + db.flashcards.map((fc, idx) => `Thẻ ${idx+1}:\n- Câu hỏi: ${fc.q}\n- Trả lời: ${fc.a}`).join('\n\n')
-      } else if (lowerText.includes('trắc nghiệm') || lowerText.includes('đố') || lowerText.includes('quiz')) {
-        aiText += `đây là 1 câu hỏi ôn tập nhanh cho bạn:\n\nCâu hỏi: Đâu là khái niệm cốt lõi được định nghĩa ở mục 1.1 của tài liệu này?\n\n*Gợi ý*: Trả lời trực tiếp để tôi kiểm tra xem bạn đã nắm vững kiến thức chưa!`
-      } else {
-        aiText += `tôi ghi nhận câu hỏi về "${textToSend}". Đây là chủ đề cốt lõi thuộc phần nghiên cứu chuyên ngành ${selectedDocForChat.subject.toLowerCase()}.\n\nTheo dữ liệu phân tích, nội dung này liên quan chặt chẽ đến phương pháp luận tổng quát ở chương đầu. Bạn cần tôi trích xuất thêm chi tiết ở mục nào không?`
+    try {
+      let sessionId = activeChatSessionId
+      if (!sessionId) {
+        const session = await aiService.createOrGetChatSession(selectedDocForChat.id, userId)
+        sessionId = session.id
+        setActiveChatSessionId(session.id)
       }
-
+      
+      const reply = await aiService.sendMessage(sessionId, textToSend)
+      
       const aiMsg = {
         sender: 'ai' as const,
-        text: aiText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: reply.messageText,
+        time: new Date(reply.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }
 
       setDocumentChats((prev) => ({
         ...prev,
         [selectedDocForChat.id]: [...(prev[selectedDocForChat.id] || []), aiMsg]
       }))
-    }, 900)
+    } catch (err) {
+      console.error('Failed to send chat message:', err)
+      const errorMsg = {
+        sender: 'ai' as const,
+        text: 'Xin lỗi, tôi gặp sự cố khi xử lý câu hỏi của bạn. Vui lòng thử lại sau!',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }
+      setDocumentChats((prev) => ({
+        ...prev,
+        [selectedDocForChat.id]: [...(prev[selectedDocForChat.id] || []), errorMsg]
+      }))
+    }
   }
 
   // Download Action
-  const handleDownloadFile = (doc: DocumentItem) => {
+  const handleDownloadFile = async (doc: DocumentItem) => {
     showToast(`Đang chuẩn bị tải xuống: ${doc.fileName}...`)
 
-    setTimeout(() => {
-      const db = getDocContent(doc)
-      const textContent = `=== LUMIEDU - WORKSPACE DOCUMENT ===\nDocument ID: ${doc.id}\nTitle: ${doc.title || doc.fileName}\nSubject: ${doc.subject}\nFile Size: ${doc.size}\nUpload Info: ${doc.uploadedAt}\n\n=== DOCUMENT PREVIEW ===\n${db.previewText}\n\n=== AI GENERATED SUMMARY ===\n${db.summaryBullets.join('\n')}\n`
-      
-      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' })
+    try {
+      const blob = await documentService.downloadDocument(doc.id, userId)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = doc.fileName.replace(/\.[^/.]+$/, "") + "_AI_Summary.txt"
+      a.download = doc.fileName
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
       
       showToast(`Tải xuống thành công tệp: ${doc.fileName}`)
-    }, 1000)
+    } catch (e) {
+      console.error('Failed to download document:', e)
+      showToast('Có lỗi xảy ra khi tải tài liệu. Vui lòng thử lại!')
+    }
   }
 
   // Open Preview Modal
@@ -1141,7 +1290,7 @@ export function DocumentsPage() {
       case 'QUEUED':
       default:
         return (
-          <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+          <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-550">
             QUEUED
           </span>
         )
@@ -1171,13 +1320,7 @@ export function DocumentsPage() {
           openChatDrawer: handleOpenChat,
           openPreviewModal: handleOpenPreview,
           handleOpenPreview,
-          openQuizModal: () => {
-            setCurrentQuizQuestion(0)
-            setSelectedQuizAnswer(null)
-            setQuizScore(0)
-            setShowQuizResults(false)
-            setIsQuizModalOpen(true)
-          },
+          openQuizModal: handleOpenQuizModal,
 
           // Utilities passed down to child pages
           showToast,
@@ -1191,211 +1334,6 @@ export function DocumentsPage() {
           handleOpenChat,
         }}
       />
-
-
-
-      {/* Practice Quiz Modal */}
-      {isQuizModalOpen && (
-        <Modal
-          isOpen={isQuizModalOpen}
-          onClose={() => setIsQuizModalOpen(false)}
-          title="Design Patterns Practice Quiz"
-          description="Test your software architecture skills with AI-curated multiple choice questions."
-          className="max-w-xl animate-fade-in"
-        >
-          <div className="space-y-6 py-2">
-            {!showQuizResults ? (
-              <>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs font-bold text-slate-400">
-                    <span>QUESTION {currentQuizQuestion + 1} OF {QUIZ_QUESTIONS.length}</span>
-                    <span className="text-[#2563eb]">{Math.round(((currentQuizQuestion) / QUIZ_QUESTIONS.length) * 100)}% Complete</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div 
-                      className="bg-[#2563eb] h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${((currentQuizQuestion + 1) / QUIZ_QUESTIONS.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-5 border border-slate-200 dark:border-slate-700">
-                  <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed">
-                    {QUIZ_QUESTIONS[currentQuizQuestion].q}
-                  </h4>
-                </div>
-
-                <div className="space-y-3">
-                  {QUIZ_QUESTIONS[currentQuizQuestion].options.map((option, idx) => {
-                    const isSelected = selectedQuizAnswer === idx;
-                    const isCorrect = QUIZ_QUESTIONS[currentQuizQuestion].answer === idx;
-                    const hasAnswered = selectedQuizAnswer !== null;
-
-                    let optionClass = "flex items-center justify-between w-full p-4 rounded-xl border text-left font-semibold text-sm transition-all duration-200 focus:outline-none ";
-                    
-                    if (!hasAnswered) {
-                      optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2563eb]/50 hover:bg-[#2563eb]/5 text-slate-700 dark:text-slate-350";
-                    } else if (isSelected) {
-                      optionClass += isCorrect 
-                        ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350" 
-                        : "border-rose-500 bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-350";
-                    } else if (isCorrect) {
-                      optionClass += "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350";
-                    } else {
-                      optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-650 opacity-60";
-                    }
-
-                    return (
-                      <button
-                        key={idx}
-                        disabled={hasAnswered}
-                        onClick={() => {
-                          setSelectedQuizAnswer(idx)
-                          if (idx === QUIZ_QUESTIONS[currentQuizQuestion].answer) {
-                            setQuizScore(prev => prev + 1)
-                          }
-                        }}
-                        className={optionClass}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className={cn(
-                            "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold border transition-colors",
-                            !hasAnswered && (isSelected ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-550"),
-                            hasAnswered && isCorrect && "bg-emerald-500 text-white border-emerald-500",
-                            hasAnswered && isSelected && !isCorrect && "bg-rose-500 text-white border-rose-500",
-                            hasAnswered && !isSelected && !isCorrect && "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500"
-                          )}>
-                            {String.fromCharCode(65 + idx)}
-                          </span>
-                          <span className="leading-snug">{option}</span>
-                        </div>
-                        
-                        {hasAnswered && (
-                          <div>
-                            {isCorrect && (
-                              <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            )}
-                            {isSelected && !isCorrect && (
-                              <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                              </svg>
-                            )}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {selectedQuizAnswer !== null && (
-                  <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20 p-4.5 text-xs text-amber-900 dark:text-amber-300 leading-relaxed flex gap-3.5 animate-fade-in shadow-xs">
-                    <div className="bg-amber-100 dark:bg-amber-900/40 rounded-lg p-2 text-amber-700 dark:text-amber-400 h-fit shrink-0">
-                      <svg className="h-4.5 w-4.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
-                        <path d="M9 18h6" />
-                        <path d="M10 22h4" />
-                      </svg>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="font-extrabold">AI Tip & Explanation:</p>
-                      <p className="font-medium text-amber-800 dark:text-amber-350">{QUIZ_QUESTIONS[currentQuizQuestion].explain}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
-                  <Button
-                    variant="secondary"
-                    onClick={() => setIsQuizModalOpen(false)}
-                    className="rounded-xl font-semibold text-sm"
-                  >
-                    Quit
-                  </Button>
-                  <Button
-                    disabled={selectedQuizAnswer === null}
-                    onClick={() => {
-                      if (currentQuizQuestion < QUIZ_QUESTIONS.length - 1) {
-                        setCurrentQuizQuestion(prev => prev + 1)
-                        setSelectedQuizAnswer(null)
-                      } else {
-                        setShowQuizResults(true)
-                        // Log quiz completed
-                        logActivity({
-                          eventKey: 'aiQuizGenerated',
-                          category: 'ai-audit',
-                          status: 'success',
-                          eventTextEn: 'AI Practice Quiz completed',
-                          eventTextVi: 'Hoàn thành trắc nghiệm AI',
-                          detailsTextEn: `Completed custom practice quiz with score ${quizScore + (selectedQuizAnswer === QUIZ_QUESTIONS[currentQuizQuestion].answer ? 1 : 0)}/${QUIZ_QUESTIONS.length}.`,
-                          detailsTextVi: `Đã hoàn thành bộ trắc nghiệm thực hành với điểm số ${quizScore + (selectedQuizAnswer === QUIZ_QUESTIONS[currentQuizQuestion].answer ? 1 : 0)}/${QUIZ_QUESTIONS.length}.`
-                        })
-                      }
-                    }}
-                    className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6 py-2.5 text-sm"
-                  >
-                    {currentQuizQuestion === QUIZ_QUESTIONS.length - 1 ? "Finish Quiz" : "Next Question"}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="py-6 text-center space-y-6 animate-fade-in">
-                <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
-                  <div className="absolute h-full w-full rounded-full border-4 border-slate-100 dark:border-slate-800" />
-                  <div 
-                    className="absolute h-full w-full rounded-full border-4 border-emerald-500 border-t-transparent"
-                    style={{ 
-                      transform: `rotate(${(quizScore / QUIZ_QUESTIONS.length) * 360}deg)`,
-                      transition: 'transform 1.5s ease-out'
-                    }}
-                  />
-                  <span className="text-3xl font-black text-slate-800 dark:text-slate-100">{quizScore}/{QUIZ_QUESTIONS.length}</span>
-                </div>
-
-                <div className="space-y-2 max-w-sm mx-auto">
-                  <h4 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
-                    {quizScore === QUIZ_QUESTIONS.length 
-                      ? "Excellent Mastery!" 
-                      : quizScore >= 2 
-                        ? "Great Achievement!" 
-                        : "Keep Studying!"}
-                  </h4>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                    {quizScore === QUIZ_QUESTIONS.length 
-                      ? "Perfect Score! You have successfully mastered Creational, Structural, and Behavioral patterns." 
-                      : quizScore >= 2 
-                        ? "Solid score! Go over the details of Adapter and Strategy patterns to lock down a perfect mark." 
-                        : "Take another look at the Design Patterns Java Guide and re-run this quiz to test your growth!"}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-center gap-3 border-t border-slate-100 pt-6 mt-8">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setCurrentQuizQuestion(0)
-                      setSelectedQuizAnswer(null)
-                      setQuizScore(0)
-                      setShowQuizResults(false)
-                    }}
-                    className="rounded-xl font-bold"
-                  >
-                    Retake Quiz
-                  </Button>
-                  <Button
-                    onClick={() => setIsQuizModalOpen(false)}
-                    className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6"
-                  >
-                    Close Practice
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </Modal>
-      )}
 
       {/* Upload Document Modal */}
       <Modal
@@ -2164,6 +2102,264 @@ export function DocumentsPage() {
               </Button>
             </div>
 
+          </div>
+        </Modal>
+      )}
+
+      {/* Practice Quiz Modal */}
+      {isQuizModalOpen && (
+        <Modal
+          isOpen={isQuizModalOpen}
+          onClose={() => setIsQuizModalOpen(false)}
+          title={selectedDocForQuiz ? t.quiz.modalTitle(selectedDocForQuiz.title) : t.quiz.modalTitleDefault}
+          description={t.quiz.modalDescription}
+          className="max-w-xl animate-fade-in"
+        >
+          <div className="space-y-6 py-2">
+            {isLoadingQuizForModal ? (
+              <div className="py-12 text-center space-y-4">
+                <div className="relative mx-auto flex h-12 w-12 items-center justify-center">
+                  <div className="absolute h-full w-full rounded-full border-4 border-slate-100 dark:border-slate-800" />
+                  <div className="absolute h-full w-full rounded-full border-4 border-[#2563eb] border-t-transparent animate-spin" />
+                </div>
+                <p className="text-xs text-slate-400">{t.quiz.loading}</p>
+              </div>
+            ) : quizQuestionsForModal.length === 0 ? (
+              <div className="py-12 text-center space-y-4">
+                <p className="text-sm text-slate-500">{t.quiz.empty}</p>
+                <Button variant="secondary" onClick={() => setIsQuizModalOpen(false)}>{t.quiz.close}</Button>
+              </div>
+            ) : !showQuizResults ? (
+              <>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                    <span>{t.quiz.questionProgress(currentQuizQuestion + 1, quizQuestionsForModal.length)}</span>
+                    <span className="text-[#2563eb]">{t.quiz.percentComplete(Math.round(((currentQuizQuestion) / quizQuestionsForModal.length) * 100))}</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-[#2563eb] h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${((currentQuizQuestion + 1) / quizQuestionsForModal.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-5 border border-slate-200 dark:border-slate-700">
+                  <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed">
+                    {quizQuestionsForModal[currentQuizQuestion].q}
+                  </h4>
+                </div>
+
+                <div className="space-y-3">
+                  {(() => {
+                    const rawOpts = quizQuestionsForModal[currentQuizQuestion].options
+                    let opts: string[] = []
+                    if (typeof rawOpts === 'string') {
+                      try {
+                        opts = JSON.parse(rawOpts) as string[]
+                      } catch (e) {
+                        opts = []
+                      }
+                    } else if (Array.isArray(rawOpts)) {
+                      opts = rawOpts
+                    }
+                    return opts.map((option, idx) => {
+                      const isSelected = selectedQuizAnswer === idx;
+                      const isCorrect = quizQuestionsForModal[currentQuizQuestion].answer === idx;
+                      const hasAnswered = selectedQuizAnswer !== null;
+
+                      let optionClass = "flex items-center justify-between w-full p-4 rounded-xl border text-left font-semibold text-sm transition-all duration-200 focus:outline-none ";
+                      
+                      if (!hasAnswered) {
+                        optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2563eb]/50 hover:bg-[#2563eb]/5 text-slate-700 dark:text-slate-350";
+                      } else if (isSelected) {
+                        optionClass += isCorrect 
+                          ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350" 
+                          : "border-rose-500 bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-350";
+                      } else if (isCorrect) {
+                        optionClass += "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350";
+                      } else {
+                        optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-650 opacity-60";
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          disabled={hasAnswered}
+                          onClick={() => {
+                            setSelectedQuizAnswer(idx)
+                            if (idx === quizQuestionsForModal[currentQuizQuestion].answer) {
+                              setQuizScore(prev => prev + 1)
+                            }
+                          }}
+                          className={optionClass}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={cn(
+                              "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold border transition-colors",
+                              !hasAnswered && (isSelected ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-550"),
+                              hasAnswered && isCorrect && "bg-emerald-500 text-white border-emerald-500",
+                              hasAnswered && isSelected && !isCorrect && "bg-rose-500 text-white border-rose-500",
+                              hasAnswered && !isSelected && !isCorrect && "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-550"
+                            )}>
+                              {String.fromCharCode(65 + idx)}
+                            </span>
+                            <span className="leading-snug">{option}</span>
+                          </div>
+                          
+                          {hasAnswered && (
+                            <div>
+                              {isCorrect && (
+                                <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              )}
+                              {isSelected && !isCorrect && (
+                                <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                  <line x1="18" y1="6" x2="6" y2="18" />
+                                  <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                              )}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {selectedQuizAnswer !== null && (
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-955/20 p-4.5 text-xs text-amber-900 dark:text-amber-300 leading-relaxed flex gap-3.5 animate-fade-in shadow-xs">
+                    <div className="bg-amber-100 dark:bg-amber-900/40 rounded-lg p-2 text-amber-700 dark:text-amber-400 h-fit shrink-0">
+                      <svg className="h-4.5 w-4.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                        <path d="M9 18h6" />
+                        <path d="M10 22h4" />
+                      </svg>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-extrabold">{t.quiz.explanationTitle}</p>
+                      <p className="font-medium text-amber-800 dark:text-amber-350">{quizQuestionsForModal[currentQuizQuestion].explain}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Assistant Edit Panel inside Practice Quiz Modal */}
+                <div className="p-4 rounded-xl border border-indigo-150/60 dark:border-indigo-950/60 bg-[#f4f7ff] dark:bg-indigo-955/10 backdrop-blur-md">
+                  <div className="flex gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-955/40 flex items-center justify-center shrink-0">
+                      <Sparkles className="size-4.5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[12px] font-extrabold text-slate-800 dark:text-slate-200">
+                        {t.quiz.aiAssistantTitle}
+                      </h4>
+                      <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                        {t.quiz.aiAssistantSubtitle}
+                      </p>
+                    </div>
+                  </div>
+                  <form onSubmit={handleModifyQuizForModalWithPrompt} className="flex gap-2 mt-3">
+                    <input
+                      type="text"
+                      value={quizPromptForModal}
+                      onChange={(e) => setQuizPromptForModal(e.target.value)}
+                      placeholder={t.quiz.promptPlaceholder}
+                      className="flex-1 rounded-lg border border-slate-250 bg-white px-3 py-1.5 text-xs focus:outline-none dark:border-slate-850 dark:bg-slate-900 dark:text-white"
+                    />
+                    <Button type="submit" disabled={isModifyingQuizForModal || !quizPromptForModal.trim()} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs px-3">
+                      {isModifyingQuizForModal ? t.quiz.sendingPrompt : t.quiz.sendPrompt}
+                    </Button>
+                  </form>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIsQuizModalOpen(false)}
+                    className="rounded-xl font-semibold text-sm"
+                  >
+                    {t.quiz.quit}
+                  </Button>
+                  <Button
+                    disabled={selectedQuizAnswer === null}
+                    onClick={() => {
+                      if (currentQuizQuestion < quizQuestionsForModal.length - 1) {
+                        setCurrentQuizQuestion(prev => prev + 1)
+                        setSelectedQuizAnswer(null)
+                      } else {
+                        setShowQuizResults(true)
+                        // Log quiz completed
+                        logActivity({
+                          eventKey: 'aiQuizGenerated',
+                          category: 'ai-audit',
+                          status: 'success',
+                          eventTextEn: 'AI Practice Quiz completed',
+                          eventTextVi: 'Hoàn thành trắc nghiệm AI',
+                          detailsTextEn: `Completed custom practice quiz with score ${quizScore + (selectedQuizAnswer === quizQuestionsForModal[currentQuizQuestion].answer ? 1 : 0)}/${quizQuestionsForModal.length}.`,
+                          detailsTextVi: `Đã hoàn thành bộ trắc nghiệm thực hành với điểm số ${quizScore + (selectedQuizAnswer === quizQuestionsForModal[currentQuizQuestion].answer ? 1 : 0)}/${quizQuestionsForModal.length}.`
+                        })
+                      }
+                    }}
+                    className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6 py-2.5 text-sm"
+                  >
+                    {currentQuizQuestion === quizQuestionsForModal.length - 1 ? t.quiz.finishQuiz : t.quiz.nextQuestion}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="py-6 text-center space-y-6 animate-fade-in">
+                <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+                  <div className="absolute h-full w-full rounded-full border-4 border-slate-100 dark:border-slate-800" />
+                  <div 
+                    className="absolute h-full w-full rounded-full border-4 border-emerald-500 border-t-transparent"
+                    style={{ 
+                      transform: `rotate(${(quizScore / quizQuestionsForModal.length) * 360}deg)`,
+                      transition: 'transform 1.5s ease-out'
+                    }}
+                  />
+                  <span className="text-3xl font-black text-slate-800 dark:text-slate-100">{quizScore}/{quizQuestionsForModal.length}</span>
+                </div>
+
+                <div className="space-y-2 max-w-sm mx-auto">
+                  <h4 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+                    {quizScore === quizQuestionsForModal.length 
+                      ? t.quiz.scoreExcellent 
+                      : quizScore >= (quizQuestionsForModal.length / 2)
+                        ? t.quiz.scoreGood 
+                        : t.quiz.scorePoor}
+                  </h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                    {quizScore === quizQuestionsForModal.length 
+                      ? t.quiz.descExcellent 
+                      : quizScore >= (quizQuestionsForModal.length / 2)
+                        ? t.quiz.descGood 
+                        : t.quiz.descPoor}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-center gap-3 border-t border-slate-100 pt-6 mt-8">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setCurrentQuizQuestion(0)
+                      setSelectedQuizAnswer(null)
+                      setQuizScore(0)
+                      setShowQuizResults(false)
+                    }}
+                    className="rounded-xl font-bold"
+                  >
+                    {t.quiz.retake}
+                  </Button>
+                  <Button
+                    onClick={() => setIsQuizModalOpen(false)}
+                    className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6"
+                  >
+                    {t.quiz.closePractice}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </Modal>
       )}

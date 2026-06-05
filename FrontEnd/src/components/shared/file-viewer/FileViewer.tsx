@@ -344,7 +344,7 @@ export function FileViewer({
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer"
               >
                 <Sparkles className="h-4.5 w-4.5" />
-                Làm trắc nghiệm AI
+                {t.actionMenu.practiceQuiz}
               </Button>
             )}
 

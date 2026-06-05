@@ -84,7 +84,7 @@ export const aiService = {
   async generateQuiz(
     documentId: number | string,
     difficulty = 'medium',
-    count = 3,
+    count = 10,
     prompt = ''
   ): Promise<QuizQuestionResponse[]> {
     const response = await apiClient.get<ApiResponse<QuizQuestionResponse[]>>(

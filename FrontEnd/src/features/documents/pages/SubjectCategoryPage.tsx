@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface DocumentItem {
   id: string
@@ -57,6 +58,7 @@ const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
 }
 
 export default function SubjectCategoryPage() {
+  const { t } = useTranslation()
   const { subjectId } = useParams<{ subjectId: string }>()
   const navigate = useNavigate()
   const activeSubjectId = (subjectId || 'GENERAL').toUpperCase()
@@ -631,7 +633,7 @@ export default function SubjectCategoryPage() {
                         </button>
                         {activeMenuId === doc.id && (
                           <div ref={menuRef} className="absolute right-0 top-8 z-30 w-48 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 shadow-xl animate-fade-in">
-                            <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"><MessageSquare className="h-4 w-4" />Chat with AI</button>
+                            <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"><MessageSquare className="h-4 w-4" />{t.actionMenu.chatAI}</button>
                             <button
                               onClick={() => {
                                 setActiveMenuId(null)
@@ -640,12 +642,12 @@ export default function SubjectCategoryPage() {
                               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"
                             >
                               <BrainCircuit className="h-4 w-4 text-indigo-500" />
-                              🎯 Làm trắc nghiệm AI
+                              🎯 {t.actionMenu.practiceQuiz}
                             </button>
-                            <button onClick={() => handleOpenDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
-                            <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"><Download className="h-4 w-4" />Download File</button>
+                            <button onClick={() => handleOpenDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"><ExternalLink className="h-4 w-4" />{t.actionMenu.open}</button>
+                            <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"><Download className="h-4 w-4" />{t.actionMenu.download}</button>
                             <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
-                            <button onClick={() => handleDeleteDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/35 transition-colors"><Trash2 className="h-4 w-4" />Delete Document</button>
+                            <button onClick={() => handleDeleteDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/35 transition-colors"><Trash2 className="h-4 w-4" />{t.actionMenu.deleteDoc}</button>
                           </div>
                         )}
                       </div>
@@ -699,7 +701,7 @@ export default function SubjectCategoryPage() {
                         </button>
                         {activeMenuId === doc.id && (
                           <div ref={menuRef} className="absolute right-0 top-8 z-30 w-48 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 shadow-xl animate-fade-in">
-                            <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"><MessageSquare className="h-4 w-4" />Chat with AI</button>
+                            <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"><MessageSquare className="h-4 w-4" />{t.actionMenu.chatAI}</button>
                             <button
                               onClick={() => {
                                 setActiveMenuId(null)
@@ -708,12 +710,12 @@ export default function SubjectCategoryPage() {
                               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"
                             >
                               <BrainCircuit className="h-4 w-4 text-indigo-500" />
-                              🎯 Làm trắc nghiệm AI
+                              🎯 {t.actionMenu.practiceQuiz}
                             </button>
-                            <button onClick={() => handleOpenDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
-                            <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors"><Download className="h-4 w-4" />Download File</button>
+                            <button onClick={() => handleOpenDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors"><ExternalLink className="h-4 w-4" />{t.actionMenu.open}</button>
+                            <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors"><Download className="h-4 w-4" />{t.actionMenu.download}</button>
                             <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
-                            <button onClick={() => handleDeleteDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/35 transition-colors"><Trash2 className="h-4 w-4" />Delete Document</button>
+                            <button onClick={() => handleDeleteDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/35 transition-colors"><Trash2 className="h-4 w-4" />{t.actionMenu.deleteDoc}</button>
                           </div>
                         )}
                       </div>
@@ -760,7 +762,7 @@ export default function SubjectCategoryPage() {
 
                       {activeMenuId === doc.id && (
                         <div ref={menuRef} className="absolute right-0 top-8 z-30 w-48 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 shadow-xl animate-fade-in">
-                          <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"><MessageSquare className="h-4 w-4" />Chat with AI</button>
+                          <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"><MessageSquare className="h-4 w-4" />{t.actionMenu.chatAI}</button>
                           <button
                             onClick={() => {
                               setActiveMenuId(null)
@@ -769,12 +771,12 @@ export default function SubjectCategoryPage() {
                             className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"
                           >
                             <BrainCircuit className="h-4 w-4 text-indigo-500" />
-                            🎯 Làm trắc nghiệm AI
+                            🎯 {t.actionMenu.practiceQuiz}
                           </button>
-                          <button onClick={() => handleOpenDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
-                          <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors"><Download className="h-4 w-4" />Download File</button>
+                          <button onClick={() => handleOpenDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"><ExternalLink className="h-4 w-4" />{t.actionMenu.open}</button>
+                          <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors"><Download className="h-4 w-4" />{t.actionMenu.download}</button>
                           <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
-                          <button onClick={() => handleDeleteDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/35 transition-colors"><Trash2 className="h-4 w-4" />Delete Document</button>
+                          <button onClick={() => handleDeleteDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/35 transition-colors"><Trash2 className="h-4 w-4" />{t.actionMenu.deleteDoc}</button>
                         </div>
                       )}
                     </div>
@@ -858,7 +860,7 @@ export default function SubjectCategoryPage() {
                             size="icon"
                             onClick={() => openQuizModal(doc)}
                             className="rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-955/50"
-                            title="Làm trắc nghiệm AI"
+                            title={t.actionMenu.practiceQuiz}
                           >
                             <BrainCircuit className="h-4.5 w-4.5" />
                           </Button>
@@ -867,7 +869,7 @@ export default function SubjectCategoryPage() {
                             size="icon"
                             onClick={() => openChatDrawer(doc)}
                             className="rounded-lg text-[#2563eb] dark:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-955/50"
-                            title="Chat with AI"
+                            title={t.actionMenu.chatAI}
                           >
                             <MessageSquare className="h-4.5 w-4.5" />
                           </Button>
@@ -876,7 +878,7 @@ export default function SubjectCategoryPage() {
                             size="icon"
                             onClick={() => handleDownloadFile(doc)}
                             className="rounded-lg text-slate-550 dark:text-slate-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/50"
-                            title="Download"
+                            title={t.actionMenu.download}
                           >
                             <Download className="h-4.5 w-4.5" />
                           </Button>
@@ -885,7 +887,7 @@ export default function SubjectCategoryPage() {
                             size="icon"
                             onClick={() => handleDeleteDocument(doc.id)}
                             className="rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-955/35"
-                            title="Delete"
+                            title={t.actionMenu.deleteDoc}
                           >
                             <Trash2 className="h-4.5 w-4.5" />
                           </Button>
