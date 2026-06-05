@@ -22,7 +22,7 @@ interface DocumentsContextType {
   openUploadModal: () => void
   openChatDrawer: (doc: DocumentItem) => void
   openPreviewModal: (doc: DocumentItem) => void
-  openQuizModal: () => void
+  openQuizModal: (doc?: DocumentItem) => void
   showToast: (message: string) => void
   handleDownloadFile: (doc: DocumentItem) => void
   handleDeleteDocument: (id: string) => void
@@ -90,7 +90,8 @@ export default function DocumentDetailPage() {
   const {
     documents,
     showToast,
-    handleDownloadFile
+    handleDownloadFile,
+    openQuizModal
   } = useOutletContext<DocumentsContextType>()
 
   useEffect(() => {
@@ -146,6 +147,7 @@ export default function DocumentDetailPage() {
       onDownload={handleDownload}
       onBackLink={backLink}
       permission="Owner"
+      onQuiz={activeDoc ? () => openQuizModal(activeDoc) : undefined}
     />
   )
 }

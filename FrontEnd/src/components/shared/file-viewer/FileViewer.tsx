@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Download, Share2 } from 'lucide-react'
+import { Download, Share2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { PreviewToolbar } from './PreviewToolbar'
@@ -30,6 +30,7 @@ interface FileViewerProps {
   onDownload: () => void
   onBackLink: React.ReactNode
   fileUrl?: string
+  onQuiz?: () => void
 }
 
 export function FileViewer({
@@ -46,7 +47,8 @@ export function FileViewer({
   showToast,
   onDownload,
   onBackLink,
-  fileUrl
+  fileUrl,
+  onQuiz
 }: FileViewerProps) {
   const { t } = useTranslation()
 
@@ -336,6 +338,16 @@ export function FileViewer({
 
           {/* 3. Action Buttons Column */}
           <div className="space-y-3">
+            {onQuiz && (
+              <Button
+                onClick={onQuiz}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer"
+              >
+                <Sparkles className="h-4.5 w-4.5" />
+                Làm trắc nghiệm AI
+              </Button>
+            )}
+
             <Button
               onClick={handleDownloadClick}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer"

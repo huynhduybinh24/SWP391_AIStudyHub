@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { logActivity } from '@/services/activityLogService'
+import { aiService } from '@/services/aiService'
+import type { AiSummaryResponse, FlashcardResponse, QuizQuestionResponse } from '@/services/aiService'
 import {
   X,
   Send,
@@ -732,9 +734,15 @@ export function DocumentsPage() {
 
   // Preview Modal States
   const [activePreviewDoc, setActivePreviewDoc] = useState<DocumentItem | null>(null)
-  const [activePreviewTab, setActivePreviewTab] = useState<'preview' | 'summary' | 'flashcards'>('preview')
+  const [activePreviewTab, setActivePreviewTab] = useState<'preview' | 'summary' | 'flashcards' | 'quiz'>('preview')
   const [activeFlashcardIndex, setActiveFlashcardIndex] = useState(0)
   const [isFlashcardFlipped, setIsFlashcardFlipped] = useState(false)
+  const [previewSummary, setPreviewSummary] = useState<AiSummaryResponse | null>(null)
+  const [previewFlashcards, setPreviewFlashcards] = useState<FlashcardResponse[]>([])
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestionResponse[]>([])
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false)
+  const [isModifyingQuiz, setIsModifyingQuiz] = useState(false)
+  const [quizPrompt, setQuizPrompt] = useState('')
 
   // Quick Chat drawer States
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false)
@@ -982,6 +990,89 @@ export function DocumentsPage() {
     setActiveFlashcardIndex(0)
     setIsFlashcardFlipped(false)
   }
+
+  // Load quiz questions for the preview tab
+  const handleLoadDocQuizForTab = async (doc: DocumentItem) => {
+    setIsGeneratingQuiz(true)
+    try {
+      let data = await aiService.getQuiz(doc.id)
+      if (!data || data.length === 0) {
+        data = await aiService.generateQuiz(doc.id)
+      }
+      setQuizQuestions(data)
+    } catch (e) {
+      console.error(e)
+      // Fallback mock data if the API fails
+      setQuizQuestions(QUIZ_QUESTIONS.map((q, idx) => ({
+        id: idx,
+        documentId: 0,
+        q: q.q,
+        options: JSON.stringify(q.options),
+        answer: q.answer,
+        explain: q.explain,
+        createdAt: new Date().toISOString()
+      })))
+    } finally {
+      setIsGeneratingQuiz(false)
+    }
+  }
+
+  // Handle modifying quiz with AI prompt
+  const handleModifyQuizWithPrompt = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!activePreviewDoc || !quizPrompt.trim()) return
+    setIsModifyingQuiz(true)
+    try {
+      const updatedQuiz = await aiService.modifyQuizWithAi(activePreviewDoc.id, quizPrompt)
+      setQuizQuestions(updatedQuiz)
+      setQuizPrompt('')
+      showToast('Bộ đề trắc nghiệm đã được cập nhật bởi AI!')
+    } catch (err) {
+      console.error(err)
+      showToast('Không thể hiệu chỉnh bộ đề. Vui lòng thử lại!')
+    } finally {
+      setIsModifyingQuiz(false)
+    }
+  }
+
+  // Automatically fetch AI summaries and flashcards when opening preview doc
+  useEffect(() => {
+    if (!activePreviewDoc) {
+      setPreviewSummary(null)
+      setPreviewFlashcards([])
+      return
+    }
+
+    const loadDocDetails = async () => {
+      try {
+        // Load summary
+        try {
+          const summary = await aiService.getSummary(activePreviewDoc.id)
+          setPreviewSummary(summary)
+        } catch (e) {
+          // If summary not found, generate it
+          try {
+            const summary = await aiService.generateSummary(activePreviewDoc.id)
+            setPreviewSummary(summary)
+          } catch (genErr) {
+            console.error('Failed to get/generate summary:', genErr)
+          }
+        }
+
+        // Load flashcards
+        try {
+          const flashcards = await aiService.getFlashcards(activePreviewDoc.id)
+          setPreviewFlashcards(flashcards)
+        } catch (fcErr) {
+          console.error('Failed to get flashcards:', fcErr)
+        }
+      } catch (err) {
+        console.error('Error loading preview document AI content:', err)
+      }
+    }
+
+    loadDocDetails()
+  }, [activePreviewDoc])
 
   const getDocContent = (doc: DocumentItem | null) => {
     if (!doc) return SUBJECTS_CONTENT_DB.GENERAL
@@ -1604,7 +1695,23 @@ export function DocumentsPage() {
                     : 'border-transparent text-slate-400 hover:text-slate-600'
                 )}
               >
-                Flashcards ({getDocContent(activePreviewDoc)?.flashcards.length || 0})
+                Flashcards ({previewFlashcards.length > 0 ? previewFlashcards.length : (getDocContent(activePreviewDoc)?.flashcards.length || 0)})
+              </button>
+              <button
+                onClick={() => {
+                  setActivePreviewTab('quiz')
+                  if (activePreviewDoc) {
+                    handleLoadDocQuizForTab(activePreviewDoc)
+                  }
+                }}
+                className={cn(
+                  'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-all',
+                  activePreviewTab === 'quiz'
+                    ? 'border-[#2563eb] text-[#2563eb]'
+                    : 'border-transparent text-slate-400 hover:text-slate-600'
+                )}
+              >
+                Practice Quiz
               </button>
             </div>
 
@@ -1613,7 +1720,7 @@ export function DocumentsPage() {
                 <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5 max-h-[350px] overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 dark:text-slate-350 whitespace-pre-wrap">
                   {getDocContent(activePreviewDoc)?.previewText}
                 </div>
-                <div className="flex justify-between items-center bg-blue-50/40 dark:bg-blue-950/20 rounded-xl p-4 border border-blue-100/50 dark:border-blue-900/30">
+                <div className="flex justify-between items-center bg-blue-50/40 dark:bg-blue-955/20 rounded-xl p-4 border border-blue-100/50 dark:border-blue-900/30">
                   <div className="flex items-center gap-3 text-sm text-[#2563eb] dark:text-blue-400 font-medium">
                     <BrainCircuit className="h-5 w-5" />
                     AI has indexed this document successfully
@@ -1625,7 +1732,7 @@ export function DocumentsPage() {
                       setActivePreviewDoc(null)
                       handleOpenChat(doc)
                     }}
-                    className="text-[#2563eb] dark:text-blue-400 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 font-semibold text-sm rounded-lg"
+                    className="text-[#2563eb] dark:text-blue-400 hover:bg-blue-50/80 dark:hover:bg-blue-955/40 font-semibold text-sm rounded-lg"
                   >
                     Discuss with AI assistant →
                   </Button>
@@ -1636,7 +1743,7 @@ export function DocumentsPage() {
             {activePreviewTab === 'summary' && (
               <div className="space-y-5 py-2">
                 <div className="flex gap-4 items-start bg-blue-50/30 dark:bg-blue-950/20 rounded-2xl p-5 border border-blue-100/40 dark:border-blue-900/30">
-                  <div className="bg-blue-100 dark:bg-blue-950/60 rounded-xl p-2.5 text-[#2563eb] dark:text-blue-400">
+                  <div className="bg-blue-100 dark:bg-blue-955/60 rounded-xl p-2.5 text-[#2563eb] dark:text-blue-400">
                     <Sparkles className="h-6 w-6 stroke-[1.8] animate-pulse" />
                   </div>
                   <div>
@@ -1646,12 +1753,31 @@ export function DocumentsPage() {
                 </div>
 
                 <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
-                  {getDocContent(activePreviewDoc)?.summaryBullets.map((bullet, idx) => (
-                    <div key={idx} className="flex gap-3 items-start text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-                      <p>{bullet}</p>
-                    </div>
-                  ))}
+                  {(() => {
+                    let bullets: string[] = []
+                    if (previewSummary) {
+                      try {
+                        if (typeof previewSummary.summaryBullets === 'string') {
+                          bullets = JSON.parse(previewSummary.summaryBullets)
+                        } else if (Array.isArray(previewSummary.summaryBullets)) {
+                          bullets = previewSummary.summaryBullets
+                        }
+                      } catch (e) {
+                        if (previewSummary.summaryText) {
+                          bullets = [previewSummary.summaryText]
+                        }
+                      }
+                    }
+                    if (!bullets || bullets.length === 0) {
+                      bullets = getDocContent(activePreviewDoc)?.summaryBullets || []
+                    }
+                    return bullets.map((bullet, idx) => (
+                      <div key={idx} className="flex gap-3 items-start text-sm text-slate-700 dark:text-slate-350 leading-relaxed text-left">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                        <p>{bullet}</p>
+                      </div>
+                    ))
+                  })()}
                 </div>
               </div>
             )}
@@ -1659,10 +1785,17 @@ export function DocumentsPage() {
             {activePreviewTab === 'flashcards' && (
               <div className="space-y-6 py-2 flex flex-col items-center">
                 {(() => {
-                  const db = getDocContent(activePreviewDoc)
-                  const currentCard = db.flashcards[activeFlashcardIndex]
+                  let flashcardsList = (previewFlashcards || []).map(fc => ({ question: fc.question, answer: fc.answer }))
+                  if (flashcardsList.length === 0) {
+                    const localFc = getDocContent(activePreviewDoc)?.flashcards || []
+                    flashcardsList = localFc.map(fc => ({ question: fc.q, answer: fc.a }))
+                  }
+                  const currentCard = flashcardsList[activeFlashcardIndex]
 
                   if (!currentCard) return <p className="text-sm text-slate-400 dark:text-slate-500">No flashcards available</p>
+
+                  const q = currentCard.question
+                  const a = currentCard.answer
 
                   return (
                     <>
@@ -1671,19 +1804,19 @@ export function DocumentsPage() {
                         className={cn(
                           'relative h-56 w-full max-w-lg rounded-2xl border cursor-pointer select-none shadow-xs transition-all duration-500 preserve-3d flex items-center justify-center p-8 text-center hover:shadow-md',
                           isFlashcardFlipped
-                            ? 'border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-950/20'
+                            ? 'border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-955/20'
                             : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
                         )}
                       >
                         {isFlashcardFlipped ? (
                           <div className="space-y-3">
-                            <span className="text-[10px] uppercase tracking-widest text-[#2563eb] dark:text-blue-400 font-bold bg-blue-100/60 dark:bg-blue-950/60 px-2 py-0.5 rounded">Answer / Mặt B</span>
-                            <p className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-relaxed">{currentCard.a}</p>
+                            <span className="text-[10px] uppercase tracking-widest text-[#2563eb] dark:text-blue-400 font-bold bg-blue-100/60 dark:bg-blue-955/60 px-2 py-0.5 rounded">Answer / Mặt B</span>
+                            <p className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-relaxed">{a}</p>
                           </div>
                         ) : (
                           <div className="space-y-3">
                             <span className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded">Question / Mặt A</span>
-                            <p className="text-xl font-black text-slate-800 dark:text-slate-100 leading-relaxed">{currentCard.q}</p>
+                            <p className="text-xl font-black text-slate-800 dark:text-slate-100 leading-relaxed">{q}</p>
                             <p className="text-xs text-slate-400 dark:text-slate-500 pt-4">Click card to reveal answer</p>
                           </div>
                         )}
@@ -1703,12 +1836,12 @@ export function DocumentsPage() {
                           ← Previous
                         </Button>
                         <span className="text-sm text-slate-500 dark:text-slate-400 font-semibold">
-                          {activeFlashcardIndex + 1} / {db.flashcards.length}
+                          {activeFlashcardIndex + 1} / {flashcardsList.length}
                         </span>
                         <Button
                           variant="secondary"
                           size="sm"
-                          disabled={activeFlashcardIndex === db.flashcards.length - 1}
+                          disabled={activeFlashcardIndex === flashcardsList.length - 1}
                           onClick={() => {
                             setActiveFlashcardIndex(prev => prev + 1)
                             setIsFlashcardFlipped(false)
@@ -1721,6 +1854,218 @@ export function DocumentsPage() {
                     </>
                   )
                 })()}
+              </div>
+            )}
+
+            {activePreviewTab === 'quiz' && (
+              <div className="space-y-6 py-2 text-left">
+                {isGeneratingQuiz ? (
+                  <div className="py-12 text-center space-y-4">
+                    <div className="w-10 h-10 rounded-full border-4 border-t-blue-600 border-blue-100 animate-spin mx-auto" />
+                    <p className="text-xs text-slate-400">AI đang chuẩn bị câu hỏi trắc nghiệm...</p>
+                  </div>
+                ) : quizQuestions.length === 0 ? (
+                  <p className="text-center text-sm py-8 text-slate-400">Không có câu hỏi trắc nghiệm.</p>
+                ) : !showQuizResults ? (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                        <span>QUESTION {currentQuizQuestion + 1} OF {quizQuestions.length}</span>
+                        <span className="text-[#2563eb]">{Math.round(((currentQuizQuestion) / quizQuestions.length) * 100)}% Complete</span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className="bg-[#2563eb] h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${((currentQuizQuestion + 1) / quizQuestions.length) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-5 border border-slate-200 dark:border-slate-700">
+                      <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed">
+                        {quizQuestions[currentQuizQuestion].q}
+                      </h4>
+                    </div>
+
+                    <div className="space-y-3">
+                      {(() => {
+                        const opts = typeof quizQuestions[currentQuizQuestion].options === 'string' 
+                          ? JSON.parse(quizQuestions[currentQuizQuestion].options) 
+                          : quizQuestions[currentQuizQuestion].options;
+                        return opts.map((option: string, idx: number) => {
+                          const isSelected = selectedQuizAnswer === idx;
+                          const isCorrect = quizQuestions[currentQuizQuestion].answer === idx;
+                          const hasAnswered = selectedQuizAnswer !== null;
+
+                          let optionClass = "flex items-center justify-between w-full p-4 rounded-xl border text-left font-semibold text-sm transition-all duration-200 focus:outline-none ";
+                          
+                          if (!hasAnswered) {
+                            optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2563eb]/50 hover:bg-[#2563eb]/5 text-slate-700 dark:text-slate-350";
+                          } else if (isSelected) {
+                            optionClass += isCorrect 
+                              ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350" 
+                              : "border-rose-500 bg-rose-50/50 dark:bg-rose-955/20 text-rose-800 dark:text-rose-350";
+                          } else if (isCorrect) {
+                            optionClass += "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350";
+                          } else {
+                            optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-650 opacity-60";
+                          }
+
+                          return (
+                            <button
+                              key={idx}
+                              disabled={hasAnswered}
+                              onClick={() => {
+                                setSelectedQuizAnswer(idx)
+                                if (idx === quizQuestions[currentQuizQuestion].answer) {
+                                  setQuizScore(prev => prev + 1)
+                                }
+                              }}
+                              className={optionClass}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className={cn(
+                                  "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold border transition-colors",
+                                  !hasAnswered && (isSelected ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-550"),
+                                  hasAnswered && isCorrect && "bg-emerald-500 text-white border-emerald-500",
+                                  hasAnswered && isSelected && !isCorrect && "bg-rose-500 text-white border-rose-500",
+                                  hasAnswered && !isSelected && !isCorrect && "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-550"
+                                )}>
+                                  {String.fromCharCode(65 + idx)}
+                                </span>
+                                <span className="leading-snug">{option}</span>
+                              </div>
+                              
+                              {hasAnswered && (
+                                <div>
+                                  {isCorrect && (
+                                    <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                      <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                  )}
+                                  {isSelected && !isCorrect && (
+                                    <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                      <line x1="18" y1="6" x2="6" y2="18" />
+                                      <line x1="6" y1="6" x2="18" y2="18" />
+                                    </svg>
+                                  )}
+                                </div>
+                              )}
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+
+                    {selectedQuizAnswer !== null && (
+                      <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-955/20 p-4.5 text-xs text-amber-900 dark:text-amber-300 leading-relaxed flex gap-3.5 animate-fade-in shadow-xs">
+                        <div className="bg-amber-100 dark:bg-amber-900/40 rounded-lg p-2 text-amber-700 dark:text-amber-400 h-fit shrink-0">
+                          <svg className="h-4.5 w-4.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                            <path d="M9 18h6" />
+                            <path d="M10 22h4" />
+                          </svg>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-extrabold">AI Tip & Explanation:</p>
+                          <p className="font-medium text-amber-800 dark:text-amber-350">{quizQuestions[currentQuizQuestion].explain}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI Assistant Edit Panel inside Preview Modal Quiz Tab */}
+                    <div className="mt-6 p-4 rounded-xl border border-indigo-150/60 dark:border-indigo-950/60 bg-[#f4f7ff] dark:bg-indigo-955/10 backdrop-blur-md">
+                      <div className="flex gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/40 flex items-center justify-center shrink-0">
+                          <Sparkles className="size-4.5 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-[12px] font-extrabold text-slate-800 dark:text-slate-200">
+                            Trợ lý Hiệu chỉnh Bộ đề AI (AI Prompt Edit)
+                          </h4>
+                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                            Nhập yêu cầu (ví dụ: 'Dịch sang tiếng Việt', 'Làm đề khó hơn') để tinh chỉnh bộ đề.
+                          </p>
+                        </div>
+                      </div>
+                      <form onSubmit={handleModifyQuizWithPrompt} className="flex gap-2 mt-3">
+                        <input
+                          type="text"
+                          value={quizPrompt}
+                          onChange={(e) => setQuizPrompt(e.target.value)}
+                          placeholder="Nhập prompt hiệu chỉnh..."
+                          className="flex-1 rounded-lg border border-slate-250 bg-white px-3 py-1.5 text-xs focus:outline-none dark:border-slate-850 dark:bg-slate-900 dark:text-white"
+                        />
+                        <Button type="submit" disabled={isModifyingQuiz || !quizPrompt.trim()} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs px-3">
+                          Gửi AI
+                        </Button>
+                      </form>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
+                      <Button
+                        disabled={selectedQuizAnswer === null}
+                        onClick={() => {
+                          if (currentQuizQuestion < quizQuestions.length - 1) {
+                            setCurrentQuizQuestion(prev => prev + 1)
+                            setSelectedQuizAnswer(null)
+                          } else {
+                            setShowQuizResults(true)
+                          }
+                        }}
+                        className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6 py-2.5 text-sm"
+                      >
+                        {currentQuizQuestion === quizQuestions.length - 1 ? "Finish Quiz" : "Next Question"}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-6 text-center space-y-6 animate-fade-in">
+                    <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+                      <div className="absolute h-full w-full rounded-full border-4 border-slate-100 dark:border-slate-800" />
+                      <div 
+                        className="absolute h-full w-full rounded-full border-4 border-emerald-500 border-t-transparent"
+                        style={{ 
+                          transform: `rotate(${(quizScore / quizQuestions.length) * 360}deg)`,
+                          transition: 'transform 1.5s ease-out'
+                        }}
+                      />
+                      <span className="text-3xl font-black text-slate-800 dark:text-slate-100">{quizScore}/{quizQuestions.length}</span>
+                    </div>
+
+                    <div className="space-y-2 max-w-sm mx-auto">
+                      <h4 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+                        {quizScore === quizQuestions.length 
+                          ? "Excellent Mastery!" 
+                          : quizScore >= (quizQuestions.length / 2) 
+                            ? "Great Achievement!" 
+                            : "Keep Studying!"}
+                      </h4>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                        {quizScore === quizQuestions.length 
+                          ? "Perfect Score! You have successfully mastered the material." 
+                          : quizScore >= (quizQuestions.length / 2) 
+                            ? "Solid score! Review the explanations to lock down a perfect mark next time." 
+                            : "Take another look at the document and re-run this quiz to test your growth!"}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-3 border-t border-slate-100 pt-6 mt-8">
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          setCurrentQuizQuestion(0)
+                          setSelectedQuizAnswer(null)
+                          setQuizScore(0)
+                          setShowQuizResults(false)
+                        }}
+                        className="rounded-xl font-bold"
+                      >
+                        Retake Quiz
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
