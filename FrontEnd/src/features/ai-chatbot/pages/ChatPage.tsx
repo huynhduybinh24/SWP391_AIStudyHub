@@ -34,6 +34,7 @@ interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
+  thought?: string
   createdAt: string
   files?: Array<{ name: string; size: string }>
 }
@@ -226,6 +227,7 @@ export function ChatPage() {
             id: String(msg.id),
             role: msg.sender.toLowerCase() === 'user' ? 'user' : 'assistant',
             content: msg.messageText,
+            thought: msg.thought,
             createdAt: new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }))
           setMessages(mappedHistory)
@@ -436,13 +438,14 @@ export function ChatPage() {
     try {
       // Fetch or create general session (documentId = null)
       const session = await aiService.createOrGetChatSession(null, userId)
-      const reply = await aiService.sendMessage(session.id, text)
+      const reply = await aiService.sendMessage(session.id, text, selectedMode === 'Thinking')
       
       const botMsgId = String(reply.id || Date.now() + 1)
       const newBotMsg: ChatMessage = {
         id: botMsgId,
         role: 'assistant',
         content: reply.messageText,
+        thought: reply.thought,
         createdAt: t.common.justNow || "Just now",
       }
 
@@ -527,7 +530,7 @@ export function ChatPage() {
     setReplyingToMessage(content)
   }
 
-  const handleRegenerateResponse = (index: number) => {
+  const handleRegenerateResponse = async (index: number) => {
     // Regenerate from the previous user message
     if (index === 0) return
     const userMsg = messages[index - 1]
@@ -537,13 +540,16 @@ export function ChatPage() {
       const slicedMsgs = messages.slice(0, index)
       setMessages(slicedMsgs)
 
-      setTimeout(() => {
-        setIsTyping(false)
-        const botResponse = t.aiChatbot.botResponseDefault
+      try {
+        const session = await aiService.createOrGetChatSession(null, userId)
+        const reply = await aiService.sendMessage(session.id, userMsg.content, selectedMode === 'Thinking')
+        
+        const botMsgId = String(reply.id || Date.now() + 1)
         const newBotMsg: ChatMessage = {
-          id: (Date.now() + 1).toString(),
+          id: botMsgId,
           role: 'assistant',
-          content: botResponse,
+          content: reply.messageText,
+          thought: reply.thought,
           createdAt: t.common.justNow || "Just now",
         }
         const finalMsgs = [...slicedMsgs, newBotMsg]
@@ -559,7 +565,19 @@ export function ChatPage() {
             })
           )
         }
-      }, 800)
+      } catch (err) {
+        console.error('Failed to regenerate response', err)
+        const botMsgId = (Date.now() + 1).toString()
+        const newBotMsg: ChatMessage = {
+          id: botMsgId,
+          role: 'assistant',
+          content: 'Xin lỗi, có lỗi xảy ra khi kết nối với máy chủ AI.',
+          createdAt: t.common.justNow || "Just now",
+        }
+        setMessages([...slicedMsgs, newBotMsg])
+      } finally {
+        setIsTyping(false)
+      }
     }
   }
 
@@ -950,6 +968,15 @@ export function ChatPage() {
                                 : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-100 dark:border-slate-700/50 rounded-tl-sm"
                             )}
                           >
+                            {!isUser && msg.thought && (
+                              <div className="mb-2 p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800/60 text-[12.5px] text-slate-500 dark:text-slate-400">
+                                <div className="flex items-center gap-1 font-bold mb-1 select-none text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">
+                                  <BrainCircuit className="size-3.5" />
+                                  <span>Reasoning Process</span>
+                                </div>
+                                <div className="italic whitespace-pre-wrap">{msg.thought}</div>
+                              </div>
+                            )}
                             {msg.content && <div>{msg.content}</div>}
 
                             {/* Attached files */}

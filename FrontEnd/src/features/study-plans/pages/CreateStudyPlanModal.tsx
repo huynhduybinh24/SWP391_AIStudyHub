@@ -12,6 +12,8 @@ import { Radio } from '@/components/ui/Radio'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { aiService } from '@/services/aiService'
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -59,6 +61,7 @@ interface CreateStudyPlanModalProps {
 export const CreateStudyPlanModal = ({ isOpen, onClose, onCreate }: CreateStudyPlanModalProps) => {
   const { t, language } = useTranslation()
   const [isGenerating, setIsGenerating] = useState(false)
+  const { user } = useAuthStore()
 
   // Memoize Zod Schema based on language translations
   const studyPlanSchema = useMemo(() => {
@@ -155,36 +158,52 @@ export const CreateStudyPlanModal = ({ isOpen, onClose, onCreate }: CreateStudyP
   // ── Generate with AI ─────────────────────────────────
   const handleGenerateAI = async () => {
     setIsGenerating(true)
-    // Simulate AI generation delay
-    await new Promise((r) => setTimeout(r, 1200))
+    try {
+      const userId = user?.id || 1
+      const selectedDocs = watch('selectedDocIds') || []
+      const docIdStr = selectedDocs[0]
+      const docId = docIdStr ? Number(docIdStr.replace('doc-', '')) : undefined
+      const goal = watch('description') || 'Học tập hiệu quả'
 
-    const suggestion = getLocalizedSuggestion(currentSubject)
-    if (suggestion.title)       setValue('title', suggestion.title, { shouldValidate: true })
-    if (suggestion.description) setValue('description', suggestion.description, { shouldValidate: true })
-    if (suggestion.schedule)    setValue('schedule', suggestion.schedule, { shouldValidate: true })
-    setValue('priority', 'High')
+      // Call OpenAI study plan generator
+      const plan = await aiService.generateStudyPlan(
+        userId,
+        currentSubject,
+        goal,
+        4, // Default 4 weeks
+        docId
+      )
 
-    // Auto-select relevant mock document based on subject
-    if (currentSubject === 'Mathematics') {
-      setValue('selectedDocIds', ['doc-3'], { shouldValidate: true })
-    } else if (currentSubject === 'Physics') {
-      setValue('selectedDocIds', ['doc-1', 'doc-3'], { shouldValidate: true })
-    } else if (currentSubject === 'Computer Science') {
-      setValue('selectedDocIds', ['doc-4'], { shouldValidate: true })
-    } else if (currentSubject === 'Literature') {
-      setValue('selectedDocIds', ['doc-5'], { shouldValidate: true })
-    } else {
-      setValue('selectedDocIds', ['doc-2'], { shouldValidate: true })
+      setValue('title', plan.title, { shouldValidate: true })
+      setValue('description', plan.planText, { shouldValidate: true })
+
+      const suggestion = getLocalizedSuggestion(currentSubject)
+      if (suggestion.schedule) setValue('schedule', suggestion.schedule, { shouldValidate: true })
+      setValue('priority', 'High')
+
+      // Set start date to today, end date to +30 days
+      const today = new Date()
+      const endDay = new Date(today)
+      endDay.setDate(today.getDate() + 30)
+      setValue('startDate', today.toISOString().split('T')[0], { shouldValidate: true })
+      setValue('endDate',   endDay.toISOString().split('T')[0],  { shouldValidate: true })
+    } catch (err) {
+      console.error('Error generating AI plan:', err)
+      // Fallback suggestions
+      const suggestion = getLocalizedSuggestion(currentSubject)
+      if (suggestion.title)       setValue('title', suggestion.title, { shouldValidate: true })
+      if (suggestion.description) setValue('description', suggestion.description, { shouldValidate: true })
+      if (suggestion.schedule)    setValue('schedule', suggestion.schedule, { shouldValidate: true })
+      setValue('priority', 'High')
+
+      const today = new Date()
+      const endDay = new Date(today)
+      endDay.setDate(today.getDate() + 30)
+      setValue('startDate', today.toISOString().split('T')[0], { shouldValidate: true })
+      setValue('endDate',   endDay.toISOString().split('T')[0],  { shouldValidate: true })
+    } finally {
+      setIsGenerating(false)
     }
-
-    // Set start date to today, end date to +30 days
-    const today = new Date()
-    const endDay = new Date(today)
-    endDay.setDate(today.getDate() + 30)
-    setValue('startDate', today.toISOString().split('T')[0], { shouldValidate: true })
-    setValue('endDate',   endDay.toISOString().split('T')[0],  { shouldValidate: true })
-
-    setIsGenerating(false)
   }
 
   // ── Submit ───────────────────────────────────────────

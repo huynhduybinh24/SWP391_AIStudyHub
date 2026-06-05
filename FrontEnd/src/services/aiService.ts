@@ -4,6 +4,7 @@ import { ApiResponse } from './documentService'
 export interface AiSummaryResponse {
   id: number
   documentId: number
+  language: string
   summaryText: string
   summaryBullets: string // String containing JSON
   createdAt: string
@@ -14,6 +15,7 @@ export interface AiChatSessionResponse {
   id: number
   documentId?: number
   userId: number
+  title?: string
   createdAt: string
   updatedAt: string
 }
@@ -23,6 +25,7 @@ export interface AiChatMessageResponse {
   sessionId: number
   sender: 'USER' | 'AI'
   messageText: string
+  thought?: string
   createdAt: string
 }
 
@@ -44,14 +47,24 @@ export interface QuizQuestionResponse {
   createdAt: string
 }
 
+export interface StudyPlanResponse {
+  id: number
+  userId: number
+  title: string
+  subject: string
+  planText: string
+  documentId?: number
+  createdAt: string
+}
+
 export const aiService = {
-  async generateSummary(documentId: number | string): Promise<AiSummaryResponse> {
-    const response = await apiClient.post<ApiResponse<AiSummaryResponse>>(`/ai/summary/generate?documentId=${documentId}`)
+  async generateSummary(documentId: number | string, language = 'vi'): Promise<AiSummaryResponse> {
+    const response = await apiClient.post<ApiResponse<AiSummaryResponse>>(`/ai/summary/generate?documentId=${documentId}&language=${language}`)
     return response.data.data
   },
 
-  async getSummary(documentId: number | string): Promise<AiSummaryResponse> {
-    const response = await apiClient.get<ApiResponse<AiSummaryResponse>>(`/ai/summary/${documentId}`)
+  async getSummary(documentId: number | string, language = 'vi'): Promise<AiSummaryResponse> {
+    const response = await apiClient.get<ApiResponse<AiSummaryResponse>>(`/ai/summary/${documentId}?language=${language}`)
     return response.data.data
   },
 
@@ -68,10 +81,11 @@ export const aiService = {
     return response.data.data
   },
 
-  async sendMessage(sessionId: number | string, messageText: string): Promise<AiChatMessageResponse> {
+  async sendMessage(sessionId: number | string, messageText: string, thinkingMode = false): Promise<AiChatMessageResponse> {
     const response = await apiClient.post<ApiResponse<AiChatMessageResponse>>('/ai/chat/send', {
       sessionId: Number(sessionId),
       messageText,
+      thinkingMode
     })
     return response.data.data
   },
@@ -103,6 +117,28 @@ export const aiService = {
 
   async getQuiz(documentId: number | string): Promise<QuizQuestionResponse[]> {
     const response = await apiClient.get<ApiResponse<QuizQuestionResponse[]>>(`/ai/quiz/${documentId}`)
+    return response.data.data
+  },
+
+  async generateStudyPlan(
+    userId: number,
+    subject: string,
+    goal: string,
+    durationWeeks: number,
+    documentId?: number
+  ): Promise<StudyPlanResponse> {
+    const response = await apiClient.post<ApiResponse<StudyPlanResponse>>('/ai/study-plans/generate', {
+      userId,
+      subject,
+      goal,
+      durationWeeks,
+      documentId: documentId ? Number(documentId) : null
+    })
+    return response.data.data
+  },
+
+  async getStudyPlans(userId: number): Promise<StudyPlanResponse[]> {
+    const response = await apiClient.get<ApiResponse<StudyPlanResponse[]>>(`/ai/study-plans/user/${userId}`)
     return response.data.data
   }
 }

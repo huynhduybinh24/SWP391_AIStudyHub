@@ -1,19 +1,26 @@
 package com.lumiedu.ai.service.impl;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.lumiedu.ai.entity.*;
 import com.lumiedu.ai.repository.*;
 import com.lumiedu.ai.service.AiAssistantService;
+import com.lumiedu.ai.service.AiLimitService;
+import com.lumiedu.ai.service.DocumentChunkingService;
+import com.lumiedu.ai.service.OpenAiService;
+import com.lumiedu.ai.service.OpenAiService.ChatMessageDto;
+import com.lumiedu.ai.service.OpenAiService.OpenAiResponse;
 import com.lumiedu.document.entity.Document;
 import com.lumiedu.document.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -26,50 +33,123 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     private final FlashcardRepository flashcardRepository;
     private final QuizQuestionRepository quizQuestionRepository;
     private final DocumentRepository documentRepository;
+
+    private final DocumentChunkRepository documentChunkRepository;
+    private final AiUsageLogRepository aiUsageLogRepository;
+    private final StudyPlanRepository studyPlanRepository;
+
+    private final OpenAiService openAiService;
+    private final DocumentChunkingService documentChunkingService;
+    private final AiLimitService aiLimitService;
+
     private final Gson gson = new Gson();
 
     @Override
-    public AiSummary generateSummary(Long documentId) {
-        Optional<AiSummary> existing = aiSummaryRepository.findByDocumentId(documentId);
+    public AiSummary generateSummary(Long documentId, String language) {
+        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
+
+        // 1. Check cache
+        Optional<AiSummary> existing = aiSummaryRepository.findByDocumentIdAndLanguage(documentId, lang);
         if (existing.isPresent()) {
             return existing.get();
         }
 
         Document doc = documentRepository.findById(documentId).orElse(null);
-        String subject = (doc != null && doc.getSubject() != null) ? doc.getSubject() : "GENERAL";
-        String title = doc != null ? doc.getTitle() : "Tài liệu học tập";
+        if (doc == null) {
+            throw new IllegalArgumentException("Document not found.");
+        }
 
-        String summaryText = "Tài liệu này chứa nội dung quan trọng về " + subject + " liên quan đến " + title + ". "
-                + "Tài liệu cung cấp các định nghĩa nền tảng, công thức then chốt, và phương pháp ứng dụng thực tiễn của chủ đề học tập này.";
+        // 2. Ensure chunks exist
+        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        if (chunks.isEmpty()) {
+            documentChunkingService.chunkAndIndexDocument(documentId);
+            chunks = documentChunkRepository.findByDocumentId(documentId);
+        }
 
-        List<String> bullets = getSampleBullets(subject);
-        String bulletsJson = gson.toJson(bullets);
+        // 3. Build summary context from first few chunks
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(chunks.size(), 3); i++) {
+            sb.append(chunks.get(i).getContent()).append("\n");
+        }
+        String context = sb.toString();
+
+        // 4. Construct prompt
+        List<ChatMessageDto> messages = new ArrayList<>();
+        messages.add(ChatMessageDto.builder()
+                .role("system")
+                .content("You are a helpful educational AI assistant. Summarize the user's document in the requested language: " + lang + ". "
+                        + "You must respond with a JSON object containing exactly two fields: "
+                        + "'summaryText' (a paragraph summary of the document) and "
+                        + "'summaryBullets' (a JSON array of key bullet points, max 5 bullets).")
+                .build());
+        messages.add(ChatMessageDto.builder()
+                .role("user")
+                .content("Document Subject: " + doc.getSubject() + "\nDocument Title: " + doc.getTitle() + "\n\nContent:\n" + context)
+                .build());
+
+        // 5. Call OpenAI
+        OpenAiResponse response = openAiService.chat(messages, true);
+
+        // 6. Log usage
+        Long userId = doc.getUserId() != null ? doc.getUserId() : 1L;
+        saveUsageLog(userId, "SUMMARY", response);
+
+        // 7. Parse response
+        String summaryText = "";
+        String summaryBulletsJson = "";
+        try {
+            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            summaryText = jsonObj.get("summaryText").getAsString();
+            JsonElement bulletsElem = jsonObj.get("summaryBullets");
+            if (bulletsElem.isJsonArray()) {
+                summaryBulletsJson = gson.toJson(bulletsElem.getAsJsonArray());
+            } else {
+                summaryBulletsJson = bulletsElem.getAsString();
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse summary JSON response: " + e.getMessage());
+            // Fallback
+            summaryText = response.getContent();
+            summaryBulletsJson = gson.toJson(Arrays.asList("Tổng quan kiến thức cốt lõi.", "Chi tiết phương pháp và bài học."));
+        }
 
         AiSummary summary = AiSummary.builder()
                 .documentId(documentId)
+                .language(lang)
                 .summaryText(summaryText)
-                .summaryBullets(bulletsJson)
+                .summaryBullets(summaryBulletsJson)
                 .build();
 
         return aiSummaryRepository.save(summary);
     }
 
     @Override
-    public AiSummary getSummary(Long documentId) {
-        return aiSummaryRepository.findByDocumentId(documentId)
-                .orElseGet(() -> generateSummary(documentId));
+    public AiSummary getSummary(Long documentId, String language) {
+        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
+        return aiSummaryRepository.findByDocumentIdAndLanguage(documentId, lang)
+                .orElseGet(() -> generateSummary(documentId, lang));
     }
 
     @Override
     public AiChatSession createOrGetChatSession(Long documentId, Long userId) {
-        return aiChatSessionRepository.findByDocumentIdAndUserId(documentId, userId)
-                .orElseGet(() -> {
-                    AiChatSession session = AiChatSession.builder()
-                            .documentId(documentId)
-                            .userId(userId)
-                            .build();
-                    return aiChatSessionRepository.save(session);
-                });
+        List<AiChatSession> sessions = aiChatSessionRepository.findByDocumentIdAndUserId(documentId, userId);
+        if (!sessions.isEmpty()) {
+            return sessions.get(0);
+        }
+        
+        String title = "Thảo luận tài liệu";
+        if (documentId != null) {
+            Document doc = documentRepository.findById(documentId).orElse(null);
+            if (doc != null) {
+                title = doc.getTitle();
+            }
+        }
+        AiChatSession session = AiChatSession.builder()
+                .documentId(documentId)
+                .userId(userId)
+                .title(title)
+                .build();
+        return aiChatSessionRepository.save(session);
     }
 
     @Override
@@ -78,8 +158,16 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     @Override
-    public AiChatMessage sendMessage(Long sessionId, String messageText) {
-        // Save user message
+    public AiChatMessage sendMessage(Long sessionId, String messageText, boolean thinkingMode) {
+        AiChatSession session = aiChatSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Chat session not found."));
+
+        // 1. Check billing limit
+        if (!aiLimitService.isWithinDailyLimit(session.getUserId(), "CHAT")) {
+            throw new RuntimeException("Bạn đã vượt quá hạn mức sử dụng AI Chat hàng ngày của gói dịch vụ hiện tại.");
+        }
+
+        // Save User Message
         AiChatMessage userMessage = AiChatMessage.builder()
                 .sessionId(sessionId)
                 .sender("USER")
@@ -87,27 +175,53 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .build();
         aiChatMessageRepository.save(userMessage);
 
-        // Retrieve session
-        AiChatSession session = aiChatSessionRepository.findById(sessionId).orElse(null);
-        String subject = "GENERAL";
-        String docName = "tài liệu";
-        if (session != null && session.getDocumentId() != null) {
-            Document doc = documentRepository.findById(session.getDocumentId()).orElse(null);
-            if (doc != null) {
-                subject = doc.getSubject() != null ? doc.getSubject() : "GENERAL";
-                docName = doc.getTitle();
-            }
+        // 2. Perform simple RAG search if session is bound to a document
+        String ragContext = "";
+        if (session.getDocumentId() != null) {
+            ragContext = performRagSearch(session.getDocumentId(), messageText);
         }
 
-        // Generate simulated AI reply
-        String replyText = generateAiReply(messageText, docName, subject);
+        // 3. Gather chat history (last 10 messages)
+        List<AiChatMessage> history = aiChatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
+        if (history.size() > 10) {
+            history = history.subList(history.size() - 10, history.size());
+        }
 
-        // Save AI message
+        // 4. Construct messages for OpenAI
+        List<ChatMessageDto> promptMsgs = new ArrayList<>();
+        String systemInstruction = "You are a friendly AI study assistant. Help the student understand their materials. ";
+        if (thinkingMode) {
+            systemInstruction += "You must think step-by-step and write down your reasoning/thought process inside a <thought>...</thought> tag FIRST, and then write the response for the user.";
+        }
+        if (!ragContext.isEmpty()) {
+            systemInstruction += "\n\nHere is relevant context extracted from the document to help you answer:\n" + ragContext;
+        }
+
+        promptMsgs.add(ChatMessageDto.builder().role("system").content(systemInstruction).build());
+
+        for (AiChatMessage msg : history) {
+            String role = "USER".equalsIgnoreCase(msg.getSender()) ? "user" : "assistant";
+            String content = msg.getMessageText();
+            if ("assistant".equals(role) && msg.getThought() != null && !msg.getThought().trim().isEmpty()) {
+                content = "<thought>\n" + msg.getThought() + "\n</thought>\n" + content;
+            }
+            promptMsgs.add(ChatMessageDto.builder().role(role).content(content).build());
+        }
+
+        // 5. Call OpenAI
+        OpenAiResponse response = openAiService.chat(promptMsgs, false);
+
+        // 6. Log usage
+        saveUsageLog(session.getUserId(), "CHAT", response);
+
+        // 7. Save and return AI Message
         AiChatMessage aiMessage = AiChatMessage.builder()
                 .sessionId(sessionId)
                 .sender("AI")
-                .messageText(replyText)
+                .messageText(response.getContent())
+                .thought(response.getThought())
                 .build();
+
         return aiChatMessageRepository.save(aiMessage);
     }
 
@@ -116,35 +230,137 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         flashcardRepository.deleteByDocumentId(documentId);
 
         Document doc = documentRepository.findById(documentId).orElse(null);
-        String subject = (doc != null && doc.getSubject() != null) ? doc.getSubject() : "GENERAL";
+        if (doc == null) {
+            throw new IllegalArgumentException("Document not found.");
+        }
 
-        List<Flashcard> cards = getSampleFlashcards(documentId, subject);
-        return flashcardRepository.saveAll(cards);
+        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        if (chunks.isEmpty()) {
+            documentChunkingService.chunkAndIndexDocument(documentId);
+            chunks = documentChunkRepository.findByDocumentId(documentId);
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(chunks.size(), 3); i++) {
+            sb.append(chunks.get(i).getContent()).append("\n");
+        }
+        String context = sb.toString();
+
+        List<ChatMessageDto> messages = new ArrayList<>();
+        messages.add(ChatMessageDto.builder()
+                .role("system")
+                .content("You are an educational AI assistant. Create 5 useful study flashcards based on the document text. "
+                        + "You must respond with a JSON object containing a 'flashcards' array. "
+                        + "Each flashcard must have two fields: 'front' (question or term) and 'back' (definition or explanation).")
+                .build());
+        messages.add(ChatMessageDto.builder()
+                .role("user")
+                .content("Create flashcards based on this text:\n\n" + context)
+                .build());
+
+        OpenAiResponse response = openAiService.chat(messages, true);
+        saveUsageLog(doc.getUserId() != null ? doc.getUserId() : 1L, "FLASHCARD", response);
+
+        List<Flashcard> list = new ArrayList<>();
+        try {
+            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            JsonArray arr = jsonObj.getAsJsonArray("flashcards");
+            for (int i = 0; i < arr.size(); i++) {
+                JsonObject item = arr.get(i).getAsJsonObject();
+                list.add(Flashcard.builder()
+                        .documentId(documentId)
+                        .question(item.get("front").getAsString())
+                        .answer(item.get("back").getAsString())
+                        .build());
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse flashcards JSON response: " + e.getMessage());
+            list.add(new Flashcard(null, documentId, "Mẫu thiết kế Singleton dùng để làm gì?", "Đảm bảo một lớp chỉ có duy nhất một thực thể."));
+            list.add(new Flashcard(null, documentId, "Mẫu thiết kế Observer hoạt động theo cơ chế nào?", "Mối quan hệ phụ thuộc một-nhiều giữa các đối tượng."));
+        }
+
+        return flashcardRepository.saveAll(list);
     }
 
     @Override
     public List<QuizQuestion> generateQuiz(Long documentId, String difficulty, int count, String customPrompt) {
+        Document doc = documentRepository.findById(documentId).orElse(null);
+        if (doc == null) {
+            throw new IllegalArgumentException("Document not found.");
+        }
+
+        Long userId = doc.getUserId() != null ? doc.getUserId() : 1L;
+        // 1. Check billing limit
+        if (!aiLimitService.isWithinDailyLimit(userId, "QUIZ")) {
+            throw new RuntimeException("Bạn đã vượt quá hạn mức sử dụng AI Quiz hàng ngày của gói dịch vụ hiện tại.");
+        }
+
+        // Delete existing quiz
         quizQuestionRepository.deleteByDocumentId(documentId);
 
-        Document doc = documentRepository.findById(documentId).orElse(null);
-        String subject = (doc != null && doc.getSubject() != null) ? doc.getSubject() : "GENERAL";
+        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        if (chunks.isEmpty()) {
+            documentChunkingService.chunkAndIndexDocument(documentId);
+            chunks = documentChunkRepository.findByDocumentId(documentId);
+        }
 
-        List<QuizQuestion> questions = getSampleQuizQuestions(documentId, subject, difficulty, customPrompt);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(chunks.size(), 4); i++) {
+            sb.append(chunks.get(i).getContent()).append("\n");
+        }
+        String context = sb.toString();
 
-        // Trim or pad to match count
-        if (questions.size() > count) {
-            questions = new ArrayList<>(questions.subList(0, count));
-        } else if (questions.size() < count) {
-            int currentSize = questions.size();
-            for (int i = 0; i < count - currentSize; i++) {
+        List<ChatMessageDto> messages = new ArrayList<>();
+        messages.add(ChatMessageDto.builder()
+                .role("system")
+                .content("You are an educational AI assistant. Create a quiz with exactly " + count + " multiple choice questions based on the document. "
+                        + "The difficulty level should be: " + difficulty + ". "
+                        + "Custom request: " + customPrompt + ". "
+                        + "You must respond with a JSON object containing a 'questions' array. "
+                        + "Each question must contain: "
+                        + "'q' (question string), "
+                        + "'options' (JSON array of 4 option strings), "
+                        + "'answer' (index of the correct option: 0, 1, 2, or 3), "
+                        + "'explain' (detailed explanation string).")
+                .build());
+        messages.add(ChatMessageDto.builder()
+                .role("user")
+                .content("Create quiz for this document text:\n\n" + context)
+                .build());
+
+        OpenAiResponse response = openAiService.chat(messages, true);
+        saveUsageLog(userId, "QUIZ", response);
+
+        List<QuizQuestion> questions = new ArrayList<>();
+        try {
+            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            JsonArray arr = jsonObj.getAsJsonArray("questions");
+            for (int i = 0; i < arr.size(); i++) {
+                JsonObject item = arr.get(i).getAsJsonObject();
+                JsonArray optsArr = item.getAsJsonArray("options");
+                List<String> options = new ArrayList<>();
+                for (int j = 0; j < optsArr.size(); j++) {
+                    options.add(optsArr.get(j).getAsString());
+                }
+
                 questions.add(QuizQuestion.builder()
                         .documentId(documentId)
-                        .q("Câu hỏi trắc nghiệm bổ sung " + (i + 1) + " về " + subject)
-                        .options(gson.toJson(Arrays.asList("Đáp án A", "Đáp án B (Đúng)", "Đáp án C", "Đáp án D")))
-                        .answer(1)
-                        .explain("Đây là câu trả lời bổ sung của AI dựa trên tài liệu.")
+                        .q(item.get("q").getAsString())
+                        .options(gson.toJson(options))
+                        .answer(item.get("answer").getAsInt())
+                        .explain(item.get("explain").getAsString())
                         .build());
             }
+        } catch (Exception e) {
+            System.err.println("Failed to parse quiz JSON response: " + e.getMessage());
+            // Fallback
+            questions.add(QuizQuestion.builder()
+                    .documentId(documentId)
+                    .q("Câu hỏi trắc nghiệm ôn tập về " + doc.getSubject())
+                    .options(gson.toJson(Arrays.asList("Đáp án A", "Đáp án B (Đúng)", "Đáp án C", "Đáp án D")))
+                    .answer(1)
+                    .explain("Đây là giải thích đáp án mẫu vì lỗi phân tích dữ liệu AI.")
+                    .build());
         }
 
         return quizQuestionRepository.saveAll(questions);
@@ -154,46 +370,58 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     public List<QuizQuestion> modifyQuizWithAi(Long documentId, String prompt) {
         List<QuizQuestion> existing = quizQuestionRepository.findByDocumentId(documentId);
         if (existing.isEmpty()) {
-            existing = generateQuiz(documentId, "medium", 10, "");
+            existing = generateQuiz(documentId, "medium", 5, "");
         }
 
-        String lowerPrompt = prompt.toLowerCase();
+        Document doc = documentRepository.findById(documentId).orElse(null);
+        Long userId = doc != null ? doc.getUserId() : 1L;
+
+        // Ask AI to modify the quiz questions based on the prompt
+        String existingQuizJson = gson.toJson(existing);
+
+        List<ChatMessageDto> messages = new ArrayList<>();
+        messages.add(ChatMessageDto.builder()
+                .role("system")
+                .content("You are an educational AI assistant. Modify the following quiz questions based on the user's instructions. "
+                        + "User instructions: " + prompt + ". "
+                        + "You must respond with a JSON object containing a 'questions' array with the modified questions. "
+                        + "Each question must contain: "
+                        + "'q' (question string), "
+                        + "'options' (JSON array of 4 option strings), "
+                        + "'answer' (index of the correct option: 0, 1, 2, or 3), "
+                        + "'explain' (explanation string).")
+                .build());
+        messages.add(ChatMessageDto.builder()
+                .role("user")
+                .content("Existing Quiz questions:\n\n" + existingQuizJson)
+                .build());
+
+        OpenAiResponse response = openAiService.chat(messages, true);
+        saveUsageLog(userId, "QUIZ_MODIFY", response);
+
         List<QuizQuestion> modified = new ArrayList<>();
-
-        for (int i = 0; i < existing.size(); i++) {
-            QuizQuestion q = existing.get(i);
-            List<String> currentOpts = gson.fromJson(q.getOptions(), List.class);
-            List<String> newOpts = new ArrayList<>();
-            String newQ = q.getQ();
-            String newExplain = q.getExplain();
-
-            if (lowerPrompt.contains("tiếng anh") || lowerPrompt.contains("english")) {
-                newQ = "[Translated] Question " + (i + 1) + ": " + translateToEnglish(q.getQ());
-                for (String opt : currentOpts) {
-                    newOpts.add(translateToEnglish(opt));
+        try {
+            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            JsonArray arr = jsonObj.getAsJsonArray("questions");
+            for (int i = 0; i < arr.size(); i++) {
+                JsonObject item = arr.get(i).getAsJsonObject();
+                JsonArray optsArr = item.getAsJsonArray("options");
+                List<String> options = new ArrayList<>();
+                for (int j = 0; j < optsArr.size(); j++) {
+                    options.add(optsArr.get(j).getAsString());
                 }
-                newExplain = "AI Explanation: The correct answer is option " + (char)('A' + q.getAnswer()) + ". Fully updated via prompt translation.";
-            } else if (lowerPrompt.contains("khó") || lowerPrompt.contains("hard") || lowerPrompt.contains("nâng cao")) {
-                newQ = "[NÂNG CAO] " + q.getQ().replace("[CƠ BẢN] ", "").replace("[AI Đã Tinh Chỉnh] ", "");
-                newOpts = currentOpts;
-                newExplain = "Giải thích nâng cao: " + q.getExplain() + " Hãy chú ý liên kết giữa các biến số và cơ chế vận hành đa chiều.";
-            } else if (lowerPrompt.contains("dễ") || lowerPrompt.contains("easy") || lowerPrompt.contains("cơ bản")) {
-                newQ = "[CƠ BẢN] " + q.getQ().replace("[NÂNG CAO] ", "").replace("[AI Đã Tinh Chỉnh] ", "");
-                newOpts = currentOpts;
-                newExplain = "Giải thích cơ bản: " + q.getExplain();
-            } else {
-                newQ = "[AI Đã Tinh Chỉnh] " + q.getQ();
-                newOpts = currentOpts;
-                newExplain = "[AI cập nhật giải thích]: " + q.getExplain();
-            }
 
-            modified.add(QuizQuestion.builder()
-                    .documentId(documentId)
-                    .q(newQ)
-                    .options(gson.toJson(newOpts))
-                    .answer(q.getAnswer())
-                    .explain(newExplain)
-                    .build());
+                modified.add(QuizQuestion.builder()
+                        .documentId(documentId)
+                        .q(item.get("q").getAsString())
+                        .options(gson.toJson(options))
+                        .answer(item.get("answer").getAsInt())
+                        .explain(item.get("explain").getAsString())
+                        .build());
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse modified quiz JSON: " + e.getMessage());
+            return existing;
         }
 
         quizQuestionRepository.deleteByDocumentId(documentId);
@@ -204,198 +432,122 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     public List<QuizQuestion> getQuiz(Long documentId) {
         List<QuizQuestion> questions = quizQuestionRepository.findByDocumentId(documentId);
         if (questions.isEmpty()) {
-            return generateQuiz(documentId, "medium", 10, "");
+            return generateQuiz(documentId, "medium", 5, "");
         }
         return questions;
     }
 
-    // --- Helper Methods ---
+    @Override
+    public StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks, Long documentId) {
+        String docContext = "";
+        if (documentId != null) {
+            List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+            if (chunks.isEmpty()) {
+                documentChunkingService.chunkAndIndexDocument(documentId);
+                chunks = documentChunkRepository.findByDocumentId(documentId);
+            }
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < Math.min(chunks.size(), 3); i++) {
+                sb.append(chunks.get(i).getContent()).append("\n");
+            }
+            docContext = sb.toString();
+        }
 
-    private List<String> getSampleBullets(String subject) {
-        switch (subject.toUpperCase()) {
-            case "COMPSCI":
-                return Arrays.asList(
-                        "Tổng quan về 3 nhóm mẫu thiết kế chính: Khởi tạo, Cấu trúc, và Hành vi.",
-                        "Cách viết mẫu thiết kế Singleton Thread-safe trong môi trường đa luồng.",
-                        "Hướng dẫn áp dụng mẫu thiết kế Observer cho lập trình hướng sự kiện.",
-                        "So sánh chi tiết mẫu Strategy và mẫu Decorator."
-                );
-            case "MATHEMATICS":
-                return Arrays.asList(
-                        "Bảng công thức đạo hàm và tích phân hàm lượng giác cơ bản.",
-                        "Định nghĩa tích phân phân kỳ và chuỗi số vô hạn.",
-                        "Khai triển chuỗi Taylor và chuỗi Maclaurin của các hàm phổ biến.",
-                        "Giới hạn đặc biệt phục vụ tính nhanh đạo hàm."
-                );
-            case "BIOLOGY":
-                return Arrays.asList(
-                        "Quy trình hô hấp tế bào và chức năng tổng hợp năng lượng ATP của Ty thể.",
-                        "Các giai đoạn phiên mã và dịch mã tổng hợp protein ở sinh vật nhân thực.",
-                        "Quy luật di truyền của Mendel và tỉ lệ kiểu hình kiểu gen cơ bản.",
-                        "Bản đồ cấu trúc tế bào và chức năng bào quan."
-                );
-            case "PHYSICS":
-                return Arrays.asList(
-                        "Lưỡng tính sóng hạt của vật chất và hệ thức bước sóng De Broglie.",
-                        "Phương trình sóng độc lập thời gian Schrödinger.",
-                        "Hiện tượng đường hầm lượng tử và ứng dụng thực tế.",
-                        "Định lượng hiện tượng quang điện ngoài của Einstein."
-                );
-            case "NEUROSCIENCE":
-                return Arrays.asList(
-                        "Cấu trúc vỏ não chia làm 4 thùy với các chức năng điều hành vận động.",
-                        "Vị trí và nhiệm vụ chuyển đổi ký ức ngắn hạn thành dài hạn của Hồi hải mã.",
-                        "Quy trình truyền dẫn hóa học qua khe synap dưới tác động của điện thế hoạt động.",
-                        "Học thuyết điều khiển cảm xúc sợ hãi của Hạch hạnh nhân."
-                );
-            default:
-                return Arrays.asList(
-                        "Giới thiệu phương pháp ôn tập chủ động Active Recall giúp nhớ sâu.",
-                        "Cách áp dụng lặp lại ngắt quãng Spaced Repetition dựa trên đường cong lãng quên.",
-                        "Kỹ thuật Feynman giải thích bài học phức tạp bằng từ ngữ đơn giản.",
-                        "Cơ chế thiết lập dàn bài học thuật chuẩn hóa cho nghiên cứu."
-                );
+        List<ChatMessageDto> messages = new ArrayList<>();
+        messages.add(ChatMessageDto.builder()
+                .role("system")
+                .content("You are an expert academic counselor. Generate a structured week-by-week study plan roadmap in markdown. "
+                        + "You must respond with a JSON object containing: "
+                        + "'title' (a concise name for the plan), "
+                        + "'subject' (the academic subject), "
+                        + "'planText' (the markdown roadmap text, including weekly goals and active recall milestones).")
+                .build());
+
+        String userQuery = "Subject: " + subject + "\nGoal: " + goal + "\nDuration: " + durationWeeks + " weeks.";
+        if (!docContext.isEmpty()) {
+            userQuery += "\n\nReference Material:\n" + docContext;
+        }
+        messages.add(ChatMessageDto.builder().role("user").content(userQuery).build());
+
+        OpenAiResponse response = openAiService.chat(messages, true);
+        saveUsageLog(userId, "STUDY_PLAN", response);
+
+        String title = "Kế hoạch học tập " + subject;
+        String planText = response.getContent();
+
+        try {
+            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            title = jsonObj.get("title").getAsString();
+            planText = jsonObj.get("planText").getAsString();
+        } catch (Exception e) {
+            System.err.println("Failed to parse study plan JSON: " + e.getMessage());
+        }
+
+        StudyPlan plan = StudyPlan.builder()
+                .userId(userId)
+                .title(title)
+                .subject(subject)
+                .planText(planText)
+                .documentId(documentId)
+                .build();
+
+        return studyPlanRepository.save(plan);
+    }
+
+    @Override
+    public List<StudyPlan> getStudyPlans(Long userId) {
+        return studyPlanRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    // --- Helpers ---
+
+    private void saveUsageLog(Long userId, String featureType, OpenAiResponse response) {
+        try {
+            AiUsageLog log = AiUsageLog.builder()
+                    .userId(userId)
+                    .featureType(featureType)
+                    .model("gpt-4o-mini")
+                    .promptTokens(response.getPromptTokens())
+                    .completionTokens(response.getCompletionTokens())
+                    .costEstimate(response.getCostEstimate() != null ? response.getCostEstimate() : BigDecimal.ZERO)
+                    .usageDate(LocalDate.now())
+                    .build();
+            aiUsageLogRepository.save(log);
+        } catch (Exception e) {
+            System.err.println("Failed to save AI Usage Log: " + e.getMessage());
         }
     }
 
-    private List<Flashcard> getSampleFlashcards(Long documentId, String subject) {
-        List<Flashcard> cards = new ArrayList<>();
-        switch (subject.toUpperCase()) {
-            case "COMPSCI":
-                cards.add(new Flashcard(null, documentId, "Mẫu thiết kế Singleton dùng để làm gì?", "Đảm bảo một lớp chỉ có duy nhất một thực thể (instance) và cung cấp một điểm truy cập toàn cục cho thực thể đó."));
-                cards.add(new Flashcard(null, documentId, "Mẫu thiết kế Observer hoạt động theo cơ chế nào?", "Định nghĩa mối quan hệ phụ thuộc một-nhiều giữa các đối tượng. Khi một đối tượng thay đổi trạng thái, tất cả các đối tượng phụ thuộc sẽ được tự động thông báo và cập nhật."));
-                cards.add(new Flashcard(null, documentId, "Sự khác biệt giữa Factory Method và Abstract Factory là gì?", "Factory Method sử dụng tính kế thừa để quyết định đối tượng cụ thể nào được khởi tạo. Abstract Factory sử dụng ủy quyền (composition) để khởi tạo một họ các đối tượng liên quan."));
-                break;
-            case "MATHEMATICS":
-                cards.add(new Flashcard(null, documentId, "Đạo hàm của sin(x) là gì?", "cos(x)"));
-                cards.add(new Flashcard(null, documentId, "Đạo hàm của ln(x) là gì?", "1/x"));
-                cards.add(new Flashcard(null, documentId, "Công thức Euler liên hệ các hằng số toán học quan trọng?", "e^(i*π) + 1 = 0"));
-                break;
-            case "BIOLOGY":
-                cards.add(new Flashcard(null, documentId, "Ty thể đóng vai trò gì trong tế bào?", "Tổng hợp năng lượng ATP thông qua hô hấp tế bào."));
-                cards.add(new Flashcard(null, documentId, "Phiên mã (Transcription) diễn ra ở đâu?", "Trong nhân tế bào (ở sinh vật nhân thực)."));
-                cards.add(new Flashcard(null, documentId, "Bazơ nitơ nào thay thế Thymine trong phân tử RNA?", "Uracil (U)."));
-                break;
-            default:
-                cards.add(new Flashcard(null, documentId, "Phương pháp Active Recall hoạt động như thế nào?", "Chủ động kiểm tra trí nhớ bằng cách tự hỏi và trả lời thay vì chỉ đọc lại bài học thụ động."));
-                cards.add(new Flashcard(null, documentId, "Kỹ thuật Feynman là gì?", "Giải thích một khái niệm phức tạp bằng ngôn từ đơn giản nhất như thể đang giảng cho một đứa trẻ để phát hiện lỗ hổng kiến thức."));
-                cards.add(new Flashcard(null, documentId, "Lặp lại ngắt quãng (Spaced Repetition) dựa trên hiện tượng nào?", "Đường cong quên lãng (Forgetting Curve) của Ebbinghaus."));
-                break;
+    private String performRagSearch(Long documentId, String query) {
+        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        if (chunks.isEmpty()) {
+            return "";
         }
-        return cards;
-    }
 
-    private List<QuizQuestion> getSampleQuizQuestions(Long documentId, String subject, String difficulty, String prompt) {
-        List<QuizQuestion> questions = new ArrayList<>();
-        boolean isHard = difficulty.equalsIgnoreCase("hard") || prompt.toLowerCase().contains("hard") || prompt.toLowerCase().contains("khó");
+        // Java keyword-matching scoring
+        String[] keywords = query.toLowerCase().split("\\s+");
+        DocumentChunk bestChunk = null;
+        int maxScore = 0;
 
-        switch (subject.toUpperCase()) {
-            case "COMPSCI":
-                if (isHard) {
-                    questions.add(new QuizQuestion(null, documentId, "[NÂNG CAO] Trong các phát biểu sau về Singleton Pattern, phát biểu nào phản ánh chính xác nhất cách hiện thực Thread-Safe tối ưu mà không gây ảnh hưởng lớn đến performance?",
-                            gson.toJson(Arrays.asList("Sử dụng từ khóa synchronized trực tiếp trên phương thức getInstance()", "Sử dụng kỹ thuật Double-Checked Locking kết hợp từ khóa volatile cho biến instance", "Sử dụng Eager Initialization tại thời điểm load class", "Sử dụng Static Inner Helper Class (Bill Pugh Singleton)")),
-                            3, "Mẫu thiết kế Bill Pugh Singleton dựa vào JVM Class Loader để đảm bảo thread-safe đồng thời trì hoãn việc khởi tạo mà không tốn chi phí đồng bộ hóa."));
-                    questions.add(new QuizQuestion(null, documentId, "[NÂNG CAO] Khi kết hợp Observer Pattern với luồng xử lý bất đồng bộ (Reactive Programming), vấn đề nào cần được kiểm soát chặt chẽ nhất để tránh lỗi rò rỉ bộ nhớ (Memory Leak)?",
-                            gson.toJson(Arrays.asList("Hiện tượng Backpressure khi nhà sản xuất gửi dữ liệu quá nhanh", "Hủy đăng ký (unsubscribe/dispose) các Observer sau khi kết thúc chu kỳ hoạt động", "Tránh việc chia sẻ trạng thái thay đổi đa luồng", "Sử dụng WeakReference cho các Subject")),
-                            1, "Rò rỉ bộ nhớ xảy ra nếu Subject giữ tham chiếu mạnh đến Observer. Khi Observer không dùng nữa, bộ dọn rác GC không thể dọn nó vì tham chiếu từ Subject vẫn còn tồn tại."));
-                } else {
-                    questions.add(new QuizQuestion(null, documentId, "Mẫu thiết kế nào dưới đây thuộc nhóm Creational (Khởi tạo)?",
-                            gson.toJson(Arrays.asList("Observer Pattern", "Singleton Pattern", "Adapter Pattern", "Strategy Pattern")),
-                            1, "Singleton Pattern, Factory Method và Builder là các mẫu thuộc nhóm Creational giúp kiểm soát việc khởi tạo đối tượng."));
-                    questions.add(new QuizQuestion(null, documentId, "Mẫu thiết kế nào cho phép các đối tượng không tương thích có thể làm việc cùng nhau bằng cách chuyển đổi giao diện của chúng?",
-                            gson.toJson(Arrays.asList("Decorator Pattern", "Facade Pattern", "Adapter Pattern", "Proxy Pattern")),
-                            2, "Adapter Pattern hoạt động giống như một phích cắm chuyển đổi giúp kết nối hai giao diện không tương thích."));
-                    questions.add(new QuizQuestion(null, documentId, "Khi muốn định nghĩa một họ thuật toán và cho phép hoán đổi chúng linh hoạt tại thời điểm chạy (runtime), mẫu thiết kế nào được dùng?",
-                            gson.toJson(Arrays.asList("Strategy Pattern", "Observer Pattern", "Command Pattern", "Template Method")),
-                            0, "Strategy Pattern đóng gói từng thuật toán độc lập và cho phép client thay đổi thuật toán tại runtime tùy ngữ cảnh."));
+        for (DocumentChunk chunk : chunks) {
+            int score = 0;
+            String contentLower = chunk.getContent().toLowerCase();
+            for (String kw : keywords) {
+                if (kw.length() > 2 && contentLower.contains(kw)) {
+                    score++;
                 }
-                break;
-            case "PHYSICS":
-                if (isHard) {
-                    questions.add(new QuizQuestion(null, documentId, "[NÂNG CAO] Hệ thức bất định Heisenberg Δx.Δp >= h/4π phản ánh bản chất vật lý cốt lõi nào của thế giới lượng tử?",
-                            gson.toJson(Arrays.asList("Sai số do dụng cụ đo lường và khả năng quan sát của con người", "Bản chất sóng-hạt vốn có của mọi hạt vật chất", "Tác động nhiệt động lực học phá hủy hàm sóng", "Lực ma sát lượng tử trong chân không")),
-                            1, "Hệ thức bất định là tính chất cơ học lượng tử nội tại phát sinh từ bản chất sóng của vật chất, không phải do sai số của thiết bị đo."));
-                } else {
-                    questions.add(new QuizQuestion(null, documentId, "Hạt mang tính chất sóng của cơ học lượng tử giúp nó vượt qua rào cản thế năng cao hơn động năng gọi là gì?",
-                            gson.toJson(Arrays.asList("Chồng chập lượng tử", "Vướng víu lượng tử", "Đường hầm lượng tử", "Dịch chuyển lượng tử")),
-                            2, "Đường hầm lượng tử (Quantum Tunneling) cho phép hạt vượt rào cản nhờ đặc tính phân bố xác suất sóng."));
-                    questions.add(new QuizQuestion(null, documentId, "Công thức bước sóng De Broglie liên hệ giữa λ, h và động lượng p là gì?",
-                            gson.toJson(Arrays.asList("λ = h/p", "λ = hp", "λ = p/h", "λ = mc²")),
-                            0, "Bước sóng De Broglie λ = h/p chứng minh bản chất lưỡng tính sóng-hạt của mọi vật thể chuyển động."));
-                }
-                break;
-            default:
-                questions.add(new QuizQuestion(null, documentId, "Phương pháp ôn tập nào giúp tăng hiệu quả ghi nhớ lâu bằng cách chủ động tự kiểm tra?",
-                        gson.toJson(Arrays.asList("Đọc đi đọc lại tài liệu", "Active Recall (Chủ động gợi nhớ)", "Tô đậm từ khóa quan trọng", "Nghe nhạc khi học bài")),
-                        1, "Active Recall kích hoạt các nơ-ron liên kết ký ức, giúp thông tin lưu trữ lâu hơn so với việc đọc thụ động."));
-                questions.add(new QuizQuestion(null, documentId, "Cơ chế Spaced Repetition (Lặp lại ngắt quãng) khuyên người học ôn tập tại thời điểm nào?",
-                        gson.toJson(Arrays.asList("Ngay trước khi kỳ thi diễn ra 1 tiếng", "Mỗi ngày lặp lại liên tục 10 lần", "Ngay tại thời điểm thông tin chuẩn bị bị quên lãng", "Học dồn vào cuối tuần")),
-                        2, "Ôn tập ngay khi kiến thức sắp quên lãng theo đường cong lãng quên của Ebbinghaus giúp gia cố đường mòn thần kinh bền vững nhất."));
-                break;
+            }
+            if (score > maxScore) {
+                maxScore = score;
+                bestChunk = chunk;
+            }
         }
-        return questions;
-    }
 
-    private String translateToEnglish(String text) {
-        if (text == null) return "";
-        switch (text) {
-            case "Mẫu thiết kế nào dưới đây thuộc nhóm Creational (Khởi tạo)?":
-                return "Which of the following design patterns belongs to the Creational group?";
-            case "Observer Pattern": return "Observer Pattern";
-            case "Singleton Pattern": return "Singleton Pattern";
-            case "Adapter Pattern": return "Adapter Pattern";
-            case "Strategy Pattern": return "Strategy Pattern";
-            case "Mẫu thiết kế nào cho phép các đối tượng không tương thích có thể làm việc cùng nhau bằng cách chuyển đổi giao diện của chúng?":
-                return "Which design pattern allows incompatible interfaces to work together by converting their interfaces?";
-            case "Decorator Pattern": return "Decorator Pattern";
-            case "Facade Pattern": return "Facade Pattern";
-            case "Proxy Pattern": return "Proxy Pattern";
-            case "Khi muốn định nghĩa một họ thuật toán và cho phép hoán đổi chúng linh hoạt tại thời điểm chạy (runtime), mẫu thiết kế nào được dùng?":
-                return "When you want to define a family of algorithms and make them interchangeable at runtime, which pattern is used?";
-            case "Command Pattern": return "Command Pattern";
-            case "Template Method": return "Template Method";
-            case "Phương pháp ôn tập nào giúp tăng hiệu quả ghi nhớ lâu bằng cách chủ động tự kiểm tra?":
-                return "Which study method enhances long-term memory through active self-testing?";
-            case "Đọc đi đọc lại tài liệu": return "Rereading the material repeatedly";
-            case "Active Recall (Chủ động gợi nhớ)": return "Active Recall";
-            case "Tô đậm từ khóa quan trọng": return "Highlighting key words";
-            case "Nghe nhạc khi học bài": return "Listening to music while studying";
-            case "Cơ chế Spaced Repetition (Lặp lại ngắt quãng) khuyên người học ôn tập tại thời điểm nào?":
-                return "At what time does the Spaced Repetition mechanism advise students to review?";
-            case "Ngay trước khi kỳ thi diễn ra 1 tiếng": return "Just 1 hour before the exam starts";
-            case "Mỗi ngày lặp lại liên tục 10 lần": return "Repeating continuously 10 times a day";
-            case "Ngay tại thời điểm thông tin chuẩn bị bị quên lãng": return "Right at the moment when information is about to be forgotten";
-            case "Học dồn vào cuối tuần": return "Cramming at the weekend";
-            default:
-                // Fallback translation rules
-                if (text.startsWith("[NÂNG CAO]")) {
-                    return "[ADVANCED] " + text.replace("[NÂNG CAO] ", "");
-                }
-                if (text.startsWith("[CƠ BẢN]")) {
-                    return "[BASIC] " + text.replace("[CƠ BẢN] ", "");
-                }
-                return text;
+        // If no match found, use the first chunk as context
+        if (bestChunk == null) {
+            return chunks.get(0).getContent();
         }
-    }
 
-    private String generateAiReply(String text, String docName, String subject) {
-        String lower = text.toLowerCase();
-        if (lower.contains("summary") || lower.contains("tóm tắt") || lower.contains("overview") || lower.contains("quá trình")) {
-            return "Dưới đây là tóm tắt nhanh của tôi về tài liệu '" + docName + "' (" + subject + "):\n\n"
-                    + "1. Tài liệu tập trung giải quyết các bài toán/khái niệm cơ bản của " + subject + ".\n"
-                    + "2. Phân tích sâu các yếu tố cốt lõi giúp củng cố kiến thức ôn luyện.\n"
-                    + "3. Đề xuất các phương pháp học tập kết hợp làm trắc nghiệm thực hành để ghi nhớ sâu sắc.\n\n"
-                    + "Bạn có cần tôi giải thích chi tiết hơn về phần nào trong tài liệu này không?";
-        }
-        if (lower.contains("quiz") || lower.contains("test") || lower.contains("kiểm tra") || lower.contains("câu hỏi")) {
-            return "Để kiểm tra mức độ hiểu tài liệu của bạn, dưới đây là một câu hỏi nhanh:\n\n"
-                    + "Khái niệm/nguyên lý nào là trọng tâm nhất của môn học " + subject + " thảo luận trong tài liệu?\n\n"
-                    + "A) Nguyên lý hoạt động cơ bản\n"
-                    + "B) Phương pháp giải quy chuẩn nâng cao\n"
-                    + "C) Mô hình kết nối thực tiễn\n"
-                    + "D) Toàn bộ các phương án trên đều đúng\n\n"
-                    + "Hãy chọn đáp án của bạn!";
-        }
-        return "Chào bạn! Tôi là Trợ lý học tập AI của LumiEdu. Tôi đã sẵn sàng hỗ trợ bạn ôn tập tài liệu '" + docName + "' thuộc môn học " + subject + ". Bạn có thể hỏi tôi bất kỳ câu hỏi nào về nội dung tài liệu hoặc yêu cầu tôi tạo Quiz, Flashcard ôn tập nhé!";
+        return bestChunk.getContent();
     }
 }
