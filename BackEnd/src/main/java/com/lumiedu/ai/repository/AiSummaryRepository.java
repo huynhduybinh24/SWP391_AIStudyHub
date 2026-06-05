@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface AiSummaryRepository extends JpaRepository<AiSummary, Long> {
     Optional<AiSummary> findByDocumentId(Long documentId);
+    Optional<AiSummary> findByDocumentIdAndLanguage(Long documentId, String language);
 }

@@ -9,6 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface AiChatSessionRepository extends JpaRepository<AiChatSession, Long> {
-    Optional<AiChatSession> findByDocumentIdAndUserId(Long documentId, Long userId);
+    List<AiChatSession> findByDocumentIdAndUserId(Long documentId, Long userId);
     List<AiChatSession> findByUserId(Long userId);
 }
