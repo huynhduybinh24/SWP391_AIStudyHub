@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { logActivity } from '@/services/activityLogService'
+import { aiService } from '@/services/aiService'
+import type { AiSummaryResponse, FlashcardResponse, QuizQuestionResponse } from '@/services/aiService'
 import {
   X,
   Send,
@@ -735,6 +737,12 @@ export function DocumentsPage() {
   const [activePreviewTab, setActivePreviewTab] = useState<'preview' | 'summary' | 'flashcards' | 'quiz'>('preview')
   const [activeFlashcardIndex, setActiveFlashcardIndex] = useState(0)
   const [isFlashcardFlipped, setIsFlashcardFlipped] = useState(false)
+  const [previewSummary, setPreviewSummary] = useState<AiSummaryResponse | null>(null)
+  const [previewFlashcards, setPreviewFlashcards] = useState<FlashcardResponse[]>([])
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestionResponse[]>([])
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false)
+  const [isModifyingQuiz, setIsModifyingQuiz] = useState(false)
+  const [quizPrompt, setQuizPrompt] = useState('')
 
   // Quick Chat drawer States
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false)
@@ -982,6 +990,89 @@ export function DocumentsPage() {
     setActiveFlashcardIndex(0)
     setIsFlashcardFlipped(false)
   }
+
+  // Load quiz questions for the preview tab
+  const handleLoadDocQuizForTab = async (doc: DocumentItem) => {
+    setIsGeneratingQuiz(true)
+    try {
+      let data = await aiService.getQuiz(doc.id)
+      if (!data || data.length === 0) {
+        data = await aiService.generateQuiz(doc.id)
+      }
+      setQuizQuestions(data)
+    } catch (e) {
+      console.error(e)
+      // Fallback mock data if the API fails
+      setQuizQuestions(QUIZ_QUESTIONS.map((q, idx) => ({
+        id: idx,
+        documentId: 0,
+        q: q.q,
+        options: JSON.stringify(q.options),
+        answer: q.answer,
+        explain: q.explain,
+        createdAt: new Date().toISOString()
+      })))
+    } finally {
+      setIsGeneratingQuiz(false)
+    }
+  }
+
+  // Handle modifying quiz with AI prompt
+  const handleModifyQuizWithPrompt = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!activePreviewDoc || !quizPrompt.trim()) return
+    setIsModifyingQuiz(true)
+    try {
+      const updatedQuiz = await aiService.modifyQuizWithAi(activePreviewDoc.id, quizPrompt)
+      setQuizQuestions(updatedQuiz)
+      setQuizPrompt('')
+      showToast('Bộ đề trắc nghiệm đã được cập nhật bởi AI!')
+    } catch (err) {
+      console.error(err)
+      showToast('Không thể hiệu chỉnh bộ đề. Vui lòng thử lại!')
+    } finally {
+      setIsModifyingQuiz(false)
+    }
+  }
+
+  // Automatically fetch AI summaries and flashcards when opening preview doc
+  useEffect(() => {
+    if (!activePreviewDoc) {
+      setPreviewSummary(null)
+      setPreviewFlashcards([])
+      return
+    }
+
+    const loadDocDetails = async () => {
+      try {
+        // Load summary
+        try {
+          const summary = await aiService.getSummary(activePreviewDoc.id)
+          setPreviewSummary(summary)
+        } catch (e) {
+          // If summary not found, generate it
+          try {
+            const summary = await aiService.generateSummary(activePreviewDoc.id)
+            setPreviewSummary(summary)
+          } catch (genErr) {
+            console.error('Failed to get/generate summary:', genErr)
+          }
+        }
+
+        // Load flashcards
+        try {
+          const flashcards = await aiService.getFlashcards(activePreviewDoc.id)
+          setPreviewFlashcards(flashcards)
+        } catch (fcErr) {
+          console.error('Failed to get flashcards:', fcErr)
+        }
+      } catch (err) {
+        console.error('Error loading preview document AI content:', err)
+      }
+    }
+
+    loadDocDetails()
+  }, [activePreviewDoc])
 
   const getDocContent = (doc: DocumentItem | null) => {
     if (!doc) return SUBJECTS_CONTENT_DB.GENERAL
@@ -1694,7 +1785,7 @@ export function DocumentsPage() {
             {activePreviewTab === 'flashcards' && (
               <div className="space-y-6 py-2 flex flex-col items-center">
                 {(() => {
-                  let flashcardsList = previewFlashcards || []
+                  let flashcardsList = (previewFlashcards || []).map(fc => ({ question: fc.question, answer: fc.answer }))
                   if (flashcardsList.length === 0) {
                     const localFc = getDocContent(activePreviewDoc)?.flashcards || []
                     flashcardsList = localFc.map(fc => ({ question: fc.q, answer: fc.a }))
@@ -1703,8 +1794,8 @@ export function DocumentsPage() {
 
                   if (!currentCard) return <p className="text-sm text-slate-400 dark:text-slate-500">No flashcards available</p>
 
-                  const q = currentCard.question || currentCard.q
-                  const a = currentCard.answer || currentCard.a
+                  const q = currentCard.question
+                  const a = currentCard.answer
 
                   return (
                     <>
