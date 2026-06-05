@@ -21,8 +21,10 @@ public class AiAssistantController {
     // POST /api/ai/summary/generate
     // ------------------------------------------------------------------
     @PostMapping("/summary/generate")
-    public ResponseEntity<ApiResponse<AiSummary>> generateSummary(@RequestParam("documentId") Long documentId) {
-        AiSummary summary = aiAssistantService.generateSummary(documentId);
+    public ResponseEntity<ApiResponse<AiSummary>> generateSummary(
+            @RequestParam("documentId") Long documentId,
+            @RequestParam(value = "language", defaultValue = "vi") String language) {
+        AiSummary summary = aiAssistantService.generateSummary(documentId, language);
         return ResponseEntity.ok(ApiResponse.ok("Summary generated successfully.", summary));
     }
 
@@ -30,8 +32,10 @@ public class AiAssistantController {
     // GET /api/ai/summary/{documentId}
     // ------------------------------------------------------------------
     @GetMapping("/summary/{documentId}")
-    public ResponseEntity<ApiResponse<AiSummary>> getSummary(@PathVariable("documentId") Long documentId) {
-        AiSummary summary = aiAssistantService.getSummary(documentId);
+    public ResponseEntity<ApiResponse<AiSummary>> getSummary(
+            @PathVariable("documentId") Long documentId,
+            @RequestParam(value = "language", defaultValue = "vi") String language) {
+        AiSummary summary = aiAssistantService.getSummary(documentId, language);
         return ResponseEntity.ok(ApiResponse.ok("Summary retrieved successfully.", summary));
     }
 
@@ -58,7 +62,8 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @PostMapping("/chat/send")
     public ResponseEntity<ApiResponse<AiChatMessage>> sendMessage(@RequestBody SendMessageRequest request) {
-        AiChatMessage aiMessage = aiAssistantService.sendMessage(request.getSessionId(), request.getMessageText());
+        boolean thinking = request.getThinkingMode() != null && request.getThinkingMode();
+        AiChatMessage aiMessage = aiAssistantService.sendMessage(request.getSessionId(), request.getMessageText(), thinking);
         return ResponseEntity.ok(ApiResponse.ok("Message sent and reply received.", aiMessage));
     }
 
@@ -103,6 +108,29 @@ public class AiAssistantController {
         return ResponseEntity.ok(ApiResponse.ok("Quiz retrieved successfully.", questions));
     }
 
+    // ------------------------------------------------------------------
+    // POST /api/ai/study-plans/generate
+    // ------------------------------------------------------------------
+    @PostMapping("/study-plans/generate")
+    public ResponseEntity<ApiResponse<StudyPlan>> generateStudyPlan(@RequestBody StudyPlanRequest request) {
+        StudyPlan plan = aiAssistantService.generateStudyPlan(
+                request.getUserId(),
+                request.getSubject(),
+                request.getGoal(),
+                request.getDurationWeeks(),
+                request.getDocumentId());
+        return ResponseEntity.ok(ApiResponse.ok("Study plan generated successfully.", plan));
+    }
+
+    // ------------------------------------------------------------------
+    // GET /api/ai/study-plans/user/{userId}
+    // ------------------------------------------------------------------
+    @GetMapping("/study-plans/user/{userId}")
+    public ResponseEntity<ApiResponse<List<StudyPlan>>> getStudyPlans(@PathVariable("userId") Long userId) {
+        List<StudyPlan> plans = aiAssistantService.getStudyPlans(userId);
+        return ResponseEntity.ok(ApiResponse.ok("Study plans retrieved successfully.", plans));
+    }
+
     // --- Request DTOs ---
 
     @Data
@@ -115,11 +143,21 @@ public class AiAssistantController {
     public static class SendMessageRequest {
         private Long sessionId;
         private String messageText;
+        private Boolean thinkingMode;
     }
 
     @Data
     public static class ModifyQuizRequest {
         private Long documentId;
         private String prompt;
+    }
+
+    @Data
+    public static class StudyPlanRequest {
+        private Long userId;
+        private String subject;
+        private String goal;
+        private Integer durationWeeks;
+        private Long documentId;
     }
 }

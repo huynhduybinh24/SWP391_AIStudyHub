@@ -5,7 +5,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "ai_summaries")
+@Table(name = "ai_summaries", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"document_id", "language"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,6 +21,9 @@ public class AiSummary extends BaseEntity {
 
     @Column(name = "document_id", nullable = false)
     private Long documentId;
+
+    @Column(name = "language", length = 10, nullable = false)
+    private String language;
 
     @Column(name = "summary_text", columnDefinition = "TEXT")
     private String summaryText;

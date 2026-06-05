@@ -22,4 +22,7 @@ public class AiChatSession extends BaseEntity {
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    @Column(name = "title", length = 255)
+    private String title;
 }
