@@ -481,7 +481,7 @@ export default function SubjectCategoryPage() {
 
           <div className="shrink-0 w-full md:w-auto z-10 self-end md:self-center">
             <Button
-              onClick={openQuizModal}
+              onClick={() => openQuizModal()}
               className="w-full md:w-auto px-8 py-3 rounded-xl font-extrabold text-xs text-white bg-[#2563eb] shadow-md shadow-blue-500/10 hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all duration-200 cursor-pointer"
             >
               Start Quiz
