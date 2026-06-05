@@ -13,6 +13,7 @@ import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.document.repository.DocumentTagRepository;
 import com.lumiedu.document.service.impl.DocumentServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,6 +21,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,6 +57,18 @@ public class DocumentServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(documentService, "uploadDir", "test-uploads");
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        Path tempDir = Paths.get("test-uploads");
+        if (Files.exists(tempDir)) {
+            try (var stream = Files.walk(tempDir)) {
+                stream.sorted(Comparator.reverseOrder())
+                      .map(Path::toFile)
+                      .forEach(java.io.File::delete);
+            }
+        }
     }
 
     @Test

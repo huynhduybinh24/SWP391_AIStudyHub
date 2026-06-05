@@ -6,8 +6,6 @@ target/
 .factorypath
 .vscode/
 *.class
-<<<<<<< HEAD
 uploads/
-=======
+test-uploads/
 maven/
->>>>>>> 7167afb331e078b4db90871ed7b1bca22f264d18
