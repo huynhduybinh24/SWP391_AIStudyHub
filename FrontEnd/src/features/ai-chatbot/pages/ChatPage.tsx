@@ -22,6 +22,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 import { logActivity } from '@/services/activityLogService'
+import { useAuthStore } from '@/stores/authStore'
+import { aiService } from '@/services/aiService'
 
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 
@@ -47,6 +49,8 @@ interface ChatConversation {
 export function ChatPage() {
   const { language, t } = useTranslation()
   const toast = useToast()
+  const user = useAuthStore(state => state.user)
+  const userId = user?.id || 1
 
   // --- Initial Mock Conversations Data ---
   const initialConversations: ChatConversation[] = [
@@ -211,6 +215,47 @@ export function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
+  // Load general session from backend on mount
+  useEffect(() => {
+    const loadGeneralSession = async () => {
+      try {
+        const session = await aiService.createOrGetChatSession(null, userId)
+        const history = await aiService.getChatHistory(session.id)
+        if (history && history.length > 0) {
+          const mappedHistory: ChatMessage[] = history.map(msg => ({
+            id: String(msg.id),
+            role: msg.sender.toLowerCase() === 'user' ? 'user' : 'assistant',
+            content: msg.messageText,
+            createdAt: new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }))
+          setMessages(mappedHistory)
+          setIsChatStarted(true)
+          
+          const generalConv: ChatConversation = {
+            id: `session-${session.id}`,
+            title: "General AI Assistant",
+            preview: mappedHistory[mappedHistory.length - 1]?.content || "Bắt đầu cuộc trò chuyện...",
+            updatedAt: t.common.justNow || "Just now",
+            messages: mappedHistory
+          }
+          
+          setConversations(prev => {
+            const exists = prev.some(c => c.id === `session-${session.id}`)
+            if (exists) {
+              return prev.map(c => c.id === `session-${session.id}` ? generalConv : c)
+            } else {
+              return [generalConv, ...prev]
+            }
+          })
+          setActiveConversationId(`session-${session.id}`)
+        }
+      } catch (err) {
+        console.error('Failed to load general chat session', err)
+      }
+    }
+    loadGeneralSession()
+  }, [userId, t.common.justNow])
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
@@ -344,7 +389,7 @@ export function ChatPage() {
   }
 
   // --- Send Message Handler ---
-  const handleSend = (textToSend?: string) => {
+  const handleSend = async (textToSend?: string) => {
     let text = (textToSend || input).trim()
     if (replyingToMessage && !textToSend) {
       text = `> ${replyingToMessage}\n\n` + text
@@ -386,74 +431,66 @@ export function ChatPage() {
 
     // Save active conversation state
     let targetConvId = activeConversationId
-
-    if (!targetConvId) {
-      // First message in a new chat: Create a new conversation
-      targetConvId = `chat-${Date.now()}`
-      const newTitle = text.length > 25 ? text.substring(0, 25) + '...' : text
-      const newConv: ChatConversation = {
-        id: targetConvId,
-        title: newTitle,
-        preview: text.length > 35 ? text.substring(0, 35) + '...' : text,
-        updatedAt: t.common.justNow || "Just now",
-        messages: updatedMessages
-      }
-      setConversations((prev) => [newConv, ...prev])
-      setActiveConversationId(targetConvId)
-    } else {
-      // Update existing conversation
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (c.id === targetConvId) {
-            return {
-              ...c,
-              preview: text.length > 35 ? text.substring(0, 35) + '...' : text,
-              updatedAt: t.common.justNow || "Just now",
-              messages: updatedMessages
-            }
-          }
-          return c
-        })
-      )
-    }
-
-    // Simulate bot response after 800ms
     setIsTyping(true)
-    setTimeout(() => {
-      setIsTyping(false)
-      let botResponse = t.aiChatbot.botResponseDefault
 
-      const lowerText = text.toLowerCase()
-      if (lowerText.includes('summarize') || lowerText.includes('notes') || lowerText.includes('tóm tắt') || lowerText.includes('요약') || lowerText.includes('要約')) {
-        botResponse = t.aiChatbot.botResponseNotes
-      } else if (lowerText.includes('quantum') || lowerText.includes('mechanics') || lowerText.includes('lượng tử') || lowerText.includes('양자') || lowerText.includes('量子')) {
-        botResponse = t.aiChatbot.botResponseQuantum
-      } else if (lowerText.includes('quiz') || lowerText.includes('generate') || lowerText.includes('kiểm tra') || lowerText.includes('퀴즈') || lowerText.includes('クイズ')) {
-        botResponse = t.aiChatbot.botResponseQuiz
-      }
-
-      const botMsgId = (Date.now() + 1).toString()
+    try {
+      // Fetch or create general session (documentId = null)
+      const session = await aiService.createOrGetChatSession(null, userId)
+      const reply = await aiService.sendMessage(session.id, text)
+      
+      const botMsgId = String(reply.id || Date.now() + 1)
       const newBotMsg: ChatMessage = {
         id: botMsgId,
         role: 'assistant',
-        content: botResponse,
+        content: reply.messageText,
         createdAt: t.common.justNow || "Just now",
       }
 
       setMessages((prev) => {
         const finalMsgs = [...prev, newBotMsg]
-        // Save to conversation
-        setConversations((convList) =>
-          convList.map((c) => {
-            if (c.id === targetConvId) {
-              return { ...c, messages: finalMsgs }
-            }
-            return c
-          })
-        )
+        // Save to active conversation in sidebar
+        if (!targetConvId) {
+          targetConvId = `session-${session.id}`
+          const newTitle = text.length > 25 ? text.substring(0, 25) + '...' : text
+          const newConv: ChatConversation = {
+            id: targetConvId,
+            title: newTitle,
+            preview: text.length > 35 ? text.substring(0, 35) + '...' : text,
+            updatedAt: t.common.justNow || "Just now",
+            messages: finalMsgs
+          }
+          setConversations((cList) => [newConv, ...cList])
+          setActiveConversationId(targetConvId)
+        } else {
+          setConversations((cList) =>
+            cList.map((c) => {
+              if (c.id === targetConvId) {
+                return {
+                  ...c,
+                  preview: text.length > 35 ? text.substring(0, 35) + '...' : text,
+                  updatedAt: t.common.justNow || "Just now",
+                  messages: finalMsgs
+                }
+              }
+              return c
+            })
+          )
+        }
         return finalMsgs
       })
-    }, 800)
+    } catch (err) {
+      console.error('Failed to send chatbot message', err)
+      const botMsgId = (Date.now() + 1).toString()
+      const newBotMsg: ChatMessage = {
+        id: botMsgId,
+        role: 'assistant',
+        content: 'Xin lỗi, có lỗi xảy ra khi kết nối với máy chủ AI.',
+        createdAt: t.common.justNow || "Just now",
+      }
+      setMessages((prev) => [...prev, newBotMsg])
+    } finally {
+      setIsTyping(false)
+    }
   }
 
   // --- Button Actions ---

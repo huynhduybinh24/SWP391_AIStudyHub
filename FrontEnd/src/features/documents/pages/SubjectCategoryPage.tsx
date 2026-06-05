@@ -11,7 +11,8 @@ import {
   Download,
   Trash2,
   SlidersHorizontal,
-  Sparkles
+  Sparkles,
+  BrainCircuit
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -35,7 +36,7 @@ interface DocumentsContextType {
   openUploadModal: () => void
   openChatDrawer: (doc: DocumentItem) => void
   openPreviewModal: (doc: DocumentItem) => void
-  openQuizModal: () => void
+  openQuizModal: (doc?: DocumentItem) => void
   showToast: (message: string) => void
   handleDownloadFile: (doc: DocumentItem) => void
   handleDeleteDocument: (id: string) => void
@@ -480,7 +481,7 @@ export default function SubjectCategoryPage() {
 
           <div className="shrink-0 w-full md:w-auto z-10 self-end md:self-center">
             <Button
-              onClick={openQuizModal}
+              onClick={() => openQuizModal()}
               className="w-full md:w-auto px-8 py-3 rounded-xl font-extrabold text-xs text-white bg-[#2563eb] shadow-md shadow-blue-500/10 hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all duration-200 cursor-pointer"
             >
               Start Quiz
@@ -631,6 +632,16 @@ export default function SubjectCategoryPage() {
                         {activeMenuId === doc.id && (
                           <div ref={menuRef} className="absolute right-0 top-8 z-30 w-48 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 shadow-xl animate-fade-in">
                             <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"><MessageSquare className="h-4 w-4" />Chat with AI</button>
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null)
+                                openQuizModal(doc)
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"
+                            >
+                              <BrainCircuit className="h-4 w-4 text-indigo-500" />
+                              🎯 Làm trắc nghiệm AI
+                            </button>
                             <button onClick={() => handleOpenDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
                             <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"><Download className="h-4 w-4" />Download File</button>
                             <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
@@ -689,6 +700,16 @@ export default function SubjectCategoryPage() {
                         {activeMenuId === doc.id && (
                           <div ref={menuRef} className="absolute right-0 top-8 z-30 w-48 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 shadow-xl animate-fade-in">
                             <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"><MessageSquare className="h-4 w-4" />Chat with AI</button>
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null)
+                                openQuizModal(doc)
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"
+                            >
+                              <BrainCircuit className="h-4 w-4 text-indigo-500" />
+                              🎯 Làm trắc nghiệm AI
+                            </button>
                             <button onClick={() => handleOpenDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
                             <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors"><Download className="h-4 w-4" />Download File</button>
                             <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
@@ -740,6 +761,16 @@ export default function SubjectCategoryPage() {
                       {activeMenuId === doc.id && (
                         <div ref={menuRef} className="absolute right-0 top-8 z-30 w-48 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 shadow-xl animate-fade-in">
                           <button onClick={() => openChatDrawer(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"><MessageSquare className="h-4 w-4" />Chat with AI</button>
+                          <button
+                            onClick={() => {
+                              setActiveMenuId(null)
+                              openQuizModal(doc)
+                            }}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#2563eb] dark:hover:text-blue-400 transition-colors"
+                          >
+                            <BrainCircuit className="h-4 w-4 text-indigo-500" />
+                            🎯 Làm trắc nghiệm AI
+                          </button>
                           <button onClick={() => handleOpenDocument(doc.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors"><ExternalLink className="h-4 w-4" />Open & View</button>
                           <button onClick={() => handleDownloadFile(doc)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors"><Download className="h-4 w-4" />Download File</button>
                           <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
@@ -822,6 +853,15 @@ export default function SubjectCategoryPage() {
                       </td>
                       <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openQuizModal(doc)}
+                            className="rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-955/50"
+                            title="Làm trắc nghiệm AI"
+                          >
+                            <BrainCircuit className="h-4.5 w-4.5" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
