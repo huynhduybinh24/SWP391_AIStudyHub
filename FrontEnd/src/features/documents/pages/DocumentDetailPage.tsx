@@ -22,7 +22,7 @@ interface DocumentsContextType {
   openUploadModal: () => void
   openChatDrawer: (doc: DocumentItem) => void
   openPreviewModal: (doc: DocumentItem) => void
-  openQuizModal: () => void
+  openQuizModal: (doc?: DocumentItem) => void
   showToast: (message: string) => void
   handleDownloadFile: (doc: DocumentItem) => void
   handleDeleteDocument: (id: string) => void
