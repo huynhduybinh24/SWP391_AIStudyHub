@@ -14,7 +14,8 @@ import {
   FolderPlus,
   FileText,
   SlidersHorizontal,
-  Pencil
+  Pencil,
+  BrainCircuit
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -39,7 +40,7 @@ interface DocumentsContextType {
   openUploadModal: () => void
   openChatDrawer: (doc: DocumentItem) => void
   openPreviewModal: (doc: DocumentItem) => void
-  openQuizModal: () => void
+  openQuizModal: (doc?: DocumentItem) => void
   showToast: (message: string) => void
   handleDownloadFile: (doc: DocumentItem) => void
   handleDeleteDocument: (id: string) => void
@@ -54,6 +55,7 @@ export default function MyDocumentsPage() {
     documents,
     openUploadModal,
     openChatDrawer,
+    openQuizModal,
     handleDownloadFile,
     handleDeleteDocument,
     renderFileIcon,
@@ -455,6 +457,16 @@ export default function MyDocumentsPage() {
                           {t.actionMenu.chatAI}
                         </button>
                         <button
+                          onClick={() => {
+                            setActiveMenuId(null)
+                            openQuizModal(doc)
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-[#2563eb] transition-colors dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-400 cursor-pointer"
+                        >
+                          <BrainCircuit className="h-4 w-4 text-indigo-500" />
+                          🎯 Làm trắc nghiệm AI
+                        </button>
+                        <button
                           onClick={() => handleOpenDocument(doc.id)}
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
                         >
@@ -575,6 +587,15 @@ export default function MyDocumentsPage() {
                       </td>
                       <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openQuizModal(doc)}
+                            className="rounded-lg text-indigo-600 hover:bg-indigo-50/50 dark:text-indigo-400 dark:hover:bg-indigo-955/50"
+                            title="Làm trắc nghiệm AI"
+                          >
+                            <BrainCircuit className="h-4.5 w-4.5" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
