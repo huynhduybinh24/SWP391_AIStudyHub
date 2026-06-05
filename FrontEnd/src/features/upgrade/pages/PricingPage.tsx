@@ -165,19 +165,29 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
     return list
   }, [language])
 
+  const normalizePlan = (p?: string) => {
+    const planLower = (p || 'free').toLowerCase()
+    if (planLower === 'enterprise' || planLower === 'premium' || planLower === 'institutional') {
+      return 'institutional'
+    }
+    return planLower
+  }
+
   // Localized pricing plans recalculated on language change and user package
   const localizedPricingPlans = useMemo<PricingPlan[]>(() => {
-    const currentPlanCode = user?.plan || 'free'
+    const currentPlanCode = normalizePlan(user?.plan)
     
     // Find current plan price to compare upgrade vs downgrade
     const currentPlanItem = packagesList.find(p => {
-      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'institutional' : p.id
+      const rawPlanCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'institutional' : p.id
+      const planCode = normalizePlan(rawPlanCode)
       return planCode === currentPlanCode
     })
     const currentPlanPrice = currentPlanItem ? currentPlanItem.priceMonthly : 0
 
     const plans: PricingPlan[] = packagesList.map((pkg) => {
-      const planCode = pkg.id === 'pkg-free' ? 'free' : pkg.id === 'pkg-pro' ? 'pro' : pkg.id === 'pkg-enterprise' ? 'institutional' : pkg.id
+      const rawPlanCode = pkg.id === 'pkg-free' ? 'free' : pkg.id === 'pkg-pro' ? 'pro' : pkg.id === 'pkg-enterprise' ? 'institutional' : pkg.id
+      const planCode = normalizePlan(rawPlanCode)
       const isCurrent = currentPlanCode === planCode
 
       // Determine localized button text
@@ -253,8 +263,8 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
 
   const handleCurrentPlanClick = () => {
     const currentPkg = packagesList.find(p => {
-      const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'institutional' : p.id
-      return planCode === (user?.plan || 'free')
+      const rawPlanCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'institutional' : p.id
+      return normalizePlan(rawPlanCode) === normalizePlan(user?.plan)
     })
     const name = currentPkg?.name || (language === 'vi' ? 'Gói Miễn phí' : 'Free Plan')
     toast.info(language === 'vi' ? `Bạn đang sử dụng ${name}` : `You are currently on the ${name}`)

@@ -63,7 +63,7 @@ export function CheckoutPage() {
         // Update local state and localStorage
         const currentUser = useAuthStore.getState().user
         if (currentUser) {
-          const newPlan = planId === 3 ? 'enterprise' : 'pro'
+          const newPlan = planId === 3 ? 'institutional' : 'pro'
           useAuthStore.setState({
             user: {
               ...currentUser,

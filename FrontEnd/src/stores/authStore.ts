@@ -34,12 +34,17 @@ export const useAuthStore = create<AuthState>()(
       ...initialAuth,
       setSession: (user, tokens, isGoogle) => {
         if (typeof window !== 'undefined') {
+          const normalizedPlan = (() => {
+            const p = (user.plan || 'free').toLowerCase()
+            if (p === 'enterprise' || p === 'premium' || p === 'institutional') return 'institutional'
+            return p
+          })()
           localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify({
             id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
-            plan: user.plan || 'free',
+            plan: normalizedPlan,
             avatar: user.avatarUrl || '/logo.png'
           }))
 
@@ -89,7 +94,15 @@ export const useAuthStore = create<AuthState>()(
             console.error('Failed to sync login session to logged-in accounts list:', e)
           }
         }
-        set({ user, tokens, isAuthenticated: true })
+        const normalizedUser = {
+          ...user,
+          plan: (() => {
+            const p = (user.plan || 'free').toLowerCase()
+            if (p === 'enterprise' || p === 'premium' || p === 'institutional') return 'institutional'
+            return p
+          })() as 'free' | 'pro' | 'institutional'
+        }
+        set({ user: normalizedUser, tokens, isAuthenticated: true })
       },
       logout: () => {
         if (typeof window !== 'undefined') {
@@ -164,7 +177,11 @@ export const useAuthStore = create<AuthState>()(
               name: savedUser.name,
               email: savedUser.email,
               role: savedUser.role,
-              plan: savedUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
+              plan: (() => {
+                const p = (savedUser.plan || 'free').toLowerCase()
+                if (p === 'enterprise' || p === 'premium' || p === 'institutional') return 'institutional'
+                return p
+              })() as 'free' | 'pro' | 'institutional',
               avatarUrl: savedUser.avatar || '/logo.png',
             }
             return {

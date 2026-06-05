@@ -29,6 +29,7 @@ import com.google.gson.JsonParser;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import com.lumiedu.auth.dto.RegisterRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -211,6 +212,43 @@ public class AuthController {
                 .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email already exists"));
+        }
+
+        User user = User.builder()
+                .fullName(request.getFullName())
+                .email(request.getEmail())
+                .passwordHash(request.getPassword())
+                .role(com.lumiedu.user.enums.UserRole.USER)
+                .accountStatus(com.lumiedu.user.enums.AccountStatus.ACTIVE)
+                .storageUsedMb(0L)
+                .storageLimitMb(1024L)
+                .build();
+        user = userRepository.save(user);
+
+        AuthUser authUser = AuthUser.builder()
+                .id(String.valueOf(user.getId()))
+                .name(user.getFullName())
+                .email(user.getEmail())
+                .role(user.getRole().name().toLowerCase())
+                .plan("free")
+                .avatarUrl("/logo.png")
+                .build();
+
+        AuthTokens tokens = AuthTokens.builder()
+                .accessToken("mock-jwt-token-for-dev")
+                .refreshToken("mock-refresh-token-for-dev")
+                .build();
+
+        return ResponseEntity.ok(LoginResponse.builder()
+                .user(authUser)
+                .tokens(tokens)
+                .build());
     }
 
     @PostMapping("/login")
