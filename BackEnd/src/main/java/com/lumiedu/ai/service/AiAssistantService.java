@@ -5,15 +5,15 @@ import java.util.List;
 
 public interface AiAssistantService {
 
-    AiSummary generateSummary(Long documentId);
+    AiSummary generateSummary(Long documentId, String language);
 
-    AiSummary getSummary(Long documentId);
+    AiSummary getSummary(Long documentId, String language);
 
     AiChatSession createOrGetChatSession(Long documentId, Long userId);
 
     List<AiChatMessage> getChatHistory(Long sessionId);
 
-    AiChatMessage sendMessage(Long sessionId, String messageText);
+    AiChatMessage sendMessage(Long sessionId, String messageText, boolean thinkingMode);
 
     List<Flashcard> generateFlashcards(Long documentId);
 
@@ -22,4 +22,8 @@ public interface AiAssistantService {
     List<QuizQuestion> modifyQuizWithAi(Long documentId, String prompt);
 
     List<QuizQuestion> getQuiz(Long documentId);
+
+    StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks, Long documentId);
+
+    List<StudyPlan> getStudyPlans(Long userId);
 }
