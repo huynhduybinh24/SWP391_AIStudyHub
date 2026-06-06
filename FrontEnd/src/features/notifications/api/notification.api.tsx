@@ -1,6 +1,7 @@
 import React from 'react';
 import { Folder, Calendar, ExternalLink, Eye } from 'lucide-react';
 import { getCurrentUser } from '../services/userNotificationService';
+import { apiClient } from '@/lib/axios';
 
 export type NotificationType = 
   | 'ai' 
@@ -315,139 +316,87 @@ const getBaseNotifications = (): Omit<Notification, 'isRead'>[] => {
   ];
 };
 
-const simulateNetworkDelay = () => new Promise((resolve) => setTimeout(resolve, 0));
+const mapBackendNotification = (item: any): Notification => {
+  const type = item.type as NotificationType;
+  let buttons: NotificationButton[] | undefined = undefined;
+
+  if (type === 'folder') {
+    buttons = [{
+      text: 'Open Folder',
+      variant: 'shared-btn',
+      icon: <Folder className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
+      url: item.actionUrl || '/dashboard/shared-files/research-materials'
+    }];
+  } else if (type === 'document') {
+    buttons = [{
+      text: 'View Document',
+      variant: 'shared-btn',
+      icon: <Eye className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
+      url: item.actionUrl || '/dashboard/notifications/summary'
+    }];
+  } else if (type === 'calendar') {
+    buttons = [{
+      text: 'Open Plan',
+      variant: 'secondary',
+      icon: <Calendar className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
+      url: item.actionUrl || '/dashboard/study-plans'
+    }];
+  } else if (type === 'flashcard') {
+    buttons = [{
+      text: 'Practice Now',
+      variant: 'secondary',
+      icon: <ExternalLink className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
+      url: item.actionUrl || '/dashboard/quizzes'
+    }];
+  } else if (type === 'security') {
+    buttons = [
+      { text: 'Review Activity', variant: 'primary', url: item.actionUrl || '#' },
+      { text: 'It was me', variant: 'light', url: '#' }
+    ];
+  }
+
+  return {
+    id: String(item.id),
+    type: type,
+    title: item.title,
+    time: item.time || 'Just now',
+    isRead: !!item.isRead,
+    description: item.description || item.message,
+    quote: item.quote,
+    actionText: item.actionText,
+    actionUrl: item.actionUrl,
+    avatar: item.avatar,
+    buttons: buttons,
+    reason: item.reason,
+    documentName: item.documentName,
+    documentId: item.documentId,
+    actionType: item.actionType,
+    adminNote: item.adminNote,
+    targetUserEmail: item.targetUserEmail
+  };
+};
 
 export const notificationApi = {
   getNotifications: async (filter: string): Promise<Notification[]> => {
-    await simulateNetworkDelay();
-    
-    const readState = getReadStateMap();
-    const baseData = getBaseNotifications().map(item => ({
-      ...item,
-      isRead: !!readState[item.id]
-    }));
-
-    const persisted = getPersistedUserNotifications();
-    const merged = [...persisted, ...baseData];
-
     const currentUser = getCurrentUser();
-    let deletedIds: string[] = [];
     try {
-      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${currentUser.email}`);
-      if (storedDeleted) {
-        deletedIds = JSON.parse(storedDeleted);
+      const response = await apiClient.get<any>(`/notifications?email=${encodeURIComponent(currentUser.email)}&filter=${filter}`);
+      if (response.data && response.data.success) {
+        return response.data.data.map(mapBackendNotification);
       }
     } catch (e) {
-      console.error('Failed to parse deleted notification IDs', e);
+      console.error('Failed to fetch notifications from backend', e);
     }
-
-    const filteredMerged = merged.filter(item => {
-      // 1. If it's deleted, filter out
-      if (deletedIds.includes(item.id)) return false;
-
-      // 2. targetUserEmail check
-      if (item.targetUserEmail && item.targetUserEmail.toLowerCase() !== currentUser.email.toLowerCase()) {
-        return false;
-      }
-
-      // 3. Admin safety filters
-      if (currentUser.role === 'admin') {
-        const typeStr = item.type || '';
-        if (typeStr === 'document_deleted' || typeStr === 'document_rejected' || typeStr === 'document_removed') {
-          if (!item.targetUserEmail || item.targetUserEmail.toLowerCase() !== currentUser.email.toLowerCase()) {
-            return false;
-          }
-        }
-        const descStr = typeof item.description === 'string' ? item.description : '';
-        if ((descStr.startsWith('Your document') || descStr.startsWith('Tài liệu')) && !item.targetUserEmail) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    switch (filter) {
-      case 'unread':
-        return filteredMerged.filter(item => !item.isRead);
-      case 'mentions':
-        return filteredMerged.filter(item => item.type === 'mention' || item.id === 'emily' || item.id === 'mention-2');
-      case 'shared-files':
-      case 'sharedfiles':
-        return filteredMerged.filter(
-          item =>
-            String(item.type) === 'shared_file' ||
-            item.type === 'folder' ||
-            item.type === 'document' ||
-            item.id === 'shared-folder' ||
-            item.id === 'shared-doc-1' ||
-            String(item.type).toLowerCase().includes('shared') ||
-            String(item.type).toLowerCase().includes('file') ||
-            String(item.type).toLowerCase().includes('folder') ||
-            String(item.type).toLowerCase().includes('document')
-        );
-      case 'ai-updates':
-      case 'aiupdates':
-        return filteredMerged.filter(
-          item =>
-            String(item.type) === 'ai_update' ||
-            item.type === 'ai' ||
-            item.type === 'flashcard' ||
-            item.type === 'calendar' ||
-            String(item.type) === 'study_plan' ||
-            item.id === 'ai-summary' ||
-            item.id === 'study-plan' ||
-            item.id === 'flashcards' ||
-            item.id === 'ai-audit-flagged' ||
-            String(item.type).toLowerCase().includes('ai') ||
-            String(item.type).toLowerCase().includes('flash') ||
-            String(item.type).toLowerCase().includes('study') ||
-            String(item.type).toLowerCase().includes('quiz')
-        );
-      case 'all':
-      default:
-        return filteredMerged;
-    }
+    return [];
   },
 
   markAsRead: async (id: string): Promise<void> => {
-    let changed = false;
     try {
-      const userEmail = getCurrentUser().email;
-      const stored = localStorage.getItem(`aiStudyHubUserNotifications:${userEmail}`);
-      if (stored) {
-        let parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          parsed = parsed.map((item: any) => {
-            if (item.id === id && !item.isRead) {
-              changed = true;
-              return { ...item, isRead: true };
-            }
-            return item;
-          });
-          if (changed) {
-            localStorage.setItem(`aiStudyHubUserNotifications:${userEmail}`, JSON.stringify(parsed));
-          }
-        }
-      }
+      await apiClient.put(`/notifications/${id}/read`);
     } catch (e) {
-      console.error('Failed to update persisted notification read state', e);
+      console.error('Failed to mark notification as read on backend', e);
     }
-
-    try {
-      const readState = getReadStateMap();
-      if (!readState[id]) {
-        readState[id] = true;
-        saveReadStateMap(readState);
-        changed = true;
-      }
-    } catch (e) {
-      console.error('Failed to update mock notification read state', e);
-    }
-
-    if (changed) {
-      window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
-    }
+    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
   }
 };
 
