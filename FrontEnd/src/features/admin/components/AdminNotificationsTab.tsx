@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Bell, Send, Trash2, ShieldAlert, Sparkles, Volume2, Info } from 'lucide-react'
+import { apiClient } from '@/lib/axios'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
 import { Card } from '@/components/ui/Card'
@@ -22,26 +23,21 @@ export function AdminNotificationsTab() {
   const { language, t } = useTranslation()
   const toast = useToast()
 
-  const [notifications, setNotifications] = useState<SentNotification[]>([
-    {
-      id: 'ntf-1',
-      titleKey: 'maintenanceTitle',
-      messageKey: 'maintenanceMessage',
-      type: 'maintenance',
-      target: 'all',
-      sentAt: '2026-05-24 10:15',
-      recipientsCount: 15248
-    },
-    {
-      id: 'ntf-2',
-      titleKey: 'proUpgradeTitle',
-      messageKey: 'proUpgradeMessage',
-      type: 'promotion',
-      target: 'pro',
-      sentAt: '2026-05-20 14:30',
-      recipientsCount: 3842
+  const [notifications, setNotifications] = useState<SentNotification[]>([])
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await apiClient.get('/notifications/broadcast/history')
+        if (response.data && response.data.success) {
+          setNotifications(response.data.data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch broadcast history', err)
+      }
     }
-  ])
+    fetchHistory()
+  }, [])
 
   // Form state
   const [title, setTitle] = useState('')
@@ -49,53 +45,59 @@ export function AdminNotificationsTab() {
   const [type, setType] = useState<'system' | 'maintenance' | 'warning' | 'promotion'>('system')
   const [target, setTarget] = useState<'all' | 'free' | 'pro'>('all')
 
-  const handleSendNotification = (e: React.FormEvent) => {
+  const handleSendNotification = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !message.trim()) {
       toast.error(language === 'vi' ? 'Vui lòng điền đầy đủ tiêu đề và nội dung' : 'Please fill out all fields')
       return
     }
 
-    // Estimate recipient counts
-    let recipientsCount = 15248
-    if (target === 'pro') recipientsCount = 3842
-    if (target === 'free') recipientsCount = 11406
+    try {
+      const payload = {
+        title: title.trim(),
+        message: message.trim(),
+        type,
+        target
+      }
+      const response = await apiClient.post('/notifications/broadcast', payload)
+      if (response.data && response.data.success) {
+        const newNtf = response.data.data
+        setNotifications((prev) => [newNtf, ...prev])
 
-    const newNtf: SentNotification = {
-      id: `ntf-${Date.now()}`,
-      title: title.trim(),
-      message: message.trim(),
-      type,
-      target,
-      sentAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      recipientsCount
+        const targetLabel = target === 'all' 
+          ? (language === 'vi' ? 'tất cả thành viên' : 'all members')
+          : (target === 'pro' 
+            ? (language === 'vi' ? 'thành viên Pro' : 'Pro members') 
+            : (language === 'vi' ? 'thành viên Free' : 'Free members'))
+
+        const successMsg = language === 'vi' 
+          ? `Đã gửi thông báo thành công đến ${newNtf.recipientsCount.toLocaleString()} ${targetLabel}!`
+          : `Notification sent successfully to ${newNtf.recipientsCount.toLocaleString()} ${targetLabel}!`
+
+        toast.success(successMsg)
+
+        // Reset Form
+        setTitle('')
+        setMessage('')
+        setType('system')
+        setTarget('all')
+      }
+    } catch (err) {
+      console.error('Failed to send broadcast notification', err)
+      toast.error(language === 'vi' ? 'Gửi thông báo thất bại' : 'Failed to send broadcast')
     }
-
-    setNotifications((prev) => [newNtf, ...prev])
-    
-    const targetLabel = target === 'all' 
-      ? (language === 'vi' ? 'tất cả thành viên' : 'all members')
-      : (target === 'pro' 
-        ? (language === 'vi' ? 'thành viên Pro' : 'Pro members') 
-        : (language === 'vi' ? 'thành viên Free' : 'Free members'))
-    
-    const successMsg = language === 'vi' 
-      ? `Đã gửi thông báo thành công đến ${recipientsCount.toLocaleString()} ${targetLabel}!`
-      : `Notification sent successfully to ${recipientsCount.toLocaleString()} ${targetLabel}!`
-    
-    toast.success(successMsg)
-
-    // Reset Form
-    setTitle('')
-    setMessage('')
-    setType('system')
-    setTarget('all')
   }
 
-  const handleDeleteHistory = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
-    const msg = language === 'vi' ? 'Đã xóa lịch sử thông báo' : 'Notification history removed'
-    toast.success(msg)
+  const handleDeleteHistory = async (id: string) => {
+    try {
+      await apiClient.delete(`/notifications/broadcast/${id}`)
+      setNotifications((prev) => prev.filter((n) => n.id !== id))
+      const msg = language === 'vi' ? 'Đã xóa lịch sử thông báo' : 'Notification history removed'
+      toast.success(msg)
+    } catch (err) {
+      console.error('Failed to delete broadcast history', err)
+      toast.error(language === 'vi' ? 'Không thể xóa lịch sử' : 'Failed to delete history')
+    }
   }
 
   const getNotificationIcon = (ntfType: SentNotification['type']) => {
