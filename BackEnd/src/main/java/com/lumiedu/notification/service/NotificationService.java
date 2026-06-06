@@ -16,9 +16,12 @@ import com.lumiedu.user.entity.User;
 import com.lumiedu.user.enums.AccountStatus;
 import com.lumiedu.user.enums.UserRole;
 import com.lumiedu.user.repository.UserRepository;
+import com.lumiedu.notification.websocket.NotificationWebSocketHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.Arrays;
 import java.util.List;
@@ -35,6 +38,8 @@ public class NotificationService {
     private final BroadcastNotificationRepository broadcastNotificationRepository;
     private final UserRepository userRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
+    private final NotificationWebSocketHandler notificationWebSocketHandler;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public List<NotificationResponse> getNotifications(Long userId, String email, String filter) {
@@ -126,7 +131,16 @@ public class NotificationService {
                 .build();
 
         Notification saved = notificationRepository.save(notification);
-        return NotificationResponse.fromEntity(saved, user.getEmail());
+        NotificationResponse response = NotificationResponse.fromEntity(saved, user.getEmail());
+
+        try {
+            String jsonPayload = objectMapper.writeValueAsString(response);
+            notificationWebSocketHandler.sendNotification(user.getEmail(), jsonPayload);
+        } catch (Exception e) {
+            System.err.println("Failed to serialize or send WebSocket notification: " + e.getMessage());
+        }
+
+        return response;
     }
 
     public BroadcastNotificationResponse sendBroadcast(BroadcastNotificationRequest request) {
@@ -161,7 +175,15 @@ public class NotificationService {
                     .isRead(false)
                     .deleted(false)
                     .build();
-            notificationRepository.save(notification);
+            Notification saved = notificationRepository.save(notification);
+
+            try {
+                NotificationResponse response = NotificationResponse.fromEntity(saved, user.getEmail());
+                String jsonPayload = objectMapper.writeValueAsString(response);
+                notificationWebSocketHandler.sendNotification(user.getEmail(), jsonPayload);
+            } catch (Exception e) {
+                System.err.println("Failed to serialize or send Broadcast WebSocket notification: " + e.getMessage());
+            }
         }
 
         return BroadcastNotificationResponse.fromEntity(savedBroadcast);
@@ -223,5 +245,12 @@ public class NotificationService {
             }
         }
         return result;
+    }
+
+    @Scheduled(cron = "0 0 2 * * ?") // Runs every day at 2:00 AM
+    public void deleteOldNotifications() {
+        java.time.LocalDateTime oneWeekAgo = java.time.LocalDateTime.now().minusDays(7);
+        notificationRepository.deleteByCreatedAtBefore(oneWeekAgo);
+        System.out.println("Cleaned up notifications created before: " + oneWeekAgo);
     }
 }
