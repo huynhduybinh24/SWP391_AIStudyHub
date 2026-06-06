@@ -9,4 +9,7 @@ import java.util.List;
 @Repository
 public interface BroadcastNotificationRepository extends JpaRepository<BroadcastNotification, Long> {
     List<BroadcastNotification> findAllByOrderByCreatedAtDesc();
+
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByCreatedAtBefore(java.time.LocalDateTime dateTime);
 }

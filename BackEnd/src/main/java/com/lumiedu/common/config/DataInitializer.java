@@ -13,6 +13,7 @@ import com.lumiedu.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ public class DataInitializer implements CommandLineRunner {
     private final com.lumiedu.document.repository.DocumentRepository documentRepository;
     private final com.lumiedu.storage.repository.StorageRepository storageRepository;
     private final NotificationRepository notificationRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
@@ -43,11 +45,25 @@ public class DataInitializer implements CommandLineRunner {
             System.err.println("Failed to run database migration: " + e.getMessage());
         }
 
+        // Auto-hash any plaintext passwords in the database
+        try {
+            userRepository.findAll().forEach(user -> {
+                String pwdHash = user.getPasswordHash();
+                if (pwdHash != null && !pwdHash.startsWith("$2a$") && !pwdHash.startsWith("$2b$") && !pwdHash.startsWith("$2y$")) {
+                    user.setPasswordHash(passwordEncoder.encode(pwdHash));
+                    userRepository.save(user);
+                    System.out.println("Auto-hashed password for user: " + user.getEmail());
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("Failed to auto-hash plaintext passwords: " + e.getMessage());
+        }
+
         if (userRepository.count() == 0) {
             User student = User.builder()
                     .fullName("LumiEdu User")
                     .email("student@lumiedu.com")
-                    .passwordHash("123456")
+                    .passwordHash(passwordEncoder.encode("123456"))
                     .role(UserRole.USER)
                     .accountStatus(AccountStatus.ACTIVE)
                     .build();
@@ -55,7 +71,7 @@ public class DataInitializer implements CommandLineRunner {
             User instructor = User.builder()
                     .fullName("LumiEdu User")
                     .email("instructor@lumiedu.com")
-                    .passwordHash("123456")
+                    .passwordHash(passwordEncoder.encode("123456"))
                     .role(UserRole.USER)
                     .accountStatus(AccountStatus.ACTIVE)
                     .build();
@@ -63,13 +79,22 @@ public class DataInitializer implements CommandLineRunner {
             User admin = User.builder()
                     .fullName("Admin User")
                     .email("admin@lumiedu.com")
-                    .passwordHash("123456")
+                    .passwordHash(passwordEncoder.encode("123456"))
                     .role(UserRole.ADMIN)
                     .accountStatus(AccountStatus.ACTIVE)
                     .storageLimitMb(51200L)
                     .build();
 
-            userRepository.saveAll(List.of(student, instructor, admin));
+            User personalAdmin = User.builder()
+                    .fullName("Duy Binh Admin")
+                    .email("huynhduybinh242k5@gmail.com")
+                    .passwordHash(passwordEncoder.encode("123456"))
+                    .role(UserRole.ADMIN)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .storageLimitMb(51200L)
+                    .build();
+
+            userRepository.saveAll(List.of(student, instructor, admin, personalAdmin));
             System.out.println("--- Seeded sample users successfully ---");
         }
 

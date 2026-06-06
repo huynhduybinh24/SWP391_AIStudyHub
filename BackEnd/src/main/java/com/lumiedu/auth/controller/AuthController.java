@@ -223,7 +223,7 @@ public class AuthController {
         User user = User.builder()
                 .fullName(request.getFullName())
                 .email(request.getEmail())
-                .passwordHash(request.getPassword())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(com.lumiedu.user.enums.UserRole.USER)
                 .accountStatus(com.lumiedu.user.enums.AccountStatus.ACTIVE)
                 .storageUsedMb(0L)
@@ -259,7 +259,7 @@ public class AuthController {
         }
 
         User user = userOpt.get();
-        if (!user.getPasswordHash().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid credentials"));
         }
 
