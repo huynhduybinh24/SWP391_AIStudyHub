@@ -849,15 +849,15 @@ export function NotificationsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => realtimeNotificationManager.injectSimulatedNotification()}
+          {false && <button
+            onClick={() => {}}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-indigo-500/10 dark:shadow-none hover:shadow-lg transition-all cursor-pointer border-none"
           >
             <Sparkles className="w-4 h-4 text-white" />
             <span className="hidden sm:inline">
               {language === 'vi' ? 'Giả lập thông báo' : language === 'ja' ? '通知をシミュレート' : language === 'ko' ? '알림 시뮬레이션' : 'Simulate alert'}
             </span>
-          </button>
+          </button>}
 
           <button
             onClick={() => fetchNotifications(activeFilter)}

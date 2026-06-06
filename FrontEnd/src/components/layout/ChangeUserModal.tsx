@@ -357,7 +357,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
 
     // Verify if it is a Google account
     const savedPassword = getTargetPassword()
-    const isGoogleAccount = selectedUser.isGoogle || (!selectedUser.email?.toLowerCase().endsWith('@lumiedu.com') && !savedPassword)
+    const isGoogleAccount = selectedUser.isGoogle === true
 
     if (isGoogleAccount) {
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '885322210817-bh9ua0cnrt5d7ogt6950o3ipekq6kdv3.apps.googleusercontent.com'
@@ -726,7 +726,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
                     )}
 
                     {/* Remembered Status Key Icon */}
-                    {user.remembered && !user.isGoogle && user.email?.toLowerCase().endsWith('@lumiedu.com') && (
+                    {user.remembered && !user.isGoogle && getPasswordForEmail(user.email) && (
                       <span className="absolute bottom-3 right-10 inline-flex items-center text-[10px] font-bold text-blue-500 dark:text-blue-400 scale-90" title="Đăng nhập nhanh đã lưu">
                         ⚡ {language === 'vi' ? 'Chuyển nhanh' : 'Quick'}
                       </span>
@@ -798,7 +798,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
                         </span>
                       )}
 
-                      {(user.isGoogle || !user.email?.toLowerCase().endsWith('@lumiedu.com')) && (
+                      {user.isGoogle && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-450 dark:border-amber-900/30">
                           Google
                         </span>

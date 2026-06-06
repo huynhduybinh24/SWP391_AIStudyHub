@@ -18,7 +18,7 @@ class NotificationRealtimeManager {
   private socket: WebSocket | null = null;
   private reconnectTimeout: any = null;
   private simulationInterval: any = null;
-  private wsUrl: string = import.meta.env.VITE_API_REALTIME_URL || 'ws://localhost:8080/api/notifications/ws';
+  private wsUrl: string = import.meta.env.VITE_API_REALTIME_URL || 'ws://localhost:8080/api/ws/notifications';
   private isSimulationActive: boolean = false;
 
 
@@ -90,15 +90,26 @@ class NotificationRealtimeManager {
       ) => {
         this.injectSimulatedNotification(type, title, description);
       };
+
+      // Reconnect when switching user
+      window.addEventListener('aiStudyHubUserChanged', () => {
+        console.log('[Realtime] User changed. Reconnecting WebSocket...');
+        this.disconnect();
+        this.connect();
+      });
     }
   }
 
   public connect() {
     if (this.socket) return;
 
-    console.log(`[Realtime] Attempting connection to WebSocket: ${this.wsUrl}`);
+    const currentUser = getCurrentUser();
+    const userEmail = currentUser?.email || '';
+    const url = userEmail ? `${this.wsUrl}?email=${encodeURIComponent(userEmail)}` : this.wsUrl;
+
+    console.log(`[Realtime] Attempting connection to WebSocket: ${url}`);
     try {
-      this.socket = new WebSocket(this.wsUrl);
+      this.socket = new WebSocket(url);
 
       this.socket.onopen = () => {
         console.log('[Realtime] WebSocket connected successfully!');

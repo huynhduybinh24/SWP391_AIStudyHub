@@ -266,10 +266,69 @@ export function Header() {
     return allNotifs
   }
 
-  const [notifications, setNotifications] = useState<MockNotification[]>(loadNotifications)
+  const [notifications, setNotifications] = useState<MockNotification[]>([])
+
+  const refreshNotifications = async () => {
+    const currentUser = getCurrentUser()
+    const userRole = currentUser.role
+    const userEmail = currentUser.email
+
+    try {
+      const { apiClient } = await import('@/lib/axios')
+      const response = await apiClient.get<any>(`/notifications?email=${encodeURIComponent(userEmail)}&filter=all`)
+      
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        const mapped = response.data.data.map((item: any) => {
+          let headerType: MockNotification['type'] = 'chat'
+          const type = item.type
+          if (type === 'document' || type === 'document_approved' || type === 'flashcard' || type === 'doc') {
+            headerType = 'doc'
+          } else if (type === 'calendar' || type === 'plan') {
+            headerType = 'plan'
+          } else if (type === 'folder' || type === 'shared_file' || type === 'share') {
+            headerType = 'share'
+          } else if (type === 'document_deleted' || type === 'document_removed') {
+            headerType = 'document_deleted'
+          } else if (type === 'document_rejected') {
+            headerType = 'document_rejected'
+          }
+
+          return {
+            id: String(item.id),
+            title: item.title,
+            description: item.description || item.message || '',
+            time: item.time || 'Just now',
+            type: headerType,
+            isRead: !!item.isRead,
+            reason: item.reason,
+            documentName: item.documentName,
+            documentId: item.documentId,
+            actionType: item.actionType,
+            adminNote: item.adminNote,
+            targetUserEmail: item.targetUserEmail
+          }
+        })
+
+        const filtered = mapped.filter((n: any) => {
+          if (n.targetUserEmail && n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
+            return false
+          }
+          return true
+        })
+
+        setNotifications(filtered)
+        return
+      }
+    } catch (e) {
+      console.error('Failed to fetch header notifications from API, falling back to local', e)
+    }
+
+    setNotifications(loadNotifications())
+  }
 
   useEffect(() => {
-    const handleUpdate = () => setNotifications(loadNotifications())
+    refreshNotifications()
+    const handleUpdate = () => refreshNotifications()
     window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
     window.addEventListener('aiStudyHubUserChanged', handleUpdate)
     window.addEventListener('storage', handleUpdate)
@@ -285,7 +344,11 @@ export function Header() {
 
   const markAsRead = (id: string) => {
     const userEmail = getCurrentUser().email
-    if (id.startsWith('usr-ntf-')) {
+    if (!isNaN(Number(id))) {
+      import('@/features/notifications/api/notification.api').then((m) => {
+        m.notificationApi.markAsRead(id)
+      })
+    } else if (id.startsWith('usr-ntf-')) {
       import('@/features/notifications/services/userNotificationService').then((m) => {
         m.userNotificationService.markUserNotificationAsRead(id, userEmail)
       })
@@ -297,7 +360,7 @@ export function Header() {
       try {
         const readMap: Record<string, boolean> = {}
         updated.forEach((n) => {
-          if (!n.id.startsWith('usr-ntf-')) {
+          if (!n.id.startsWith('usr-ntf-') && isNaN(Number(n.id))) {
             readMap[n.id] = n.isRead
           }
         })
@@ -321,7 +384,7 @@ export function Header() {
       try {
         const readMap: Record<string, boolean> = {}
         updated.forEach((n) => {
-          if (!n.id.startsWith('usr-ntf-')) {
+          if (!n.id.startsWith('usr-ntf-') && isNaN(Number(n.id))) {
             readMap[n.id] = n.isRead
           }
         })
