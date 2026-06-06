@@ -7,6 +7,9 @@ import com.lumiedu.user.entity.User;
 import com.lumiedu.user.enums.AccountStatus;
 import com.lumiedu.user.enums.UserRole;
 import com.lumiedu.user.repository.UserRepository;
+import com.lumiedu.notification.entity.Notification;
+import com.lumiedu.notification.enums.NotificationType;
+import com.lumiedu.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,6 +28,7 @@ public class DataInitializer implements CommandLineRunner {
     private final JdbcTemplate jdbcTemplate;
     private final com.lumiedu.document.repository.DocumentRepository documentRepository;
     private final com.lumiedu.storage.repository.StorageRepository storageRepository;
+    private final NotificationRepository notificationRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -258,6 +262,42 @@ public class DataInitializer implements CommandLineRunner {
 
                 storageRepository.saveAll(java.util.List.of(snap1, snap2));
                 System.out.println("--- Seeded default storage snapshots successfully ---");
+            }
+
+            if (notificationRepository.count() == 0) {
+                Notification n1 = Notification.builder()
+                        .userId(student.getId())
+                        .type(NotificationType.AI)
+                        .title("AI Summary Ready")
+                        .message("The comprehensive summary for your document \"Lecture_Notes_Week1.pdf\" is now complete and ready for review.")
+                        .actionText("View Summary")
+                        .actionUrl("/dashboard/notifications/summary")
+                        .isRead(false)
+                        .deleted(false)
+                        .build();
+
+                Notification n2 = Notification.builder()
+                        .userId(student.getId())
+                        .type(NotificationType.FOLDER)
+                        .title("Sarah Jenkins shared a folder with you")
+                        .message("Folder: Group Project Research Materials")
+                        .actionText("Open Folder")
+                        .actionUrl("/dashboard/shared-files/research-materials")
+                        .isRead(false)
+                        .deleted(false)
+                        .build();
+
+                Notification n3 = Notification.builder()
+                        .userId(student.getId())
+                        .type(NotificationType.SECURITY)
+                        .title("Security Alert: New Login")
+                        .message("A new login was detected on your account from a Chrome browser on a MacOS device. If this wasn't you, please secure your account immediately.")
+                        .isRead(true)
+                        .deleted(false)
+                        .build();
+
+                notificationRepository.saveAll(java.util.List.of(n1, n2, n3));
+                System.out.println("--- Seeded sample notifications for student successfully ---");
             }
         });
     }
