@@ -1,3 +1,5 @@
+import { apiClient } from '@/lib/axios';
+
 export type UserNotificationType =
   | "document_deleted"
   | "document_rejected"
@@ -43,122 +45,83 @@ export const getCurrentUser = () => {
   }
 };
 
-const getNotificationStorageKey = (email: string) => {
-  return `aiStudyHubUserNotifications:${email}`;
-};
-
 export const userNotificationService = {
-  getUserNotifications(email?: string): UserNotification[] {
+  getUserNotifications(_email?: string): UserNotification[] {
+    return [];
+  },
+
+  saveUserNotifications(_notifications: UserNotification[], _email?: string): void {
+    // No-op
+  },
+
+  async addUserNotification(notification: Omit<UserNotification, "id" | "createdAt" | "isRead" | "time"> & { targetUserEmail?: string }): Promise<any> {
+    const targetEmail = notification.targetUserEmail || getCurrentUser().email;
     try {
-      const targetEmail = email || getCurrentUser().email;
-      const key = getNotificationStorageKey(targetEmail);
-      const data = localStorage.getItem(key);
-      if (!data) return [];
-      const list: UserNotification[] = JSON.parse(data);
+      const payload = {
+        ...notification,
+        targetUserEmail: targetEmail
+      };
+      
+      const response = await apiClient.post('/notifications', payload);
+      window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
 
-      // Filter out notifications older than 7 days
-      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      const validList = list.filter((n: any) => {
-        const timestamp = n.createdAt ? new Date(n.createdAt).getTime() : Date.now();
-        return timestamp >= sevenDaysAgo;
-      });
+      if (typeof window !== 'undefined') {
+        import('@/stores/authStore').then((auth) => {
+          const { isAuthenticated } = auth.useAuthStore.getState();
+          if (!isAuthenticated) return;
 
-      if (validList.length !== list.length) {
-        localStorage.setItem(key, JSON.stringify(validList));
+          const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser');
+          if (activeUserStr) {
+            try {
+              const activeUser = JSON.parse(activeUserStr);
+              if (activeUser?.email?.toLowerCase() === targetEmail.toLowerCase()) {
+                import('@/stores/toastStore').then((m) => {
+                  let toastType: 'success' | 'info' | 'warning' | 'error' = 'info';
+                  if (notification.type === 'document_deleted' || notification.type === 'document_rejected') {
+                    toastType = 'warning';
+                  } else if (notification.type === 'document_approved') {
+                    toastType = 'success';
+                  }
+                  const messageSummary = notification.message.length > 60 
+                    ? notification.message.substring(0, 60) + '...'
+                    : notification.message;
+                  m.useToastStore.getState().addToast(
+                    `${notification.title}: ${messageSummary}`,
+                    toastType,
+                    4000
+                  );
+                });
+              }
+            } catch (e) {}
+          }
+        });
       }
 
-      return validList;
+      if (response.data && response.data.success) {
+        return response.data.data;
+      }
     } catch (error) {
-      console.error('Failed to parse user notifications from localStorage', error);
-      return [];
+      console.error('Failed to add user notification via backend', error);
     }
+    return null;
   },
 
-  saveUserNotifications(notifications: UserNotification[], email?: string): void {
+  async markUserNotificationAsRead(id: string, _email?: string): Promise<void> {
     try {
-      const targetEmail = email || getCurrentUser().email;
-      const key = getNotificationStorageKey(targetEmail);
-      localStorage.setItem(key, JSON.stringify(notifications));
-    } catch (error) {
-      console.error('Failed to save user notifications to localStorage', error);
+      await apiClient.put(`/notifications/${id}/read`);
+    } catch (e) {
+      console.error('Failed to mark user notification as read via backend', e);
     }
-  },
-
-  addUserNotification(notification: Omit<UserNotification, "id" | "createdAt" | "isRead" | "time"> & { targetUserEmail?: string }): UserNotification {
-    const targetEmail = notification.targetUserEmail || getCurrentUser().email;
-    const notifications = this.getUserNotifications(targetEmail);
-    
-    // Deduplicate: remove older duplicate notifications (type, documentId, reason) to avoid spam
-    const filteredNotifications = notifications.filter(n => {
-      const isDuplicate = n.type === notification.type &&
-                          n.documentId === notification.documentId &&
-                          n.reason === notification.reason;
-      return !isDuplicate;
-    });
-
-    const newNotification: UserNotification = {
-      ...notification,
-      id: `usr-ntf-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      createdAt: new Date().toISOString(),
-      time: "Just now",
-      isRead: false
-    };
-
-    const updatedNotifications = [newNotification, ...filteredNotifications];
-    this.saveUserNotifications(updatedNotifications, targetEmail);
-    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
-
-    // Trigger toast if the active user is the one receiving it and is logged in
-    if (typeof window !== 'undefined') {
-      import('@/stores/authStore').then((auth) => {
-        const { isAuthenticated } = auth.useAuthStore.getState();
-        if (!isAuthenticated) return;
-
-        const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser');
-        if (activeUserStr) {
-          try {
-            const activeUser = JSON.parse(activeUserStr);
-            if (activeUser?.email?.toLowerCase() === targetEmail.toLowerCase()) {
-              import('@/stores/toastStore').then((m) => {
-                let toastType: 'success' | 'info' | 'warning' | 'error' = 'info';
-                if (notification.type === 'document_deleted' || notification.type === 'document_rejected') {
-                  toastType = 'warning';
-                } else if (notification.type === 'document_approved') {
-                  toastType = 'success';
-                }
-                const messageSummary = notification.message.length > 60 
-                  ? notification.message.substring(0, 60) + '...'
-                  : notification.message;
-                m.useToastStore.getState().addToast(
-                  `${notification.title}: ${messageSummary}`,
-                  toastType,
-                  4000
-                );
-              });
-            }
-          } catch (e) {}
-        }
-      });
-    }
-
-    return newNotification;
-  },
-
-  markUserNotificationAsRead(id: string, email?: string): void {
-    const targetEmail = email || getCurrentUser().email;
-    const notifications = this.getUserNotifications(targetEmail);
-    const updatedNotifications = notifications.map(n => 
-      n.id === id ? { ...n, isRead: true } : n
-    );
-    this.saveUserNotifications(updatedNotifications, targetEmail);
     window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
   },
 
-  markAllUserNotificationsAsRead(email?: string): void {
+  async markAllUserNotificationsAsRead(email?: string): Promise<void> {
     const targetEmail = email || getCurrentUser().email;
-    const notifications = this.getUserNotifications(targetEmail);
-    const updatedNotifications = notifications.map(n => ({ ...n, isRead: true }));
-    this.saveUserNotifications(updatedNotifications, targetEmail);
+    try {
+      await apiClient.put(`/notifications/read-all?email=${encodeURIComponent(targetEmail)}`);
+    } catch (e) {
+      console.error('Failed to mark all user notifications as read via backend', e);
+    }
     window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
   }
 };
