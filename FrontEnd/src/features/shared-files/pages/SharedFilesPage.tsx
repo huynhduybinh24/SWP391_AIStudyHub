@@ -8,6 +8,8 @@ import { env } from '@/config/env'
 import { cn } from '@/lib/utils'
 import { reportService } from '../services/reportService'
 import { sharedFileService } from '../services/sharedFileService'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
@@ -41,14 +43,17 @@ import { FileTypeIcon } from '../components/FileTypeIcon'
 interface QuotaDetailsModalProps {
   isOpen: boolean
   onClose: () => void
-  usedGb: number
-  totalGb: number
+  usedMb: number
+  totalMb: number
 }
 
-function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsModalProps) {
+function QuotaDetailsModal({ isOpen, onClose, usedMb, totalMb }: QuotaDetailsModalProps) {
   const { t, language } = useTranslation()
   
-  const isPro = totalGb > 10;
+  const usage = calculateStorageUsage(usedMb, totalMb)
+  const percentage = usage.percentage
+  
+  const isPro = totalMb > 10 * 1024;
   const pdfGb = isPro ? '6.2 GB' : '1.2 GB';
   const officeGb = isPro ? '3.8 GB' : '0.8 GB';
   const foldersGb = isPro ? '2.4 GB' : '0.4 GB';
@@ -60,8 +65,6 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
-
-  const percentage = (usedGb / totalGb) * 100
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isOpen ? 'block' : 'hidden'}`}>
@@ -106,13 +109,13 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
         <div className="space-y-5 text-left">
           <div className="flex items-end justify-between">
             <div>
-              <span className="text-3xl font-black text-slate-900 dark:text-white">{usedGb}GB</span>
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{formatStorageSize(usedMb)}</span>
               <span className="text-sm font-bold text-slate-400 dark:text-slate-550 ml-1 font-sans">
-                {t.sharedFiles.usedOf} {totalGb}GB {t.sharedFiles.used.toLowerCase()}
+                {t.sharedFiles.usedOf} {formatStorageSize(totalMb)} {t.sharedFiles.used.toLowerCase()}
               </span>
             </div>
             <span className="text-sm font-bold text-[#3155F6] dark:text-blue-450">
-              {percentage.toFixed(0)}% {t.sharedFiles.used}
+              {percentage}% {t.sharedFiles.used}
             </span>
           </div>
 
@@ -1097,8 +1100,8 @@ export function SharedFilesPage() {
       <QuotaDetailsModal
         isOpen={modals.quota}
         onClose={() => setModals(prev => ({ ...prev, quota: false }))}
-        usedGb={user?.plan === 'pro' ? 12.4 : 2.4}
-        totalGb={user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT}
+        usedMb={(user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise') ? 12.4 * 1024 : 2.4 * 1024}
+        totalMb={getStorageLimitByPlan(user?.plan)}
       />
 
       <CollaboratorsModal

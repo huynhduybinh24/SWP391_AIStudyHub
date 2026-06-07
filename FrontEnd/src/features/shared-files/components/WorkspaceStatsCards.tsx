@@ -3,6 +3,8 @@ import { motion, type Variants } from 'framer-motion'
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
 interface WorkspaceStatsCardsProps {
   onViewAIReport: () => void
@@ -20,9 +22,12 @@ export function WorkspaceStatsCards({
   const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
   
-  const totalGb = user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
-  const usedGb = user?.plan === 'pro' ? 12.4 : 2.4
-  const usedPercentage = Math.round((usedGb / totalGb) * 100)
+  const isPremium = user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise'
+  const totalMb = getStorageLimitByPlan(user?.plan)
+  const totalGb = totalMb / 1024
+  const usedGb = isPremium ? 12.4 : 2.4
+  const usageInfo = calculateStorageUsage(usedGb * 1024, totalMb)
+  const usedPercentage = usageInfo.percentage
 
   // SVG Stroke parameters for dynamic circular progress
   const radius = 18
@@ -117,7 +122,7 @@ export function WorkspaceStatsCards({
             <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{usedGb}</span>
             <span className="text-xs font-bold text-slate-400 dark:text-slate-550 ml-0.5">GB</span>
             <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">
-              {t.sharedFiles.used} {usedGb} GB {t.sharedFiles.usedOf} {totalGb} GB
+              {t.sharedFiles.used} {formatStorageSize(usedGb * 1024)} {t.sharedFiles.usedOf} {formatStorageSize(totalMb)}
             </p>
           </div>
         </div>
