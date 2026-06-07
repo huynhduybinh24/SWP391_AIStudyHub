@@ -56,6 +56,15 @@ public class AiAssistantController {
     }
 
     // ------------------------------------------------------------------
+    // GET /api/ai/chat/sessions?userId=X
+    // ------------------------------------------------------------------
+    @GetMapping("/chat/sessions")
+    public ResponseEntity<ApiResponse<List<AiChatSession>>> getUserSessions(@RequestParam("userId") Long userId) {
+        List<AiChatSession> sessions = aiAssistantService.getUserSessions(userId);
+        return ResponseEntity.ok(ApiResponse.ok("Chat sessions retrieved successfully.", sessions));
+    }
+
+    // ------------------------------------------------------------------
     // GET /api/ai/chat/messages
     // ------------------------------------------------------------------
     @GetMapping("/chat/messages")
