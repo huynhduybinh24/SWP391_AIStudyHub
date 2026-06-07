@@ -44,7 +44,14 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @PostMapping("/chat/session")
     public ResponseEntity<ApiResponse<AiChatSession>> createOrGetChatSession(@RequestBody ChatSessionRequest request) {
-        AiChatSession session = aiAssistantService.createOrGetChatSession(request.getDocumentId(), request.getUserId());
+        List<Long> ids = request.getDocumentIds();
+        if (ids == null || ids.isEmpty()) {
+            ids = new java.util.ArrayList<>();
+            if (request.getDocumentId() != null) {
+                ids.add(request.getDocumentId());
+            }
+        }
+        AiChatSession session = aiAssistantService.createOrGetChatSession(ids, request.getUserId());
         return ResponseEntity.ok(ApiResponse.ok("Chat session retrieved or created successfully.", session));
     }
 
@@ -136,6 +143,7 @@ public class AiAssistantController {
     @Data
     public static class ChatSessionRequest {
         private Long documentId;
+        private List<Long> documentIds;
         private Long userId;
     }
 

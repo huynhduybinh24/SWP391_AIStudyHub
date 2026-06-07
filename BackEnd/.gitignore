@@ -9,3 +9,7 @@ target/
 uploads/
 test-uploads/
 maven/
+
+# Local application properties containing credentials
+src/main/resources/application-local.properties
+
