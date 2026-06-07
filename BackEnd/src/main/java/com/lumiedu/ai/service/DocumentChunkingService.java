@@ -39,33 +39,39 @@ public class DocumentChunkingService {
         // Delete existing chunks first
         documentChunkRepository.deleteByDocumentId(documentId);
 
-        String ext = getExtension(doc.getFileName()).toLowerCase();
-        Path filePath = Paths.get(uploadDir, "documents", doc.getFileName()).toAbsolutePath().normalize();
-        File file = filePath.toFile();
-
-        if (!file.exists()) {
-            System.err.println("File not found for chunking: " + filePath);
-            return;
-        }
-
         String fullText = "";
         try {
-            if ("pdf".equals(ext)) {
-                fullText = extractTextFromPdf(file);
-            } else if ("txt".equals(ext)) {
-                fullText = Files.readString(filePath);
+            if (doc.getFileName() != null && !doc.getFileName().isEmpty()) {
+                Path filePath = Paths.get(uploadDir, "documents", doc.getFileName()).toAbsolutePath().normalize();
+                File file = filePath.toFile();
+
+                String ext = getExtension(doc.getFileName()).toLowerCase();
+                if (file.exists()) {
+                    if ("pdf".equals(ext)) {
+                        fullText = extractTextFromPdf(file);
+                    } else if ("txt".equals(ext)) {
+                        fullText = Files.readString(filePath);
+                    }
+                } else {
+                    System.err.println("File not found locally for chunking: " + filePath + ". Using document metadata as fallback.");
+                }
             } else {
-                // If other files, we can extract details from the title and description as a fallback chunk
-                fullText = (doc.getTitle() != null ? doc.getTitle() : "") + "\n" + (doc.getDescription() != null ? doc.getDescription() : "");
+                System.err.println("Document has no local fileName (may be external URL). Using metadata as fallback for: " + doc.getTitle());
             }
         } catch (Exception e) {
-            System.err.println("Failed to extract text from file: " + filePath + ", error: " + e.getMessage());
-            // Fallback
-            fullText = (doc.getTitle() != null ? doc.getTitle() : "") + "\n" + (doc.getDescription() != null ? doc.getDescription() : "");
+            System.err.println("Failed to extract text from file: " + e.getMessage());
         }
 
+        // Fallback: use document metadata when file is unavailable
         if (fullText == null || fullText.trim().isEmpty()) {
-            fullText = doc.getTitle();
+            StringBuilder fallback = new StringBuilder();
+            if (doc.getTitle() != null) fallback.append("Tên tài liệu: ").append(doc.getTitle()).append("\n");
+            if (doc.getSubject() != null) fallback.append("Môn học: ").append(doc.getSubject()).append("\n");
+            if (doc.getDescription() != null && !doc.getDescription().isEmpty()) {
+                fallback.append("Mô tả: ").append(doc.getDescription()).append("\n");
+            }
+            fullText = fallback.toString().trim();
+            System.out.println("Using metadata fallback for document: " + doc.getTitle());
         }
 
         List<String> chunks = splitIntoChunks(fullText, 1000, 200);

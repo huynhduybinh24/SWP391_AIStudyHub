@@ -16,8 +16,6 @@ public interface AiAssistantService {
 
     List<AiChatMessage> getChatHistory(Long sessionId);
 
-    List<AiChatSession> getUserSessions(Long userId);
-
     AiChatMessage sendMessage(Long sessionId, String messageText, boolean thinkingMode);
 
     List<Flashcard> generateFlashcards(Long documentId);

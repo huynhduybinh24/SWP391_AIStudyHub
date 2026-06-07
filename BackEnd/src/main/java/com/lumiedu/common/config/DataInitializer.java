@@ -212,6 +212,7 @@ public class DataInitializer implements CommandLineRunner {
                         .fileSize(4718592L) // 4.5 MB
                         .fileUrl("https://storage.lumiedu.com/files/lecture_notes_week1.pdf")
                         .fileType("PDF")
+                        .subject("Sinh học")
                         .checksum("5d41402abc4b2a76b9719d911017c592")
                         .userId(student.getId())
                         .build();
@@ -221,6 +222,7 @@ public class DataInitializer implements CommandLineRunner {
                         .fileSize(4718592L) // 4.5 MB (Duplicate checksum!)
                         .fileUrl("https://storage.lumiedu.com/files/lecture_notes_week1_backup.pdf")
                         .fileType("PDF")
+                        .subject("Sinh học")
                         .checksum("5d41402abc4b2a76b9719d911017c592")
                         .userId(student.getId())
                         .build();
@@ -230,6 +232,7 @@ public class DataInitializer implements CommandLineRunner {
                         .fileSize(15728640L) // 15 MB (Large file!)
                         .fileUrl("https://storage.lumiedu.com/files/course_intro_video.mp4")
                         .fileType("VIDEO")
+                        .subject("Giới thiệu")
                         .checksum("7d41402abc4b2a76b9719d911017c593")
                         .userId(student.getId())
                         .build();
@@ -239,6 +242,7 @@ public class DataInitializer implements CommandLineRunner {
                         .fileSize(2097152L) // 2 MB
                         .fileUrl("https://storage.lumiedu.com/files/meeting_audio_record.mp3")
                         .fileType("AUDIO")
+                        .subject("Ghi âm")
                         .checksum("8d41402abc4b2a76b9719d911017c594")
                         .userId(student.getId())
                         .build();
@@ -248,6 +252,7 @@ public class DataInitializer implements CommandLineRunner {
                         .fileSize(1048576L) // 1 MB
                         .fileUrl("https://storage.lumiedu.com/files/profile_picture.png")
                         .fileType("IMAGE")
+                        .subject("Hình ảnh")
                         .checksum("9d41402abc4b2a76b9719d911017c595")
                         .userId(student.getId())
                         .build();

@@ -4,6 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.lumiedu.ai.dto.QuizResponse;
+import com.lumiedu.ai.dto.QuizQuestionResponse;
+import com.lumiedu.ai.dto.QuizSubmitResponse;
 import com.lumiedu.ai.entity.*;
 import com.lumiedu.ai.repository.*;
 import com.lumiedu.ai.service.AiAssistantService;
@@ -12,6 +15,7 @@ import com.lumiedu.ai.service.DocumentChunkingService;
 import com.lumiedu.ai.service.OpenAiService;
 import com.lumiedu.ai.service.OpenAiService.ChatMessageDto;
 import com.lumiedu.ai.service.OpenAiService.OpenAiResponse;
+import com.lumiedu.ai.service.GeminiService;
 import com.lumiedu.document.entity.Document;
 import com.lumiedu.document.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     private final AiChatMessageRepository aiChatMessageRepository;
     private final FlashcardRepository flashcardRepository;
     private final QuizQuestionRepository quizQuestionRepository;
+    private final QuizRepository quizRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
     private final DocumentRepository documentRepository;
 
     private final DocumentChunkRepository documentChunkRepository;
@@ -41,6 +47,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     private final OpenAiService openAiService;
     private final DocumentChunkingService documentChunkingService;
     private final AiLimitService aiLimitService;
+    private final GeminiService geminiService;
 
     private final Gson gson = new Gson();
 
@@ -131,24 +138,63 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     @Override
-    public AiChatSession createOrGetChatSession(Long documentId, Long userId) {
-        List<AiChatSession> sessions = aiChatSessionRepository.findByDocumentIdAndUserId(documentId, userId);
-        if (!sessions.isEmpty()) {
-            return sessions.get(0);
+    public AiChatSession createOrGetChatSession(List<Long> documentIds, Long userId) {
+        if (documentIds == null || documentIds.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một tài liệu nguồn.");
         }
-        
-        String title = "Thảo luận tài liệu";
-        if (documentId != null) {
-            Document doc = documentRepository.findById(documentId).orElse(null);
-            if (doc != null) {
-                title = doc.getTitle();
+
+        // Sort documentIds to ensure consistent matching
+        List<Long> sortedIds = new java.util.ArrayList<>(documentIds);
+        java.util.Collections.sort(sortedIds);
+
+        // Find user's sessions
+        List<AiChatSession> userSessions = aiChatSessionRepository.findByUserId(userId);
+        for (AiChatSession s : userSessions) {
+            List<Long> sessionDocIds = new java.util.ArrayList<>();
+            if (s.getDocuments() != null) {
+                for (Document d : s.getDocuments()) {
+                    sessionDocIds.add(d.getId());
+                }
+            }
+            java.util.Collections.sort(sessionDocIds);
+            
+            if (sessionDocIds.equals(sortedIds)) {
+                return s;
             }
         }
+
+        // If not found, create new session
+        List<Document> docs = new java.util.ArrayList<>();
+        StringBuilder titleBuilder = new StringBuilder();
+        for (int i = 0; i < documentIds.size(); i++) {
+            Long docId = documentIds.get(i);
+            Document doc = documentRepository.findById(docId).orElse(null);
+            if (doc != null) {
+                docs.add(doc);
+                if (titleBuilder.length() > 0) {
+                    titleBuilder.append(", ");
+                }
+                titleBuilder.append(doc.getTitle());
+            }
+        }
+
+        String title = titleBuilder.toString();
+        if (title.length() > 255) {
+            title = title.substring(0, 252) + "...";
+        }
+        if (title.isEmpty()) {
+            title = "Thảo luận tài liệu";
+        }
+
+        Long firstDocId = documentIds.get(0);
+
         AiChatSession session = AiChatSession.builder()
-                .documentId(documentId)
+                .documentId(firstDocId)
                 .userId(userId)
                 .title(title)
+                .documents(docs)
                 .build();
+
         return aiChatSessionRepository.save(session);
     }
 
@@ -175,10 +221,43 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .build();
         aiChatMessageRepository.save(userMessage);
 
-        // 2. Perform simple RAG search if session is bound to a document
+        // 2. Ensure chunks exist, then perform RAG search
         String ragContext = "";
-        if (session.getDocumentId() != null) {
-            ragContext = performRagSearch(session.getDocumentId(), messageText);
+        List<Long> docIds = new java.util.ArrayList<>();
+        if (session.getDocuments() != null && !session.getDocuments().isEmpty()) {
+            for (Document d : session.getDocuments()) {
+                docIds.add(d.getId());
+            }
+        } else if (session.getDocumentId() != null) {
+            docIds.add(session.getDocumentId());
+        }
+
+        // Build document metadata context (title, subject) always available
+        StringBuilder docMetaContext = new StringBuilder();
+        for (Long docId : docIds) {
+            Document doc = documentRepository.findById(docId).orElse(null);
+            if (doc != null) {
+                docMetaContext.append("Tài liệu: ").append(doc.getTitle());
+                if (doc.getSubject() != null) docMetaContext.append(" | Môn học: ").append(doc.getSubject());
+                if (doc.getDescription() != null && !doc.getDescription().isEmpty()) {
+                    docMetaContext.append("\nMô tả: ").append(doc.getDescription());
+                }
+                docMetaContext.append("\n");
+                // Auto-index chunks if not yet indexed
+                List<DocumentChunk> existingChunks = documentChunkRepository.findByDocumentId(docId);
+                if (existingChunks.isEmpty()) {
+                    try {
+                        documentChunkingService.chunkAndIndexDocument(docId);
+                        System.out.println("Auto-indexed chunks for document: " + doc.getTitle());
+                    } catch (Exception e) {
+                        System.err.println("Failed to auto-index chunks for doc " + docId + ": " + e.getMessage());
+                    }
+                }
+            }
+        }
+
+        if (!docIds.isEmpty()) {
+            ragContext = performRagSearch(docIds, messageText);
         }
 
         // 3. Gather chat history (last 10 messages)
@@ -187,14 +266,21 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             history = history.subList(history.size() - 10, history.size());
         }
 
-        // 4. Construct messages for OpenAI
+        // 4. Construct messages for Gemini
         List<ChatMessageDto> promptMsgs = new ArrayList<>();
-        String systemInstruction = "You are a friendly AI study assistant. Help the student understand their materials. ";
-        if (thinkingMode) {
-            systemInstruction += "You must think step-by-step and write down your reasoning/thought process inside a <thought>...</thought> tag FIRST, and then write the response for the user.";
+        String systemInstruction = "You are a friendly AI study assistant named LumiEdu AI. "
+                + "Help the student understand and discuss their documents. "
+                + "Answer primarily in Vietnamese unless the user writes in another language. ";
+        if (!docMetaContext.isEmpty()) {
+            systemInstruction += "\n\nThe student has attached the following documents for this session:\n" + docMetaContext;
         }
         if (!ragContext.isEmpty()) {
-            systemInstruction += "\n\nHere is relevant context extracted from the document to help you answer:\n" + ragContext;
+            systemInstruction += "\n\nHere is relevant content extracted from the documents to help you answer:\n" + ragContext;
+        } else if (!docMetaContext.isEmpty()) {
+            systemInstruction += "\n\nNote: The full text of the documents is not yet available for search, but please use the document titles and metadata above to help the student as best you can.";
+        }
+        if (thinkingMode) {
+            systemInstruction += " Think step-by-step and write your reasoning inside a <thought>...</thought> tag FIRST, then write the response.";
         }
 
         promptMsgs.add(ChatMessageDto.builder().role("system").content(systemInstruction).build());
@@ -208,8 +294,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             promptMsgs.add(ChatMessageDto.builder().role(role).content(content).build());
         }
 
-        // 5. Call OpenAI
-        OpenAiResponse response = openAiService.chat(promptMsgs, false);
+        // 5. Call Gemini
+        OpenAiResponse response = geminiService.chat(promptMsgs, false);
 
         // 6. Log usage
         saveUsageLog(session.getUserId(), "CHAT", response);
@@ -295,9 +381,6 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             throw new RuntimeException("Bạn đã vượt quá hạn mức sử dụng AI Quiz hàng ngày của gói dịch vụ hiện tại.");
         }
 
-        // Delete existing quiz
-        quizQuestionRepository.deleteByDocumentId(documentId);
-
         List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
         if (chunks.isEmpty()) {
             documentChunkingService.chunkAndIndexDocument(documentId);
@@ -331,6 +414,13 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         OpenAiResponse response = openAiService.chat(messages, true);
         saveUsageLog(userId, "QUIZ", response);
 
+        Quiz quiz = Quiz.builder()
+                .documentId(documentId)
+                .title("Quiz for " + doc.getTitle())
+                .promptUsed(customPrompt)
+                .build();
+        quiz = quizRepository.save(quiz);
+
         List<QuizQuestion> questions = new ArrayList<>();
         try {
             JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
@@ -344,22 +434,22 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 }
 
                 questions.add(QuizQuestion.builder()
-                        .documentId(documentId)
-                        .q(item.get("q").getAsString())
+                        .quiz(quiz)
+                        .questionText(item.get("q").getAsString())
                         .options(gson.toJson(options))
-                        .answer(item.get("answer").getAsInt())
-                        .explain(item.get("explain").getAsString())
+                        .answerIndex(item.get("answer").getAsInt())
+                        .explanation(item.get("explain").getAsString())
                         .build());
             }
         } catch (Exception e) {
             System.err.println("Failed to parse quiz JSON response: " + e.getMessage());
             // Fallback
             questions.add(QuizQuestion.builder()
-                    .documentId(documentId)
-                    .q("Câu hỏi trắc nghiệm ôn tập về " + doc.getSubject())
+                    .quiz(quiz)
+                    .questionText("Câu hỏi trắc nghiệm ôn tập về " + doc.getSubject())
                     .options(gson.toJson(Arrays.asList("Đáp án A", "Đáp án B (Đúng)", "Đáp án C", "Đáp án D")))
-                    .answer(1)
-                    .explain("Đây là giải thích đáp án mẫu vì lỗi phân tích dữ liệu AI.")
+                    .answerIndex(1)
+                    .explanation("Đây là giải thích đáp án mẫu vì lỗi phân tích dữ liệu AI.")
                     .build());
         }
 
@@ -368,73 +458,117 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     @Override
     public List<QuizQuestion> modifyQuizWithAi(Long documentId, String prompt) {
-        List<QuizQuestion> existing = quizQuestionRepository.findByDocumentId(documentId);
-        if (existing.isEmpty()) {
-            existing = generateQuiz(documentId, "medium", 5, "");
-        }
-
-        Document doc = documentRepository.findById(documentId).orElse(null);
-        Long userId = doc != null ? doc.getUserId() : 1L;
-
-        // Ask AI to modify the quiz questions based on the prompt
-        String existingQuizJson = gson.toJson(existing);
-
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content("You are an educational AI assistant. Modify the following quiz questions based on the user's instructions. "
-                        + "User instructions: " + prompt + ". "
-                        + "You must respond with a JSON object containing a 'questions' array with the modified questions. "
-                        + "Each question must contain: "
-                        + "'q' (question string), "
-                        + "'options' (JSON array of 4 option strings), "
-                        + "'answer' (index of the correct option: 0, 1, 2, or 3), "
-                        + "'explain' (explanation string).")
-                .build());
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Existing Quiz questions:\n\n" + existingQuizJson)
-                .build());
-
-        OpenAiResponse response = openAiService.chat(messages, true);
-        saveUsageLog(userId, "QUIZ_MODIFY", response);
-
-        List<QuizQuestion> modified = new ArrayList<>();
-        try {
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
-            JsonArray arr = jsonObj.getAsJsonArray("questions");
-            for (int i = 0; i < arr.size(); i++) {
-                JsonObject item = arr.get(i).getAsJsonObject();
-                JsonArray optsArr = item.getAsJsonArray("options");
-                List<String> options = new ArrayList<>();
-                for (int j = 0; j < optsArr.size(); j++) {
-                    options.add(optsArr.get(j).getAsString());
-                }
-
-                modified.add(QuizQuestion.builder()
-                        .documentId(documentId)
-                        .q(item.get("q").getAsString())
-                        .options(gson.toJson(options))
-                        .answer(item.get("answer").getAsInt())
-                        .explain(item.get("explain").getAsString())
-                        .build());
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to parse modified quiz JSON: " + e.getMessage());
-            return existing;
-        }
-
-        quizQuestionRepository.deleteByDocumentId(documentId);
-        return quizQuestionRepository.saveAll(modified);
+        return generateQuiz(documentId, "medium", 5, prompt);
     }
 
     @Override
     public List<QuizQuestion> getQuiz(Long documentId) {
-        List<QuizQuestion> questions = quizQuestionRepository.findByDocumentId(documentId);
-        if (questions.isEmpty()) {
+        Optional<Quiz> latestQuizOpt = quizRepository.findFirstByDocumentIdOrderByCreatedAtDesc(documentId);
+        if (latestQuizOpt.isEmpty()) {
             return generateQuiz(documentId, "medium", 5, "");
         }
-        return questions;
+        return quizQuestionRepository.findByQuizId(latestQuizOpt.get().getId());
+    }
+
+    @Override
+    public QuizResponse getQuizResponse(Long documentId) {
+        List<Quiz> quizzes = quizRepository.findByDocumentId(documentId);
+        if (quizzes.isEmpty()) {
+            generateQuiz(documentId, "medium", 5, "");
+            quizzes = quizRepository.findByDocumentId(documentId);
+        }
+
+        List<QuizQuestion> pool = new ArrayList<>();
+        for (Quiz q : quizzes) {
+            pool.addAll(quizQuestionRepository.findByQuizId(q.getId()));
+        }
+
+        Collections.shuffle(pool);
+
+        int selectCount = Math.min(pool.size(), 5);
+        List<QuizQuestion> selectedQuestions = pool.subList(0, selectCount);
+
+        List<QuizQuestionResponse> questionResponses = new ArrayList<>();
+        for (QuizQuestion qq : selectedQuestions) {
+            List<String> optionsList;
+            try {
+                optionsList = gson.fromJson(qq.getOptions(), new com.google.gson.reflect.TypeToken<List<String>>(){}.getType());
+            } catch (Exception e) {
+                optionsList = Arrays.asList("Option A", "Option B", "Option C", "Option D");
+            }
+
+            questionResponses.add(QuizQuestionResponse.builder()
+                    .id(qq.getId())
+                    .text(qq.getQuestionText())
+                    .options(optionsList)
+                    .answerIndex(qq.getAnswerIndex())
+                    .explanation(qq.getExplanation())
+                    .build());
+        }
+
+        Optional<Quiz> latestQuizOpt = quizRepository.findFirstByDocumentIdOrderByCreatedAtDesc(documentId);
+        Quiz latestQuiz = latestQuizOpt.orElse(quizzes.get(0));
+
+        return QuizResponse.builder()
+                .id(latestQuiz.getId())
+                .documentId(documentId)
+                .title(latestQuiz.getTitle())
+                .promptUsed(latestQuiz.getPromptUsed())
+                .questions(questionResponses)
+                .build();
+    }
+
+    @Override
+    public QuizResponse regenerateQuizResponse(Long documentId, String prompt) {
+        generateQuiz(documentId, "medium", 5, prompt);
+        return getQuizResponse(documentId);
+    }
+
+    @Override
+    public QuizSubmitResponse submitQuiz(Long userId, Long documentId, Map<Long, Integer> answers) {
+        int correctCount = 0;
+        int totalQuestions = answers.size();
+        Map<Long, Integer> correctAnswers = new HashMap<>();
+        Map<Long, String> explanations = new HashMap<>();
+
+        for (Map.Entry<Long, Integer> entry : answers.entrySet()) {
+            Long questionId = entry.getKey();
+            Integer selectedIndex = entry.getValue();
+
+            Optional<QuizQuestion> qqOpt = quizQuestionRepository.findById(questionId);
+            if (qqOpt.isPresent()) {
+                QuizQuestion qq = qqOpt.get();
+                correctAnswers.put(questionId, qq.getAnswerIndex());
+                explanations.put(questionId, qq.getExplanation());
+
+                if (selectedIndex != null && selectedIndex.equals(qq.getAnswerIndex())) {
+                    correctCount++;
+                }
+            }
+        }
+
+        int scorePercentage = totalQuestions > 0 ? Math.round(((float) correctCount / totalQuestions) * 100) : 0;
+
+        Optional<Quiz> latestQuizOpt = quizRepository.findFirstByDocumentIdOrderByCreatedAtDesc(documentId);
+        Long latestQuizId = latestQuizOpt.map(Quiz::getId).orElse(null);
+
+        QuizAttempt attempt = QuizAttempt.builder()
+                .userId(userId)
+                .documentId(documentId)
+                .quizId(latestQuizId)
+                .score(scorePercentage)
+                .submittedAnswers(gson.toJson(answers))
+                .build();
+        attempt = quizAttemptRepository.save(attempt);
+
+        return QuizSubmitResponse.builder()
+                .attemptId(attempt.getId())
+                .score(scorePercentage)
+                .correctCount(correctCount)
+                .totalQuestions(totalQuestions)
+                .correctAnswers(correctAnswers)
+                .explanations(explanations)
+                .build();
     }
 
     @Override
@@ -518,17 +652,38 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
     }
 
-    private String performRagSearch(Long documentId, String query) {
-        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+    private String performRagSearch(List<Long> documentIds, String query) {
+        if (documentIds == null || documentIds.isEmpty()) {
+            return "";
+        }
+        
+        List<DocumentChunk> chunks = new java.util.ArrayList<>();
+        for (Long documentId : documentIds) {
+            chunks.addAll(documentChunkRepository.findByDocumentId(documentId));
+        }
+        
         if (chunks.isEmpty()) {
             return "";
         }
 
-        // Java keyword-matching scoring
         String[] keywords = query.toLowerCase().split("\\s+");
-        DocumentChunk bestChunk = null;
-        int maxScore = 0;
-
+        
+        class ChunkScore implements Comparable<ChunkScore> {
+            DocumentChunk chunk;
+            int score;
+            
+            ChunkScore(DocumentChunk chunk, int score) {
+                this.chunk = chunk;
+                this.score = score;
+            }
+            
+            @Override
+            public int compareTo(ChunkScore o) {
+                return Integer.compare(o.score, this.score); // descending
+            }
+        }
+        
+        List<ChunkScore> scoredChunks = new java.util.ArrayList<>();
         for (DocumentChunk chunk : chunks) {
             int score = 0;
             String contentLower = chunk.getContent().toLowerCase();
@@ -537,17 +692,31 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                     score++;
                 }
             }
-            if (score > maxScore) {
-                maxScore = score;
-                bestChunk = chunk;
+            if (score > 0) {
+                scoredChunks.add(new ChunkScore(chunk, score));
             }
         }
-
-        // If no match found, use the first chunk as context
-        if (bestChunk == null) {
-            return chunks.get(0).getContent();
+        
+        if (scoredChunks.isEmpty()) {
+            StringBuilder fallback = new StringBuilder();
+            for (Long documentId : documentIds) {
+                List<DocumentChunk> docChunks = documentChunkRepository.findByDocumentId(documentId);
+                if (!docChunks.isEmpty()) {
+                    fallback.append(docChunks.get(0).getContent()).append("\n\n");
+                }
+            }
+            return fallback.toString();
         }
-
-        return bestChunk.getContent();
+        
+        java.util.Collections.sort(scoredChunks);
+        StringBuilder result = new StringBuilder();
+        int limit = Math.min(scoredChunks.size(), 5);
+        for (int i = 0; i < limit; i++) {
+            DocumentChunk c = scoredChunks.get(i).chunk;
+            result.append("--- Source Document ID: ").append(c.getDocumentId()).append(" ---\n");
+            result.append(c.getContent()).append("\n\n");
+        }
+        
+        return result.toString();
     }
 }
