@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/axios'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
 
 export interface StorageUsage {
   userId: number
@@ -41,22 +42,26 @@ export const storageService = {
     } catch (e) {
       console.warn("Using mock storage usage fallback", e)
       let limitMb = 1024 // 1GB
+      let usedMb = 8
       if (typeof window !== 'undefined') {
         const currentUserStr = localStorage.getItem('aiStudyHubCurrentUser')
         if (currentUserStr) {
           try {
             const user = JSON.parse(currentUserStr)
-            const plan = (user.plan || 'free').toLowerCase()
-            if (plan === 'pro') limitMb = 5120 // 5GB
-            else if (plan === 'enterprise' || plan === 'premium' || plan === 'institutional') limitMb = 51200 // 50GB
+            limitMb = getStorageLimitByPlan(user.plan)
+            usedMb = user.plan === 'pro'
+              ? 2457.6
+              : (user.plan === 'premium' || user.plan === 'institutional' || user.plan === 'enterprise')
+                ? 8192
+                : 8
           } catch (err) {}
         }
       }
       return {
         userId,
-        storageUsedMb: 450,
+        storageUsedMb: usedMb,
         storageLimitMb: limitMb,
-        storagePercentage: Number(((450 / limitMb) * 100).toFixed(1))
+        storagePercentage: Number(((usedMb / limitMb) * 100).toFixed(1))
       }
     }
   },
@@ -68,35 +73,39 @@ export const storageService = {
     } catch (e) {
       console.warn("Using mock storage analytics fallback", e)
       let limitMb = 1024 // 1GB
+      let usedMb = 8
       if (typeof window !== 'undefined') {
         const currentUserStr = localStorage.getItem('aiStudyHubCurrentUser')
         if (currentUserStr) {
           try {
             const user = JSON.parse(currentUserStr)
-            const plan = (user.plan || 'free').toLowerCase()
-            if (plan === 'pro') limitMb = 5120 // 5GB
-            else if (plan === 'enterprise' || plan === 'premium' || plan === 'institutional') limitMb = 51200 // 50GB
+            limitMb = getStorageLimitByPlan(user.plan)
+            usedMb = user.plan === 'pro'
+              ? 2457.6
+              : (user.plan === 'premium' || user.plan === 'institutional' || user.plan === 'enterprise')
+                ? 8192
+                : 8
           } catch (err) {}
         }
       }
       return {
-        totalUsedMb: 450,
+        totalUsedMb: usedMb,
         limitMb: limitMb,
-        totalFiles: 12,
+        totalFiles: 3,
         categoryBreakdown: {
-          'Documents': 300,
-          'Media': 120,
-          'Other': 30
+          'Documents': usedMb * 0.6,
+          'Media': usedMb * 0.3,
+          'Other': usedMb * 0.1
         },
         snapshots: [
           {
             id: 1,
-            totalUsedMb: 450,
+            totalUsedMb: usedMb,
             limitMb: limitMb,
-            fileCount: 12,
-            documentCount: 8,
-            mediaCount: 3,
-            otherCount: 1,
+            fileCount: 3,
+            documentCount: 2,
+            mediaCount: 1,
+            otherCount: 0,
             snapshotDate: new Date().toISOString()
           }
         ]
@@ -111,22 +120,26 @@ export const storageService = {
     } catch (e) {
       console.warn("Using mock storage overview fallback", e)
       let limitMb = 1024 // 1GB
+      let usedMb = 8
       if (typeof window !== 'undefined') {
         const currentUserStr = localStorage.getItem('aiStudyHubCurrentUser')
         if (currentUserStr) {
           try {
             const user = JSON.parse(currentUserStr)
-            const plan = (user.plan || 'free').toLowerCase()
-            if (plan === 'pro') limitMb = 5120 // 5GB
-            else if (plan === 'enterprise' || plan === 'premium' || plan === 'institutional') limitMb = 51200 // 50GB
+            limitMb = getStorageLimitByPlan(user.plan)
+            usedMb = user.plan === 'pro'
+              ? 2457.6
+              : (user.plan === 'premium' || user.plan === 'institutional' || user.plan === 'enterprise')
+                ? 8192
+                : 8
           } catch (err) {}
         }
       }
       return {
-        totalUsedMb: 450,
+        totalUsedMb: usedMb,
         limitMb: limitMb,
-        totalFiles: 12,
-        categoryBreakdown: { pdf: 300, docx: 100, pptx: 30, other: 20 }
+        totalFiles: 3,
+        categoryBreakdown: { pdf: 5, docx: 2, pptx: 1, other: 0 }
       }
     }
   },
@@ -154,8 +167,8 @@ export const storageService = {
         id: Date.now(),
         scanType: 'DUPLICATE',
         status: 'COMPLETED',
-        filesFound: 3,
-        spaceReclaimedMb: 45.2,
+        filesFound: 1,
+        spaceReclaimedMb: 2.1,
         createdAt: new Date().toISOString()
       }
     }
@@ -171,8 +184,8 @@ export const storageService = {
         id: Date.now(),
         scanType: 'LARGE',
         status: 'COMPLETED',
-        filesFound: 2,
-        spaceReclaimedMb: 120.5,
+        filesFound: 0,
+        spaceReclaimedMb: 0,
         createdAt: new Date().toISOString()
       }
     }
