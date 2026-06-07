@@ -1,6 +1,47 @@
 import { apiClient } from '@/lib/axios'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 
+// ─── Storage Summary Helper ─────────────────────────────────────────────────
+// Source of truth for personal storage values across all dashboard pages.
+// Free = 1 GB / 8.3 MB used   |   Pro = 5 GB / 2.4 GB used   |   Premium = 50 GB / 8 GB used
+
+export interface StorageSummary {
+  plan: string
+  totalMb: number
+  usedMb: number
+  remainingMb: number
+  percentage: number
+}
+
+const MOCK_USED_MB: Record<string, number> = {
+  free: 8.3,
+  pro: 2457.6,
+  premium: 8192,
+  institutional: 8192,
+  enterprise: 8192,
+}
+
+export function getCurrentUserStorageSummary(): StorageSummary {
+  let plan = 'free'
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('aiStudyHubCurrentUser')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        plan = (parsed?.plan ?? 'free').toLowerCase()
+      }
+    } catch (_) {}
+  }
+
+  const totalMb = getStorageLimitByPlan(plan)
+  const usedMb = MOCK_USED_MB[plan] ?? MOCK_USED_MB.free
+  const remainingMb = Math.max(totalMb - usedMb, 0)
+  const percentage = Math.min(Math.round((usedMb / totalMb) * 100), 100)
+
+  return { plan, totalMb, usedMb, remainingMb, percentage }
+}
+
 export interface StorageUsage {
   userId: number
   storageUsedMb: number

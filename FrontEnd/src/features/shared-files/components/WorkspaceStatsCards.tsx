@@ -81,8 +81,8 @@ export function WorkspaceStatsCards({
         className="group relative flex flex-col justify-between rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-300 cursor-pointer"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-550">
-            {t.settings.interface === "Interface" || !t.settings.interface ? "STORAGE" : t.dashboard.storage.toUpperCase()}
+          <span className="text-[11px] font-black tracking-widest text-blue-500 uppercase dark:text-blue-400">
+            {t.sharedFiles.statsStorage ? t.sharedFiles.statsStorage.toUpperCase() : 'SHARED QUOTA'}
           </span>
           <HardDrive className="size-4.5 text-blue-500 dark:text-blue-400 group-hover:rotate-12 transition-transform duration-300" />
         </div>
@@ -123,6 +123,7 @@ export function WorkspaceStatsCards({
             <span className="text-xs font-bold text-slate-400 dark:text-slate-550 ml-0.5">GB</span>
             <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">
               {t.sharedFiles.used} {formatStorageSize(usedGb * 1024)} {t.sharedFiles.usedOf} {formatStorageSize(totalMb)}
+              <span className="ml-1 text-blue-400 dark:text-blue-500">(shared)</span>
             </p>
           </div>
         </div>

@@ -1,27 +1,28 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarDays, Sparkles, Share2, Cloud } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { StatisticsCard, StatisticItem } from './StatisticsCard'
 import { StatisticsDetailModal } from './StatisticsDetailModal'
 import { useTranslation } from '@/context/LanguageContext'
-import { useAuthStore } from '@/stores/authStore'
-import { env } from '@/config/env'
-import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { getCurrentUserStorageSummary } from '@/services/storageService'
 import { formatStorageSize } from '@/utils/storageFormat'
 
 export function StatisticsSection() {
   const navigate = useNavigate()
   const toast = useToast()
   const { t, language } = useTranslation()
-  const user = useAuthStore((s) => s.user)
 
-  const totalMb = getStorageLimitByPlan(user?.plan)
-  const usedMb = user?.plan === 'pro' 
-    ? 2457.6 
-    : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
-      ? 8192
-      : 8
+  // Use shared helper so all pages stay in sync
+  const [storageSummary, setStorageSummary] = useState(() => getCurrentUserStorageSummary())
+
+  useEffect(() => {
+    const refresh = () => setStorageSummary(getCurrentUserStorageSummary())
+    window.addEventListener('aiStudyHubUserChanged', refresh)
+    return () => window.removeEventListener('aiStudyHubUserChanged', refresh)
+  }, [])
+
+  const { usedMb, totalMb } = storageSummary
 
   // Localized statistics values recalculated on language change
   const statistics = useMemo<StatisticItem[]>(() => [

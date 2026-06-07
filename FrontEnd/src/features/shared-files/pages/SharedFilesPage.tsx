@@ -10,6 +10,7 @@ import { reportService } from '../services/reportService'
 import { sharedFileService } from '../services/sharedFileService'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
+import { getCurrentUserStorageSummary } from '@/services/storageService'
 
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
@@ -53,10 +54,11 @@ function QuotaDetailsModal({ isOpen, onClose, usedMb, totalMb }: QuotaDetailsMod
   const usage = calculateStorageUsage(usedMb, totalMb)
   const percentage = usage.percentage
   
-  const isPro = totalMb > 10 * 1024;
-  const pdfGb = isPro ? '6.2 GB' : '1.2 GB';
-  const officeGb = isPro ? '3.8 GB' : '0.8 GB';
-  const foldersGb = isPro ? '2.4 GB' : '0.4 GB';
+  // Compute breakdown proportionally from actual usedMb
+  const pdfGb    = formatStorageSize(usedMb * 0.50)
+  const officeGb = formatStorageSize(usedMb * 0.30)
+  const foldersGb = formatStorageSize(usedMb * 0.20)
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1100,8 +1102,8 @@ export function SharedFilesPage() {
       <QuotaDetailsModal
         isOpen={modals.quota}
         onClose={() => setModals(prev => ({ ...prev, quota: false }))}
-        usedMb={(user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise') ? 12.4 * 1024 : 2.4 * 1024}
-        totalMb={getStorageLimitByPlan(user?.plan)}
+        usedMb={getCurrentUserStorageSummary().usedMb}
+        totalMb={getCurrentUserStorageSummary().totalMb}
       />
 
       <CollaboratorsModal

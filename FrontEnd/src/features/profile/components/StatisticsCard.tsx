@@ -1,10 +1,9 @@
+import { useState, useEffect } from 'react'
 import { LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from '@/context/LanguageContext'
-import { useAuthStore } from '@/stores/authStore'
-import { env } from '@/config/env'
-import { getStorageLimitByPlan } from '@/constants/storagePlans'
-import { calculateStorageUsage } from '@/utils/storageFormat'
+import { calculateStorageUsage, formatStorageSize } from '@/utils/storageFormat'
+import { getCurrentUserStorageSummary } from '@/services/storageService'
 
 export interface StatisticItem {
   id: string
@@ -23,17 +22,18 @@ interface StatisticsCardProps {
 
 export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: StatisticsCardProps) {
   const { t, language } = useTranslation()
-  const user = useAuthStore((s) => s.user)
   const isStorage = item.id === 'storageUsed'
 
-  const totalMb = getStorageLimitByPlan(user?.plan)
-  const totalGb = totalMb / 1024
-  const usedMb = user?.plan === 'pro' 
-    ? 2457.6 
-    : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
-      ? 8192
-      : 8
-  const usedGb = usedMb / 1024
+  // Use the shared summary helper – keeps profile card in sync with dashboard/storage
+  const [storageSummary, setStorageSummary] = useState(() => getCurrentUserStorageSummary())
+
+  useEffect(() => {
+    const refresh = () => setStorageSummary(getCurrentUserStorageSummary())
+    window.addEventListener('aiStudyHubUserChanged', refresh)
+    return () => window.removeEventListener('aiStudyHubUserChanged', refresh)
+  }, [])
+
+  const { usedMb, totalMb, remainingMb } = storageSummary
   const usageInfo = calculateStorageUsage(usedMb, totalMb)
   const percentage = usageInfo.percentage
 
@@ -107,7 +107,7 @@ export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: Sta
           <div className="pt-3 w-full space-y-1.5">
             <div className="flex items-center justify-between text-[10px] font-bold tracking-wide uppercase text-slate-450 dark:text-slate-500">
               <span>{percentage}% {language === 'vi' ? 'Đã dùng' : 'Used'}</span>
-              <span>{totalGb - usedGb < 0.5 ? 'Full' : `${(totalGb - usedGb).toFixed(1)} GB ${language === 'vi' ? 'trống' : 'free'}`}</span>
+              <span>{remainingMb < 512 ? (language === 'vi' ? 'Đầy' : 'Full') : `${formatStorageSize(remainingMb)} ${language === 'vi' ? 'trống' : 'free'}`}</span>
             </div>
             <div className="w-full bg-slate-100 dark:bg-slate-800/80 h-2.5 rounded-full overflow-hidden border border-slate-200/20 dark:border-slate-850/20" role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100}>
               <motion.div
