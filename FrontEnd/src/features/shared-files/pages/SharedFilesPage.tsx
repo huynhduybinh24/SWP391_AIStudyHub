@@ -6,6 +6,11 @@ import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { cn } from '@/lib/utils'
+import { reportService } from '../services/reportService'
+import { sharedFileService } from '../services/sharedFileService'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
+import { getCurrentUserStorageSummary } from '@/services/storageService'
 
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
@@ -39,17 +44,21 @@ import { FileTypeIcon } from '../components/FileTypeIcon'
 interface QuotaDetailsModalProps {
   isOpen: boolean
   onClose: () => void
-  usedGb: number
-  totalGb: number
+  usedMb: number
+  totalMb: number
 }
 
-function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsModalProps) {
+function QuotaDetailsModal({ isOpen, onClose, usedMb, totalMb }: QuotaDetailsModalProps) {
   const { t, language } = useTranslation()
   
-  const isPro = totalGb > 10;
-  const pdfGb = isPro ? '6.2 GB' : '1.2 GB';
-  const officeGb = isPro ? '3.8 GB' : '0.8 GB';
-  const foldersGb = isPro ? '2.4 GB' : '0.4 GB';
+  const usage = calculateStorageUsage(usedMb, totalMb)
+  const percentage = usage.percentage
+  
+  // Compute breakdown proportionally from actual usedMb
+  const pdfGb    = formatStorageSize(usedMb * 0.50)
+  const officeGb = formatStorageSize(usedMb * 0.30)
+  const foldersGb = formatStorageSize(usedMb * 0.20)
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -58,8 +67,6 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
-
-  const percentage = (usedGb / totalGb) * 100
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isOpen ? 'block' : 'hidden'}`}>
@@ -104,13 +111,13 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
         <div className="space-y-5 text-left">
           <div className="flex items-end justify-between">
             <div>
-              <span className="text-3xl font-black text-slate-900 dark:text-white">{usedGb}GB</span>
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{formatStorageSize(usedMb)}</span>
               <span className="text-sm font-bold text-slate-400 dark:text-slate-550 ml-1 font-sans">
-                {t.sharedFiles.usedOf} {totalGb}GB {t.sharedFiles.used.toLowerCase()}
+                {t.sharedFiles.usedOf} {formatStorageSize(totalMb)} {t.sharedFiles.used.toLowerCase()}
               </span>
             </div>
             <span className="text-sm font-bold text-[#3155F6] dark:text-blue-450">
-              {percentage.toFixed(0)}% {t.sharedFiles.used}
+              {percentage}% {t.sharedFiles.used}
             </span>
           </div>
 
@@ -203,95 +210,25 @@ export function SharedFilesPage() {
   const { fileId } = useParams<{ fileId: string }>()
 
   // State Management
-  const [files, setFiles] = useState<SharedFile[]>([
-    {
-      id: 'file-1',
-      name: 'Biology 101 Midterm Notes.pdf',
-      owner: 'Sarah Jenkins',
-      permission: 'Viewer',
-      dateShared: '2h ago',
-      type: 'pdf',
-      size: '2.4 MB',
-      totalPages: 42,
-      description: 'Comprehensive study guide and midterm summary for General Biology 101, containing cellular respiration diagrams, metabolic pathway notes, and mitosis stages.',
-      tags: ['CellBiology', 'KrebsCycle'],
-      previewContent: 'Biology 101 Midterm Notes preview content.',
-      url: '',
-      editHistory: [
-        { id: 'h-1-1', user: 'Sarah Jenkins', action: 'Đã tạo tài liệu', time: '5 ngày trước', avatarBg: 'bg-emerald-500' },
-        { id: 'h-1-2', user: 'Sarah Jenkins', action: 'Đã chia sẻ tài liệu với bạn', time: '2 giờ trước', avatarBg: 'bg-emerald-500' }
-      ]
-    },
-    {
-      id: 'file-2',
-      name: 'Group Project Assets',
-      owner: 'David Kim',
-      permission: 'Editor',
-      dateShared: 'Oct 22, 2023',
-      type: 'folder',
-      size: '15.8 MB',
-      description: 'Group assets folder containing images, mock data, design specifications, and reference links.',
-      tags: ['GroupProject', 'Assets'],
-      previewContent: 'Folder contents: assets, design specifications.',
-      url: '',
-      editHistory: [
-        { id: 'h-2-1', user: 'David Kim', action: 'Đã tạo thư mục', time: '1 tháng trước', avatarBg: 'bg-blue-500' },
-        { id: 'h-2-2', user: 'David Kim', action: 'Đã chia sẻ quyền chỉnh sửa (Editor) cho bạn', time: 'Oct 22, 2023', avatarBg: 'bg-blue-500' }
-      ]
-    },
-    {
-      id: 'file-3',
-      name: 'Physics Lab Data.xlsx',
-      owner: 'Emily Chen',
-      permission: 'Viewer',
-      dateShared: 'Oct 18, 2023',
-      type: 'xlsx',
-      size: '1.2 MB',
-      totalPages: 10,
-      description: 'Tabulated values of raw experimental logs, voltage sweeps, and resistance indexes from the electromagnetism laboratory session.',
-      tags: ['Physics', 'LabData'],
-      previewContent: 'Voltage, Current, Resistance sweep tables.',
-      url: '',
-      editHistory: [
-        { id: 'h-3-1', user: 'Emily Chen', action: 'Đã tạo tài liệu', time: 'Oct 15, 2023', avatarBg: 'bg-purple-500' },
-        { id: 'h-3-2', user: 'Emily Chen', action: 'Đã chia sẻ quyền xem (Viewer) cho bạn', time: 'Oct 18, 2023', avatarBg: 'bg-purple-500' }
-      ]
-    },
-    {
-      id: 'file-4',
-      name: 'Chemistry 101 Lab Report.docx',
-      owner: 'me',
-      permission: 'Owner',
-      dateShared: 'Yesterday',
-      type: 'docx',
-      size: '1.8 MB',
-      description: 'My chemistry lab report shared with Sarah and David.',
-      tags: ['Chemistry', 'LabReport'],
-      previewContent: 'Chemistry lab report contents.',
-      url: '',
-      editHistory: [
-        { id: 'h-4-1', user: 'Tôi', action: 'Đã tạo tài liệu', time: '2 ngày trước', avatarBg: 'bg-indigo-600' },
-        { id: 'h-4-2', user: 'Tôi', action: 'Đã chia sẻ quyền xem cho Sarah Jenkins', time: '1 ngày trước', avatarBg: 'bg-indigo-600' },
-        { id: 'h-4-3', user: 'Tôi', action: 'Đã chia sẻ quyền chỉnh sửa cho David Kim', time: '1 ngày trước', avatarBg: 'bg-indigo-600' }
-      ]
-    },
-    {
-      id: 'file-5',
-      name: 'Math Calculus Exercises.pdf',
-      owner: 'me',
-      permission: 'Owner',
-      dateShared: '3 days ago',
-      type: 'pdf',
-      size: '3.1 MB',
-      description: 'Calculus assignment worksheet with solved exercises.',
-      tags: ['Math', 'Calculus'],
-      previewContent: 'Calculus exercises content.',
-      url: '',
-      editHistory: [
-        { id: 'h-5-1', user: 'Tôi', action: 'Đã tạo tài liệu', time: '3 ngày trước', avatarBg: 'bg-indigo-600' }
-      ]
+  const [files, setFiles] = useState<SharedFile[]>([])
+
+  useEffect(() => {
+    let active = true
+    const loadFiles = async () => {
+      try {
+        const fetched = await sharedFileService.getSharedFiles()
+        if (active) {
+          setFiles(fetched)
+        }
+      } catch (err) {
+        console.error("Failed to load shared files", err)
+      }
     }
-  ])
+    loadFiles()
+    return () => {
+      active = false
+    }
+  }, [])
 
   // Modals Visibility
   const [modals, setModals] = useState({
@@ -1165,8 +1102,8 @@ export function SharedFilesPage() {
       <QuotaDetailsModal
         isOpen={modals.quota}
         onClose={() => setModals(prev => ({ ...prev, quota: false }))}
-        usedGb={user?.plan === 'pro' ? 12.4 : 2.4}
-        totalGb={user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT}
+        usedMb={getCurrentUserStorageSummary().usedMb}
+        totalMb={getCurrentUserStorageSummary().totalMb}
       />
 
       <CollaboratorsModal
@@ -1443,22 +1380,15 @@ export function SharedFilesPage() {
                 onClick={async () => {
                   setIsSubmittingReport(true)
                   try {
-                    // Let's call the report submission logic:
-                    // 1. Create a reported ticket in localStorage
-                    const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
-                    localReports.push({
-                      id: `rep-${Date.now()}`,
-                      reportedFile: reportDoc.name,
+                    // Let's call the report submission logic via reportService
+                    await reportService.reportDocument({
                       documentId: reportDoc.id,
+                      reason: "Document violation report",
+                      details: reportReason.trim(),
+                      reportedFile: reportDoc.name,
                       reporterName: user?.name || 'Alex Rivera',
                       reporterEmail: user?.email || 'alex@example.com',
-                      reason: reportReason.trim(),
-                      reportedAt: new Date().toISOString()
                     })
-                    localStorage.setItem('aiStudyHubDocumentReports', JSON.stringify(localReports))
-
-                    // 2. Dispatch event so other components know if they're listening
-                    window.dispatchEvent(new Event('aiStudyHubDocumentReportsUpdated'))
 
                     // 3. Show beautiful notification
                     const successMsg = language === 'vi'

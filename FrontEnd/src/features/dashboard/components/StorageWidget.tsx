@@ -1,24 +1,40 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, CardTitle } from '@/components/ui/Card'
 import { useTranslation } from '@/context/LanguageContext'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
+import { getCurrentUserStorageSummary } from '@/services/storageService'
 
 interface StorageWidgetProps {
   usedMb?: number
   totalMb?: number
 }
 
-export function StorageWidget({ usedMb = 0, totalMb = 1024 }: StorageWidgetProps) {
+export function StorageWidget({ usedMb: propUsedMb, totalMb: propTotalMb }: StorageWidgetProps) {
   const { t } = useTranslation()
-  
-  const safeUsedMb = usedMb ?? 0
-  const safeTotalMb = totalMb ?? 1024
-  
-  const percent = safeTotalMb > 0 ? Math.round((safeUsedMb / safeTotalMb) * 100) : 0
+
+  // Lazy-initialise from helper so we always have a non-zero starting point
+  const [summary, setSummary] = useState(() => getCurrentUserStorageSummary())
+
+  // Re-read when another user is selected (plan may change)
+  useEffect(() => {
+    const refresh = () => setSummary(getCurrentUserStorageSummary())
+    window.addEventListener('aiStudyHubUserChanged', refresh)
+    return () => window.removeEventListener('aiStudyHubUserChanged', refresh)
+  }, [])
+
+  // Prefer live API props when they carry a real non-zero used value;
+  // fall back to helper otherwise (mock / API not yet connected).
+  const usedMb  = (propUsedMb  != null && propUsedMb  > 0) ? propUsedMb  : summary.usedMb
+  const totalMb = (propTotalMb != null && propTotalMb > 0) ? propTotalMb : summary.totalMb
+
+  const usage = calculateStorageUsage(usedMb, totalMb)
+  const percent = usage.percentage
   const circumference = 2 * Math.PI * 28
   const offset = circumference - (percent / 100) * circumference
 
-  const displayUsed = safeUsedMb >= 100 ? `${(safeUsedMb / 1024).toFixed(1)} GB` : `${safeUsedMb.toFixed(0)} MB`
-  const displayTotal = safeTotalMb >= 1024 ? `${(safeTotalMb / 1024).toFixed(0)} GB` : `${safeTotalMb.toFixed(0)} MB`
+  const displayUsed  = formatStorageSize(usedMb)
+  const displayTotal = formatStorageSize(totalMb)
 
   return (
     <section className="col-span-4 space-y-4">
@@ -55,4 +71,3 @@ export function StorageWidget({ usedMb = 0, totalMb = 1024 }: StorageWidgetProps
     </section>
   )
 }
-

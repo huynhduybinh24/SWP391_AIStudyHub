@@ -18,7 +18,7 @@ class NotificationRealtimeManager {
   private socket: WebSocket | null = null;
   private reconnectTimeout: any = null;
   private simulationInterval: any = null;
-  private wsUrl: string = import.meta.env.VITE_API_REALTIME_URL || 'ws://localhost:8080/api/ws/notifications';
+  private wsUrl: string = import.meta.env.VITE_API_REALTIME_URL || 'ws://localhost:8085/api/ws/notifications';
   private isSimulationActive: boolean = false;
 
 

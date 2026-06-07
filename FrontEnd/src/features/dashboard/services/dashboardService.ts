@@ -3,6 +3,7 @@ import { getCurrentWeekDays, getTrackedSeconds, addTrackedSeconds, formatDateLoc
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { storageService } from '@/services/storageService'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
 
 const MOCK_DASHBOARD: DashboardData = {
   pendingPlans: 3,
@@ -73,20 +74,21 @@ export const dashboardService = {
     const weeklyTrend = diff >= 0 ? `+${diff.toFixed(1)} hrs` : `-${Math.abs(diff).toFixed(1)} hrs`
 
     const user = useAuthStore.getState().user
-    let storageUsedMb = 8.3
-    let storageTotalMb = (user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : (user?.plan === 'enterprise' || user?.plan === 'premium' ? env.PREMIUM_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT)) * 1024
+    let storageTotalMb = getStorageLimitByPlan(user?.plan)
+    let storageUsedMb = user?.plan === 'pro' 
+      ? 2457.6 
+      : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
+        ? 8192
+        : 8
 
     if (user?.id) {
       try {
         const usage = await storageService.getStorageUsage(Number(user.id))
-        storageUsedMb = usage.storageUsedMb + 8.3
+        storageUsedMb = usage.storageUsedMb
         storageTotalMb = usage.storageLimitMb
       } catch (e) {
         console.error('Failed to fetch storage usage for dashboard:', e)
-        storageUsedMb = 8.3
       }
-    } else {
-      storageUsedMb = 8.3
     }
 
     // Update alert contents dynamically for storage

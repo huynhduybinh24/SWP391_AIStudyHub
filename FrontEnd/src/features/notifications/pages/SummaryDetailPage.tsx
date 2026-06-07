@@ -127,7 +127,7 @@ export function SummaryDetailPage() {
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         fileName="Advanced Neuroscience Syllabus 2024.pdf"
-        shareUrl="http://localhost:5173/dashboard/notifications/summary"
+        shareUrl="http://localhost:8386/dashboard/notifications/summary"
         initialUsers={defaultUsers}
       />
 
