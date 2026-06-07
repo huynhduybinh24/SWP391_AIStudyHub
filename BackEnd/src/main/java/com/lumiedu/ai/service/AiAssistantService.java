@@ -23,7 +23,7 @@ public interface AiAssistantService {
 
     List<QuizQuestion> getQuiz(Long documentId);
 
-    StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks, Long documentId);
+    StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks, List<Long> documentIds);
 
     List<StudyPlan> getStudyPlans(Long userId);
 }
