@@ -18,6 +18,8 @@ export function WorkspaceStatsCards({
   onActiveCardClick,
   activeCollaboratorsCount
 }: WorkspaceStatsCardsProps) {
+  const { t } = useTranslation()
+
   // ── Storage data: same source as QuotaDetailsModal ──────────────────────
   const [storageSummary, setStorageSummary] = useState(() => getCurrentUserStorageSummary())
 
