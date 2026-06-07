@@ -1,10 +1,9 @@
 import { HardDrive, Sparkles } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import { useTranslation } from '@/context/LanguageContext'
-import { useAuthStore } from '@/stores/authStore'
-import { env } from '@/config/env'
-import { getStorageLimitByPlan } from '@/constants/storagePlans'
-import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
+import { formatStorageSize } from '@/utils/storageFormat'
+import { getCurrentUserStorageSummary } from '@/services/storageService'
 
 interface WorkspaceStatsCardsProps {
   onViewAIReport: () => void
@@ -19,15 +18,16 @@ export function WorkspaceStatsCards({
   onActiveCardClick,
   activeCollaboratorsCount
 }: WorkspaceStatsCardsProps) {
-  const { t } = useTranslation()
-  const user = useAuthStore((s) => s.user)
-  
-  const isPremium = user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise'
-  const totalMb = getStorageLimitByPlan(user?.plan)
-  const totalGb = totalMb / 1024
-  const usedGb = isPremium ? 12.4 : 2.4
-  const usageInfo = calculateStorageUsage(usedGb * 1024, totalMb)
-  const usedPercentage = usageInfo.percentage
+  // ── Storage data: same source as QuotaDetailsModal ──────────────────────
+  const [storageSummary, setStorageSummary] = useState(() => getCurrentUserStorageSummary())
+
+  useEffect(() => {
+    const refresh = () => setStorageSummary(getCurrentUserStorageSummary())
+    window.addEventListener('aiStudyHubUserChanged', refresh)
+    return () => window.removeEventListener('aiStudyHubUserChanged', refresh)
+  }, [])
+
+  const { usedMb, totalMb, percentage: usedPercentage } = storageSummary
 
   // SVG Stroke parameters for dynamic circular progress
   const radius = 18
@@ -119,10 +119,9 @@ export function WorkspaceStatsCards({
           </div>
 
           <div>
-            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{usedGb}</span>
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-550 ml-0.5">GB</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{formatStorageSize(usedMb)}</span>
             <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">
-              {t.sharedFiles.used} {formatStorageSize(usedGb * 1024)} {t.sharedFiles.usedOf} {formatStorageSize(totalMb)}
+              {t.sharedFiles.used} {formatStorageSize(usedMb)} {t.sharedFiles.usedOf} {formatStorageSize(totalMb)}
               <span className="ml-1 text-blue-400 dark:text-blue-500">(shared)</span>
             </p>
           </div>
