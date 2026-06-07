@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Card, CardTitle } from '@/components/ui/Card'
 import { useTranslation } from '@/context/LanguageContext'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
 interface StorageWidgetProps {
   usedMb?: number
@@ -10,15 +11,13 @@ interface StorageWidgetProps {
 export function StorageWidget({ usedMb = 0, totalMb = 1024 }: StorageWidgetProps) {
   const { t } = useTranslation()
   
-  const safeUsedMb = usedMb ?? 0
-  const safeTotalMb = totalMb ?? 1024
-  
-  const percent = safeTotalMb > 0 ? Math.round((safeUsedMb / safeTotalMb) * 100) : 0
+  const usage = calculateStorageUsage(usedMb, totalMb)
+  const percent = usage.percentage
   const circumference = 2 * Math.PI * 28
   const offset = circumference - (percent / 100) * circumference
 
-  const displayUsed = safeUsedMb >= 100 ? `${(safeUsedMb / 1024).toFixed(1)} GB` : `${safeUsedMb.toFixed(0)} MB`
-  const displayTotal = safeTotalMb >= 1024 ? `${(safeTotalMb / 1024).toFixed(0)} GB` : `${safeTotalMb.toFixed(0)} MB`
+  const displayUsed = formatStorageSize(usedMb)
+  const displayTotal = formatStorageSize(totalMb)
 
   return (
     <section className="col-span-4 space-y-4">
