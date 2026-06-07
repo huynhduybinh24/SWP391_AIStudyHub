@@ -1,4 +1,5 @@
 import { userNotificationService } from '@/features/notifications/services/userNotificationService';
+import { reportService } from '@/features/shared-files/services/reportService';
 
 export type AdminUser = {
   id: string;
@@ -721,4 +722,10 @@ export const adminService = {
   bulkDeleteDocuments,
   exportModerationReport,
   getDashboardSummary,
+  getReports: () => {
+    return reportService.getReports();
+  },
+  updateReportStatus: (id: string, status: 'pending' | 'resolved' | 'ignored') => {
+    return reportService.updateReport(id, { status });
+  },
 };

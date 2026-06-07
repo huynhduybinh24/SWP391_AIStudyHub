@@ -6,6 +6,7 @@ import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { cn } from '@/lib/utils'
+import { reportService } from '../services/reportService'
 
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
@@ -1443,22 +1444,14 @@ export function SharedFilesPage() {
                 onClick={async () => {
                   setIsSubmittingReport(true)
                   try {
-                    // Let's call the report submission logic:
-                    // 1. Create a reported ticket in localStorage
-                    const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
-                    localReports.push({
-                      id: `rep-${Date.now()}`,
+                    // Let's call the report submission logic via reportService
+                    reportService.createReport({
                       reportedFile: reportDoc.name,
                       documentId: reportDoc.id,
                       reporterName: user?.name || 'Alex Rivera',
                       reporterEmail: user?.email || 'alex@example.com',
-                      reason: reportReason.trim(),
-                      reportedAt: new Date().toISOString()
+                      reason: reportReason.trim()
                     })
-                    localStorage.setItem('aiStudyHubDocumentReports', JSON.stringify(localReports))
-
-                    // 2. Dispatch event so other components know if they're listening
-                    window.dispatchEvent(new Event('aiStudyHubDocumentReportsUpdated'))
 
                     // 3. Show beautiful notification
                     const successMsg = language === 'vi'
