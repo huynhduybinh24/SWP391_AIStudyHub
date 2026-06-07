@@ -80,8 +80,17 @@ export const userNotificationService = {
     }
   },
 
-  getNotifications(currentUser?: any): UserNotification[] {
+  async getNotifications(currentUser?: any): Promise<UserNotification[]> {
     const email = currentUser?.email || getCurrentUser().email;
+    try {
+      const response = await apiClient.get(`/notifications?email=${encodeURIComponent(email)}`);
+      const list = response.data?.data || response.data;
+      if (Array.isArray(list)) {
+        return list;
+      }
+    } catch (error) {
+      console.warn("Using mock/localStorage notifications fallback", error);
+    }
     return this.getUserNotifications(email);
   },
 
@@ -89,8 +98,13 @@ export const userNotificationService = {
     return this.addUserNotification(payload);
   },
 
-  deleteNotification(id: string, email?: string): void {
+  async deleteNotification(id: string, email?: string): Promise<void> {
     const targetEmail = email || getCurrentUser().email;
+    try {
+      await apiClient.delete(`/notifications/${id}`);
+    } catch (e) {
+      console.warn("Failed to delete notification via API, using fallback", e);
+    }
     try {
       const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${targetEmail}`);
       let deletedIds: string[] = [];
@@ -107,7 +121,7 @@ export const userNotificationService = {
       }
       window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
     } catch (e) {
-      console.error('Failed to delete notification', e);
+      console.error('Failed to delete notification locally', e);
     }
   },
 
