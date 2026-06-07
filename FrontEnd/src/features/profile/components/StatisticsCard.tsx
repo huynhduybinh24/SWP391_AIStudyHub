@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { calculateStorageUsage } from '@/utils/storageFormat'
 
 export interface StatisticItem {
   id: string
@@ -24,12 +26,16 @@ export function StatisticsCard({ item, icon: Icon, onClick, onViewDetails }: Sta
   const user = useAuthStore((s) => s.user)
   const isStorage = item.id === 'storageUsed'
 
-  const isPro = user?.plan === 'pro'
-  const isInstitutional = user?.plan === 'institutional'
-  
-  const totalGb = isPro ? env.PRO_STORAGE_LIMIT : isInstitutional ? 1000 : env.FREE_STORAGE_LIMIT
-  const usedGb = isPro ? 18.0 : isInstitutional ? 12.4 : 2.4
-  const percentage = Math.round((usedGb / totalGb) * 100)
+  const totalMb = getStorageLimitByPlan(user?.plan)
+  const totalGb = totalMb / 1024
+  const usedMb = user?.plan === 'pro' 
+    ? 2457.6 
+    : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
+      ? 8192
+      : 8
+  const usedGb = usedMb / 1024
+  const usageInfo = calculateStorageUsage(usedMb, totalMb)
+  const percentage = usageInfo.percentage
 
   return (
     <motion.div
