@@ -18,6 +18,8 @@ import { env } from '@/config/env'
 import { useMemo } from 'react'
 import { useTranslation } from '@/context/LanguageContext'
 import { storageService, type StorageAnalytics } from '@/services/storageService'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
 export function StorageAnalyticsPage() {
   const navigate = useNavigate()
@@ -44,20 +46,21 @@ export function StorageAnalyticsPage() {
     }
   }, [user?.id])
 
-  const totalGb = analyticsData 
-    ? analyticsData.limitMb / 1024 
+  const totalMb = getStorageLimitByPlan(user?.plan)
+  const totalGb = totalMb / 1024
+
+  const usedMb = analyticsData 
+    ? analyticsData.totalUsedMb 
     : user?.plan === 'pro' 
-      ? env.PRO_STORAGE_LIMIT 
-      : user?.plan === 'enterprise' || user?.plan === 'premium'
-        ? env.PREMIUM_STORAGE_LIMIT
-        : env.FREE_STORAGE_LIMIT
+      ? 2457.6 
+      : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
+        ? 8192
+        : 8
 
-  const usedGb = analyticsData 
-    ? Number((analyticsData.totalUsedMb / 1024).toFixed(3)) 
-    : isPro ? 45.2 : 2.4
-
-  const freeGb = Number((totalGb - usedGb).toFixed(1))
-  const usedPercentage = Math.round((usedGb / totalGb) * 100)
+  const usedGb = usedMb / 1024
+  const usageInfo = calculateStorageUsage(usedMb, totalMb)
+  const usedPercentage = usageInfo.percentage
+  const freeGb = Number((usageInfo.remainingMB / 1024).toFixed(1))
 
   const barChartData = useMemo(() => {
     if (analyticsData && analyticsData.snapshots.length > 0) {
@@ -81,15 +84,37 @@ export function StorageAnalyticsPage() {
         default: return month
       }
     }
+    const isPremium = user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise'
+    if (isPremium) {
+      return [
+        { name: getLocalizedMonthName('Jan'), value: 1.2 },
+        { name: getLocalizedMonthName('Feb'), value: 2.5 },
+        { name: getLocalizedMonthName('Mar'), value: 4.8 },
+        { name: getLocalizedMonthName('Apr'), value: 6.2 },
+        { name: getLocalizedMonthName('May'), value: 7.5 },
+        { name: getLocalizedMonthName('Jun'), value: usedGb },
+      ]
+    }
+    if (isPro) {
+      return [
+        { name: getLocalizedMonthName('Jan'), value: 0.5 },
+        { name: getLocalizedMonthName('Feb'), value: 0.8 },
+        { name: getLocalizedMonthName('Mar'), value: 1.2 },
+        { name: getLocalizedMonthName('Apr'), value: 1.6 },
+        { name: getLocalizedMonthName('May'), value: 2.0 },
+        { name: getLocalizedMonthName('Jun'), value: usedGb },
+      ]
+    }
+    // Free plan
     return [
-      { name: getLocalizedMonthName('Jan'), value: isPro ? 12 : 1.2 },
-      { name: getLocalizedMonthName('Feb'), value: isPro ? 18 : 1.5 },
-      { name: getLocalizedMonthName('Mar'), value: isPro ? 25 : 1.8 },
-      { name: getLocalizedMonthName('Apr'), value: isPro ? 32 : 2.0 },
-      { name: getLocalizedMonthName('May'), value: isPro ? 38 : 2.2 },
-      { name: getLocalizedMonthName('Jun'), value: isPro ? 45.2 : 2.4 },
+      { name: getLocalizedMonthName('Jan'), value: 0.001 },
+      { name: getLocalizedMonthName('Feb'), value: 0.002 },
+      { name: getLocalizedMonthName('Mar'), value: 0.003 },
+      { name: getLocalizedMonthName('Apr'), value: 0.005 },
+      { name: getLocalizedMonthName('May'), value: 0.006 },
+      { name: getLocalizedMonthName('Jun'), value: usedGb },
     ]
-  }, [analyticsData, isPro, t])
+  }, [analyticsData, isPro, user?.plan, usedGb, t])
 
   const pieChartData = useMemo(() => {
     const getPieItemName = (name: string) => {
@@ -110,12 +135,28 @@ export function StorageAnalyticsPage() {
         { name: getPieItemName('Other'), value: breakdown["Other"] ? breakdown["Other"] / 1024 : 0, color: '#8b5cf6' },
       ].filter(item => item.value > 0);
     }
+    const isPremium = user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise'
+    if (isPremium) {
+      return [
+        { name: getPieItemName('Documents'), value: 4.8, color: '#2563eb' },
+        { name: getPieItemName('Media'), value: 2.4, color: '#0d9488' },
+        { name: getPieItemName('Other'), value: 0.8, color: '#8b5cf6' },
+      ]
+    }
+    if (isPro) {
+      return [
+        { name: getPieItemName('Documents'), value: 1.4, color: '#2563eb' },
+        { name: getPieItemName('Media'), value: 0.7, color: '#0d9488' },
+        { name: getPieItemName('Other'), value: 0.3, color: '#8b5cf6' },
+      ]
+    }
+    // Free plan (usedMb = 8)
     return [
-      { name: getPieItemName('Documents'), value: isPro ? 22.1 : 1.2, color: '#2563eb' },
-      { name: getPieItemName('Media'), value: isPro ? 15.5 : 0.8, color: '#0d9488' },
-      { name: getPieItemName('Other'), value: isPro ? 7.6 : 0.4, color: '#8b5cf6' },
+      { name: getPieItemName('Documents'), value: 0.0048, color: '#2563eb' },
+      { name: getPieItemName('Media'), value: 0.0024, color: '#0d9488' },
+      { name: getPieItemName('Other'), value: 0.0008, color: '#8b5cf6' },
     ]
-  }, [analyticsData, isPro, t])
+  }, [analyticsData, isPro, user?.plan, t])
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 200)

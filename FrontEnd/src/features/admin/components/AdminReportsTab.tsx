@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
+import { adminService } from '../services/adminService'
 
 interface ReportTicket {
   id: string
@@ -68,7 +69,7 @@ export function AdminReportsTab() {
       }
     ]
 
-    const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
+    const localReports = adminService.getReports()
     const mappedLocal: ReportTicket[] = localReports.map((r: any) => ({
       id: r.id,
       reportedFile: r.reportedFile || 'Reported Shared Document',
@@ -88,9 +89,7 @@ export function AdminReportsTab() {
     setTickets((prev) => {
       const updated = prev.map((t) => (t.id === id ? { ...t, status: 'resolved' as 'pending' | 'resolved' | 'ignored' } : t))
       
-      const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
-      const updatedLocal = localReports.map((r: any) => r.id === id ? { ...r, status: 'resolved' } : r)
-      localStorage.setItem('aiStudyHubDocumentReports', JSON.stringify(updatedLocal))
+      adminService.updateReportStatus(id, 'resolved')
       
       return updated
     })
@@ -104,9 +103,7 @@ export function AdminReportsTab() {
     setTickets((prev) => {
       const updated = prev.map((t) => (t.id === id ? { ...t, status: 'ignored' as 'pending' | 'resolved' | 'ignored' } : t))
       
-      const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
-      const updatedLocal = localReports.map((r: any) => r.id === id ? { ...r, status: 'ignored' } : r)
-      localStorage.setItem('aiStudyHubDocumentReports', JSON.stringify(updatedLocal))
+      adminService.updateReportStatus(id, 'ignored')
       
       return updated
     })

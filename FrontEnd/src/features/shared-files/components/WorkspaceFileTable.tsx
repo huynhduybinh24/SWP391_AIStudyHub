@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, Fragment } from 'react'
 import { MoreVertical, Users, ArrowDown, ArrowUp, Star } from 'lucide-react'
 import { SharedFile } from './SharedFilesTable'
 import { FileActionsDropdown } from './FileActionsDropdown'
@@ -146,7 +146,7 @@ export function WorkspaceFileTable({
               if (groupFiles.length === 0) return null
 
               return (
-                <tr key={group.key} className="contents">
+                <Fragment key={group.key}>
                   {/* Time Group Header Row */}
                   <tr>
                     <td colSpan={4} className="py-4 px-5 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50/30 dark:bg-slate-900/10">
@@ -253,7 +253,7 @@ export function WorkspaceFileTable({
                       </tr>
                     )
                   })}
-                </tr>
+                </Fragment>
               )
             })}
           </tbody>

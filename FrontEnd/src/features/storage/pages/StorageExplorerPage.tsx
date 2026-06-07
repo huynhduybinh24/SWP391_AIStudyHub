@@ -27,6 +27,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { useTranslation } from '@/context/LanguageContext'
 import { storageService, type StorageUsage } from '@/services/storageService'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
 const INITIAL_FOLDERS = [
   { id: '1', name: 'Physics 101', itemsCount: 12, size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe', category: 'Study' },
@@ -102,19 +104,23 @@ export function StorageExplorerPage() {
     }
   }, [user?.id])
 
-  const totalGb = usage 
-    ? usage.storageLimitMb / 1024 
-    : user?.plan === 'pro' 
-      ? env.PRO_STORAGE_LIMIT 
-      : user?.plan === 'enterprise' || user?.plan === 'premium'
-        ? env.PREMIUM_STORAGE_LIMIT
-        : env.FREE_STORAGE_LIMIT
+  const totalMb = getStorageLimitByPlan(user?.plan)
+  const totalGb = totalMb / 1024
 
-  const usedGb = usage 
-    ? Number(((usage.storageUsedMb + 8.3) / 1024).toFixed(3)) 
-    : 8.3 / 1024
+  const usedMb = usage
+    ? usage.storageUsedMb
+    : user?.plan === 'pro'
+      ? 2457.6
+      : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
+        ? 8192
+        : 8
 
-  const usedPercentage = Math.round((usedGb / totalGb) * 100)
+  const usedGb = usedMb / 1024
+  const usageInfo = calculateStorageUsage(usedMb, totalMb)
+  const usedPercentage = usageInfo.percentage
+
+  const displayUsedGb = parseFloat(usedGb.toFixed(3))
+  const displayTotalGb = parseFloat(totalGb.toFixed(1))
   const [folders, setFolders] = useState(INITIAL_FOLDERS)
   const [files, setFiles] = useState(INITIAL_FILES)
   const [searchQuery, setSearchQuery] = useState('')
@@ -195,14 +201,17 @@ export function StorageExplorerPage() {
   }, [files, searchQuery, typeFilter])
 
   const chartData = useMemo(() => {
-    const isPro = user?.plan === 'pro'
+    const pctDoc = Math.round(usedPercentage * 0.6)
+    const pctImg = Math.round(usedPercentage * 0.3)
+    const pctOther = Math.round(usedPercentage * 0.1)
+    const pctRemaining = Math.max(0, 100 - (pctDoc + pctImg + pctOther))
     return [
-      { name: 'Documents', value: isPro ? 45 : 1.2, color: '#2563eb' },
-      { name: 'Images', value: isPro ? 20.5 : 0.8, color: '#0d9488' },
-      { name: 'Other', value: isPro ? 9.5 : 0.4, color: isDark ? '#334155' : '#cbd5e1' },
-      { name: 'Remaining', value: isPro ? 25 : 7.6, color: isDark ? '#1e293b' : '#e5eeff' },
+      { name: 'Documents', value: pctDoc, color: '#2563eb' },
+      { name: 'Images', value: pctImg, color: '#0d9488' },
+      { name: 'Other', value: pctOther, color: isDark ? '#334155' : '#cbd5e1' },
+      { name: 'Remaining', value: pctRemaining, color: isDark ? '#1e293b' : '#e5eeff' },
     ]
-  }, [user, isDark])
+  }, [usedPercentage, isDark])
 
   const folderOptions = ['All Folders', 'Study', 'Archived', 'New']
   const typeOptions = ['All Types', 'PDF', 'DOCX', 'Image', 'ZIP']
@@ -535,7 +544,7 @@ export function StorageExplorerPage() {
             </div>
 
             <div className="text-center mt-6 mb-8">
-              <h3 className="font-bold text-foreground text-[15px]">{t.storageExplorer.usedOfText(usedGb, totalGb)}</h3>
+              <h3 className="font-bold text-foreground text-[15px]">{t.storageExplorer.usedOfText(displayUsedGb, displayTotalGb)}</h3>
             </div>
 
             <div className="flex flex-col gap-3 mb-8">
@@ -544,21 +553,21 @@ export function StorageExplorerPage() {
                   <div className="w-2.5 h-2.5 rounded-full bg-[#2563eb]"></div>
                   <span className="text-foreground font-medium">{t.storageExplorer.documents}</span>
                 </div>
-                <span className="text-muted font-medium">{user?.plan === 'pro' ? '45.0 GB' : '1.2 GB'}</span>
+                <span className="text-muted font-medium">{formatStorageSize(usedMb * 0.6)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#0d9488]"></div>
                   <span className="text-foreground font-medium">{t.storageExplorer.images}</span>
                 </div>
-                <span className="text-muted font-medium">{user?.plan === 'pro' ? '20.5 GB' : '0.8 GB'}</span>
+                <span className="text-muted font-medium">{formatStorageSize(usedMb * 0.3)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1] dark:bg-slate-700"></div>
                   <span className="text-foreground font-medium">{t.storageExplorer.other}</span>
                 </div>
-                <span className="text-muted font-medium">{user?.plan === 'pro' ? '9.5 GB' : '0.4 GB'}</span>
+                <span className="text-muted font-medium">{formatStorageSize(usedMb * 0.1)}</span>
               </div>
             </div>
 

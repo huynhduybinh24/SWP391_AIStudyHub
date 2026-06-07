@@ -1,4 +1,6 @@
 import { userNotificationService } from '@/features/notifications/services/userNotificationService';
+import { reportService } from '@/features/shared-files/services/reportService';
+import { apiClient } from '@/lib/axios';
 
 export type AdminUser = {
   id: string;
@@ -407,6 +409,12 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const randomDelay = () => delay(Math.floor(Math.random() * 300) + 300); // 300-600ms
 
 export const getAdminStats = async (): Promise<AdminStats> => {
+  try {
+    const response = await apiClient.get('/admin/stats');
+    if (response.data) return response.data;
+  } catch (error) {
+    console.warn("Using mock admin stats fallback", error);
+  }
   await randomDelay();
   const currentUsers = loadUsersFromStorage();
   const storageMB = currentUsers.reduce((sum, u) => sum + u.storageUsedMB, 0);
@@ -424,6 +432,26 @@ export const getAdminStats = async (): Promise<AdminStats> => {
 };
 
 export const getUsers = async (): Promise<AdminUser[]> => {
+  try {
+    const response = await apiClient.get('/users');
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return data.map((u: any) => ({
+        id: String(u.id),
+        name: u.fullName || u.name || 'Anonymous',
+        email: u.email,
+        role: u.role?.toLowerCase() === 'admin' ? 'admin' : 'user',
+        status: u.accountStatus?.toLowerCase() || 'active',
+        joinedAt: u.createdAt ? u.createdAt.split('T')[0] : '2023-01-15',
+        documentsCount: u.documentsCount || 0,
+        storageUsedMB: u.storageUsedMb || 0,
+        plan: u.plan?.toLowerCase() || 'free',
+        isOnline: u.isOnline || false,
+      }));
+    }
+  } catch (error) {
+    console.warn("Using mock users fallback", error);
+  }
   await randomDelay();
   return loadUsersFromStorage();
 };
@@ -433,6 +461,19 @@ export const updateUser = async (
   updates: Partial<AdminUser>,
   reason?: string
 ): Promise<AdminUser> => {
+  try {
+    if (updates.status) {
+      await apiClient.put(`/users/${userId}/status`, { status: updates.status, reason });
+    }
+    if (updates.role) {
+      await apiClient.put(`/users/${userId}/role`, { role: updates.role });
+    }
+    if (updates.name) {
+      await apiClient.put(`/users/${userId}/profile`, { fullName: updates.name });
+    }
+  } catch (error) {
+    console.warn("Using mock update user fallback", error);
+  }
   await randomDelay();
   const currentUsers = loadUsersFromStorage();
   const index = currentUsers.findIndex((u) => u.id === userId);
@@ -515,6 +556,11 @@ export const updateUser = async (
 };
 
 export const deleteUser = async (userId: string, reason?: string): Promise<{ success: boolean }> => {
+  try {
+    await apiClient.delete(`/users/${userId}`);
+  } catch (error) {
+    console.warn("Using mock delete user fallback", error);
+  }
   await randomDelay();
   const currentUsers = loadUsersFromStorage();
   const index = currentUsers.findIndex((u) => u.id === userId);
@@ -547,6 +593,37 @@ export const deleteUser = async (userId: string, reason?: string): Promise<{ suc
 };
 
 export const getDocuments = async (): Promise<AdminDocument[]> => {
+  try {
+    const response = await apiClient.get('/documents');
+    const list = response.data?.data || response.data;
+    if (Array.isArray(list)) {
+      return list.map((d: any) => ({
+        id: String(d.id),
+        title: d.title,
+        ownerName: d.ownerName || 'User',
+        ownerEmail: d.ownerEmail || 'user@example.com',
+        fileType: d.fileType?.toLowerCase() || 'pdf',
+        sizeMB: d.sizeMb || 0.5,
+        uploadedAt: d.createdAt ? d.createdAt.split('T')[0] : '2024-05-18',
+        status: d.status?.toLowerCase() || 'approved',
+        aiStatus: d.aiStatus?.toLowerCase() || 'analyzed',
+        category: d.subject || 'General',
+        sharedCount: d.sharedCount || 0,
+        isAiGenerated: d.isAiGenerated || false,
+        aiConfidenceScore: d.aiConfidenceScore || 0,
+        isFlagged: d.isFlagged || false,
+        bannedKeywords: d.bannedKeywords || [],
+        reportCount: d.reportCount || 0,
+        aiRiskLevel: d.aiRiskLevel?.toLowerCase() || 'low',
+        plagiarismScore: d.plagiarismScore || 0,
+        unsafeContentScore: d.unsafeContentScore || 0,
+        spamScore: d.spamScore || 0,
+        uploadSource: d.uploadSource || 'web_upload'
+      }));
+    }
+  } catch (error) {
+    console.warn("Using mock documents fallback", error);
+  }
   await randomDelay();
   return [...mockDocuments];
 };
@@ -570,6 +647,11 @@ export const updateDocument = async (
 };
 
 export const deleteDocument = async (documentId: string, reason?: string): Promise<{ success: boolean }> => {
+  try {
+    await apiClient.delete(`/documents/${documentId}`);
+  } catch (error) {
+    console.warn("Using mock delete document fallback", error);
+  }
   await randomDelay();
   const index = mockDocuments.findIndex((d) => d.id === documentId);
   if (index === -1) throw new Error("Document not found");
@@ -610,6 +692,12 @@ export const deleteDocument = async (documentId: string, reason?: string): Promi
 };
 
 export const approveDocument = async (documentId: string): Promise<AdminDocument> => {
+  try {
+    const response = await apiClient.post(`/admin/documents/${documentId}/approve`);
+    if (response.data) return response.data;
+  } catch (error) {
+    console.warn("Using mock approve document fallback", error);
+  }
   await randomDelay();
   const index = mockDocuments.findIndex((d) => d.id === documentId);
   if (index === -1) throw new Error("Document not found");
@@ -623,6 +711,12 @@ export const approveDocument = async (documentId: string): Promise<AdminDocument
 };
 
 export const rejectDocument = async (documentId: string, reason?: string): Promise<AdminDocument> => {
+  try {
+    const response = await apiClient.post(`/admin/documents/${documentId}/reject`, { reason });
+    if (response.data) return response.data;
+  } catch (error) {
+    console.warn("Using mock reject document fallback", error);
+  }
   await randomDelay();
   const index = mockDocuments.findIndex((d) => d.id === documentId);
   if (index === -1) throw new Error("Document not found");
@@ -721,4 +815,32 @@ export const adminService = {
   bulkDeleteDocuments,
   exportModerationReport,
   getDashboardSummary,
+  getReports: async () => {
+    try {
+      const response = await apiClient.get('/admin/reports');
+      if (response.data) return response.data;
+    } catch (error) {
+      console.warn("Using mock reports fallback", error);
+    }
+    return reportService.getReports();
+  },
+  updateReportStatus: async (id: string, status: 'pending' | 'resolved' | 'ignored') => {
+    try {
+      const response = await apiClient.put(`/admin/reports/${id}`, { status });
+      if (response.data) return response.data;
+    } catch (error) {
+      console.warn("Using mock update report status fallback", error);
+    }
+    return reportService.updateReport(id, { status });
+  },
+  getActivityLogs: async () => {
+    try {
+      const response = await apiClient.get('/admin/activity-logs');
+      if (response.data) return response.data;
+    } catch (error) {
+      console.warn("Using mock activity logs fallback", error);
+    }
+    const { getLogs } = await import('@/services/activityLogService');
+    return getLogs();
+  }
 };

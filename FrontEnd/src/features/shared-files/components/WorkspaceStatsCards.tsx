@@ -1,8 +1,9 @@
 import { HardDrive, Sparkles } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import { useTranslation } from '@/context/LanguageContext'
-import { useAuthStore } from '@/stores/authStore'
-import { env } from '@/config/env'
+import { formatStorageSize } from '@/utils/storageFormat'
+import { getCurrentUserStorageSummary } from '@/services/storageService'
 
 interface WorkspaceStatsCardsProps {
   onViewAIReport: () => void
@@ -18,11 +19,17 @@ export function WorkspaceStatsCards({
   activeCollaboratorsCount
 }: WorkspaceStatsCardsProps) {
   const { t } = useTranslation()
-  const user = useAuthStore((s) => s.user)
-  
-  const totalGb = user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT
-  const usedGb = user?.plan === 'pro' ? 12.4 : 2.4
-  const usedPercentage = Math.round((usedGb / totalGb) * 100)
+
+  // ── Storage data: same source as QuotaDetailsModal ──────────────────────
+  const [storageSummary, setStorageSummary] = useState(() => getCurrentUserStorageSummary())
+
+  useEffect(() => {
+    const refresh = () => setStorageSummary(getCurrentUserStorageSummary())
+    window.addEventListener('aiStudyHubUserChanged', refresh)
+    return () => window.removeEventListener('aiStudyHubUserChanged', refresh)
+  }, [])
+
+  const { usedMb, totalMb, percentage: usedPercentage } = storageSummary
 
   // SVG Stroke parameters for dynamic circular progress
   const radius = 18
@@ -76,8 +83,8 @@ export function WorkspaceStatsCards({
         className="group relative flex flex-col justify-between rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-300 cursor-pointer"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-550">
-            {t.settings.interface === "Interface" || !t.settings.interface ? "STORAGE" : t.dashboard.storage.toUpperCase()}
+          <span className="text-[11px] font-black tracking-widest text-blue-500 uppercase dark:text-blue-400">
+            {t.sharedFiles.statsStorage ? t.sharedFiles.statsStorage.toUpperCase() : 'SHARED QUOTA'}
           </span>
           <HardDrive className="size-4.5 text-blue-500 dark:text-blue-400 group-hover:rotate-12 transition-transform duration-300" />
         </div>
@@ -114,10 +121,10 @@ export function WorkspaceStatsCards({
           </div>
 
           <div>
-            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{usedGb}</span>
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-550 ml-0.5">GB</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{formatStorageSize(usedMb)}</span>
             <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">
-              {t.sharedFiles.used} {usedGb} GB {t.sharedFiles.usedOf} {totalGb} GB
+              {t.sharedFiles.used} {formatStorageSize(usedMb)} {t.sharedFiles.usedOf} {formatStorageSize(totalMb)}
+              <span className="ml-1 text-blue-400 dark:text-blue-500">(shared)</span>
             </p>
           </div>
         </div>
