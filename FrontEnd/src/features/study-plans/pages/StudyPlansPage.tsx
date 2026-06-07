@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Clock,
@@ -66,6 +66,7 @@ type StudyPlan = {
   tasks?: number
   iconType?: 'flask' | 'rocket' | 'bot' | 'cpu' | 'languages'
   linkedDocs?: string[]
+  curriculumJson?: string
 }
 
 // Helper to localize mock plan strings
@@ -1020,6 +1021,185 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   )
 }
 
+// Helper to build CurriculumPlan from a StudyPlan
+function getPlanCurriculum(plan: StudyPlan, language: Language): CurriculumPlan {
+  const completedLessonsRaw = localStorage.getItem(`study_plan_completed_lessons_${plan.id}`)
+  const completedLessonIds: string[] = completedLessonsRaw ? JSON.parse(completedLessonsRaw) : []
+
+  // 1. If it's mock, use CURRICULUM_DATA
+  if (CURRICULUM_DATA[plan.id]) {
+    const mockCurric = CURRICULUM_DATA[plan.id]
+    let foundFirstIncomplete = false
+    const modules = mockCurric.modules.map(mod => {
+      const lessons = mod.lessons.map(les => {
+        const isCompleted = completedLessonIds.includes(les.id) || les.status === 'completed'
+        let status: 'completed' | 'in-progress' | 'locked' = 'locked'
+        if (isCompleted) {
+          status = 'completed'
+        } else if (!foundFirstIncomplete) {
+          status = 'in-progress'
+          foundFirstIncomplete = true
+        }
+        return {
+          ...les,
+          status
+        }
+      })
+      return {
+        ...mod,
+        lessons
+      }
+    })
+    return {
+      ...mockCurric,
+      modules,
+      linkedDocs: plan.linkedDocs
+    }
+  }
+
+  // 2. Parse from curriculumJson or default fallback
+  let parsedModules: any[] = []
+  if (plan.curriculumJson) {
+    try {
+      const parsed = JSON.parse(plan.curriculumJson)
+      if (Array.isArray(parsed)) {
+        parsedModules = parsed
+      }
+    } catch (e) {
+      console.error('Failed to parse curriculumJson:', e)
+    }
+  }
+
+  if (parsedModules.length === 0) {
+    parsedModules = plan.segments.map((seg, sIdx) => ({
+      title: seg.label,
+      description: language === 'vi' 
+        ? `Nội dung học tập chi tiết được AI trích xuất và lên kế hoạch dựa trên tài liệu liên kết.`
+        : `Detailed study topics compiled by AI based on your linked reference documents.`,
+      lessons: [
+        { id: `l-${sIdx}-1-${plan.id}`, title: language === 'vi' ? 'Đọc và hiểu tài liệu tham khảo chính' : 'Read & Understand Core References', duration: '25 min', type: 'reading' },
+        { id: `l-${sIdx}-2-${plan.id}`, title: language === 'vi' ? 'Trắc nghiệm tự luyện cùng AI' : 'AI-Assisted Practice Quiz', duration: '30 min', type: 'quiz' }
+      ]
+    }))
+  }
+
+  let foundFirstIncomplete = false
+  const modules = parsedModules.map((mod: any, mIdx: number) => {
+    const lessons = (mod.lessons || []).map((lesson: any, lIdx: number) => {
+      const id = lesson.id || `lesson-${mIdx}-${lIdx}-${plan.id}`
+      const isCompleted = completedLessonIds.includes(id)
+      let status: 'completed' | 'in-progress' | 'locked' = 'locked'
+      if (isCompleted) {
+        status = 'completed'
+      } else if (!foundFirstIncomplete) {
+        status = 'in-progress'
+        foundFirstIncomplete = true
+      }
+
+      return {
+        id,
+        title: lesson.title,
+        duration: lesson.duration || '20 min',
+        type: lesson.type || 'reading',
+        status,
+        linkedDocName: lesson.linkedDocName || plan.linkedDocs?.[0] || undefined,
+        pageRange: lesson.pageRange || undefined
+      }
+    })
+
+    return {
+      id: mod.id || `m-${mIdx}-${plan.id}`,
+      title: mod.title || `Module ${mIdx + 1}`,
+      description: mod.description || '',
+      lessons
+    }
+  })
+
+  return {
+    id: plan.id,
+    title: plan.title,
+    documents: plan.documents,
+    hoursEst: plan.hoursEst,
+    difficulty: plan.difficulty,
+    modules,
+    linkedDocs: plan.linkedDocs
+  }
+}
+
+// Helper to build LearningProgressPlan from a StudyPlan
+function getPlanLearningProgress(plan: StudyPlan, language: Language): LearningProgressPlan {
+  const completedLessonsRaw = localStorage.getItem(`study_plan_completed_lessons_${plan.id}`)
+  const completedLessonIds: string[] = completedLessonsRaw ? JSON.parse(completedLessonsRaw) : []
+
+  // 1. If it's mock, use LEARNING_DATA but merge the completed status from localStorage
+  if (LEARNING_DATA[plan.id]) {
+    const mockPlan = LEARNING_DATA[plan.id]
+    const sections = mockPlan.sections.map(sec => {
+      const lessons = sec.lessons.map(les => {
+        const isCompletedLocal = completedLessonIds.includes(les.id)
+        return {
+          ...les,
+          completed: les.completed || isCompletedLocal
+        }
+      })
+      const completedCount = lessons.filter(l => l.completed).length
+      const value = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0
+      return {
+        ...sec,
+        lessons,
+        value
+      }
+    })
+    
+    const totalLessons = sections.flatMap(s => s.lessons)
+    const totalCount = totalLessons.length
+    const completedCount = totalLessons.filter(l => l.completed).length
+    const overallProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+
+    return {
+      ...mockPlan,
+      overallProgress,
+      sections
+    }
+  }
+
+  // 2. Build from curriculum
+  const curriculum = getPlanCurriculum(plan, language)
+  const sections = curriculum.modules.map(mod => {
+    const lessons = mod.lessons.map(les => ({
+      id: les.id,
+      title: les.title,
+      duration: les.duration,
+      type: les.type as any,
+      completed: completedLessonIds.includes(les.id),
+      linkedDocName: les.linkedDocName,
+      pageRange: les.pageRange
+    }))
+    const completedCount = lessons.filter(l => l.completed).length
+    const value = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0
+    return {
+      label: mod.title,
+      value,
+      lessons
+    }
+  })
+
+  const totalLessons = sections.flatMap(s => s.lessons)
+  const totalCount = totalLessons.length
+  const completedCount = totalLessons.filter(l => l.completed).length
+  const overallProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+
+  return {
+    id: plan.id,
+    title: plan.title,
+    description: plan.description,
+    isAiGenerated: plan.isAiGenerated,
+    overallProgress,
+    sections,
+    linkedDocs: plan.linkedDocs
+  }
+}
+
 // ─────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────
@@ -1027,16 +1207,50 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 export function StudyPlansPage() {
   const { t, language } = useTranslation()
   const [activeTab, setActiveTab]     = useState<FilterTab>('All')
-  const [plans, setPlans]             = useState<StudyPlan[]>(STUDY_PLANS)
+  const [plans, setPlans]             = useState<StudyPlan[]>(() => {
+    const saved = localStorage.getItem('study_plans')
+    return saved ? JSON.parse(saved) : STUDY_PLANS
+  })
   const [createOpen, setCreateOpen]   = useState(false)
   const [learningPlan, setLearningPlan] = useState<LearningProgressPlan | null>(null)
   const [curriculumPlan, setCurriculumPlan] = useState<CurriculumPlan | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<StudyPlan | null>(null)
   
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const keyword = searchParams.get('keyword') || ''
 
-  const filteredPlans = plans.filter((plan) => {
+  const preselectedDocId = searchParams.get('documentId') || undefined
+  const autoGenerate = searchParams.get('generate') === 'true'
+
+  // Sync plans changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('study_plans', JSON.stringify(plans))
+  }, [plans])
+
+  // Automatically open create modal if documentId is present in URL query
+  useEffect(() => {
+    if (preselectedDocId) {
+      setCreateOpen(true)
+    }
+  }, [preselectedDocId])
+
+  const enhancedPlans = useMemo(() => {
+    return plans.map(p => {
+      const progressInfo = getPlanLearningProgress(p, language)
+      const segments = progressInfo.sections.map(sec => ({
+        label: sec.label,
+        value: sec.value
+      }))
+      return {
+        ...p,
+        overallProgress: progressInfo.overallProgress,
+        segments
+      }
+    })
+  }, [plans, language])
+
+  const filteredPlans = enhancedPlans.filter((plan) => {
     // Search filter
     if (keyword) {
       const q = keyword.toLowerCase()
@@ -1097,31 +1311,8 @@ export function StudyPlansPage() {
                 key={plan.id}
                 plan={plan}
                 isAiTab={activeTab === 'AI Generated'}
-                onContinue={() => setLearningPlan(LEARNING_DATA[plan.id] ?? null)}
-                onCurriculum={() => {
-                  const baseCurriculum = CURRICULUM_DATA[plan.id] || {
-                    id: plan.id,
-                    title: plan.title,
-                    documents: plan.documents,
-                    hoursEst: plan.hoursEst,
-                    difficulty: plan.difficulty,
-                    modules: plan.segments.map((seg, sIdx) => ({
-                      id: `m-${sIdx}-${Date.now()}`,
-                      title: seg.label,
-                      description: language === 'vi' 
-                        ? `Nội dung học tập chi tiết được AI trích xuất và lên kế hoạch dựa trên tài liệu liên kết.`
-                        : `Detailed study topics compiled by AI based on your linked reference documents.`,
-                      lessons: [
-                        { id: `l-${sIdx}-1`, title: language === 'vi' ? 'Đọc và hiểu tài liệu tham khảo chính' : 'Read & Understand Core References', duration: '25 min', type: 'reading', status: 'in-progress' },
-                        { id: `l-${sIdx}-2`, title: language === 'vi' ? 'Trắc nghiệm tự luyện cùng AI' : 'AI-Assisted Practice Quiz', duration: '30 min', type: 'quiz', status: 'locked' }
-                      ]
-                    }))
-                  }
-                  setCurriculumPlan({
-                    ...baseCurriculum,
-                    linkedDocs: plan.linkedDocs
-                  })
-                }}
+                onContinue={() => setLearningPlan(getPlanLearningProgress(plan, language))}
+                onCurriculum={() => setCurriculumPlan(getPlanCurriculum(plan, language))}
                 onEdit={() => setCreateOpen(true)}
                 onDuplicate={() => handleDuplicate(plan)}
                 onArchive={() => handleArchive(plan)}
@@ -1135,8 +1326,15 @@ export function StudyPlansPage() {
       {/* ── Create Plan Modal ── */}
       <CreateStudyPlanModal
         isOpen={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false)
+          if (preselectedDocId) {
+            navigate('/dashboard/study-plans', { replace: true })
+          }
+        }}
         onCreate={(newPlan) => setPlans((prev) => [newPlan, ...prev])}
+        preselectedDocId={preselectedDocId}
+        autoGenerate={autoGenerate}
       />
 
       {/* ── Learning Progress Modal ── */}
