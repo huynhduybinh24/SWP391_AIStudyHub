@@ -1,10 +1,11 @@
 import { userNotificationService } from '@/features/notifications/services/userNotificationService';
+import { UserRole } from '@/types/auth';
 
 export type AdminUser = {
   id: string;
   name: string;
   email: string;
-  role: "user" | "admin";
+  role: UserRole;
   status: "active" | "inactive" | "banned";
   joinedAt: string;
   documentsCount: number;
@@ -175,10 +176,6 @@ const loadUsersFromStorage = (): AdminUser[] => {
         const updatedList = parsed.map((u: any) => {
           let role = u.role;
           let name = u.name;
-          if (role === 'student' || role === 'teacher' || role === 'instructor') {
-            role = 'user';
-            changed = true;
-          }
           if (name === 'Student User' || name === 'Instructor User') {
             name = 'LumiEdu User';
             changed = true;
