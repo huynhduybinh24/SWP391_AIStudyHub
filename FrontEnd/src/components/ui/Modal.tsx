@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './Button'
@@ -79,9 +80,9 @@ export const Modal = ({
 
   if (!isOpen) return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 dark:bg-black/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 dark:bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
       aria-label="Modal backdrop"
     >
@@ -89,7 +90,7 @@ export const Modal = ({
         ref={modalRef}
         tabIndex={-1}
         className={cn(
-          'relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white text-slate-900 border border-slate-200 shadow-xl focus:outline-none dark:bg-slate-900 dark:text-slate-100 dark:border-slate-800',
+          'relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white text-slate-900 border border-slate-200 shadow-xl focus:outline-none dark:bg-slate-900 dark:text-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200',
           className
         )}
         onClick={(e) => e.stopPropagation()}
@@ -123,7 +124,8 @@ export const Modal = ({
         </div>
         <div className="p-6 text-slate-900 dark:text-slate-100">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

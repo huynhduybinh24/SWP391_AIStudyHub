@@ -622,7 +622,7 @@ export function Header() {
   )
 
   return (
-    <header className="relative z-20 flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 px-8 shadow-sm">
+    <header className="relative z-50 flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 px-8 shadow-sm">
       <button
         type="button"
         onClick={() => setSidebarOpen(true)}
