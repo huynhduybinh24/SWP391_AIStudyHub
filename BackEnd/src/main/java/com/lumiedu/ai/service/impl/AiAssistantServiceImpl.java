@@ -438,20 +438,29 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     @Override
-    public StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks, Long documentId) {
-        String docContext = "";
-        if (documentId != null) {
-            List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
-            if (chunks.isEmpty()) {
-                documentChunkingService.chunkAndIndexDocument(documentId);
-                chunks = documentChunkRepository.findByDocumentId(documentId);
+    public StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks, List<Long> documentIds) {
+        StringBuilder docContextBuilder = new StringBuilder();
+        Set<Document> sourceDocs = new HashSet<>();
+
+        if (documentIds != null && !documentIds.isEmpty()) {
+            for (Long documentId : documentIds) {
+                if (documentId == null) continue;
+                Document doc = documentRepository.findById(documentId).orElse(null);
+                if (doc != null) {
+                    sourceDocs.add(doc);
+                    List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+                    if (chunks.isEmpty()) {
+                        documentChunkingService.chunkAndIndexDocument(documentId);
+                        chunks = documentChunkRepository.findByDocumentId(documentId);
+                    }
+                    for (int i = 0; i < Math.min(chunks.size(), 2); i++) {
+                        docContextBuilder.append("[").append(doc.getTitle()).append("]: ")
+                                         .append(chunks.get(i).getContent()).append("\n");
+                    }
+                }
             }
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < Math.min(chunks.size(), 3); i++) {
-                sb.append(chunks.get(i).getContent()).append("\n");
-            }
-            docContext = sb.toString();
         }
+        String docContext = docContextBuilder.toString();
 
         List<ChatMessageDto> messages = new ArrayList<>();
         messages.add(ChatMessageDto.builder()
@@ -460,7 +469,15 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                         + "You must respond with a JSON object containing: "
                         + "'title' (a concise name for the plan), "
                         + "'subject' (the academic subject), "
-                        + "'planText' (the markdown roadmap text, including weekly goals and active recall milestones).")
+                        + "'planText' (the markdown roadmap text, including weekly goals and active recall milestones), "
+                        + "'curriculum' (a JSON array representing modules of study). "
+                        + "Each module object in the 'curriculum' array must contain:\n"
+                        + "- 'title' (module/week title),\n"
+                        + "- 'description' (module description),\n"
+                        + "- 'lessons' (array of lesson objects, each having 'title', 'duration' (e.g., '25 min'), "
+                        + "'type' ('reading' or 'quiz' or 'video' or 'practice'), "
+                        + "'linkedDocName' (if reading type, matching the reference material filename, e.g. Co_Hoc_Luong_Tu_Chuong2.pdf), "
+                        + "and 'pageRange' (optional page range, e.g., 'Trang 15 - 30')).")
                 .build());
 
         String userQuery = "Subject: " + subject + "\nGoal: " + goal + "\nDuration: " + durationWeeks + " weeks.";
@@ -474,11 +491,15 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
         String title = "Kế hoạch học tập " + subject;
         String planText = response.getContent();
+        String curriculumJson = "";
 
         try {
             JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
             title = jsonObj.get("title").getAsString();
             planText = jsonObj.get("planText").getAsString();
+            if (jsonObj.has("curriculum")) {
+                curriculumJson = gson.toJson(jsonObj.get("curriculum"));
+            }
         } catch (Exception e) {
             System.err.println("Failed to parse study plan JSON: " + e.getMessage());
         }
@@ -488,7 +509,9 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .title(title)
                 .subject(subject)
                 .planText(planText)
-                .documentId(documentId)
+                .curriculumJson(curriculumJson)
+                .documentId(documentIds != null && !documentIds.isEmpty() ? documentIds.get(0) : null)
+                .sourceDocuments(sourceDocs)
                 .build();
 
         return studyPlanRepository.save(plan);
