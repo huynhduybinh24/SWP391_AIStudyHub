@@ -57,6 +57,46 @@ export interface StudyPlanResponse {
   createdAt: string
 }
 
+// AI Studio Interfaces
+export interface StudioSummaryResponse {
+  summaryText: string
+  keyBullets: string[]
+}
+
+export interface StudioMindmapResponse {
+  mermaidCode: string
+}
+
+export interface InfographicItem {
+  label: string
+  value: string
+  description: string
+  iconType: 'brain' | 'lightbulb' | 'chart' | 'star'
+}
+
+export interface StudioInfographicResponse {
+  title: string
+  subtitle: string
+  items: InfographicItem[]
+}
+
+export interface StudioFlashcardResponse {
+  front: string
+  back: string
+}
+
+export interface StudioQuizResponse {
+  questionText: string
+  options: string[]
+  answerIndex: number
+  explanation: string
+}
+
+export interface StudioFaqResponse {
+  question: string
+  answer: string
+}
+
 export const aiService = {
   async generateSummary(documentId: number | string, language = 'vi'): Promise<AiSummaryResponse> {
     const response = await apiClient.post<ApiResponse<AiSummaryResponse>>(`/ai/summary/generate?documentId=${documentId}&language=${language}`)
@@ -68,9 +108,9 @@ export const aiService = {
     return response.data.data
   },
 
-  async createOrGetChatSession(documentId: number | string | null, userId: number): Promise<AiChatSessionResponse> {
+  async createOrGetChatSession(documentIds: number[], userId: number): Promise<AiChatSessionResponse> {
     const response = await apiClient.post<ApiResponse<AiChatSessionResponse>>('/ai/chat/session', {
-      documentId: documentId ? Number(documentId) : null,
+      documentIds,
       userId,
     })
     return response.data.data
@@ -139,6 +179,37 @@ export const aiService = {
 
   async getStudyPlans(userId: number): Promise<StudyPlanResponse[]> {
     const response = await apiClient.get<ApiResponse<StudyPlanResponse[]>>(`/ai/study-plans/user/${userId}`)
+    return response.data.data
+  },
+
+  // AI Studio Features
+  async generateStudioSummary(documentIds: number[], language = 'vi'): Promise<StudioSummaryResponse> {
+    const response = await apiClient.post<ApiResponse<StudioSummaryResponse>>('/ai/studio/summary', { documentIds, language })
+    return response.data.data
+  },
+
+  async generateStudioMindmap(documentIds: number[], language = 'vi'): Promise<StudioMindmapResponse> {
+    const response = await apiClient.post<ApiResponse<StudioMindmapResponse>>('/ai/studio/mindmap', { documentIds, language })
+    return response.data.data
+  },
+
+  async generateStudioInfographic(documentIds: number[], language = 'vi'): Promise<StudioInfographicResponse> {
+    const response = await apiClient.post<ApiResponse<StudioInfographicResponse>>('/ai/studio/infographic', { documentIds, language })
+    return response.data.data
+  },
+
+  async generateStudioFlashcards(documentIds: number[], language = 'vi'): Promise<StudioFlashcardResponse[]> {
+    const response = await apiClient.post<ApiResponse<StudioFlashcardResponse[]>>('/ai/studio/flashcards', { documentIds, language })
+    return response.data.data
+  },
+
+  async generateStudioQuiz(documentIds: number[], difficulty = 'medium', count = 5, language = 'vi'): Promise<StudioQuizResponse[]> {
+    const response = await apiClient.post<ApiResponse<StudioQuizResponse[]>>('/ai/studio/quiz', { documentIds, difficulty, count, language })
+    return response.data.data
+  },
+
+  async generateStudioFaq(documentIds: number[], language = 'vi'): Promise<StudioFaqResponse[]> {
+    const response = await apiClient.post<ApiResponse<StudioFaqResponse[]>>('/ai/studio/faq', { documentIds, language })
     return response.data.data
   }
 }

@@ -40,7 +40,7 @@ export function LoginPage() {
           
           <div className="relative z-10 flex flex-col items-center text-center max-w-[420px] mt-12">
             <div className="flex items-center justify-center mb-5">
-              <img src="/logo.png" alt="LumiEdu" className="w-24 h-24 object-contain" />
+              <img src="/logo.png" alt="LumiEdu" className="w-80 h-80 object-contain" />
             </div>
             <h2 className="text-[32px] leading-tight font-bold text-slate-900 dark:text-white mb-4">
               Illuminate Your Learning

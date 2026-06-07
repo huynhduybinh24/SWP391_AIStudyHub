@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { FileViewer } from '@/components/shared/file-viewer/FileViewer'
 import { SharedFile } from './SharedFilesTable'
+import { QuizModal } from './QuizModal'
 
 import BackToSharedFilesButton from '@/components/shared/BackToSharedFilesButton'
 
@@ -17,7 +18,7 @@ export function SharedFileViewer({
   showToast,
   onDownload
 }: SharedFileViewerProps) {
-
+  const [isQuizOpen, setIsQuizOpen] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -54,22 +55,31 @@ export function SharedFileViewer({
     : 'GENERAL'
 
   return (
-    <FileViewer
-      fileName={file.name}
-      fileType={file.type}
-      fileSize={file.size}
-      uploadedAt={`Shared ${file.dateShared}`}
-      description={file.description}
-      tags={file.tags}
-      totalPages={file.totalPages}
-      subject={resolvedSubject}
-      previewContent={file.previewContent}
-      permission={file.permission}
-      showToast={showToast}
-      onDownload={() => onDownload(file)}
-      onBackLink={backLink}
-      fileUrl={file.url}
-    />
+    <>
+      <FileViewer
+        fileName={file.name}
+        fileType={file.type}
+        fileSize={file.size}
+        uploadedAt={`Shared ${file.dateShared}`}
+        description={file.description}
+        tags={file.tags}
+        totalPages={file.totalPages}
+        subject={resolvedSubject}
+        previewContent={file.previewContent}
+        permission={file.permission}
+        showToast={showToast}
+        onDownload={() => onDownload(file)}
+        onBackLink={backLink}
+        fileUrl={file.url}
+        onQuiz={() => setIsQuizOpen(true)}
+      />
+
+      <QuizModal
+        isOpen={isQuizOpen}
+        onClose={() => setIsQuizOpen(false)}
+        file={file}
+      />
+    </>
   )
 }
 
