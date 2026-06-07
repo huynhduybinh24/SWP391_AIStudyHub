@@ -54,6 +54,8 @@ export interface StudyPlanResponse {
   subject: string
   planText: string
   documentId?: number
+  sourceDocuments?: any[]
+  curriculumJson?: string
   createdAt: string
 }
 
@@ -125,14 +127,14 @@ export const aiService = {
     subject: string,
     goal: string,
     durationWeeks: number,
-    documentId?: number
+    documentIds?: number[]
   ): Promise<StudyPlanResponse> {
     const response = await apiClient.post<ApiResponse<StudyPlanResponse>>('/ai/study-plans/generate', {
       userId,
       subject,
       goal,
       durationWeeks,
-      documentId: documentId ? Number(documentId) : null
+      documentIds: documentIds || []
     })
     return response.data.data
   },
