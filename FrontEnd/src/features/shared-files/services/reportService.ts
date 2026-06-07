@@ -1,3 +1,5 @@
+import { apiClient } from '@/lib/axios';
+
 export interface DocumentReport {
   id: string;
   reportedFile: string;
@@ -7,6 +9,16 @@ export interface DocumentReport {
   reason: string;
   reportedAt: string;
   status: 'pending' | 'resolved' | 'ignored';
+}
+
+export interface ReportPayload {
+  documentId: string;
+  reason: string;
+  details: string;
+  evidenceLink?: string;
+  reportedFile?: string;
+  reporterName?: string;
+  reporterEmail?: string;
 }
 
 export const reportService = {
@@ -38,6 +50,22 @@ export const reportService = {
     }
 
     return newReport;
+  },
+
+  async reportDocument(payload: ReportPayload): Promise<any> {
+    try {
+      const response = await apiClient.post('/reports', payload);
+      return response.data;
+    } catch (e) {
+      console.warn("Using mock reportDocument fallback", e);
+    }
+    return this.createReport({
+      reportedFile: payload.reportedFile || 'Unknown File',
+      documentId: payload.documentId,
+      reporterName: payload.reporterName || 'Anonymous',
+      reporterEmail: payload.reporterEmail || 'anonymous@example.com',
+      reason: `${payload.reason} - ${payload.details}`
+    });
   },
 
   updateReport(id: string, payload: Partial<DocumentReport>): DocumentReport | null {

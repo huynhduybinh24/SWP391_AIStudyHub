@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { cn } from '@/lib/utils'
 import { reportService } from '../services/reportService'
+import { sharedFileService } from '../services/sharedFileService'
 
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
@@ -204,95 +205,25 @@ export function SharedFilesPage() {
   const { fileId } = useParams<{ fileId: string }>()
 
   // State Management
-  const [files, setFiles] = useState<SharedFile[]>([
-    {
-      id: 'file-1',
-      name: 'Biology 101 Midterm Notes.pdf',
-      owner: 'Sarah Jenkins',
-      permission: 'Viewer',
-      dateShared: '2h ago',
-      type: 'pdf',
-      size: '2.4 MB',
-      totalPages: 42,
-      description: 'Comprehensive study guide and midterm summary for General Biology 101, containing cellular respiration diagrams, metabolic pathway notes, and mitosis stages.',
-      tags: ['CellBiology', 'KrebsCycle'],
-      previewContent: 'Biology 101 Midterm Notes preview content.',
-      url: '',
-      editHistory: [
-        { id: 'h-1-1', user: 'Sarah Jenkins', action: 'Đã tạo tài liệu', time: '5 ngày trước', avatarBg: 'bg-emerald-500' },
-        { id: 'h-1-2', user: 'Sarah Jenkins', action: 'Đã chia sẻ tài liệu với bạn', time: '2 giờ trước', avatarBg: 'bg-emerald-500' }
-      ]
-    },
-    {
-      id: 'file-2',
-      name: 'Group Project Assets',
-      owner: 'David Kim',
-      permission: 'Editor',
-      dateShared: 'Oct 22, 2023',
-      type: 'folder',
-      size: '15.8 MB',
-      description: 'Group assets folder containing images, mock data, design specifications, and reference links.',
-      tags: ['GroupProject', 'Assets'],
-      previewContent: 'Folder contents: assets, design specifications.',
-      url: '',
-      editHistory: [
-        { id: 'h-2-1', user: 'David Kim', action: 'Đã tạo thư mục', time: '1 tháng trước', avatarBg: 'bg-blue-500' },
-        { id: 'h-2-2', user: 'David Kim', action: 'Đã chia sẻ quyền chỉnh sửa (Editor) cho bạn', time: 'Oct 22, 2023', avatarBg: 'bg-blue-500' }
-      ]
-    },
-    {
-      id: 'file-3',
-      name: 'Physics Lab Data.xlsx',
-      owner: 'Emily Chen',
-      permission: 'Viewer',
-      dateShared: 'Oct 18, 2023',
-      type: 'xlsx',
-      size: '1.2 MB',
-      totalPages: 10,
-      description: 'Tabulated values of raw experimental logs, voltage sweeps, and resistance indexes from the electromagnetism laboratory session.',
-      tags: ['Physics', 'LabData'],
-      previewContent: 'Voltage, Current, Resistance sweep tables.',
-      url: '',
-      editHistory: [
-        { id: 'h-3-1', user: 'Emily Chen', action: 'Đã tạo tài liệu', time: 'Oct 15, 2023', avatarBg: 'bg-purple-500' },
-        { id: 'h-3-2', user: 'Emily Chen', action: 'Đã chia sẻ quyền xem (Viewer) cho bạn', time: 'Oct 18, 2023', avatarBg: 'bg-purple-500' }
-      ]
-    },
-    {
-      id: 'file-4',
-      name: 'Chemistry 101 Lab Report.docx',
-      owner: 'me',
-      permission: 'Owner',
-      dateShared: 'Yesterday',
-      type: 'docx',
-      size: '1.8 MB',
-      description: 'My chemistry lab report shared with Sarah and David.',
-      tags: ['Chemistry', 'LabReport'],
-      previewContent: 'Chemistry lab report contents.',
-      url: '',
-      editHistory: [
-        { id: 'h-4-1', user: 'Tôi', action: 'Đã tạo tài liệu', time: '2 ngày trước', avatarBg: 'bg-indigo-600' },
-        { id: 'h-4-2', user: 'Tôi', action: 'Đã chia sẻ quyền xem cho Sarah Jenkins', time: '1 ngày trước', avatarBg: 'bg-indigo-600' },
-        { id: 'h-4-3', user: 'Tôi', action: 'Đã chia sẻ quyền chỉnh sửa cho David Kim', time: '1 ngày trước', avatarBg: 'bg-indigo-600' }
-      ]
-    },
-    {
-      id: 'file-5',
-      name: 'Math Calculus Exercises.pdf',
-      owner: 'me',
-      permission: 'Owner',
-      dateShared: '3 days ago',
-      type: 'pdf',
-      size: '3.1 MB',
-      description: 'Calculus assignment worksheet with solved exercises.',
-      tags: ['Math', 'Calculus'],
-      previewContent: 'Calculus exercises content.',
-      url: '',
-      editHistory: [
-        { id: 'h-5-1', user: 'Tôi', action: 'Đã tạo tài liệu', time: '3 ngày trước', avatarBg: 'bg-indigo-600' }
-      ]
+  const [files, setFiles] = useState<SharedFile[]>([])
+
+  useEffect(() => {
+    let active = true
+    const loadFiles = async () => {
+      try {
+        const fetched = await sharedFileService.getSharedFiles()
+        if (active) {
+          setFiles(fetched)
+        }
+      } catch (err) {
+        console.error("Failed to load shared files", err)
+      }
     }
-  ])
+    loadFiles()
+    return () => {
+      active = false
+    }
+  }, [])
 
   // Modals Visibility
   const [modals, setModals] = useState({
@@ -1445,12 +1376,13 @@ export function SharedFilesPage() {
                   setIsSubmittingReport(true)
                   try {
                     // Let's call the report submission logic via reportService
-                    reportService.createReport({
-                      reportedFile: reportDoc.name,
+                    await reportService.reportDocument({
                       documentId: reportDoc.id,
+                      reason: "Document violation report",
+                      details: reportReason.trim(),
+                      reportedFile: reportDoc.name,
                       reporterName: user?.name || 'Alex Rivera',
                       reporterEmail: user?.email || 'alex@example.com',
-                      reason: reportReason.trim()
                     })
 
                     // 3. Show beautiful notification
