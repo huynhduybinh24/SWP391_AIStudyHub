@@ -589,6 +589,7 @@ export const en = {
     remove: "Remove Access",
     chatAI: "Chat with AI",
     practiceQuiz: "Practice Quiz with AI",
+    generateStudyPlan: "Generate Study Plan with AI",
     editDetails: "Edit Details",
     deleteDoc: "Delete Document",
     cancel: "Cancel"

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Download, Share2, Sparkles } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { PreviewToolbar } from './PreviewToolbar'
@@ -31,6 +32,8 @@ interface FileViewerProps {
   onBackLink: React.ReactNode
   fileUrl?: string
   onQuiz?: () => void
+  initialPage?: number
+  documentId?: string
 }
 
 export function FileViewer({
@@ -48,14 +51,23 @@ export function FileViewer({
   onDownload,
   onBackLink,
   fileUrl,
-  onQuiz
+  onQuiz,
+  initialPage,
+  documentId
 }: FileViewerProps) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
   // 1. Zoom and Page state
   const [zoomScale, setZoomScale] = useState(100)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(initialPage || 1)
   const [isFullscreen, setIsFullscreen] = useState(false)
+
+  useEffect(() => {
+    if (initialPage) {
+      setCurrentPage(initialPage)
+    }
+  }, [initialPage])
 
   // 2. AI Chat assistant state
   const [chatLog, setChatLog] = useState<ChatMessage[]>([])
@@ -345,6 +357,16 @@ export function FileViewer({
               >
                 <Sparkles className="h-4.5 w-4.5" />
                 {t.actionMenu.practiceQuiz}
+              </Button>
+            )}
+
+            {documentId && (
+              <Button
+                onClick={() => navigate(`/dashboard/study-plans?documentId=${documentId}&generate=true`)}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer"
+              >
+                <Sparkles className="h-4.5 w-4.5" />
+                {t.actionMenu.generateStudyPlan}
               </Button>
             )}
 

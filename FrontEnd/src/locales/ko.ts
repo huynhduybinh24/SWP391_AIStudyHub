@@ -582,6 +582,7 @@ export const ko: any = {
     remove: "액세스 권한 제거",
     chatAI: "AI와 채팅",
     practiceQuiz: "AI 퀴즈로 연습",
+    generateStudyPlan: "AI로 학습 계획 생성",
     editDetails: "상세 정보 편집",
     deleteDoc: "문서 삭제",
     cancel: "취소"

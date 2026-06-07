@@ -31,6 +31,8 @@ export type CurriculumLesson = {
   duration: string
   type: LessonType
   status: LessonStatus
+  linkedDocName?: string
+  pageRange?: string
 }
 
 export type CurriculumModule = {
@@ -59,6 +61,21 @@ interface Props {
 
 export function getDocumentIdByName(name: string): string {
   const n = name.toLowerCase()
+
+  // Try to lookup in localStorage name-to-id map
+  try {
+    const localMapRaw = localStorage.getItem('document_name_to_id_map')
+    if (localMapRaw) {
+      const map = JSON.parse(localMapRaw)
+      const foundKey = Object.keys(map).find(k => k.toLowerCase() === n || name.includes(k) || k.includes(name))
+      if (foundKey) {
+        return map[foundKey]
+      }
+    }
+  } catch (e) {
+    console.error('Error reading document_name_to_id_map:', e)
+  }
+
   if (n.includes('lượng tử') || n.includes('quantum') || n.includes('vật lý') || n.includes('physics')) {
     return 'doc-3' // Introduction to Quantum Mechanics
   }
@@ -76,6 +93,12 @@ export function getDocumentIdByName(name: string): string {
     return 'doc-5' // Philosophy 101 Notes
   }
   return 'doc-1' // Mathematics Cheat Sheet
+}
+
+function extractPageNumber(range?: string): number | undefined {
+  if (!range) return undefined
+  const match = range.match(/\d+/)
+  return match ? parseInt(match[0], 10) : undefined
 }
 
 // Helper to localize module titles
@@ -183,7 +206,6 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
   const [expandedModule, setExpandedModule] = useState<string | null>(null)
   const [highlightedModule] = useState<string | null>(null)
   const activeModuleRef = useRef<HTMLDivElement | null>(null)
-  const activeLessonRef = useRef<HTMLButtonElement | null>(null)
   const addToast = useToastStore((s) => s.addToast)
 
   // Localize plan title
@@ -219,7 +241,6 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
     m.lessons.some((l) => l.status !== 'completed')
   )
 
-  const firstActiveLessonId = firstActiveModule?.lessons.find(l => l.status !== 'completed')?.id
 
   // ── Handlers ─────────────────────────────────────────────
 
@@ -358,35 +379,52 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
                 <div className="border-t border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
                   {mod.lessons.map((lesson) => {
                     const isLocked = lesson.status === 'locked'
-                    const attachRef = lesson.id === firstActiveLessonId
                     const localizedDuration = lesson.duration
                       ? lesson.duration.replace('min', language === 'vi' ? 'phút' : language === 'ja' ? '分' : language === 'ko' ? '분' : 'min')
                       : ''
 
                     return (
-                      <button
-                        type="button"
+                      <div
                         key={lesson.id}
-                        ref={attachRef ? activeLessonRef : undefined}
-                        onClick={() => handleLessonClick(lesson)}
                         className={`w-full flex items-center text-left gap-3 px-4 py-2.5 transition-colors ${isLocked
-                          ? 'opacity-40 cursor-not-allowed bg-slate-50/50'
-                          : 'hover:bg-slate-50/70 cursor-pointer'
+                          ? 'opacity-40 bg-slate-50/50'
+                          : 'hover:bg-slate-50/70'
                           }`}
                       >
                         <StatusIcon status={lesson.status} />
                         <LessonTypeIcon type={lesson.type} />
                         <span className={`flex-1 text-sm ${lesson.status === 'completed'
                           ? 'text-slate-400 line-through'
-                          : 'text-slate-700'
+                          : 'text-slate-700 font-medium'
                           }`}>
-                          {getLocalizedLessonTitle(lesson.title, language)}
+                          <div 
+                            className={isLocked ? 'cursor-not-allowed' : 'cursor-pointer hover:text-indigo-600'}
+                            onClick={() => !isLocked && handleLessonClick(lesson)}
+                          >
+                            {getLocalizedLessonTitle(lesson.title, language)}
+                          </div>
+                          {lesson.linkedDocName && (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const docId = getDocumentIdByName(lesson.linkedDocName || '')
+                                const pageNum = extractPageNumber(lesson.pageRange)
+                                const pageQuery = pageNum ? `?page=${pageNum}` : ''
+                                navigate(`/dashboard/documents/document/${docId}${pageQuery}`)
+                                onClose()
+                              }}
+                              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 flex items-center gap-1 cursor-pointer font-normal"
+                            >
+                              <span>📖 Tài liệu: {lesson.linkedDocName}</span>
+                              {lesson.pageRange && <span className="text-[11px] text-slate-450 dark:text-slate-500">({lesson.pageRange})</span>}
+                            </div>
+                          )}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
                           <Clock className="size-3 text-slate-400 dark:text-slate-500" />
                           <span className="text-xs text-slate-400 dark:text-slate-500">{localizedDuration}</span>
                         </div>
-                      </button>
+                      </div>
                     )
                   })}
                 </div>
