@@ -32,6 +32,8 @@ export type LearningLesson = {
   duration: string
   type: LessonType
   completed: boolean
+  linkedDocName?: string
+  pageRange?: string
 }
 
 export type LearningSection = {
@@ -47,6 +49,7 @@ export type LearningProgressPlan = {
   isAiGenerated: boolean
   overallProgress: number
   sections: LearningSection[]
+  linkedDocs?: string[]
 }
 
 interface Props {
@@ -110,6 +113,12 @@ function getLocalizedLessonTitle(title: string, language: Language): string {
   return map[title] ?? title
 }
 
+function extractPageNumber(range?: string): number | undefined {
+  if (!range) return undefined
+  const match = range.match(/\d+/)
+  return match ? parseInt(match[0], 10) : undefined
+}
+
 // ─── Lesson type icon ─────────────────────────────────────
 
 function LessonTypeIcon({ type }: { type: LessonType }) {
@@ -153,17 +162,26 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
     return { title, description }
   }, [plan, language])
 
-  // Reset state when plan changes
+  // Reset state when plan changes (merging with localStorage)
   useEffect(() => {
     if (!plan) return
-    const initial = new Set(
-      plan.sections.flatMap((s) => s.lessons.filter((l) => l.completed).map((l) => l.id))
-    )
+    const completedLocalRaw = localStorage.getItem(`study_plan_completed_lessons_${plan.id}`)
+    const completedLocal: string[] = completedLocalRaw ? JSON.parse(completedLocalRaw) : []
+    const initial = new Set([
+      ...plan.sections.flatMap((s) => s.lessons.filter((l) => l.completed).map((l) => l.id)),
+      ...completedLocal
+    ])
     setCompletedIds(initial)
     // Auto-expand first section with incomplete lessons
     const target = plan.sections.find((s) => s.lessons.some((l) => !initial.has(l.id)))
     setExpandedSection(target?.label ?? plan.sections[0]?.label ?? null)
   }, [plan?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist completed lessons back to localStorage
+  useEffect(() => {
+    if (!plan) return
+    localStorage.setItem(`study_plan_completed_lessons_${plan.id}`, JSON.stringify(Array.from(completedIds)))
+  }, [completedIds, plan?.id])
 
   // ── Derived: per-section stats ───────
   const sectionStats = useMemo(
@@ -211,6 +229,9 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
     )
     if (ownerSection) setExpandedSection(ownerSection.label)
 
+    const docName = nextLesson.linkedDocName || plan.linkedDocs?.[0] || plan.title
+    const docId = getDocumentIdByName(docName)
+
     if (nextLesson.type === 'reading') {
       addToast(
         language === 'vi'
@@ -219,7 +240,9 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
         'info'
       )
       onClose()
-      navigate(`/dashboard/documents/document/${getDocumentIdByName(plan.title)}`)
+      const pageNum = extractPageNumber(nextLesson.pageRange)
+      const pageQuery = pageNum ? `?page=${pageNum}` : ''
+      navigate(`/dashboard/documents/document/${docId}${pageQuery}`)
     } else if (nextLesson.type === 'quiz') {
       addToast(
         language === 'vi'
@@ -228,7 +251,7 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
         'success'
       )
       onClose()
-      navigate('/dashboard/quizzes')
+      navigate(`/dashboard/quizzes?doc=${docId}&lessonId=${nextLesson.id}&planId=${plan.id}`)
     } else {
       setCompletedIds((prev) => new Set([...prev, nextLesson.id]))
       addToast(
@@ -374,45 +397,69 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
                           }
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (lesson.type === 'reading') {
-                              addToast(
-                                language === 'vi'
-                                  ? `Đang mở tài liệu bài học: ${lesson.title}`
-                                  : `Opening reading materials: ${lesson.title}`,
-                                'info'
-                              )
-                              onClose()
-                              navigate(`/dashboard/documents/document/${getDocumentIdByName(plan.title)}`)
-                            } else if (lesson.type === 'quiz') {
-                              addToast(
-                                language === 'vi'
-                                  ? `Đang mở bài kiểm tra tự luyện: ${lesson.title}`
-                                  : `Opening practice quiz: ${lesson.title}`,
-                                'success'
-                              )
-                              onClose()
-                              navigate('/dashboard/quizzes')
-                            } else {
-                              addToast(
-                                language === 'vi'
-                                  ? `Đã hoàn thành bài học: ${lesson.title}`
-                                  : `Completed lesson: ${lesson.title}`,
-                                'success'
-                              )
-                              toggleLesson(lesson.id)
-                            }
-                          }}
-                          className="flex-1 flex items-center gap-3 text-left focus:outline-none cursor-pointer"
-                        >
-                          <LessonTypeIcon type={lesson.type} />
-                          <span className={`flex-1 text-sm ${isDone ? 'text-slate-400 dark:text-slate-500 line-through font-medium' : 'text-slate-700 dark:text-slate-300 font-medium'}`}>
-                            {getLocalizedLessonTitle(lesson.title, language)}
-                          </span>
-                          <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">{localizedDuration}</span>
-                        </button>
+                        <div className="flex-1 flex flex-col gap-1 text-left">
+                          <div
+                            onClick={() => {
+                              if (lesson.type === 'reading') {
+                                addToast(
+                                  language === 'vi'
+                                    ? `Đang mở tài liệu bài học: ${lesson.title}`
+                                    : `Opening reading materials: ${lesson.title}`,
+                                  'info'
+                                )
+                                onClose()
+                                const docName = lesson.linkedDocName || plan.linkedDocs?.[0] || plan.title
+                                const docId = getDocumentIdByName(docName)
+                                const pageNum = extractPageNumber(lesson.pageRange)
+                                const pageQuery = pageNum ? `?page=${pageNum}` : ''
+                                navigate(`/dashboard/documents/document/${docId}${pageQuery}`)
+                              } else if (lesson.type === 'quiz') {
+                                addToast(
+                                  language === 'vi'
+                                    ? `Đang mở bài kiểm tra tự luyện: ${lesson.title}`
+                                    : `Opening practice quiz: ${lesson.title}`,
+                                  'success'
+                                )
+                                onClose()
+                                const docName = lesson.linkedDocName || plan.linkedDocs?.[0] || plan.title
+                                const docId = getDocumentIdByName(docName)
+                                navigate(`/dashboard/quizzes?doc=${docId}&lessonId=${lesson.id}&planId=${plan.id}`)
+                              } else {
+                                addToast(
+                                  language === 'vi'
+                                    ? `Đã hoàn thành bài học: ${lesson.title}`
+                                    : `Completed lesson: ${lesson.title}`,
+                                  'success'
+                                )
+                                toggleLesson(lesson.id)
+                              }
+                            }}
+                            className="flex items-center gap-3 cursor-pointer hover:text-indigo-650 dark:hover:text-indigo-400"
+                          >
+                            <LessonTypeIcon type={lesson.type} />
+                            <span className={`text-sm ${isDone ? 'text-slate-400 dark:text-slate-500 line-through font-medium' : 'text-slate-700 dark:text-slate-300 font-medium'}`}>
+                              {getLocalizedLessonTitle(lesson.title, language)}
+                            </span>
+                          </div>
+
+                          {lesson.linkedDocName && (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const docId = getDocumentIdByName(lesson.linkedDocName || '')
+                                const pageNum = extractPageNumber(lesson.pageRange)
+                                const pageQuery = pageNum ? `?page=${pageNum}` : ''
+                                navigate(`/dashboard/documents/document/${docId}${pageQuery}`)
+                                onClose()
+                              }}
+                              className="text-xs text-indigo-650 dark:text-indigo-400 hover:underline pl-7 flex items-center gap-1 cursor-pointer font-normal"
+                            >
+                              <span>📖 Tài liệu: {lesson.linkedDocName}</span>
+                              {lesson.pageRange && <span className="text-[11px] text-slate-450 dark:text-slate-500">({lesson.pageRange})</span>}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">{localizedDuration}</span>
                       </div>
                     )
                   })}
