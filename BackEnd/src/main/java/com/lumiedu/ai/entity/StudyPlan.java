@@ -1,8 +1,10 @@
 package com.lumiedu.ai.entity;
 
 import com.lumiedu.common.entity.BaseEntity;
+import com.lumiedu.document.entity.Document;
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.Set;
 
 @Entity
 @Table(name = "study_plans")
@@ -29,6 +31,18 @@ public class StudyPlan extends BaseEntity {
     @Column(name = "plan_text", columnDefinition = "LONGTEXT", nullable = false)
     private String planText;
 
+    @Column(name = "curriculum_json", columnDefinition = "LONGTEXT")
+    private String curriculumJson;
+
     @Column(name = "document_id")
     private Long documentId;
+
+    @ManyToMany
+    @JoinTable(
+        name = "study_plan_documents",
+        joinColumns = @JoinColumn(name = "study_plan_id"),
+        inverseJoinColumns = @JoinColumn(name = "document_id")
+    )
+    private Set<Document> sourceDocuments;
 }
+
