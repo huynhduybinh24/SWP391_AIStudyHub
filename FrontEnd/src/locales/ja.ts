@@ -582,6 +582,7 @@ export const ja: any = {
     remove: "アクセス権を削除",
     chatAI: "AIとチャット",
     practiceQuiz: "AIクイズで練習",
+    generateStudyPlan: "AIで学習計画を生成",
     editDetails: "詳細を編集",
     deleteDoc: "ドキュメントを削除",
     cancel: "キャンセル"
