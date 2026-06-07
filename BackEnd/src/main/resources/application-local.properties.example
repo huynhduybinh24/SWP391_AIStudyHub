@@ -1,0 +1,17 @@
+# CẤU HÌNH CỤC BỘ DÀNH CHO NHÀ PHÁT TRIỂN (TEMPLATE)
+# Hướng dẫn: Sao chép tệp này thành 'application-local.properties' và điền thông tin thật của bạn.
+# Tệp 'application-local.properties' đã được cấu hình trong .gitignore nên sẽ không bị đẩy lên GitHub.
+
+# Stripe Configuration (Thanh toán thử nghiệm)
+stripe.secret-key=sk_test_dien_stripe_key_cua_ban_vao_day
+stripe.webhook-secret=whsec_dien_webhook_key_cua_ban_vao_day
+
+# Google OAuth2 Credentials (Đăng nhập Google)
+google.client-id=dien_google_client_id_cua_ban_vao_day.apps.googleusercontent.com
+google.client-secret=dien_google_client_secret_cua_ban_vao_day
+
+# OpenAI API Key (Nếu có sử dụng)
+openai.api.key=dien_openai_key_cua_ban_vao_day
+
+# Gemini API Key (Sử dụng AI Studio)
+gemini.api.key=dien_gemini_key_cua_ban_vao_day
