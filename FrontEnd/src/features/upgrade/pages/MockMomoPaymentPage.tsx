@@ -26,7 +26,7 @@ export function MockMomoPaymentPage() {
     
     try {
       // Direct call to the backend mock callback endpoint
-      window.location.href = `http://localhost:8080/api/billing/momo-callback-mock?orderId=${orderId}`
+      window.location.href = `http://localhost:8085/api/billing/momo-callback-mock?orderId=${orderId}`
     } catch (err: any) {
       console.error(err)
       toast.error('Lỗi khi giả lập thanh toán')
@@ -35,7 +35,7 @@ export function MockMomoPaymentPage() {
   }
 
   // Dynamic QR Code link pointing to the mock callback URL
-  const qrData = `http://localhost:8080/api/billing/momo-callback-mock?orderId=${orderId}`
+  const qrData = `http://localhost:8085/api/billing/momo-callback-mock?orderId=${orderId}`
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`
 
   return (
