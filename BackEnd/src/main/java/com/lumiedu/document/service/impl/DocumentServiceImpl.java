@@ -68,6 +68,10 @@ public class DocumentServiceImpl implements DocumentService {
     private final GoogleDriveService googleDriveService;
     private final DocumentChunkingService documentChunkingService;
 
+    private final com.lumiedu.workspace.repository.WorkspaceDocumentRepository workspaceDocumentRepository;
+    private final com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
+    private final com.lumiedu.workspace.repository.SharedWorkspaceRepository sharedWorkspaceRepository;
+
     // -------------------------------------------------------------------------
     // Upload
     // -------------------------------------------------------------------------
@@ -271,6 +275,22 @@ public class DocumentServiceImpl implements DocumentService {
     public Resource downloadDocument(Long id, Long userId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
+
+        // Enforce block download for viewers in shared workspaces
+        if (userId != null && !userId.equals(document.getUserId())) {
+            List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByDocumentId(id);
+            for (com.lumiedu.workspace.entity.WorkspaceDocument wd : workspaceDocs) {
+                com.lumiedu.workspace.entity.SharedWorkspace workspace = sharedWorkspaceRepository.findById(wd.getWorkspaceId()).orElse(null);
+                if (workspace != null && Boolean.TRUE.equals(workspace.getBlockDownloadForViewers())) {
+                    Optional<com.lumiedu.workspace.entity.WorkspaceMember> memberOpt = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), userId);
+                    if (memberOpt.isPresent() && memberOpt.get().getStatus() == com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED) {
+                        if (memberOpt.get().getRole() == com.lumiedu.workspace.enums.WorkspaceMemberRole.VIEWER) {
+                            throw new SecurityException("Downloading and printing documents is blocked for viewers in this workspace.");
+                        }
+                    }
+                }
+            }
+        }
 
         Resource resource = loadFileAsResource(document.getFileType(), document.getFileName());
 

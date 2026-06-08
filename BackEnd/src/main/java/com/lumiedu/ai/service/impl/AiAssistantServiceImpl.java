@@ -147,7 +147,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         List<Long> sortedIds = new ArrayList<>(documentIds);
         Collections.sort(sortedIds);
 
-        // Find user's sessions
+        // Find user's sessions ordered by update time
         List<AiChatSession> userSessions = aiChatSessionRepository.findByUserIdOrderByUpdatedAtDesc(userId);
         for (AiChatSession s : userSessions) {
             List<Long> sessionDocIds = new ArrayList<>();
