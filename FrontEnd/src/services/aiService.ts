@@ -57,6 +57,7 @@ export interface StudyPlanResponse {
   documentId?: number
   sourceDocuments?: any[]
   curriculumJson?: string
+  completedLessonsJson?: string
   createdAt: string
 }
 
@@ -188,6 +189,23 @@ export const aiService = {
   async getStudyPlans(userId: number): Promise<StudyPlanResponse[]> {
     const response = await apiClient.get<ApiResponse<StudyPlanResponse[]>>(`/ai/study-plans/user/${userId}`)
     return response.data.data
+  },
+
+  async getCompletedLessons(planId: number | string): Promise<string[]> {
+    try {
+      const response = await apiClient.get<ApiResponse<string[]>>(`/ai/study-plans/${planId}/completed-lessons`)
+      return response.data.data || []
+    } catch {
+      return []
+    }
+  },
+
+  async updateCompletedLessons(planId: number | string, lessonIds: string[]): Promise<string[]> {
+    const response = await apiClient.put<ApiResponse<string[]>>(
+      `/ai/study-plans/${planId}/completed-lessons`,
+      { lessonIds }
+    )
+    return response.data.data || []
   },
 
   // AI Studio Features

@@ -13,5 +13,8 @@ maven/
 # Local application properties containing credentials
 src/main/resources/application-local.properties
 
+# Google Service Account credentials (NEVER commit this!)
+src/main/resources/google-credentials.json
+
 # Local database file
 data/

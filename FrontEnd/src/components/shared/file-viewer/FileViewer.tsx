@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { Download, Share2, Sparkles } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Download, Share2, Sparkles, CheckCircle2 } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { PreviewToolbar } from './PreviewToolbar'
@@ -9,6 +9,7 @@ import { FileMetadataPanel } from './FileMetadataPanel'
 import { AskAIAssistantPanel } from './AskAIAssistantPanel'
 import { ShareAccessModal } from '../share-access/ShareAccessModal'
 import { useTranslation } from '@/context/LanguageContext'
+import { aiService } from '@/services/aiService'
 
 interface ChatMessage {
   sender: 'user' | 'ai'
@@ -57,6 +58,36 @@ export function FileViewer({
 }: FileViewerProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // Study Plan Progress Sync
+  const planIdParam = searchParams.get('planId')
+  const lessonIdParam = searchParams.get('lessonId')
+  const [isLessonCompleted, setIsLessonCompleted] = useState(false)
+
+  useEffect(() => {
+    if (!planIdParam || !lessonIdParam) return
+    const localKey = `study_plan_completed_lessons_${planIdParam}`
+    // Immediately check localStorage
+    const raw = localStorage.getItem(localKey)
+    const local: string[] = raw ? JSON.parse(raw) : []
+    if (local.includes(lessonIdParam)) {
+      setIsLessonCompleted(true)
+      return
+    }
+    // Then verify with API
+    const planIdNum = Number(planIdParam)
+    if (!isNaN(planIdNum) && planIdNum > 0) {
+      aiService.getCompletedLessons(planIdNum).then((serverIds) => {
+        const done = serverIds.includes(lessonIdParam)
+        setIsLessonCompleted(done)
+        if (done) {
+          const merged = Array.from(new Set([...local, lessonIdParam]))
+          localStorage.setItem(localKey, JSON.stringify(merged))
+        }
+      }).catch(() => {})
+    }
+  }, [planIdParam, lessonIdParam])
 
   // 1. Zoom and Page state
   const [zoomScale, setZoomScale] = useState(100)
@@ -282,6 +313,57 @@ export function FileViewer({
       <div className="flex items-center gap-2 select-none">
         {onBackLink}
       </div>
+
+      {/* Study Plan Lesson Completion Banner */}
+      {planIdParam && lessonIdParam && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-150 dark:border-indigo-900/40 shadow-sm transition-all duration-305">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+              <Sparkles className="size-5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-indigo-500 dark:text-indigo-400 tracking-wide uppercase">Bài học trong Lộ trình học tập</p>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                Hãy đọc và hoàn thành nội dung tài liệu này để cập nhật tiến độ
+              </h4>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+            {isLessonCompleted ? (
+              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-900/30 w-full justify-center sm:w-auto">
+                <CheckCircle2 className="size-4" />
+                Đã hoàn thành
+              </span>
+            ) : (
+              <Button
+                onClick={async () => {
+                  if (!planIdParam || !lessonIdParam) return
+                  try {
+                    const localKey = `study_plan_completed_lessons_${planIdParam}`
+                    const raw = localStorage.getItem(localKey)
+                    const local: string[] = raw ? JSON.parse(raw) : []
+                    const merged = Array.from(new Set([...local, lessonIdParam]))
+                    localStorage.setItem(localKey, JSON.stringify(merged))
+                    setIsLessonCompleted(true)
+                    showToast("Chúc mừng! Đã ghi nhận hoàn thành bài học.")
+                    // Sync to database
+                    const planIdNum = Number(planIdParam)
+                    if (!isNaN(planIdNum) && planIdNum > 0) {
+                      await aiService.updateCompletedLessons(planIdNum, merged)
+                    }
+                  } catch (e) {
+                    console.error("Error setting lesson completed", e)
+                  }
+                }}
+                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-750 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-98 cursor-pointer"
+              >
+                <CheckCircle2 className="size-4" />
+                Đánh dấu hoàn thành bài học
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 2. Main Two-Column Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

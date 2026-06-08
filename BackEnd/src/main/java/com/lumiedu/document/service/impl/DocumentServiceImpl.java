@@ -15,6 +15,8 @@ import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.document.repository.DocumentTagRepository;
 import com.lumiedu.document.service.DocumentService;
+import com.lumiedu.document.service.GoogleDriveService;
+import com.lumiedu.ai.service.DocumentChunkingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,6 +65,8 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentTagRepository documentTagRepository;
     private final DocumentDownloadRepository documentDownloadRepository;
     private final AudioRecordRepository audioRecordRepository;
+    private final GoogleDriveService googleDriveService;
+    private final DocumentChunkingService documentChunkingService;
 
     private final com.lumiedu.workspace.repository.WorkspaceDocumentRepository workspaceDocumentRepository;
     private final com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
@@ -97,17 +101,36 @@ public class DocumentServiceImpl implements DocumentService {
             throw new InvalidFileTypeException(extension, fileType);
         }
 
-        String newFileName = UUID.randomUUID() + "." + extension;
-        Path targetPath = resolveUploadPath(fileType).resolve(newFileName);
+        // Upload lên Google Drive
+        String googleDriveFileId = null;
+        String fileUrl = null;
+        String savedFileName = null;
 
-        try {
-            Files.createDirectories(targetPath.getParent());
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new FileStorageException("Failed to store file: " + originalFileName, e);
+        if (FILE_TYPE_DOCUMENT.equals(fileType)) {
+            // Tài liệu: lưu trên Google Drive thật, tự động tạo thư mục theo môn học
+            try {
+                String subjectFolder = (request.getSubject() != null && !request.getSubject().isBlank())
+                        ? request.getSubject().trim()
+                        : "Khác";
+                googleDriveFileId = googleDriveService.uploadFile(file, subjectFolder);
+                savedFileName = googleDriveFileId + "." + extension;
+                fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
+            } catch (IOException e) {
+                throw new FileStorageException("Lỗi upload lên Google Drive: " + originalFileName, e);
+            }
+        } else {
+            // Media/Audio: lưu local như cũ
+            String newFileName = UUID.randomUUID() + "." + extension;
+            Path targetPath = resolveUploadPath(fileType).resolve(newFileName);
+            try {
+                Files.createDirectories(targetPath.getParent());
+                Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new FileStorageException("Failed to store file: " + originalFileName, e);
+            }
+            savedFileName = newFileName;
+            fileUrl = buildFileUrl(fileType, newFileName);
         }
-
-        String fileUrl = buildFileUrl(fileType, newFileName);
 
         Document document = Document.builder()
                 .title(request.getTitle())
@@ -115,12 +138,14 @@ public class DocumentServiceImpl implements DocumentService {
                 .subject(request.getSubject())
                 .visibility(request.getVisibility() != null ? request.getVisibility() : "PRIVATE")
                 .userId(request.getUserId())
-                .fileName(newFileName)
+                .fileName(savedFileName)
                 .originalFileName(originalFileName)
                 .fileUrl(fileUrl)
                 .fileType(fileType)
                 .mimeType(file.getContentType())
                 .fileSize(file.getSize())
+                .googleDriveFileId(googleDriveFileId)
+                .storageProvider(googleDriveFileId != null ? "GOOGLE_DRIVE" : "LOCAL")
                 .deleted(false)
                 .build();
 
@@ -128,6 +153,12 @@ public class DocumentServiceImpl implements DocumentService {
 
         if (request.getTags() != null && !request.getTags().isEmpty()) {
             saveTagsForDocument(document, request.getTags());
+        }
+
+        // Tự động chunk & index cho tài liệu
+        if (FILE_TYPE_DOCUMENT.equals(fileType)) {
+            final Long docId = document.getId();
+            documentChunkingService.chunkAndIndexDocument(docId);
         }
 
         return mapToResponse(document);
@@ -421,6 +452,8 @@ public class DocumentServiceImpl implements DocumentService {
                 .fileName(document.getFileName())
                 .originalFileName(document.getOriginalFileName())
                 .fileUrl(document.getFileUrl())
+                .googleDriveFileId(document.getGoogleDriveFileId())
+                .storageProvider(document.getStorageProvider())
                 .fileType(document.getFileType())
                 .mimeType(document.getMimeType())
                 .fileSize(document.getFileSize())

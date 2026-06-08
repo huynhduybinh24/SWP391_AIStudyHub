@@ -1337,10 +1337,12 @@ export function StudyPlansPage() {
         autoGenerate={autoGenerate}
       />
 
-      {/* ── Learning Progress Modal ── */}
       <LearningProgressModal
         isOpen={learningPlan !== null}
-        onClose={() => setLearningPlan(null)}
+        onClose={() => {
+          setLearningPlan(null)
+          setPlans((prev) => [...prev])
+        }}
         plan={learningPlan}
       />
 

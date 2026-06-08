@@ -39,4 +39,8 @@ public interface AiAssistantService {
     StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks, List<Long> documentIds);
 
     List<StudyPlan> getStudyPlans(Long userId);
+
+    List<String> getCompletedLessons(Long planId);
+
+    List<String> updateCompletedLessons(Long planId, List<String> lessonIds);
 }

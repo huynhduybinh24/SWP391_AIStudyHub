@@ -33,6 +33,13 @@ public class Document {
     @Column(name = "file_url")
     private String fileUrl;
 
+    @Column(name = "google_drive_file_id", length = 100)
+    private String googleDriveFileId;
+
+    @Column(name = "storage_provider", length = 50)
+    @Builder.Default
+    private String storageProvider = "LOCAL";
+
     @Column(name = "file_type", length = 50)
     private String fileType;
 

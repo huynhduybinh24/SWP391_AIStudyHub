@@ -4,6 +4,7 @@ import com.lumiedu.ai.entity.DocumentChunk;
 import com.lumiedu.ai.repository.DocumentChunkRepository;
 import com.lumiedu.document.entity.Document;
 import com.lumiedu.document.repository.DocumentRepository;
+import com.lumiedu.document.service.GoogleDriveService;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -13,11 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,7 @@ public class DocumentChunkingService {
 
     private final DocumentRepository documentRepository;
     private final DocumentChunkRepository documentChunkRepository;
+    private final GoogleDriveService googleDriveService;
 
     public void chunkAndIndexDocument(Long documentId) {
         Document doc = documentRepository.findById(documentId).orElse(null);
@@ -41,10 +46,12 @@ public class DocumentChunkingService {
 
         String fullText = "";
         try {
-            if (doc.getFileName() != null && !doc.getFileName().isEmpty()) {
+            if ("GOOGLE_DRIVE".equals(doc.getStorageProvider()) && doc.getGoogleDriveFileId() != null) {
+                // Tải file từ Google Drive để trích xuất text
+                fullText = extractTextFromGoogleDrive(doc);
+            } else if (doc.getFileName() != null && !doc.getFileName().isEmpty()) {
                 Path filePath = Paths.get(uploadDir, "documents", doc.getFileName()).toAbsolutePath().normalize();
                 File file = filePath.toFile();
-
                 String ext = getExtension(doc.getFileName()).toLowerCase();
                 if (file.exists()) {
                     if ("pdf".equals(ext)) {
@@ -53,10 +60,8 @@ public class DocumentChunkingService {
                         fullText = Files.readString(filePath);
                     }
                 } else {
-                    System.err.println("File not found locally for chunking: " + filePath + ". Using document metadata as fallback.");
+                    System.err.println("File not found locally for chunking: " + filePath);
                 }
-            } else {
-                System.err.println("Document has no local fileName (may be external URL). Using metadata as fallback for: " + doc.getTitle());
             }
         } catch (Exception e) {
             System.err.println("Failed to extract text from file: " + e.getMessage());
@@ -86,6 +91,31 @@ public class DocumentChunkingService {
 
         documentChunkRepository.saveAll(documentChunks);
         System.out.println("Successfully chunked and saved " + documentChunks.size() + " chunks for document: " + doc.getTitle());
+    }
+
+    private String extractTextFromGoogleDrive(Document doc) throws IOException {
+        // Tải file tạm thời về local để trích xuất text
+        String ext = getExtension(doc.getOriginalFileName() != null ? doc.getOriginalFileName() : "file.pdf").toLowerCase();
+        Path tempFile = Paths.get(System.getProperty("java.io.tmpdir"), "lumiedu_chunk_" + UUID.randomUUID() + "." + ext);
+
+        try {
+            org.springframework.core.io.Resource resource = googleDriveService.downloadFile(doc.getGoogleDriveFileId());
+            try (InputStream inputStream = resource.getInputStream()) {
+                Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            if ("pdf".equals(ext)) {
+                return extractTextFromPdf(tempFile.toFile());
+            } else if ("txt".equals(ext)) {
+                return Files.readString(tempFile);
+            } else {
+                System.err.println("Unsupported file type for text extraction: " + ext);
+                return "";
+            }
+        } finally {
+            // Xóa file tạm
+            Files.deleteIfExists(tempFile);
+        }
     }
 
     private String extractTextFromPdf(File file) throws IOException {
