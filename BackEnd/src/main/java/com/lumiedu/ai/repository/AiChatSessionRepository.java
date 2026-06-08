@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface AiChatSessionRepository extends JpaRepository<AiChatSession, Long> {
     List<AiChatSession> findByDocumentIdAndUserId(Long documentId, Long userId);
     List<AiChatSession> findByUserId(Long userId);
+    List<AiChatSession> findByUserIdOrderByUpdatedAtDesc(Long userId);
 }
