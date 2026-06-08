@@ -18,6 +18,7 @@ export interface AiChatSessionResponse {
   title?: string
   createdAt: string
   updatedAt: string
+  documents?: any[]
 }
 
 export interface AiChatMessageResponse {
@@ -115,6 +116,11 @@ export const aiService = {
       documentIds,
       userId,
     })
+    return response.data.data
+  },
+
+  async getUserSessions(userId: number): Promise<AiChatSessionResponse[]> {
+    const response = await apiClient.get<ApiResponse<AiChatSessionResponse[]>>(`/ai/chat/sessions?userId=${userId}`)
     return response.data.data
   },
 

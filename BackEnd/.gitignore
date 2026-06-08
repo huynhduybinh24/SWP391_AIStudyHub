@@ -13,3 +13,5 @@ maven/
 # Local application properties containing credentials
 src/main/resources/application-local.properties
 
+# Local database file
+data/

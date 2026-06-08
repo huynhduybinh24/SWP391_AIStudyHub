@@ -74,21 +74,35 @@ export function ChatPage() {
   const [sharingMessage, setSharingMessage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Load user documents from database on mount
+  // Load user documents and previous chat sessions from database on mount
   useEffect(() => {
-    const fetchUserDocs = async () => {
+    const fetchUserDocsAndSessions = async () => {
       setLoadingDocs(true)
       try {
         const docs = await documentService.getAllDocuments(userId)
         setAllDocuments(docs)
+
+        const sessions = await aiService.getUserSessions(userId)
+        const mappedConv: ChatConversation[] = sessions.map(session => {
+          const docIds = session.documents ? session.documents.map((d: any) => d.id) : (session.documentId ? [session.documentId] : []);
+          return {
+            id: `session-${session.id}`,
+            title: session.title || docs.filter(d => docIds.includes(d.id)).map(d => d.title).join(', ') || "Thảo luận tài liệu",
+            preview: "Xem lịch sử trò chuyện...",
+            updatedAt: new Date(session.updatedAt || session.createdAt || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+            messages: [], // load lazily on click
+            documentIds: docIds
+          }
+        })
+        setConversations(mappedConv)
       } catch (err) {
-        console.error('Failed to load user documents', err)
-        toast.error('Không thể tải danh sách tài liệu.')
+        console.error('Failed to load user documents or sessions', err)
+        toast.error('Không thể tải danh sách tài liệu hoặc lịch sử trò chuyện.')
       } finally {
         setLoadingDocs(false)
       }
     }
-    fetchUserDocs()
+    fetchUserDocsAndSessions()
   }, [userId])
 
   // Close dropdowns on outside click
@@ -293,10 +307,9 @@ export function ChatPage() {
     setActiveConversationId(null)
   }
 
-  const handleOpenConversation = (id: string) => {
+  const handleOpenConversation = async (id: string) => {
     const conv = conversations.find((c) => c.id === id)
     if (conv) {
-      setMessages(conv.messages)
       setActiveConversationId(conv.id)
       setIsChatStarted(true)
       setInput('')
@@ -304,6 +317,32 @@ export function ChatPage() {
       // Load corresponding documents from database for this session
       const docsToSelect = allDocuments.filter(d => conv.documentIds.includes(d.id))
       setSelectedDocuments(docsToSelect)
+
+      // Lazy load chat history from database if it's empty
+      if (conv.messages.length === 0 && id.startsWith('session-')) {
+        setIsTyping(true)
+        try {
+          const dbSessionId = Number(id.replace('session-', ''))
+          const history = await aiService.getChatHistory(dbSessionId)
+          const mappedHistory: ChatMessage[] = history.map(msg => ({
+            id: String(msg.id),
+            role: msg.sender.toLowerCase() === 'user' ? 'user' : 'assistant',
+            content: msg.messageText,
+            thought: msg.thought,
+            createdAt: new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }))
+          setMessages(mappedHistory)
+          // Store it in the local state so we don't refetch
+          setConversations(prev => prev.map(c => c.id === id ? { ...c, messages: mappedHistory } : c))
+        } catch (err) {
+          console.error('Failed to load chat history', err)
+          toast.error('Không thể tải lịch sử trò chuyện.')
+        } finally {
+          setIsTyping(false)
+        }
+      } else {
+        setMessages(conv.messages)
+      }
     }
   }
 

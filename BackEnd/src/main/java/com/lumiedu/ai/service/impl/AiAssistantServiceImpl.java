@@ -656,6 +656,11 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         return studyPlanRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
+    @Override
+    public List<AiChatSession> getUserSessions(Long userId) {
+        return aiChatSessionRepository.findByUserIdOrderByUpdatedAtDesc(userId);
+    }
+
     // --- Helpers ---
 
     private void saveUsageLog(Long userId, String featureType, OpenAiResponse response) {
