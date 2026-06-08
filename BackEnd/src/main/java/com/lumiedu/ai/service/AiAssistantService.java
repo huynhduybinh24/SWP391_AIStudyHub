@@ -14,6 +14,8 @@ public interface AiAssistantService {
 
     AiChatSession createOrGetChatSession(List<Long> documentIds, Long userId);
 
+    List<AiChatSession> getUserSessions(Long userId);
+
     List<AiChatMessage> getChatHistory(Long sessionId);
 
     AiChatMessage sendMessage(Long sessionId, String messageText, boolean thinkingMode);
@@ -27,7 +29,6 @@ public interface AiAssistantService {
 
     List<QuizQuestion> getQuiz(Long documentId);
 
-<<<<<<< HEAD
     // New quiz methods supporting pooling and randomized question bank
     QuizResponse getQuizResponse(Long documentId);
 
@@ -35,10 +36,7 @@ public interface AiAssistantService {
 
     QuizSubmitResponse submitQuiz(Long userId, Long documentId, Map<Long, Integer> answers);
 
-    StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks, Long documentId);
-=======
     StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks, List<Long> documentIds);
->>>>>>> f9a2bd7ef9c4bc3b8ea3f753dbae8b6abaa46bfb
 
     List<StudyPlan> getStudyPlans(Long userId);
 }
