@@ -199,6 +199,11 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     @Override
+    public List<AiChatSession> getUserSessions(Long userId) {
+        return aiChatSessionRepository.findByUserIdOrderByUpdatedAtDesc(userId);
+    }
+
+    @Override
     public List<AiChatMessage> getChatHistory(Long sessionId) {
         return aiChatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
     }
@@ -680,10 +685,6 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         return lessonIds;
     }
 
-    @Override
-    public List<AiChatSession> getUserSessions(Long userId) {
-        return aiChatSessionRepository.findByUserIdOrderByUpdatedAtDesc(userId);
-    }
 
     // --- Helpers ---
 

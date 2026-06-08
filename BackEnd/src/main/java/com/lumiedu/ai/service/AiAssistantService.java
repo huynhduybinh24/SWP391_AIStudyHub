@@ -14,6 +14,8 @@ public interface AiAssistantService {
 
     AiChatSession createOrGetChatSession(List<Long> documentIds, Long userId);
 
+    List<AiChatSession> getUserSessions(Long userId);
+
     List<AiChatMessage> getChatHistory(Long sessionId);
 
     AiChatMessage sendMessage(Long sessionId, String messageText, boolean thinkingMode);
@@ -41,6 +43,4 @@ public interface AiAssistantService {
     List<String> getCompletedLessons(Long planId);
 
     List<String> updateCompletedLessons(Long planId, List<String> lessonIds);
-
-    List<AiChatSession> getUserSessions(Long userId);
 }
