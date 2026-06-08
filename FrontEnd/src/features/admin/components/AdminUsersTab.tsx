@@ -354,7 +354,13 @@ export function AdminUsersTab({
                           <button
                             onClick={() => {
                               setEditingRoleUser(u)
-                              setSelectedRole(u.role)
+                              setSelectedRole(
+                                u.role === 'admin'
+                                  ? 'admin'
+                                  : (u.role === 'teacher' || u.role === 'instructor')
+                                    ? 'teacher'
+                                    : 'student'
+                              )
                             }}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-55/10 dark:text-slate-400 dark:hover:text-purple-400 dark:hover:bg-purple-955/20 transition-all cursor-pointer"
                             title={language === 'vi' ? 'Đổi vai trò' : 'Change user role'}

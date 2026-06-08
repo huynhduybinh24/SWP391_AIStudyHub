@@ -2,21 +2,17 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Sparkles,
-  BookOpen,
   Send,
   HelpCircle,
   CheckCircle2,
   XCircle,
   Database,
-  ArrowRight,
   RotateCcw,
   Sliders,
   Cpu,
   Brain,
   ChevronRight,
-  Flame,
   Check,
-  AlertCircle,
   FileText
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -94,6 +90,9 @@ export function QuizzesPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const addToast = useToastStore((s) => s.addToast)
+
+  const lessonId = searchParams.get('lessonId') || undefined
+  const planId = searchParams.get('planId') || undefined
 
   // 1. Documents loading
   const [documents] = useState<DocumentItem[]>(() => {
@@ -641,7 +640,30 @@ export function QuizzesPage() {
                         </Button>
                       ) : (
                         <Button
-                          onClick={() => setIsSubmitted(true)}
+                          onClick={() => {
+                            setIsSubmitted(true)
+                            const correctCount = questions.filter((q, idx) => selectedAnswers[idx] === q.answer).length
+                            const scorePercentage = questions.length === 0 ? 0 : Math.round((correctCount / questions.length) * 100)
+                            
+                            if (scorePercentage >= 50 && planId && lessonId) {
+                              try {
+                                const completedLessonsRaw = localStorage.getItem(`study_plan_completed_lessons_${planId}`)
+                                const completedLocal: string[] = completedLessonsRaw ? JSON.parse(completedLessonsRaw) : []
+                                if (!completedLocal.includes(lessonId)) {
+                                  completedLocal.push(lessonId)
+                                  localStorage.setItem(`study_plan_completed_lessons_${planId}`, JSON.stringify(completedLocal))
+                                }
+                                addToast(
+                                  language === 'vi'
+                                    ? 'Chúc mừng! Bạn đã vượt qua bài kiểm tra và hoàn thành bài học này trong Kế hoạch học tập.'
+                                    : 'Congratulations! You passed the quiz and completed this lesson in your Study Plan.',
+                                  'success'
+                                )
+                              } catch (e) {
+                                console.error('Failed to sync quiz completion to Study Plan:', e)
+                              }
+                            }
+                          }}
                           disabled={Object.keys(selectedAnswers).length < questions.length}
                           className="bg-indigo-650 hover:bg-indigo-750 text-white text-xs py-2 px-5 rounded-xl font-extrabold tracking-wider shadow-md shadow-indigo-600/10"
                         >

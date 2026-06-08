@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/ai")
@@ -129,12 +130,19 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @PostMapping("/study-plans/generate")
     public ResponseEntity<ApiResponse<StudyPlan>> generateStudyPlan(@RequestBody StudyPlanRequest request) {
+        List<Long> docIds = request.getDocumentIds();
+        if (docIds == null || docIds.isEmpty()) {
+            docIds = new ArrayList<>();
+            if (request.getDocumentId() != null) {
+                docIds.add(request.getDocumentId());
+            }
+        }
         StudyPlan plan = aiAssistantService.generateStudyPlan(
                 request.getUserId(),
                 request.getSubject(),
                 request.getGoal(),
                 request.getDurationWeeks(),
-                request.getDocumentId());
+                docIds);
         return ResponseEntity.ok(ApiResponse.ok("Study plan generated successfully.", plan));
     }
 
@@ -176,5 +184,6 @@ public class AiAssistantController {
         private String goal;
         private Integer durationWeeks;
         private Long documentId;
+        private List<Long> documentIds;
     }
 }

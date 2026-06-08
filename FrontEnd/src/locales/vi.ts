@@ -591,6 +591,7 @@ export const vi: typeof en = {
     remove: "Xóa truy cập",
     chatAI: "Trò chuyện với AI",
     practiceQuiz: "Làm trắc nghiệm AI",
+    generateStudyPlan: "Lập kế hoạch cùng AI",
     editDetails: "Sửa chi tiết",
     deleteDoc: "Xóa tài liệu",
     cancel: "Hủy bỏ"

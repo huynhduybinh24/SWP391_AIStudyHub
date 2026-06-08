@@ -1,24 +1,28 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarDays, Sparkles, Share2, Cloud } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { StatisticsCard, StatisticItem } from './StatisticsCard'
 import { StatisticsDetailModal } from './StatisticsDetailModal'
 import { useTranslation } from '@/context/LanguageContext'
-import { useAuthStore } from '@/stores/authStore'
-import { env } from '@/config/env'
+import { getCurrentUserStorageSummary } from '@/services/storageService'
+import { formatStorageSize } from '@/utils/storageFormat'
 
 export function StatisticsSection() {
   const navigate = useNavigate()
   const toast = useToast()
   const { t, language } = useTranslation()
-  const user = useAuthStore((s) => s.user)
 
-  const isPro = user?.plan === 'pro'
-  const isInstitutional = user?.plan === 'institutional'
-  
-  const totalGb = isPro ? env.PRO_STORAGE_LIMIT : isInstitutional ? 1000 : env.FREE_STORAGE_LIMIT
-  const usedGb = isPro ? 18.0 : isInstitutional ? 12.4 : 2.4
+  // Use shared helper so all pages stay in sync
+  const [storageSummary, setStorageSummary] = useState(() => getCurrentUserStorageSummary())
+
+  useEffect(() => {
+    const refresh = () => setStorageSummary(getCurrentUserStorageSummary())
+    window.addEventListener('aiStudyHubUserChanged', refresh)
+    return () => window.removeEventListener('aiStudyHubUserChanged', refresh)
+  }, [])
+
+  const { usedMb, totalMb } = storageSummary
 
   // Localized statistics values recalculated on language change
   const statistics = useMemo<StatisticItem[]>(() => [
@@ -46,13 +50,13 @@ export function StatisticsSection() {
     {
       id: 'storageUsed',
       label: t.profile.storageUsedLabel,
-      value: `${usedGb}GB`,
+      value: formatStorageSize(usedMb),
       description: language === 'vi' 
-        ? `Đã dùng trên ${totalGb}GB` 
-        : `Used of ${totalGb}GB`,
+        ? `Đã dùng trên ${formatStorageSize(totalMb)}` 
+        : `Used of ${formatStorageSize(totalMb)}`,
       route: '/cloud-storage',
     },
-  ], [t, language, usedGb, totalGb])
+  ], [t, language, usedMb, totalMb])
 
   const [selectedStatistic, setSelectedStatistic] = useState<StatisticItem | null>(null)
   const [statisticDetailOpen, setStatisticDetailOpen] = useState(false)
