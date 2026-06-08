@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { useToastStore } from '@/stores/toastStore'
 import { useTranslation } from '@/context/LanguageContext'
+import { aiService } from '@/services/aiService'
 
 interface DocumentItem {
   id: string
@@ -640,18 +641,22 @@ export function QuizzesPage() {
                         </Button>
                       ) : (
                         <Button
-                          onClick={() => {
+                          onClick={async () => {
                             setIsSubmitted(true)
                             const correctCount = questions.filter((q, idx) => selectedAnswers[idx] === q.answer).length
                             const scorePercentage = questions.length === 0 ? 0 : Math.round((correctCount / questions.length) * 100)
                             
                             if (scorePercentage >= 50 && planId && lessonId) {
                               try {
-                                const completedLessonsRaw = localStorage.getItem(`study_plan_completed_lessons_${planId}`)
-                                const completedLocal: string[] = completedLessonsRaw ? JSON.parse(completedLessonsRaw) : []
-                                if (!completedLocal.includes(lessonId)) {
-                                  completedLocal.push(lessonId)
-                                  localStorage.setItem(`study_plan_completed_lessons_${planId}`, JSON.stringify(completedLocal))
+                                const localKey = `study_plan_completed_lessons_${planId}`
+                                const raw = localStorage.getItem(localKey)
+                                const completedLocal: string[] = raw ? JSON.parse(raw) : []
+                                const merged = Array.from(new Set([...completedLocal, lessonId]))
+                                localStorage.setItem(localKey, JSON.stringify(merged))
+                                // Sync to DB
+                                const planIdNum = Number(planId)
+                                if (!isNaN(planIdNum) && planIdNum > 0) {
+                                  await aiService.updateCompletedLessons(planIdNum, merged)
                                 }
                                 addToast(
                                   language === 'vi'

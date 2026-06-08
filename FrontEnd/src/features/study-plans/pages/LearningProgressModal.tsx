@@ -21,6 +21,7 @@ import { getDocumentIdByName } from './CurriculumModal'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useTranslation } from '@/context/LanguageContext'
 import { Language } from '@/locales'
+import { aiService } from '@/services/aiService'
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -162,25 +163,43 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
     return { title, description }
   }, [plan, language])
 
-  // Reset state when plan changes (merging with localStorage)
+  // Reset state when plan changes (load from API, fallback to localStorage)
   useEffect(() => {
     if (!plan) return
-    const completedLocalRaw = localStorage.getItem(`study_plan_completed_lessons_${plan.id}`)
+    const localKey = `study_plan_completed_lessons_${plan.id}`
+    const completedLocalRaw = localStorage.getItem(localKey)
     const completedLocal: string[] = completedLocalRaw ? JSON.parse(completedLocalRaw) : []
-    const initial = new Set([
-      ...plan.sections.flatMap((s) => s.lessons.filter((l) => l.completed).map((l) => l.id)),
-      ...completedLocal
-    ])
-    setCompletedIds(initial)
-    // Auto-expand first section with incomplete lessons
-    const target = plan.sections.find((s) => s.lessons.some((l) => !initial.has(l.id)))
+    const staticCompleted = plan.sections.flatMap((s) => s.lessons.filter((l) => l.completed).map((l) => l.id))
+
+    // Merge immediately from localStorage while waiting for API
+    const merged = new Set([...staticCompleted, ...completedLocal])
+    setCompletedIds(merged)
+    const target = plan.sections.find((s) => s.lessons.some((l) => !merged.has(l.id)))
     setExpandedSection(target?.label ?? plan.sections[0]?.label ?? null)
+
+    // Check if plan ID looks like a real DB ID (numeric)
+    const planIdNum = Number(plan.id)
+    if (!isNaN(planIdNum) && planIdNum > 0) {
+      aiService.getCompletedLessons(planIdNum).then((serverIds) => {
+        if (serverIds.length > 0) {
+          const serverSet = new Set([...staticCompleted, ...serverIds])
+          setCompletedIds(serverSet)
+          // Keep localStorage in sync
+          localStorage.setItem(localKey, JSON.stringify(Array.from(serverSet)))
+        }
+      }).catch(() => { /* ignore network error, keep localStorage state */ })
+    }
   }, [plan?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist completed lessons back to localStorage
+  // Persist completed lessons to both API and localStorage when changed
   useEffect(() => {
     if (!plan) return
-    localStorage.setItem(`study_plan_completed_lessons_${plan.id}`, JSON.stringify(Array.from(completedIds)))
+    const ids = Array.from(completedIds)
+    localStorage.setItem(`study_plan_completed_lessons_${plan.id}`, JSON.stringify(ids))
+    const planIdNum = Number(plan.id)
+    if (!isNaN(planIdNum) && planIdNum > 0) {
+      aiService.updateCompletedLessons(planIdNum, ids).catch(() => { /* ignore */ })
+    }
   }, [completedIds, plan?.id])
 
   // ── Derived: per-section stats ───────
@@ -241,7 +260,7 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
       )
       onClose()
       const pageNum = extractPageNumber(nextLesson.pageRange)
-      const pageQuery = pageNum ? `?page=${pageNum}` : ''
+      const pageQuery = `?page=${pageNum || 1}&planId=${plan.id}&lessonId=${nextLesson.id}`
       navigate(`/dashboard/documents/document/${docId}${pageQuery}`)
     } else if (nextLesson.type === 'quiz') {
       addToast(
@@ -411,7 +430,7 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
                                 const docName = lesson.linkedDocName || plan.linkedDocs?.[0] || plan.title
                                 const docId = getDocumentIdByName(docName)
                                 const pageNum = extractPageNumber(lesson.pageRange)
-                                const pageQuery = pageNum ? `?page=${pageNum}` : ''
+                                const pageQuery = `?page=${pageNum || 1}&planId=${plan.id}&lessonId=${lesson.id}`
                                 navigate(`/dashboard/documents/document/${docId}${pageQuery}`)
                               } else if (lesson.type === 'quiz') {
                                 addToast(
@@ -448,7 +467,7 @@ export function LearningProgressModal({ isOpen, onClose, plan }: Props) {
                                 e.stopPropagation()
                                 const docId = getDocumentIdByName(lesson.linkedDocName || '')
                                 const pageNum = extractPageNumber(lesson.pageRange)
-                                const pageQuery = pageNum ? `?page=${pageNum}` : ''
+                                const pageQuery = `?page=${pageNum || 1}&planId=${plan.id}&lessonId=${lesson.id}`
                                 navigate(`/dashboard/documents/document/${docId}${pageQuery}`)
                                 onClose()
                               }}
