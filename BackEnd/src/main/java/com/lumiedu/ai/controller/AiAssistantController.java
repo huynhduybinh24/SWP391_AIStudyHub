@@ -155,6 +155,26 @@ public class AiAssistantController {
         return ResponseEntity.ok(ApiResponse.ok("Study plans retrieved successfully.", plans));
     }
 
+    // ------------------------------------------------------------------
+    // GET /api/ai/study-plans/{planId}/completed-lessons
+    // ------------------------------------------------------------------
+    @GetMapping("/study-plans/{planId}/completed-lessons")
+    public ResponseEntity<ApiResponse<List<String>>> getCompletedLessons(@PathVariable("planId") Long planId) {
+        List<String> completedIds = aiAssistantService.getCompletedLessons(planId);
+        return ResponseEntity.ok(ApiResponse.ok("Completed lessons retrieved.", completedIds));
+    }
+
+    // ------------------------------------------------------------------
+    // PUT /api/ai/study-plans/{planId}/completed-lessons
+    // ------------------------------------------------------------------
+    @PutMapping("/study-plans/{planId}/completed-lessons")
+    public ResponseEntity<ApiResponse<List<String>>> updateCompletedLessons(
+            @PathVariable("planId") Long planId,
+            @RequestBody CompletedLessonsRequest request) {
+        List<String> updatedIds = aiAssistantService.updateCompletedLessons(planId, request.getLessonIds());
+        return ResponseEntity.ok(ApiResponse.ok("Completed lessons updated.", updatedIds));
+    }
+
     // --- Request DTOs ---
 
     @Data
@@ -185,5 +205,10 @@ public class AiAssistantController {
         private Integer durationWeeks;
         private Long documentId;
         private List<Long> documentIds;
+    }
+
+    @Data
+    public static class CompletedLessonsRequest {
+        private List<String> lessonIds;
     }
 }

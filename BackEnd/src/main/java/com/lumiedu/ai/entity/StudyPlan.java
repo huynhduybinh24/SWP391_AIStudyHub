@@ -34,6 +34,9 @@ public class StudyPlan extends BaseEntity {
     @Column(name = "curriculum_json", columnDefinition = "LONGTEXT")
     private String curriculumJson;
 
+    @Column(name = "completed_lessons_json", columnDefinition = "LONGTEXT")
+    private String completedLessonsJson;
+
     @Column(name = "document_id")
     private Long documentId;
 

@@ -658,6 +658,29 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     @Override
+    public List<String> getCompletedLessons(Long planId) {
+        StudyPlan plan = studyPlanRepository.findById(planId).orElse(null);
+        if (plan == null || plan.getCompletedLessonsJson() == null || plan.getCompletedLessonsJson().isBlank()) {
+            return new ArrayList<>();
+        }
+        try {
+            com.google.gson.reflect.TypeToken<List<String>> typeToken = new com.google.gson.reflect.TypeToken<>() {};
+            return gson.fromJson(plan.getCompletedLessonsJson(), typeToken.getType());
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<String> updateCompletedLessons(Long planId, List<String> lessonIds) {
+        StudyPlan plan = studyPlanRepository.findById(planId)
+                .orElseThrow(() -> new IllegalArgumentException("Study plan not found: " + planId));
+        plan.setCompletedLessonsJson(gson.toJson(lessonIds));
+        studyPlanRepository.save(plan);
+        return lessonIds;
+    }
+
+    @Override
     public List<AiChatSession> getUserSessions(Long userId) {
         return aiChatSessionRepository.findByUserIdOrderByUpdatedAtDesc(userId);
     }
