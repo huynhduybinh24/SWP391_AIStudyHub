@@ -14,6 +14,8 @@ public interface AiAssistantService {
 
     AiChatSession createOrGetChatSession(List<Long> documentIds, Long userId);
 
+    List<AiChatSession> getUserSessions(Long userId);
+
     List<AiChatMessage> getChatHistory(Long sessionId);
 
     AiChatMessage sendMessage(Long sessionId, String messageText, boolean thinkingMode);
