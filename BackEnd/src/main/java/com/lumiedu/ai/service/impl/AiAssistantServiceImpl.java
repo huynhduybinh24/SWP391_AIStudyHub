@@ -144,19 +144,19 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         // Sort documentIds to ensure consistent matching
-        List<Long> sortedIds = new java.util.ArrayList<>(documentIds);
-        java.util.Collections.sort(sortedIds);
+        List<Long> sortedIds = new ArrayList<>(documentIds);
+        Collections.sort(sortedIds);
 
         // Find user's sessions
-        List<AiChatSession> userSessions = aiChatSessionRepository.findByUserId(userId);
+        List<AiChatSession> userSessions = aiChatSessionRepository.findByUserIdOrderByUpdatedAtDesc(userId);
         for (AiChatSession s : userSessions) {
-            List<Long> sessionDocIds = new java.util.ArrayList<>();
+            List<Long> sessionDocIds = new ArrayList<>();
             if (s.getDocuments() != null) {
                 for (Document d : s.getDocuments()) {
                     sessionDocIds.add(d.getId());
                 }
             }
-            java.util.Collections.sort(sessionDocIds);
+            Collections.sort(sessionDocIds);
             
             if (sessionDocIds.equals(sortedIds)) {
                 return s;
@@ -164,7 +164,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         // If not found, create new session
-        List<Document> docs = new java.util.ArrayList<>();
+        List<Document> docs = new ArrayList<>();
         StringBuilder titleBuilder = new StringBuilder();
         for (int i = 0; i < documentIds.size(); i++) {
             Long docId = documentIds.get(i);
@@ -223,35 +223,36 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
         // 2. Ensure chunks exist, then perform RAG search
         String ragContext = "";
-        List<Long> docIds = new java.util.ArrayList<>();
+        StringBuilder docMetaContext = new StringBuilder();
+        List<Document> docObjects = new ArrayList<>();
+
         if (session.getDocuments() != null && !session.getDocuments().isEmpty()) {
-            for (Document d : session.getDocuments()) {
-                docIds.add(d.getId());
-            }
+            docObjects.addAll(session.getDocuments());
         } else if (session.getDocumentId() != null) {
-            docIds.add(session.getDocumentId());
+            Document doc = documentRepository.findById(session.getDocumentId()).orElse(null);
+            if (doc != null) {
+                docObjects.add(doc);
+            }
         }
 
-        // Build document metadata context (title, subject) always available
-        StringBuilder docMetaContext = new StringBuilder();
-        for (Long docId : docIds) {
-            Document doc = documentRepository.findById(docId).orElse(null);
-            if (doc != null) {
-                docMetaContext.append("Tài liệu: ").append(doc.getTitle());
-                if (doc.getSubject() != null) docMetaContext.append(" | Môn học: ").append(doc.getSubject());
-                if (doc.getDescription() != null && !doc.getDescription().isEmpty()) {
-                    docMetaContext.append("\nMô tả: ").append(doc.getDescription());
-                }
-                docMetaContext.append("\n");
-                // Auto-index chunks if not yet indexed
-                List<DocumentChunk> existingChunks = documentChunkRepository.findByDocumentId(docId);
-                if (existingChunks.isEmpty()) {
-                    try {
-                        documentChunkingService.chunkAndIndexDocument(docId);
-                        System.out.println("Auto-indexed chunks for document: " + doc.getTitle());
-                    } catch (Exception e) {
-                        System.err.println("Failed to auto-index chunks for doc " + docId + ": " + e.getMessage());
-                    }
+        List<Long> docIds = new ArrayList<>();
+        for (Document doc : docObjects) {
+            docIds.add(doc.getId());
+            docMetaContext.append("Tài liệu: ").append(doc.getTitle());
+            if (doc.getSubject() != null) docMetaContext.append(" | Môn học: ").append(doc.getSubject());
+            if (doc.getDescription() != null && !doc.getDescription().isEmpty()) {
+                docMetaContext.append("\nMô tả: ").append(doc.getDescription());
+            }
+            docMetaContext.append("\n");
+            
+            // Auto-index chunks if not yet indexed
+            List<DocumentChunk> existingChunks = documentChunkRepository.findByDocumentId(doc.getId());
+            if (existingChunks.isEmpty()) {
+                try {
+                    documentChunkingService.chunkAndIndexDocument(doc.getId());
+                    System.out.println("Auto-indexed chunks for document: " + doc.getTitle());
+                } catch (Exception e) {
+                    System.err.println("Failed to auto-index chunks for doc " + doc.getId() + ": " + e.getMessage());
                 }
             }
         }
@@ -685,7 +686,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             return "";
         }
         
-        List<DocumentChunk> chunks = new java.util.ArrayList<>();
+        List<DocumentChunk> chunks = new ArrayList<>();
         for (Long documentId : documentIds) {
             chunks.addAll(documentChunkRepository.findByDocumentId(documentId));
         }
@@ -711,7 +712,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             }
         }
         
-        List<ChunkScore> scoredChunks = new java.util.ArrayList<>();
+        List<ChunkScore> scoredChunks = new ArrayList<>();
         for (DocumentChunk chunk : chunks) {
             int score = 0;
             String contentLower = chunk.getContent().toLowerCase();
@@ -727,16 +728,17 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         
         if (scoredChunks.isEmpty()) {
             StringBuilder fallback = new StringBuilder();
-            for (Long documentId : documentIds) {
-                List<DocumentChunk> docChunks = documentChunkRepository.findByDocumentId(documentId);
-                if (!docChunks.isEmpty()) {
-                    fallback.append(docChunks.get(0).getContent()).append("\n\n");
-                }
+            Map<Long, DocumentChunk> firstChunks = new HashMap<>();
+            for (DocumentChunk chunk : chunks) {
+                firstChunks.putIfAbsent(chunk.getDocumentId(), chunk);
+            }
+            for (DocumentChunk firstChunk : firstChunks.values()) {
+                fallback.append(firstChunk.getContent()).append("\n\n");
             }
             return fallback.toString();
         }
         
-        java.util.Collections.sort(scoredChunks);
+        Collections.sort(scoredChunks);
         StringBuilder result = new StringBuilder();
         int limit = Math.min(scoredChunks.size(), 5);
         for (int i = 0; i < limit; i++) {
