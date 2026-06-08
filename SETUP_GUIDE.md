@@ -1,46 +1,55 @@
-# Hướng Dẫn Cài Đặt LumiEdu
+# Hướng Dẫn Cài Đặt Nhanh LumiEdu
 
-## 1. Clone dự án
-```bash
-git clone https://github.com/huynhduybinh24/SWP391_AIStudyHub.git
-```
+Tài liệu này giúp các thành viên cấu hình và chạy dự án nhanh nhất.
 
-## 2. Cấu hình Frontend
-Vào thư mục `FrontEnd`, tạo file `.env` với nội dung sau:
+---
+
+### Bước 1: Tạo File Cấu Hình (Copy & Paste)
+
+Vì các file cấu hình nằm trong `.gitignore` (không được đẩy lên GitHub), bạn cần tạo thủ công 2 file sau:
+
+#### 1. Tạo file `FrontEnd/.env`
 ```env
 VITE_API_BASE_URL=/api
-VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key_here
-VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
+VITE_STRIPE_PUBLISHABLE_KEY=YOUR_STRIPE_PUBLISHABLE_KEY_HERE
+VITE_GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
 ```
 
-## 3. Cấu hình Backend
-Vào thư mục `BackEnd/src/main/resources`, tạo file `application-local.properties` with nội dung sau:
+#### 2. Tạo file `BackEnd/src/main/resources/application-local.properties`
 ```properties
-stripe.secret-key=your_stripe_secret_key_here
-stripe.webhook-secret=your_stripe_webhook_secret_here
-google.client-id=your_google_client_id_here
-google.client-secret=your_google_client_secret_here
-openai.api.key=your_openai_api_key_here
-gemini.api.key=your_gemini_api_key_here
+stripe.secret-key=YOUR_STRIPE_SECRET_KEY_HERE
+stripe.webhook-secret=whsec_mock_key_for_now
+google.client-id=YOUR_GOOGLE_CLIENT_ID_HERE
+google.client-secret=YOUR_GOOGLE_CLIENT_SECRET_HERE
+openai.api.key=mock-key
+gemini.api.key=YOUR_GEMINI_API_KEY_HERE
 ```
+*(Thay `YOUR_GEMINI_API_KEY_HERE` bằng API Key cá nhân của bạn nếu muốn kiểm thử tính năng AI Chatbot).*
 
-## 4. Chạy
+---
+
+### Bước 2: Khởi Chạy Dự Án
+
+Mở 2 cửa sổ Terminal độc lập để chạy đồng thời Backend và Frontend:
+
+#### 1. Chạy Backend
 ```bash
-# Backend
 cd BackEnd
 ./mvnw spring-boot:run
+```
 
-# Frontend
+#### 2. Chạy Frontend
+```bash
 cd FrontEnd
 npm install
 npm run dev
 ```
 
-## Tài khoản test
-- User: `student@lumiedu.com` / `123456`
-- Admin: `admin@lumiedu.com` / `123456`
+---
 
-> ⚠️ File `.env` và `application-local.properties` đã được thêm vào `.gitignore` nên Git sẽ **tự động bỏ qua**, không push lên GitHub. Bạn không cần làm gì thêm.
->
-> Kiểm tra bằng lệnh: `git status` — nếu không thấy 2 file trên trong danh sách là OK ✅
+### Bước 3: Đăng Nhập Tài Khoản Test
+
+Sau khi giao diện chạy lên, bạn có thể đăng nhập bằng các tài khoản test sẵn có:
+- **Tài khoản học viên:** `student@lumiedu.com` / mật khẩu `123456`
+- **Tài khoản quản trị viên:** `admin@lumiedu.com` / mật khẩu `123456`
 
