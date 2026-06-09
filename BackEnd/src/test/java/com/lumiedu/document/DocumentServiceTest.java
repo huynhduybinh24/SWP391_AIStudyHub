@@ -12,6 +12,8 @@ import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.document.repository.DocumentTagRepository;
 import com.lumiedu.document.service.impl.DocumentServiceImpl;
+import com.lumiedu.document.service.GoogleDriveService;
+import com.lumiedu.ai.service.DocumentChunkingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +53,12 @@ public class DocumentServiceTest {
     @Mock
     private AudioRecordRepository audioRecordRepository;
 
+    @Mock
+    private GoogleDriveService googleDriveService;
+
+    @Mock
+    private DocumentChunkingService documentChunkingService;
+
     @InjectMocks
     private DocumentServiceImpl documentService;
 
@@ -72,7 +80,7 @@ public class DocumentServiceTest {
     }
 
     @Test
-    void testUploadDocument_Success() {
+    void testUploadDocument_Success() throws IOException {
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "lecture1.pdf",
@@ -101,9 +109,12 @@ public class DocumentServiceTest {
                 .subject("PRJ301")
                 .visibility("PUBLIC")
                 .userId(1L)
+                .googleDriveFileId("mock-drive-id")
+                .storageProvider("GOOGLE_DRIVE")
                 .deleted(false)
                 .build();
 
+        when(googleDriveService.uploadFile(any(), any())).thenReturn("mock-drive-id");
         when(documentRepository.save(any(Document.class))).thenReturn(mockSavedDoc);
         when(documentTagRepository.findAllByDocumentId(100L)).thenReturn(
                 List.of(

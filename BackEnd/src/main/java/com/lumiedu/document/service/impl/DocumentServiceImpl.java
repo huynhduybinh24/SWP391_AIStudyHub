@@ -292,7 +292,16 @@ public class DocumentServiceImpl implements DocumentService {
             }
         }
 
-        Resource resource = loadFileAsResource(document.getFileType(), document.getFileName());
+        Resource resource;
+        if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+            try {
+                resource = googleDriveService.downloadFile(document.getGoogleDriveFileId());
+            } catch (IOException e) {
+                throw new FileStorageException("Failed to download file from Google Drive ID: " + document.getGoogleDriveFileId(), e);
+            }
+        } else {
+            resource = loadFileAsResource(document.getFileType(), document.getFileName());
+        }
 
         // Record download history
         DocumentDownload download = DocumentDownload.builder()
@@ -309,6 +318,13 @@ public class DocumentServiceImpl implements DocumentService {
     public Resource previewDocument(Long id) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
+        if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+            try {
+                return googleDriveService.downloadFile(document.getGoogleDriveFileId());
+            } catch (IOException e) {
+                throw new FileStorageException("Failed to load preview from Google Drive ID: " + document.getGoogleDriveFileId(), e);
+            }
+        }
         return loadFileAsResource(document.getFileType(), document.getFileName());
     }
 
