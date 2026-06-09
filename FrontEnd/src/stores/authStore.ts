@@ -127,7 +127,6 @@ export const useAuthStore = create<AuthState>()(
               })
 
               if (activeUser?.role?.toLowerCase() === 'admin') {
-                localStorage.removeItem('mock_partnership_requests')
                 localStorage.removeItem('mock_sent_emails')
                 localStorage.removeItem('aiStudyHubSystemStatus') // Resets status
               }

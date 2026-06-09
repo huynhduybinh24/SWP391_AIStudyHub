@@ -426,21 +426,32 @@ export const getAdminStats = async (): Promise<AdminStats> => {
   };
 };
 
-export const getUsers = async (): Promise<AdminUser[]> => {
+export const getUsers = async (
+  keyword?: string,
+  role?: string,
+  status?: string,
+  page = 0,
+  size = 100
+): Promise<AdminUser[]> => {
   try {
-    const response = await apiClient.get('/users');
-    const data = response.data;
-    if (Array.isArray(data)) {
-      return data.map((u: any) => ({
+    const params: any = { page, size };
+    if (keyword) params.keyword = keyword;
+    if (role) params.role = role.toUpperCase();
+    if (status) params.status = status.toUpperCase();
+
+    const response = await apiClient.get('/admin/users', { params });
+    const list = response.data?.data || response.data;
+    if (Array.isArray(list)) {
+      return list.map((u: any) => ({
         id: String(u.id),
         name: u.fullName || u.name || 'Anonymous',
         email: u.email,
-        role: u.role?.toLowerCase() === 'admin' ? 'admin' : 'user',
+        role: u.role?.toLowerCase() === 'admin' ? 'admin' : u.role?.toLowerCase() === 'teacher' ? 'teacher' : 'user',
         status: u.accountStatus?.toLowerCase() || 'active',
         joinedAt: u.createdAt ? u.createdAt.split('T')[0] : '2023-01-15',
         documentsCount: u.documentsCount || 0,
         storageUsedMB: u.storageUsedMb || 0,
-        plan: u.plan?.toLowerCase() || 'free',
+        plan: u.planType?.toLowerCase() || 'free',
         isOnline: u.isOnline || false,
       }));
     }
@@ -448,7 +459,18 @@ export const getUsers = async (): Promise<AdminUser[]> => {
     console.warn("Using mock users fallback", error);
   }
   await randomDelay();
-  return loadUsersFromStorage();
+  let result = loadUsersFromStorage();
+  if (keyword) {
+    const kw = keyword.toLowerCase();
+    result = result.filter(u => u.name.toLowerCase().includes(kw) || u.email.toLowerCase().includes(kw));
+  }
+  if (role) {
+    result = result.filter(u => u.role === role.toLowerCase());
+  }
+  if (status) {
+    result = result.filter(u => u.status === status.toLowerCase());
+  }
+  return result;
 };
 
 export const updateUser = async (
@@ -458,13 +480,18 @@ export const updateUser = async (
 ): Promise<AdminUser> => {
   try {
     if (updates.status) {
-      await apiClient.put(`/users/${userId}/status`, { status: updates.status, reason });
+      await apiClient.patch(`/admin/users/${userId}/status`, { status: updates.status.toUpperCase(), reason });
     }
     if (updates.role) {
-      await apiClient.put(`/users/${userId}/role`, { role: updates.role });
+      await apiClient.patch(`/admin/users/${userId}/role`, { role: updates.role.toUpperCase() });
     }
-    if (updates.name) {
-      await apiClient.put(`/users/${userId}/profile`, { fullName: updates.name });
+    if (updates.name || updates.email) {
+      const currentUsers = loadUsersFromStorage();
+      const existing = currentUsers.find(u => u.id === userId);
+      await apiClient.put(`/admin/users/${userId}`, {
+        fullName: updates.name || existing?.name || '',
+        email: updates.email || existing?.email || ''
+      });
     }
   } catch (error) {
     console.warn("Using mock update user fallback", error);
@@ -552,7 +579,7 @@ export const updateUser = async (
 
 export const deleteUser = async (userId: string, reason?: string): Promise<{ success: boolean }> => {
   try {
-    await apiClient.delete(`/users/${userId}`);
+    await apiClient.delete(`/admin/users/${userId}`);
   } catch (error) {
     console.warn("Using mock delete user fallback", error);
   }
@@ -688,96 +715,127 @@ export const deleteDocument = async (documentId: string, reason?: string): Promi
 
 export const approveDocument = async (documentId: string): Promise<AdminDocument> => {
   try {
-    const response = await apiClient.post(`/admin/documents/${documentId}/approve`);
-    if (response.data) return response.data;
+    const response = await apiClient.patch(`/admin/documents/${documentId}/moderate`, { status: 'APPROVED' });
+    if (response.data) {
+      return { ...mockDocuments.find(d => d.id === documentId)!, status: 'approved' };
+    }
   } catch (error) {
-    console.warn("Using mock approve document fallback", error);
+    console.warn('Using mock approve document fallback', error);
   }
   await randomDelay();
   const index = mockDocuments.findIndex((d) => d.id === documentId);
-  if (index === -1) throw new Error("Document not found");
-  
-  mockDocuments[index] = {
-    ...mockDocuments[index],
-    status: "approved",
-    aiStatus: mockDocuments[index].aiStatus === "not_analyzed" ? "analyzed" : mockDocuments[index].aiStatus,
-  };
+  if (index === -1) throw new Error('Document not found');
+  mockDocuments[index] = { ...mockDocuments[index], status: 'approved' };
   return { ...mockDocuments[index] };
 };
 
 export const rejectDocument = async (documentId: string, reason?: string): Promise<AdminDocument> => {
   try {
-    const response = await apiClient.post(`/admin/documents/${documentId}/reject`, { reason });
-    if (response.data) return response.data;
+    await apiClient.patch(`/admin/documents/${documentId}/moderate`, { status: 'REJECTED', reason });
   } catch (error) {
-    console.warn("Using mock reject document fallback", error);
+    console.warn('Using mock reject document fallback', error);
   }
   await randomDelay();
   const index = mockDocuments.findIndex((d) => d.id === documentId);
-  if (index === -1) throw new Error("Document not found");
-  
-  mockDocuments[index] = {
-    ...mockDocuments[index],
-    status: "rejected",
-  };
-  
-  const doc = mockDocuments[index];
+  if (index === -1) throw new Error('Document not found');
+  mockDocuments[index] = { ...mockDocuments[index], status: 'rejected' };
   if (reason) {
-    console.log(`[Email Notification Sent] To: ${doc.ownerEmail} | Subject: Document Rejection Notice | Reason: ${reason}`);
-    
     userNotificationService.addUserNotification({
-      targetUserEmail: doc.ownerEmail || 'binh@example.com',
-      type: "document_rejected",
-      title: "Document rejected by admin",
-      message: `Your document "${doc.title}" was rejected by admin. Reason: ${reason}`,
-      documentId: doc.id,
-      documentName: doc.title,
-      reason: reason,
-      actionType: "rejected"
+      targetUserEmail: mockDocuments[index].ownerEmail || 'binh@example.com',
+      type: 'document_rejected',
+      title: 'Document rejected by admin',
+      message: `Your document "${mockDocuments[index].title}" was rejected. Reason: ${reason}`,
+      documentId: mockDocuments[index].id,
+      documentName: mockDocuments[index].title,
+      reason,
+      actionType: 'rejected',
     });
   }
-  
   return { ...mockDocuments[index] };
 };
 
 export const bulkApproveDocuments = async (documentIds: string[]): Promise<AdminDocument[]> => {
+  try {
+    await apiClient.post('/admin/documents/bulk-approve', { ids: documentIds.map(Number) });
+  } catch (error) {
+    console.warn('Using mock bulk approve fallback', error);
+  }
   await randomDelay();
-  mockDocuments = mockDocuments.map((d) => {
-    if (documentIds.includes(d.id)) {
-      return {
-        ...d,
-        status: "approved",
-        aiStatus: d.aiStatus === "not_analyzed" ? "analyzed" : d.aiStatus,
-      };
-    }
-    return d;
-  });
+  mockDocuments = mockDocuments.map((d) =>
+    documentIds.includes(d.id) ? { ...d, status: 'approved' as const } : d
+  );
   return mockDocuments.filter((d) => documentIds.includes(d.id));
 };
 
-export const bulkRejectDocuments = async (documentIds: string[]): Promise<AdminDocument[]> => {
+export const bulkRejectDocuments = async (documentIds: string[], reason?: string): Promise<AdminDocument[]> => {
+  try {
+    await apiClient.post('/admin/documents/bulk-reject', { ids: documentIds.map(Number), reason });
+  } catch (error) {
+    console.warn('Using mock bulk reject fallback', error);
+  }
   await randomDelay();
-  mockDocuments = mockDocuments.map((d) => {
-    if (documentIds.includes(d.id)) {
-      return { ...d, status: "rejected" };
-    }
-    return d;
-  });
+  mockDocuments = mockDocuments.map((d) =>
+    documentIds.includes(d.id) ? { ...d, status: 'rejected' as const } : d
+  );
   return mockDocuments.filter((d) => documentIds.includes(d.id));
 };
 
 export const bulkDeleteDocuments = async (documentIds: string[]): Promise<{ success: boolean }> => {
+  try {
+    await apiClient.delete('/admin/documents/bulk', { data: { ids: documentIds.map(Number) } });
+  } catch (error) {
+    console.warn('Using mock bulk delete fallback', error);
+  }
   await randomDelay();
   mockDocuments = mockDocuments.filter((d) => !documentIds.includes(d.id));
   return { success: true };
 };
 
-export const exportModerationReport = async (_documentIds: string[]): Promise<{ downloadUrl: string; filename: string }> => {
-  await randomDelay();
-  return {
-    downloadUrl: "#",
-    filename: `moderation_report_${new Date().toISOString().split("T")[0]}.csv`,
-  };
+export const exportModerationReport = async (documentIds: string[]): Promise<{ downloadUrl: string; filename: string }> => {
+  const filename = `moderation_report_${new Date().toISOString().split("T")[0]}.csv`;
+  try {
+    const params = documentIds && documentIds.length > 0 ? { ids: documentIds.join(',') } : undefined;
+    const response = await apiClient.get('/admin/documents/export-report', {
+      params,
+      responseType: 'blob'
+    });
+    
+    const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    return {
+      downloadUrl: url,
+      filename
+    };
+  } catch (error) {
+    console.warn('Failed to export moderation report from server, using local fallback:', error);
+    const headers = 'Document ID,Title,Uploader Email,Uploader Name,File Type,File Size (MB),Moderation Status,Created At\n';
+    const rows = mockDocuments
+      .filter((d) => documentIds.length === 0 || documentIds.includes(d.id))
+      .map((d) => `${d.id},"${d.title.replace(/"/g, '""')}","${d.ownerEmail}","${d.ownerName}","${d.fileType}",${d.sizeMB},${d.status},${d.uploadedAt}`)
+      .join('\n');
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    return {
+      downloadUrl: url,
+      filename
+    };
+  }
 };
 
 export const getDashboardSummary = async () => {
