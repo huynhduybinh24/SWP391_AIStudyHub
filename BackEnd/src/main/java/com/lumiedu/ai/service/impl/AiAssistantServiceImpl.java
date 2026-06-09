@@ -719,6 +719,71 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             return "";
         }
 
+        // 1. Get embedding for the query
+        float[] queryVector = geminiService.getEmbedding(query);
+
+        class ChunkVectorScore implements Comparable<ChunkVectorScore> {
+            DocumentChunk chunk;
+            double similarity;
+            
+            ChunkVectorScore(DocumentChunk chunk, double similarity) {
+                this.chunk = chunk;
+                this.similarity = similarity;
+            }
+            
+            @Override
+            public int compareTo(ChunkVectorScore o) {
+                return Double.compare(o.similarity, this.similarity); // descending
+            }
+        }
+        
+        List<ChunkVectorScore> scoredChunks = new ArrayList<>();
+        for (DocumentChunk chunk : chunks) {
+            if (chunk.getEmbedding() != null && !chunk.getEmbedding().isEmpty()) {
+                try {
+                    float[] chunkVector = gson.fromJson(chunk.getEmbedding(), float[].class);
+                    double similarity = cosineSimilarity(queryVector, chunkVector);
+                    scoredChunks.add(new ChunkVectorScore(chunk, similarity));
+                } catch (Exception e) {
+                    System.err.println("Failed to parse or compute similarity for chunk ID " + chunk.getId() + ": " + e.getMessage());
+                }
+            }
+        }
+        
+        // 2. If no chunks have embeddings, fallback to keyword search
+        if (scoredChunks.isEmpty()) {
+            System.out.println("No chunk embeddings found. Falling back to keyword search.");
+            return performKeywordSearch(chunks, query);
+        }
+        
+        Collections.sort(scoredChunks);
+        StringBuilder result = new StringBuilder();
+        int limit = Math.min(scoredChunks.size(), 5);
+        for (int i = 0; i < limit; i++) {
+            DocumentChunk c = scoredChunks.get(i).chunk;
+            result.append("--- Source Document ID: ").append(c.getDocumentId()).append(" ---\n");
+            result.append(c.getContent()).append("\n\n");
+        }
+        
+        return result.toString();
+    }
+
+    private double cosineSimilarity(float[] vectorA, float[] vectorB) {
+        double dotProduct = 0.0;
+        double normA = 0.0;
+        double normB = 0.0;
+        for (int i = 0; i < Math.min(vectorA.length, vectorB.length); i++) {
+            dotProduct += vectorA[i] * vectorB[i];
+            normA += Math.pow(vectorA[i], 2);
+            normB += Math.pow(vectorB[i], 2);
+        }
+        if (normA == 0.0 || normB == 0.0) {
+            return 0.0;
+        }
+        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
+
+    private String performKeywordSearch(List<DocumentChunk> chunks, String query) {
         String[] keywords = query.toLowerCase().split("\\s+");
         
         class ChunkScore implements Comparable<ChunkScore> {

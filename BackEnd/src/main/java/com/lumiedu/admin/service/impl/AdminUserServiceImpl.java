@@ -103,10 +103,21 @@ public class AdminUserServiceImpl implements AdminUserService {
         return mapUserToResponse(saved);
     }
 
+    private void checkNotSelf(User targetUser, String action) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getName() != null) {
+            if (auth.getName().equalsIgnoreCase(targetUser.getEmail())) {
+                throw new IllegalStateException("You cannot " + action + " your own account.");
+            }
+        }
+    }
+
     @Override
     public AdminUserResponse updateUserRole(Long id, AdminUpdateUserRoleRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        checkNotSelf(user, "change the role of");
 
         user.setRole(request.getRole());
         User saved = userRepository.save(user);
@@ -117,6 +128,8 @@ public class AdminUserServiceImpl implements AdminUserService {
     public AdminUserResponse updateUserStatus(Long id, AdminUpdateUserStatusRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        checkNotSelf(user, "change the status of");
 
         user.setAccountStatus(request.getStatus());
         User saved = userRepository.save(user);
@@ -166,8 +179,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 
-        // TODO: Prevent admin from deleting their own account once security context is configured.
-        // E.g. if (currentUser.getId().equals(id)) throw new RuntimeException("Cannot delete yourself");
+        checkNotSelf(user, "delete");
 
         user.setAccountStatus(AccountStatus.DELETED);
         userRepository.save(user);

@@ -5,6 +5,7 @@ import com.lumiedu.admin.service.AdminDashboardService;
 import com.lumiedu.billing.entity.Payment;
 import com.lumiedu.billing.enums.PaymentStatus;
 import com.lumiedu.billing.repository.PaymentRepository;
+import com.lumiedu.document.enums.DocumentStatus;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.notification.repository.NotificationRepository;
 import com.lumiedu.user.entity.User;
@@ -56,10 +57,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .filter(n -> n.getIsRead() != null && !n.getIsRead() && n.getDeleted() != null && !n.getDeleted())
                 .count();
 
-        // Cột status chưa được cấu hình cho Document entity, trả về 0 và gắn TODO
-        // TODO: Map these fields once document status and moderation columns are added
-        long rejectedDocuments = 0;
-        long pendingDocuments = 0;
+        long rejectedDocuments = documentRepository.countByModerationStatusAndDeletedFalse(DocumentStatus.REJECTED);
+        long pendingDocuments = documentRepository.countByModerationStatusAndDeletedFalse(DocumentStatus.PENDING);
 
         return AdminDashboardStatsResponse.builder()
                 .totalUsers(totalUsers)

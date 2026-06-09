@@ -30,8 +30,8 @@ public class AdminDocumentMapper {
                 .createdAt(doc.getCreatedAt())
                 .updatedAt(doc.getUpdatedAt())
                 .summaryPreview(summaryPreview)
-                .status("ACTIVE") // Mặc định do Document entity chưa có status
-                .moderationReason(null)
+                .status(doc.getModerationStatus() != null ? doc.getModerationStatus().name() : "APPROVED")
+                .moderationReason(doc.getModerationNote())
                 .build();
     }
 }

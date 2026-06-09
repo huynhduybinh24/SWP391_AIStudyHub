@@ -1,10 +1,12 @@
 package com.lumiedu.admin.service.impl;
 
 import com.lumiedu.admin.dto.request.AdminDocumentModerationRequest;
+import com.lumiedu.admin.dto.request.BulkDocumentRequest;
 import com.lumiedu.admin.dto.response.AdminDocumentResponse;
 import com.lumiedu.admin.mapper.AdminDocumentMapper;
 import com.lumiedu.admin.service.AdminDocumentService;
 import com.lumiedu.document.entity.Document;
+import com.lumiedu.document.enums.DocumentStatus;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.user.entity.User;
 import com.lumiedu.user.repository.UserRepository;
@@ -116,18 +118,115 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
         Document doc = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Document not found with id: " + id));
 
-        // If the status is rejected, set deleted = true to hide it from listings
-        if ("rejected".equalsIgnoreCase(request.getStatus()) || "REJECTED".equalsIgnoreCase(request.getStatus())) {
-            doc.setDeleted(true);
-            documentRepository.save(doc);
+        // Parse and apply the moderation status
+        DocumentStatus status = null;
+        if (request.getStatus() != null) {
+            try {
+                status = DocumentStatus.valueOf(request.getStatus().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid moderation status: " + request.getStatus());
+            }
         }
 
-        User owner = doc.getUserId() != null ? userRepository.findById(doc.getUserId()).orElse(null) : null;
-        AdminDocumentResponse response = AdminDocumentMapper.toResponse(doc, owner);
-        if (request.getStatus() != null) {
-            response.setStatus(request.getStatus().toUpperCase());
+        if (status != null) {
+            doc.setModerationStatus(status);
+            // Rejected documents are hidden from public listing
+            doc.setDeleted(status == DocumentStatus.REJECTED);
         }
-        response.setModerationReason(request.getReason());
-        return response;
+
+        if (request.getReason() != null) {
+            doc.setModerationNote(request.getReason());
+        }
+
+        documentRepository.save(doc);
+
+        User owner = doc.getUserId() != null ? userRepository.findById(doc.getUserId()).orElse(null) : null;
+        return AdminDocumentMapper.toResponse(doc, owner);
+    }
+
+    @Override
+    public int bulkApprove(BulkDocumentRequest request) {
+        if (request.getIds() == null || request.getIds().isEmpty()) return 0;
+        List<Document> docs = documentRepository.findAllById(request.getIds());
+        docs.forEach(d -> {
+            d.setModerationStatus(DocumentStatus.APPROVED);
+            d.setDeleted(false);
+        });
+        documentRepository.saveAll(docs);
+        return docs.size();
+    }
+
+    @Override
+    public int bulkReject(BulkDocumentRequest request) {
+        if (request.getIds() == null || request.getIds().isEmpty()) return 0;
+        List<Document> docs = documentRepository.findAllById(request.getIds());
+        docs.forEach(d -> {
+            d.setModerationStatus(DocumentStatus.REJECTED);
+            d.setDeleted(true);
+            if (request.getReason() != null) d.setModerationNote(request.getReason());
+        });
+        documentRepository.saveAll(docs);
+        return docs.size();
+    }
+
+    @Override
+    public int bulkDelete(BulkDocumentRequest request) {
+        if (request.getIds() == null || request.getIds().isEmpty()) return 0;
+        List<Document> docs = documentRepository.findAllById(request.getIds());
+        docs.forEach(d -> d.setDeleted(true));
+        documentRepository.saveAll(docs);
+        return docs.size();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String exportModerationReport(List<Long> ids) {
+        List<Document> docs;
+        if (ids == null || ids.isEmpty()) {
+            docs = documentRepository.findAllByDeletedFalse();
+        } else {
+            docs = documentRepository.findAllById(ids);
+        }
+
+        List<Long> userIds = docs.stream()
+                .map(Document::getUserId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("Document ID,Title,Uploader Email,Uploader Name,File Type,File Size (MB),Moderation Status,Created At\n");
+
+        for (Document d : docs) {
+            User owner = d.getUserId() != null ? userMap.get(d.getUserId()) : null;
+            String ownerEmail = owner != null ? owner.getEmail() : "N/A";
+            String ownerName = owner != null ? owner.getFullName() : "N/A";
+            double sizeMb = d.getFileSize() != null ? (double) d.getFileSize() / (1024 * 1024) : 0.0;
+            String sizeStr = String.format(java.util.Locale.US, "%.2f", sizeMb);
+            String statusStr = d.getModerationStatus() != null ? d.getModerationStatus().name() : "PENDING";
+            String createdAtStr = d.getCreatedAt() != null ? d.getCreatedAt().toString() : "N/A";
+
+            csv.append(d.getId()).append(",")
+                    .append(escapeCsv(d.getTitle())).append(",")
+                    .append(escapeCsv(ownerEmail)).append(",")
+                    .append(escapeCsv(ownerName)).append(",")
+                    .append(escapeCsv(d.getFileType())).append(",")
+                    .append(sizeStr).append(",")
+                    .append(statusStr).append(",")
+                    .append(escapeCsv(createdAtStr)).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) return "";
+        String escaped = value.replace("\"", "\"\"");
+        if (escaped.contains(",") || escaped.contains("\"") || escaped.contains("\n") || escaped.contains("\r")) {
+            return "\"" + escaped + "\"";
+        }
+        return escaped;
     }
 }
