@@ -1,5 +1,6 @@
 package com.lumiedu.document.entity;
 
+import com.lumiedu.document.enums.DocumentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -64,6 +65,14 @@ public class Document {
     @Builder.Default
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status", length = 20)
+    @Builder.Default
+    private DocumentStatus moderationStatus = DocumentStatus.APPROVED;
+
+    @Column(name = "moderation_note", columnDefinition = "TEXT")
+    private String moderationNote;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

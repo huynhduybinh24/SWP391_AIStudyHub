@@ -31,6 +31,9 @@ public class DataInitializer implements CommandLineRunner {
     private final com.lumiedu.storage.repository.StorageRepository storageRepository;
     private final NotificationRepository notificationRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.lumiedu.workspace.repository.SharedWorkspaceRepository sharedWorkspaceRepository;
+    private final com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
+    private final com.lumiedu.workspace.repository.WorkspaceDocumentRepository workspaceDocumentRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -328,6 +331,96 @@ public class DataInitializer implements CommandLineRunner {
 
                 notificationRepository.saveAll(java.util.List.of(n1, n2, n3));
                 System.out.println("--- Seeded sample notifications for student successfully ---");
+            }
+
+            if (workspaceDocumentRepository.count() == 0) {
+                System.out.println("--- Found 0 workspace documents. Resetting partial shared workspace data ---");
+                workspaceMemberRepository.deleteAll();
+                sharedWorkspaceRepository.deleteAll();
+            }
+
+            boolean hasShared = workspaceMemberRepository.findByUserIdAndStatus(student.getId(), com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED)
+                    .stream().anyMatch(m -> m.getRole() != com.lumiedu.workspace.enums.WorkspaceMemberRole.OWNER);
+            if (!hasShared) {
+                userRepository.findByEmail("instructor@lumiedu.com").ifPresent(instructor -> {
+                    // Create workspace
+                    com.lumiedu.workspace.entity.SharedWorkspace workspace = com.lumiedu.workspace.entity.SharedWorkspace.builder()
+                            .name("Biology Study Group")
+                            .description("Shared workspace for Biology 101 study group materials and project files.")
+                            .ownerId(instructor.getId())
+                            .accessType(com.lumiedu.workspace.enums.WorkspaceAccessType.PRIVATE)
+                            .blockDownloadForViewers(false)
+                            .build();
+                    com.lumiedu.workspace.entity.SharedWorkspace savedWorkspace = sharedWorkspaceRepository.save(workspace);
+
+                    // Add members (Owner: Instructor, Collaborator: Student)
+                    com.lumiedu.workspace.entity.WorkspaceMember ownerMember = com.lumiedu.workspace.entity.WorkspaceMember.builder()
+                            .workspaceId(savedWorkspace.getId())
+                            .userId(instructor.getId())
+                            .email(instructor.getEmail())
+                            .role(com.lumiedu.workspace.enums.WorkspaceMemberRole.OWNER)
+                            .status(com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED)
+                            .build();
+
+                    com.lumiedu.workspace.entity.WorkspaceMember studentMember = com.lumiedu.workspace.entity.WorkspaceMember.builder()
+                            .workspaceId(savedWorkspace.getId())
+                            .userId(student.getId())
+                            .email(student.getEmail())
+                            .role(com.lumiedu.workspace.enums.WorkspaceMemberRole.COLLABORATOR)
+                            .status(com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED)
+                            .build();
+
+                    workspaceMemberRepository.saveAll(List.of(ownerMember, studentMember));
+
+                    // Create documents owned by instructor
+                    com.lumiedu.document.entity.Document sharedDoc1 = com.lumiedu.document.entity.Document.builder()
+                            .title("Biology 101 Midterm Notes.pdf")
+                            .fileName("biology_101_midterm_notes.pdf")
+                            .originalFileName("Biology 101 Midterm Notes.pdf")
+                            .fileSize(2516582L) // 2.4 MB
+                            .fileUrl("https://storage.lumiedu.com/files/biology_101_midterm_notes.pdf")
+                            .fileType("pdf")
+                            .mimeType("application/pdf")
+                            .subject("Biology")
+                            .checksum("biology_checksum_1234")
+                            .userId(instructor.getId())
+                            .moderationStatus(com.lumiedu.document.enums.DocumentStatus.APPROVED)
+                            .deleted(false)
+                            .build();
+
+                    com.lumiedu.document.entity.Document sharedDoc2 = com.lumiedu.document.entity.Document.builder()
+                            .title("Physics Lab Data.xlsx")
+                            .fileName("physics_lab_data.xlsx")
+                            .originalFileName("Physics Lab Data.xlsx")
+                            .fileSize(1258291L) // 1.2 MB
+                            .fileUrl("https://storage.lumiedu.com/files/physics_lab_data.xlsx")
+                            .fileType("xlsx")
+                            .mimeType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                            .subject("Physics")
+                            .checksum("physics_checksum_5678")
+                            .userId(instructor.getId())
+                            .moderationStatus(com.lumiedu.document.enums.DocumentStatus.APPROVED)
+                            .deleted(false)
+                            .build();
+
+                    documentRepository.saveAll(List.of(sharedDoc1, sharedDoc2));
+
+                    // Associate documents with workspace
+                    com.lumiedu.workspace.entity.WorkspaceDocument wd1 = com.lumiedu.workspace.entity.WorkspaceDocument.builder()
+                            .workspaceId(savedWorkspace.getId())
+                            .documentId(sharedDoc1.getId())
+                            .addedBy(instructor.getId())
+                            .build();
+
+                    com.lumiedu.workspace.entity.WorkspaceDocument wd2 = com.lumiedu.workspace.entity.WorkspaceDocument.builder()
+                            .workspaceId(savedWorkspace.getId())
+                            .documentId(sharedDoc2.getId())
+                            .addedBy(instructor.getId())
+                            .build();
+
+                    workspaceDocumentRepository.saveAll(List.of(wd1, wd2));
+                    System.out.println("--- Seeded sample shared workspace data successfully ---");
+                });
             }
         });
     }

@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.UUID;
 import com.lumiedu.auth.dto.RegisterRequest;
 
+import com.lumiedu.common.config.JwtTokenProvider;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -40,6 +42,7 @@ public class AuthController {
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final ThirdPartyAccountRepository thirdPartyAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Value("${google.client-id:123456789-dummy.apps.googleusercontent.com}")
     private String googleClientId;
@@ -202,8 +205,8 @@ public class AuthController {
                 .build();
 
         AuthTokens tokens = AuthTokens.builder()
-                .accessToken("mock-jwt-token-for-dev")
-                .refreshToken("mock-refresh-token-for-dev")
+                .accessToken(jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name()))
+                .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail(), user.getRole().name()))
                 .build();
 
         LoginResponse response = LoginResponse.builder()
@@ -241,8 +244,8 @@ public class AuthController {
                 .build();
 
         AuthTokens tokens = AuthTokens.builder()
-                .accessToken("mock-jwt-token-for-dev")
-                .refreshToken("mock-refresh-token-for-dev")
+                .accessToken(jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name()))
+                .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail(), user.getRole().name()))
                 .build();
 
         return ResponseEntity.ok(LoginResponse.builder()
@@ -285,8 +288,8 @@ public class AuthController {
                 .build();
 
         AuthTokens tokens = AuthTokens.builder()
-                .accessToken("mock-jwt-token-for-dev")
-                .refreshToken("mock-refresh-token-for-dev")
+                .accessToken(jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name()))
+                .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail(), user.getRole().name()))
                 .build();
 
         LoginResponse response = LoginResponse.builder()
