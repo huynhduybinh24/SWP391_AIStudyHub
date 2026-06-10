@@ -124,7 +124,7 @@ export function StorageCleanupPage() {
     }
   }
  
-  const totalMb = getStorageLimitByPlan(user?.plan)
+  const totalMb = usage ? usage.storageLimitMb : getStorageLimitByPlan(user?.plan)
   const totalGB = totalMb / 1024
 
   const usedMb = usage

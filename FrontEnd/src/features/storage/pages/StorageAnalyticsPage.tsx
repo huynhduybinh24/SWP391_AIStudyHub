@@ -46,7 +46,7 @@ export function StorageAnalyticsPage() {
     }
   }, [user?.id])
 
-  const totalMb = getStorageLimitByPlan(user?.plan)
+  const totalMb = analyticsData ? analyticsData.limitMb : getStorageLimitByPlan(user?.plan)
   const totalGb = totalMb / 1024
 
   const usedMb = analyticsData 

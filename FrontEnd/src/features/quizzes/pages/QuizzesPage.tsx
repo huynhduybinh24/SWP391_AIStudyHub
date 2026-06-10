@@ -86,6 +86,27 @@ const INITIAL_QUESTION_BANK: Record<string, Question[]> = {
   ]
 }
 
+const mapBackendQuestionToFrontend = (item: any): Question => {
+  let opts: string[] = []
+  if (typeof item.options === 'string') {
+    try {
+      opts = JSON.parse(item.options)
+    } catch (e) {
+      opts = [item.options]
+    }
+  } else if (Array.isArray(item.options)) {
+    opts = item.options
+  }
+
+  return {
+    id: String(item.id || Date.now() + Math.random()),
+    q: item.questionText || item.q || '',
+    options: opts,
+    answer: typeof item.answerIndex === 'number' ? item.answerIndex : (typeof item.answer === 'number' ? item.answer : 0),
+    explain: item.explanation || item.explain || ''
+  }
+}
+
 export function QuizzesPage() {
   const { language } = useTranslation()
   const [searchParams] = useSearchParams()
@@ -95,26 +116,42 @@ export function QuizzesPage() {
   const lessonId = searchParams.get('lessonId') || undefined
   const planId = searchParams.get('planId') || undefined
 
-  // 1. Documents loading
-  const [documents] = useState<DocumentItem[]>(() => {
-    const saved = localStorage.getItem('ai_study_hub_documents')
-    if (saved) {
+  const { user } = useAuthStore()
+  const currentUserId = user?.id ? Number(user.id) : undefined
+
+  // 1. Documents loading from backend
+  const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [selectedDocId, setSelectedDocId] = useState<string>('')
+
+  useEffect(() => {
+    if (!currentUserId) return
+
+    const fetchDocs = async () => {
       try {
-        const parsed = JSON.parse(saved) as DocumentItem[]
-        if (parsed.length > 0) return parsed
-      } catch (e) {
-        // Fallback
+        const response = await documentService.getAllDocuments(currentUserId)
+        const mapped: DocumentItem[] = response.map((d: any) => ({
+          id: String(d.id),
+          title: d.title || d.originalFileName || 'Tài liệu không tên',
+          fileName: d.originalFileName || '',
+          subject: d.subject || 'GENERAL',
+          type: d.fileType?.toLowerCase() || 'pdf'
+        }))
+        setDocuments(mapped)
+
+        const docQuery = searchParams.get('doc')
+        if (docQuery) {
+          setSelectedDocId(docQuery)
+        } else if (mapped.length > 0) {
+          setSelectedDocId(String(mapped[0].id))
+        }
+      } catch (err) {
+        console.error('Failed to load user documents:', err)
       }
     }
-    return DEFAULT_DOCUMENTS
-  })
+    fetchDocs()
+  }, [currentUserId, searchParams])
 
   // 2. Active selection and config states
-  const [selectedDocId, setSelectedDocId] = useState<string>(() => {
-    const docQuery = searchParams.get('doc')
-    if (docQuery) return docQuery
-    return documents[0]?.id || ''
-  })
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium')
   const [questionCount, setQuestionCount] = useState<number>(3)
   const [promptModifier, setPromptModifier] = useState<string>('')
@@ -154,134 +191,87 @@ export function QuizzesPage() {
     }
   }, [searchParams, documents])
 
-  // Get active document details
-  const activeDoc = documents.find(d => d.id === selectedDocId)
+  // Load existing quiz for the selected document if available
+  useEffect(() => {
+    if (!selectedDocId) return
 
-  // Simulated AI Quiz Generation
-  const handleGenerateQuiz = (customPrompt?: string) => {
-    setIsGenerating(true)
-    setGenStep(language === 'vi' ? 'Đang phân tích cấu trúc tài liệu...' : 'Analyzing document structure...')
-    
-    setTimeout(() => {
-      setGenStep(language === 'vi' ? 'Đang trích xuất trọng tâm bài học...' : 'Extracting learning milestones...')
-      
-      setTimeout(() => {
-        setGenStep(language === 'vi' ? 'Đang biên soạn câu hỏi & giải thích chi tiết...' : 'Compiling questions & AI explanations...')
-        
-        setTimeout(() => {
-          // Generate questions based on chosen doc and filters
-          const bankQuestions = questionBank[selectedDocId] || []
-          let generated: Question[] = []
-
-          // Handle prompt modifiers (Make it harder, easy, etc.)
-          const targetPrompt = (customPrompt || promptModifier || '').toLowerCase()
-          
-          if (targetPrompt.includes('khó') || targetPrompt.includes('hard') || difficulty === 'hard') {
-            generated = [
-              {
-                id: `q-gen-h1-${Date.now()}`,
-                q: `[NÂNG CAO] Đối với tài liệu '${activeDoc?.title || 'Tài liệu'}', câu hỏi chuyên sâu nào sau đây phản ánh chính xác nhất bản chất cốt lõi của nội dung?`,
-                options: [
-                  'Phương án phân tích hệ thống động lực học phi tuyến bậc cao.',
-                  'Các khía cạnh cơ bản của việc khai thác tham số chuẩn hóa.',
-                  'Giải pháp tối ưu hóa bộ nhớ đệm đa luồng bất đối xứng.',
-                  'Không có phương án nào ở trên là toàn diện.'
-                ],
-                answer: 0,
-                explain: 'Cấp độ Khó yêu cầu phân tích hệ thống phi tuyến tính liên kết trực tiếp tới các trường năng lượng lượng tử cao cấp.'
-              },
-              {
-                id: `q-gen-h2-${Date.now()}`,
-                q: 'Để tối ưu hóa độ chính xác của phép đo trong cơ học lượng tử, nguyên lý nào của Heisenberg được áp dụng?',
-                options: [
-                  'Giới hạn độ bất định tích số độ lệch vị trí và xung lượng lớn hơn hoặc bằng h/4π.',
-                  'Bảo toàn xung lượng tuyệt đối của hệ cô lập.',
-                  'Sự phụ thuộc tuyến tính của hệ số suy giảm hàm sóng.',
-                  'Định luật dịch chuyển Wien đối với bức xạ hố đen.'
-                ],
-                answer: 0,
-                explain: 'Hệ thức bất định Δx.Δp >= h/4π giới hạn độ chính xác đồng thời của tọa độ và xung lượng.'
-              }
-            ]
-          } else if (targetPrompt.includes('dễ') || targetPrompt.includes('easy') || difficulty === 'easy') {
-            generated = [
-              {
-                id: `q-gen-e1-${Date.now()}`,
-                q: `[CƠ BẢN] Chủ đề chính được thảo luận trong '${activeDoc?.title || 'tài liệu học tập'}' là gì?`,
-                options: [
-                  'Tổng quan lý thuyết cơ bản và các định nghĩa cốt lõi.',
-                  'Quy trình vận hành máy móc công nghiệp nặng.',
-                  'Lịch sử phát triển hội họa phục hưng.',
-                  'Hướng dẫn lập trình Web với PHP.'
-                ],
-                answer: 0,
-                explain: 'Nội dung cơ bản tập trung định hình khái niệm nền tảng của môn học.'
-              }
-            ]
-          } else {
-            // General or medium level questions
-            if (bankQuestions.length > 0) {
-              generated = [...bankQuestions]
-            } else {
-              generated = [
-                {
-                  id: `q-gen-m1-${Date.now()}`,
-                  q: `Khái niệm then chốt được nhấn mạnh xuyên suốt tài liệu '${activeDoc?.title || 'tài liệu học tập'}' là gì?`,
-                  options: [
-                    'Sự phân rã các trạng thái chồng chập lượng tử.',
-                    'Lịch sử nghiên cứu hạt cơ bản thế kỷ 19.',
-                    'Thiết kế kiến trúc hệ thống dữ liệu đám mây.',
-                    'Ứng dụng của sóng điện từ trong đời sống.'
-                  ],
-                  answer: 0,
-                  explain: 'Tài liệu nhấn mạnh vào quá trình sụp đổ hàm sóng và phân rã các trạng thái lượng tử.'
-                }
-              ]
-            }
-          }
-
-          // Adjust question count
-          if (generated.length > questionCount) {
-            generated = generated.slice(0, questionCount)
-          } else if (generated.length < questionCount) {
-            // pad with general questions
-            const padCount = questionCount - generated.length
-            for (let i = 0; i < padCount; i++) {
-              generated.push({
-                id: `q-pad-${i}-${Date.now()}`,
-                q: `[Câu hỏi bổ sung ${i+1}] Tác động thực tiễn lớn nhất của chủ đề trong tài liệu này là gì?`,
-                options: [
-                  'Làm nền tảng phát triển các công nghệ thế hệ tiếp theo.',
-                  'Tối ưu hóa chi phí vận hành doanh nghiệp.',
-                  'Rút ngắn thời gian biên dịch mã nguồn.',
-                  'Cải thiện băng thông đường truyền mạng xã hội.'
-                ],
-                answer: 0,
-                explain: 'Chủ đề này giúp khai mở các nghiên cứu ứng dụng thực tế trong tương lai.'
-              })
-            }
-          }
-
-          setQuestions(generated)
-          setIsGenerating(false)
+    const loadExistingQuiz = async () => {
+      try {
+        const raw = await aiService.getQuiz(selectedDocId)
+        if (raw && raw.length > 0) {
+          const mapped = raw.map(mapBackendQuestionToFrontend)
+          setQuestions(mapped)
           setActiveQuiz(true)
           setCurrentIdx(0)
           setSelectedAnswers({})
           setIsSubmitted(false)
-          setIsSavedToBank(false)
-          addToast(
-            language === 'vi' ? 'Đã tạo bộ đề trắc nghiệm AI thành công!' : 'AI Quiz generated successfully!',
-            'success'
-          )
-        }, 800)
-      }, 700)
-    }, 600)
+          setIsSavedToBank(true)
+        } else {
+          setQuestions([])
+          setActiveQuiz(false)
+        }
+      } catch (err) {
+        console.log('No existing quiz found or failed to load:', err)
+        setQuestions([])
+        setActiveQuiz(false)
+      }
+    }
+    loadExistingQuiz()
+  }, [selectedDocId])
+
+  // Get active document details
+  const activeDoc = documents.find(d => d.id === selectedDocId)
+
+  // Real AI Quiz Generation
+  const handleGenerateQuiz = async (customPrompt?: string) => {
+    if (!selectedDocId) {
+      addToast(
+        language === 'vi' ? 'Vui lòng chọn một tài liệu trước!' : 'Please select a document first!',
+        'error'
+      )
+      return
+    }
+
+    setIsGenerating(true)
+    setGenStep(language === 'vi' ? 'Đang phân tích cấu trúc tài liệu...' : 'Analyzing document structure...')
+    
+    try {
+      const rawQuestions = await aiService.generateQuiz(
+        selectedDocId,
+        difficulty,
+        questionCount,
+        customPrompt || promptModifier || ''
+      )
+
+      const mapped = rawQuestions.map(mapBackendQuestionToFrontend)
+      
+      setQuestions(mapped)
+      setActiveQuiz(true)
+      setCurrentIdx(0)
+      setSelectedAnswers({})
+      setIsSubmitted(false)
+      setIsSavedToBank(false)
+      
+      addToast(
+        language === 'vi' ? 'Đã tạo bộ đề trắc nghiệm AI thành công!' : 'AI Quiz generated successfully!',
+        'success'
+      )
+    } catch (err: any) {
+      console.error('Failed to generate quiz:', err)
+      addToast(
+        language === 'vi' ? 'Tạo đề trắc nghiệm thất bại. Vui lòng thử lại!' : 'Failed to generate quiz. Please try again!',
+        'error'
+      )
+    } finally {
+      setIsGenerating(false)
+      setGenStep('')
+    }
   }
 
   // Handle AI Prompt Editing on active Quiz
-  const handleModifyQuizWithAi = (e: React.FormEvent) => {
+  const handleModifyQuizWithAi = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!aiAssistantPrompt.trim()) return
+    if (!aiAssistantPrompt.trim() || !selectedDocId) return
 
     setIsModifyingWithAi(true)
     addToast(
@@ -289,51 +279,29 @@ export function QuizzesPage() {
       'info'
     )
 
-    setTimeout(() => {
-      // Modify questions list based on input prompt
-      const prompt = aiAssistantPrompt.toLowerCase()
-      let updated: Question[] = [...questions]
+    try {
+      const rawQuestions = await aiService.modifyQuizWithAi(
+        selectedDocId,
+        aiAssistantPrompt
+      )
 
-      if (prompt.includes('tiếng anh') || prompt.includes('english')) {
-        updated = updated.map((q, idx) => ({
-          ...q,
-          q: `[Translated] Question ${idx + 1}: ${q.q.replace('[NÂNG CAO] ', '').replace('[CƠ BẢN] ', '')}`,
-          options: q.options.map((opt, oIdx) => `Option ${oIdx + 1}: ${opt}`),
-          explain: `AI Explanation: The correct option is ${q.answer + 1}. Source reference linked to document.`
-        }))
-      } else if (prompt.includes('khó') || prompt.includes('hard') || prompt.includes('nâng cao')) {
-        updated = [
-          {
-            id: `q-edit-h1-${Date.now()}`,
-            q: `[AI ĐÃ SỬA - KHÓ] Phân tích trạng thái vướng víu lượng tử Einstein-Podolsky-Rosen (EPR) trong tài liệu này:`,
-            options: [
-              'Phép đo trên một hạt lập tức xác định trạng thái của hạt kia bất kể khoảng cách.',
-              'Hạt truyền thông tin nhanh hơn vận tốc ánh sáng thông qua sóng hấp dẫn.',
-              'Sự bất định hoàn toàn trong việc xác định spin của electron.',
-              'Trạng thái chồng chập bị triệt tiêu do tương tác nhiệt động lực học.'
-            ],
-            answer: 0,
-            explain: 'Trạng thái EPR chứng minh tính phi địa phương (non-locality) của cơ học lượng tử.'
-          },
-          ...updated.slice(1)
-        ]
-      } else {
-        // General rewrite
-        updated = updated.map((q) => ({
-          ...q,
-          q: `[AI Đã Tinh Chỉnh] ${q.q}`,
-          explain: `[AI đã cập nhật giải thích]: ${q.explain}`
-        }))
-      }
-
-      setQuestions(updated)
-      setIsModifyingWithAi(false)
+      const mapped = rawQuestions.map(mapBackendQuestionToFrontend)
+      
+      setQuestions(mapped)
       setAiAssistantPrompt('')
       addToast(
         language === 'vi' ? 'Đã hiệu chỉnh bộ đề thành công bằng AI Prompt!' : 'Quiz updated via AI Prompt successfully!',
         'success'
       )
-    }, 1200)
+    } catch (err: any) {
+      console.error('Failed to modify quiz:', err)
+      addToast(
+        language === 'vi' ? 'Hiệu chỉnh đề trắc nghiệm thất bại. Vui lòng thử lại!' : 'Failed to modify quiz. Please try again!',
+        'error'
+      )
+    } finally {
+      setIsModifyingWithAi(false)
+    }
   }
 
   // Score Calculation
