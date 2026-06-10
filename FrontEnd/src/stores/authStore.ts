@@ -152,22 +152,30 @@ export const useAuthStore = create<AuthState>()(
       merge: (persisted, current) => {
         const persistedState = persisted as Partial<AuthState>
         
-        // Restore mock user from localStorage if it exists to persist on reload (except Admin)
+        // Restore mock user from localStorage if it exists to persist on reload
         const savedMockUserStr = typeof window !== 'undefined' ? localStorage.getItem('aiStudyHubCurrentUser') : null
         if (savedMockUserStr) {
           try {
             const savedUser = JSON.parse(savedMockUserStr)
+
+            // Check if this reload is triggered by a User Switch action
+            const isSwitchingUser = typeof window !== 'undefined' && sessionStorage.getItem('aiStudyHubSwitchingUser') === 'true'
             
-            // Kick admin back to login on reload (F5 reload protection)
+            // If it is admin, kick back to login on reload (F5) UNLESS it was just a user switch reload
             if (savedUser?.role?.toLowerCase() === 'admin') {
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('aiStudyHubCurrentUser')
-              }
-              return {
-                ...current,
-                user: null,
-                tokens: null,
-                isAuthenticated: false,
+              if (isSwitchingUser) {
+                // Clear the switch flag so subsequent manual reloads (F5) will trigger logout
+                sessionStorage.removeItem('aiStudyHubSwitchingUser')
+              } else {
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('aiStudyHubCurrentUser')
+                }
+                return {
+                  ...current,
+                  user: null,
+                  tokens: null,
+                  isAuthenticated: false,
+                }
               }
             }
 
@@ -195,7 +203,8 @@ export const useAuthStore = create<AuthState>()(
         }
 
         // Prevent admin session from persisting across reloads (F5) (fallback safeguard)
-        if (persistedState?.user?.role?.toLowerCase() === 'admin') {
+        const isSwitchingUser = typeof window !== 'undefined' && sessionStorage.getItem('aiStudyHubSwitchingUser') === 'true'
+        if (persistedState?.user?.role?.toLowerCase() === 'admin' && !isSwitchingUser) {
           if (typeof window !== 'undefined') {
             localStorage.removeItem('aiStudyHubCurrentUser')
           }

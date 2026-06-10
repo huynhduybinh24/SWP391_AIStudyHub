@@ -24,9 +24,11 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useAuthStore } from '@/stores/authStore'
+import { useToast } from '@/components/ui/Toast'
 import { env } from '@/config/env'
 import { useTranslation } from '@/context/LanguageContext'
 import { storageService, type StorageUsage } from '@/services/storageService'
+import { documentService, type DocumentResponse } from '@/services/documentService'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
@@ -83,6 +85,42 @@ const INITIAL_FILES = [
   },
 ]
 
+const formatTimeAgo = (dateStr: string) => {
+  if (!dateStr) return 'Recently';
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Yesterday';
+    return `${diffDays}d ago`;
+  } catch (e) {
+    return 'Recently';
+  }
+};
+
+const mapDocumentToExplorerFile = (doc: DocumentResponse) => {
+  const ext = (doc.originalFileName || doc.fileName).split('.').pop()?.toUpperCase() || 'FILE';
+  let icon = FileIcon;
+  if (['PDF'].includes(ext)) icon = FileText;
+  else if (['DOC', 'DOCX'].includes(ext)) icon = FileText;
+  else if (['PNG', 'JPG', 'JPEG', 'WEBP', 'SVG'].includes(ext)) icon = FileImage;
+  
+  return {
+    id: doc.id,
+    name: doc.originalFileName || doc.fileName,
+    modified: `Modified ${formatTimeAgo(doc.createdAt)}`,
+    icon,
+    type: ext,
+    aiSummarized: doc.fileType === 'DOCUMENT'
+  };
+};
+
 export function StorageExplorerPage() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -90,7 +128,19 @@ export function StorageExplorerPage() {
   const user = useAuthStore((s) => s.user)
   const { t, language } = useTranslation()
   
+  const toast = useToast()
   const [usage, setUsage] = useState<StorageUsage | null>(null)
+
+  const loadUserFiles = async () => {
+    if (!user?.id) return;
+    try {
+      const docs = await documentService.getAllDocuments(Number(user.id));
+      const mapped = docs.map(mapDocumentToExplorerFile);
+      setFiles(mapped);
+    } catch (err) {
+      console.error("Failed to load user files:", err);
+    }
+  };
 
   useEffect(() => {
     if (user?.id) {
@@ -101,10 +151,11 @@ export function StorageExplorerPage() {
         .catch(err => {
           console.error("Failed to fetch storage usage:", err)
         })
+      loadUserFiles();
     }
   }, [user?.id])
 
-  const totalMb = getStorageLimitByPlan(user?.plan)
+  const totalMb = usage ? usage.storageLimitMb : getStorageLimitByPlan(user?.plan)
   const totalGb = totalMb / 1024
 
   const usedMb = usage
@@ -122,7 +173,7 @@ export function StorageExplorerPage() {
   const displayUsedGb = parseFloat(usedGb.toFixed(3))
   const displayTotalGb = parseFloat(totalGb.toFixed(1))
   const [folders, setFolders] = useState(INITIAL_FOLDERS)
-  const [files, setFiles] = useState(INITIAL_FILES)
+  const [files, setFiles] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
@@ -173,9 +224,23 @@ export function StorageExplorerPage() {
     setFolders(folders.filter(f => f.id !== id))
   }
 
-  const handleDeleteFile = (id: string, e: React.MouseEvent) => {
+  const handleDeleteFile = async (id: string | number, e: React.MouseEvent) => {
     e.stopPropagation()
-    setFiles(files.filter(f => f.id !== id))
+    try {
+      await documentService.deleteDocument(id);
+      toast.success('File deleted successfully');
+      loadUserFiles();
+      if (user?.id) {
+        storageService.getStorageUsage(Number(user.id))
+          .then(data => {
+            setUsage(data)
+          })
+          .catch(() => {})
+      }
+    } catch (err) {
+      console.error("Failed to delete document:", err);
+      toast.error('Failed to delete file');
+    }
   }
 
   const filteredFolders = useMemo(() => {

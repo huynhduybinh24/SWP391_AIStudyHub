@@ -29,6 +29,9 @@ import { LearningProgressModal, type LearningProgressPlan } from '@/features/stu
 import { CurriculumModal, type CurriculumPlan, getDocumentIdByName } from '@/features/study-plans/pages/CurriculumModal'
 import { useTranslation } from '@/context/LanguageContext'
 import { Language } from '@/locales'
+import { useAuthStore } from '@/stores/authStore'
+import { documentService } from '@/services/documentService'
+import { aiService } from '@/services/aiService'
 
 // ─────────────────────────────────────────────
 // Types
@@ -144,7 +147,7 @@ function localizePlan(plan: StudyPlan, language: Language): StudyPlan {
 // Mock data
 // ─────────────────────────────────────────────
 
-const STUDY_PLANS: StudyPlan[] = [
+const STUDY_PLANS: StudyPlan[] = []; const UNUSED_STUDY_PLANS: StudyPlan[] = [
   {
     id: '1',
     title: 'Quantum Mechanics Mastery',
@@ -1204,13 +1207,52 @@ function getPlanLearningProgress(plan: StudyPlan, language: Language): LearningP
 // Main Page
 // ─────────────────────────────────────────────
 
+function mapResponseToStudyPlan(response: any): StudyPlan {
+  let segments: ProgressSegment[] = []
+  if (response.curriculumJson) {
+    try {
+      const parsed = JSON.parse(response.curriculumJson)
+      if (Array.isArray(parsed)) {
+        segments = parsed.map((mod: any) => ({
+          label: mod.title || 'Bài học',
+          value: 0
+        }))
+      }
+    } catch (e) {
+      console.error('Failed to parse curriculumJson for segments:', e)
+    }
+  }
+
+  if (segments.length === 0) {
+    segments = [
+      { label: 'Khái niệm cốt lõi', value: 0 },
+      { label: 'Lý thuyết nâng cao', value: 0 },
+      { label: 'Thi thử', value: 0 }
+    ]
+  }
+
+  const docNames = response.sourceDocuments ? response.sourceDocuments.map((d: any) => d.title || d.fileName) : []
+
+  return {
+    id: String(response.id),
+    title: response.title,
+    description: response.planText || '',
+    isAiGenerated: true,
+    status: 'Active',
+    documents: docNames.length,
+    hoursEst: 28,
+    difficulty: 'Medium',
+    overallProgress: 0,
+    segments,
+    linkedDocs: docNames,
+    curriculumJson: response.curriculumJson
+  }
+}
+
 export function StudyPlansPage() {
   const { t, language } = useTranslation()
   const [activeTab, setActiveTab]     = useState<FilterTab>('All')
-  const [plans, setPlans]             = useState<StudyPlan[]>(() => {
-    const saved = localStorage.getItem('study_plans')
-    return saved ? JSON.parse(saved) : STUDY_PLANS
-  })
+  const [plans, setPlans]             = useState<StudyPlan[]>([])
   const [createOpen, setCreateOpen]   = useState(false)
   const [learningPlan, setLearningPlan] = useState<LearningProgressPlan | null>(null)
   const [curriculumPlan, setCurriculumPlan] = useState<CurriculumPlan | null>(null)
@@ -1223,10 +1265,32 @@ export function StudyPlansPage() {
   const preselectedDocId = searchParams.get('documentId') || undefined
   const autoGenerate = searchParams.get('generate') === 'true'
 
-  // Sync plans changes to localStorage
+  const { user } = useAuthStore()
+  const userId = user?.id ? Number(user.id) : undefined
+
+  // Load plans from backend
   useEffect(() => {
-    localStorage.setItem('study_plans', JSON.stringify(plans))
-  }, [plans])
+    if (!userId) return
+
+    const loadPlans = async () => {
+      try {
+        const dbPlans = await aiService.getStudyPlans(userId)
+        // Map and display DB plans
+        const mapped = dbPlans.map(mapResponseToStudyPlan)
+        setPlans(mapped)
+      } catch (err) {
+        console.error('Failed to load study plans:', err)
+      }
+    }
+
+    loadPlans()
+  }, [userId])
+
+  // Clear mock local storage keys on mount
+  useEffect(() => {
+    localStorage.removeItem('study_plans')
+    localStorage.removeItem('ai_study_hub_documents')
+  }, [])
 
   // Automatically open create modal if documentId is present in URL query
   useEffect(() => {
@@ -1234,6 +1298,28 @@ export function StudyPlansPage() {
       setCreateOpen(true)
     }
   }, [preselectedDocId])
+
+  // Dynamically load user's real documents to map names to database IDs
+  useEffect(() => {
+    const syncDocumentNamesToIds = async () => {
+      try {
+        const docs = await documentService.getAllDocuments(userId)
+        if (docs) {
+          const map: Record<string, string> = {}
+          docs.forEach(doc => {
+            const title = doc.title || doc.originalFileName || doc.fileName
+            if (title) {
+              map[title] = String(doc.id)
+            }
+          })
+          localStorage.setItem('document_name_to_id_map', JSON.stringify(map))
+        }
+      } catch (err) {
+        console.error('Failed to sync document_name_to_id_map:', err)
+      }
+    }
+    syncDocumentNamesToIds()
+  }, [userId])
 
   const enhancedPlans = useMemo(() => {
     return plans.map(p => {
@@ -1264,18 +1350,52 @@ export function StudyPlansPage() {
     return plan.status === activeTab
   })
 
-  const handleDuplicate = (plan: StudyPlan) => {
-    const copy: StudyPlan = { ...plan, id: `${plan.id}-copy-${Date.now()}`, title: `${plan.title} (Copy)` }
-    setPlans((prev) => [...prev, copy])
+  const handleDuplicate = async (plan: StudyPlan) => {
+    try {
+      const docIdMap = localStorage.getItem('document_name_to_id_map')
+      const docMap: Record<string, string> = docIdMap ? JSON.parse(docIdMap) : {}
+      const docIds = (plan.linkedDocs || []).map(name => Number(docMap[name])).filter(n => !isNaN(n) && n > 0)
+
+      const savedResponse = await aiService.saveStudyPlan({
+        userId: userId || 1,
+        title: `${plan.title} (Copy)`,
+        subject: plan.title.split(' ').pop() || 'Tổng hợp',
+        planText: plan.description,
+        curriculumJson: plan.curriculumJson || '',
+        documentId: docIds.length > 0 ? docIds[0] : undefined
+      })
+      const mapped = mapResponseToStudyPlan(savedResponse)
+      setPlans((prev) => [mapped, ...prev])
+    } catch (err) {
+      console.error('Failed to duplicate study plan:', err)
+    }
   }
 
-  const handleArchive = (plan: StudyPlan) => {
-    setPlans((prev) => prev.filter((p) => p.id !== plan.id))
+  const handleArchive = async (plan: StudyPlan) => {
+    try {
+      const planIdNum = Number(plan.id)
+      if (!isNaN(planIdNum) && planIdNum > 0) {
+        await aiService.deleteStudyPlan(planIdNum)
+      }
+      setPlans((prev) => prev.filter((p) => p.id !== plan.id))
+    } catch (err) {
+      console.error('Failed to archive study plan:', err)
+    }
   }
 
-  const confirmDelete = () => {
-    if (deleteTarget) setPlans((prev) => prev.filter((p) => p.id !== deleteTarget.id))
-    setDeleteTarget(null)
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      const planIdNum = Number(deleteTarget.id)
+      if (!isNaN(planIdNum) && planIdNum > 0) {
+        await aiService.deleteStudyPlan(planIdNum)
+      }
+      setPlans((prev) => prev.filter((p) => p.id !== deleteTarget.id))
+    } catch (err) {
+      console.error('Failed to delete study plan:', err)
+    } finally {
+      setDeleteTarget(null)
+    }
   }
 
   return (

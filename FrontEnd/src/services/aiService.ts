@@ -208,6 +208,20 @@ export const aiService = {
     return response.data.data || []
   },
 
+  async saveStudyPlan(plan: Partial<StudyPlanResponse>): Promise<StudyPlanResponse> {
+    const response = await apiClient.post<ApiResponse<StudyPlanResponse>>('/ai/study-plans', plan)
+    return response.data.data
+  },
+
+  async updateStudyPlan(id: number | string, plan: Partial<StudyPlanResponse>): Promise<StudyPlanResponse> {
+    const response = await apiClient.put<ApiResponse<StudyPlanResponse>>(`/ai/study-plans/${id}`, plan)
+    return response.data.data
+  },
+
+  async deleteStudyPlan(id: number | string): Promise<void> {
+    await apiClient.delete<ApiResponse<void>>(`/ai/study-plans/${id}`)
+  },
+
   // AI Studio Features
   async generateStudioSummary(documentIds: number[], language = 'vi'): Promise<StudioSummaryResponse> {
     const response = await apiClient.post<ApiResponse<StudioSummaryResponse>>('/ai/studio/summary', { documentIds, language })
