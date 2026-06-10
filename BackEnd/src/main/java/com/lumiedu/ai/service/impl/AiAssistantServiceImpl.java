@@ -685,6 +685,35 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         return lessonIds;
     }
 
+    @Override
+    public StudyPlan saveStudyPlan(StudyPlan studyPlan) {
+        return studyPlanRepository.save(studyPlan);
+    }
+
+    @Override
+    public StudyPlan updateStudyPlan(Long id, StudyPlan studyPlan) {
+        StudyPlan existing = studyPlanRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Study plan not found: " + id));
+        existing.setTitle(studyPlan.getTitle());
+        existing.setSubject(studyPlan.getSubject());
+        existing.setPlanText(studyPlan.getPlanText());
+        if (studyPlan.getCurriculumJson() != null) {
+            existing.setCurriculumJson(studyPlan.getCurriculumJson());
+        }
+        if (studyPlan.getCompletedLessonsJson() != null) {
+            existing.setCompletedLessonsJson(studyPlan.getCompletedLessonsJson());
+        }
+        if (studyPlan.getDocumentId() != null) {
+            existing.setDocumentId(studyPlan.getDocumentId());
+        }
+        return studyPlanRepository.save(existing);
+    }
+
+    @Override
+    public void deleteStudyPlan(Long id) {
+        studyPlanRepository.deleteById(id);
+    }
+
 
     // --- Helpers ---
 

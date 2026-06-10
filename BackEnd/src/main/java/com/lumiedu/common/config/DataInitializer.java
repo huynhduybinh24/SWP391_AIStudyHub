@@ -34,6 +34,8 @@ public class DataInitializer implements CommandLineRunner {
     private final com.lumiedu.workspace.repository.SharedWorkspaceRepository sharedWorkspaceRepository;
     private final com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
     private final com.lumiedu.workspace.repository.WorkspaceDocumentRepository workspaceDocumentRepository;
+    private final com.lumiedu.document.repository.DocumentReportRepository documentReportRepository;
+
 
     @Override
     public void run(String... args) throws Exception {
@@ -62,7 +64,7 @@ public class DataInitializer implements CommandLineRunner {
             System.err.println("Failed to auto-hash plaintext passwords: " + e.getMessage());
         }
 
-        if (userRepository.count() == 0) {
+        if (userRepository.findByEmail("student@lumiedu.com").isEmpty()) {
             User student = User.builder()
                     .fullName("LumiEdu User")
                     .email("student@lumiedu.com")
@@ -70,7 +72,11 @@ public class DataInitializer implements CommandLineRunner {
                     .role(UserRole.USER)
                     .accountStatus(AccountStatus.ACTIVE)
                     .build();
+            userRepository.save(student);
+            System.out.println("--- Seeded student@lumiedu.com successfully ---");
+        }
 
+        if (userRepository.findByEmail("instructor@lumiedu.com").isEmpty()) {
             User instructor = User.builder()
                     .fullName("LumiEdu User")
                     .email("instructor@lumiedu.com")
@@ -78,7 +84,11 @@ public class DataInitializer implements CommandLineRunner {
                     .role(UserRole.USER)
                     .accountStatus(AccountStatus.ACTIVE)
                     .build();
+            userRepository.save(instructor);
+            System.out.println("--- Seeded instructor@lumiedu.com successfully ---");
+        }
 
+        if (userRepository.findByEmail("admin@lumiedu.com").isEmpty()) {
             User admin = User.builder()
                     .fullName("Admin User")
                     .email("admin@lumiedu.com")
@@ -87,7 +97,11 @@ public class DataInitializer implements CommandLineRunner {
                     .accountStatus(AccountStatus.ACTIVE)
                     .storageLimitMb(51200L)
                     .build();
+            userRepository.save(admin);
+            System.out.println("--- Seeded admin@lumiedu.com successfully ---");
+        }
 
+        if (userRepository.findByEmail("huynhduybinh242k5@gmail.com").isEmpty()) {
             User personalAdmin = User.builder()
                     .fullName("Duy Binh Admin")
                     .email("huynhduybinh242k5@gmail.com")
@@ -96,9 +110,8 @@ public class DataInitializer implements CommandLineRunner {
                     .accountStatus(AccountStatus.ACTIVE)
                     .storageLimitMb(51200L)
                     .build();
-
-            userRepository.saveAll(List.of(student, instructor, admin, personalAdmin));
-            System.out.println("--- Seeded sample users successfully ---");
+            userRepository.save(personalAdmin);
+            System.out.println("--- Seeded huynhduybinh242k5@gmail.com successfully ---");
         }
 
         if (subscriptionPlanRepository.count() == 0) {
@@ -208,220 +221,23 @@ public class DataInitializer implements CommandLineRunner {
             });
         }
 
-        userRepository.findByEmail("student@lumiedu.com").ifPresent(student -> {
-            if (documentRepository.count() == 0) {
-                com.lumiedu.document.entity.Document doc1 = com.lumiedu.document.entity.Document.builder()
-                        .title("Lecture_Notes_Week1.pdf")
-                        .fileSize(4718592L) // 4.5 MB
-                        .fileUrl("https://storage.lumiedu.com/files/lecture_notes_week1.pdf")
-                        .fileType("PDF")
-                        .subject("Sinh học")
-                        .checksum("5d41402abc4b2a76b9719d911017c592")
-                        .userId(student.getId())
-                        .build();
-
-                com.lumiedu.document.entity.Document doc2 = com.lumiedu.document.entity.Document.builder()
-                        .title("Lecture_Notes_Week1_Backup.pdf")
-                        .fileSize(4718592L) // 4.5 MB (Duplicate checksum!)
-                        .fileUrl("https://storage.lumiedu.com/files/lecture_notes_week1_backup.pdf")
-                        .fileType("PDF")
-                        .subject("Sinh học")
-                        .checksum("5d41402abc4b2a76b9719d911017c592")
-                        .userId(student.getId())
-                        .build();
-
-                com.lumiedu.document.entity.Document doc3 = com.lumiedu.document.entity.Document.builder()
-                        .title("Course_Intro_Video.mp4")
-                        .fileSize(15728640L) // 15 MB (Large file!)
-                        .fileUrl("https://storage.lumiedu.com/files/course_intro_video.mp4")
-                        .fileType("VIDEO")
-                        .subject("Giới thiệu")
-                        .checksum("7d41402abc4b2a76b9719d911017c593")
-                        .userId(student.getId())
-                        .build();
-
-                com.lumiedu.document.entity.Document doc4 = com.lumiedu.document.entity.Document.builder()
-                        .title("Meeting_Audio_Record.mp3")
-                        .fileSize(2097152L) // 2 MB
-                        .fileUrl("https://storage.lumiedu.com/files/meeting_audio_record.mp3")
-                        .fileType("AUDIO")
-                        .subject("Ghi âm")
-                        .checksum("8d41402abc4b2a76b9719d911017c594")
-                        .userId(student.getId())
-                        .build();
-
-                com.lumiedu.document.entity.Document doc5 = com.lumiedu.document.entity.Document.builder()
-                        .title("Profile_Picture.png")
-                        .fileSize(1048576L) // 1 MB
-                        .fileUrl("https://storage.lumiedu.com/files/profile_picture.png")
-                        .fileType("IMAGE")
-                        .subject("Hình ảnh")
-                        .checksum("9d41402abc4b2a76b9719d911017c595")
-                        .userId(student.getId())
-                        .build();
-
-                documentRepository.saveAll(java.util.List.of(doc1, doc2, doc3, doc4, doc5));
-
-                long totalBytes = doc1.getFileSize() + doc2.getFileSize() + doc3.getFileSize() + doc4.getFileSize() + doc5.getFileSize();
-                long totalMb = Math.round((double) totalBytes / (1024.0 * 1024.0));
-                student.setStorageUsedMb(totalMb);
-                userRepository.save(student);
-                System.out.println("--- Seeded sample documents for student user successfully ---");
-            }
-
-            if (storageRepository.count() == 0) {
-                java.time.LocalDate today = java.time.LocalDate.now();
-                com.lumiedu.storage.entity.StorageAnalyticsSnapshot snap1 = com.lumiedu.storage.entity.StorageAnalyticsSnapshot.builder()
-                        .user(student)
-                        .totalUsedMb(10.0)
-                        .limitMb(1024.0)
-                        .fileCount(3)
-                        .documentCount(2)
-                        .mediaCount(1)
-                        .otherCount(0)
-                        .snapshotDate(today.minusDays(2))
-                        .build();
-
-                com.lumiedu.storage.entity.StorageAnalyticsSnapshot snap2 = com.lumiedu.storage.entity.StorageAnalyticsSnapshot.builder()
-                        .user(student)
-                        .totalUsedMb(18.0)
-                        .limitMb(1024.0)
-                        .fileCount(4)
-                        .documentCount(2)
-                        .mediaCount(2)
-                        .otherCount(0)
-                        .snapshotDate(today.minusDays(1))
-                        .build();
-
-                storageRepository.saveAll(java.util.List.of(snap1, snap2));
-                System.out.println("--- Seeded default storage snapshots successfully ---");
-            }
-
-            if (notificationRepository.count() == 0) {
-                Notification n1 = Notification.builder()
-                        .userId(student.getId())
-                        .type(NotificationType.AI)
-                        .title("AI Summary Ready")
-                        .message("The comprehensive summary for your document \"Lecture_Notes_Week1.pdf\" is now complete and ready for review.")
-                        .actionText("View Summary")
-                        .actionUrl("/dashboard/notifications/summary")
-                        .isRead(false)
-                        .deleted(false)
-                        .build();
-
-                Notification n2 = Notification.builder()
-                        .userId(student.getId())
-                        .type(NotificationType.FOLDER)
-                        .title("Sarah Jenkins shared a folder with you")
-                        .message("Folder: Group Project Research Materials")
-                        .actionText("Open Folder")
-                        .actionUrl("/dashboard/shared-files/research-materials")
-                        .isRead(false)
-                        .deleted(false)
-                        .build();
-
-                Notification n3 = Notification.builder()
-                        .userId(student.getId())
-                        .type(NotificationType.SECURITY)
-                        .title("Security Alert: New Login")
-                        .message("A new login was detected on your account from a Chrome browser on a MacOS device. If this wasn't you, please secure your account immediately.")
-                        .isRead(true)
-                        .deleted(false)
-                        .build();
-
-                notificationRepository.saveAll(java.util.List.of(n1, n2, n3));
-                System.out.println("--- Seeded sample notifications for student successfully ---");
-            }
-
-            if (workspaceDocumentRepository.count() == 0) {
-                System.out.println("--- Found 0 workspace documents. Resetting partial shared workspace data ---");
-                workspaceMemberRepository.deleteAll();
-                sharedWorkspaceRepository.deleteAll();
-            }
-
-            boolean hasShared = workspaceMemberRepository.findByUserIdAndStatus(student.getId(), com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED)
-                    .stream().anyMatch(m -> m.getRole() != com.lumiedu.workspace.enums.WorkspaceMemberRole.OWNER);
-            if (!hasShared) {
-                userRepository.findByEmail("instructor@lumiedu.com").ifPresent(instructor -> {
-                    // Create workspace
-                    com.lumiedu.workspace.entity.SharedWorkspace workspace = com.lumiedu.workspace.entity.SharedWorkspace.builder()
-                            .name("Biology Study Group")
-                            .description("Shared workspace for Biology 101 study group materials and project files.")
-                            .ownerId(instructor.getId())
-                            .accessType(com.lumiedu.workspace.enums.WorkspaceAccessType.PRIVATE)
-                            .blockDownloadForViewers(false)
-                            .build();
-                    com.lumiedu.workspace.entity.SharedWorkspace savedWorkspace = sharedWorkspaceRepository.save(workspace);
-
-                    // Add members (Owner: Instructor, Collaborator: Student)
-                    com.lumiedu.workspace.entity.WorkspaceMember ownerMember = com.lumiedu.workspace.entity.WorkspaceMember.builder()
-                            .workspaceId(savedWorkspace.getId())
-                            .userId(instructor.getId())
-                            .email(instructor.getEmail())
-                            .role(com.lumiedu.workspace.enums.WorkspaceMemberRole.OWNER)
-                            .status(com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED)
-                            .build();
-
-                    com.lumiedu.workspace.entity.WorkspaceMember studentMember = com.lumiedu.workspace.entity.WorkspaceMember.builder()
-                            .workspaceId(savedWorkspace.getId())
-                            .userId(student.getId())
-                            .email(student.getEmail())
-                            .role(com.lumiedu.workspace.enums.WorkspaceMemberRole.COLLABORATOR)
-                            .status(com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED)
-                            .build();
-
-                    workspaceMemberRepository.saveAll(List.of(ownerMember, studentMember));
-
-                    // Create documents owned by instructor
-                    com.lumiedu.document.entity.Document sharedDoc1 = com.lumiedu.document.entity.Document.builder()
-                            .title("Biology 101 Midterm Notes.pdf")
-                            .fileName("biology_101_midterm_notes.pdf")
-                            .originalFileName("Biology 101 Midterm Notes.pdf")
-                            .fileSize(2516582L) // 2.4 MB
-                            .fileUrl("https://storage.lumiedu.com/files/biology_101_midterm_notes.pdf")
-                            .fileType("pdf")
-                            .mimeType("application/pdf")
-                            .subject("Biology")
-                            .checksum("biology_checksum_1234")
-                            .userId(instructor.getId())
-                            .moderationStatus(com.lumiedu.document.enums.DocumentStatus.APPROVED)
-                            .deleted(false)
-                            .build();
-
-                    com.lumiedu.document.entity.Document sharedDoc2 = com.lumiedu.document.entity.Document.builder()
-                            .title("Physics Lab Data.xlsx")
-                            .fileName("physics_lab_data.xlsx")
-                            .originalFileName("Physics Lab Data.xlsx")
-                            .fileSize(1258291L) // 1.2 MB
-                            .fileUrl("https://storage.lumiedu.com/files/physics_lab_data.xlsx")
-                            .fileType("xlsx")
-                            .mimeType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                            .subject("Physics")
-                            .checksum("physics_checksum_5678")
-                            .userId(instructor.getId())
-                            .moderationStatus(com.lumiedu.document.enums.DocumentStatus.APPROVED)
-                            .deleted(false)
-                            .build();
-
-                    documentRepository.saveAll(List.of(sharedDoc1, sharedDoc2));
-
-                    // Associate documents with workspace
-                    com.lumiedu.workspace.entity.WorkspaceDocument wd1 = com.lumiedu.workspace.entity.WorkspaceDocument.builder()
-                            .workspaceId(savedWorkspace.getId())
-                            .documentId(sharedDoc1.getId())
-                            .addedBy(instructor.getId())
-                            .build();
-
-                    com.lumiedu.workspace.entity.WorkspaceDocument wd2 = com.lumiedu.workspace.entity.WorkspaceDocument.builder()
-                            .workspaceId(savedWorkspace.getId())
-                            .documentId(sharedDoc2.getId())
-                            .addedBy(instructor.getId())
-                            .build();
-
-                    workspaceDocumentRepository.saveAll(List.of(wd1, wd2));
-                    System.out.println("--- Seeded sample shared workspace data successfully ---");
-                });
-            }
-        });
+        // One-time targeted cleanup of mock data
+        try {
+            System.out.println("--- DB Cleanup: Removing seeded mock records ---");
+            jdbcTemplate.update("DELETE FROM workspace_document WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM document_report WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM notification WHERE action_url = '/dashboard/shared-files/research-materials' OR action_url = '/dashboard/notifications/summary'");
+            jdbcTemplate.update("DELETE FROM storage_analytics_snapshot");
+            jdbcTemplate.update("DELETE FROM document_chunk WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM document_tag WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM quiz_question WHERE quiz_id IN (SELECT id FROM quiz WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%'))");
+            jdbcTemplate.update("DELETE FROM quiz WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM study_plan_documents WHERE study_plan_id IN (SELECT id FROM study_plans WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%'))");
+            jdbcTemplate.update("DELETE FROM study_plans WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%'");
+            jdbcTemplate.update("UPDATE users SET storage_used_mb = 0");
+        } catch (Exception e) {
+            System.err.println("DB Cleanup failed: " + e.getMessage());
+        }
     }
 }

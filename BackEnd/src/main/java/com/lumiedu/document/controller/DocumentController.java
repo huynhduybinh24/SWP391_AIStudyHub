@@ -94,9 +94,21 @@ public class DocumentController {
     // ------------------------------------------------------------------
     @GetMapping
     public ResponseEntity<ApiResponse<List<DocumentResponse>>> getAllDocuments(
-            @RequestParam(required = false) Long userId
+            @RequestParam(required = false) Long userId,
+            org.springframework.security.core.Authentication authentication
     ) {
-        List<DocumentResponse> documents = documentService.getAllDocuments(userId);
+        Long currentUserId = null;
+        boolean isAdmin = false;
+        if (authentication != null) {
+            currentUserId = (Long) authentication.getDetails();
+            isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ADMIN"));
+        }
+        Long targetUserId = userId;
+        if (!isAdmin) {
+            targetUserId = currentUserId;
+        }
+        List<DocumentResponse> documents = documentService.getAllDocuments(targetUserId);
         return ResponseEntity.ok(ApiResponse.ok("Documents retrieved successfully.", documents));
     }
 
@@ -104,8 +116,12 @@ public class DocumentController {
     // GET /api/documents/{id}
     // ------------------------------------------------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<DocumentResponse>> getDocumentById(@PathVariable Long id) {
-        DocumentResponse document = documentService.getDocumentById(id);
+    public ResponseEntity<ApiResponse<DocumentResponse>> getDocumentById(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = authentication != null ? (Long) authentication.getDetails() : null;
+        DocumentResponse document = documentService.getDocumentById(id, currentUserId);
         return ResponseEntity.ok(ApiResponse.ok("Document retrieved successfully.", document));
     }
 
@@ -113,8 +129,12 @@ public class DocumentController {
     // GET /api/documents/{id}/preview
     // ------------------------------------------------------------------
     @GetMapping("/{id}/preview")
-    public ResponseEntity<Resource> previewDocument(@PathVariable Long id) {
-        Resource resource = documentService.previewDocument(id);
+    public ResponseEntity<Resource> previewDocument(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = authentication != null ? (Long) authentication.getDetails() : null;
+        Resource resource = documentService.previewDocument(id, currentUserId);
         String mimeType = resolveMimeType(id);
 
         return ResponseEntity.ok()
@@ -129,9 +149,10 @@ public class DocumentController {
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> downloadDocument(
             @PathVariable Long id,
-            @RequestParam(required = false) Long userId
+            org.springframework.security.core.Authentication authentication
     ) {
-        Resource resource = documentService.downloadDocument(id, userId);
+        Long currentUserId = authentication != null ? (Long) authentication.getDetails() : null;
+        Resource resource = documentService.downloadDocument(id, currentUserId);
         String mimeType = resolveMimeType(id);
 
         return ResponseEntity.ok()
@@ -146,9 +167,11 @@ public class DocumentController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<DocumentResponse>> updateDocument(
             @PathVariable Long id,
-            @RequestBody DocumentUpdateRequest request
+            @RequestBody DocumentUpdateRequest request,
+            org.springframework.security.core.Authentication authentication
     ) {
-        DocumentResponse response = documentService.updateDocument(id, request);
+        Long currentUserId = authentication != null ? (Long) authentication.getDetails() : null;
+        DocumentResponse response = documentService.updateDocument(id, request, currentUserId);
         return ResponseEntity.ok(ApiResponse.ok("Document updated successfully.", response));
     }
 
@@ -156,8 +179,12 @@ public class DocumentController {
     // DELETE /api/documents/{id}
     // ------------------------------------------------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteDocument(@PathVariable Long id) {
-        documentService.deleteDocument(id);
+    public ResponseEntity<ApiResponse<Void>> deleteDocument(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = authentication != null ? (Long) authentication.getDetails() : null;
+        documentService.deleteDocument(id, currentUserId);
         return ResponseEntity.ok(ApiResponse.ok("Document deleted successfully.", null));
     }
 
@@ -170,9 +197,21 @@ public class DocumentController {
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) String fileType,
             @RequestParam(required = false) String tag,
-            @RequestParam(required = false) Long userId
+            @RequestParam(required = false) Long userId,
+            org.springframework.security.core.Authentication authentication
     ) {
-        List<DocumentResponse> results = documentService.searchDocuments(keyword, subject, fileType, tag, userId);
+        Long currentUserId = null;
+        boolean isAdmin = false;
+        if (authentication != null) {
+            currentUserId = (Long) authentication.getDetails();
+            isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ADMIN"));
+        }
+        Long targetUserId = userId;
+        if (!isAdmin) {
+            targetUserId = currentUserId;
+        }
+        List<DocumentResponse> results = documentService.searchDocuments(keyword, subject, fileType, tag, targetUserId);
         return ResponseEntity.ok(ApiResponse.ok("Search completed.", results));
     }
 
