@@ -224,18 +224,20 @@ public class DataInitializer implements CommandLineRunner {
         // One-time targeted cleanup of mock data
         try {
             System.out.println("--- DB Cleanup: Removing seeded mock records ---");
-            jdbcTemplate.update("DELETE FROM workspace_document WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
-            jdbcTemplate.update("DELETE FROM document_report WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
-            jdbcTemplate.update("DELETE FROM notification WHERE action_url = '/dashboard/shared-files/research-materials' OR action_url = '/dashboard/notifications/summary'");
-            jdbcTemplate.update("DELETE FROM storage_analytics_snapshot");
-            jdbcTemplate.update("DELETE FROM document_chunk WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
-            jdbcTemplate.update("DELETE FROM document_tag WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
-            jdbcTemplate.update("DELETE FROM quiz_question WHERE quiz_id IN (SELECT id FROM quiz WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%'))");
-            jdbcTemplate.update("DELETE FROM quiz WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
-            jdbcTemplate.update("DELETE FROM study_plan_documents WHERE study_plan_id IN (SELECT id FROM study_plans WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%'))");
-            jdbcTemplate.update("DELETE FROM study_plans WHERE document_id IN (SELECT id FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
-            jdbcTemplate.update("DELETE FROM document WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%'");
+            jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0");
+            jdbcTemplate.update("DELETE FROM workspace_documents WHERE document_id IN (SELECT id FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM document_reports WHERE document_id IN (SELECT id FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM notifications WHERE action_url = '/dashboard/shared-files/research-materials' OR action_url = '/dashboard/notifications/summary'");
+            jdbcTemplate.update("DELETE FROM storage_analytics_snapshots");
+            jdbcTemplate.update("DELETE FROM document_chunks WHERE document_id IN (SELECT id FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM document_tags WHERE document_id IN (SELECT id FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM quiz_question WHERE quiz_id IN (SELECT id FROM quiz WHERE document_id IN (SELECT id FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%'))");
+            jdbcTemplate.update("DELETE FROM quiz WHERE document_id IN (SELECT id FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM study_plan_documents WHERE study_plan_id IN (SELECT id FROM study_plans WHERE document_id IN (SELECT id FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%'))");
+            jdbcTemplate.update("DELETE FROM study_plans WHERE document_id IN (SELECT id FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
+            jdbcTemplate.update("DELETE FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%'");
             jdbcTemplate.update("UPDATE users SET storage_used_mb = 0");
+            jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1");
         } catch (Exception e) {
             System.err.println("DB Cleanup failed: " + e.getMessage());
         }
