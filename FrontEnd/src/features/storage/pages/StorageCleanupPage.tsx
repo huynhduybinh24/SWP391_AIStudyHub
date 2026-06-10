@@ -131,7 +131,7 @@ export function StorageCleanupPage() {
     ? usage.storageUsedMb
     : user?.plan === 'pro'
       ? 2457.6
-      : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
+      : ((user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise')
         ? 8192
         : 8
 

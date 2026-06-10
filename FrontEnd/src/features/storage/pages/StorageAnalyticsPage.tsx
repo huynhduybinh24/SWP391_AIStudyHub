@@ -53,7 +53,7 @@ export function StorageAnalyticsPage() {
     ? analyticsData.totalUsedMb 
     : user?.plan === 'pro' 
       ? 2457.6 
-      : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
+      : ((user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise')
         ? 8192
         : 8
 
@@ -84,7 +84,7 @@ export function StorageAnalyticsPage() {
         default: return month
       }
     }
-    const isPremium = user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise'
+    const isPremium = (user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise'
     if (isPremium) {
       return [
         { name: getLocalizedMonthName('Jan'), value: 1.2 },
@@ -121,7 +121,7 @@ export function StorageAnalyticsPage() {
       switch (name) {
         case 'Documents': return t.storageExplorer.documents
         case 'Media': return t.storageAnalytics.media
-        case 'Audio': return t.storageAnalytics.audio || 'Audio'
+        case 'Audio': return 'Audio'
         case 'Other': return t.storageExplorer.other
         default: return name
       }
@@ -135,7 +135,7 @@ export function StorageAnalyticsPage() {
         { name: getPieItemName('Other'), value: breakdown["Other"] ? breakdown["Other"] / 1024 : 0, color: '#8b5cf6' },
       ].filter(item => item.value > 0);
     }
-    const isPremium = user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise'
+    const isPremium = (user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise'
     if (isPremium) {
       return [
         { name: getPieItemName('Documents'), value: 4.8, color: '#2563eb' },

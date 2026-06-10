@@ -1002,7 +1002,7 @@ export function DocumentsPage() {
     setIsChatDrawerOpen(true)
     
     try {
-      const session = await aiService.createOrGetChatSession(doc.id, userId)
+      const session = await aiService.createOrGetChatSession([Number(doc.id)], Number(userId))
       setActiveChatSessionId(session.id)
       
       const history = await aiService.getChatHistory(session.id)
@@ -1079,7 +1079,7 @@ export function DocumentsPage() {
     try {
       let sessionId = activeChatSessionId
       if (!sessionId) {
-        const session = await aiService.createOrGetChatSession(selectedDocForChat.id, userId)
+        const session = await aiService.createOrGetChatSession([Number(selectedDocForChat.id)], Number(userId))
         sessionId = session.id
         setActiveChatSessionId(session.id)
       }

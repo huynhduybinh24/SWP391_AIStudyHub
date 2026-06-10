@@ -249,7 +249,7 @@ export function Header() {
 
       if (userRole === 'admin') {
         const typeStr = n.type || '';
-        if (typeStr === 'document_deleted' || typeStr === 'document_rejected' || typeStr === 'document_removed') {
+        if ((typeStr as string) === 'document_deleted' || (typeStr as string) === 'document_rejected' || (typeStr as string) === 'document_removed') {
           if (!n.targetUserEmail || n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
             return false;
           }

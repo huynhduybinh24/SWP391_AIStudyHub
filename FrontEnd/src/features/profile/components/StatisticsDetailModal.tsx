@@ -6,7 +6,7 @@ import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
-import { calculateStorageUsage } from '@/utils/storageFormat'
+import { calculateStorageUsage, formatStorageSize } from '@/utils/storageFormat'
 import { storageService } from '@/services/storageService'
 
 interface StatisticsDetailModalProps {
@@ -42,7 +42,7 @@ export function StatisticsDetailModal({
     ? storageData.storageUsedMb 
     : user?.plan === 'pro' 
       ? 2457.6 
-      : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
+      : ((user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise')
         ? 8192
         : 8
   const usedGb = usedMb / 1024

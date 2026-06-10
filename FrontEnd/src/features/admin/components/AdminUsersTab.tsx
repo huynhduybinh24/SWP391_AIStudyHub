@@ -145,7 +145,7 @@ export function AdminUsersTab({
   // Save Role Changes
   const handleSaveRole = () => {
     if (!editingRoleUser) return
-    onUpdateUser(editingRoleUser.id, { role: selectedRole })
+    onUpdateUser(editingRoleUser.id, { role: selectedRole as any })
     const msg = language === 'vi' 
       ? `Đã cập nhật vai trò của ${editingRoleUser.name} thành ${selectedRole}` 
       : `Updated ${editingRoleUser.name}'s role to ${selectedRole}`
@@ -254,7 +254,7 @@ export function AdminUsersTab({
                           "font-extrabold text-[10px] uppercase tracking-wider rounded-full px-2.5 py-0.5",
                           u.role === 'admin' && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
                           u.role === 'teacher' && "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
-                          u.role === 'student' && "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          (u.role as string) === 'student' && "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
                         )}>
                           {u.role}
                         </Badge>
@@ -296,7 +296,7 @@ export function AdminUsersTab({
                           let dotBg: string;
                           let statusLabel: string;
 
-                          if (s === 'banned') {
+                          if ((s as string) === 'banned') {
                             badgeBg = "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/15";
                             dotBg = "bg-rose-500";
                             statusLabel = language === 'vi' ? 'Bị cấm' : 'Banned';
@@ -356,7 +356,7 @@ export function AdminUsersTab({
                               setSelectedRole(
                                 u.role === 'admin'
                                   ? 'admin'
-                                  : (u.role === 'teacher' || u.role === 'instructor')
+                                  : (u.role === 'teacher' || (u.role as string) === 'instructor')
                                     ? 'teacher'
                                     : 'student'
                               )

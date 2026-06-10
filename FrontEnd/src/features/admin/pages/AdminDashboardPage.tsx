@@ -154,7 +154,7 @@ export function AdminDashboardPage() {
           email: updated.email,
           role: updated.role,
           plan: updated.plan || 'free',
-          avatar: updated.avatar || '/logo.png'
+          avatar: (updated as any).avatar || '/logo.png'
         }))
       }
 

@@ -1,4 +1,8 @@
-import { apiClient } from '@/lib/axios'
+import os
+
+file_path = r"D:\SWP391_AIStudyHub\FrontEnd\src\services\storageService.ts"
+
+code_content = """import { apiClient } from '@/lib/axios'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 
 export interface StorageSummary {
@@ -94,3 +98,9 @@ export const storageService = {
     return response.data
   }
 }
+"""
+
+with open(file_path, "w", encoding="utf-8") as f:
+    f.write(code_content)
+
+print("Successfully cleaned storageService.ts")

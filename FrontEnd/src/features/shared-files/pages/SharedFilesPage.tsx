@@ -218,7 +218,11 @@ export function SharedFilesPage() {
       try {
         const fetched = await sharedFileService.getSharedFiles()
         if (active) {
-          setFiles(fetched)
+          const mapped = fetched.map((f: any) => ({
+            ...f,
+            description: f.description || ''
+          }));
+          setFiles(mapped)
         }
       } catch (err) {
         console.error("Failed to load shared files", err)

@@ -1245,7 +1245,8 @@ function mapResponseToStudyPlan(response: any): StudyPlan {
     overallProgress: 0,
     segments,
     linkedDocs: docNames,
-    curriculumJson: response.curriculumJson
+    curriculumJson: response.curriculumJson,
+    themeColor: 'blue'
   }
 }
 

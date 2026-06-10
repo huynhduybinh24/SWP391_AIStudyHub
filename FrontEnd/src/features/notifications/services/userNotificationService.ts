@@ -1,29 +1,5 @@
 import { apiClient } from '@/lib/axios';
 
-export type UserNotificationType =
-  | "document_deleted"
-  | "document_rejected"
-  | "document_approved"
-  | "system"
-  | "shared_file"
-  | "ai_update";
-
-export interface UserNotification {
-  id: string;
-  type: UserNotificationType;
-  title: string;
-  message: string;
-  documentId?: string;
-  documentName?: string;
-  reason?: string;
-  actionType?: "removed" | "rejected" | "approved" | "system";
-  adminNote?: string;
-  createdAt: string;
-  time?: string;
-  isRead: boolean;
-  targetUserEmail?: string;
-}
-
 export const getCurrentUser = () => {
   if (typeof window === 'undefined') {
     return { id: 'admin', email: 'admin@example.com', role: 'admin', name: 'Alex Morgan' };
@@ -45,204 +21,60 @@ export const getCurrentUser = () => {
   }
 };
 
+
+
+export interface UserNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  createdAt: string;
+  time?: string;
+  isRead: boolean;
+  targetUserEmail?: string;
+  documentId?: string;
+  documentName?: string;
+  reason?: string;
+  actionType?: string;
+}
+
 export const userNotificationService = {
-  getUserNotifications(email?: string): UserNotification[] {
-    const targetEmail = email || getCurrentUser().email;
-    try {
-      const stored = localStorage.getItem(`aiStudyHubUserNotifications:${targetEmail}`);
-      if (!stored) return [];
-      const parsed = JSON.parse(stored);
-      
-      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${targetEmail}`);
-      let deletedIds: string[] = [];
-      if (storedDeleted) {
-        try {
-          deletedIds = JSON.parse(storedDeleted);
-        } catch (e) {
-          deletedIds = [];
-        }
-      }
-      
-      return Array.isArray(parsed) ? parsed.filter((n: any) => n && n.id && !deletedIds.includes(n.id)) : [];
-    } catch (e) {
-      console.error('Failed to parse notifications from localStorage', e);
-      return [];
-    }
-  },
-
-  saveUserNotifications(notifications: UserNotification[], email?: string): void {
-    const targetEmail = email || getCurrentUser().email;
-    try {
-      localStorage.setItem(`aiStudyHubUserNotifications:${targetEmail}`, JSON.stringify(notifications));
-      window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
-    } catch (e) {
-      console.error('Failed to save notifications to localStorage', e);
-    }
-  },
-
   async getNotifications(currentUser?: any): Promise<UserNotification[]> {
-    const email = currentUser?.email || getCurrentUser().email;
-    try {
-      const response = await apiClient.get(`/notifications?email=${encodeURIComponent(email)}`);
-      const list = response.data?.data || response.data;
-      if (Array.isArray(list)) {
-        return list;
-      }
-    } catch (error) {
-      console.warn("Using mock/localStorage notifications fallback", error);
+    const email = currentUser?.email || '';
+    const response = await apiClient.get(`/notifications?email=${encodeURIComponent(email)}`);
+    const list = response.data?.data || response.data;
+    if (Array.isArray(list)) {
+      return list;
     }
-    return this.getUserNotifications(email);
+    return [];
   },
 
-  async addNotification(payload: Omit<UserNotification, "id" | "createdAt" | "isRead" | "time"> & { targetUserEmail?: string }): Promise<any> {
-    return this.addUserNotification(payload);
+  async deleteNotification(id: string, _email?: string): Promise<void> {
+    await apiClient.delete(`/notifications/${id}`);
   },
 
-  async deleteNotification(id: string, email?: string): Promise<void> {
-    const targetEmail = email || getCurrentUser().email;
-    try {
-      await apiClient.delete(`/notifications/${id}`);
-    } catch (e) {
-      console.warn("Failed to delete notification via API, using fallback", e);
-    }
-    try {
-      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${targetEmail}`);
-      let deletedIds: string[] = [];
-      if (storedDeleted) {
-        try {
-          deletedIds = JSON.parse(storedDeleted);
-        } catch (e) {
-          deletedIds = [];
-        }
-      }
-      if (!deletedIds.includes(id)) {
-        deletedIds.push(id);
-        localStorage.setItem(`aiStudyHubDeletedNotificationIds:${targetEmail}`, JSON.stringify(deletedIds));
-      }
-      window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
-    } catch (e) {
-      console.error('Failed to delete notification locally', e);
-    }
-  },
-
-  async markAsRead(id: string, email?: string): Promise<void> {
-    return this.markUserNotificationAsRead(id, email);
-  },
-
-  async markAllAsRead(email?: string): Promise<void> {
-    return this.markAllUserNotificationsAsRead(email);
-  },
-
-  getUnreadCount(email?: string): number {
-    const targetEmail = email || getCurrentUser().email;
-    const list = this.getUserNotifications(targetEmail);
-    return list.filter(n => !n.isRead).length;
-  },
-
-  async addUserNotification(notification: Omit<UserNotification, "id" | "createdAt" | "isRead" | "time"> & { targetUserEmail?: string }): Promise<any> {
-    const targetEmail = notification.targetUserEmail || getCurrentUser().email;
-    
-    const newNotif: UserNotification = {
-      ...notification,
-      id: `usr-ntf-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      time: 'Just now',
-      isRead: false,
-      targetUserEmail: targetEmail
-    };
-    
-    try {
-      const list = this.getUserNotifications(targetEmail);
-      list.unshift(newNotif);
-      this.saveUserNotifications(list, targetEmail);
-    } catch (e) {
-      console.error('Failed to save new notification locally', e);
-    }
-
-    try {
-      const payload = {
-        ...notification,
-        targetUserEmail: targetEmail
-      };
-      
-      const response = await apiClient.post('/notifications', payload);
-      window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
-
-      if (typeof window !== 'undefined') {
-        import('@/stores/authStore').then((auth) => {
-          const { isAuthenticated } = auth.useAuthStore.getState();
-          if (!isAuthenticated) return;
-
-          const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser');
-          if (activeUserStr) {
-            try {
-              const activeUser = JSON.parse(activeUserStr);
-              if (activeUser?.email?.toLowerCase() === targetEmail.toLowerCase()) {
-                import('@/stores/toastStore').then((m) => {
-                  let toastType: 'success' | 'info' | 'warning' | 'error' = 'info';
-                  if (notification.type === 'document_deleted' || notification.type === 'document_rejected') {
-                    toastType = 'warning';
-                  } else if (notification.type === 'document_approved') {
-                    toastType = 'success';
-                  }
-                  const messageSummary = notification.message.length > 60 
-                    ? notification.message.substring(0, 60) + '...'
-                    : notification.message;
-                  m.useToastStore.getState().addToast(
-                    `${notification.title}: ${messageSummary}`,
-                    toastType,
-                    4000
-                  );
-                });
-              }
-            } catch (e) {}
-          }
-        });
-      }
-
-      if (response.data && response.data.success) {
-        return response.data.data;
-      }
-    } catch (error) {
-      console.error('Failed to add user notification via backend', error);
-    }
-    return newNotif;
+  async markAsRead(id: string): Promise<void> {
+    await apiClient.put(`/notifications/${id}/read`);
   },
 
   async markUserNotificationAsRead(id: string, email?: string): Promise<void> {
-    const targetEmail = email || getCurrentUser().email;
-    try {
-      const list = this.getUserNotifications(targetEmail);
-      const updated = list.map(n => n.id === id ? { ...n, isRead: true } : n);
-      this.saveUserNotifications(updated, targetEmail);
-    } catch (e) {
-      console.error('Failed to mark notification as read locally', e);
-    }
+    return this.markAsRead(id);
+  },
 
-    try {
-      await apiClient.put(`/notifications/${id}/read`);
-    } catch (e) {
-      console.error('Failed to mark user notification as read via backend', e);
-    }
-    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+  async markAllAsRead(email?: string): Promise<void> {
+    await apiClient.put(`/notifications/read-all?email=${encodeURIComponent(email || '')}`);
   },
 
   async markAllUserNotificationsAsRead(email?: string): Promise<void> {
-    const targetEmail = email || getCurrentUser().email;
-    try {
-      const list = this.getUserNotifications(targetEmail);
-      const updated = list.map(n => ({ ...n, isRead: true }));
-      this.saveUserNotifications(updated, targetEmail);
-    } catch (e) {
-      console.error('Failed to mark all notifications as read locally', e);
-    }
+    return this.markAllAsRead(email);
+  },
 
-    try {
-      await apiClient.put(`/notifications/read-all?email=${encodeURIComponent(targetEmail)}`);
-    } catch (e) {
-      console.error('Failed to mark all user notifications as read via backend', e);
-    }
-    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+  async addUserNotification(notification: any): Promise<any> {
+    const response = await apiClient.post('/notifications', notification);
+    return response.data?.data || response.data;
+  },
+
+  async addNotification(payload: any): Promise<any> {
+    return this.addUserNotification(payload);
   }
 };
-

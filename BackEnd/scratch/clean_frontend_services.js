@@ -1,4 +1,195 @@
-import { apiClient } from '@/lib/axios';
+const fs = require('fs');
+const path = require('path');
+
+const cleanStorageService = `import { apiClient } from '@/lib/axios'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+
+export interface StorageSummary {
+  plan: string
+  totalMb: number
+  usedMb: number
+  remainingMb: number
+  percentage: number
+}
+
+export function getCurrentUserStorageSummary(): StorageSummary {
+  let plan = 'free'
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('aiStudyHubCurrentUser')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        plan = (parsed?.plan ?? 'free').toLowerCase()
+      }
+    } catch (_) {}
+  }
+
+  const totalMb = getStorageLimitByPlan(plan)
+  const usedMb = 0
+  const remainingMb = Math.max(totalMb - usedMb, 0)
+  const percentage = Math.min(Math.round((usedMb / totalMb) * 100), 100)
+
+  return { plan, totalMb, usedMb, remainingMb, percentage }
+}
+
+export interface StorageUsage {
+  userId: number
+  storageUsedMb: number
+  storageLimitMb: number
+  storagePercentage: number
+}
+
+export interface StorageAnalytics {
+  totalUsedMb: number
+  limitMb: number
+  totalFiles: number
+  categoryBreakdown: Record<string, number>
+  snapshots: Array<{
+    id: number
+    totalUsedMb: number
+    limitMb: number
+    fileCount: number
+    documentCount: number
+    mediaCount: number
+    otherCount: number
+    snapshotDate: string
+  }>
+}
+
+export interface StorageCleanupScan {
+  id: number
+  scanType: 'DUPLICATE' | 'LARGE'
+  status: string
+  filesFound: number
+  spaceReclaimedMb: number
+  createdAt: string
+}
+
+export const storageService = {
+  async getStorageUsage(userId: number): Promise<StorageUsage> {
+    const response = await apiClient.get<StorageUsage>(\`/storage/usage?userId=\${userId}\`)
+    return response.data
+  },
+
+  async getStorageAnalytics(userId: number): Promise<StorageAnalytics> {
+    const response = await apiClient.get<StorageAnalytics>(\`/storage/analytics?userId=\${userId}\`)
+    return response.data
+  },
+
+  async getStorageOverview(userId: number): Promise<any> {
+    const response = await apiClient.get(\`/storage/overview?userId=\${userId}\`)
+    return response.data
+  },
+
+  async getRecentUploads(userId: number): Promise<any[]> {
+    const response = await apiClient.get(\`/storage/recent-uploads?userId=\${userId}\`)
+    return response.data
+  },
+
+  async runDuplicateCleanup(userId: number): Promise<StorageCleanupScan> {
+    const response = await apiClient.post<StorageCleanupScan>(\`/storage/cleanup/duplicate?userId=\${userId}\`)
+    return response.data
+  },
+
+  async runLargeCleanup(userId: number, minSizeMb = 10): Promise<StorageCleanupScan> {
+    const response = await apiClient.post<StorageCleanupScan>(\`/storage/cleanup/large?userId=\${userId}&minSizeMb=\${minSizeMb}\`)
+    return response.data
+  }
+}
+`;
+
+const cleanReportService = `import { apiClient } from '@/lib/axios';
+
+export interface DocumentReport {
+  id: string;
+  reportedFile: string;
+  documentId: string;
+  reporterName: string;
+  reporterEmail: string;
+  reason: string;
+  reportedAt: string;
+  status: 'pending' | 'resolved' | 'ignored';
+}
+
+export interface ReportPayload {
+  documentId: string;
+  reason: string;
+  details: string;
+  evidenceLink?: string;
+  reportedFile?: string;
+  reporterName?: string;
+  reporterEmail?: string;
+}
+
+export const reportService = {
+  async reportDocument(payload: ReportPayload): Promise<any> {
+    const response = await apiClient.post('/reports', payload);
+    return response.data;
+  }
+};
+`;
+
+const cleanUserNotificationService = `import { apiClient } from '@/lib/axios';
+
+export interface UserNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  createdAt: string;
+  time?: string;
+  isRead: boolean;
+  targetUserEmail?: string;
+  documentId?: string;
+  documentName?: string;
+  reason?: string;
+  actionType?: string;
+}
+
+export const userNotificationService = {
+  async getNotifications(currentUser?: any): Promise<UserNotification[]> {
+    const email = currentUser?.email || '';
+    const response = await apiClient.get(\`/notifications?email=\${encodeURIComponent(email)}\`);
+    const list = response.data?.data || response.data;
+    if (Array.isArray(list)) {
+      return list;
+    }
+    return [];
+  },
+
+  async deleteNotification(id: string): Promise<void> {
+    await apiClient.delete(\`/notifications/\${id}\`);
+  },
+
+  async markAsRead(id: string): Promise<void> {
+    await apiClient.put(\`/notifications/\${id}/read\`);
+  },
+
+  async markUserNotificationAsRead(id: string, email?: string): Promise<void> {
+    return this.markAsRead(id);
+  },
+
+  async markAllAsRead(email?: string): Promise<void> {
+    await apiClient.put(\`/notifications/read-all?email=\${encodeURIComponent(email || '')}\`);
+  },
+
+  async markAllUserNotificationsAsRead(email?: string): Promise<void> {
+    return this.markAllAsRead(email);
+  },
+
+  async addUserNotification(notification: any): Promise<any> {
+    const response = await apiClient.post('/notifications', notification);
+    return response.data?.data || response.data;
+  },
+
+  async addNotification(payload: any): Promise<any> {
+    return this.addUserNotification(payload);
+  }
+};
+`;
+
+const cleanAdminService = `import { apiClient } from '@/lib/axios';
 
 export interface AdminUser {
   id: string;
@@ -92,7 +283,7 @@ export const getAdminStats = async (): Promise<AdminStats> => {
     storageUsedGB: Number(((statsData.totalStorageUsed || 0) / 1024).toFixed(2)),
     aiProcessedDocuments: statsData.totalDocuments - statsData.pendingDocuments,
     flaggedDocuments: statsData.rejectedDocuments || 0,
-    newUsersThisWeek: (statsData.newRegistrationsLast7Days || []).reduce((a: number, b: number) => a + b, 0),
+    newUsersThisWeek: (statsData.newRegistrationsLast7Days || []).reduce((a, b) => a + b, 0),
     newRegistrationsLast7Days: statsData.newRegistrationsLast7Days || [0, 0, 0, 0, 0, 0, 0],
     pdfStorageMb: statsData.pdfStorageMb || 0,
     officeStorageMb: statsData.officeStorageMb || 0,
@@ -128,11 +319,11 @@ export const getUsers = async (
         if (diffMin < 2) {
           lastActiveVi = 'Vừa xong'; lastActiveEn = 'Just now';
         } else if (diffMin < 60) {
-          lastActiveVi = `${diffMin} phút trước`; lastActiveEn = `${diffMin}m ago`;
+          lastActiveVi = \`\${diffMin} phút trước\`; lastActiveEn = \`\${diffMin}m ago\`;
         } else if (diffHr < 24) {
-          lastActiveVi = `${diffHr} giờ trước`; lastActiveEn = `${diffHr}h ago`;
+          lastActiveVi = \`\${diffHr} giờ trước\`; lastActiveEn = \`\${diffHr}h ago\`;
         } else if (diffDay < 30) {
-          lastActiveVi = `${diffDay} ngày trước`; lastActiveEn = `${diffDay}d ago`;
+          lastActiveVi = \`\${diffDay} ngày trước\`; lastActiveEn = \`\${diffDay}d ago\`;
         } else {
           const d = new Date(lastActive);
           lastActiveVi = d.toLocaleDateString('vi-VN');
@@ -165,16 +356,16 @@ export const updateUser = async (
   reason?: string
 ): Promise<AdminUser> => {
   if (updates.status) {
-    await apiClient.patch(`/admin/users/${userId}/status`, { status: updates.status.toUpperCase(), reason });
+    await apiClient.patch(\`/admin/users/\${userId}/status\`, { status: updates.status.toUpperCase(), reason });
   }
   if (updates.role) {
-    await apiClient.patch(`/admin/users/${userId}/role`, { role: updates.role.toUpperCase() });
+    await apiClient.patch(\`/admin/users/\${userId}/role\`, { role: updates.role.toUpperCase() });
   }
   if (updates.plan) {
-    await apiClient.patch(`/admin/users/${userId}/plan`, { planType: updates.plan.toUpperCase() });
+    await apiClient.patch(\`/admin/users/\${userId}/plan\`, { planType: updates.plan.toUpperCase() });
   }
   if (updates.name || updates.email) {
-    await apiClient.put(`/admin/users/${userId}`, {
+    await apiClient.put(\`/admin/users/\${userId}\`, {
       fullName: updates.name || '',
       email: updates.email || ''
     });
@@ -219,8 +410,8 @@ export const updateUser = async (
   };
 };
 
-export const deleteUser = async (userId: string, _reason?: string): Promise<{ success: boolean }> => {
-  await apiClient.delete(`/admin/users/${userId}`);
+export const deleteUser = async (userId: string, reason?: string): Promise<{ success: boolean }> => {
+  await apiClient.delete(\`/admin/users/\${userId}\`);
   return { success: true };
 };
 
@@ -246,13 +437,13 @@ export const updateDocument = async (
   }
 
   if (status) {
-    const response = await apiClient.patch(`/admin/documents/${documentId}/moderate`, { status, reason });
+    const response = await apiClient.patch(\`/admin/documents/\${documentId}/moderate\`, { status, reason });
     if (response.data) {
       return mapBackendDocumentToAdminDocument(response.data);
     }
   }
 
-  const response = await apiClient.get(`/admin/documents/${documentId}`);
+  const response = await apiClient.get(\`/admin/documents/\${documentId}\`);
   if (response.data) {
     return mapBackendDocumentToAdminDocument(response.data);
   }
@@ -260,18 +451,18 @@ export const updateDocument = async (
   throw new Error("Failed to update document");
 };
 
-export const deleteDocument = async (documentId: string, _reason?: string): Promise<{ success: boolean }> => {
-  await apiClient.delete(`/admin/documents/${documentId}`);
+export const deleteDocument = async (documentId: string, reason?: string): Promise<{ success: boolean }> => {
+  await apiClient.delete(\`/admin/documents/\${documentId}\`);
   return { success: true };
 };
 
 export const approveDocument = async (documentId: string): Promise<AdminDocument> => {
-  const response = await apiClient.patch(`/admin/documents/${documentId}/moderate`, { status: 'APPROVED' });
+  const response = await apiClient.patch(\`/admin/documents/\${documentId}/moderate\`, { status: 'APPROVED' });
   return mapBackendDocumentToAdminDocument(response.data?.data || response.data);
 };
 
 export const rejectDocument = async (documentId: string, reason?: string): Promise<AdminDocument> => {
-  const response = await apiClient.patch(`/admin/documents/${documentId}/moderate`, { status: 'REJECTED', reason });
+  const response = await apiClient.patch(\`/admin/documents/\${documentId}/moderate\`, { status: 'REJECTED', reason });
   return mapBackendDocumentToAdminDocument(response.data?.data || response.data);
 };
 
@@ -293,7 +484,7 @@ export const bulkDeleteDocuments = async (documentIds: string[]): Promise<{ succ
 };
 
 export const exportModerationReport = async (documentIds: string[]): Promise<{ downloadUrl: string; filename: string }> => {
-  const filename = `moderation_report_${new Date().toISOString().split("T")[0]}.csv`;
+  const filename = \`moderation_report_\${new Date().toISOString().split("T")[0]}.csv\`;
   const params = documentIds && documentIds.length > 0 ? { ids: documentIds.join(',') } : undefined;
   const response = await apiClient.get('/admin/documents/export-report', {
     params,
@@ -350,7 +541,7 @@ export const adminService = {
     return response.data?.data || response.data || [];
   },
   updateReportStatus: async (id: string | number, status: 'pending' | 'resolved' | 'ignored') => {
-    const response = await apiClient.patch(`/admin/reports/${id}/status`, { status });
+    const response = await apiClient.patch(\`/admin/reports/\${id}/status\`, { status });
     return response.data?.data || response.data || { id, status };
   },
   getActivityLogs: async () => {
@@ -358,3 +549,16 @@ export const adminService = {
     return response.data?.data || response.data || [];
   }
 };
+`;
+
+fs.writeFileSync(path.resolve('D:/SWP391_AIStudyHub/FrontEnd/src/services/storageService.ts'), cleanStorageService, 'utf8');
+console.log('Cleaned storageService.ts');
+
+fs.writeFileSync(path.resolve('D:/SWP391_AIStudyHub/FrontEnd/src/features/shared-files/services/reportService.ts'), cleanReportService, 'utf8');
+console.log('Cleaned reportService.ts');
+
+fs.writeFileSync(path.resolve('D:/SWP391_AIStudyHub/FrontEnd/src/features/notifications/services/userNotificationService.ts'), cleanUserNotificationService, 'utf8');
+console.log('Cleaned userNotificationService.ts');
+
+fs.writeFileSync(path.resolve('D:/SWP391_AIStudyHub/FrontEnd/src/features/admin/services/adminService.ts'), cleanAdminService, 'utf8');
+console.log('Cleaned adminService.ts');

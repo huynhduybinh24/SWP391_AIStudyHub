@@ -466,7 +466,7 @@ export function AdminPackagesTab({
                                 value={u.plan || 'free'}
                                 onChange={(e) => {
                                   const nextPlan = e.target.value
-                                  onUpdateUser(u.id, { plan: nextPlan })
+                                  onUpdateUser(u.id, { plan: nextPlan as any })
                                   const chosenPlanName = packages.find(p => {
                                     const planCode = p.id === 'pkg-free' ? 'free' : p.id === 'pkg-pro' ? 'pro' : p.id === 'pkg-enterprise' ? 'enterprise' : p.id
                                     return planCode === nextPlan
