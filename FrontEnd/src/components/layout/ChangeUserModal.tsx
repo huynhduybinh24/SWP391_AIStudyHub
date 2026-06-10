@@ -323,6 +323,16 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
       setShowPasswordPrompt(false)
       setShowSavePrompt(false)
       onClose()
+
+      // Redirect and reload to clean the SPA state for the new user role
+      setTimeout(() => {
+        if (userToUse.role?.toLowerCase() === 'admin') {
+          sessionStorage.setItem('aiStudyHubSwitchingUser', 'true')
+          window.location.href = '/dashboard/admin?tab=overview'
+        } else {
+          window.location.href = '/dashboard'
+        }
+      }, 800)
     } catch (err) {
       console.error('Failed to switch user:', err)
       toast.error('Failed to switch account')
@@ -339,8 +349,11 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
       return
     }
 
+    const targetIsAdmin = selectedUser.role === 'admin'
+
     // Try to switch instantly using saved session tokens if available (instant 0ms bypass)
-    if (selectedUser.tokens && selectedUser.tokens.accessToken) {
+    // For admin security, always require password prompt unless already verifying password
+    if (!targetIsAdmin && selectedUser.tokens && selectedUser.tokens.accessToken) {
       executeUserSwitch(selectedUser.remembered || false, {
         user: {
           id: selectedUser.id.startsWith('u-') ? selectedUser.id.replace('u-', '') : selectedUser.id,
@@ -399,7 +412,8 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
     const isRemembered = selectedUser.remembered === true
 
     // If target B is already remembered and we have a saved password, switch immediately by calling backend
-    if (isRemembered && savedPassword) {
+    // For admin security, always require password prompt
+    if (!targetIsAdmin && isRemembered && savedPassword) {
       try {
         const response = await authService.login({ email: selectedUser.email, password: savedPassword })
         executeUserSwitch(true, response)

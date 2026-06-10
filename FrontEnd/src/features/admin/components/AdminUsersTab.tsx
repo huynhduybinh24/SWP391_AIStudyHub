@@ -291,25 +291,24 @@ export function AdminUsersTab({
                       {/* Status */}
                       <td className="p-4">
                         {(() => {
-                          const isLocked = u.status === 'inactive' || u.status === 'banned';
-                          const isOnline = u.isOnline;
-                          
-                          let badgeBg = "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400";
-                          let dotBg = "bg-slate-400";
-                          let statusLabel = "";
+                          const s = u.status; // from DB: 'active' | 'inactive' | 'banned'
+                          let badgeBg: string;
+                          let dotBg: string;
+                          let statusLabel: string;
 
-                          if (isLocked) {
-                            badgeBg = "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/15";
+                          if (s === 'banned') {
+                            badgeBg = "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/15";
                             dotBg = "bg-rose-500";
-                            statusLabel = language === 'vi' ? 'Bị khoá' : 'Locked';
-                          } else if (isOnline) {
-                            badgeBg = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/15";
-                            dotBg = "bg-emerald-500 animate-pulse";
-                            statusLabel = 'Online';
+                            statusLabel = language === 'vi' ? 'Bị cấm' : 'Banned';
+                          } else if (s === 'inactive') {
+                            badgeBg = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/15";
+                            dotBg = "bg-amber-400";
+                            statusLabel = language === 'vi' ? 'Không hoạt động' : 'Inactive';
                           } else {
-                            badgeBg = "bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/15";
-                            dotBg = "bg-slate-400";
-                            statusLabel = 'Offline';
+                            // active
+                            badgeBg = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/15";
+                            dotBg = "bg-emerald-500";
+                            statusLabel = language === 'vi' ? 'Hoạt động' : 'Active';
                           }
 
                           return (
