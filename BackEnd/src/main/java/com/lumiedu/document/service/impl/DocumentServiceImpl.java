@@ -71,6 +71,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final com.lumiedu.workspace.repository.WorkspaceDocumentRepository workspaceDocumentRepository;
     private final com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
     private final com.lumiedu.workspace.repository.SharedWorkspaceRepository sharedWorkspaceRepository;
+    private final com.lumiedu.user.repository.UserRepository userRepository;
 
     // -------------------------------------------------------------------------
     // Upload
@@ -223,16 +224,18 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional(readOnly = true)
-    public DocumentResponse getDocumentById(Long id) {
+    public DocumentResponse getDocumentById(Long id, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
+        checkDocumentAccess(document, currentUserId);
         return mapToResponse(document);
     }
 
     @Override
-    public DocumentResponse updateDocument(Long id, DocumentUpdateRequest request) {
+    public DocumentResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
+        checkDocumentAccess(document, currentUserId);
 
         if (request.getTitle() != null) {
             document.setTitle(request.getTitle());
@@ -250,7 +253,6 @@ public class DocumentServiceImpl implements DocumentService {
         document = documentRepository.save(document);
 
         if (request.getTags() != null) {
-            // Replace all existing tags
             List<DocumentTag> existingTags = documentTagRepository.findAllByDocumentId(id);
             documentTagRepository.deleteAll(existingTags);
             saveTagsForDocument(document, request.getTags());
@@ -260,9 +262,10 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public void deleteDocument(Long id) {
+    public void deleteDocument(Long id, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
+        checkDocumentAccess(document, currentUserId);
         document.setDeleted(true);
         documentRepository.save(document);
     }
@@ -272,17 +275,18 @@ public class DocumentServiceImpl implements DocumentService {
     // -------------------------------------------------------------------------
 
     @Override
-    public Resource downloadDocument(Long id, Long userId) {
+    public Resource downloadDocument(Long id, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
+        checkDocumentAccess(document, currentUserId);
 
         // Enforce block download for viewers in shared workspaces
-        if (userId != null && !userId.equals(document.getUserId())) {
+        if (currentUserId != null && !currentUserId.equals(document.getUserId())) {
             List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByDocumentId(id);
             for (com.lumiedu.workspace.entity.WorkspaceDocument wd : workspaceDocs) {
                 com.lumiedu.workspace.entity.SharedWorkspace workspace = sharedWorkspaceRepository.findById(wd.getWorkspaceId()).orElse(null);
                 if (workspace != null && Boolean.TRUE.equals(workspace.getBlockDownloadForViewers())) {
-                    Optional<com.lumiedu.workspace.entity.WorkspaceMember> memberOpt = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), userId);
+                    Optional<com.lumiedu.workspace.entity.WorkspaceMember> memberOpt = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUserId);
                     if (memberOpt.isPresent() && memberOpt.get().getStatus() == com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED) {
                         if (memberOpt.get().getRole() == com.lumiedu.workspace.enums.WorkspaceMemberRole.VIEWER) {
                             throw new SecurityException("Downloading and printing documents is blocked for viewers in this workspace.");
@@ -306,7 +310,7 @@ public class DocumentServiceImpl implements DocumentService {
         // Record download history
         DocumentDownload download = DocumentDownload.builder()
                 .document(document)
-                .userId(userId)
+                .userId(currentUserId)
                 .build();
         documentDownloadRepository.save(download);
 
@@ -315,9 +319,10 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Resource previewDocument(Long id) {
+    public Resource previewDocument(Long id, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
+        checkDocumentAccess(document, currentUserId);
         if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
             try {
                 return googleDriveService.downloadFile(document.getGoogleDriveFileId());
@@ -480,5 +485,31 @@ public class DocumentServiceImpl implements DocumentService {
                 .createdAt(document.getCreatedAt())
                 .updatedAt(document.getUpdatedAt())
                 .build();
+    }
+
+    private void checkDocumentAccess(Document document, Long userId) {
+        if (userId == null) {
+            throw new SecurityException("Authentication is required to access this document.");
+        }
+        boolean isAdmin = userRepository.findById(userId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (isAdmin) {
+            return;
+        }
+        if (userId.equals(document.getUserId())) {
+            return;
+        }
+        if ("PUBLIC".equalsIgnoreCase(document.getVisibility())) {
+            return;
+        }
+        List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByDocumentId(document.getId());
+        for (com.lumiedu.workspace.entity.WorkspaceDocument wd : workspaceDocs) {
+            Optional<com.lumiedu.workspace.entity.WorkspaceMember> memberOpt = workspaceMemberRepository.findByWorkspaceIdAndUserId(wd.getWorkspaceId(), userId);
+            if (memberOpt.isPresent() && memberOpt.get().getStatus() == com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED) {
+                return;
+            }
+        }
+        throw new SecurityException("You do not have permission to access this document.");
     }
 }

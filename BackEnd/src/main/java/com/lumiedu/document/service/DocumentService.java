@@ -18,15 +18,15 @@ public interface DocumentService {
 
     List<DocumentResponse> getAllDocuments(Long userId);
 
-    DocumentResponse getDocumentById(Long id);
+    DocumentResponse getDocumentById(Long id, Long currentUserId);
 
-    DocumentResponse updateDocument(Long id, DocumentUpdateRequest request);
+    DocumentResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId);
 
-    void deleteDocument(Long id);
+    void deleteDocument(Long id, Long currentUserId);
 
-    Resource downloadDocument(Long id, Long userId);
+    Resource downloadDocument(Long id, Long currentUserId);
 
-    Resource previewDocument(Long id);
+    Resource previewDocument(Long id, Long currentUserId);
 
     List<DocumentResponse> searchDocuments(
             String keyword,

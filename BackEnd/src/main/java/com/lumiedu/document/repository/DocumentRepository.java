@@ -40,4 +40,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     long countByModerationStatusAndDeletedFalse(DocumentStatus status);
 
     List<Document> findByModerationStatusAndDeletedFalse(DocumentStatus status);
+
+    @Query("SELECT d FROM Document d WHERE d.deleted = false AND LOWER(d.fileType) IN :types")
+    List<Document> findAllByFileTypeInAndDeletedFalse(@Param("types") List<String> types);
 }
