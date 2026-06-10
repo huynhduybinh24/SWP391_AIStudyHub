@@ -43,4 +43,10 @@ public interface AiAssistantService {
     List<String> getCompletedLessons(Long planId);
 
     List<String> updateCompletedLessons(Long planId, List<String> lessonIds);
+
+    StudyPlan saveStudyPlan(StudyPlan studyPlan);
+
+    StudyPlan updateStudyPlan(Long id, StudyPlan studyPlan);
+
+    void deleteStudyPlan(Long id);
 }

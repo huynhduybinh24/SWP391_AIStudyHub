@@ -175,6 +175,35 @@ public class AiAssistantController {
         return ResponseEntity.ok(ApiResponse.ok("Completed lessons updated.", updatedIds));
     }
 
+    // ------------------------------------------------------------------
+    // POST /api/ai/study-plans
+    // ------------------------------------------------------------------
+    @PostMapping("/study-plans")
+    public ResponseEntity<ApiResponse<StudyPlan>> createStudyPlan(@RequestBody StudyPlan studyPlan) {
+        StudyPlan saved = aiAssistantService.saveStudyPlan(studyPlan);
+        return ResponseEntity.ok(ApiResponse.ok("Study plan saved successfully.", saved));
+    }
+
+    // ------------------------------------------------------------------
+    // PUT /api/ai/study-plans/{id}
+    // ------------------------------------------------------------------
+    @PutMapping("/study-plans/{id}")
+    public ResponseEntity<ApiResponse<StudyPlan>> updateStudyPlan(
+            @PathVariable("id") Long id,
+            @RequestBody StudyPlan studyPlan) {
+        StudyPlan updated = aiAssistantService.updateStudyPlan(id, studyPlan);
+        return ResponseEntity.ok(ApiResponse.ok("Study plan updated successfully.", updated));
+    }
+
+    // ------------------------------------------------------------------
+    // DELETE /api/ai/study-plans/{id}
+    // ------------------------------------------------------------------
+    @DeleteMapping("/study-plans/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteStudyPlan(@PathVariable("id") Long id) {
+        aiAssistantService.deleteStudyPlan(id);
+        return ResponseEntity.ok(ApiResponse.ok("Study plan deleted successfully.", null));
+    }
+
     // --- Request DTOs ---
 
     @Data
