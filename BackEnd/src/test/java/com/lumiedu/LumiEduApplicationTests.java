@@ -81,4 +81,19 @@ class LumiEduApplicationTests {
             System.out.println("Error reading payments: " + e.getMessage());
         }
     }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.lumiedu.user.repository.UserRepository userRepository;
+
+    @Test
+    void testPrintUsers() {
+        System.out.println("=== USERS IN DATABASE ===");
+        try {
+            userRepository.findAll().forEach(u -> {
+                System.out.println("User ID: " + u.getId() + ", Email: " + u.getEmail() + ", Name: " + u.getFullName() + ", Role: " + u.getRole() + ", Status: " + u.getAccountStatus());
+            });
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
 }

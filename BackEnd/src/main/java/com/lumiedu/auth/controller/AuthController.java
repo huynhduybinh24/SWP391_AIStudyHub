@@ -121,6 +121,10 @@ public class AuthController {
             }
         }
 
+        if (googleId == null || googleId.trim().isEmpty() || email == null || email.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Google authentication did not return a valid user ID or email."));
+        }
+
         // Logic: find user by third-party account or email
         Optional<ThirdPartyAccount> tpAccountOpt = thirdPartyAccountRepository
                 .findByProviderTypeAndProviderUserId(ProviderType.GOOGLE, googleId);
