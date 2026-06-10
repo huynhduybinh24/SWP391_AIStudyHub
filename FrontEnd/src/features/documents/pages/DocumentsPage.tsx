@@ -48,7 +48,7 @@ interface SubjectContent {
 }
 
 // Initial Mock Data
-export const INITIAL_DOCUMENTS: DocumentItem[] = [
+export const INITIAL_DOCUMENTS: DocumentItem[] = []; const UNUSED_DOCUMENTS: DocumentItem[] = [
   // Existing files
   {
     id: 'doc-design-patterns',

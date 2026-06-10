@@ -3,19 +3,57 @@ import type { LoginCredentials, LoginResponse, RegisterCredentials } from '@/typ
 
 /** Backend response shape from POST /auth/login and /auth/register */
 interface BackendAuthResponse {
-  userId: number
-  fullName: string
-  email: string
-  role: string
+  user?: {
+    id: string | number
+    name?: string
+    fullName?: string
+    email: string
+    role: string
+    plan?: string
+    avatarUrl?: string
+  }
+  tokens?: {
+    accessToken: string
+    refreshToken?: string
+  }
+  // Fallbacks for flat structure
+  userId?: number
+  fullName?: string
+  email?: string
+  role?: string
   plan?: string
-  accountStatus: string
-  message: string
-  accessToken: string
+  accessToken?: string
   refreshToken?: string
 }
 
-/** Map backend flat response → frontend { user, tokens } shape */
+/** Map backend response (nested or flat) → frontend { user, tokens } shape */
 function mapToLoginResponse(data: BackendAuthResponse): LoginResponse {
+  // If the backend returned a nested structure: { user, tokens }
+  if (data && data.user && data.tokens) {
+    const user = data.user
+    const tokens = data.tokens
+    const planRaw = (user.plan ?? 'free').toLowerCase()
+    const plan = planRaw === 'institutional' || planRaw === 'enterprise' || planRaw === 'premium'
+      ? 'institutional'
+      : planRaw === 'pro' ? 'pro' : 'free'
+
+    return {
+      user: {
+        id: String(user.id),
+        name: user.name || user.fullName || '',
+        email: user.email || '',
+        role: (user.role?.toLowerCase() ?? 'student') as LoginResponse['user']['role'],
+        plan: plan as 'free' | 'pro' | 'institutional',
+        avatarUrl: user.avatarUrl || '/logo.png',
+      },
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
+    }
+  }
+
+  // Fallback to flat structure
   const planRaw = (data.plan ?? 'free').toLowerCase()
   const plan = planRaw === 'institutional' || planRaw === 'enterprise' || planRaw === 'premium'
     ? 'institutional'
@@ -23,14 +61,15 @@ function mapToLoginResponse(data: BackendAuthResponse): LoginResponse {
 
   return {
     user: {
-      id: String(data.userId),
-      name: data.fullName,
-      email: data.email,
-      role: (data.role?.toLowerCase() ?? 'user') as LoginResponse['user']['role'],
+      id: String(data.userId || ''),
+      name: data.fullName || '',
+      email: data.email || '',
+      role: (data.role?.toLowerCase() ?? 'student') as LoginResponse['user']['role'],
       plan: plan as 'free' | 'pro' | 'institutional',
+      avatarUrl: '/logo.png',
     },
     tokens: {
-      accessToken: data.accessToken,
+      accessToken: data.accessToken || '',
       refreshToken: data.refreshToken,
     },
   }

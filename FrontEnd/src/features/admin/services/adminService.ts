@@ -1,5 +1,6 @@
 import { userNotificationService } from '@/features/notifications/services/userNotificationService';
 import { UserRole } from '@/types/auth';
+import { apiClient } from '@/lib/axios';
 
 export type AdminUser = {
   id: string;
@@ -56,12 +57,18 @@ export type DeletedDocumentRecord = {
 export type AdminStats = {
   totalUsers: number;
   activeUsers: number;
+  premiumUsers: number;
   totalDocuments: number;
   pendingDocuments: number;
   storageUsedGB: number;
   aiProcessedDocuments: number;
   flaggedDocuments: number;
   newUsersThisWeek: number;
+  newRegistrationsLast7Days: number[];
+  pdfStorageMb: number;
+  officeStorageMb: number;
+  spreadsheetStorageMb: number;
+  otherStorageMb: number;
 };
 
 const DEFAULT_MOCK_USERS: AdminUser[] = [
@@ -405,8 +412,26 @@ const randomDelay = () => delay(Math.floor(Math.random() * 300) + 300); // 300-6
 
 export const getAdminStats = async (): Promise<AdminStats> => {
   try {
-    const response = await apiClient.get('/admin/stats');
-    if (response.data) return response.data;
+    const response = await apiClient.get('/admin/dashboard/stats');
+    if (response.data) {
+      const statsData = response.data;
+      return {
+        totalUsers: statsData.totalUsers || 0,
+        activeUsers: (statsData.totalUsers - statsData.totalAdmins) || 0,
+        premiumUsers: statsData.premiumUsers || 0,
+        totalDocuments: statsData.totalDocuments || 0,
+        pendingDocuments: statsData.pendingDocuments || 0,
+        storageUsedGB: Number(((statsData.totalStorageUsed || 0) / 1024).toFixed(2)),
+        aiProcessedDocuments: statsData.totalDocuments - statsData.pendingDocuments,
+        flaggedDocuments: statsData.rejectedDocuments || 0,
+        newUsersThisWeek: (statsData.newRegistrationsLast7Days || []).reduce((a: number, b: number) => a + b, 0),
+        newRegistrationsLast7Days: statsData.newRegistrationsLast7Days || [0, 0, 0, 0, 0, 0, 0],
+        pdfStorageMb: statsData.pdfStorageMb || 0,
+        officeStorageMb: statsData.officeStorageMb || 0,
+        spreadsheetStorageMb: statsData.spreadsheetStorageMb || 0,
+        otherStorageMb: statsData.otherStorageMb || 0,
+      };
+    }
   } catch (error) {
     console.warn("Using mock admin stats fallback", error);
   }
@@ -417,12 +442,18 @@ export const getAdminStats = async (): Promise<AdminStats> => {
   return {
     totalUsers: currentUsers.length,
     activeUsers: currentUsers.filter((u) => u.status === "active").length,
+    premiumUsers: currentUsers.filter((u) => u.plan === "pro" || u.plan === "enterprise").length,
     totalDocuments: mockDocuments.length,
     pendingDocuments: mockDocuments.filter((d) => d.status === "pending").length,
     storageUsedGB: Number((storageMB / 1024).toFixed(2)),
     aiProcessedDocuments: mockDocuments.filter((d) => d.aiStatus === "analyzed").length,
     flaggedDocuments: mockDocuments.filter((d) => d.aiStatus === "flagged").length,
     newUsersThisWeek: 2,
+    newRegistrationsLast7Days: [0, 0, 0, 0, 0, 0, 2],
+    pdfStorageMb: 0,
+    officeStorageMb: 0,
+    spreadsheetStorageMb: 0,
+    otherStorageMb: 0,
   };
 };
 
@@ -442,18 +473,47 @@ export const getUsers = async (
     const response = await apiClient.get('/admin/users', { params });
     const list = response.data?.data || response.data;
     if (Array.isArray(list)) {
-      return list.map((u: any) => ({
-        id: String(u.id),
-        name: u.fullName || u.name || 'Anonymous',
-        email: u.email,
-        role: u.role?.toLowerCase() === 'admin' ? 'admin' : u.role?.toLowerCase() === 'teacher' ? 'teacher' : 'user',
-        status: u.accountStatus?.toLowerCase() || 'active',
-        joinedAt: u.createdAt ? u.createdAt.split('T')[0] : '2023-01-15',
-        documentsCount: u.documentsCount || 0,
-        storageUsedMB: u.storageUsedMb || 0,
-        plan: u.planType?.toLowerCase() || 'free',
-        isOnline: u.isOnline || false,
-      }));
+      return list.map((u: any) => {
+        // Compute relative "last active" from updatedAt
+        const lastActive = u.updatedAt || u.createdAt;
+        let lastActiveVi = 'Không rõ';
+        let lastActiveEn = 'Unknown';
+        if (lastActive) {
+          const diffMs = Date.now() - new Date(lastActive).getTime();
+          const diffMin = Math.floor(diffMs / 60000);
+          const diffHr = Math.floor(diffMin / 60);
+          const diffDay = Math.floor(diffHr / 24);
+          if (diffMin < 2) {
+            lastActiveVi = 'Vừa xong'; lastActiveEn = 'Just now';
+          } else if (diffMin < 60) {
+            lastActiveVi = `${diffMin} phút trước`; lastActiveEn = `${diffMin}m ago`;
+          } else if (diffHr < 24) {
+            lastActiveVi = `${diffHr} giờ trước`; lastActiveEn = `${diffHr}h ago`;
+          } else if (diffDay < 30) {
+            lastActiveVi = `${diffDay} ngày trước`; lastActiveEn = `${diffDay}d ago`;
+          } else {
+            const d = new Date(lastActive);
+            lastActiveVi = d.toLocaleDateString('vi-VN');
+            lastActiveEn = d.toLocaleDateString('en-US');
+          }
+        }
+
+        return {
+          id: String(u.id),
+          name: u.fullName || u.name || 'Anonymous',
+          email: u.email,
+          role: u.role?.toLowerCase() === 'admin' ? 'admin' : u.role?.toLowerCase() === 'teacher' ? 'teacher' : 'user',
+          status: u.accountStatus?.toLowerCase() || 'active',
+          joinedAt: u.createdAt ? u.createdAt.split('T')[0] : '2023-01-15',
+          documentsCount: u.documentsCount || 0,
+          storageUsedMB: u.storageUsedMb || 0,
+          plan: u.planType?.toLowerCase() || 'free',
+          isOnline: false,
+          lastActiveVi,
+          lastActiveEn,
+        };
+      });
+
     }
   } catch (error) {
     console.warn("Using mock users fallback", error);
@@ -484,6 +544,9 @@ export const updateUser = async (
     }
     if (updates.role) {
       await apiClient.patch(`/admin/users/${userId}/role`, { role: updates.role.toUpperCase() });
+    }
+    if (updates.plan) {
+      await apiClient.patch(`/admin/users/${userId}/plan`, { planType: updates.plan.toUpperCase() });
     }
     if (updates.name || updates.email) {
       const currentUsers = loadUsersFromStorage();
@@ -614,34 +677,36 @@ export const deleteUser = async (userId: string, reason?: string): Promise<{ suc
   return { success: true };
 };
 
+const mapBackendDocumentToAdminDocument = (d: any): AdminDocument => ({
+  id: String(d.id),
+  title: d.title,
+  ownerName: d.ownerName || 'User',
+  ownerEmail: d.ownerEmail || 'user@example.com',
+  fileType: d.fileType?.toLowerCase() || 'pdf',
+  sizeMB: d.fileSize ? Number((d.fileSize / (1024 * 1024)).toFixed(2)) : (d.sizeMb || 0.5),
+  uploadedAt: d.createdAt ? d.createdAt.split('T')[0] : '2024-05-18',
+  status: d.status?.toLowerCase() || 'approved',
+  aiStatus: d.status?.toLowerCase() === 'rejected' ? 'flagged' : (d.aiStatus?.toLowerCase() || 'analyzed'),
+  category: d.subject || 'General',
+  sharedCount: d.sharedCount || 0,
+  isAiGenerated: d.isAiGenerated || false,
+  aiConfidenceScore: d.aiConfidenceScore || 0,
+  isFlagged: d.status?.toLowerCase() === 'rejected' || d.isFlagged || false,
+  bannedKeywords: d.moderationReason ? [d.moderationReason] : (d.bannedKeywords || []),
+  reportCount: d.reportCount || 0,
+  aiRiskLevel: d.status?.toLowerCase() === 'rejected' ? 'high' : (d.aiRiskLevel?.toLowerCase() || 'low'),
+  plagiarismScore: d.plagiarismScore || 0,
+  unsafeContentScore: d.unsafeContentScore || 0,
+  spamScore: d.spamScore || 0,
+  uploadSource: d.uploadSource || 'web_upload'
+});
+
 export const getDocuments = async (): Promise<AdminDocument[]> => {
   try {
-    const response = await apiClient.get('/documents');
+    const response = await apiClient.get('/admin/documents');
     const list = response.data?.data || response.data;
     if (Array.isArray(list)) {
-      return list.map((d: any) => ({
-        id: String(d.id),
-        title: d.title,
-        ownerName: d.ownerName || 'User',
-        ownerEmail: d.ownerEmail || 'user@example.com',
-        fileType: d.fileType?.toLowerCase() || 'pdf',
-        sizeMB: d.sizeMb || 0.5,
-        uploadedAt: d.createdAt ? d.createdAt.split('T')[0] : '2024-05-18',
-        status: d.status?.toLowerCase() || 'approved',
-        aiStatus: d.aiStatus?.toLowerCase() || 'analyzed',
-        category: d.subject || 'General',
-        sharedCount: d.sharedCount || 0,
-        isAiGenerated: d.isAiGenerated || false,
-        aiConfidenceScore: d.aiConfidenceScore || 0,
-        isFlagged: d.isFlagged || false,
-        bannedKeywords: d.bannedKeywords || [],
-        reportCount: d.reportCount || 0,
-        aiRiskLevel: d.aiRiskLevel?.toLowerCase() || 'low',
-        plagiarismScore: d.plagiarismScore || 0,
-        unsafeContentScore: d.unsafeContentScore || 0,
-        spamScore: d.spamScore || 0,
-        uploadSource: d.uploadSource || 'web_upload'
-      }));
+      return list.map(mapBackendDocumentToAdminDocument);
     }
   } catch (error) {
     console.warn("Using mock documents fallback", error);
@@ -670,7 +735,7 @@ export const updateDocument = async (
 
 export const deleteDocument = async (documentId: string, reason?: string): Promise<{ success: boolean }> => {
   try {
-    await apiClient.delete(`/documents/${documentId}`);
+    await apiClient.delete(`/admin/documents/${documentId}`);
   } catch (error) {
     console.warn("Using mock delete document fallback", error);
   }
@@ -717,7 +782,7 @@ export const approveDocument = async (documentId: string): Promise<AdminDocument
   try {
     const response = await apiClient.patch(`/admin/documents/${documentId}/moderate`, { status: 'APPROVED' });
     if (response.data) {
-      return { ...mockDocuments.find(d => d.id === documentId)!, status: 'approved' };
+      return mapBackendDocumentToAdminDocument(response.data);
     }
   } catch (error) {
     console.warn('Using mock approve document fallback', error);
@@ -731,7 +796,10 @@ export const approveDocument = async (documentId: string): Promise<AdminDocument
 
 export const rejectDocument = async (documentId: string, reason?: string): Promise<AdminDocument> => {
   try {
-    await apiClient.patch(`/admin/documents/${documentId}/moderate`, { status: 'REJECTED', reason });
+    const response = await apiClient.patch(`/admin/documents/${documentId}/moderate`, { status: 'REJECTED', reason });
+    if (response.data) {
+      return mapBackendDocumentToAdminDocument(response.data);
+    }
   } catch (error) {
     console.warn('Using mock reject document fallback', error);
   }
@@ -875,16 +943,27 @@ export const adminService = {
     } catch (error) {
       console.warn("Using mock reports fallback", error);
     }
-    return reportService.getReports();
+    return [
+      {
+        id: 'rep-1',
+        reportedFile: 'Violating_Exam_Leaks_2026.pdf',
+        reportedFileId: 'doc-4',
+        reporter: 'Sarah Jenkins',
+        reporterEmail: 'sarah.j@school.edu',
+        reason: 'Tài liệu này chứa nội dung rò rỉ đề thi cuối kỳ, vi phạm quy chế học tập nghiêm trọng.',
+        status: 'pending',
+        createdAt: '2026-05-25T10:15:00'
+      }
+    ];
   },
-  updateReportStatus: async (id: string, status: 'pending' | 'resolved' | 'ignored') => {
+  updateReportStatus: async (id: string | number, status: 'pending' | 'resolved' | 'ignored') => {
     try {
-      const response = await apiClient.put(`/admin/reports/${id}`, { status });
+      const response = await apiClient.patch(`/admin/reports/${id}/status`, { status });
       if (response.data) return response.data;
     } catch (error) {
       console.warn("Using mock update report status fallback", error);
     }
-    return reportService.updateReport(id, { status });
+    return { id, status };
   },
   getActivityLogs: async () => {
     try {

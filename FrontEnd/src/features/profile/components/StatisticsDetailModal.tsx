@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CalendarDays, Sparkles, Share2, Cloud, FileText, AlertTriangle } from 'lucide-react'
 import { StatisticItem } from './StatisticsCard'
@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { calculateStorageUsage } from '@/utils/storageFormat'
+import { storageService } from '@/services/storageService'
 
 interface StatisticsDetailModalProps {
   isOpen: boolean
@@ -25,13 +26,25 @@ export function StatisticsDetailModal({
   const { t, language } = useTranslation()
   const user = useAuthStore((s) => s.user)
 
-  const totalMb = getStorageLimitByPlan(user?.plan)
+  const [storageData, setStorageData] = useState<any>(null)
+
+  useEffect(() => {
+    if (isOpen && item?.id === 'storageUsed' && user?.id) {
+      storageService.getStorageUsage(Number(user.id))
+        .then(data => setStorageData(data))
+        .catch(err => console.error("Failed to fetch storage usage in modal:", err))
+    }
+  }, [isOpen, item?.id, user?.id])
+
+  const totalMb = storageData ? storageData.storageLimitMb : getStorageLimitByPlan(user?.plan)
   const totalGb = totalMb / 1024
-  const usedMb = user?.plan === 'pro' 
-    ? 2457.6 
-    : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
-      ? 8192
-      : 8
+  const usedMb = storageData 
+    ? storageData.storageUsedMb 
+    : user?.plan === 'pro' 
+      ? 2457.6 
+      : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
+        ? 8192
+        : 8
   const usedGb = usedMb / 1024
   const usageInfo = calculateStorageUsage(usedMb, totalMb)
   const percentage = usageInfo.percentage

@@ -32,7 +32,7 @@ interface DocumentItem {
   essential?: boolean;
 }
 
-const INITIAL_DOCUMENTS: DocumentItem[] = [
+const INITIAL_DOCUMENTS: DocumentItem[] = []; const UNUSED_DOCUMENTS: DocumentItem[] = [
   {
     id: 'doc-design-patterns',
     title: 'Design Patterns',

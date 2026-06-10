@@ -59,6 +59,18 @@ public class DocumentServiceTest {
     @Mock
     private DocumentChunkingService documentChunkingService;
 
+    @Mock
+    private com.lumiedu.workspace.repository.WorkspaceDocumentRepository workspaceDocumentRepository;
+
+    @Mock
+    private com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
+
+    @Mock
+    private com.lumiedu.workspace.repository.SharedWorkspaceRepository sharedWorkspaceRepository;
+
+    @Mock
+    private com.lumiedu.user.repository.UserRepository userRepository;
+
     @InjectMocks
     private DocumentServiceImpl documentService;
 
@@ -162,13 +174,15 @@ public class DocumentServiceTest {
         Document document = Document.builder()
                 .id(1L)
                 .title("Test Doc")
+                .userId(1L)
                 .deleted(false)
                 .build();
 
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
         when(documentRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(document));
         when(documentTagRepository.findAllByDocumentId(1L)).thenReturn(Collections.emptyList());
 
-        DocumentResponse response = documentService.getDocumentById(1L);
+        DocumentResponse response = documentService.getDocumentById(1L, 1L);
 
         assertNotNull(response);
         assertEquals(1L, response.getId());
@@ -180,7 +194,7 @@ public class DocumentServiceTest {
         when(documentRepository.findByIdAndDeletedFalse(999L)).thenReturn(Optional.empty());
 
         assertThrows(DocumentNotFoundException.class, () -> {
-            documentService.getDocumentById(999L);
+            documentService.getDocumentById(999L, 1L);
         });
     }
 
@@ -189,6 +203,7 @@ public class DocumentServiceTest {
         Document existingDoc = Document.builder()
                 .id(1L)
                 .title("Old Title")
+                .userId(1L)
                 .deleted(false)
                 .build();
 
@@ -197,10 +212,11 @@ public class DocumentServiceTest {
                 .tags(List.of("updated-tag"))
                 .build();
 
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
         when(documentRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(existingDoc));
         when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        DocumentResponse response = documentService.updateDocument(1L, updateRequest);
+        DocumentResponse response = documentService.updateDocument(1L, updateRequest, 1L);
 
         assertNotNull(response);
         assertEquals("New Title", response.getTitle());
@@ -213,12 +229,14 @@ public class DocumentServiceTest {
         Document existingDoc = Document.builder()
                 .id(1L)
                 .title("Target Doc")
+                .userId(1L)
                 .deleted(false)
                 .build();
 
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
         when(documentRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(existingDoc));
 
-        documentService.deleteDocument(1L);
+        documentService.deleteDocument(1L, 1L);
 
         assertTrue(existingDoc.getDeleted());
         verify(documentRepository, times(1)).save(existingDoc);
