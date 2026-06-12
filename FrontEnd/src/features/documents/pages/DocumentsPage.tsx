@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { logActivity } from '@/services/activityLogService'
 import { aiService } from '@/services/aiService'
 import type { AiSummaryResponse, FlashcardResponse, QuizQuestionResponse } from '@/services/aiService'
@@ -18,7 +18,8 @@ import {
   Image as ImageIcon,
   FolderDown,
   HardDrive,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -35,7 +36,7 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
+  subject: string
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
   essential?: boolean
@@ -46,6 +47,92 @@ interface SubjectContent {
   summaryBullets: string[]
   flashcards: Array<{ q: string; a: string }>
 }
+
+interface FptSubjectInfo {
+  id: string
+  title: string
+  courseCode: string
+  semester: string
+  majors: ('SE' | 'AI' | 'BA')[]
+}
+
+const FPT_SUBJECTS: FptSubjectInfo[] = [
+  // Semester 1 (K1)
+  { id: 'PRF192', title: 'Programming Fundamentals', courseCode: 'PRF192', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'MAE101', title: 'Mathematics for Engineering', courseCode: 'MAE101', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'CEA201', title: 'Computer Organization', courseCode: 'CEA201', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'CSI104', title: 'Introduction to Computer Science', courseCode: 'CSI104', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'MGT103', title: 'Introduction to Management', courseCode: 'MGT103', semester: 'K1', majors: ['BA'] },
+  { id: 'ECO111', title: 'Microeconomics', courseCode: 'ECO111', semester: 'K1', majors: ['BA'] },
+  { id: 'FMA101', title: 'Financial Mathematics', courseCode: 'FMA101', semester: 'K1', majors: ['BA'] },
+
+  // Semester 2 (K2)
+  { id: 'PRO192', title: 'Object-Oriented Programming', courseCode: 'PRO192', semester: 'K2', majors: ['SE', 'AI'] },
+  { id: 'MAD101', title: 'Discrete Mathematics', courseCode: 'MAD101', semester: 'K2', majors: ['SE', 'AI'] },
+  { id: 'OSG202', title: 'Operating Systems', courseCode: 'OSG202', semester: 'K2', majors: ['SE', 'AI'] },
+  { id: 'SSG104', title: 'Communication Skills', courseCode: 'SSG104', semester: 'K2', majors: ['SE', 'AI', 'BA'] },
+  { id: 'MKT101', title: 'Basic Marketing', courseCode: 'MKT101', semester: 'K2', majors: ['BA'] },
+  { id: 'ECO121', title: 'Macroeconomics', courseCode: 'ECO121', semester: 'K2', majors: ['BA'] },
+  { id: 'AMG111', title: 'Art Management', courseCode: 'AMG111', semester: 'K2', majors: ['BA'] },
+
+  // Semester 3 (K3)
+  { id: 'CSD201', title: 'Data Structures and Algorithms', courseCode: 'CSD201', semester: 'K3', majors: ['SE', 'AI'] },
+  { id: 'DBI202', title: 'Database Systems', courseCode: 'DBI202', semester: 'K3', majors: ['SE', 'AI', 'BA'] },
+  { id: 'LAB211', title: 'OOP Java Lab', courseCode: 'LAB211', semester: 'K3', majors: ['SE'] },
+  { id: 'AIL302M', title: 'Machine Learning', courseCode: 'AIL302m', semester: 'K3', majors: ['AI'] },
+  { id: 'ACC101', title: 'Principles of Accounting', courseCode: 'ACC101', semester: 'K3', majors: ['BA'] },
+  { id: 'FIN201', title: 'Corporate Finance', courseCode: 'FIN201', semester: 'K3', majors: ['BA'] },
+  { id: 'BUL201', title: 'Business Law', courseCode: 'BUL201', semester: 'K3', majors: ['BA'] },
+
+  // Semester 4 (K4)
+  { id: 'PRN211', title: 'Basic Cross-Platform Application (.NET)', courseCode: 'PRN211', semester: 'K4', majors: ['SE'] },
+  { id: 'SWE201', title: 'Introduction to Software Engineering', courseCode: 'SWE201', semester: 'K4', majors: ['SE'] },
+  { id: 'JPD113', title: 'Japanese Language 1', courseCode: 'JPD113', semester: 'K4', majors: ['SE', 'AI'] },
+  { id: 'AIP301', title: 'Artificial Intelligence Project', courseCode: 'AIP301', semester: 'K4', majors: ['AI'] },
+  { id: 'MTH202', title: 'Probability and Statistics', courseCode: 'MTH202', semester: 'K4', majors: ['SE', 'AI'] },
+  { id: 'HRM201', title: 'Human Resource Management', courseCode: 'HRM201', semester: 'K4', majors: ['BA'] },
+  { id: 'OBH201', title: 'Organizational Behavior', courseCode: 'OBH201', semester: 'K4', majors: ['BA'] },
+  { id: 'MRF301', title: 'Marketing Research', courseCode: 'MRF301', semester: 'K4', majors: ['BA'] },
+
+  // Semester 5 (K5)
+  { id: 'SWP391', title: 'Software Development Project', courseCode: 'SWP391', semester: 'K5', majors: ['SE', 'AI'] },
+  { id: 'SWD392', title: 'Software Architecture and Design', courseCode: 'SWD392', semester: 'K5', majors: ['SE'] },
+  { id: 'SWT301', title: 'Software Testing', courseCode: 'SWT301', semester: 'K5', majors: ['SE'] },
+  { id: 'DLN301', title: 'Deep Learning', courseCode: 'DLN301', semester: 'K5', majors: ['AI'] },
+  { id: 'BIS301', title: 'Business Information Systems', courseCode: 'BIS301', semester: 'K5', majors: ['BA'] },
+  { id: 'ENT301', title: 'Entrepreneurship', courseCode: 'ENT301', semester: 'K5', majors: ['SE', 'AI', 'BA'] },
+  { id: 'POM201', title: 'Production and Operations Management', courseCode: 'POM201', semester: 'K5', majors: ['BA'] },
+
+  // Semester 6 (K6)
+  { id: 'OJT202', title: 'On-the-Job Training (OJT)', courseCode: 'OJT202', semester: 'K6', majors: ['SE', 'AI', 'BA'] },
+
+  // Semester 7 (K7)
+  { id: 'PRM392', title: 'Mobile Programming', courseCode: 'PRM392', semester: 'K7', majors: ['SE', 'AI'] },
+  { id: 'PRN221', title: 'Advanced Cross-Platform Application (.NET)', courseCode: 'PRN221', semester: 'K7', majors: ['SE'] },
+  { id: 'WDP301', title: 'Web Development Project', courseCode: 'WDP301', semester: 'K7', majors: ['SE'] },
+  { id: 'NLP301', title: 'Natural Language Processing', courseCode: 'NLP301', semester: 'K7', majors: ['AI'] },
+  { id: 'CVP301', title: 'Computer Vision Project', courseCode: 'CVP301', semester: 'K7', majors: ['AI'] },
+  { id: 'IBM301', title: 'International Business Management', courseCode: 'IBM301', semester: 'K7', majors: ['BA'] },
+  { id: 'SCM301', title: 'Supply Chain Management', courseCode: 'SCM301', semester: 'K7', majors: ['BA'] },
+  { id: 'BRM301', title: 'Business Research Methods', courseCode: 'BRM301', semester: 'K7', majors: ['BA'] },
+
+  // Semester 8 (K8)
+  { id: 'SEP490', title: 'Capstone Project Preparation (SE)', courseCode: 'SEP490', semester: 'K8', majors: ['SE'] },
+  { id: 'CAP490', title: 'Capstone Project Preparation (AI)', courseCode: 'CAP490', semester: 'K8', majors: ['AI'] },
+  { id: 'BAP490', title: 'Capstone Project Preparation (BA)', courseCode: 'BAP490', semester: 'K8', majors: ['BA'] },
+  { id: 'EXE101', title: 'Experiential Entrepreneurship 1', courseCode: 'EXE101', semester: 'K8', majors: ['SE', 'AI', 'BA'] },
+  { id: 'IAS301', title: 'Information Assurance & Security', courseCode: 'IAS301', semester: 'K8', majors: ['SE'] },
+  { id: 'BDA301', title: 'Big Data Analytics', courseCode: 'BDA301', semester: 'K8', majors: ['AI'] },
+  { id: 'SMA301', title: 'Strategic Management', courseCode: 'SMA301', semester: 'K8', majors: ['BA'] },
+
+  // Semester 9 (K9)
+  { id: 'SEP490_DEF', title: 'Capstone Project Graduation (SE)', courseCode: 'SEP490', semester: 'K9', majors: ['SE'] },
+  { id: 'CAP490_DEF', title: 'Capstone Project Graduation (AI)', courseCode: 'CAP490', semester: 'K9', majors: ['AI'] },
+  { id: 'BAP490_DEF', title: 'Capstone Project Graduation (BA)', courseCode: 'BAP490', semester: 'K9', majors: ['BA'] },
+  { id: 'EXE201', title: 'Experiential Entrepreneurship 2', courseCode: 'EXE201', semester: 'K9', majors: ['SE', 'AI', 'BA'] },
+  { id: 'PMG201', title: 'Project Management', courseCode: 'PMG201', semester: 'K9', majors: ['SE', 'AI'] },
+  { id: 'EBU301', title: 'E-Business', courseCode: 'EBU301', semester: 'K9', majors: ['BA'] }
+]
 
 // Initial Mock Data
 export const INITIAL_DOCUMENTS: DocumentItem[] = []; const UNUSED_DOCUMENTS: DocumentItem[] = [
@@ -698,7 +785,8 @@ const QUIZ_QUESTIONS = [
 ]
 
 export function DocumentsPage() {
-  const { t } = useTranslation()
+  const { language, t } = useTranslation()
+  const navigate = useNavigate()
   const user = useAuthStore(state => state.user)
   const userId = Number(user?.id || 1)
   const [documents, setDocuments] = useState<DocumentItem[]>([])
@@ -772,9 +860,21 @@ export function DocumentsPage() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadStepMsg, setUploadStepMsg] = useState('')
   const [newDocTitle, setNewDocTitle] = useState('')
-  const [newDocSubject, setNewDocSubject] = useState<'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'>('GENERAL')
+  const [uploadMajor, setUploadMajor] = useState<'SE' | 'AI' | 'BA'>('SE')
+  const [uploadSemester, setUploadSemester] = useState<string>('K1')
+  const [newDocSubject, setNewDocSubject] = useState<string>('PRF192')
   const [newDocType, setNewDocType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+
+  // Reset newDocSubject when uploadMajor or uploadSemester changes
+  useEffect(() => {
+    const filtered = FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester)
+    if (filtered.length > 0) {
+      setNewDocSubject(filtered[0].id)
+    } else {
+      setNewDocSubject('GENERAL')
+    }
+  }, [uploadMajor, uploadSemester])
 
   // Preview Modal States
   const [activePreviewDoc, setActivePreviewDoc] = useState<DocumentItem | null>(null)
@@ -787,6 +887,10 @@ export function DocumentsPage() {
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false)
   const [isModifyingQuiz, setIsModifyingQuiz] = useState(false)
   const [quizPrompt, setQuizPrompt] = useState('')
+
+  const [previewFileUrl, setPreviewFileUrl] = useState<string | null>(null)
+  const [previewTextContent, setPreviewTextContent] = useState<string>('')
+  const [loadingPreviewFile, setLoadingPreviewFile] = useState(false)
 
   // Quick Chat drawer States
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false)
@@ -955,8 +1059,13 @@ export function DocumentsPage() {
 
         showToast(`Tài liệu "${finalTitle}" tải lên và phân tích AI thành công!`)
         
+        const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
+        navigate(`/dashboard/documents/subject/${finalSubjectKey}`)
+
         setNewDocTitle('')
-        setNewDocSubject('GENERAL')
+        setUploadMajor('SE')
+        setUploadSemester('K1')
+        setNewDocSubject('PRF192')
         setNewDocType('pdf')
         setSelectedFile(null)
       }, 500)
@@ -1223,6 +1332,53 @@ export function DocumentsPage() {
     loadDocDetails()
   }, [activePreviewDoc])
 
+  // Automatically fetch PDF/image blob or text preview when activePreviewDoc is set
+  useEffect(() => {
+    if (!activePreviewDoc) {
+      if (previewFileUrl) {
+        URL.revokeObjectURL(previewFileUrl)
+      }
+      setPreviewFileUrl(null)
+      setPreviewTextContent('')
+      return
+    }
+
+    const loadRealPreview = async () => {
+      setLoadingPreviewFile(true)
+      try {
+        if (activePreviewDoc.type === 'pdf' || activePreviewDoc.type === 'image') {
+          const blob = await documentService.previewDocumentBlob(activePreviewDoc.id, userId)
+          const url = URL.createObjectURL(blob)
+          setPreviewFileUrl(url)
+        } else {
+          const content = await documentService.previewDocument(activePreviewDoc.id)
+          if (content && !content.startsWith('%PDF')) {
+            setPreviewTextContent(content)
+          } else {
+            setPreviewTextContent('')
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load document preview:", err)
+        setPreviewFileUrl(null)
+        setPreviewTextContent('')
+      } finally {
+        setLoadingPreviewFile(false)
+      }
+    }
+
+    loadRealPreview()
+  }, [activePreviewDoc, userId])
+
+  // Cleanup Object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewFileUrl) {
+        URL.revokeObjectURL(previewFileUrl)
+      }
+    }
+  }, [previewFileUrl])
+
   const getDocContent = (doc: DocumentItem | null) => {
     if (!doc) return SUBJECTS_CONTENT_DB.GENERAL
     return SUBJECTS_CONTENT_DB[doc.id] || SUBJECTS_CONTENT_DB[doc.subject] || SUBJECTS_CONTENT_DB.GENERAL
@@ -1386,37 +1542,84 @@ export function DocumentsPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-left">
+                {/* Major Select */}
                 <div className="space-y-1.5">
-                  <label htmlFor="subject-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">Subject</label>
+                  <label htmlFor="upload-major-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {language === 'en' ? 'Major' : 'Ngành học'}
+                  </label>
                   <select
-                    id="subject-select"
-                    value={newDocSubject}
-                    onChange={(e) => setNewDocSubject(e.target.value as any)}
+                    id="upload-major-select"
+                    value={uploadMajor}
+                    onChange={(e) => setUploadMajor(e.target.value as any)}
                     className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
-                    <option value="GENERAL">General/Other</option>
-                    <option value="MATHEMATICS">Mathematics</option>
-                    <option value="BIOLOGY">Biology</option>
-                    <option value="PHYSICS">Physics</option>
-                    <option value="COMPSCI">CompSci</option>
-                    <option value="PHILOSOPHY">Philosophy</option>
-                    <option value="ECONOMICS">Economics</option>
+                    <option value="SE">{language === 'en' ? 'Software Engineering (SE)' : 'Kỹ thuật phần mềm (SE)'}</option>
+                    <option value="AI">{language === 'en' ? 'Artificial Intelligence (AI)' : 'Trí tuệ nhân tạo (AI)'}</option>
+                    <option value="BA">{language === 'en' ? 'Business Administration (BA)' : 'Quản trị kinh doanh (BA)'}</option>
                   </select>
                 </div>
 
+                {/* Semester Select */}
                 <div className="space-y-1.5">
-                  <label htmlFor="type-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">File Type</label>
+                  <label htmlFor="upload-semester-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {language === 'en' ? 'Semester' : 'Học kỳ'}
+                  </label>
+                  <select
+                    id="upload-semester-select"
+                    value={uploadSemester}
+                    onChange={(e) => setUploadSemester(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
+                  >
+                    <option value="K1">{language === 'en' ? 'Semester 1' : 'Học kỳ 1'}</option>
+                    <option value="K2">{language === 'en' ? 'Semester 2' : 'Học kỳ 2'}</option>
+                    <option value="K3">{language === 'en' ? 'Semester 3' : 'Học kỳ 3'}</option>
+                    <option value="K4">{language === 'en' ? 'Semester 4' : 'Học kỳ 4'}</option>
+                    <option value="K5">{language === 'en' ? 'Semester 5' : 'Học kỳ 5'}</option>
+                    <option value="K6">{language === 'en' ? 'Semester 6' : 'Học kỳ 6'}</option>
+                    <option value="K7">{language === 'en' ? 'Semester 7' : 'Học kỳ 7'}</option>
+                    <option value="K8">{language === 'en' ? 'Semester 8' : 'Học kỳ 8'}</option>
+                    <option value="K9">{language === 'en' ? 'Semester 9' : 'Học kỳ 9'}</option>
+                  </select>
+                </div>
+
+                {/* Subject Select */}
+                <div className="space-y-1.5">
+                  <label htmlFor="subject-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {language === 'en' ? 'Subject' : 'Môn học'}
+                  </label>
+                  <select
+                    id="subject-select"
+                    value={newDocSubject}
+                    onChange={(e) => setNewDocSubject(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
+                  >
+                    {FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).map((subj) => (
+                      <option key={subj.id} value={subj.id}>
+                        {subj.courseCode} - {subj.title}
+                      </option>
+                    ))}
+                    {FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).length === 0 && (
+                      <option value="GENERAL">General/Other</option>
+                    )}
+                  </select>
+                </div>
+
+                {/* File Type Select */}
+                <div className="space-y-1.5">
+                  <label htmlFor="type-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {language === 'en' ? 'File Type' : 'Loại tệp'}
+                  </label>
                   <select
                     id="type-select"
                     value={newDocType}
                     onChange={(e) => setNewDocType(e.target.value as any)}
                     className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
-                    <option value="pdf">PDF File (.pdf)</option>
-                    <option value="word">Word Document (.docx)</option>
-                    <option value="text">Text File (.txt)</option>
-                    <option value="image">Image Note (.png, .jpg)</option>
-                    <option value="slides">Presentation Slides (.pptx)</option>
+                    <option value="pdf">{language === 'en' ? 'PDF File (.pdf)' : 'Tệp PDF (.pdf)'}</option>
+                    <option value="word">{language === 'en' ? 'Word Document (.docx)' : 'Tài liệu Word (.docx)'}</option>
+                    <option value="text">{language === 'en' ? 'Text File (.txt)' : 'Tệp văn bản (.txt)'}</option>
+                    <option value="image">{language === 'en' ? 'Image Note (.png, .jpg)' : 'Hình ảnh (.png, .jpg)'}</option>
+                    <option value="slides">{language === 'en' ? 'Presentation Slides (.pptx)' : 'Slide trình chiếu (.pptx)'}</option>
                   </select>
                 </div>
               </div>
@@ -1655,9 +1858,30 @@ export function DocumentsPage() {
 
             {activePreviewTab === 'preview' && (
               <div className="space-y-4">
-                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5 max-h-[350px] overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 dark:text-slate-350 whitespace-pre-wrap">
-                  {getDocContent(activePreviewDoc)?.previewText}
-                </div>
+                {loadingPreviewFile ? (
+                  <div className="flex flex-col items-center justify-center h-[355px] bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <Loader2 className="animate-spin size-8 text-[#2563eb] mb-2" />
+                    <span className="text-sm text-slate-500">Loading document...</span>
+                  </div>
+                ) : previewFileUrl ? (
+                  activePreviewDoc.type === 'image' ? (
+                    <img
+                      src={previewFileUrl}
+                      alt={activePreviewDoc.title}
+                      className="max-h-[355px] w-auto mx-auto rounded-xl object-contain border border-slate-200 dark:border-slate-800"
+                    />
+                  ) : (
+                    <iframe
+                      src={previewFileUrl}
+                      className="w-full h-[400px] rounded-xl border border-slate-200 dark:border-slate-800"
+                      title={activePreviewDoc.title}
+                    />
+                  )
+                ) : (
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5 max-h-[350px] overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 dark:text-slate-350 whitespace-pre-wrap">
+                    {previewTextContent || getDocContent(activePreviewDoc)?.previewText}
+                  </div>
+                )}
                 <div className="flex justify-between items-center bg-blue-50/40 dark:bg-blue-955/20 rounded-xl p-4 border border-blue-100/50 dark:border-blue-900/30">
                   <div className="flex items-center gap-3 text-sm text-[#2563eb] dark:text-blue-400 font-medium">
                     <BrainCircuit className="h-5 w-5" />

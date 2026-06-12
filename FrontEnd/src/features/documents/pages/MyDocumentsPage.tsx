@@ -15,11 +15,13 @@ import {
   FileText,
   SlidersHorizontal,
   Pencil,
-  BrainCircuit
+  BrainCircuit,
+  Share2
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { ShareDocumentModal } from '../components/ShareDocumentModal'
 
 interface DocumentItem {
   id: string
@@ -29,7 +31,7 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
+  subject: string
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
@@ -47,6 +49,92 @@ interface DocumentsContextType {
   renderFileIcon: (type: string) => React.ReactNode
   renderStatusBadge: (status: string) => React.ReactNode
 }
+
+interface FptSubjectInfo {
+  id: string
+  title: string
+  courseCode: string
+  semester: string
+  majors: ('SE' | 'AI' | 'BA')[]
+}
+
+const FPT_SUBJECTS: FptSubjectInfo[] = [
+  // Semester 1 (K1)
+  { id: 'PRF192', title: 'Programming Fundamentals', courseCode: 'PRF192', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'MAE101', title: 'Mathematics for Engineering', courseCode: 'MAE101', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'CEA201', title: 'Computer Organization', courseCode: 'CEA201', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'CSI104', title: 'Introduction to Computer Science', courseCode: 'CSI104', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'MGT103', title: 'Introduction to Management', courseCode: 'MGT103', semester: 'K1', majors: ['BA'] },
+  { id: 'ECO111', title: 'Microeconomics', courseCode: 'ECO111', semester: 'K1', majors: ['BA'] },
+  { id: 'FMA101', title: 'Financial Mathematics', courseCode: 'FMA101', semester: 'K1', majors: ['BA'] },
+
+  // Semester 2 (K2)
+  { id: 'PRO192', title: 'Object-Oriented Programming', courseCode: 'PRO192', semester: 'K2', majors: ['SE', 'AI'] },
+  { id: 'MAD101', title: 'Discrete Mathematics', courseCode: 'MAD101', semester: 'K2', majors: ['SE', 'AI'] },
+  { id: 'OSG202', title: 'Operating Systems', courseCode: 'OSG202', semester: 'K2', majors: ['SE', 'AI'] },
+  { id: 'SSG104', title: 'Communication Skills', courseCode: 'SSG104', semester: 'K2', majors: ['SE', 'AI', 'BA'] },
+  { id: 'MKT101', title: 'Basic Marketing', courseCode: 'MKT101', semester: 'K2', majors: ['BA'] },
+  { id: 'ECO121', title: 'Macroeconomics', courseCode: 'ECO121', semester: 'K2', majors: ['BA'] },
+  { id: 'AMG111', title: 'Art Management', courseCode: 'AMG111', semester: 'K2', majors: ['BA'] },
+
+  // Semester 3 (K3)
+  { id: 'CSD201', title: 'Data Structures and Algorithms', courseCode: 'CSD201', semester: 'K3', majors: ['SE', 'AI'] },
+  { id: 'DBI202', title: 'Database Systems', courseCode: 'DBI202', semester: 'K3', majors: ['SE', 'AI', 'BA'] },
+  { id: 'LAB211', title: 'OOP Java Lab', courseCode: 'LAB211', semester: 'K3', majors: ['SE'] },
+  { id: 'AIL302M', title: 'Machine Learning', courseCode: 'AIL302m', semester: 'K3', majors: ['AI'] },
+  { id: 'ACC101', title: 'Principles of Accounting', courseCode: 'ACC101', semester: 'K3', majors: ['BA'] },
+  { id: 'FIN201', title: 'Corporate Finance', courseCode: 'FIN201', semester: 'K3', majors: ['BA'] },
+  { id: 'BUL201', title: 'Business Law', courseCode: 'BUL201', semester: 'K3', majors: ['BA'] },
+
+  // Semester 4 (K4)
+  { id: 'PRN211', title: 'Basic Cross-Platform Application (.NET)', courseCode: 'PRN211', semester: 'K4', majors: ['SE'] },
+  { id: 'SWE201', title: 'Introduction to Software Engineering', courseCode: 'SWE201', semester: 'K4', majors: ['SE'] },
+  { id: 'JPD113', title: 'Japanese Language 1', courseCode: 'JPD113', semester: 'K4', majors: ['SE', 'AI'] },
+  { id: 'AIP301', title: 'Artificial Intelligence Project', courseCode: 'AIP301', semester: 'K4', majors: ['AI'] },
+  { id: 'MTH202', title: 'Probability and Statistics', courseCode: 'MTH202', semester: 'K4', majors: ['SE', 'AI'] },
+  { id: 'HRM201', title: 'Human Resource Management', courseCode: 'HRM201', semester: 'K4', majors: ['BA'] },
+  { id: 'OBH201', title: 'Organizational Behavior', courseCode: 'OBH201', semester: 'K4', majors: ['BA'] },
+  { id: 'MRF301', title: 'Marketing Research', courseCode: 'MRF301', semester: 'K4', majors: ['BA'] },
+
+  // Semester 5 (K5)
+  { id: 'SWP391', title: 'Software Development Project', courseCode: 'SWP391', semester: 'K5', majors: ['SE', 'AI'] },
+  { id: 'SWD392', title: 'Software Architecture and Design', courseCode: 'SWD392', semester: 'K5', majors: ['SE'] },
+  { id: 'SWT301', title: 'Software Testing', courseCode: 'SWT301', semester: 'K5', majors: ['SE'] },
+  { id: 'DLN301', title: 'Deep Learning', courseCode: 'DLN301', semester: 'K5', majors: ['AI'] },
+  { id: 'BIS301', title: 'Business Information Systems', courseCode: 'BIS301', semester: 'K5', majors: ['BA'] },
+  { id: 'ENT301', title: 'Entrepreneurship', courseCode: 'ENT301', semester: 'K5', majors: ['SE', 'AI', 'BA'] },
+  { id: 'POM201', title: 'Production and Operations Management', courseCode: 'POM201', semester: 'K5', majors: ['BA'] },
+
+  // Semester 6 (K6)
+  { id: 'OJT202', title: 'On-the-Job Training (OJT)', courseCode: 'OJT202', semester: 'K6', majors: ['SE', 'AI', 'BA'] },
+
+  // Semester 7 (K7)
+  { id: 'PRM392', title: 'Mobile Programming', courseCode: 'PRM392', semester: 'K7', majors: ['SE', 'AI'] },
+  { id: 'PRN221', title: 'Advanced Cross-Platform Application (.NET)', courseCode: 'PRN221', semester: 'K7', majors: ['SE'] },
+  { id: 'WDP301', title: 'Web Development Project', courseCode: 'WDP301', semester: 'K7', majors: ['SE'] },
+  { id: 'NLP301', title: 'Natural Language Processing', courseCode: 'NLP301', semester: 'K7', majors: ['AI'] },
+  { id: 'CVP301', title: 'Computer Vision Project', courseCode: 'CVP301', semester: 'K7', majors: ['AI'] },
+  { id: 'IBM301', title: 'International Business Management', courseCode: 'IBM301', semester: 'K7', majors: ['BA'] },
+  { id: 'SCM301', title: 'Supply Chain Management', courseCode: 'SCM301', semester: 'K7', majors: ['BA'] },
+  { id: 'BRM301', title: 'Business Research Methods', courseCode: 'BRM301', semester: 'K7', majors: ['BA'] },
+
+  // Semester 8 (K8)
+  { id: 'SEP490', title: 'Capstone Project Preparation (SE)', courseCode: 'SEP490', semester: 'K8', majors: ['SE'] },
+  { id: 'CAP490', title: 'Capstone Project Preparation (AI)', courseCode: 'CAP490', semester: 'K8', majors: ['AI'] },
+  { id: 'BAP490', title: 'Capstone Project Preparation (BA)', courseCode: 'BAP490', semester: 'K8', majors: ['BA'] },
+  { id: 'EXE101', title: 'Experiential Entrepreneurship 1', courseCode: 'EXE101', semester: 'K8', majors: ['SE', 'AI', 'BA'] },
+  { id: 'IAS301', title: 'Information Assurance & Security', courseCode: 'IAS301', semester: 'K8', majors: ['SE'] },
+  { id: 'BDA301', title: 'Big Data Analytics', courseCode: 'BDA301', semester: 'K8', majors: ['AI'] },
+  { id: 'SMA301', title: 'Strategic Management', courseCode: 'SMA301', semester: 'K8', majors: ['BA'] },
+
+  // Semester 9 (K9)
+  { id: 'SEP490_DEF', title: 'Capstone Project Graduation (SE)', courseCode: 'SEP490', semester: 'K9', majors: ['SE'] },
+  { id: 'CAP490_DEF', title: 'Capstone Project Graduation (AI)', courseCode: 'CAP490', semester: 'K9', majors: ['AI'] },
+  { id: 'BAP490_DEF', title: 'Capstone Project Graduation (BA)', courseCode: 'BAP490', semester: 'K9', majors: ['BA'] },
+  { id: 'EXE201', title: 'Experiential Entrepreneurship 2', courseCode: 'EXE201', semester: 'K9', majors: ['SE', 'AI', 'BA'] },
+  { id: 'PMG201', title: 'Project Management', courseCode: 'PMG201', semester: 'K9', majors: ['SE', 'AI'] },
+  { id: 'EBU301', title: 'E-Business', courseCode: 'EBU301', semester: 'K9', majors: ['BA'] }
+]
 
 export default function MyDocumentsPage() {
   const navigate = useNavigate()
@@ -68,6 +156,10 @@ export default function MyDocumentsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(false)
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
+  const [shareDocModalOpen, setShareDocModalOpen] = useState(false)
+  const [selectedShareDoc, setSelectedShareDoc] = useState<DocumentItem | null>(null)
+  const [selectedMajor, setSelectedMajor] = useState<'SE' | 'AI' | 'BA' | 'ALL'>('SE')
+  const [selectedSemester, setSelectedSemester] = useState<string>('ALL')
 
   const handleOpenDocument = (docId: string) => {
     setActiveMenuId(null)
@@ -131,10 +223,18 @@ export default function MyDocumentsPage() {
     return queryMatch && subjectMatch && typeMatch
   })
 
-  // Dynamic counts for top folder cards
-  const compsCount = documents.filter(d => d.subject === 'COMPSCI').length
-  const mathCount = documents.filter(d => d.subject === 'MATHEMATICS').length
-  const bioCount = documents.filter(d => d.subject === 'BIOLOGY').length
+  // Filter FPT subjects based on selected major and semester
+  const displayedSubjects = FPT_SUBJECTS.filter(subj => {
+    // Filter by Major
+    const majorMatch = selectedMajor === 'ALL' || subj.majors.includes(selectedMajor as any)
+    // Filter by Semester
+    const semesterMatch = selectedSemester === 'ALL' || subj.semester === selectedSemester
+    return majorMatch && semesterMatch
+  })
+
+  const getDocCountForSubject = (subjId: string) => {
+    return documents.filter(d => String(d.subject).toUpperCase() === subjId.toUpperCase()).length
+  }
 
   const getDocumentsCountLabel = (count: number) => {
     if (language === 'en') {
@@ -153,21 +253,11 @@ export default function MyDocumentsPage() {
   }
 
   const getSubjectName = (subject: string) => {
-    const s = subject.toLowerCase()
-    if (s === 'all') return language === 'en' ? 'All Subjects' : (language === 'vi' ? 'Tất cả môn học' : (language === 'ja' ? 'すべての科目' : '모든 과목'))
-    if (s === 'mathematics' || s === 'math') return t.myDocuments.math
-    if (s === 'biology' || s === 'bio') return t.myDocuments.bio
-    if (s === 'compsci') return t.myDocuments.compsci
-
-    const subjectMap: Record<string, Record<string, string>> = {
-      physics: { en: 'Physics', vi: 'Vật lý', ja: '物理学', ko: '물리학' },
-      philosophy: { en: 'Philosophy', vi: 'Triết học', ja: '哲学', ko: '철학' },
-      economics: { en: 'Economics', vi: 'Kinh tế học', ja: '経済学', ko: '経済学' },
-      neuroscience: { en: 'Neuroscience', vi: 'Thần kinh học', ja: '神経科学', ko: '신경과학' },
-      psychology: { en: 'Psychology', vi: 'Tâm lý học', ja: '心理学', ko: '심리학' },
-      general: { en: 'General Studies', vi: 'Đại cương', ja: '一般教養', ko: '교양' }
-    }
-    return subjectMap[s]?.[language] || subject
+    const s = subject.toUpperCase()
+    if (s === 'ALL') return language === 'en' ? 'All Subjects' : (language === 'vi' ? 'Tất cả môn học' : (language === 'ja' ? 'すべての科目' : '모든 과목'))
+    const found = FPT_SUBJECTS.find(x => x.id === s)
+    if (found) return found.title
+    return subject
   }
 
   const getTypeName = (type: string) => {
@@ -232,64 +322,108 @@ export default function MyDocumentsPage() {
       </div>
 
 
-      {/* Folders List Grid Section */}
-      <div className="space-y-3.5">
-        <h3 className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">{t.myDocuments.folders}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-          {/* Software Engineering Folder Card */}
-          <div 
-            onClick={() => navigate('/dashboard/documents/subject/COMPSCI')}
-            className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-[#2563eb]/45 hover:shadow-md cursor-pointer transition-all duration-300 hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/40"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-primary border border-blue-500/20 group-hover:bg-[#2563eb] group-hover:text-white transition-all duration-300 dark:border-blue-500/30">
-              <FolderPlus className="h-5.5 w-5.5 text-[#2563eb] group-hover:text-white dark:text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors truncate">
-                {t.myDocuments.compsci}
-              </h4>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
-                CS-402 &bull; {getDocumentsCountLabel(compsCount)}
-              </p>
-            </div>
-          </div>
-          
-          {/* Mathematics Folder Card */}
-          <div 
-            onClick={() => navigate('/dashboard/documents/subject/MATHEMATICS')}
-            className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-[#2563eb]/45 hover:shadow-md cursor-pointer transition-all duration-300 hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/40"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-primary border border-blue-500/20 group-hover:bg-[#2563eb] group-hover:text-white transition-all duration-300 dark:border-blue-500/30">
-              <FolderPlus className="h-5.5 w-5.5 text-[#2563eb] group-hover:text-white dark:text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors truncate">
-                {t.myDocuments.math}
-              </h4>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
-                Calculus II &bull; {getDocumentsCountLabel(mathCount)}
-              </p>
-            </div>
+      {/* FPT University Classification & Filters */}
+      <div className="space-y-5 bg-slate-50/50 dark:bg-slate-900/40 p-6 rounded-3xl border border-slate-150 dark:border-slate-800/80 shadow-xs">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h3 className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+              {language === 'en' ? 'FPT UNIVERSITY ROADMAP' : 'LỘ TRÌNH ĐẠI HỌC FPT'}
+            </h3>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {language === 'en' ? 'Select your major and semester to view subjects' : 'Chọn ngành học và học kỳ để xem danh sách môn học'}
+            </p>
           </div>
 
-          {/* Biology Folder Card */}
-          <div 
-            onClick={() => navigate('/dashboard/documents/subject/BIOLOGY')}
-            className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-[#2563eb]/45 hover:shadow-md cursor-pointer transition-all duration-300 hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/40"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-primary border border-blue-500/20 group-hover:bg-[#2563eb] group-hover:text-white transition-all duration-300 dark:border-blue-500/30">
-              <FolderPlus className="h-5.5 w-5.5 text-[#2563eb] group-hover:text-white dark:text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors truncate">
-                {t.myDocuments.bio}
-              </h4>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
-                Genetics Lab &bull; {getDocumentsCountLabel(bioCount)}
-              </p>
-            </div>
+          {/* Major Select Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
+              {language === 'en' ? 'Major:' : 'Ngành học:'}
+            </span>
+            <select
+              value={selectedMajor}
+              onChange={(e) => {
+                setSelectedMajor(e.target.value as any)
+                setSelectedSemester('ALL') // Reset semester to avoid showing empty screens
+              }}
+              className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none focus:border-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-350 cursor-pointer"
+            >
+              <option value="SE">{language === 'en' ? 'Software Engineering (SE)' : 'Kỹ thuật phần mềm (SE)'}</option>
+              <option value="AI">{language === 'en' ? 'Artificial Intelligence (AI)' : 'Trí tuệ nhân tạo (AI)'}</option>
+              <option value="BA">{language === 'en' ? 'Business Administration (BA)' : 'Quản trị kinh doanh (BA)'}</option>
+              <option value="ALL">{language === 'en' ? 'All Majors' : 'Tất cả các ngành'}</option>
+            </select>
           </div>
         </div>
+
+        {/* Semester Tab Switcher */}
+        <div className="flex flex-wrap gap-2 border-t border-slate-200/60 dark:border-slate-800/50 pt-4 overflow-x-auto scrollbar-none">
+          {[
+            { key: 'ALL', labelEn: 'All Semesters', labelVi: 'Tất cả học kỳ' },
+            { key: 'K1', labelEn: 'Semester 1', labelVi: 'Học kỳ 1' },
+            { key: 'K2', labelEn: 'Semester 2', labelVi: 'Học kỳ 2' },
+            { key: 'K3', labelEn: 'Semester 3', labelVi: 'Học kỳ 3' },
+            { key: 'K4', labelEn: 'Semester 4', labelVi: 'Học kỳ 4' },
+            { key: 'K5', labelEn: 'Semester 5', labelVi: 'Học kỳ 5' },
+            { key: 'K6', labelEn: 'Semester 6', labelVi: 'Học kỳ 6' },
+            { key: 'K7', labelEn: 'Semester 7', labelVi: 'Học kỳ 7' },
+            { key: 'K8', labelEn: 'Semester 8', labelVi: 'Học kỳ 8' },
+            { key: 'K9', labelEn: 'Semester 9', labelVi: 'Học kỳ 9' }
+          ].map((sem) => (
+            <button
+              key={sem.key}
+              onClick={() => setSelectedSemester(sem.key)}
+              className={cn(
+                "rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 border cursor-pointer select-none whitespace-nowrap",
+                selectedSemester === sem.key
+                  ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/20"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-900"
+              )}
+            >
+              {language === 'en' ? sem.labelEn : sem.labelVi}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Folders List Grid Section */}
+      <div className="space-y-4">
+        <h3 className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+          {language === 'en' ? 'SUBJECT FOLDERS' : 'THƯ MỤC MÔN HỌC'}
+        </h3>
+        
+        {displayedSubjects.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+            {displayedSubjects.map((subject) => {
+              const docCount = getDocCountForSubject(subject.id)
+              return (
+                <div 
+                  key={subject.id}
+                  onClick={() => navigate(`/dashboard/documents/subject/${subject.id.toLowerCase()}`)}
+                  className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-blue-500/45 hover:shadow-md cursor-pointer transition-all duration-300 hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/40"
+                >
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-primary border border-blue-500/20 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 dark:border-blue-500/30">
+                    <FolderPlus className="h-5.5 w-5.5 text-blue-600 group-hover:text-white dark:text-blue-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 transition-colors truncate">
+                      {subject.title}
+                    </h4>
+                    <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
+                      {subject.courseCode} &bull; {getDocumentsCountLabel(docCount)}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30">
+            <FolderPlus className="h-10 w-10 text-slate-300 dark:text-slate-700 mb-2 stroke-[1.5]" />
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+              {language === 'en' ? 'No subjects found for this selection.' : 'Không tìm thấy môn học nào cho lựa chọn này.'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Filter and List Workspace */}
@@ -487,6 +621,18 @@ export default function MyDocumentsPage() {
                           <Download className="h-4 w-4" />
                           {t.actionMenu.download}
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveMenuId(null)
+                            setSelectedShareDoc(doc)
+                            setShareDocModalOpen(true)
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <Share2 className="h-4 w-4 text-emerald-500" />
+                          {language === 'vi' ? 'Chia sẻ nhóm' : 'Share to workspace'}
+                        </button>
                         <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
                         <button
                           onClick={() => handleDeleteDocument(doc.id)}
@@ -608,6 +754,18 @@ export default function MyDocumentsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => {
+                              setSelectedShareDoc(doc)
+                              setShareDocModalOpen(true)
+                            }}
+                            className="rounded-lg text-emerald-600 hover:bg-emerald-50/50 dark:text-emerald-400 dark:hover:bg-emerald-955/50"
+                            title={language === 'vi' ? 'Chia sẻ nhóm' : 'Share to workspace'}
+                          >
+                            <Share2 className="h-4.5 w-4.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => navigate(`/dashboard/documents/document/${doc.id}/edit`)}
                             className="rounded-lg text-slate-500 hover:bg-slate-100/50 dark:text-slate-400 dark:hover:bg-slate-800/50"
                             title={t.actionMenu.editDetails}
@@ -642,6 +800,16 @@ export default function MyDocumentsPage() {
           </div>
         )}
       </div>
+
+      <ShareDocumentModal
+        isOpen={shareDocModalOpen}
+        onClose={() => {
+          setShareDocModalOpen(false)
+          setSelectedShareDoc(null)
+        }}
+        documentId={selectedShareDoc?.id || ''}
+        documentTitle={selectedShareDoc?.title || selectedShareDoc?.fileName || ''}
+      />
     </div>
   )
 }

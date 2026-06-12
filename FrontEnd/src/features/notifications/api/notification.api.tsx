@@ -2,6 +2,7 @@ import React from 'react';
 import { Folder, Calendar, ExternalLink, Eye } from 'lucide-react';
 import { getCurrentUser } from '../services/userNotificationService';
 import { apiClient } from '@/lib/axios';
+import { useToastStore } from '@/stores/toastStore';
 
 export type NotificationType = 
   | 'ai' 
@@ -318,9 +319,50 @@ const getBaseNotifications = (): Omit<Notification, 'isRead'>[] => {
 
 const mapBackendNotification = (item: any): Notification => {
   const type = item.type as NotificationType;
+  let displayType = type;
   let buttons: NotificationButton[] | undefined = undefined;
 
-  if (type === 'folder') {
+  if (item.actionType === 'workspace_invite' || type === 'shared_file') {
+    const actionUrl = item.actionUrl || '';
+    const match = actionUrl.match(/\/dashboard\/workspaces\/(\d+)/);
+    const workspaceId = match ? match[1] : null;
+    const currentUser = getCurrentUser();
+
+    buttons = [
+      {
+        text: 'Chấp nhận',
+        variant: 'primary',
+        onClick: async () => {
+          if (!workspaceId) return;
+          try {
+            await apiClient.post(`/workspaces/${workspaceId}/respond?userId=${currentUser.id}&action=ACCEPT`);
+            useToastStore.getState().addToast('Đã chấp nhận lời mời tham gia nhóm học tập!', 'success', 3000);
+            window.dispatchEvent(new Event('aiStudyHubUserChanged'));
+            window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+          } catch (error) {
+            console.error('Failed to accept workspace invite:', error);
+            useToastStore.getState().addToast('Không thể chấp nhận lời mời', 'error', 3000);
+          }
+        }
+      },
+      {
+        text: 'Từ chối',
+        variant: 'light',
+        onClick: async () => {
+          if (!workspaceId) return;
+          try {
+            await apiClient.post(`/workspaces/${workspaceId}/respond?userId=${currentUser.id}&action=REJECT`);
+            useToastStore.getState().addToast('Đã từ chối lời mời tham gia nhóm học tập!', 'info', 3000);
+            window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+          } catch (error) {
+            console.error('Failed to decline workspace invite:', error);
+            useToastStore.getState().addToast('Không thể từ chối lời mời', 'error', 3000);
+          }
+        }
+      }
+    ];
+    displayType = 'folder';
+  } else if (type === 'folder') {
     buttons = [{
       text: 'Open Folder',
       variant: 'shared-btn',
@@ -357,7 +399,7 @@ const mapBackendNotification = (item: any): Notification => {
 
   return {
     id: String(item.id),
-    type: type,
+    type: displayType,
     title: item.title,
     time: item.time || 'Just now',
     isRead: !!item.isRead,
@@ -375,6 +417,7 @@ const mapBackendNotification = (item: any): Notification => {
     targetUserEmail: item.targetUserEmail
   };
 };
+
 
 export const notificationApi = {
   getNotifications: async (filter: string): Promise<Notification[]> => {
