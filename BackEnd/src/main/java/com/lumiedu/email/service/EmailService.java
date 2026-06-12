@@ -17,12 +17,12 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    @Async("taskExecutor") // Run in background without blocking the main thread
+    @Async // Run in background without blocking the main thread
     public void sendEmail(String to, String subject, String content, boolean isHtml) {
         sendEmail(to, fromEmail, "LumiEdu Support", subject, content, isHtml);
     }
 
-    @Async("taskExecutor")
+    @Async
     public void sendEmail(String to, String from, String fromName, String subject, String content, boolean isHtml) {
         try {
             MimeMessage message = mailSender.createMimeMessage();

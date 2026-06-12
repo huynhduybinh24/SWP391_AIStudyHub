@@ -256,6 +256,8 @@ public class DataInitializer implements CommandLineRunner {
             jdbcTemplate.update("DELETE FROM study_plans WHERE document_id IN (SELECT id FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%')");
             jdbcTemplate.update("DELETE FROM documents WHERE file_url LIKE '%storage.lumiedu.com%' OR file_url LIKE '%giao_trinh%' OR file_url LIKE '%slide_bai_giang%'");
             jdbcTemplate.update("UPDATE users SET storage_used_mb = 0");
+            jdbcTemplate.update("UPDATE users SET storage_limit_mb = 1024 WHERE storage_limit_mb = 500");
+            jdbcTemplate.update("UPDATE users SET storage_limit_mb = 51200 WHERE role = 'ADMIN' AND storage_limit_mb != 51200");
             jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1");
         } catch (Exception e) {
             System.err.println("DB Cleanup failed: " + e.getMessage());

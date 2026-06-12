@@ -166,7 +166,7 @@ public class AuthController {
                         .accountStatus(com.lumiedu.user.enums.AccountStatus.ACTIVE)
                         .twoFactorEnabled(false)
                         .storageUsedMb(0L)
-                        .storageLimitMb(500L)
+                        .storageLimitMb(1024L)
                         .build();
                 
                 user = userRepository.save(user);

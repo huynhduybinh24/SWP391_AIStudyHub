@@ -225,8 +225,9 @@ export function AdminPackagesTab({
     if (!userSearchTerm.trim()) return []
     return users.filter(
       u =>
-        u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+        u.role !== 'admin' &&
+        (u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+         u.email.toLowerCase().includes(userSearchTerm.toLowerCase()))
     )
   }, [users, userSearchTerm])
 

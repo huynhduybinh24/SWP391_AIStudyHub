@@ -34,6 +34,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final ThirdPartyAccountRepository thirdPartyAccountRepository;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional(readOnly = true)
@@ -95,11 +96,43 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-        
-        user.setAccountStatus(AccountStatus.DELETED);
-        userRepository.save(user);
+        // Thực hiện xóa cứng toàn bộ các bảng liên quan đến user
+        jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0");
+        try {
+            // Xóa tài liệu của user và các bảng con liên quan tài liệu
+            List<Long> docIds = jdbcTemplate.queryForList("SELECT id FROM documents WHERE user_id = ?", Long.class, userId);
+            for (Long docId : docIds) {
+                jdbcTemplate.update("DELETE FROM quiz_question WHERE quiz_id IN (SELECT id FROM quiz WHERE document_id = ?)", docId);
+                jdbcTemplate.update("DELETE FROM quiz WHERE document_id = ?", docId);
+                jdbcTemplate.update("DELETE FROM study_plan_documents WHERE study_plan_id IN (SELECT id FROM study_plans WHERE document_id = ?)", docId);
+                jdbcTemplate.update("DELETE FROM study_plans WHERE document_id = ?", docId);
+                jdbcTemplate.update("DELETE FROM document_chunks WHERE document_id = ?", docId);
+                jdbcTemplate.update("DELETE FROM document_tags WHERE document_id = ?", docId);
+                jdbcTemplate.update("DELETE FROM document_reports WHERE document_id = ?", docId);
+                jdbcTemplate.update("DELETE FROM workspace_documents WHERE document_id = ?", docId);
+                jdbcTemplate.update("DELETE FROM document_downloads WHERE document_id = ?", docId);
+                jdbcTemplate.update("DELETE FROM documents WHERE id = ?", docId);
+            }
+
+            jdbcTemplate.update("DELETE FROM third_party_accounts WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM user_subscriptions WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM payments WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM password_reset_tokens WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM storage_analytics_snapshots WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM storage_cleanup_scans WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM notifications WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM support_tickets WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM workspace_members WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM shared_workspaces WHERE owner_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM ai_chat_sessions WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM quiz_attempt WHERE user_id = ?", userId);
+            jdbcTemplate.update("DELETE FROM ai_usage_logs WHERE user_id = ?", userId);
+            
+            // Cuối cùng xóa user
+            jdbcTemplate.update("DELETE FROM users WHERE id = ?", userId);
+        } finally {
+            jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1");
+        }
     }
 
     @Value("${google.client-id:123456789-dummy.apps.googleusercontent.com}")

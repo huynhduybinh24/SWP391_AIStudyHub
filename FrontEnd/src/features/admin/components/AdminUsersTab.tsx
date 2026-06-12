@@ -62,6 +62,9 @@ export function AdminUsersTab({
   // Search/Filter logic
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
+      // Exclude admin accounts from general user management
+      if (u.role === 'admin') return false
+
       const searchLower = searchTerm.toLowerCase()
       const planName = u.plan === 'pro' ? 'pro' : u.plan === 'free' ? 'free' : (u.plan || 'free').toLowerCase()
       const matchesSearch =
@@ -180,7 +183,6 @@ export function AdminUsersTab({
             className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold focus:outline-none"
           >
             <option value="all">{language === 'vi' ? 'Mọi vai trò' : 'All Roles'}</option>
-            <option value="admin">Admin</option>
             <option value="teacher">Teacher</option>
             <option value="student">Student</option>
           </select>
@@ -755,7 +757,7 @@ export function AdminUsersTab({
               {language === 'vi' ? 'Chọn vai trò mới cho:' : 'Select role for:'} <span className="font-extrabold text-slate-800 dark:text-white block mt-0.5">{editingRoleUser.name}</span>
             </p>
             <div className="space-y-2">
-              {(['student', 'teacher', 'admin'] as const).map((r) => (
+              {(['student', 'teacher'] as const).map((r) => (
                 <label
                   key={r}
                   className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
