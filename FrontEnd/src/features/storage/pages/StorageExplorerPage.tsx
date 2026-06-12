@@ -509,7 +509,7 @@ export function StorageExplorerPage() {
                 {filteredFiles.map((file) => (
                   <Card 
                     key={file.id} 
-                    onClick={() => navigate('/dashboard/storage/explorer/preview')}
+                    onClick={() => navigate(`/dashboard/storage/explorer/preview?id=${file.id}`)}
                     className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group"
                   >
                     <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex items-center justify-center relative mb-3 overflow-hidden">
@@ -540,7 +540,7 @@ export function StorageExplorerPage() {
                 {filteredFiles.map((file) => (
                   <Card 
                     key={file.id} 
-                    onClick={() => navigate('/dashboard/storage/explorer/preview')}
+                    onClick={() => navigate(`/dashboard/storage/explorer/preview?id=${file.id}`)}
                     className="p-3 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group"
                   >
                     <div className="flex items-center gap-4">

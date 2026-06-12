@@ -449,6 +449,8 @@ export const ko: any = {
     subjectMaterials: "과목별 워크스페이스",
     noMatches: "일치하는 결과가 없습니다",
     noMatchesSub: "필터 조건에 맞는 문서가 없습니다. 과목이나 형식 체크리스트를 변경해 보세요.",
+    emptyWorkspace: "이 학습 그룹에는 아직 문서가 없습니다",
+    emptyWorkspaceSub: "첫 번째 학습 자료를 업로드하여 모두와 함께 학습 및 협업을 시작해 보세요!",
     resetFilterChoices: "필터 초기화",
     uploadFiles: "파일 업로드",
     activeCourse: "활성 코스",

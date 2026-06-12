@@ -11,6 +11,7 @@ export interface StorageSummary {
 
 export function getCurrentUserStorageSummary(): StorageSummary {
   let plan = 'free'
+  let usedMb = 0
 
   if (typeof window !== 'undefined') {
     try {
@@ -19,11 +20,14 @@ export function getCurrentUserStorageSummary(): StorageSummary {
         const parsed = JSON.parse(raw)
         plan = (parsed?.plan ?? 'free').toLowerCase()
       }
+      const storedUsed = localStorage.getItem('aiStudyHubStorageUsedMb')
+      if (storedUsed) {
+        usedMb = parseFloat(storedUsed)
+      }
     } catch (_) {}
   }
 
   const totalMb = getStorageLimitByPlan(plan)
-  const usedMb = 0
   const remainingMb = Math.max(totalMb - usedMb, 0)
   const percentage = Math.min(Math.round((usedMb / totalMb) * 100), 100)
 

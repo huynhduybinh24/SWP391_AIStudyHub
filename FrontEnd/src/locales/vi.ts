@@ -458,6 +458,8 @@ export const vi: typeof en = {
     subjectMaterials: "KHÔNG GIAN TÀI LIỆU MÔN HỌC",
     noMatches: "Không tìm thấy kết quả",
     noMatchesSub: "Không tìm thấy tài liệu nào khớp với bộ lọc đã chọn. Vui lòng cập nhật bộ lọc môn học hoặc định dạng.",
+    emptyWorkspace: "Nhóm học tập này chưa có tài liệu nào",
+    emptyWorkspaceSub: "Hãy tải tài liệu đầu tiên lên để bắt đầu học tập và thảo luận cùng mọi người!",
     resetFilterChoices: "Đặt lại các bộ lọc",
     uploadFiles: "Tải lên tệp",
     activeCourse: "Khóa học hiện tại",

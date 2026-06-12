@@ -456,6 +456,8 @@ export const en = {
     subjectMaterials: "SUBJECT MATERIALS WORKSPACE",
     noMatches: "No matches found",
     noMatchesSub: "No documents in search match the selected filters. Try updating your subject or format checklists.",
+    emptyWorkspace: "This study group has no documents yet",
+    emptyWorkspaceSub: "Upload the first study resource to start learning and collaborating with everyone!",
     resetFilterChoices: "Reset Filter Choices",
     uploadFiles: "Upload Files",
     activeCourse: "Active Course",
