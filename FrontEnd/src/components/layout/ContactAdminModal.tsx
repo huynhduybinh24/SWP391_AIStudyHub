@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
 import { Send, CheckCircle2, AlertCircle } from 'lucide-react'
+import { supportService } from '@/services/supportService'
 
 interface ContactAdminModalProps {
   isOpen: boolean
@@ -48,12 +49,18 @@ export function ContactAdminModal({ isOpen, onClose }: ContactAdminModalProps) {
     setIsSending(true)
     setError('')
 
-    // Simulate sending email to admin
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await supportService.createTicket({
+        name: user?.name || user?.email?.split('@')[0] || 'Guest',
+        email: email.trim(),
+        subject: subject.trim(),
+        message: message.trim()
+      }, user?.id)
+      
       setIsSuccess(true)
       toast.success(language === 'vi' ? 'Gửi email thành công!' : 'Email sent successfully!')
     } catch (err) {
+      console.error("Failed to create support ticket", err)
       setError(language === 'vi' ? 'Có lỗi xảy ra khi gửi. Vui lòng thử lại.' : 'Failed to send email. Please try again.')
     } finally {
       setIsSending(false)

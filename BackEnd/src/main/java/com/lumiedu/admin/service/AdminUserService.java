@@ -13,5 +13,5 @@ public interface AdminUserService {
     AdminUserResponse updateUserRole(Long id, AdminUpdateUserRoleRequest request);
     AdminUserResponse updateUserStatus(Long id, AdminUpdateUserStatusRequest request);
     AdminUserResponse updateUserPlan(Long id, AdminUpdateUserPlanRequest request);
-    void deleteUser(Long id);
+    void deleteUser(Long id, String reason);
 }

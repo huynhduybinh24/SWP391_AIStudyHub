@@ -12,4 +12,6 @@ import lombok.*;
 public class AdminUpdateUserStatusRequest {
     @NotNull(message = "Status cannot be null")
     private AccountStatus status;
+
+    private String reason;
 }

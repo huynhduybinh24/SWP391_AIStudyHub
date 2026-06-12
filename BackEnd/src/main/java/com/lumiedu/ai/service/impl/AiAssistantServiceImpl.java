@@ -139,13 +139,15 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     @Override
     public AiChatSession createOrGetChatSession(List<Long> documentIds, Long userId) {
-        if (documentIds == null || documentIds.isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng chọn ít nhất một tài liệu nguồn.");
+        List<Long> sortedIds = new ArrayList<>();
+        if (documentIds != null) {
+            for (Long id : documentIds) {
+                if (id != null) {
+                    sortedIds.add(id);
+                }
+            }
+            Collections.sort(sortedIds);
         }
-
-        // Sort documentIds to ensure consistent matching
-        List<Long> sortedIds = new ArrayList<>(documentIds);
-        Collections.sort(sortedIds);
 
         // Find user's sessions ordered by update time
         List<AiChatSession> userSessions = aiChatSessionRepository.findByUserIdOrderByUpdatedAtDesc(userId);
@@ -166,15 +168,18 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         // If not found, create new session
         List<Document> docs = new ArrayList<>();
         StringBuilder titleBuilder = new StringBuilder();
-        for (int i = 0; i < documentIds.size(); i++) {
-            Long docId = documentIds.get(i);
-            Document doc = documentRepository.findById(docId).orElse(null);
-            if (doc != null) {
-                docs.add(doc);
-                if (titleBuilder.length() > 0) {
-                    titleBuilder.append(", ");
+        if (documentIds != null) {
+            for (int i = 0; i < documentIds.size(); i++) {
+                Long docId = documentIds.get(i);
+                if (docId == null) continue;
+                Document doc = documentRepository.findById(docId).orElse(null);
+                if (doc != null) {
+                    docs.add(doc);
+                    if (titleBuilder.length() > 0) {
+                        titleBuilder.append(", ");
+                    }
+                    titleBuilder.append(doc.getTitle());
                 }
-                titleBuilder.append(doc.getTitle());
             }
         }
 
@@ -183,10 +188,10 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             title = title.substring(0, 252) + "...";
         }
         if (title.isEmpty()) {
-            title = "Thảo luận tài liệu";
+            title = "LumiEdu AI Assistant";
         }
 
-        Long firstDocId = documentIds.get(0);
+        Long firstDocId = (documentIds != null && !documentIds.isEmpty()) ? documentIds.get(0) : null;
 
         AiChatSession session = AiChatSession.builder()
                 .documentId(firstDocId)

@@ -6,6 +6,9 @@ import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 import { motion } from 'framer-motion'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
+import { useAuthStore } from '@/stores/authStore'
+import { aiService } from '@/services/aiService'
+import { documentService } from '@/services/documentService'
 
 interface Message {
   id: string
@@ -29,7 +32,33 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [attachedDocIds, setAttachedDocIds] = useState<number[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  
+  const user = useAuthStore((s) => s.user)
+  const [sessionId, setSessionId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (user?.id) {
+      aiService.createOrGetChatSession([], Number(user.id))
+        .then((session) => {
+          setSessionId(session.id)
+          return aiService.getChatHistory(session.id)
+        })
+        .then((history) => {
+          const formatted = history.map((m) => ({
+            id: m.id.toString(),
+            sender: m.sender === 'USER' ? 'user' as const : 'bot' as const,
+            text: m.messageText,
+            thought: m.thought || undefined
+          }))
+          setMessages(formatted)
+        })
+        .catch((err) => {
+          console.error("Failed to initialize global chatbot session", err)
+        })
+    }
+  }, [user?.id])
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -127,49 +156,37 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
   const handleLocalFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
+      if (!user?.id) {
+        toast.error("Vui lòng đăng nhập để gửi tệp.")
+        return
+      }
       if (selectedFiles.length >= 3) {
         toast.error(t.aiChatbot.maxFilesLimit || "You can attach up to 3 files.")
         return
       }
       setIsUploading(true)
-      setTimeout(() => {
+      documentService.uploadDocument(
+        file,
+        file.name,
+        'Attached from Global Chat',
+        'General',
+        'private',
+        Number(user.id),
+        []
+      )
+      .then((uploadedDoc) => {
         setSelectedFiles((prev) => [...prev, file])
+        setAttachedDocIds((prev) => [...prev, uploadedDoc.id])
         setIsUploading(false)
         toast.success(t.toasts.uploadSuccess || "File attached successfully!")
-      }, 900)
+      })
+      .catch((err) => {
+        console.error("Failed to upload document from chat", err)
+        setIsUploading(false)
+        toast.error("Không thể tải tệp lên hệ thống.")
+      })
     }
     e.target.value = ''
-    setIsAttachDropdownOpen(false)
-  }
-
-  const handleAttachFromDocs = () => {
-    if (selectedFiles.length >= 3) {
-      toast.error(t.aiChatbot.maxFilesLimit || "You can attach up to 3 files.")
-      return
-    }
-    setIsUploading(true)
-    setTimeout(() => {
-      const mockFile = new File([""], "Lecture_Notes_Neuroscience.pdf", { type: "application/pdf" })
-      setSelectedFiles((prev) => [...prev, mockFile])
-      setIsUploading(false)
-      toast.success(`${t.aiChatbot.promptAdded || "Prompt added"}: ${mockFile.name}`)
-    }, 800)
-    setIsAttachDropdownOpen(false)
-  }
-
-  const handleAttachFromShared = () => {
-    if (selectedFiles.length >= 3) {
-      toast.error(t.aiChatbot.maxFilesLimit || "You can attach up to 3 files.")
-      return
-    }
-    setIsUploading(true)
-    setTimeout(() => {
-      const mockFile = new File([""], "SWE_Lab_Requirements.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
-      setSelectedFiles((prev) => [...prev, mockFile])
-      setIsUploading(false)
-      toast.success(`${t.aiChatbot.promptAdded || "Prompt added"}: ${mockFile.name}`)
-    }, 800)
-    setIsAttachDropdownOpen(false)
   }
 
   const handleMicClick = () => {
@@ -199,52 +216,78 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
       },
     ])
     setInputText('')
-    const hasFiles = selectedFiles.length > 0
-    const attachedFiles = [...selectedFiles]
+    
+    const docIds = [...attachedDocIds]
     setSelectedFiles([])
+    setAttachedDocIds([])
 
     setIsTyping(true)
-    const delay = selectedMode === 'Thinking' ? 3200 : 1000
 
-    setTimeout(() => {
-      setIsTyping(false)
-      let botResponse = t.aiChatbot.botResponseDefault
-      
-      const lowerText = text.toLowerCase()
-      if (hasFiles) {
-        botResponse = `${t.aiChatbot.deepAnalysisRunning || "Neural Analyzer active!"}\n\nI have successfully scanned and indexed "${attachedFiles.map(f => f.name).join(', ')}". I am ready to summarize, generate quiz questions, or answer deep-dive questions based on this material!`
-      } else if (lowerText.includes('summarize') || lowerText.includes('notes') || lowerText.includes('tóm tắt') || lowerText.includes('요약') || lowerText.includes('要約')) {
-        botResponse = t.aiChatbot.botResponseNotes
-      } else if (lowerText.includes('quantum') || lowerText.includes('mechanics') || lowerText.includes('lượng tử') || lowerText.includes('양자') || lowerText.includes('量子')) {
-        botResponse = t.aiChatbot.botResponseQuantum
-      } else if (lowerText.includes('quiz') || lowerText.includes('generate') || lowerText.includes('kiểm tra') || lowerText.includes('퀴즈') || lowerText.includes('クイズ')) {
-        botResponse = t.aiChatbot.botResponseQuiz
-      }
+    if (user?.id) {
+      aiService.createOrGetChatSession(docIds, Number(user.id))
+        .then((session) => {
+          return aiService.sendMessage(session.id, text, selectedMode === 'Thinking')
+        })
+        .then((reply) => {
+          setIsTyping(false)
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: reply.id.toString(),
+              sender: 'bot',
+              text: reply.messageText,
+              thought: reply.thought || undefined
+            }
+          ])
+        })
+        .catch((err) => {
+          console.error("Failed to send message", err)
+          setIsTyping(false)
+          toast.error("Không thể kết nối với dịch vụ AI.")
+        })
+    } else {
+      const delay = selectedMode === 'Thinking' ? 3200 : 1000
 
-      // Thinking log structure
-      let thought: string | undefined = undefined
-      if (selectedMode === 'Thinking') {
-        thought = t.aiChatbot.listening === 'Đang nghe...' 
-          ? `[1] Đang kích hoạt bộ suy luận Lumi Reasoning Engine...
+      setTimeout(() => {
+        setIsTyping(false)
+        let botResponse = t.aiChatbot.botResponseDefault
+        
+        const lowerText = text.toLowerCase()
+        if (docIds.length > 0) {
+          botResponse = `${t.aiChatbot.deepAnalysisRunning || "Neural Analyzer active!"}\n\nI have successfully scanned and indexed the attached file. I am ready to summarize, generate quiz questions, or answer deep-dive questions based on this material!`
+        } else if (lowerText.includes('summarize') || lowerText.includes('notes') || lowerText.includes('tóm tắt') || lowerText.includes('요약') || lowerText.includes('要約')) {
+          botResponse = t.aiChatbot.botResponseNotes
+        } else if (lowerText.includes('quantum') || lowerText.includes('mechanics') || lowerText.includes('lượng tử') || lowerText.includes('양자') || lowerText.includes('量子')) {
+          botResponse = t.aiChatbot.botResponseQuantum
+        } else if (lowerText.includes('quiz') || lowerText.includes('generate') || lowerText.includes('kiểm tra') || lowerText.includes('퀴즈') || lowerText.includes('クイズ')) {
+          botResponse = t.aiChatbot.botResponseQuiz
+        }
+
+        // Thinking log structure
+        let thought: string | undefined = undefined
+        if (selectedMode === 'Thinking') {
+          thought = t.aiChatbot.listening === 'Đang nghe...' 
+            ? `[1] Đang kích hoạt bộ suy luận Lumi Reasoning Engine...
 [2] Đang phân tích ngữ cảnh người dùng: "${text}"
 [3] Đang tìm kiếm tài liệu đối chiếu liên quan trong cơ sở dữ liệu...
 [4] Đang tổng hợp các liên kết nhận thức để xây dựng phản hồi đầy đủ nhất.`
-          : `[1] Triggering Lumi Reasoning Engine...
+            : `[1] Triggering Lumi Reasoning Engine...
 [2] Analyzing user query intent: "${text}"
 [3] Querying relevant study modules and documents...
 [4] Constructing optimized mental model and final reasoning response.`
-      }
+        }
 
-      setMessages((prev) => [
-        ...prev,
-        { 
-          id: (Date.now() + 1).toString(), 
-          sender: 'bot', 
-          text: botResponse,
-          thought 
-        },
-      ])
-    }, delay)
+        setMessages((prev) => [
+          ...prev,
+          { 
+            id: (Date.now() + 1).toString(), 
+            sender: 'bot', 
+            text: botResponse,
+            thought 
+          },
+        ])
+      }, delay)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -435,7 +478,10 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
                   <span className="truncate max-w-[120px]">{file.name}</span>
                   <button 
                     type="button"
-                    onClick={() => setSelectedFiles((prev) => prev.filter((_, i) => i !== idx))}
+                    onClick={() => {
+                      setSelectedFiles((prev) => prev.filter((_, i) => i !== idx))
+                      setAttachedDocIds((prev) => prev.filter((_, i) => i !== idx))
+                    }}
                     className="ml-0.5 rounded-full p-0.5 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                   >
                     <X className="size-3" />
@@ -474,49 +520,15 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
                 onChange={handleLocalFileChange}
               />
               
-              {/* Fully functional Attach file dropdown */}
-              <div className="relative" ref={attachDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsAttachDropdownOpen(!isAttachDropdownOpen)}
-                  className={cn(
-                    "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 size-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer",
-                    isAttachDropdownOpen && "bg-slate-100 dark:bg-slate-800 text-blue-500 dark:text-blue-400"
-                  )}
-                  title={t.aiChatbot.attachFiles || "Attach File"}
-                >
-                  <Paperclip className="size-4.5" />
-                </button>
-
-                {isAttachDropdownOpen && (
-                  <div className="absolute left-0 bottom-full mb-2 w-52 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-1.5 flex flex-col gap-1 z-30 animate-in fade-in zoom-in-95 duration-100">
-                    <button
-                      type="button"
-                      onClick={() => { fileInputRef.current?.click(); setIsAttachDropdownOpen(false); }}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
-                    >
-                      <CloudUpload className="size-4 text-blue-500" />
-                      <span>{t.sidebar.upload || "Upload local file"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleAttachFromDocs}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
-                    >
-                      <Library className="size-4 text-emerald-500" />
-                      <span>{t.sidebar.myDocuments || "My Library Documents"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleAttachFromShared}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
-                    >
-                      <Sparkles className="size-4 text-indigo-500" />
-                      <span>{t.sidebar.sharedFiles || "Shared Workspace"}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+              {/* Direct file upload button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 size-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                title={t.aiChatbot.attachFiles || "Attach File"}
+              >
+                <Paperclip className="size-4.5" />
+              </button>
 
               {/* Fully functional Mic audio voice input */}
               <button

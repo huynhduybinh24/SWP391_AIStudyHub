@@ -65,8 +65,10 @@ public class AdminUserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        adminUserService.deleteUser(id);
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable Long id,
+            @RequestParam(required = false) String reason) {
+        adminUserService.deleteUser(id, reason);
         return ResponseEntity.noContent().build();
     }
 }

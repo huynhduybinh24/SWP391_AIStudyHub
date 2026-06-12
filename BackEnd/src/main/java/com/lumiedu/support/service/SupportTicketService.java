@@ -38,42 +38,52 @@ public class SupportTicketService {
         SupportTicket savedTicket = ticketRepository.save(ticket);
 
         // 1. Send Email Notification to Admin (Async)
-        String adminHtml = String.format(
-                "<h2>Có yêu cầu hỗ trợ mới!</h2>" +
+        // User/Guest sends to Admin: From = User/Guest's email, To = Admin's email
+        String adminHtmlContent = String.format(
                 "<p><strong>Mã vé:</strong> #%d</p>" +
                 "<p><strong>Người gửi:</strong> %s (%s)</p>" +
                 "<p><strong>Tiêu đề:</strong> %s</p>" +
                 "<p><strong>Nội dung:</strong></p>" +
-                "<blockquote style='background:#f9f9f9;border-left:5px solid #ccc;padding:10px;margin:10px 0;'>%s</blockquote>" +
-                "<p><a href='http://localhost:8386/dashboard/admin?tab=support' style='background:#3155F6;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block;font-weight:bold;'>Truy cập Trang Quản Trị</a></p>",
+                "<div class=\"highlight-card\" style=\"white-space: pre-wrap;\">%s</div>" +
+                "<p><a href=\"http://localhost:8386/dashboard/admin?tab=support\" class=\"btn\">Truy cập Trang Quản Trị</a></p>",
                 savedTicket.getId(), ticket.getName(), ticket.getEmail(), ticket.getSubject(), ticket.getMessage()
         );
-        emailService.sendEmail(adminEmail, "LumiEdu - Yêu cầu hỗ trợ mới #" + savedTicket.getId(), adminHtml, true);
+        String adminHtml = emailService.buildHtmlTemplate(
+                "Yêu cầu hỗ trợ mới",
+                "Có yêu cầu hỗ trợ mới!",
+                adminHtmlContent
+        );
+        emailService.sendEmail(adminEmail, ticket.getEmail(), ticket.getName(), "LumiEdu - Yêu cầu hỗ trợ mới #" + savedTicket.getId(), adminHtml, true);
 
         // 2. Send Confirmation Email to User/Guest (Async)
-        String userHtml = String.format(
-                "<h3>Chào %s,</h3>" +
+        // Admin sends to User/Guest: From = Admin's email, To = User/Guest's email
+        String userHtmlContent = String.format(
+                "<p>Chào <strong>%s</strong>,</p>" +
                 "<p>Cảm ơn bạn đã liên hệ với LumiEdu. Chúng tôi đã nhận được yêu cầu hỗ trợ của bạn (Mã vé: <strong>#%d</strong>).</p>" +
                 "<p><strong>Tiêu đề:</strong> %s</p>" +
                 "<p><strong>Nội dung yêu cầu:</strong></p>" +
-                "<div style='background:#f4f6f8;border:1px solid #e1e4e6;border-radius:6px;padding:15px;margin:15px 0;'>%s</div>" +
-                "<p>Đội ngũ hỗ trợ của chúng tôi sẽ phản hồi lại bạn sớm nhất qua email này.</p>" +
-                "<p>Trân trọng,<br/><strong>Ban quản trị LumiEdu</strong></p>",
+                "<div class=\"highlight-card\" style=\"white-space: pre-wrap;\">%s</div>" +
+                "<p>Đội ngũ hỗ trợ của chúng tôi sẽ phản hồi lại bạn sớm nhất qua email này.</p>",
                 ticket.getName(), savedTicket.getId(), ticket.getSubject(), ticket.getMessage()
         );
-        emailService.sendEmail(ticket.getEmail(), "LumiEdu - Xác nhận yêu cầu hỗ trợ #" + savedTicket.getId(), userHtml, true);
+        String userHtml = emailService.buildHtmlTemplate(
+                "Xác nhận yêu cầu hỗ trợ",
+                "Chúng tôi đã nhận được yêu cầu hỗ trợ!",
+                userHtmlContent
+        );
+        emailService.sendEmail(ticket.getEmail(), adminEmail, "LumiEdu Support", "LumiEdu - Xác nhận yêu cầu hỗ trợ #" + savedTicket.getId(), userHtml, true);
 
         return mapToTicketResponse(savedTicket);
     }
 
-    public SupportMessageResponse replyFromAdmin(Long ticketId, String messageContent, String adminName, String adminEmail) {
+    public SupportMessageResponse replyFromAdmin(Long ticketId, String messageContent, String adminName, String adminEmailAddress) {
         SupportTicket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Ticket với ID: " + ticketId));
 
         SupportMessage message = SupportMessage.builder()
                 .ticketId(ticketId)
                 .senderName(adminName)
-                .senderEmail(adminEmail)
+                .senderEmail(adminEmailAddress)
                 .message(messageContent)
                 .isFromAdmin(true)
                 .build();
@@ -85,14 +95,20 @@ public class SupportTicketService {
         ticketRepository.save(ticket);
 
         // Send Reply Email to User/Guest (Async)
-        String replyHtml = String.format(
-                "<h3>Chào %s,</h3>" +
+        // Admin sends to User/Guest: From = Admin's email, To = User's email
+        String replyHtmlContent = String.format(
+                "<p>Chào <strong>%s</strong>,</p>" +
                 "<p>Đội ngũ hỗ trợ LumiEdu đã phản hồi về yêu cầu <strong>#%d: %s</strong> của bạn:</p>" +
-                "<div style='background:#f4f6f8;border:1px solid #e1e4e6;border-radius:6px;padding:15px;margin:15px 0;white-space:pre-wrap;font-family:sans-serif;'>%s</div>" +
+                "<div class=\"highlight-card\" style=\"white-space: pre-wrap;\">%s</div>" +
                 "<p>Trân trọng,<br/><strong>%s</strong> (Ban quản trị LumiEdu)</p>",
                 ticket.getName(), ticket.getId(), ticket.getSubject(), messageContent, adminName
         );
-        emailService.sendEmail(ticket.getEmail(), "Re: LumiEdu - Phản hồi hỗ trợ #" + ticket.getId(), replyHtml, true);
+        String replyHtml = emailService.buildHtmlTemplate(
+                "Phản hồi từ hỗ trợ",
+                "Phản hồi hỗ trợ mới",
+                replyHtmlContent
+        );
+        emailService.sendEmail(ticket.getEmail(), adminEmail, adminName + " (LumiEdu Support)", "Re: LumiEdu - Phản hồi hỗ trợ #" + ticket.getId(), replyHtml, true);
 
         return mapToMessageResponse(savedMessage);
     }
@@ -116,17 +132,22 @@ public class SupportTicketService {
         ticketRepository.save(ticket);
 
         // Send email notification to Admin (Async)
-        String adminHtml = String.format(
-                "<h3>Người dùng đã phản hồi yêu cầu hỗ trợ!</h3>" +
+        // User sends to Admin: From = User's email, To = Admin's email
+        String adminHtmlContent = String.format(
                 "<p><strong>Mã vé:</strong> #%d</p>" +
                 "<p><strong>Người gửi:</strong> %s (%s)</p>" +
                 "<p><strong>Tiêu đề vé:</strong> %s</p>" +
                 "<p><strong>Nội dung phản hồi mới:</strong></p>" +
-                "<blockquote style='background:#f9f9f9;border-left:5px solid #ccc;padding:10px;margin:10px 0;white-space:pre-wrap;'>%s</blockquote>" +
-                "<p><a href='http://localhost:8386/dashboard/admin?tab=support' style='background:#3155F6;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block;font-weight:bold;'>Trả lời trên trang Quản Trị</a></p>",
+                "<div class=\"highlight-card\" style=\"white-space: pre-wrap;\">%s</div>" +
+                "<p><a href=\"http://localhost:8386/dashboard/admin?tab=support\" class=\"btn\">Trả lời trên trang Quản Trị</a></p>",
                 ticket.getId(), userName, userEmail, ticket.getSubject(), messageContent
         );
-        emailService.sendEmail(adminEmail, "LumiEdu - Phản hồi mới từ Người dùng cho vé #" + ticket.getId(), adminHtml, true);
+        String adminHtml = emailService.buildHtmlTemplate(
+                "Phản hồi mới từ người dùng",
+                "Người dùng đã phản hồi yêu cầu hỗ trợ!",
+                adminHtmlContent
+        );
+        emailService.sendEmail(adminEmail, userEmail, userName, "LumiEdu - Phản hồi mới từ Người dùng cho vé #" + ticket.getId(), adminHtml, true);
 
         return mapToMessageResponse(savedMessage);
     }
@@ -179,16 +200,21 @@ public class SupportTicketService {
         SupportTicket updatedTicket = ticketRepository.save(ticket);
 
         // Optionally notify user about status change if it is closed or resolved
+        // Admin sends to User: From = Admin's email, To = User's email
         if (status == TicketStatus.RESOLVED || status == TicketStatus.CLOSED) {
             String statusWord = status == TicketStatus.RESOLVED ? "Đã giải quyết" : "Đã đóng";
-            String emailHtml = String.format(
-                    "<h3>Kính chào %s,</h3>" +
+            String emailHtmlContent = String.format(
+                    "<p>Chào <strong>%s</strong>,</p>" +
                     "<p>Yêu cầu hỗ trợ của bạn (Mã vé: <strong>#%d</strong>) đã được chuyển sang trạng thái: <strong>%s</strong>.</p>" +
-                    "<p>Nếu bạn vẫn cần trợ giúp thêm, vui lòng gửi phản hồi trực tiếp hoặc mở vé mới.</p>" +
-                    "<p>Cảm ơn bạn đã đồng hành cùng LumiEdu.</p>",
+                    "<p>Nếu bạn vẫn cần trợ giúp thêm, vui lòng phản hồi trực tiếp bằng cách trả lời email này hoặc mở một yêu cầu hỗ trợ mới.</p>",
                     ticket.getName(), ticket.getId(), statusWord
             );
-            emailService.sendEmail(ticket.getEmail(), "LumiEdu - Yêu cầu hỗ trợ #" + ticket.getId() + " - " + statusWord, emailHtml, true);
+            String emailHtml = emailService.buildHtmlTemplate(
+                    "Cập nhật trạng thái yêu cầu",
+                    "Yêu cầu hỗ trợ đã được xử lý",
+                    emailHtmlContent
+            );
+            emailService.sendEmail(ticket.getEmail(), adminEmail, "LumiEdu Support", "LumiEdu - Yêu cầu hỗ trợ #" + ticket.getId() + " - " + statusWord, emailHtml, true);
         }
 
         return mapToTicketResponse(updatedTicket);

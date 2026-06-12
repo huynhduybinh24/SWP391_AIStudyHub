@@ -71,7 +71,9 @@ export function AdminUsersTab({
         planName.includes(searchLower)
       
       const matchesRole = roleFilter === 'all' || u.role === roleFilter
-      const matchesStatus = statusFilter === 'all' || u.status === statusFilter
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'inactive' && (u.status === 'inactive' || u.status === 'locked')) ||
+        u.status === statusFilter
 
       return matchesSearch && matchesRole && matchesStatus
     })
@@ -111,7 +113,7 @@ export function AdminUsersTab({
 
   const handleConfirmLockUser = () => {
     if (!lockUserConfirm) return
-    onUpdateUser(lockUserConfirm.id, { status: 'inactive' }, lockReason)
+    onUpdateUser(lockUserConfirm.id, { status: 'locked' }, lockReason)
     const label = language === 'vi'
       ? `Đã khóa tài khoản và gửi email thông báo lý do đến ${lockUserConfirm.email} thành công`
       : `Account locked and notification email with reason sent to ${lockUserConfirm.email} successfully`
@@ -300,10 +302,12 @@ export function AdminUsersTab({
                             badgeBg = "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/15";
                             dotBg = "bg-rose-500";
                             statusLabel = language === 'vi' ? 'Bị cấm' : 'Banned';
-                          } else if (s === 'inactive') {
+                          } else if (s === 'inactive' || s === 'locked') {
                             badgeBg = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/15";
                             dotBg = "bg-amber-400";
-                            statusLabel = language === 'vi' ? 'Không hoạt động' : 'Inactive';
+                            statusLabel = s === 'locked' 
+                              ? (language === 'vi' ? 'Bị khóa' : 'Locked')
+                              : (language === 'vi' ? 'Không hoạt động' : 'Inactive');
                           } else {
                             // active
                             badgeBg = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/15";

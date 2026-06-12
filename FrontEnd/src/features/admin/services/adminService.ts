@@ -219,8 +219,9 @@ export const updateUser = async (
   };
 };
 
-export const deleteUser = async (userId: string, _reason?: string): Promise<{ success: boolean }> => {
-  await apiClient.delete(`/admin/users/${userId}`);
+export const deleteUser = async (userId: string, reason?: string): Promise<{ success: boolean }> => {
+  const url = reason ? `/admin/users/${userId}?reason=${encodeURIComponent(reason)}` : `/admin/users/${userId}`;
+  await apiClient.delete(url);
   return { success: true };
 };
 
