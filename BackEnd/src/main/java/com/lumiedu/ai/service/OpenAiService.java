@@ -24,6 +24,12 @@ public class OpenAiService {
     @Value("${openai.api.key}")
     private String apiKey;
 
+    private final GeminiService geminiService;
+
+    public OpenAiService(GeminiService geminiService) {
+        this.geminiService = geminiService;
+    }
+
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(30))
             .build();
@@ -41,7 +47,7 @@ public class OpenAiService {
 
     public OpenAiResponse chat(List<ChatMessageDto> messages, boolean isJson) {
         if (apiKey == null || apiKey.trim().isEmpty() || "mock-key".equalsIgnoreCase(apiKey)) {
-            return generateMockResponse(messages, isJson);
+            return geminiService.chat(messages, isJson);
         }
 
         try {
