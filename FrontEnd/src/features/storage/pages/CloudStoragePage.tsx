@@ -415,7 +415,7 @@ export function CloudStoragePage() {
                   className={`flex items-center gap-4 p-5 group cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors ${
                     i !== uploads.length - 1 ? 'border-b border-border' : ''
                   }`}
-                  onClick={() => navigate('/dashboard/storage/explorer/preview')}
+                  onClick={() => navigate(`/dashboard/storage/explorer/preview?id=${file.id}`)}
                 >
                   <div className={`p-2.5 rounded-lg ${file.bgColor}`}>
                     <file.icon className={`size-6 ${file.iconColor}`} />

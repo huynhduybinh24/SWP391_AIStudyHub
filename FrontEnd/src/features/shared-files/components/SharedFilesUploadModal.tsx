@@ -15,7 +15,15 @@ import { motion } from 'framer-motion';
 interface SharedFilesUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (newFile: SharedFile) => void;
+  onSave: (
+    newFile: SharedFile,
+    rawFile?: File,
+    metadata?: {
+      description?: string;
+      subject?: string;
+      tags?: string[];
+    }
+  ) => void;
 }
 
 export function SharedFilesUploadModal({ isOpen, onClose, onSave }: SharedFilesUploadModalProps) {
@@ -136,7 +144,12 @@ export function SharedFilesUploadModal({ isOpen, onClose, onSave }: SharedFilesU
         url: previewUrl || ''
       };
 
-      onSave(newSharedFile);
+      const rawFile = (activeTab === 'document' ? uploadedDocument : uploadedFile) || undefined;
+      onSave(newSharedFile, rawFile || undefined, {
+        description: description.trim(),
+        subject: selectedSubjectKey,
+        tags: selectedTags
+      });
       setIsProcessing(false);
       onClose();
     }, 1000);

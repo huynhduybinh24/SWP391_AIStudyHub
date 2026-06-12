@@ -762,6 +762,37 @@ The combined research indicates a strong correlation between multivariable biolo
         type="folder"
         collaborators={mappedShareCollabs}
         onCollaboratorsChange={handleCollaboratorsChange}
+        onShareSubmit={async (email, permission) => {
+          if (!workspaceId || !currentUserId) return
+          try {
+            const apiRole = permission === 'Editor' ? 'COLLABORATOR' : 'VIEWER'
+            await apiClient.post(`/workspaces/${workspaceId}/invite`, {
+              email,
+              role: apiRole,
+              inviterId: currentUserId
+            })
+            toast.success(language === 'vi' ? 'Đã gửi lời mời thành công!' : 'Invitation sent successfully!')
+            
+            // Refresh collaborators list
+            const response = await apiClient.get<any>(`/workspaces/${workspaceId}?userId=${currentUserId}`)
+            const workspace = response.data.data
+            if (workspace) {
+              const mappedCollabs: Collaborator[] = (workspace.members || []).map((mem: any) => ({
+                id: String(mem.userId),
+                name: mem.fullName || mem.email || 'Member',
+                email: mem.email || '',
+                role: mem.role === 'OWNER' ? 'Owner' : (mem.role === 'COLLABORATOR' ? 'Editor' : 'Viewer'),
+                avatar: undefined,
+                lastActive: mem.status === 'ACCEPTED' ? 'Active' : 'Pending invite'
+              }))
+              setCollaborators(mappedCollabs)
+            }
+          } catch (err: any) {
+            console.error('Failed to invite member:', err)
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to invite member'
+            toast.error(errorMsg)
+          }
+        }}
       />
 
       {/* Confirm Import dialog */}
