@@ -3,6 +3,7 @@ package com.lumiedu.document.service;
 import com.lumiedu.document.dto.request.DocumentCreateRequest;
 import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.response.DocumentResponse;
+import com.lumiedu.document.dto.response.SubjectStatsResponse;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,4 +40,6 @@ public interface DocumentService {
     void addTag(Long documentId, String tagName);
 
     void removeTag(Long documentId, String tagName);
+
+    SubjectStatsResponse getSubjectStats(String subjectId, Long userId);
 }

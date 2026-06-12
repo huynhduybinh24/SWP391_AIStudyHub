@@ -42,6 +42,7 @@ public class DataInitializer implements CommandLineRunner {
         try {
             jdbcTemplate.execute("ALTER TABLE users MODIFY COLUMN role VARCHAR(50) NOT NULL");
             jdbcTemplate.execute("UPDATE users SET role = 'USER' WHERE role IN ('STUDENT', 'INSTRUCTOR')");
+            jdbcTemplate.execute("UPDATE users SET full_name = 'Huỳnh Duy Bình' WHERE email = 'student@lumiedu.com'");
             jdbcTemplate.execute("UPDATE users SET full_name = 'LumiEdu User' WHERE full_name = 'Student User'");
             jdbcTemplate.execute("UPDATE users SET full_name = 'LumiEdu User' WHERE full_name = 'Instructor User'");
             jdbcTemplate.execute("ALTER TABLE payments MODIFY COLUMN payment_method VARCHAR(50) NOT NULL");
@@ -66,7 +67,7 @@ public class DataInitializer implements CommandLineRunner {
 
         if (userRepository.findByEmail("student@lumiedu.com").isEmpty()) {
             User student = User.builder()
-                    .fullName("LumiEdu User")
+                    .fullName("Huỳnh Duy Bình")
                     .email("student@lumiedu.com")
                     .passwordHash(passwordEncoder.encode("123456"))
                     .role(UserRole.USER)
@@ -112,6 +113,24 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
             userRepository.save(personalAdmin);
             System.out.println("--- Seeded huynhduybinh242k5@gmail.com successfully ---");
+        }
+
+        if (userRepository.findByEmail("huynhduybinh242h5@gmail.com").isEmpty()) {
+            User personalUser = User.builder()
+                    .fullName("Duy Binh User")
+                    .email("huynhduybinh242h5@gmail.com")
+                    .passwordHash(passwordEncoder.encode("123456"))
+                    .role(UserRole.USER)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .storageLimitMb(1024L)
+                    .build();
+            userRepository.save(personalUser);
+            System.out.println("--- Seeded huynhduybinh242h5@gmail.com successfully ---");
+        } else {
+            User personalUser = userRepository.findByEmail("huynhduybinh242h5@gmail.com").get();
+            personalUser.setPasswordHash(passwordEncoder.encode("123456"));
+            userRepository.save(personalUser);
+            System.out.println("--- Reset password for huynhduybinh242h5@gmail.com successfully ---");
         }
 
         if (subscriptionPlanRepository.count() == 0) {

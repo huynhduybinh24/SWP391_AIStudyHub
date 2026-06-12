@@ -12,6 +12,12 @@ public interface GoogleDriveService {
     String uploadFile(MultipartFile file, String folderName) throws IOException;
 
     /**
+     * Upload file lên Google Drive theo cấu trúc phân cấp thư mục (Ngành học -> Kỳ học -> Môn học)
+     * @return googleDriveFileId
+     */
+    String uploadFile(MultipartFile file, java.util.List<String> folderHierarchy) throws IOException;
+
+    /**
      * Tải file từ Google Drive
      */
     Resource downloadFile(String googleDriveFileId) throws IOException;

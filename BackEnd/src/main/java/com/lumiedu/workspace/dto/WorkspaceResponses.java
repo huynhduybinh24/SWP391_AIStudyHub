@@ -77,9 +77,11 @@ public class WorkspaceResponses {
         private Long workspaceId;
         private Long documentId;
         private String title;
+        private String fileName;
         private String originalFileName;
         private String fileUrl;
         private String fileType;
+        private String mimeType;
         private Long fileSize;
         private Long addedBy;
         private String addedByName;
