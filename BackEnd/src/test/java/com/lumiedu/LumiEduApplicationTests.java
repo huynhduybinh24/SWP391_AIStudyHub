@@ -85,15 +85,44 @@ class LumiEduApplicationTests {
     @org.springframework.beans.factory.annotation.Autowired
     private com.lumiedu.user.repository.UserRepository userRepository;
 
+
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     @Test
-    void testPrintUsers() {
-        System.out.println("=== USERS IN DATABASE ===");
+    void testPrintDocuments() {
+        System.out.println("=== DOCUMENTS VIA JDBC ===");
         try {
-            userRepository.findAll().forEach(u -> {
-                System.out.println("User ID: " + u.getId() + ", Email: " + u.getEmail() + ", Name: " + u.getFullName() + ", Role: " + u.getRole() + ", Status: " + u.getAccountStatus());
+            jdbcTemplate.query("SELECT id, title, file_name, file_url, added_by_id, deleted FROM documents", (rs, rowNum) -> {
+                System.out.printf("Repository Doc ID: %d | Title: %s | FileName: %s | FileUrl: %s | AddedBy: %d | Deleted: %b\n",
+                        rs.getLong("id"), rs.getString("title"), rs.getString("file_name"), rs.getString("file_url"), rs.getLong("added_by_id"), rs.getBoolean("deleted"));
+                return null;
             });
         } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println("Error reading documents: " + e.getMessage());
+        }
+
+        System.out.println("=== WORKSPACES VIA JDBC ===");
+        try {
+            jdbcTemplate.query("SELECT id, name, owner_id FROM shared_workspaces", (rs, rowNum) -> {
+                System.out.printf("Workspace ID: %d | Name: %s | Owner ID: %d\n",
+                        rs.getLong("id"), rs.getString("name"), rs.getLong("owner_id"));
+                return null;
+            });
+        } catch (Exception e) {
+            System.out.println("Error reading workspaces: " + e.getMessage());
+        }
+
+        System.out.println("=== WORKSPACE DOCUMENTS VIA JDBC ===");
+        try {
+            jdbcTemplate.query("SELECT id, workspace_id, document_id FROM workspace_documents", (rs, rowNum) -> {
+                System.out.printf("WS Doc ID: %d | Workspace ID: %d | Document ID: %d\n",
+                        rs.getLong("id"), rs.getLong("workspace_id"), rs.getLong("document_id"));
+                return null;
+            });
+        } catch (Exception e) {
+            System.out.println("Error reading workspace documents: " + e.getMessage());
         }
     }
 }

@@ -126,7 +126,7 @@ public class DocumentServiceTest {
                 .deleted(false)
                 .build();
 
-        when(googleDriveService.uploadFile(any(), any())).thenReturn("mock-drive-id");
+        when(googleDriveService.uploadFile(any(), any(List.class))).thenReturn("mock-drive-id");
         when(documentRepository.save(any(Document.class))).thenReturn(mockSavedDoc);
         when(documentTagRepository.findAllByDocumentId(100L)).thenReturn(
                 List.of(

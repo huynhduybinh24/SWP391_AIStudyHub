@@ -42,6 +42,9 @@ class StorageServiceTests {
     @Mock
     private StorageCleanupScanRepository storageCleanupScanRepository;
 
+    @Mock
+    private com.lumiedu.billing.repository.UserSubscriptionRepository userSubscriptionRepository;
+
     @InjectMocks
     private StorageServiceImpl storageService;
 
@@ -50,6 +53,9 @@ class StorageServiceTests {
 
     @BeforeEach
     void setUp() {
+        lenient().when(userSubscriptionRepository.findFirstByUserIdAndStatusOrderByEndDateDesc(anyLong(), any()))
+                .thenReturn(Optional.empty());
+
         testUser = User.builder()
                 .id(1L)
                 .fullName("Test User")

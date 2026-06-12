@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Download, Share2, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Download, Share2, Sparkles, CheckCircle2, Loader2, Printer, Minimize2, Maximize2 } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -10,6 +10,8 @@ import { AskAIAssistantPanel } from './AskAIAssistantPanel'
 import { ShareAccessModal } from '../share-access/ShareAccessModal'
 import { useTranslation } from '@/context/LanguageContext'
 import { aiService } from '@/services/aiService'
+import { documentService } from '@/services/documentService'
+import { useAuthStore } from '@/stores/authStore'
 
 interface ChatMessage {
   sender: 'user' | 'ai'
@@ -94,6 +96,76 @@ export function FileViewer({
   const [currentPage, setCurrentPage] = useState(initialPage || 1)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
+  const normType = fileType.toLowerCase()
+  const [pdfUrl, setPdfUrl] = useState<string>('')
+  const [loadingPdf, setLoadingPdf] = useState(false)
+  const [pdfLoadError, setPdfLoadError] = useState(false)
+  const [previewText, setPreviewText] = useState<string>(previewContent || '')
+  const [loadingPreview, setLoadingPreview] = useState(false)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  useEffect(() => {
+    if (previewContent) {
+      setPreviewText(previewContent)
+    }
+  }, [previewContent])
+
+  useEffect(() => {
+    if (normType === 'pdf' && documentId) {
+      setLoadingPdf(true)
+      setPdfLoadError(false)
+      documentService.downloadDocument(documentId)
+        .then((blob) => {
+          const url = URL.createObjectURL(blob)
+          setPdfUrl(url)
+        })
+        .catch((err) => {
+          console.error("Failed to fetch PDF blob for viewer:", err)
+          setPdfLoadError(true)
+        })
+        .finally(() => {
+          setLoadingPdf(false)
+        })
+    }
+  }, [documentId, normType])
+
+  useEffect(() => {
+    if (!documentId) return
+
+    // If it's a PDF, we try to download and preview it in iframe.
+    // If it's NOT a PDF, OR if it's a PDF but download failed (pdfLoadError is true), we fetch the text preview.
+    const shouldFetchText = normType !== 'pdf' || pdfLoadError
+
+    if (shouldFetchText) {
+      setLoadingPreview(true)
+      documentService.previewDocument(documentId)
+        .then((content) => {
+          if (content && !content.startsWith('%PDF') && content.length < 500000) {
+            setPreviewText(content)
+          } else if (!previewContent) {
+            setPreviewText('')
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch document text preview:", err)
+          if (!previewContent) {
+            setPreviewText('')
+          }
+        })
+        .finally(() => {
+          setLoadingPreview(false)
+        })
+    }
+  }, [documentId, normType, pdfLoadError])
+
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl)
+      }
+    }
+  }, [pdfUrl])
+
   useEffect(() => {
     if (initialPage) {
       setCurrentPage(initialPage)
@@ -101,31 +173,58 @@ export function FileViewer({
   }, [initialPage])
 
   // 2. AI Chat assistant state
+  const user = useAuthStore((s) => s.user)
+  const [sessionId, setSessionId] = useState<number | null>(null)
   const [chatLog, setChatLog] = useState<ChatMessage[]>([])
   const [isAiResponding, setIsAiResponding] = useState(false)
   const [aiTypingText, setAiTypingText] = useState('')
 
-  // Dynamically initialize and update welcome message on language change
+  // Dynamically initialize chat session and fetch history from backend
   useEffect(() => {
-    setChatLog(prev => {
-      const welcomeText = t.fileViewer.welcomeMsg(fileName)
-      if (prev.length === 0) {
-        return [
-          {
-            sender: 'ai',
-            text: welcomeText,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    if (documentId && user?.id) {
+      aiService.createOrGetChatSession([Number(documentId)], Number(user.id))
+        .then(session => {
+          setSessionId(session.id)
+          return aiService.getChatHistory(session.id)
+        })
+        .then(history => {
+          if (history && history.length > 0) {
+            const mappedHistory = history.map(msg => ({
+              sender: msg.sender.toLowerCase() as 'user' | 'ai',
+              text: msg.messageText,
+              timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }))
+            setChatLog(mappedHistory)
+          } else {
+            setChatLog([
+              {
+                sender: 'ai',
+                text: t.fileViewer.welcomeMsg(fileName),
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              }
+            ])
           }
-        ]
-      }
-      return prev.map((msg, i) => {
-        if (i === 0 && msg.sender === 'ai') {
-          return { ...msg, text: welcomeText }
+        })
+        .catch(err => {
+          console.error("Failed to load or create AI chat session:", err)
+          setChatLog([
+            {
+              sender: 'ai',
+              text: t.fileViewer.welcomeMsg(fileName),
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ])
+        })
+    } else {
+      setChatLog([
+        {
+          sender: 'ai',
+          text: t.fileViewer.welcomeMsg(fileName),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
-        return msg
-      })
-    })
-  }, [t, fileName])
+      ])
+    }
+  }, [documentId, user?.id, fileName, t])
 
   // 3. Document AI deep analysis state
   const [isScanning, setIsScanning] = useState(false)
@@ -179,10 +278,18 @@ export function FileViewer({
       showToast(t.fileViewer.printRestricted)
       return
     }
-    showToast(t.fileViewer.printPreparing(fileName))
-    setTimeout(() => {
-      window.print()
-    }, 800)
+    if (normType === 'pdf' && iframeRef.current) {
+      try {
+        iframeRef.current.contentWindow?.print()
+      } catch (err) {
+        window.print()
+      }
+    } else {
+      showToast(t.fileViewer.printPreparing(fileName))
+      setTimeout(() => {
+        window.print()
+      }, 800)
+    }
   }
 
   // Fullscreen trigger
@@ -198,7 +305,7 @@ export function FileViewer({
   }
 
   // Send AI Message handler
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string) => {
     if (!text.trim()) return
 
     showToast(t.fileViewer.aiProcessingToast)
@@ -211,79 +318,100 @@ export function FileViewer({
     }
     setChatLog(prev => [...prev, userMsg])
     setIsAiResponding(true)
+    setAiTypingText('...')
 
-    // Clear previous responses
-    if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current)
-    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
-
-    // Simulate AI response response logic
-    aiTimeoutRef.current = setTimeout(() => {
-      let responseText = ''
-      const lower = text.toLowerCase()
-
-      if (lower.includes('summary') || lower.includes('tóm tắt') || lower.includes('overview') || lower.includes('quá trình')) {
-        responseText = t.fileViewer.summaryResponse(fileName, subject)
-      } else {
-        responseText = t.fileViewer.defaultResponse(fileName)
+    try {
+      let activeSessionId = sessionId
+      if (!activeSessionId && documentId && user?.id) {
+        const session = await aiService.createOrGetChatSession([Number(documentId)], Number(user.id))
+        activeSessionId = session.id
+        setSessionId(session.id)
       }
 
-      let idx = 0
+      if (!activeSessionId) {
+        throw new Error("Chat session not available")
+      }
+
+      const aiReply = await aiService.sendMessage(activeSessionId, text)
+      
+      const aiMsg: ChatMessage = {
+        sender: 'ai',
+        text: aiReply.messageText,
+        timestamp: new Date(aiReply.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+      setChatLog(prev => [...prev, aiMsg])
+    } catch (err) {
+      console.error("Failed to send message to AI Assistant:", err)
+      showToast("Gửi tin nhắn thất bại. Vui lòng thử lại.")
+    } finally {
+      setIsAiResponding(false)
       setAiTypingText('')
-      typingIntervalRef.current = setInterval(() => {
-        if (idx < responseText.length) {
-          setAiTypingText(responseText.substring(0, idx + 1))
-          idx++
-        } else {
-          if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
-          setChatLog(prev => [...prev, {
-            sender: 'ai',
-            text: responseText,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }])
-          setAiTypingText('')
-          setIsAiResponding(false)
-        }
-      }, 12)
-    }, 1000)
+    }
   }
 
-  // Deep AI Analysis scan simulator (1s loading)
-  const handleDeepAnalysis = () => {
-    if (isScanning) return
+  // Deep AI Analysis (Calls real summary generation)
+  const handleDeepAnalysis = async () => {
+    if (isScanning || !documentId) return
     setIsScanning(true)
     setScanProgress(10)
     setScanStep(t.fileViewer.analyzingLayout)
     showToast(t.fileViewer.analyzingFile(fileName))
 
-    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current)
-    if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current)
-
-    const steps = [
-      { progress: 40, step: t.fileViewer.extractingText },
-      { progress: 75, step: t.fileViewer.runningConceptMatch },
-      { progress: 100, step: t.fileViewer.syncingDb }
-    ]
-
-    let stepIdx = 0
-    scanIntervalRef.current = setInterval(() => {
-      if (stepIdx < steps.length) {
-        setScanProgress(steps[stepIdx].progress)
-        setScanStep(steps[stepIdx].step)
-        stepIdx++
+    let progress = 10
+    const interval = setInterval(() => {
+      progress = Math.min(progress + 15, 90)
+      setScanProgress(progress)
+      if (progress < 40) {
+        setScanStep(t.fileViewer.extractingText)
+      } else if (progress < 75) {
+        setScanStep(t.fileViewer.runningConceptMatch)
       } else {
-        if (scanIntervalRef.current) clearInterval(scanIntervalRef.current)
-        scanTimeoutRef.current = setTimeout(() => {
-          setIsScanning(false)
-          showToast(t.fileViewer.analysisCompleted)
-          
-          setChatLog(prev => [...prev, {
-            sender: 'ai',
-            text: t.fileViewer.analysisSuccessMsg(fileName),
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }])
-        }, 300)
+        setScanStep(t.fileViewer.syncingDb)
       }
-    }, 300) // fast load to fit 1 second duration request
+    }, 200)
+
+    try {
+      const summary = await aiService.generateSummary(documentId, 'vi')
+      
+      clearInterval(interval)
+      setScanProgress(100)
+      setScanStep(t.fileViewer.syncingDb)
+      
+      setTimeout(() => {
+        setIsScanning(false)
+        showToast(t.fileViewer.analysisCompleted)
+
+        let bulletsList: string[] = []
+        try {
+          if (summary.summaryBullets) {
+            bulletsList = JSON.parse(summary.summaryBullets)
+          }
+        } catch (e) {
+          console.warn("Failed to parse summary bullets JSON:", e)
+        }
+
+        let formattedText = `**Tóm tắt tài liệu "${fileName}":**\n\n${summary.summaryText}`
+        if (bulletsList && bulletsList.length > 0) {
+          formattedText += `\n\n**Các ý chính:**\n` + bulletsList.map(b => `- ${b}`).join('\n')
+        }
+
+        if (sessionId) {
+          aiService.sendMessage(sessionId, `[Hệ thống] Đã thực hiện phân tích tài liệu và tạo tóm tắt.`)
+            .catch(() => {})
+        }
+
+        setChatLog(prev => [...prev, {
+          sender: 'ai',
+          text: formattedText,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }])
+      }, 300)
+    } catch (err) {
+      clearInterval(interval)
+      setIsScanning(false)
+      console.error("Failed to analyze document:", err)
+      showToast("Phân tích tài liệu thất bại. Vui lòng thử lại.")
+    }
   }
 
   const handleDownloadClick = () => {
@@ -372,35 +500,85 @@ export function FileViewer({
         <div
           className={cn(
             "lg:col-span-8 flex flex-col bg-slate-900/5 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden transition-all duration-300",
-            isFullscreen ? "fixed inset-4 z-50 bg-slate-950 p-6 shadow-2xl border-slate-850" : "relative shadow-xl"
+            isFullscreen ? "fixed inset-4 z-50 bg-slate-955 shadow-2xl" : "relative shadow-xl"
           )}
         >
-          {/* Top toolbar */}
-          <PreviewToolbar
-            zoomScale={zoomScale}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            onPrint={handlePrint}
-            isFullscreen={isFullscreen}
-            onToggleFullscreen={toggleFullscreen}
-            fileName={fileName}
-          />
+          {normType === 'pdf' && !pdfLoadError ? (
+            <div className="flex flex-col h-full w-full">
+              {/* PDF Toolbar */}
+              <div className="flex items-center justify-between gap-4 border-b bg-blue-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 px-6 py-4 select-none">
+                <span className="text-sm font-bold truncate text-slate-800 dark:text-slate-100 max-w-[300px]">
+                  {fileName}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 p-2.5 rounded-xl border border-slate-250/40 dark:border-slate-700 transition-colors cursor-pointer"
+                    title={t.fileViewer.printDoc(fileName)}
+                    aria-label={t.fileViewer.print}
+                  >
+                    <Printer className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleFullscreen}
+                    className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 p-2.5 rounded-xl border border-slate-250/40 dark:border-slate-700 transition-colors cursor-pointer"
+                    title={isFullscreen ? (t.fileViewer.exitFullscreen || "Exit Fullscreen") : (t.fileViewer.fullscreenViewer || "Fullscreen Viewer")}
+                    aria-label={isFullscreen ? (t.fileViewer.exitFullscreen || "Exit Fullscreen") : (t.fileViewer.fullscreenViewer || "Fullscreen Viewer")}
+                  >
+                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              
+              {/* PDF Canvas area */}
+              <div className={cn("w-full bg-white dark:bg-slate-900", isFullscreen ? "h-[calc(100vh-80px)]" : "h-[750px]")}>
+                {pdfUrl ? (
+                  <iframe
+                    ref={iframeRef}
+                    src={pdfUrl}
+                    className="w-full h-full border-none"
+                    title={fileName}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500">
+                    <Loader2 className="animate-spin size-8 text-primary" />
+                    <span className="text-sm font-semibold">Loading PDF...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Top toolbar */}
+              <PreviewToolbar
+                zoomScale={zoomScale}
+                onZoomIn={handleZoomIn}
+                onZoomOut={handleZoomOut}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                onPrint={handlePrint}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={toggleFullscreen}
+                fileName={fileName}
+              />
 
-          {/* Canvas area */}
-          <DocumentPreview
-            fileType={fileType}
-            fileName={fileName}
-            zoomScale={zoomScale}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            subject={subject}
-            previewContent={previewContent}
-            isDownloadRestricted={isDownloadRestricted()}
-            fileUrl={fileUrl}
-          />
+              {/* Canvas area */}
+              <DocumentPreview
+                fileType={pdfLoadError ? 'txt' : fileType}
+                fileName={fileName}
+                zoomScale={zoomScale}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                subject={subject}
+                previewContent={previewText}
+                isDownloadRestricted={isDownloadRestricted()}
+                fileUrl={fileUrl}
+              />
+            </>
+          )}
         </div>
 
         {/* RIGHT COLUMN: Sidebar controls panel */}
