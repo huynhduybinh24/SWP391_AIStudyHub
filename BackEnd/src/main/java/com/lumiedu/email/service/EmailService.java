@@ -30,7 +30,6 @@ public class EmailService {
             
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(content, isHtml);
             
             if (from != null && !from.trim().isEmpty()) {
                 if (!from.equalsIgnoreCase(fromEmail)) {
@@ -51,6 +50,17 @@ public class EmailService {
                 helper.setFrom(fromEmail, "LumiEdu Support");
             }
 
+            if (isHtml && content != null) {
+                String updatedContent = content.replace("https://raw.githubusercontent.com/huynhduybinh24/SWP391_AIStudyHub/main/FrontEnd/public/logo.png", "cid:logo");
+                helper.setText(updatedContent, true);
+                org.springframework.core.io.ClassPathResource logoResource = new org.springframework.core.io.ClassPathResource("logo.png");
+                if (logoResource.exists()) {
+                    helper.addInline("logo", logoResource);
+                }
+            } else {
+                helper.setText(content, isHtml);
+            }
+
             mailSender.send(message);
             System.out.println("Email sent successfully to " + to + " (From: " + from + ")");
         } catch (Exception e) {
@@ -68,9 +78,8 @@ public class EmailService {
                 "    body { margin: 0; padding: 0; background-color: #f5f5f7; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; -webkit-font-smoothing: antialiased; }" +
                 "    .wrapper { width: 100%; background-color: #f5f5f7; padding: 40px 0; }" +
                 "    .container { max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border: 1px solid #e3e3e8; }" +
-                "    .header { padding: 32px 40px 20px 40px; border-bottom: 1px solid #f5f5f7; }" +
-                "    .logo { font-size: 22px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.5px; }" +
-                "    .logo-dot { color: #0071e3; }" +
+                "    .header { padding: 24px 40px; border-bottom: 1px solid #e2e8f0; text-align: center; background-color: #ffffff; }" +
+                "    .logo-img { max-width: 120px; height: auto; display: block; margin: 0 auto; }" +
                 "    .content { padding: 32px 40px; color: #1d1d1f; font-size: 15px; line-height: 1.6; }" +
                 "    .footer { padding: 24px 40px 32px 40px; background-color: #f9f9fb; border-top: 1px solid #f5f5f7; text-align: left; font-size: 12px; color: #86868b; }" +
                 "    .footer a { color: #0071e3; text-decoration: none; }" +
@@ -84,7 +93,7 @@ public class EmailService {
                 "  <div class=\"wrapper\">" +
                 "    <div class=\"container\">" +
                 "      <div class=\"header\">" +
-                "        <div class=\"logo\">LumiEdu<span class=\"logo-dot\">.</span></div>" +
+                "        <img class=\"logo-img\" src=\"https://raw.githubusercontent.com/huynhduybinh24/SWP391_AIStudyHub/main/FrontEnd/public/logo.png\" alt=\"LumiEdu Logo\" />" +
                 "      </div>" +
                 "      <div class=\"content\">" +
                 "        <h2 style=\"font-size: 20px; font-weight: 700; color: #1d1d1f; margin-top: 0; margin-bottom: 16px;\">" + heading + "</h2>" +

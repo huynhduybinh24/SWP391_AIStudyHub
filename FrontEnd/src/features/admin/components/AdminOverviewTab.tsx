@@ -116,6 +116,21 @@ export function AdminOverviewTab({
     ]
   }, [stats, language])
 
+  const usedPercent = useMemo(() => {
+    if (!stats || !stats.storageLimitGB) return 0
+    const rawPct = (stats.storageUsedGB / stats.storageLimitGB) * 100
+    return parseFloat(rawPct.toFixed(1))
+  }, [stats])
+
+  const capacityText = useMemo(() => {
+    if (!stats || !stats.storageLimitGB) return '0 GB'
+    const limitGB = stats.storageLimitGB
+    if (limitGB >= 1024) {
+      return `${(limitGB / 1024).toFixed(1)} TB`
+    }
+    return `${limitGB.toFixed(1)} GB`
+  }, [stats])
+
   const totalUsedStorage = useMemo(() => {
     return storageData.reduce((acc, curr) => acc + curr.value, 0).toFixed(1)
   }, [storageData])
@@ -203,12 +218,12 @@ export function AdminOverviewTab({
               <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-violet-600 dark:bg-violet-500 rounded-full transition-all duration-1000" 
-                  style={{ width: '24%' }}
+                  style={{ width: `${Math.min(usedPercent, 100)}%` }}
                 />
               </div>
               <div className="flex items-center justify-between text-[10px] font-extrabold text-slate-400 dark:text-slate-500">
-                <span>24.8% Used</span>
-                <span>1.0 PB Capacity</span>
+                <span>{usedPercent}% {t.admin.capacityUsedRatio}</span>
+                <span>{capacityText} {t.admin.capacityTotal}</span>
               </div>
             </div>
           </CardContent>

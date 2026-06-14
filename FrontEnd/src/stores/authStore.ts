@@ -43,9 +43,13 @@ export const useAuthStore = create<AuthState>()(
             id: user.id,
             name: user.name,
             email: user.email,
-            role: user.role,
+            role: (user.role || 'user').toLowerCase(),
             plan: normalizedPlan,
-            avatar: user.avatarUrl || '/logo.png'
+            avatar: user.avatarUrl || '/logo.png',
+            university: user.university || 'FPT University',
+            major: user.major || 'Software engineering',
+            degree: user.degree || 'Bachelor',
+            twoFactorEnabled: user.twoFactorEnabled
           }))
 
           // Cancel any scheduled log deletion since the user logged back in
@@ -64,29 +68,48 @@ export const useAuthStore = create<AuthState>()(
 
           // Automatically register this logged-in account in device login history
           try {
+            const cleanEmail = (email?: string): string => {
+              if (!email) return ''
+              return email.trim().toLowerCase().replace(/[^\x20-\x7E]/g, '')
+            }
+
             const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
             let list = stored ? JSON.parse(stored) : []
             if (!Array.isArray(list)) list = []
             
-            const existingIndex = list.findIndex((u: any) => u.email?.toLowerCase() === user.email?.toLowerCase())
+            const userEmailClean = cleanEmail(user.email)
+            const existingIndex = list.findIndex((u: any) => cleanEmail(u.email) === userEmailClean)
+            const planFormatted = (user.plan || 'free').toUpperCase()
+            const nameFormatted = user.name
+            const initialsFormatted = user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'US'
+            const roleFormatted = user.role?.toLowerCase() === 'admin' ? 'admin' : 'user'
+
             if (existingIndex !== -1) {
-              list[existingIndex].tokens = tokens // Always update/persist the tokens
-              if (isGoogle) {
-                list[existingIndex].isGoogle = true
-                list[existingIndex].remembered = true
+              list[existingIndex] = {
+                ...list[existingIndex],
+                name: nameFormatted,
+                email: userEmailClean, // Save cleaned email!
+                role: roleFormatted,
+                plan: planFormatted,
+                initials: initialsFormatted,
+                avatar: user.avatarUrl || list[existingIndex].avatar || '/logo.png',
+                tokens: tokens,
+                isGoogle: isGoogle || list[existingIndex].isGoogle || false,
+                remembered: isGoogle ? true : list[existingIndex].remembered
               }
             } else {
               list.push({
                 id: `u-${user.id}`,
-                name: user.name,
-                email: user.email,
-                role: user.role === 'admin' ? 'admin' : 'user',
-                plan: (user.plan || 'free').toUpperCase() as 'FREE' | 'PRO',
-                initials: user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'US',
+                name: nameFormatted,
+                email: userEmailClean, // Save cleaned email!
+                role: roleFormatted,
+                plan: planFormatted,
+                initials: initialsFormatted,
+                avatar: user.avatarUrl || '/logo.png',
                 description: `Tài khoản đăng nhập hệ thống ngày ${new Date().toLocaleDateString('vi-VN')}`,
                 remembered: isGoogle ? true : false,
                 isGoogle: isGoogle || false,
-                tokens: tokens // Save tokens here!
+                tokens: tokens
               })
             }
             localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(list))
@@ -96,6 +119,7 @@ export const useAuthStore = create<AuthState>()(
         }
         const normalizedUser = {
           ...user,
+          role: (user.role || 'user').toLowerCase(),
           plan: (() => {
             const p = (user.plan || 'free').toLowerCase()
             if (p === 'enterprise' || p === 'premium' || p === 'institutional') return 'institutional'
@@ -183,13 +207,16 @@ export const useAuthStore = create<AuthState>()(
               id: savedUser.id,
               name: savedUser.name,
               email: savedUser.email,
-              role: savedUser.role,
+              role: (savedUser.role || 'user').toLowerCase(),
               plan: (() => {
                 const p = (savedUser.plan || 'free').toLowerCase()
                 if (p === 'enterprise' || p === 'premium' || p === 'institutional') return 'institutional'
                 return p
               })() as 'free' | 'pro' | 'institutional',
               avatarUrl: savedUser.avatar || '/logo.png',
+              university: savedUser.university || 'FPT University',
+              major: savedUser.major || 'Software engineering',
+              degree: savedUser.degree || 'Bachelor'
             }
             return {
               ...current,
@@ -230,3 +257,55 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 )
+
+if (typeof window !== 'undefined') {
+  const cleanEmail = (email?: string): string => {
+    if (!email) return ''
+    return email.trim().toLowerCase().replace(/[^\x20-\x7E]/g, '')
+  }
+
+  useAuthStore.subscribe((state) => {
+    if (state.user) {
+      try {
+        const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
+        if (stored) {
+          const list = JSON.parse(stored)
+          if (Array.isArray(list)) {
+            const userEmailClean = cleanEmail(state.user?.email)
+            const existingIndex = list.findIndex((u: any) => cleanEmail(u.email) === userEmailClean)
+            if (existingIndex !== -1) {
+              const currentItem = list[existingIndex]
+              const newPlan = (state.user.plan || 'free').toUpperCase()
+              const newRole = state.user.role?.toLowerCase() === 'admin' ? 'admin' : 'user'
+              const newName = state.user.name
+              const newAvatar = state.user.avatarUrl || '/logo.png'
+              const newInitials = state.user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'US'
+
+              if (
+                currentItem.plan !== newPlan ||
+                currentItem.role !== newRole ||
+                currentItem.name !== newName ||
+                currentItem.avatar !== newAvatar ||
+                cleanEmail(currentItem.email) !== userEmailClean
+              ) {
+                list[existingIndex] = {
+                  ...currentItem,
+                  email: userEmailClean,
+                  name: newName,
+                  role: newRole,
+                  plan: newPlan,
+                  avatar: newAvatar,
+                  initials: newInitials
+                }
+                localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(list))
+                window.dispatchEvent(new Event('aiStudyHubLoggedInAccountsUpdated'))
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to sync state.user to logged-in accounts:', e)
+      }
+    }
+  })
+}

@@ -271,9 +271,15 @@ export function AdminUsersTab({
                             "font-extrabold text-[10px] rounded-full px-2.5 py-0.5 uppercase tracking-wide",
                             u.plan === 'pro' 
                               ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15"
+                              : (u.plan === 'enterprise' || u.plan === 'premium' || u.plan === 'institutional')
+                              ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/15"
                               : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450"
                           )}>
-                            {u.plan === 'pro' ? 'Pro' : 'Free'}
+                            {u.plan === 'pro' 
+                              ? 'Pro' 
+                              : (u.plan === 'enterprise' || u.plan === 'premium' || u.plan === 'institutional')
+                              ? 'Premium' 
+                              : 'Free'}
                           </Badge>
                         ) : (
                           <span className="text-slate-400 dark:text-slate-600 font-bold">-</span>
@@ -282,7 +288,7 @@ export function AdminUsersTab({
 
                       {/* Storage used */}
                       <td className="p-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                        {(u.storageUsedMB / 1024).toFixed(2)} GB / {u.plan === 'pro' ? 50 : 10} GB
+                        {(u.storageUsedMB / 1024).toFixed(2)} GB / {((u.storageLimitMB || 1024) / 1024).toFixed(0)} GB
                       </td>
 
                       {/* Last Active */}
@@ -549,12 +555,12 @@ export function AdminUsersTab({
                   <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-blue-600 dark:bg-blue-500 rounded-full" 
-                      style={{ width: `${(selectedUser.storageUsedMB / (selectedUser.plan === 'pro' ? 51200 : 10240)) * 100}%` }}
+                      style={{ width: `${Math.min(100, (selectedUser.storageUsedMB / (selectedUser.storageLimitMB || 1024)) * 100)}%` }}
                     />
                   </div>
                   <div className="flex justify-between font-extrabold text-[10px] text-slate-450 dark:text-slate-500">
                     <span>{(selectedUser.storageUsedMB / 1024).toFixed(2)} GB {language === 'vi' ? 'đã dùng' : 'used'}</span>
-                    <span>{selectedUser.plan === 'pro' ? 50 : 10} GB</span>
+                    <span>{((selectedUser.storageLimitMB || 1024) / 1024).toFixed(0)} GB</span>
                   </div>
                 </div>
               </div>

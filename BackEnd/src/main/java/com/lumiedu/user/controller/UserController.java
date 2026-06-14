@@ -86,6 +86,36 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{id}/2fa/setup")
+    public ResponseEntity<java.util.Map<String, String>> setupTwoFactor(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.setupTwoFactor(id));
+    }
+
+    @PostMapping("/{id}/2fa/enable")
+    public ResponseEntity<Void> enableTwoFactor(
+            @PathVariable Long id,
+            @RequestBody TwoFactorCodeRequest request) {
+        boolean success = userService.enableTwoFactor(id, request.getCode());
+        if (success) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.badRequest().build();
+    }
+
+    @PostMapping("/{id}/2fa/disable")
+    public ResponseEntity<Void> disableTwoFactor(@PathVariable Long id) {
+        boolean success = userService.disableTwoFactor(id);
+        if (success) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.badRequest().build();
+    }
+
+    @lombok.Data
+    public static class TwoFactorCodeRequest {
+        private String code;
+    }
+
     @lombok.Data
     public static class LinkAccountRequest {
         private String code;

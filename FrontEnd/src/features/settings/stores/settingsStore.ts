@@ -55,6 +55,10 @@ export const useSettingsStore = create<SettingsState>()(
       theme: 'light',
       loadUserSettings: (email) => {
         const settings = settingsService.getSettings(email)
+        const authUser = useAuthStore.getState().user
+        if (authUser && authUser.email.toLowerCase() === email.toLowerCase()) {
+          settings.security.isTwoFactorEnabled = !!authUser.twoFactorEnabled
+        }
         set({
           account: settings.account,
           security: settings.security,

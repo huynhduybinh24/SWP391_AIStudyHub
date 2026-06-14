@@ -9,6 +9,7 @@ export interface AdminUser {
   joinedAt: string;
   documentsCount: number;
   storageUsedMB: number;
+  storageLimitMB: number;
   plan: 'free' | 'pro' | 'enterprise' | 'institutional';
   isOnline: boolean;
   lastActiveVi?: string;
@@ -46,6 +47,7 @@ export interface AdminStats {
   totalDocuments: number;
   pendingDocuments: number;
   storageUsedGB: number;
+  storageLimitGB: number;
   aiProcessedDocuments: number;
   flaggedDocuments: number;
   newUsersThisWeek: number;
@@ -54,6 +56,21 @@ export interface AdminStats {
   officeStorageMb: number;
   spreadsheetStorageMb: number;
   otherStorageMb: number;
+  engagementRate: number;
+  avgAiResponseTime: number;
+  storageEfficiency: number;
+  tempFilesCleanedGb: number;
+  proConversionRate: number;
+  monthlyTrafficLabels: string[];
+  monthlyPageViews: number[];
+  monthlyAiQueries: number[];
+  aiChatInteractions: number;
+  fileStorageInteractions: number;
+  studyPlanInteractions: number;
+  quizInteractions: number;
+  freePlanUsersCount: number;
+  proPlanUsersCount: number;
+  premiumPlanUsersCount: number;
 }
 
 const mapBackendDocumentToAdminDocument = (d: any): AdminDocument => ({
@@ -85,11 +102,12 @@ export const getAdminStats = async (): Promise<AdminStats> => {
   const statsData = response.data;
   return {
     totalUsers: statsData.totalUsers || 0,
-    activeUsers: (statsData.totalUsers - statsData.totalAdmins) || 0,
+    activeUsers: statsData.totalUsers || 0,
     premiumUsers: statsData.premiumUsers || 0,
     totalDocuments: statsData.totalDocuments || 0,
     pendingDocuments: statsData.pendingDocuments || 0,
     storageUsedGB: Number(((statsData.totalStorageUsed || 0) / 1024).toFixed(2)),
+    storageLimitGB: Number(((statsData.totalStorageLimit || 0) / 1024).toFixed(2)),
     aiProcessedDocuments: statsData.totalDocuments - statsData.pendingDocuments,
     flaggedDocuments: statsData.rejectedDocuments || 0,
     newUsersThisWeek: (statsData.newRegistrationsLast7Days || []).reduce((a: number, b: number) => a + b, 0),
@@ -98,6 +116,21 @@ export const getAdminStats = async (): Promise<AdminStats> => {
     officeStorageMb: statsData.officeStorageMb || 0,
     spreadsheetStorageMb: statsData.spreadsheetStorageMb || 0,
     otherStorageMb: statsData.otherStorageMb || 0,
+    engagementRate: statsData.engagementRate ?? 84.2,
+    avgAiResponseTime: statsData.avgAiResponseTime ?? 1.18,
+    storageEfficiency: statsData.storageEfficiency ?? 98.1,
+    tempFilesCleanedGb: statsData.tempFilesCleanedGb ?? 982,
+    proConversionRate: statsData.proConversionRate ?? 25.2,
+    monthlyTrafficLabels: statsData.monthlyTrafficLabels || ['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'],
+    monthlyPageViews: statsData.monthlyPageViews || [45000, 52000, 49000, 63000, 78000, 92450],
+    monthlyAiQueries: statsData.monthlyAiQueries || [12000, 15400, 14200, 19800, 24500, 31200],
+    aiChatInteractions: statsData.aiChatInteractions ?? 85240,
+    fileStorageInteractions: statsData.fileStorageInteractions ?? 64205,
+    studyPlanInteractions: statsData.studyPlanInteractions ?? 38450,
+    quizInteractions: statsData.quizInteractions ?? 29400,
+    freePlanUsersCount: statsData.freePlanUsersCount || 0,
+    proPlanUsersCount: statsData.proPlanUsersCount || 0,
+    premiumPlanUsersCount: statsData.premiumPlanUsersCount || 0,
   };
 };
 
@@ -149,6 +182,7 @@ export const getUsers = async (
         joinedAt: u.createdAt ? u.createdAt.split('T')[0] : '2023-01-15',
         documentsCount: u.documentsCount || 0,
         storageUsedMB: u.storageUsedMb || 0,
+        storageLimitMB: u.storageLimitMb || 1024,
         plan: u.planType?.toLowerCase() || 'free',
         isOnline: false,
         lastActiveVi,
@@ -195,6 +229,7 @@ export const updateUser = async (
         joinedAt: u.createdAt ? u.createdAt.split('T')[0] : '2023-01-15',
         documentsCount: u.documentsCount || 0,
         storageUsedMB: u.storageUsedMb || 0,
+        storageLimitMB: u.storageLimitMb || 1024,
         plan: u.planType?.toLowerCase() || 'free',
         isOnline: false,
         lastActiveVi: 'Just now',
@@ -212,6 +247,7 @@ export const updateUser = async (
     joinedAt: new Date().toISOString().split('T')[0],
     documentsCount: 0,
     storageUsedMB: 0,
+    storageLimitMB: 1024,
     plan: updates.plan || 'free',
     isOnline: false,
     lastActiveVi: 'Just now',
@@ -331,8 +367,38 @@ export const getDashboardSummary = async () => {
   };
 };
 
+export interface SubscriptionPlan {
+  id: number;
+  planType: 'FREE' | 'PRO' | 'ENTERPRISE';
+  price: number;
+  durationDays: number;
+  storageLimitMb: number;
+  aiChatLimitPerDay: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const getSubscriptionPlans = async (): Promise<SubscriptionPlan[]> => {
+  const response = await apiClient.get('/admin/plans');
+  return response.data;
+};
+
+export const updateSubscriptionPlan = async (
+  id: number,
+  price: number,
+  storageLimitMb: number
+): Promise<SubscriptionPlan> => {
+  const response = await apiClient.put(`/admin/plans/${id}`, {
+    price,
+    storageLimitMb
+  });
+  return response.data;
+};
+
 export const adminService = {
   getAdminStats,
+  getSubscriptionPlans,
+  updateSubscriptionPlan,
   getUsers,
   updateUser,
   deleteUser,

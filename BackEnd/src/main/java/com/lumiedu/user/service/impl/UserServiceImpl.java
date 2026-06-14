@@ -26,6 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.lumiedu.billing.repository.UserSubscriptionRepository;
+import com.lumiedu.billing.repository.SubscriptionPlanRepository;
+import com.lumiedu.billing.enums.SubscriptionStatus;
+import com.lumiedu.billing.enums.PlanType;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +39,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final ThirdPartyAccountRepository thirdPartyAccountRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final UserSubscriptionRepository userSubscriptionRepository;
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -67,6 +73,9 @@ public class UserServiceImpl implements UserService {
         
         user.setFullName(request.getFullName());
         user.setAvatarUrl(request.getAvatarUrl());
+        user.setUniversity(request.getUniversity());
+        user.setMajor(request.getMajor());
+        user.setDegree(request.getDegree());
         
         User updatedUser = userRepository.save(user);
         return mapToUserResponse(updatedUser);
@@ -259,6 +268,33 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             return null;
         }
+
+        String planStr = "FREE";
+        Long storageLimit = user.getStorageLimitMb();
+        if (user.getRole() == com.lumiedu.user.enums.UserRole.ADMIN) {
+            storageLimit = 51200L;
+            planStr = "PRO";
+        } else {
+            var activeSub = userSubscriptionRepository.findFirstByUserIdAndStatusOrderByEndDateDesc(
+                    user.getId(), SubscriptionStatus.ACTIVE);
+            if (activeSub.isPresent()) {
+                var plan = activeSub.get().getSubscriptionPlan();
+                if (plan != null) {
+                    if (plan.getStorageLimitMb() != null) {
+                        storageLimit = plan.getStorageLimitMb();
+                    }
+                    if (plan.getPlanType() != null) {
+                        planStr = plan.getPlanType().name();
+                    }
+                }
+            } else {
+                var freePlan = subscriptionPlanRepository.findByPlanType(PlanType.FREE);
+                if (freePlan.isPresent() && freePlan.get().getStorageLimitMb() != null) {
+                    storageLimit = freePlan.get().getStorageLimitMb();
+                }
+            }
+        }
+
         return UserResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
@@ -267,10 +303,66 @@ public class UserServiceImpl implements UserService {
                 .role(user.getRole())
                 .accountStatus(user.getAccountStatus())
                 .twoFactorEnabled(user.getTwoFactorEnabled())
+                .plan(planStr)
                 .storageUsedMb(user.getStorageUsedMb())
-                .storageLimitMb(user.getStorageLimitMb())
+                .storageLimitMb(storageLimit)
+                .university(user.getUniversity() != null ? user.getUniversity() : "FPT University")
+                .major(user.getMajor() != null ? user.getMajor() : "Software engineering")
+                .degree(user.getDegree() != null ? user.getDegree() : "Bachelor")
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    public java.util.Map<String, String> setupTwoFactor(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        String secret = com.lumiedu.common.util.TotpUtils.generateSecretKey();
+        user.setTempTwoFactorSecret(secret);
+        userRepository.save(user);
+
+        String otpAuthUri = com.lumiedu.common.util.TotpUtils.getOtpAuthUri(user.getEmail(), secret);
+        String encodedUri = org.springframework.web.util.UriUtils.encode(otpAuthUri, java.nio.charset.StandardCharsets.UTF_8);
+        String qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodedUri;
+
+        java.util.Map<String, String> result = new java.util.HashMap<>();
+        result.put("secret", secret);
+        result.put("qrCodeUrl", qrCodeUrl);
+        return result;
+    }
+
+    @Override
+    public boolean enableTwoFactor(Long userId, String code) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        String tempSecret = user.getTempTwoFactorSecret();
+        if (tempSecret == null) {
+            return false;
+        }
+
+        boolean isValid = com.lumiedu.common.util.TotpUtils.verifyCode(tempSecret, code);
+        if (isValid) {
+            user.setTwoFactorSecret(tempSecret);
+            user.setTwoFactorEnabled(true);
+            user.setTempTwoFactorSecret(null);
+            userRepository.save(user);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean disableTwoFactor(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        user.setTwoFactorEnabled(false);
+        user.setTwoFactorSecret(null);
+        user.setTempTwoFactorSecret(null);
+        userRepository.save(user);
+        return true;
     }
 }

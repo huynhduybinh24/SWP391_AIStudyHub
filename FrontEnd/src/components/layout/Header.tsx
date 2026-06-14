@@ -439,6 +439,11 @@ export function Header() {
   const { pathname } = useLocation()
   const { userMenuOpen, setUserMenuOpen, toggleUserMenu, setSidebarOpen } = useUiStore()
   const { profile } = useProfileStore()
+  const currentEmail = user?.email
+  const rawHeaderAvatar = currentEmail 
+    ? (localStorage.getItem(`aiStudyHubUserAvatar:${currentEmail}`) || profile.avatarUrl) 
+    : profile.avatarUrl
+  const headerAvatarUrl = (rawHeaderAvatar && rawHeaderAvatar !== '/logo.png') ? rawHeaderAvatar : undefined
   
   const menuRef = useRef<HTMLDivElement>(null)
   const notificationRef = useRef<HTMLDivElement>(null)
@@ -480,15 +485,18 @@ export function Header() {
             role: savedUser.role,
             plan: savedUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
             avatarUrl: savedUser.avatar || '/logo.png',
+            university: savedUser.university || 'FPT University',
+            major: savedUser.major || 'Software engineering',
+            degree: savedUser.degree || 'Bachelor',
           },
           isAuthenticated: true,
         })
         useProfileStore.setState({
           profile: {
             name: savedUser.name,
-            university: 'FPT University',
-            major: 'Software engineering',
-            degree: 'Bachelor',
+            university: savedUser.university || 'FPT University',
+            major: savedUser.major || 'Software engineering',
+            degree: savedUser.degree || 'Bachelor',
             avatarUrl: savedUser.avatar || '/logo.png',
           }
         })
@@ -978,7 +986,7 @@ export function Header() {
             aria-haspopup="menu"
             aria-label="User menu"
           >
-            <Avatar src={profile.avatarUrl} name={profile.name} className="cursor-pointer border border-slate-200/50 dark:border-slate-800" />
+            <Avatar src={headerAvatarUrl} name={profile.name} className="cursor-pointer border border-slate-200/50 dark:border-slate-800" />
           </button>
 
           <AnimatePresence>

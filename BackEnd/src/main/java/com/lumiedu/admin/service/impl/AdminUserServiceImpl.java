@@ -322,9 +322,27 @@ public class AdminUserServiceImpl implements AdminUserService {
         PlanType planType = PlanType.FREE;
         Optional<UserSubscription> activeSub = userSubscriptionRepository
                 .findFirstByUserIdAndStatusOrderByEndDateDesc(user.getId(), SubscriptionStatus.ACTIVE);
+        
+        Long storageLimit = user.getStorageLimitMb();
+        if (user.getRole() == UserRole.ADMIN) {
+            storageLimit = 51200L;
+        } else {
+            if (activeSub.isPresent()) {
+                var plan = activeSub.get().getSubscriptionPlan();
+                if (plan != null && plan.getStorageLimitMb() != null) {
+                    storageLimit = plan.getStorageLimitMb();
+                }
+            } else {
+                var freePlan = subscriptionPlanRepository.findByPlanType(PlanType.FREE);
+                if (freePlan.isPresent() && freePlan.get().getStorageLimitMb() != null) {
+                    storageLimit = freePlan.get().getStorageLimitMb();
+                }
+            }
+        }
+
         if (activeSub.isPresent() && activeSub.get().getSubscriptionPlan() != null) {
             planType = activeSub.get().getSubscriptionPlan().getPlanType();
         }
-        return AdminUserMapper.toResponse(user, planType);
+        return AdminUserMapper.toResponse(user, planType, storageLimit);
     }
 }

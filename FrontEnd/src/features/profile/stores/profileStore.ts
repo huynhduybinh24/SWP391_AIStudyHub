@@ -60,6 +60,9 @@ export const useProfileStore = create<ProfileState>()(
             await apiClient.put(`/users/${authUser.id}/profile`, {
               fullName: data.name ?? authUser.name,
               avatarUrl: data.avatarUrl ?? authUser.avatarUrl,
+              university: data.university ?? authUser.university,
+              major: data.major ?? authUser.major,
+              degree: data.degree ?? authUser.degree,
             })
           } catch (error) {
             console.error('Failed to update profile on backend database:', error)
@@ -77,6 +80,9 @@ export const useProfileStore = create<ProfileState>()(
                 ...authUser,
                 name: updatedProfile.name,
                 avatarUrl: updatedProfile.avatarUrl,
+                university: updatedProfile.university,
+                major: updatedProfile.major,
+                degree: updatedProfile.degree,
               }
             })
 
@@ -87,7 +93,10 @@ export const useProfileStore = create<ProfileState>()(
               email: authUser.email,
               role: authUser.role,
               plan: authUser.plan || 'free',
-              avatar: updatedProfile.avatarUrl || '/logo.png'
+              avatar: updatedProfile.avatarUrl || '/logo.png',
+              university: updatedProfile.university,
+              major: updatedProfile.major,
+              degree: updatedProfile.degree,
             }))
           }
           

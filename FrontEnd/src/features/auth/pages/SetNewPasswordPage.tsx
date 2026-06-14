@@ -1,39 +1,110 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Lock, Eye, EyeOff, RotateCcw, CheckCircle2, Circle } from 'lucide-react'
+import { ArrowLeft, Lock, Eye, EyeOff, RotateCcw, CheckCircle2, Circle, Mail, KeyRound } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { setNewPasswordSchema, type SetNewPasswordValues } from '@/features/auth/schemas/setNewPasswordSchema'
 import { AppFooter } from '@/components/shared/AppFooter'
+import { authService } from '@/features/auth/services/authService'
 
 export function SetNewPasswordPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const emailParam = searchParams.get('email') || ''
+  
+  const [resendCooldown, setResendCooldown] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
 
   const {
     register,
     handleSubmit,
     watch,
+    trigger,
+    setError,
     formState: { errors },
   } = useForm<SetNewPasswordValues>({
     resolver: zodResolver(setNewPasswordSchema),
-    defaultValues: { password: '', confirmPassword: '' },
+    defaultValues: { email: emailParam, otp: '', password: '', confirmPassword: '' },
+    mode: 'onChange',
   })
 
-  const passwordValue = watch('password')
+  const emailValue = watch('email') || ''
+  const passwordValue = watch('password') || ''
+  const confirmPasswordValue = watch('confirmPassword') || ''
 
-  const onSubmit = (data: SetNewPasswordValues) => {
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [resendCooldown])
+
+  useEffect(() => {
+    if (confirmPasswordValue) {
+      trigger('confirmPassword')
+    }
+  }, [passwordValue, confirmPasswordValue, trigger])
+
+  const handleResendOtp = async () => {
+    if (!emailValue) {
+      setError('email', { type: 'manual', message: 'Please enter your email to resend OTP.' })
+      return
+    }
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      await authService.forgotPassword(emailValue)
+      setSuccessMsg('A new OTP code has been sent successfully to your email!')
+      setResendCooldown(60)
+    } catch (err: any) {
+      setErrorMsg(err?.response?.data?.message || err?.message || 'Failed to resend OTP. Please try again later.')
+    }
+  }
+
+  const onSubmit = async (data: SetNewPasswordValues) => {
     setIsSubmitting(true)
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Password updated successfully:', data)
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      await authService.resetPassword(data.email, data.otp, data.password)
       setIsSubmitting(false)
-      navigate('/login')
-    }, 1500)
+      setSuccessMsg('Password reset successfully! Redirecting to login page...')
+      setTimeout(() => {
+        navigate('/login')
+      }, 3000)
+    } catch (err: any) {
+      setIsSubmitting(false)
+      const backendMessage = err?.response?.data?.message || err?.message || ''
+      
+      if (backendMessage.includes("Invalid token")) {
+        setError('otp', { 
+          type: 'manual', 
+          message: 'Invalid OTP code. Please check again.' 
+        })
+      } else if (backendMessage.includes("Email does not match this token")) {
+        setError('otp', { 
+          type: 'manual', 
+          message: 'OTP code does not match this email.' 
+        })
+        setError('email', {
+          type: 'manual',
+          message: 'Email does not match the OTP code recipient.'
+        })
+      } else if (backendMessage.includes("Token expired or already used")) {
+        setError('otp', { 
+          type: 'manual', 
+          message: 'OTP code has expired or has already been used.' 
+        })
+      } else {
+        setErrorMsg(backendMessage || 'Invalid or expired OTP code.')
+      }
+    }
   }
 
   // Password requirement checks
@@ -64,6 +135,47 @@ export function SetNewPasswordPage() {
 
           <form className="w-full space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-bold text-foreground" htmlFor="email">
+                  Email Address
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="student@university.edu"
+                  startIcon={<Mail className="w-5 h-5 text-muted" />}
+                  className="bg-white border-border/60 focus:bg-white"
+                  error={errors.email?.message}
+                  {...register('email')}
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm font-bold text-foreground" htmlFor="otp">
+                    OTP Code (6 Digits)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={resendCooldown > 0 || !emailValue}
+                    className="text-xs font-semibold text-[#3B41E3] hover:text-[#2d31b3] disabled:text-[#94a3b8] disabled:cursor-not-allowed transition-colors"
+                  >
+                    {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : 'Resend OTP'}
+                  </button>
+                </div>
+                <Input
+                  id="otp"
+                  type="text"
+                  maxLength={6}
+                  placeholder="123456"
+                  startIcon={<KeyRound className="w-5 h-5 text-muted" />}
+                  className="bg-white border-border/60 focus:bg-white font-mono tracking-widest text-center text-lg font-bold"
+                  error={errors.otp?.message}
+                  {...register('otp')}
+                />
+              </div>
+
               <div>
                 <label className="mb-2 block text-sm font-bold text-foreground" htmlFor="password">
                   New Password
@@ -133,6 +245,18 @@ export function SetNewPasswordPage() {
                 </li>
               </ul>
             </div>
+
+            {errorMsg && (
+              <p className="text-sm text-red-500 text-center font-medium">
+                {errorMsg}
+              </p>
+            )}
+
+            {successMsg && (
+              <p className="text-sm text-green-600 text-center font-semibold animate-pulse">
+                {successMsg}
+              </p>
+            )}
 
             <Button 
               type="submit" 

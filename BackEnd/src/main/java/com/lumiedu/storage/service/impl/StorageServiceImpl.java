@@ -33,25 +33,34 @@ public class StorageServiceImpl implements StorageService {
     private final StorageRepository storageRepository;
     private final StorageCleanupScanRepository storageCleanupScanRepository;
     private final com.lumiedu.billing.repository.UserSubscriptionRepository userSubscriptionRepository;
+    private final com.lumiedu.billing.repository.SubscriptionPlanRepository subscriptionPlanRepository;
 
     private double calculateStorageLimit(User user) {
-        double limitMb = user.getStorageLimitMb() != null ? user.getStorageLimitMb().doubleValue() : 1024.0;
-        
+        if (user.getRole() == com.lumiedu.user.enums.UserRole.ADMIN) {
+            return 51200.0; // 50 GB
+        }
+
+        double limitMb = 1024.0;
+
         // Find active subscription plan to dynamically override limit
         var activeSub = userSubscriptionRepository.findFirstByUserIdAndStatusOrderByEndDateDesc(
                 user.getId(), com.lumiedu.billing.enums.SubscriptionStatus.ACTIVE);
-        
+
         if (activeSub.isPresent()) {
             var plan = activeSub.get().getSubscriptionPlan();
             if (plan != null && plan.getStorageLimitMb() != null) {
                 limitMb = plan.getStorageLimitMb().doubleValue();
             }
+        } else {
+            // Retrieve dynamic storage limit for the FREE plan
+            var freePlan = subscriptionPlanRepository.findByPlanType(com.lumiedu.billing.enums.PlanType.FREE);
+            if (freePlan.isPresent() && freePlan.get().getStorageLimitMb() != null) {
+                limitMb = freePlan.get().getStorageLimitMb().doubleValue();
+            } else if (user.getStorageLimitMb() != null) {
+                limitMb = user.getStorageLimitMb().doubleValue();
+            }
         }
-        
-        if (user.getRole() == com.lumiedu.user.enums.UserRole.ADMIN) {
-            limitMb = 51200.0; // 50 GB
-        }
-        
+
         return limitMb;
     }
 

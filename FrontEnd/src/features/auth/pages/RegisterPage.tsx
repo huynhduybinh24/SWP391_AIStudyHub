@@ -1,12 +1,29 @@
+import { useState, useEffect } from 'react'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
-import { Sparkles, ArrowLeft } from 'lucide-react'
+import { Sparkles, ArrowLeft, Wrench } from 'lucide-react'
 import heroImg from '@/assets/hero.png'
 import { AppFooter } from '@/components/shared/AppFooter'
 import { Link } from 'react-router-dom'
 import { useTranslation } from '@/context/LanguageContext'
+import { getSystemStatus, SystemStatusState } from '@/features/admin/services/systemStatusService'
+import { Modal } from '@/components/ui/Modal'
 
 export function RegisterPage() {
   const { language } = useTranslation()
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
+  const [maintenanceMessage, setMaintenanceMessage] = useState('')
+
+  useEffect(() => {
+    getSystemStatus().then((statusState) => {
+      if (statusState.status === 'maintenance') {
+        setShowMaintenanceModal(true)
+        setMaintenanceMessage(statusState.message)
+      }
+    }).catch(err => {
+      console.error('Failed to check system status on register page', err)
+    })
+  }, [])
+
   const backToHomeText = language === 'vi' 
     ? 'Quay lại trang chủ' 
     : (language === 'ja' ? 'ホームに戻る' : (language === 'ko' ? '홈으로 돌아가기' : 'Back to Home'))
@@ -74,6 +91,35 @@ export function RegisterPage() {
       </div>
 
       <AppFooter variant="simple" />
+
+      {/* Maintenance Info Modal */}
+      <Modal
+        isOpen={showMaintenanceModal}
+        onClose={() => {
+          window.location.href = '/'
+        }}
+        title={language === 'vi' ? 'Hệ thống đang bảo trì' : 'System Under Maintenance'}
+        className="max-w-md"
+      >
+        <div className="flex flex-col items-center text-center p-4 space-y-4">
+          <div className="w-16 h-16 bg-amber-50 dark:bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-100 dark:border-amber-500/20">
+            <Wrench className="size-8 text-amber-500" />
+          </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400 font-semibold leading-relaxed">
+            {maintenanceMessage || (language === 'vi' 
+              ? 'Hệ thống hiện đang tiến hành bảo trì định kỳ. Các chức năng đăng ký tạm thời bị khóa. Vui lòng quay lại sau.' 
+              : 'The system is currently undergoing scheduled maintenance. Registration functions are temporarily disabled. Please check back later.')}
+          </p>
+          <button
+            onClick={() => {
+              window.location.href = '/'
+            }}
+            className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer shadow-md shadow-blue-500/10"
+          >
+            {language === 'vi' ? 'Quay lại Trang chủ' : 'Back to Home'}
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }

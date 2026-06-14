@@ -15,6 +15,7 @@ public class AdminDashboardStatsResponse {
     private long totalDocuments;
     private long totalNotifications;
     private double totalStorageUsed; // MB
+    private double totalStorageLimit; // MB
     private long totalTransactions;
     private BigDecimal totalRevenue;
     private long pendingTransactions;
@@ -40,4 +41,25 @@ public class AdminDashboardStatsResponse {
 
     /** Storage used by all other file types (MB) */
     private double otherStorageMb;
+
+    // === New fields for Admin Analytics ===
+    private double engagementRate;
+    private double avgAiResponseTime;
+    private double storageEfficiency;
+    private double tempFilesCleanedGb;
+    private double proConversionRate;
+
+    private List<String> monthlyTrafficLabels;
+    private List<Long> monthlyPageViews;
+    private List<Long> monthlyAiQueries;
+
+    private long aiChatInteractions;
+    private long fileStorageInteractions;
+    private long studyPlanInteractions;
+    private long quizInteractions;
+
+    // === User counts by subscription plan from Database ===
+    private long freePlanUsersCount;
+    private long proPlanUsersCount;
+    private long premiumPlanUsersCount;
 }

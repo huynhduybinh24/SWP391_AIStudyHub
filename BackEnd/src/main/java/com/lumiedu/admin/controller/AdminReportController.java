@@ -35,6 +35,19 @@ public class AdminReportController {
             Optional<Document> docOpt = documentRepository.findById(r.getDocumentId());
             if (docOpt.isPresent()) {
                 reportedFile = docOpt.get().getTitle();
+            } else if (r.getReason() != null && r.getReason().startsWith("[Tên tệp: ")) {
+                int endIndex = r.getReason().indexOf("] ");
+                if (endIndex > 0) {
+                    reportedFile = r.getReason().substring(10, endIndex);
+                }
+            }
+
+            String displayReason = r.getReason();
+            if (displayReason != null && displayReason.startsWith("[Tên tệp: ")) {
+                int endIndex = displayReason.indexOf("] ");
+                if (endIndex > 0) {
+                    displayReason = displayReason.substring(endIndex + 2);
+                }
             }
 
             String reporterName = "Anonymous Student";
@@ -53,7 +66,7 @@ public class AdminReportController {
                     .reporterId(r.getReporterId())
                     .reporterName(reporterName)
                     .reporterEmail(reporterEmail)
-                    .reason(r.getReason())
+                    .reason(displayReason)
                     .status(r.getStatus().toLowerCase())
                     .createdAt(r.getCreatedAt())
                     .build();
@@ -83,6 +96,19 @@ public class AdminReportController {
         Optional<Document> docOpt = documentRepository.findById(report.getDocumentId());
         if (docOpt.isPresent()) {
             reportedFile = docOpt.get().getTitle();
+        } else if (report.getReason() != null && report.getReason().startsWith("[Tên tệp: ")) {
+            int endIndex = report.getReason().indexOf("] ");
+            if (endIndex > 0) {
+                reportedFile = report.getReason().substring(10, endIndex);
+            }
+        }
+
+        String displayReason = report.getReason();
+        if (displayReason != null && displayReason.startsWith("[Tên tệp: ")) {
+            int endIndex = displayReason.indexOf("] ");
+            if (endIndex > 0) {
+                displayReason = displayReason.substring(endIndex + 2);
+            }
         }
 
         String reporterName = "Anonymous Student";
@@ -101,7 +127,7 @@ public class AdminReportController {
                 .reporterId(report.getReporterId())
                 .reporterName(reporterName)
                 .reporterEmail(reporterEmail)
-                .reason(report.getReason())
+                .reason(displayReason)
                 .status(report.getStatus().toLowerCase())
                 .createdAt(report.getCreatedAt())
                 .build();

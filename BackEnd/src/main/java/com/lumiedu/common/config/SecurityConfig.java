@@ -48,6 +48,9 @@ public class SecurityConfig {
                 // Static files & health
                 .requestMatchers("/actuator/**", "/error").permitAll()
 
+                // Public system status check (to determine maintenance mode)
+                .requestMatchers(HttpMethod.GET, "/api/admin/system/status").permitAll()
+
                 // ===== ADMIN ONLY =====
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 

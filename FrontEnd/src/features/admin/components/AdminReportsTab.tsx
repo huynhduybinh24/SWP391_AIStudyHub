@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { CheckCircle, Eye, HelpCircle, Loader2 } from 'lucide-react'
+import { CheckCircle, Eye, HelpCircle, Loader2, ExternalLink } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
+import { useSearchParams } from 'react-router-dom'
 import { useToast } from '@/components/ui/Toast'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -23,6 +24,7 @@ interface ReportTicket {
 export function AdminReportsTab() {
   const { language } = useTranslation()
   const toast = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [selectedTicket, setSelectedTicket] = useState<ReportTicket | null>(null)
   const [tickets, setTickets] = useState<ReportTicket[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -172,6 +174,17 @@ export function AdminReportsTab() {
                         <Eye className="size-4" />
                       </button>
 
+                      {/* Go to reported document */}
+                      {t.reportedFileId && t.reportedFileId !== "0" && t.reportedFileId !== "null" && (
+                        <button
+                          onClick={() => setSearchParams({ tab: 'ai-moderation', keyword: t.reportedFile })}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-955/20 transition-all cursor-pointer"
+                          title={language === 'vi' ? 'Đi tới tài liệu để xử lý' : 'Go to document to resolve'}
+                        >
+                          <ExternalLink className="size-4" />
+                        </button>
+                      )}
+
                       {t.status === 'pending' && (
                         <>
                           {/* Resolve ticket */}
@@ -257,6 +270,18 @@ export function AdminReportsTab() {
               >
                 {language === 'vi' ? 'Đóng' : 'Close'}
               </Button>
+              {selectedTicket.reportedFileId && selectedTicket.reportedFileId !== "0" && selectedTicket.reportedFileId !== "null" && (
+                <Button
+                  onClick={() => {
+                    setSearchParams({ tab: 'ai-moderation', keyword: selectedTicket.reportedFile })
+                    setSelectedTicket(null)
+                  }}
+                  className="bg-blue-50 text-blue-650 hover:bg-blue-100 dark:bg-blue-955/35 dark:text-blue-400 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <ExternalLink className="size-3.5" />
+                  {language === 'vi' ? 'Xem tài liệu' : 'View Document'}
+                </Button>
+              )}
               {selectedTicket.status === 'pending' && (
                 <>
                   <Button

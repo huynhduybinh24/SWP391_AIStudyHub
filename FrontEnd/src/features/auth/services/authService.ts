@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/axios'
-import type { LoginCredentials, LoginResponse, RegisterCredentials } from '@/types/auth'
+import type { LoginCredentials, LoginResponse, RegisterCredentials, AuthUser, AuthTokens } from '@/types/auth'
 
 /** Backend response shape from POST /auth/login and /auth/register */
 interface BackendAuthResponse {
@@ -11,19 +11,28 @@ interface BackendAuthResponse {
     role: string
     plan?: string
     avatarUrl?: string
+    twoFactorEnabled?: boolean
   }
   tokens?: {
     accessToken: string
     refreshToken?: string
   }
+  requires2fa?: boolean
+  email?: string
   // Fallbacks for flat structure
   userId?: number
   fullName?: string
-  email?: string
   role?: string
   plan?: string
   accessToken?: string
   refreshToken?: string
+}
+
+export interface LoginResult {
+  requires2fa?: boolean
+  email?: string
+  user?: AuthUser
+  tokens?: AuthTokens
 }
 
 /** Map backend response (nested or flat) → frontend { user, tokens } shape */
@@ -45,6 +54,7 @@ function mapToLoginResponse(data: BackendAuthResponse): LoginResponse {
         role: (user.role?.toLowerCase() ?? 'student') as LoginResponse['user']['role'],
         plan: plan as 'free' | 'pro' | 'institutional',
         avatarUrl: user.avatarUrl || '/logo.png',
+        twoFactorEnabled: user.twoFactorEnabled,
       },
       tokens: {
         accessToken: tokens.accessToken,
@@ -67,6 +77,7 @@ function mapToLoginResponse(data: BackendAuthResponse): LoginResponse {
       role: (data.role?.toLowerCase() ?? 'student') as LoginResponse['user']['role'],
       plan: plan as 'free' | 'pro' | 'institutional',
       avatarUrl: '/logo.png',
+      twoFactorEnabled: false,
     },
     tokens: {
       accessToken: data.accessToken || '',
@@ -76,8 +87,16 @@ function mapToLoginResponse(data: BackendAuthResponse): LoginResponse {
 }
 
 export const authService = {
-  async login(credentials: LoginCredentials): Promise<LoginResponse> {
+  async login(credentials: LoginCredentials): Promise<LoginResult> {
     const { data } = await apiClient.post<BackendAuthResponse>('/auth/login', credentials)
+    if (data.requires2fa) {
+      return { requires2fa: true, email: data.email }
+    }
+    return mapToLoginResponse(data)
+  },
+
+  async verify2fa(email: string, code: string): Promise<LoginResponse> {
+    const { data } = await apiClient.post<BackendAuthResponse>('/auth/login/verify-2fa', { email, code })
     return mapToLoginResponse(data)
   },
 
@@ -109,7 +128,17 @@ export const authService = {
     try {
       await apiClient.post('/auth/logout')
     } catch {
-      // no-op — backend logout is optional, client clears state regardless
+      // no-op — client clears state regardless
     }
+  },
+
+  async forgotPassword(email: string): Promise<string> {
+    const { data } = await apiClient.post<{ message?: string } | string>('/auth/forgot-password', { email })
+    return typeof data === 'string' ? data : (data?.message || '')
+  },
+
+  async resetPassword(email: string, token: string, newPassword: string): Promise<string> {
+    const { data } = await apiClient.post<{ message?: string } | string>('/auth/reset-password', { email, token, newPassword })
+    return typeof data === 'string' ? data : (data?.message || '')
   },
 }

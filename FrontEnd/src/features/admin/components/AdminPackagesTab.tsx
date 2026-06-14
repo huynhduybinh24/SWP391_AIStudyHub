@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Zap, HardDrive, Edit3, Save, Users, Search, Trash2, Plus } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
-import { AdminUser } from '../services/adminService'
+import { AdminUser, AdminStats, adminService, SubscriptionPlan } from '../services/adminService'
 import { cn } from '@/lib/utils'
 
 interface PackageItem {
@@ -21,13 +21,59 @@ interface PackageItem {
 
 export function AdminPackagesTab({
   users = [],
+  stats,
   onUpdateUser
 }: {
   users?: AdminUser[]
-  onUpdateUser: (id: string, updates: Partial<AdminUser>) => void
+  stats?: AdminStats | null
+  onUpdateUser: (id: string, updates: Partial<AdminUser>, reason?: string) => void
 }) {
   const { language } = useTranslation()
   const toast = useToast()
+  const [dbPlans, setDbPlans] = useState<SubscriptionPlan[]>([])
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const plans = await adminService.getSubscriptionPlans()
+        setDbPlans(plans)
+        
+        // Update packages state with the loaded prices and limits
+        setPackages(prevPackages => {
+          return prevPackages.map(pkg => {
+            let type: 'FREE' | 'PRO' | 'ENTERPRISE' | null = null
+            if (pkg.id === 'pkg-free') type = 'FREE'
+            else if (pkg.id === 'pkg-pro') type = 'PRO'
+            else if (pkg.id === 'pkg-enterprise') type = 'ENTERPRISE'
+
+            if (type) {
+              const matchedPlan = plans.find(p => p.planType === type)
+              if (matchedPlan) {
+                const storageGb = Math.round(matchedPlan.storageLimitMb / 1024)
+                return {
+                  ...pkg,
+                  priceMonthly: matchedPlan.price,
+                  storageLimit: storageGb,
+                  perks: pkg.perks.map((perk, i) => {
+                    if (i === 0) {
+                      return language === 'vi'
+                        ? `Dung lượng lưu trữ ${storageGb} GB`
+                        : `${storageGb} GB storage limit`
+                    }
+                    return perk
+                  })
+                }
+              }
+            }
+            return pkg
+          })
+        })
+      } catch (err) {
+        console.error('Failed to load subscription plans', err)
+      }
+    }
+    fetchPlans()
+  }, [language])
 
   const [packages, setPackages] = useState<PackageItem[]>(() => {
     if (typeof window !== 'undefined') {
@@ -189,7 +235,30 @@ export function AdminPackagesTab({
     setEditedPrice(pkg.priceMonthly)
   }
 
-  const handleSaveClick = (id: string) => {
+  const handleSaveClick = async (id: string) => {
+    // Map to backend ID
+    let type: 'FREE' | 'PRO' | 'ENTERPRISE' | null = null
+    if (id === 'pkg-free') type = 'FREE'
+    else if (id === 'pkg-pro') type = 'PRO'
+    else if (id === 'pkg-enterprise') type = 'ENTERPRISE'
+
+    if (type) {
+      const matchedPlan = dbPlans.find(p => p.planType === type)
+      if (matchedPlan) {
+        try {
+          const limitMb = editedStorage * 1024
+          await adminService.updateSubscriptionPlan(matchedPlan.id, editedPrice, limitMb)
+          
+          // Also update matched dbPlans in state
+          setDbPlans(prev => prev.map(p => p.id === matchedPlan.id ? { ...p, price: editedPrice, storageLimitMb: limitMb } : p))
+        } catch (err) {
+          console.error('Failed to update plan on backend', err)
+          toast.error(language === 'vi' ? 'Lưu cấu hình thất bại!' : 'Failed to save configuration!')
+          return
+        }
+      }
+    }
+
     const nextPackages = packages.map((pkg) =>
       pkg.id === id
         ? {
@@ -219,6 +288,39 @@ export function AdminPackagesTab({
     const msg = language === 'vi' ? 'Đã lưu cấu hình gói cước thành công' : 'Package config saved successfully'
     toast.success(msg)
   }
+
+  // Count users per package id dynamically using stats from database as baseline,
+  // falling back to local list counts if stats is not yet loaded
+  const packageUsersCounts = useMemo(() => {
+    if (stats) {
+      return {
+        'pkg-free': stats.freePlanUsersCount || 0,
+        'pkg-pro': stats.proPlanUsersCount || 0,
+        'pkg-enterprise': stats.premiumPlanUsersCount || 0,
+      }
+    }
+
+    const counts: Record<string, number> = {}
+    users.forEach((u) => {
+      const planCode = u.plan?.toLowerCase() || 'free'
+      let pkgId = 'pkg-free'
+      if (planCode === 'pro') {
+        pkgId = 'pkg-pro'
+      } else if (planCode === 'enterprise' || planCode === 'premium') {
+        pkgId = 'pkg-enterprise'
+      } else if (planCode === 'free') {
+        pkgId = 'pkg-free'
+      } else {
+        if (planCode.startsWith('pkg-')) {
+          pkgId = planCode
+        } else {
+          pkgId = 'pkg-' + planCode
+        }
+      }
+      counts[pkgId] = (counts[pkgId] || 0) + 1
+    })
+    return counts
+  }, [users, stats])
 
   // Filter users for upgrades search
   const searchedUsers = useMemo(() => {
@@ -260,7 +362,7 @@ export function AdminPackagesTab({
                       </h3>
                       <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500 dark:text-slate-455 font-bold">
                         <Users className="size-4" />
-                        <span>{pkg.usersCount.toLocaleString()} {language === 'vi' ? 'người dùng' : 'active users'}</span>
+                        <span>{(packageUsersCounts[pkg.id] || 0).toLocaleString()} {language === 'vi' ? 'người dùng' : 'active users'}</span>
                       </div>
                     </div>
 

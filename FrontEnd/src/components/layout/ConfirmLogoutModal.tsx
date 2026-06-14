@@ -38,17 +38,24 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
   const handleLogoutWithPreference = (remember: boolean) => {
     if (authUser) {
       try {
+        const cleanEmail = (email?: string): string => {
+          if (!email) return ''
+          return email.trim().toLowerCase().replace(/[^\x20-\x7E]/g, '')
+        }
+
         const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
         let list = stored ? JSON.parse(stored) : []
         if (!Array.isArray(list)) list = []
         
+        const userEmailClean = cleanEmail(authUser.email)
+        
         // Find existing password fallback
-        let existingPassword = authUser.email
+        let existingPassword = userEmailClean
         const savedUsersStr = localStorage.getItem('aiStudyHubUsers')
         if (savedUsersStr) {
           try {
             const users = JSON.parse(savedUsersStr)
-            const found = users.find((u: any) => u.email?.toLowerCase() === authUser.email?.toLowerCase())
+            const found = users.find((u: any) => cleanEmail(u.email) === userEmailClean)
             if (found && found.password) {
               existingPassword = found.password
             }
@@ -57,9 +64,10 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
           }
         }
 
-        const index = list.findIndex((u: any) => u.email?.toLowerCase() === authUser.email?.toLowerCase())
+        const index = list.findIndex((u: any) => cleanEmail(u.email) === userEmailClean)
         
         if (index !== -1) {
+          list[index].email = userEmailClean // Save cleaned email!
           list[index].remembered = remember
           list[index].askedRemember = true
           if (!list[index].password) {
@@ -70,8 +78,8 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
           list.push({
             id: `u-${authUser.id || Math.random().toString(36).substr(2, 9)}`,
             name: authUser.name,
-            email: authUser.email,
-            role: authUser.role === 'admin' ? 'admin' : authUser.role === 'teacher' || authUser.role === 'instructor' ? 'instructor' : 'student',
+            email: userEmailClean, // Save cleaned email!
+            role: authUser.role?.toLowerCase() === 'admin' ? 'admin' : 'user',
             plan: (authUser.plan || 'free').toUpperCase() as 'FREE' | 'PRO',
             initials: authUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'US',
             description: `Tài khoản đăng nhập hệ thống ngày ${new Date().toLocaleDateString('vi-VN')}`,
@@ -173,6 +181,11 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
                     return
                   }
 
+                  const cleanEmail = (email?: string): string => {
+                    if (!email) return ''
+                    return email.trim().toLowerCase().replace(/[^\x20-\x7E]/g, '')
+                  }
+
                   // Check if this account is already remembered or already asked
                   const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
                   let isAlreadyAskedOrRemembered = false
@@ -180,7 +193,7 @@ export function ConfirmLogoutModal({ isOpen, onClose }: ConfirmLogoutModalProps)
                   if (stored && authUser) {
                     try {
                       const list = JSON.parse(stored)
-                      const found = list.find((u: any) => u.email?.toLowerCase() === authUser.email?.toLowerCase())
+                      const found = list.find((u: any) => cleanEmail(u.email) === cleanEmail(authUser.email))
                       if (found) {
                         if (found.remembered === true || found.askedRemember === true) {
                           isAlreadyAskedOrRemembered = true
