@@ -58,7 +58,7 @@ export function RegisterPage() {
             />
           </div>
           
-          <div className="relative z-20 flex flex-col h-full justify-center max-w-[480px]">
+          <div className="relative z-20 flex flex-col h-full justify-center max-w-[480px] pt-16">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 w-fit mb-8 shadow-sm">
               <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
