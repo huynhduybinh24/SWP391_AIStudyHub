@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 
-// ─── Search Constants ────────────────────────────────────────────────────────
+// â”€â”€â”€ Search Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface SearchSuggestion {
   id: string
   title: string
@@ -92,7 +92,7 @@ export interface MockNotification {
   targetUserEmail?: string
 }
 
-// ─── Header ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function Header() {
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role?.toLowerCase() === 'admin'
@@ -108,222 +108,58 @@ export function Header() {
   const [searchResults, setSearchResults] = useState<typeof CHATBOT_SEARCH_DATA>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
-  const loadNotifications = () => {
-    const currentUser = getCurrentUser();
-    const userRole = currentUser.role;
-    const userEmail = currentUser.email;
-
-    let defaultNotifications: MockNotification[] = [];
-    if (userRole === 'admin') {
-      defaultNotifications = [
-        {
-          id: 'new-report-submitted',
-          title: language === 'vi' ? 'Có báo cáo mới' : 'New report submitted',
-          description: language === 'vi' ? 'Một người dùng đã báo cáo tài liệu vì đạo văn.' : 'A user reported a document for plagiarism.',
-          time: '10m ago',
-          type: 'doc',
-          isRead: false,
-        },
-        {
-          id: 'ai-audit-flagged',
-          title: language === 'vi' ? 'AI phát hiện tài liệu đáng ngờ' : 'AI audit flagged a document',
-          description: language === 'vi' ? 'AI Guard đã phát hiện vi phạm chính sách tiềm ẩn.' : 'AI Guard detected a potential policy violation.',
-          time: '1h ago',
-          type: 'chat',
-          isRead: false,
-        },
-        {
-          id: 'system-status-updated',
-          title: language === 'vi' ? 'Trạng thái hệ thống đã cập nhật' : 'System status updated',
-          description: language === 'vi' ? 'Chế độ bảo trì hoặc trạng thái sự cố đã được thay đổi.' : 'Maintenance mode or incident status was changed.',
-          time: '3h ago',
-          type: 'plan',
-          isRead: true,
-        }
-      ];
-    } else {
-      defaultNotifications = [
-        {
-          id: 'syllabus-analyzed',
-          title: 'Syllabus analyzed',
-          description: 'Your CS101 Syllabus was parsed successfully by AI.',
-          time: '5m ago',
-          type: 'doc',
-          isRead: false,
-        },
-        {
-          id: 'study-plan-starting',
-          title: 'Study plan starting',
-          description: 'Your midterm exam study plan starts tomorrow.',
-          time: '1h ago',
-          type: 'plan',
-          isRead: false,
-        },
-        {
-          id: 'new-shared-folder',
-          title: 'New shared folder',
-          description: 'Duy Binh shared "SWE Lab materials" with you.',
-          time: '3h ago',
-          type: 'share',
-          isRead: true,
-        },
-        {
-          id: 'ai-summary-generated',
-          title: 'AI Summary generated',
-          description: 'Summary is ready for Chapter 4: Computer Networking.',
-          time: '1d ago',
-          type: 'chat',
-          isRead: true,
-        },
-      ];
-    }
-
-    let localNotifications: MockNotification[] = []
-    try {
-      const savedNotifs = localStorage.getItem(`aiStudyHubUserNotifications:${userEmail}`)
-      if (savedNotifs) {
-        const parsed = JSON.parse(savedNotifs)
-        
-        // Filter out notifications older than 7 days
-        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-        const validList = parsed.filter((n: any) => {
-          const timestamp = n.createdAt ? new Date(n.createdAt).getTime() : Date.now();
-          return timestamp >= sevenDaysAgo;
-        });
-
-        if (validList.length !== parsed.length) {
-          localStorage.setItem(`aiStudyHubUserNotifications:${userEmail}`, JSON.stringify(validList));
-        }
-
-        localNotifications = validList.map((n: any) => ({
-          id: n.id,
-          title: n.title,
-          description: n.message,
-          time: n.time || 'Just now',
-          type: n.type,
-          isRead: n.isRead,
-          createdAt: n.createdAt,
-          reason: n.reason,
-          documentName: n.documentName,
-          documentId: n.documentId,
-          actionType: n.actionType,
-          adminNote: n.adminNote,
-          targetUserEmail: n.targetUserEmail
-        }))
-      }
-    } catch (err) {
-      console.error('Failed to load user notifications:', err)
-    }
-
-    let allNotifs = [...localNotifications, ...defaultNotifications]
-
-    try {
-      const saved = localStorage.getItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`)
-      if (saved) {
-        const readMap = JSON.parse(saved)
-        allNotifs = allNotifs.map((n) => ({
-          ...n,
-          isRead: readMap[n.id] !== undefined ? readMap[n.id] : n.isRead,
-        }))
-      }
-    } catch (err) {
-      console.error('Failed to load notifications read state:', err)
-    }
-
-    let deletedIds: string[] = []
-    try {
-      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`)
-      if (storedDeleted) {
-        deletedIds = JSON.parse(storedDeleted)
-      }
-    } catch (e) {
-      console.error('Failed to parse deleted notification IDs', e)
-    }
-
-    allNotifs = allNotifs.filter((n) => {
-      if (deletedIds.includes(n.id)) return false;
-
-      if (n.targetUserEmail && n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
-        return false;
-      }
-
-      if (userRole === 'admin') {
-        const typeStr = n.type || '';
-        if (typeStr === 'document_deleted' || typeStr === 'document_rejected' || typeStr === 'document_removed') {
-          if (!n.targetUserEmail || n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
-            return false;
-          }
-        }
-        const descStr = typeof n.description === 'string' ? n.description : '';
-        if ((descStr.startsWith('Your document') || descStr.startsWith('Tài liệu')) && !n.targetUserEmail) {
-          return false;
-        }
-      }
-
-      return true;
-    })
-
-    return allNotifs
-  }
-
   const [notifications, setNotifications] = useState<MockNotification[]>([])
 
   const refreshNotifications = async () => {
     const currentUser = getCurrentUser()
-    const userRole = currentUser.role
     const userEmail = currentUser.email
 
     try {
-      const { apiClient } = await import('@/lib/axios')
-      const response = await apiClient.get<any>(`/notifications?email=${encodeURIComponent(userEmail)}&filter=all`)
-      
-      if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        const mapped = response.data.data.map((item: any) => {
-          let headerType: MockNotification['type'] = 'chat'
-          const type = item.type
-          if (type === 'document' || type === 'document_approved' || type === 'flashcard' || type === 'doc') {
-            headerType = 'doc'
-          } else if (type === 'calendar' || type === 'plan') {
-            headerType = 'plan'
-          } else if (type === 'folder' || type === 'shared_file' || type === 'share') {
-            headerType = 'share'
-          } else if (type === 'document_deleted' || type === 'document_removed') {
-            headerType = 'document_deleted'
-          } else if (type === 'document_rejected') {
-            headerType = 'document_rejected'
-          }
+      const { userNotificationService } = await import('@/features/notifications/services/userNotificationService')
+      const data = await userNotificationService.getNotifications(currentUser)
 
-          return {
-            id: String(item.id),
-            title: item.title,
-            description: item.description || item.message || '',
-            time: item.time || 'Just now',
-            type: headerType,
-            isRead: !!item.isRead,
-            reason: item.reason,
-            documentName: item.documentName,
-            documentId: item.documentId,
-            actionType: item.actionType,
-            adminNote: item.adminNote,
-            targetUserEmail: item.targetUserEmail
-          }
-        })
+      const mapped = data.map((item: any): MockNotification => {
+        let headerType: MockNotification['type'] = 'chat'
+        const type = item.type
+        if (type === 'document' || type === 'document_approved' || type === 'flashcard' || type === 'doc') {
+          headerType = 'doc'
+        } else if (type === 'calendar' || type === 'plan') {
+          headerType = 'plan'
+        } else if (type === 'folder' || type === 'shared_file' || type === 'share') {
+          headerType = 'share'
+        } else if (type === 'document_deleted' || type === 'document_removed') {
+          headerType = 'document_deleted'
+        } else if (type === 'document_rejected') {
+          headerType = 'document_rejected'
+        }
 
-        const filtered = mapped.filter((n: any) => {
-          if (n.targetUserEmail && n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
-            return false
-          }
-          return true
-        })
+        return {
+          id: String(item.id),
+          title: item.title,
+          description: item.description || item.message || '',
+          time: item.time || 'Just now',
+          type: headerType,
+          isRead: !!item.isRead,
+          reason: item.reason,
+          documentName: item.documentName,
+          documentId: item.documentId,
+          actionType: item.actionType,
+          adminNote: item.adminNote,
+          targetUserEmail: item.targetUserEmail
+        }
+      })
 
-        setNotifications(filtered)
-        return
-      }
+      const filtered = mapped.filter((n: any) => {
+        if (n.targetUserEmail && n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
+          return false
+        }
+        return true
+      })
+
+      setNotifications(filtered)
     } catch (e) {
-      console.error('Failed to fetch header notifications from API, falling back to local', e)
+      console.error('Failed to fetch header notifications', e)
     }
-
-    setNotifications(loadNotifications())
   }
 
   useEffect(() => {
@@ -344,32 +180,11 @@ export function Header() {
 
   const markAsRead = (id: string) => {
     const userEmail = getCurrentUser().email
-    if (!isNaN(Number(id))) {
-      import('@/features/notifications/api/notification.api').then((m) => {
-        m.notificationApi.markAsRead(id)
-      })
-    } else if (id.startsWith('usr-ntf-')) {
-      import('@/features/notifications/services/userNotificationService').then((m) => {
-        m.userNotificationService.markUserNotificationAsRead(id, userEmail)
-      })
-    }
-    
-    setNotifications((prev) => {
-      const updated = prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      
-      try {
-        const readMap: Record<string, boolean> = {}
-        updated.forEach((n) => {
-          if (!n.id.startsWith('usr-ntf-') && isNaN(Number(n.id))) {
-            readMap[n.id] = n.isRead
-          }
-        })
-        localStorage.setItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`, JSON.stringify(readMap))
-      } catch (err) {
-        console.error('Failed to save notifications read state:', err)
-      }
-      return updated
+    import('@/features/notifications/services/userNotificationService').then((m) => {
+      m.userNotificationService.markUserNotificationAsRead(id, userEmail)
     })
+
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
   }
 
   const markAllAsRead = () => {
@@ -377,23 +192,8 @@ export function Header() {
     import('@/features/notifications/services/userNotificationService').then((m) => {
       m.userNotificationService.markAllUserNotificationsAsRead(userEmail)
     })
-    
-    setNotifications((prev) => {
-      const updated = prev.map((n) => ({ ...n, isRead: true }))
-      
-      try {
-        const readMap: Record<string, boolean> = {}
-        updated.forEach((n) => {
-          if (!n.id.startsWith('usr-ntf-') && isNaN(Number(n.id))) {
-            readMap[n.id] = n.isRead
-          }
-        })
-        localStorage.setItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`, JSON.stringify(readMap))
-      } catch (err) {
-        console.error('Failed to save notifications read state:', err)
-      }
-      return updated
-    })
+
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
     toast.success(t.header.toastAllMarkedRead)
   }
 
@@ -439,7 +239,7 @@ export function Header() {
   const { pathname } = useLocation()
   const { userMenuOpen, setUserMenuOpen, toggleUserMenu, setSidebarOpen } = useUiStore()
   const { profile } = useProfileStore()
-  
+
   const menuRef = useRef<HTMLDivElement>(null)
   const notificationRef = useRef<HTMLDivElement>(null)
   const searchContainerRef = useRef<HTMLFormElement>(null)
@@ -589,7 +389,7 @@ export function Header() {
     setSearchVal(term)
     saveSearchToHistory(term)
     toast.success(t.header.toastSearchingResults(term))
-    
+
     if (isAdmin) {
       const lowerTerm = term.toLowerCase()
       if (category === 'Admin Panel' || lowerTerm.includes('user') || lowerTerm.includes('moderation') || lowerTerm.includes('log') || lowerTerm.includes('status') || lowerTerm.includes('report') || lowerTerm.includes('package')) {
@@ -600,7 +400,7 @@ export function Header() {
         else if (lowerTerm.includes('report')) targetTab = 'reports'
         else if (lowerTerm.includes('package') || lowerTerm.includes('pricing')) targetTab = 'packages'
         else if (lowerTerm.includes('status') || lowerTerm.includes('maintenance')) targetTab = 'overview'
-        
+
         navigate(`/dashboard/admin?tab=${targetTab}`)
       } else if (category && category.includes('User')) {
         navigate(`/dashboard/admin?tab=users&keyword=${encodeURIComponent(term)}`)
@@ -631,10 +431,10 @@ export function Header() {
       >
         <Menu className="size-5" />
       </button>
-      
-      <form 
+
+      <form
         ref={searchContainerRef}
-        onSubmit={handleSearchSubmit} 
+        onSubmit={handleSearchSubmit}
         className="relative flex flex-1 items-center max-w-[400px]"
       >
         <Input
@@ -934,7 +734,7 @@ export function Header() {
             <CircleHelp className="size-5 text-body dark:text-slate-400" />
           </Button>
         )}
-        
+
         {/* Notification Bell with Dropdown */}
         {user && (
           <div className="relative" ref={notificationRef}>
@@ -1004,7 +804,7 @@ export function Header() {
   )
 }
 
-// ─── Test Verification Plan ──────────────────────────────────────────────────
+// â”€â”€â”€ Test Verification Plan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Verified interactions:
 // 1. Dropdown toggle: Bell click correctly shows/hides the notification dropdown.
 // 2. Individual read: Clicking a single notification successfully calls markAsRead(id), removing its red dot immediately and decrementing unreadCount.
