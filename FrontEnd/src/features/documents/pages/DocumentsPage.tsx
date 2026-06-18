@@ -1483,7 +1483,7 @@ export function DocumentsPage() {
                   disabled={!selectedFile && !newDocTitle}
                   className="rounded-xl bg-[#2563eb] text-white font-semibold shadow-md shadow-blue-500/10 px-6"
                 >
-                  Process with AI
+                  {t.upload.processAI}
                 </Button>
               </div>
             </>

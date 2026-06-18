@@ -343,7 +343,7 @@ export const vi: typeof en = {
     genSummary: "Tạo tóm tắt tài liệu",
     createFlashcards: "Tạo bộ flashcard",
     cancel: "Hủy bỏ",
-    processAI: "Xử lý với AI",
+    processAI: "Xử lý",
     processing: "Đang xử lý...",
     uploadVideo: "Tải lên Video",
     uploadAudio: "Tải lên Audio",

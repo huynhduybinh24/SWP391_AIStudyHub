@@ -341,7 +341,7 @@ export const en = {
     genSummary: "Generate summary",
     createFlashcards: "Create flashcards",
     cancel: "Cancel",
-    processAI: "Process with AI",
+    processAI: "Process",
     processing: "Processing...",
     uploadVideo: "Upload Video",
     uploadAudio: "Upload Audio",
