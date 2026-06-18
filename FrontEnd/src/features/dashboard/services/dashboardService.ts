@@ -1,9 +1,10 @@
-import type { DashboardData } from '@/features/dashboard/types'
+import type { DashboardData, AlertItem } from '@/features/dashboard/types'
 import { getCurrentWeekDays, getTrackedSeconds, addTrackedSeconds, formatDateLocal } from '../utils/studyTime'
 import { useAuthStore } from '@/stores/authStore'
 import { storageService } from '@/services/storageService'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { documentService } from '@/services/documentService'
+import { userNotificationService } from '@/features/notifications/services/userNotificationService'
 
 function formatTimestamp(dateStr: string): string {
   try {
@@ -69,12 +70,7 @@ const MOCK_DASHBOARD: DashboardData = {
   weeklyHours: 14,
   weeklyTrend: '+2 hrs',
   documents: [],
-  alerts: [
-    { id: '1', title: "Study Plan 'Finals Week' starts tomorrow", time: '2h ago', variant: 'info' },
-    { id: '2', title: 'Dr. Smith shared "Midterm Review.pdf"', time: '5h ago', variant: 'success' },
-    { id: '3', title: 'Storage is 75% full', time: '1d ago', variant: 'warning' },
-    { id: '4', title: 'AI summarized your latest upload', time: '2d ago', variant: 'neutral' },
-  ],
+  alerts: [],
   weeklyActivity: [
     { day: 'M', hours: 2 },
     { day: 'T', hours: 3 },
@@ -163,25 +159,59 @@ export const dashboardService = {
       }
     }
 
-    // Update alert contents dynamically for storage
-    const dynamicAlerts = MOCK_DASHBOARD.alerts.map(alert => {
-      if (alert.id === '3') {
-        const percentage = Math.round((storageUsedMb / storageTotalMb) * 100)
-        return { ...alert, title: `Storage is ${percentage}% full` }
+    let alerts: AlertItem[] = []
+    if (user) {
+      try {
+        const notifications = await userNotificationService.getNotifications(user)
+        const sortedNotifs = [...notifications].sort((a, b) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
+        const latestNotifs = sortedNotifs.slice(0, 4)
+        alerts = latestNotifs.map((n) => {
+          let variant: AlertItem['variant'] = 'info'
+          switch (n.type) {
+            case 'document_approved':
+              variant = 'success'
+              break
+            case 'document_rejected':
+            case 'document_deleted':
+              variant = 'warning'
+              break
+            case 'shared_file':
+              variant = 'success'
+              break
+            case 'ai_update':
+              variant = 'neutral'
+              break
+            case 'system':
+              variant = 'info'
+              break
+            default:
+              variant = 'info'
+          }
+          return {
+            id: n.id,
+            title: n.title || n.message,
+            time: n.time || formatTimestamp(n.createdAt),
+            variant
+          }
+        })
+      } catch (e) {
+        console.error('Failed to fetch user notifications for dashboard alerts:', e)
       }
-      return alert
-    })
+    }
 
     return {
       ...MOCK_DASHBOARD,
       documents,
+      alerts,
       storageUsedMb,
       storageTotalMb,
-      alerts: dynamicAlerts,
       weeklyHours: formattedTotalWeeklyHours,
       weeklyTrend,
       weeklyActivity: dynamicActivity,
     }
   },
 }
+
 
