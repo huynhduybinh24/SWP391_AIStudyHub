@@ -1,9 +1,65 @@
 import type { DashboardData } from '@/features/dashboard/types'
 import { getCurrentWeekDays, getTrackedSeconds, addTrackedSeconds, formatDateLocal } from '../utils/studyTime'
 import { useAuthStore } from '@/stores/authStore'
-import { env } from '@/config/env'
 import { storageService } from '@/services/storageService'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { documentService } from '@/services/documentService'
+
+function formatTimestamp(dateStr: string): string {
+  try {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return dateStr
+    const now = new Date()
+    
+    // check if today
+    if (d.toDateString() === now.toDateString()) {
+      return `Today, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    }
+    
+    // check if yesterday
+    const yesterday = new Date(now)
+    yesterday.setDate(now.getDate() - 1)
+    if (d.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday'
+    }
+    
+    // otherwise short date
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  } catch (e) {
+    return dateStr
+  }
+}
+
+function detectType(fileName: string, mimeType: string): 'pdf' | 'word' | 'image' {
+  const nameLower = (fileName || '').toLowerCase()
+  const mimeLower = (mimeType || '').toLowerCase()
+  
+  if (nameLower.endsWith('.pdf') || mimeLower === 'application/pdf') {
+    return 'pdf'
+  }
+  
+  if (
+    nameLower.endsWith('.docx') ||
+    nameLower.endsWith('.doc') ||
+    mimeLower.startsWith('application/msword') ||
+    mimeLower === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ) {
+    return 'word'
+  }
+  
+  if (
+    nameLower.endsWith('.png') ||
+    nameLower.endsWith('.jpg') ||
+    nameLower.endsWith('.jpeg') ||
+    nameLower.endsWith('.gif') ||
+    nameLower.endsWith('.webp') ||
+    mimeLower.startsWith('image/')
+  ) {
+    return 'image'
+  }
+  
+  return 'pdf'
+}
 
 const MOCK_DASHBOARD: DashboardData = {
   pendingPlans: 3,
@@ -12,11 +68,7 @@ const MOCK_DASHBOARD: DashboardData = {
   storageTotalMb: 100 * 1024,
   weeklyHours: 14,
   weeklyTrend: '+2 hrs',
-  documents: [
-    { id: '1', name: 'Lecture_Notes_Week5.pdf', course: 'CS401', timestamp: 'Today, 10:30 AM', type: 'pdf' },
-    { id: '2', name: 'Essay_Draft_v2.docx', course: 'ECON202', timestamp: 'Yesterday', type: 'word' },
-    { id: '3', name: 'Diagram_Flow.png', course: 'CS401', timestamp: 'Oct 12', type: 'image' },
-  ],
+  documents: [],
   alerts: [
     { id: '1', title: "Study Plan 'Finals Week' starts tomorrow", time: '2h ago', variant: 'info' },
     { id: '2', title: 'Dr. Smith shared "Midterm Review.pdf"', time: '5h ago', variant: 'success' },
@@ -91,6 +143,26 @@ export const dashboardService = {
       }
     }
 
+    let documents: DashboardData["documents"] = []
+    if (user?.id) {
+      try {
+        const backendDocs = await documentService.getAllDocuments(Number(user.id))
+        const sortedDocs = [...backendDocs].sort((a, b) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
+        const latestDocs = sortedDocs.slice(0, 3)
+        documents = latestDocs.map((doc) => ({
+          id: String(doc.id),
+          name: doc.originalFileName || doc.title,
+          course: doc.subject || "General",
+          timestamp: formatTimestamp(doc.createdAt),
+          type: detectType(doc.fileName || doc.originalFileName || '', doc.mimeType || '')
+        }))
+      } catch (e) {
+        console.error('Failed to fetch user documents for dashboard:', e)
+      }
+    }
+
     // Update alert contents dynamically for storage
     const dynamicAlerts = MOCK_DASHBOARD.alerts.map(alert => {
       if (alert.id === '3') {
@@ -102,6 +174,7 @@ export const dashboardService = {
 
     return {
       ...MOCK_DASHBOARD,
+      documents,
       storageUsedMb,
       storageTotalMb,
       alerts: dynamicAlerts,

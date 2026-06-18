@@ -53,23 +53,30 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
         </Link>
       </div>
       <Card className="divide-y divide-slate-200 dark:divide-slate-800">
-        {documents.map((doc) => {
-          const meta = iconMap[doc.type]
-          const Icon = meta.icon
-          return (
-            <div key={doc.id} className="flex items-center gap-3 px-5 py-4">
-              <Icon className={cn('size-5 shrink-0', meta.color)} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-medium text-foreground">{doc.name}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge variant={meta.badge}>{doc.course}</Badge>
-                  <span className="text-sm text-muted">{doc.timestamp}</span>
+        {documents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500 dark:text-slate-400">
+            <p className="text-sm font-medium">{t.dashboard.noDocs}</p>
+            <p className="text-xs mt-1 text-slate-400 dark:text-slate-500">{t.dashboard.uploadPrompt}</p>
+          </div>
+        ) : (
+          documents.map((doc) => {
+            const meta = iconMap[doc.type]
+            const Icon = meta.icon
+            return (
+              <div key={doc.id} className="flex items-center gap-3 px-5 py-4">
+                <Icon className={cn('size-5 shrink-0', meta.color)} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-medium text-foreground">{doc.name}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge variant={meta.badge}>{doc.course}</Badge>
+                    <span className="text-sm text-muted">{doc.timestamp}</span>
+                  </div>
                 </div>
+                <CopyLinkButton docId={doc.id} />
               </div>
-              <CopyLinkButton docId={doc.id} />
-            </div>
-          )
-        })}
+            )
+          })
+        )}
       </Card>
     </section>
   )
