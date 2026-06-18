@@ -16,6 +16,7 @@ import { StudioPanel } from '../components/StudioPanel'
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 interface ChatMessage {
   id: string
@@ -40,6 +41,8 @@ export function ChatPage() {
   const toast = useToast()
   const user = useAuthStore(state => state.user)
   const userId = user?.id || 1
+  const location = useLocation()
+  const navigate = useNavigate()
 
   // --- States ---
   const [conversations, setConversations] = useState<ChatConversation[]>([])
@@ -52,6 +55,16 @@ export function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+
+  // Consume initialPrompt from location state (e.g. from Dashboard Quick Ask)
+  useEffect(() => {
+    const state = location.state as { initialPrompt?: string } | null
+    if (state?.initialPrompt) {
+      setInput(state.initialPrompt)
+      // Clear/replace location state to prevent repopulating on reload
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [location, navigate])
 
   // Document management states
   const [allDocuments, setAllDocuments] = useState<DocumentResponse[]>([])
@@ -79,16 +92,16 @@ export function ChatPage() {
     const fetchUserDocsAndSessions = async () => {
       setLoadingDocs(true)
       try {
-        const docs = await documentService.getAllDocuments(userId)
+        const docs = await documentService.getAllDocuments(Number(userId))
         setAllDocuments(docs)
 
-        const sessions = await aiService.getUserSessions(userId)
+        const sessions = await aiService.getUserSessions(Number(userId))
         const mappedConv: ChatConversation[] = sessions.map(session => {
           const docIds = session.documents ? session.documents.map((d: any) => d.id) : (session.documentId ? [session.documentId] : []);
           return {
             id: `session-${session.id}`,
-            title: session.title || docs.filter(d => docIds.includes(d.id)).map(d => d.title).join(', ') || "Thảo luận tài liệu",
-            preview: "Xem lịch sử trò chuyện...",
+            title: session.title || docs.filter(d => docIds.includes(d.id)).map(d => d.title).join(', ') || "ThÃ¡ÂºÂ£o luÃ¡ÂºÂ­n tÃƒÂ i liÃ¡Â»â€¡u",
+            preview: "Xem lÃ¡Â»â€¹ch sÃ¡Â»Â­ trÃƒÂ² chuyÃ¡Â»â€¡n...",
             updatedAt: new Date(session.updatedAt || session.createdAt || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric' }),
             messages: [], // load lazily on click
             documentIds: docIds
@@ -97,7 +110,7 @@ export function ChatPage() {
         setConversations(mappedConv)
       } catch (err) {
         console.error('Failed to load user documents or sessions', err)
-        toast.error('Không thể tải danh sách tài liệu hoặc lịch sử trò chuyện.')
+        toast.error('KhÃƒÂ´ng thÃ¡Â»Æ’ tÃ¡ÂºÂ£i danh sÃƒÂ¡ch tÃƒÂ i liÃ¡Â»â€¡u hoÃ¡ÂºÂ·c lÃ¡Â»â€¹ch sÃ¡Â»Â­ trÃƒÂ² chuyÃ¡Â»â€¡n.')
       } finally {
         setLoadingDocs(false)
       }
@@ -149,7 +162,7 @@ export function ChatPage() {
 
   const handleStartStudy = async () => {
     if (selectedDocuments.length === 0) {
-      toast.warning('Vui lòng chọn ít nhất một tài liệu nguồn.')
+      toast.warning('Vui lÃƒÂ²ng chÃ¡Â»Ân ÃƒÂ­t nhÃ¡ÂºÂ¥t mÃ¡Â»â„¢t tÃƒÂ i liÃ¡Â»â€¡u nguÃ¡Â»â€œn.')
       return
     }
 
@@ -157,9 +170,9 @@ export function ChatPage() {
 
     try {
       setIsTyping(true)
-      const session = await aiService.createOrGetChatSession(docIds, userId)
+      const session = await aiService.createOrGetChatSession(docIds, Number(userId))
       const history = await aiService.getChatHistory(session.id)
-      
+
       const mappedHistory: ChatMessage[] = history.map(msg => ({
         id: String(msg.id),
         role: msg.sender.toLowerCase() === 'user' ? 'user' : 'assistant',
@@ -174,7 +187,7 @@ export function ChatPage() {
       const sessionConv: ChatConversation = {
         id: `session-${session.id}`,
         title: session.title || selectedDocuments.map(d => d.title).join(', '),
-        preview: mappedHistory[mappedHistory.length - 1]?.content || "Bắt đầu cuộc trò chuyện...",
+        preview: mappedHistory[mappedHistory.length - 1]?.content || "BÃ¡ÂºÂ¯t Ã„â€˜Ã¡ÂºÂ§u cuÃ¡Â»â„¢c trÃƒÂ² chuyÃ¡Â»â€¡n...",
         updatedAt: t.common.justNow || "Just now",
         messages: mappedHistory,
         documentIds: docIds
@@ -192,7 +205,7 @@ export function ChatPage() {
       setIsDocModalOpen(false)
     } catch (err) {
       console.error('Failed to initialize chat session', err)
-      toast.error('Lỗi khởi tạo phiên học tập.')
+      toast.error('LÃ¡Â»â€”i khÃ¡Â»Å¸i tÃ¡ÂºÂ¡o phiÃƒÂªn hÃ¡Â»Âc tÃ¡ÂºÂ­p.')
     } finally {
       setIsTyping(false)
     }
@@ -207,7 +220,7 @@ export function ChatPage() {
 
     if (!text) return
     if (selectedDocuments.length === 0) {
-      toast.warning('Bạn phải đính kèm ít nhất một tài liệu nguồn trước khi gửi câu hỏi.')
+      toast.warning('BÃ¡ÂºÂ¡n phÃ¡ÂºÂ£i Ã„â€˜ÃƒÂ­nh kÃƒÂ¨m ÃƒÂ­t nhÃ¡ÂºÂ¥t mÃ¡Â»â„¢t tÃƒÂ i liÃ¡Â»â€¡u nguÃ¡Â»â€œn trÃ†Â°Ã¡Â»â€ºc khi gÃ¡Â»Â­i cÃƒÂ¢u hÃ¡Â»Âi.')
       return
     }
 
@@ -217,9 +230,9 @@ export function ChatPage() {
       category: 'ai-audit',
       status: 'success',
       eventTextEn: 'AI Chatbot query',
-      eventTextVi: 'Truy vấn chatbot AI',
+      eventTextVi: 'Truy vÃ¡ÂºÂ¥n chatbot AI',
       detailsTextEn: `Queried global AI Chatbot: '${text.length > 60 ? text.substring(0, 57) + '...' : text}'.`,
-      detailsTextVi: `Đã gửi câu hỏi chatbot AI toàn cục: '${text.length > 60 ? text.substring(0, 57) + '...' : text}'.`
+      detailsTextVi: `Ã„ÂÃƒÂ£ gÃ¡Â»Â­i cÃƒÂ¢u hÃ¡Â»Âi chatbot AI toÃƒÂ n cÃ¡Â»Â¥c: '${text.length > 60 ? text.substring(0, 57) + '...' : text}'.`
     })
 
     const userMsgId = Date.now().toString()
@@ -240,9 +253,9 @@ export function ChatPage() {
 
     try {
       const docIds = selectedDocuments.map(d => d.id)
-      const session = await aiService.createOrGetChatSession(docIds, userId)
+      const session = await aiService.createOrGetChatSession(docIds, Number(userId))
       const reply = await aiService.sendMessage(session.id, text, selectedMode === 'Thinking')
-      
+
       const botMsgId = String(reply.id || Date.now() + 1)
       const newBotMsg: ChatMessage = {
         id: botMsgId,
@@ -289,7 +302,7 @@ export function ChatPage() {
       const newBotMsg: ChatMessage = {
         id: botMsgId,
         role: 'assistant',
-        content: 'Xin lỗi, có lỗi xảy ra khi kết nối với máy chủ AI.',
+        content: 'Xin lÃ¡Â»â€”i, cÃƒÂ³ lÃ¡Â»â€”i xÃ¡ÂºÂ£y ra khi kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i vÃ¡Â»â€ºi mÃƒÂ¡y chÃ¡Â»Â§ AI.',
         createdAt: t.common.justNow || "Just now",
       }
       setMessages((prev) => [...prev, newBotMsg])
@@ -313,7 +326,7 @@ export function ChatPage() {
       setActiveConversationId(conv.id)
       setIsChatStarted(true)
       setInput('')
-      
+
       // Load corresponding documents from database for this session
       const docsToSelect = allDocuments.filter(d => conv.documentIds.includes(d.id))
       setSelectedDocuments(docsToSelect)
@@ -336,7 +349,7 @@ export function ChatPage() {
           setConversations(prev => prev.map(c => c.id === id ? { ...c, messages: mappedHistory } : c))
         } catch (err) {
           console.error('Failed to load chat history', err)
-          toast.error('Không thể tải lịch sử trò chuyện.')
+          toast.error('KhÃƒÂ´ng thÃ¡Â»Æ’ tÃ¡ÂºÂ£i lÃ¡Â»â€¹ch sÃ¡Â»Â­ trÃƒÂ² chuyÃ¡Â»â€¡n.')
         } finally {
           setIsTyping(false)
         }
@@ -370,9 +383,9 @@ export function ChatPage() {
 
       try {
         const docIds = selectedDocuments.map(d => d.id)
-        const session = await aiService.createOrGetChatSession(docIds, userId)
+        const session = await aiService.createOrGetChatSession(docIds, Number(userId))
         const reply = await aiService.sendMessage(session.id, userMsg.content, selectedMode === 'Thinking')
-        
+
         const botMsgId = String(reply.id || Date.now() + 1)
         const newBotMsg: ChatMessage = {
           id: botMsgId,
@@ -400,7 +413,7 @@ export function ChatPage() {
         const newBotMsg: ChatMessage = {
           id: botMsgId,
           role: 'assistant',
-          content: 'Xin lỗi, có lỗi xảy ra khi kết nối với máy chủ AI.',
+          content: 'Xin lÃ¡Â»â€”i, cÃƒÂ³ lÃ¡Â»â€”i xÃ¡ÂºÂ£y ra khi kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i vÃ¡Â»â€ºi mÃƒÂ¡y chÃ¡Â»Â§ AI.',
           createdAt: t.common.justNow || "Just now",
         }
         setMessages([...slicedMsgs, newBotMsg])
@@ -518,10 +531,10 @@ export function ChatPage() {
                 <div className="text-left">
                   <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                     <BookOpen className="size-5 text-[#2563eb]" />
-                    <span>Chọn tài liệu nguồn để bắt đầu học tập</span>
+                    <span>ChÃ¡Â»Ân tÃƒÂ i liÃ¡Â»â€¡u nguÃ¡Â»â€œn Ã„â€˜Ã¡Â»Æ’ bÃ¡ÂºÂ¯t Ã„â€˜Ã¡ÂºÂ§u hÃ¡Â»Âc tÃ¡ÂºÂ­p</span>
                   </h2>
                   <p className="text-xs font-semibold text-slate-400 mt-1">
-                    Hãy lựa chọn các tài liệu mà bạn đã tải lên. AI sẽ đồng hành trả lời và phân tích thông tin dựa trên các nguồn này.
+                    HÃƒÂ£y lÃ¡Â»Â±a chÃ¡Â»Ân cÃƒÂ¡c tÃƒÂ i liÃ¡Â»â€¡u mÃƒÂ  bÃ¡ÂºÂ¡n Ã„â€˜ÃƒÂ£ tÃ¡ÂºÂ£i lÃƒÂªn. AI sÃ¡ÂºÂ½ Ã„â€˜Ã¡Â»â€œng hÃƒÂ nh trÃ¡ÂºÂ£ lÃ¡Â»Âi vÃƒÂ  phÃƒÂ¢n tÃƒÂ­ch thÃƒÂ´ng tin dÃ¡Â»Â±a trÃƒÂªn cÃƒÂ¡c nguÃ¡Â»â€œn nÃƒÂ y.
                   </p>
                 </div>
 
@@ -529,13 +542,13 @@ export function ChatPage() {
                 {loadingDocs ? (
                   <div className="flex flex-col items-center justify-center py-10">
                     <Loader2 className="size-8 text-[#2563eb] animate-spin" />
-                    <span className="text-xs text-slate-400 font-bold mt-2">Đang tải tài liệu từ thư viện...</span>
+                    <span className="text-xs text-slate-400 font-bold mt-2">Ã„Âang tÃ¡ÂºÂ£i tÃƒÂ i liÃ¡Â»â€¡u tÃ¡Â»Â« thÃ†Â° viÃ¡Â»â€¡n...</span>
                   </div>
                 ) : allDocuments.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl bg-slate-50/50 dark:bg-slate-950/20">
                     <FolderOpen className="size-10 text-slate-350 dark:text-slate-650" />
-                    <span className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-3">Thư viện tài liệu của bạn đang trống</span>
-                    <p className="text-xs text-slate-400 mt-1 max-w-[280px] text-center">Vui lòng tải lên tài liệu ở trang tài liệu trước khi bắt đầu hội thoại AI.</p>
+                    <span className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-3">ThÃ†Â° viÃ¡Â»â€¡n tÃƒÂ i liÃ¡Â»â€¡u cÃ¡Â»Â§a bÃ¡ÂºÂ¡n Ã„â€˜ang trÃ¡Â»â€˜ng</span>
+                    <p className="text-xs text-slate-400 mt-1 max-w-[280px] text-center">Vui lÃƒÂ²ng tÃ¡ÂºÂ£i lÃƒÂªn tÃƒÂ i liÃ¡Â»â€¡u Ã¡Â»Å¸ trang tÃƒÂ i liÃ¡Â»â€¡u trÃ†Â°Ã¡Â»â€ºc khi bÃ¡ÂºÂ¯t Ã„â€˜Ã¡ÂºÂ§u hÃ¡Â»â„¢i thoÃ¡ÂºÂ¡i AI.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 max-h-[260px] overflow-y-auto pr-1">
@@ -561,7 +574,7 @@ export function ChatPage() {
                           <div className="flex-1 min-w-0 text-left">
                             <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{doc.title}</h4>
                             <span className="text-[10px] font-bold text-[#2563eb] bg-blue-50 dark:bg-blue-950/30 border border-blue-100/10 px-2 py-0.5 rounded-md inline-block mt-2">
-                              {doc.subject || doc.fileType || 'Tài liệu'}
+                              {doc.subject || doc.fileType || 'TÃƒÂ i liÃ¡Â»â€¡u'}
                             </span>
                             <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 block mt-2 font-medium">
                               {formatFileSize(doc.fileSize)}
@@ -581,14 +594,14 @@ export function ChatPage() {
                     className="flex items-center justify-center gap-2.5 h-12 rounded-2xl text-white font-extrabold bg-gradient-to-r from-[#2563eb] to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed active:scale-98 transition-all cursor-pointer"
                   >
                     <Plus className="size-5" />
-                    <span>Bắt đầu học ({selectedDocuments.length} tài liệu)</span>
+                    <span>BÃ¡ÂºÂ¯t Ã„â€˜Ã¡ÂºÂ§u hÃ¡Â»Âc ({selectedDocuments.length} tÃƒÂ i liÃ¡Â»â€¡u)</span>
                   </button>
                   <button
                     onClick={() => setSearchModalOpen(true)}
                     className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold border border-slate-200/50 dark:border-slate-800 active:scale-98 transition-all cursor-pointer"
                   >
                     <Search className="size-4.5" />
-                    <span>Tìm đoạn chat cũ</span>
+                    <span>TÃƒÂ¬m Ã„â€˜oÃ¡ÂºÂ¡n chat cÃ…Â©</span>
                   </button>
                 </div>
 
@@ -713,13 +726,13 @@ export function ChatPage() {
             exit={{ opacity: 0 }}
             className="flex-1 flex overflow-hidden h-full gap-0 bg-[#f8fafc] dark:bg-slate-950"
           >
-            {/* Left Column: Nguồn (Sources) */}
+            {/* Left Column: NguÃ¡Â»â€œn (Sources) */}
             <div className="w-[280px] shrink-0 border-r border-slate-200/85 dark:border-slate-800/80 bg-white dark:bg-slate-900 flex flex-col h-full overflow-hidden select-none">
               {/* Header */}
               <div className="p-4 border-b border-slate-150 dark:border-slate-850 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <BookOpen className="size-4.5 text-slate-500 dark:text-slate-400" />
-                  <span className="text-sm font-bold text-slate-850 dark:text-slate-100">Nguồn</span>
+                  <span className="text-sm font-bold text-slate-850 dark:text-slate-100">NguÃ¡Â»â€œn</span>
                 </div>
               </div>
 
@@ -730,7 +743,7 @@ export function ChatPage() {
                   className="w-full h-10 border border-dashed border-slate-300 dark:border-slate-700 hover:border-[#2563eb] rounded-xl flex items-center justify-center gap-2 bg-slate-50/50 hover:bg-blue-50/20 dark:bg-slate-900/30 text-slate-600 hover:text-[#2563eb] dark:text-slate-450 dark:hover:text-blue-400 font-bold text-xs transition-all cursor-pointer shadow-2xs"
                 >
                   <Plus className="size-4" />
-                  <span>Thêm nguồn</span>
+                  <span>ThÃƒÂªm nguÃ¡Â»â€œn</span>
                 </button>
               </div>
 
@@ -740,7 +753,7 @@ export function ChatPage() {
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-4 py-8">
                     <FolderOpen className="size-9 text-slate-300 dark:text-slate-600" />
                     <span className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-3 leading-relaxed">
-                      Các nguồn đã đính kèm sẽ xuất hiện ở đây.
+                      CÃƒÂ¡c nguÃ¡Â»â€œn Ã„â€˜ÃƒÂ£ Ã„â€˜ÃƒÂ­nh kÃƒÂ¨m sÃ¡ÂºÂ½ xuÃ¡ÂºÂ¥t hiÃ¡Â»â€¡n Ã¡Â»Å¸ Ã„â€˜ÃƒÂ¢y.
                     </span>
                   </div>
                 ) : (
@@ -759,7 +772,7 @@ export function ChatPage() {
                           {doc.title}
                         </span>
                         <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 block">
-                          {doc.subject || doc.fileType || 'Tài liệu'}
+                          {doc.subject || doc.fileType || 'TÃƒÂ i liÃ¡Â»â€¡u'}
                         </span>
                       </div>
 
@@ -778,7 +791,7 @@ export function ChatPage() {
 
             {/* Middle Column: Chat Workspace */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden pr-0 bg-slate-50/30 dark:bg-slate-950/10">
-              
+
               {/* Header / Top bar */}
               <div className="sticky top-0 z-20 bg-[#f5f7fb] dark:bg-slate-950 pt-2 -mt-2 flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800 pb-4 mb-4 select-none">
                 <div className="flex items-center gap-3">
@@ -789,7 +802,7 @@ export function ChatPage() {
                       setSelectedDocuments([])
                     }}
                     className="p-2 rounded-xl border border-slate-200/50 dark:border-slate-800/80 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 bg-white dark:bg-slate-900 transition-colors flex items-center justify-center cursor-pointer shadow-sm"
-                    title="Trở về danh sách chọn"
+                    title="TrÃ¡Â»Å¸ vÃ¡Â»Â danh sÃƒÂ¡ch chÃ¡Â»Ân"
                   >
                     <ArrowLeft className="size-4" />
                   </button>
@@ -801,7 +814,7 @@ export function ChatPage() {
                       }
                     </h1>
                     <span className="text-[10.5px] font-semibold font-mono tracking-widest text-[#2563eb] uppercase block mt-0.5">
-                      {selectedDocuments.length} tài liệu nguồn được đính kèm
+                      {selectedDocuments.length} tÃƒÂ i liÃ¡Â»â€¡u nguÃ¡Â»â€œn Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜ÃƒÂ­nh kÃƒÂ¨m
                     </span>
                   </div>
                 </div>
@@ -824,7 +837,7 @@ export function ChatPage() {
                   <button
                     onClick={() => setSearchModalOpen(true)}
                     className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                    title="Tìm đoạn chat"
+                    title="TÃƒÂ¬m Ã„â€˜oÃ¡ÂºÂ¡n chat"
                   >
                     <Search className="size-4.5" />
                   </button>
@@ -833,7 +846,7 @@ export function ChatPage() {
                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100/60 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 text-[#2563eb] dark:text-blue-400 font-bold text-xs border border-blue-100/50 dark:border-blue-900/30 transition-colors cursor-pointer shadow-2xs"
                   >
                     <Plus className="size-3.5" />
-                    <span>Chat mới</span>
+                    <span>Chat mÃ¡Â»â€ºi</span>
                   </button>
                 </div>
               </div>
@@ -850,10 +863,10 @@ export function ChatPage() {
                       <AIChatbotIcon className="size-9 animate-float drop-shadow-sm" />
                     </div>
                     <h2 className="text-xl md:text-2xl font-heading font-bold text-slate-800 dark:text-slate-100 leading-tight tracking-tight mb-4">
-                      Bạn đã liên kết {selectedDocuments.length} tài liệu thành công!
+                      BÃ¡ÂºÂ¡n Ã„â€˜ÃƒÂ£ liÃƒÂªn kÃ¡ÂºÂ¿t {selectedDocuments.length} tÃƒÂ i liÃ¡Â»â€¡u thÃƒÂ nh cÃƒÂ´ng!
                     </h2>
                     <p className="text-xs text-slate-400 dark:text-slate-500 mb-8 max-w-sm">
-                      Đặt câu hỏi hoặc chọn các thẻ gợi ý dưới đây để AI phân tích tài liệu nguồn ngay lập tức.
+                      Ã„ÂÃ¡ÂºÂ·t cÃƒÂ¢u hÃ¡Â»Âi hoÃ¡ÂºÂ·c chÃ¡Â»Ân cÃƒÂ¡c thÃ¡ÂºÂ» gÃ¡Â»Â£i ÃƒÂ½ dÃ†Â°Ã¡Â»â€ºi Ã„â€˜ÃƒÂ¢y Ã„â€˜Ã¡Â»Æ’ AI phÃƒÂ¢n tÃƒÂ­ch tÃƒÂ i liÃ¡Â»â€¡u nguÃ¡Â»â€œn ngay lÃ¡ÂºÂ­p tÃ¡Â»Â©c.
                     </p>
 
                     {/* Suggestion Prompt Chips */}
@@ -868,10 +881,10 @@ export function ChatPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleSend("Phân tích cấu trúc cốt lõi của tài liệu này.")}
+                        onClick={() => handleSend("PhÃƒÂ¢n tÃƒÂ­ch cÃ¡ÂºÂ¥u trÃƒÂºc cÃ¡Â»â€˜t lÃƒÂµi cÃ¡Â»Â§a tÃƒÂ i liÃ¡Â»â€¡u nÃƒÂ y.")}
                         className="flex items-center justify-between gap-3 text-left w-full rounded-[16px] border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm px-4 py-3.5 text-sm font-semibold text-slate-600 dark:text-slate-350 shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800/50 cursor-pointer active:scale-[0.98]"
                       >
-                        <span className="truncate">Cấu trúc cốt lõi</span>
+                        <span className="truncate">CÃ¡ÂºÂ¥u trÃƒÂºc cÃ¡Â»â€˜t lÃƒÂµi</span>
                         <BrainCircuit className="size-4 opacity-70 shrink-0 text-blue-500" />
                       </button>
                     </div>
@@ -938,27 +951,27 @@ export function ChatPage() {
                                 <Copy className="size-3" />
                                 <span>Copy</span>
                               </button>
-                              
+
                               {!isUser && (
                                 <>
-                                  <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">•</span>
+                                  <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">Ã¢â‚¬Â¢</span>
                                   <button
                                     onClick={() => handleRegenerateResponse(index)}
                                     className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                                   >
                                     <RefreshCw className="size-3" />
-                                    <span>Tái tạo</span>
+                                    <span>TÃƒÂ¡i tÃ¡ÂºÂ¡o</span>
                                   </button>
                                 </>
                               )}
 
-                              <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">•</span>
+                              <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">Ã¢â‚¬Â¢</span>
                               <button
                                 onClick={() => handleReplyMessage(msg.content)}
                                 className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                               >
                                 <Reply className="size-3" />
-                                <span>Trích dẫn</span>
+                                <span>TrÃƒÂ­ch dÃ¡ÂºÂ«n</span>
                               </button>
                             </div>
                           </div>
@@ -991,7 +1004,7 @@ export function ChatPage() {
                     2C. COMPOSER BAR
                    ================================================== */}
                 <div className="mt-2 border-t border-slate-200/50 dark:border-slate-800 pt-4 shrink-0 bg-[#f5f7fb] dark:bg-slate-950 z-20 sticky bottom-0 pb-2 flex flex-col gap-2">
-                  
+
                   {/* Linked source document chips list */}
                   <div className="flex flex-wrap gap-1.5 items-center mb-1.5">
                     {selectedDocuments.map((doc) => (
@@ -1014,12 +1027,12 @@ export function ChatPage() {
                       className="flex items-center gap-1 px-3 py-1 rounded-full border border-dashed border-slate-300 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-[11px] font-bold text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
                     >
                       <Plus className="size-3" />
-                      <span>Chọn nguồn</span>
+                      <span>ChÃ¡Â»Ân nguÃ¡Â»â€œn</span>
                     </button>
                   </div>
 
                   <div className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 p-4 px-5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] backdrop-blur-xl transition-all duration-300 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-blue-400 dark:focus-within:border-blue-500/85 focus-within:shadow-[0_4px_20px_-4px_rgba(59,130,246,0.12)] z-10 relative flex flex-col gap-2">
-                    
+
                     {replyingToMessage && (
                       <div className="mb-1 flex items-center justify-between gap-3 text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-850/50 rounded-xl px-3 py-2 border border-slate-100 dark:border-slate-800/80">
                         <div className="flex items-center gap-2.5 overflow-hidden">
@@ -1039,9 +1052,9 @@ export function ChatPage() {
                       disabled={selectedDocuments.length === 0}
                       className="min-h-[24px] max-h-[160px] w-full resize-none bg-transparent text-[14px] font-medium leading-relaxed text-slate-800 dark:text-slate-150 outline-none placeholder:text-slate-450 dark:placeholder:text-slate-550 border-none p-0 focus:ring-0 disabled:cursor-not-allowed"
                       placeholder={
-                        selectedDocuments.length === 0 
-                          ? "Hãy chọn ít nhất một tài liệu nguồn để bắt đầu..." 
-                          : "Hỏi AI về các tài liệu nguồn đã đính kèm..."
+                        selectedDocuments.length === 0
+                          ? "HÃƒÂ£y chÃ¡Â»Ân ÃƒÂ­t nhÃ¡ÂºÂ¥t mÃ¡Â»â„¢t tÃƒÂ i liÃ¡Â»â€¡u nguÃ¡Â»â€œn Ã„â€˜Ã¡Â»Æ’ bÃ¡ÂºÂ¯t Ã„â€˜Ã¡ÂºÂ§u..."
+                          : "HÃ¡Â»Âi AI vÃ¡Â»Â cÃƒÂ¡c tÃƒÂ i liÃ¡Â»â€¡u nguÃ¡Â»â€œn Ã„â€˜ÃƒÂ£ Ã„â€˜ÃƒÂ­nh kÃƒÂ¨m..."
                       }
                       rows={1}
                     />
@@ -1054,7 +1067,7 @@ export function ChatPage() {
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition-colors text-xs font-bold text-slate-750 dark:text-slate-250 cursor-pointer shadow-sm"
                         >
                           {selectedMode === 'Instant' ? <Zap className="size-3.5 text-amber-500" /> : <BrainCircuit className="size-3.5 text-indigo-500" />}
-                          <span>{selectedMode === 'Instant' ? 'Tức Thì' : 'Deep Thinking'}</span>
+                          <span>{selectedMode === 'Instant' ? 'TÃ¡Â»Â©c ThÃƒÂ¬' : 'Deep Thinking'}</span>
                           <ChevronDown className="size-3.5 opacity-60" />
                         </button>
 
@@ -1071,8 +1084,8 @@ export function ChatPage() {
                                 <Zap className="size-4 text-amber-600 dark:text-amber-400" />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[12px] font-bold text-slate-900 dark:text-white">Tức Thì</span>
-                                <span className="text-[10px] text-slate-400">Tốc độ siêu nhanh</span>
+                                <span className="text-[12px] font-bold text-slate-900 dark:text-white">TÃ¡Â»Â©c ThÃƒÂ¬</span>
+                                <span className="text-[10px] text-slate-400">TÃ¡Â»â€˜c Ã„â€˜Ã¡Â»â„¢ siÃƒÂªu nhanh</span>
                               </div>
                             </button>
                             <button
@@ -1087,7 +1100,7 @@ export function ChatPage() {
                               </div>
                               <div className="flex flex-col">
                                 <span className="text-[12px] font-bold text-slate-900 dark:text-white">Deep Thinking</span>
-                                <span className="text-[10px] text-slate-400">Suy nghĩ lập luận</span>
+                                <span className="text-[10px] text-slate-400">Suy nghÃ„Â© lÃ¡ÂºÂ­p luÃ¡ÂºÂ­n</span>
                               </div>
                             </button>
                           </div>
@@ -1098,7 +1111,7 @@ export function ChatPage() {
                         {/* Source count badge */}
                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-100/10 text-xs font-bold text-[#2563eb] dark:text-blue-400 select-none">
                           <BookOpen className="size-3.5" />
-                          <span>{selectedDocuments.length} nguồn</span>
+                          <span>{selectedDocuments.length} nguÃ¡Â»â€œn</span>
                         </div>
 
                         <button
@@ -1123,8 +1136,8 @@ export function ChatPage() {
 
             {/* Right Side AI Studio Panel (1/3 width) */}
             {isStudioOpen && (
-              <StudioPanel 
-                documentIds={selectedDocuments.map(d => d.id)} 
+              <StudioPanel
+                documentIds={selectedDocuments.map(d => d.id)}
                 language={language}
               />
             )}
@@ -1138,12 +1151,12 @@ export function ChatPage() {
       <Modal
         isOpen={isDocModalOpen}
         onClose={() => setIsDocModalOpen(false)}
-        title="Quản lý tài liệu nguồn"
+        title="QuÃ¡ÂºÂ£n lÃƒÂ½ tÃƒÂ i liÃ¡Â»â€¡u nguÃ¡Â»â€œn"
         className="max-w-2xl"
       >
         <div className="flex flex-col gap-4 py-2 text-left">
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-            Chọn một hoặc nhiều tài liệu để tạo kho ngữ cảnh ôn tập. AI sẽ chỉ tham chiếu và trích xuất dữ liệu từ các tệp này để đảm bảo độ chính xác.
+            ChÃ¡Â»Ân mÃ¡Â»â„¢t hoÃ¡ÂºÂ·c nhiÃ¡Â»Âu tÃƒÂ i liÃ¡Â»â€¡u Ã„â€˜Ã¡Â»Æ’ tÃ¡ÂºÂ¡o kho ngÃ¡Â»Â¯ cÃ¡ÂºÂ£nh ÃƒÂ´n tÃ¡ÂºÂ­p. AI sÃ¡ÂºÂ½ chÃ¡Â»â€° tham chiÃ¡ÂºÂ¿u vÃƒÂ  trÃƒÂ­ch xuÃ¡ÂºÂ¥t dÃ¡Â»Â¯ liÃ¡Â»â€¡u tÃ¡Â»Â« cÃƒÂ¡c tÃ¡Â»â€¡p nÃƒÂ y Ã„â€˜Ã¡Â»Æ’ Ã„â€˜Ã¡ÂºÂ£m bÃ¡ÂºÂ£o Ã„â€˜Ã¡Â»â„¢ chÃƒÂ­nh xÃƒÂ¡c.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[300px] overflow-y-auto pr-1">
@@ -1169,7 +1182,7 @@ export function ChatPage() {
                   <div className="flex-1 min-w-0 text-left">
                     <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{doc.title}</h4>
                     <span className="text-[10px] font-bold text-[#2563eb] bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded-md inline-block mt-2">
-                      {doc.subject || doc.fileType || 'Tài liệu'}
+                      {doc.subject || doc.fileType || 'TÃƒÂ i liÃ¡Â»â€¡u'}
                     </span>
                   </div>
                 </div>
@@ -1182,16 +1195,16 @@ export function ChatPage() {
               onClick={() => setIsDocModalOpen(false)}
               className="px-4.5 h-10 rounded-xl bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer hover:bg-slate-100"
             >
-              Hủy bỏ
+              HÃ¡Â»Â§y bÃ¡Â»Â
             </button>
             <button
               onClick={() => {
                 setIsDocModalOpen(false)
-                toast.success('Cập nhật tài liệu nguồn thành công.')
+                toast.success('CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t tÃƒÂ i liÃ¡Â»â€¡u nguÃ¡Â»â€œn thÃƒÂ nh cÃƒÂ´ng.')
               }}
               className="px-4.5 h-10 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-extrabold text-xs cursor-pointer shadow-md"
             >
-              Xác nhận ({selectedDocuments.length} tài liệu)
+              XÃƒÂ¡c nhÃ¡ÂºÂ­n ({selectedDocuments.length} tÃƒÂ i liÃ¡Â»â€¡u)
             </button>
           </div>
         </div>
@@ -1204,7 +1217,7 @@ export function ChatPage() {
           setSearchModalOpen(false)
           setSearchQuery("")
         }}
-        title="Tìm đoạn chat cũ"
+        title="TÃƒÂ¬m Ã„â€˜oÃ¡ÂºÂ¡n chat cÃ…Â©"
         className="max-w-lg"
       >
         <div className="flex flex-col gap-5 py-2">
@@ -1212,7 +1225,7 @@ export function ChatPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
-              placeholder="Nhập tiêu đề hoặc từ khóa tìm kiếm..."
+              placeholder="NhÃ¡ÂºÂ­p tiÃƒÂªu Ã„â€˜Ã¡Â»Â hoÃ¡ÂºÂ·c tÃ¡Â»Â« khÃƒÂ³a tÃƒÂ¬m kiÃ¡ÂºÂ¿m..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-12 pl-11 pr-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none focus:border-blue-500/40 focus:ring-1"
@@ -1223,7 +1236,7 @@ export function ChatPage() {
           <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
             {filteredConversations.length === 0 ? (
               <div className="text-center py-10 text-slate-400 dark:text-slate-500 text-sm font-semibold">
-                Không tìm thấy kết quả phù hợp
+                KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y kÃ¡ÂºÂ¿t quÃ¡ÂºÂ£ phÃƒÂ¹ hÃ¡Â»Â£p
               </div>
             ) : (
               filteredConversations.map((conv) => (
@@ -1256,24 +1269,24 @@ export function ChatPage() {
       <Modal
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
-        title={t.common.share || "Chia sẻ"}
+        title={t.common.share || "Chia sÃ¡ÂºÂ»"}
         className="max-w-md"
       >
         <div className="flex flex-col gap-8 py-6">
           <p className="text-sm text-slate-650 dark:text-slate-300 text-center px-4 leading-relaxed font-semibold">
             {sharingMessage && sharingMessage.length > 120 ? sharingMessage.substring(0, 120) + '...' : sharingMessage}
           </p>
-          
+
           <div className="flex items-center justify-center gap-6">
             <button className="flex flex-col items-center gap-2 group cursor-pointer" onClick={() => {
               navigator.clipboard.writeText(sharingMessage || "")
-              toast.success("Đã sao chép liên kết!")
+              toast.success("Ã„ÂÃƒÂ£ sao chÃƒÂ©p liÃƒÂªn kÃ¡ÂºÂ¿t!")
               setShareModalOpen(false)
             }}>
               <div className="size-14 rounded-full bg-slate-950 dark:bg-white flex items-center justify-center shadow-md hover:scale-105 transition-transform">
                 <Link className="size-6 text-white dark:text-slate-950" />
               </div>
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Sao chép link</span>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Sao chÃƒÂ©p link</span>
             </button>
           </div>
         </div>
