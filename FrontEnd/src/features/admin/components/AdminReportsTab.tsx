@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CheckCircle, Eye, HelpCircle } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
@@ -25,64 +25,92 @@ export function AdminReportsTab() {
   const toast = useToast()
   const [selectedTicket, setSelectedTicket] = useState<ReportTicket | null>(null)
 
-  const [tickets, setTickets] = useState<ReportTicket[]>(() => {
-    const defaultTickets: ReportTicket[] = [
-      {
-        id: 'rep-1',
-        reportedFile: 'Violating_Exam_Leaks_2026.pdf',
-        reportedFileId: 'doc-4',
-        reporter: 'Sarah Jenkins',
-        reporterEmail: 'sarah.j@school.edu',
-        timestamp: '2026-05-25 10:15',
-        reason: 'Tài liệu này chứa nội dung rò rỉ đề thi cuối kỳ, vi phạm quy chế học tập nghiêm trọng.',
-        status: 'pending'
-      },
-      {
-        id: 'rep-2',
-        reportedFile: 'Unfinished_Physics_Draft.docx',
-        reportedFileId: 'doc-6',
-        reporter: 'Emma Watson',
-        reporterEmail: 'emma@example.com',
-        timestamp: '2026-05-23 09:44',
-        reason: 'Tài liệu này sao chép toàn bộ nội dung từ sách giáo trình Physics Mechanics của trường mà chưa được sự cho phép.',
-        status: 'pending'
-      },
-      {
-        id: 'rep-3',
-        reportedFile: 'Spam_Marketing_101.pdf',
-        reportedFileId: 'doc-9',
-        reporter: 'David Kim',
-        reporterEmail: 'david.kim@university.edu',
-        timestamp: '2026-05-22 14:02',
-        reason: 'Quảng cáo khóa học đa cấp không liên quan đến học thuật, làm rác không gian chung.',
-        status: 'resolved'
-      },
-      {
-        id: 'rep-4',
-        reportedFile: 'Math_Calculus_Notes.pdf',
-        reportedFileId: 'doc-10',
-        reporter: 'Huynh Duy Binh',
-        reporterEmail: 'binh@example.com',
-        timestamp: '2026-05-20 16:30',
-        reason: 'Nhầm lẫn về bản quyền, đây thực tế là tài liệu cá nhân tự biên soạn của tôi bị người khác chia sẻ lại.',
-        status: 'ignored'
+  const defaultTickets: ReportTicket[] = [
+    {
+      id: 'rep-1',
+      reportedFile: 'Violating_Exam_Leaks_2026.pdf',
+      reportedFileId: 'doc-4',
+      reporter: 'Sarah Jenkins',
+      reporterEmail: 'sarah.j@school.edu',
+      timestamp: '2026-05-25 10:15',
+      reason: 'Tài liệu này chứa nội dung rò rỉ đề thi cuối kỳ, vi phạm quy chế học tập nghiêm trọng.',
+      status: 'pending'
+    },
+    {
+      id: 'rep-2',
+      reportedFile: 'Unfinished_Physics_Draft.docx',
+      reportedFileId: 'doc-6',
+      reporter: 'Emma Watson',
+      reporterEmail: 'emma@example.com',
+      timestamp: '2026-05-23 09:44',
+      reason: 'Tài liệu này sao chép toàn bộ nội dung từ sách giáo trình Physics Mechanics của trường mà chưa được sự cho phép.',
+      status: 'pending'
+    },
+    {
+      id: 'rep-3',
+      reportedFile: 'Spam_Marketing_101.pdf',
+      reportedFileId: 'doc-9',
+      reporter: 'David Kim',
+      reporterEmail: 'david.kim@university.edu',
+      timestamp: '2026-05-22 14:02',
+      reason: 'Quảng cáo khóa học đa cấp không liên quan đến học thuật, làm rác không gian chung.',
+      status: 'resolved'
+    },
+    {
+      id: 'rep-4',
+      reportedFile: 'Math_Calculus_Notes.pdf',
+      reportedFileId: 'doc-10',
+      reporter: 'Huynh Duy Binh',
+      reporterEmail: 'binh@example.com',
+      timestamp: '2026-05-20 16:30',
+      reason: 'Nhầm lẫn về bản quyền, đây thực tế là tài liệu cá nhân tự biên soạn của tôi bị người khác chia sẻ lại.',
+      status: 'ignored'
+    }
+  ]
+
+  const [tickets, setTickets] = useState<ReportTicket[]>(defaultTickets)
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchReports = async () => {
+      try {
+        const response = await adminService.getReports()
+        if (!isMounted) return
+
+        let localReports: any[] = []
+        if (Array.isArray(response)) {
+          localReports = response
+        } else if (response && Array.isArray(response.content)) {
+          localReports = response.content
+        } else if (response && Array.isArray(response.data)) {
+          localReports = response.data
+        }
+
+        const mappedLocal: ReportTicket[] = localReports.map((r: any) => ({
+          id: String(r.id),
+          reportedFile: r.reportedFile || 'Reported Shared Document',
+          reportedFileId: String(r.documentId),
+          reporter: r.reporterName || 'Student User',
+          reporterEmail: r.reporterEmail,
+          timestamp: r.reportedAt ? r.reportedAt.replace('T', ' ').substring(0, 16) : new Date().toISOString().replace('T', ' ').substring(0, 16),
+          reason: r.reason,
+          status: (r.status as 'pending' | 'resolved' | 'ignored') || 'pending'
+        }))
+
+        setTickets((prev) => {
+          const existingIds = new Set(mappedLocal.map(t => t.id))
+          const filteredDefault = defaultTickets.filter(d => !existingIds.has(d.id))
+          return [...mappedLocal, ...filteredDefault]
+        })
+      } catch (err) {
+        console.error('Failed to fetch admin reports:', err)
       }
-    ]
-
-    const localReports = adminService.getReports()
-    const mappedLocal: ReportTicket[] = localReports.map((r: any) => ({
-      id: r.id,
-      reportedFile: r.reportedFile || 'Reported Shared Document',
-      reportedFileId: r.documentId,
-      reporter: r.reporterName || 'Student User',
-      reporterEmail: r.reporterEmail,
-      timestamp: r.reportedAt ? r.reportedAt.replace('T', ' ').substring(0, 16) : new Date().toISOString().replace('T', ' ').substring(0, 16),
-      reason: r.reason,
-      status: (r.status as 'pending' | 'resolved' | 'ignored') || 'pending'
-    }))
-
-    return [...mappedLocal, ...defaultTickets]
-  })
+    }
+    fetchReports()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // Resolve Action
   const handleResolve = (id: string) => {
@@ -130,7 +158,7 @@ export function AdminReportsTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-              {tickets.map((t) => (
+              {Array.isArray(tickets) && tickets.map((t) => (
                 <tr
                   key={t.id}
                   className="hover:bg-slate-100/70 dark:hover:bg-slate-800/40 even:bg-slate-50/40 dark:even:bg-slate-900/20 transition-all duration-200 group"
