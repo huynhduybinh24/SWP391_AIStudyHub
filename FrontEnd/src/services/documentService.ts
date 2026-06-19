@@ -16,6 +16,7 @@ export interface DocumentResponse {
   ownerName?: string
   ownerEmail?: string
   role?: string
+  status?: string
   createdAt: string
   updatedAt: string
 }

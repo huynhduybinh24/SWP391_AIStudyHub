@@ -158,7 +158,7 @@ const loadUsersFromStorage = (): AdminUser[] => {
     if (saved) {
       try {
         let parsed = JSON.parse(saved);
-        
+
         // If the parsed list doesn't have the new active properties, reset to DEFAULT_MOCK_USERS
         if (parsed.length > 0 && !parsed[0].hasOwnProperty('lastActiveVi')) {
           localStorage.setItem('aiStudyHubUsers', JSON.stringify(DEFAULT_MOCK_USERS));
@@ -414,7 +414,7 @@ export const getAdminStats = async (): Promise<AdminStats> => {
   await randomDelay();
   const currentUsers = loadUsersFromStorage();
   const storageMB = currentUsers.reduce((sum, u) => sum + u.storageUsedMB, 0);
-  
+
   return {
     totalUsers: currentUsers.length,
     activeUsers: currentUsers.filter((u) => u.status === "active").length,
@@ -474,19 +474,19 @@ export const updateUser = async (
   const currentUsers = loadUsersFromStorage();
   const index = currentUsers.findIndex((u) => u.id === userId);
   if (index === -1) throw new Error("User not found");
-  
+
   const user = currentUsers[index];
   if (updates.status === 'inactive' && reason) {
     console.log(`[Email Notification Sent] To: ${user.email} | Subject: Account Suspension Notice | Reason: ${reason}`);
   }
-  
+
   currentUsers[index] = { ...currentUsers[index], ...updates };
   saveUsersToStorage(currentUsers);
 
   // Sync with persistent switcher and active session stores
   if (typeof window !== 'undefined') {
     const email = user.email;
-    
+
     // 1. Sync logged-in accounts switcher (aiStudyHubLoggedInAccounts)
     const loggedInAccountsStr = localStorage.getItem('aiStudyHubLoggedInAccounts');
     if (loggedInAccountsStr) {
@@ -528,7 +528,7 @@ export const updateUser = async (
             activeUser.role = updates.role;
           }
           localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify(activeUser));
-          
+
           // Dynamically require or update Zustand state if window is active
           const { useAuthStore } = await import('@/stores/authStore');
           const currentAuth = useAuthStore.getState().user;
@@ -561,12 +561,12 @@ export const deleteUser = async (userId: string, reason?: string): Promise<{ suc
   const currentUsers = loadUsersFromStorage();
   const index = currentUsers.findIndex((u) => u.id === userId);
   if (index === -1) throw new Error("User not found");
-  
+
   const user = currentUsers[index];
   if (reason) {
     console.log(`[Email Notification Sent] To: ${user.email} | Subject: Account Termination Notice | Reason: ${reason}`);
   }
-  
+
   // Remove from the switcher accounts registry so they disappear from the "Change User" popup modal
   if (typeof window !== 'undefined') {
     try {
@@ -633,12 +633,12 @@ export const updateDocument = async (
   await randomDelay();
   const index = mockDocuments.findIndex((d) => d.id === documentId);
   if (index === -1) throw new Error("Document not found");
-  
+
   const doc = mockDocuments[index];
   if (updates.isFlagged === true && reason) {
     console.log(`[Email Notification Sent] To: ${doc.ownerEmail} | Subject: Document Flagged Notice | Reason: ${reason}`);
   }
-  
+
   mockDocuments[index] = { ...mockDocuments[index], ...updates };
   return { ...mockDocuments[index] };
 };
@@ -652,7 +652,7 @@ export const deleteDocument = async (documentId: string, reason?: string): Promi
   await randomDelay();
   const index = mockDocuments.findIndex((d) => d.id === documentId);
   if (index === -1) throw new Error("Document not found");
-  
+
   const doc = mockDocuments[index];
 
   if (reason) {
@@ -689,57 +689,79 @@ export const deleteDocument = async (documentId: string, reason?: string): Promi
 };
 
 export const approveDocument = async (documentId: string): Promise<AdminDocument> => {
-  try {
-    const response = await apiClient.post(`/admin/documents/${documentId}/approve`);
-    if (response.data) return response.data;
-  } catch (error) {
-    console.warn("Using mock approve document fallback", error);
-  }
-  await randomDelay();
-  const index = mockDocuments.findIndex((d) => d.id === documentId);
-  if (index === -1) throw new Error("Document not found");
-  
-  mockDocuments[index] = {
-    ...mockDocuments[index],
-    status: "approved",
-    aiStatus: mockDocuments[index].aiStatus === "not_analyzed" ? "analyzed" : mockDocuments[index].aiStatus,
+  const response = await apiClient.post(`/admin/documents/${documentId}/approve`);
+  const d = response.data?.data || response.data;
+  return {
+    id: String(d.id),
+    title: d.title,
+    ownerName: d.ownerName || '',
+    ownerEmail: d.ownerEmail || '',
+    fileType: d.fileType?.toLowerCase() || 'pdf',
+    sizeMB: d.fileSize ? Number((d.fileSize / (1024 * 1024)).toFixed(2)) : 0,
+    uploadedAt: d.createdAt ? d.createdAt.split('T')[0] : '',
+    status: d.status?.toLowerCase() || 'approved',
+    aiStatus: d.aiStatus?.toLowerCase() || 'analyzed',
+    category: d.subject || 'General',
+    sharedCount: d.sharedCount || 0,
+    isAiGenerated: d.isAiGenerated || false,
+    aiConfidenceScore: d.aiConfidenceScore || 0,
+    isFlagged: d.isFlagged || false,
+    bannedKeywords: d.bannedKeywords || [],
+    reportCount: d.reportCount || 0,
+    aiRiskLevel: d.aiRiskLevel?.toLowerCase() || 'low',
+    plagiarismScore: d.plagiarismScore || 0,
+    unsafeContentScore: d.unsafeContentScore || 0,
+    spamScore: d.spamScore || 0,
+    uploadSource: d.uploadSource || 'web_upload',
+    visibility: d.visibility || 'PRIVATE'
   };
-  return { ...mockDocuments[index] };
 };
 
 export const rejectDocument = async (documentId: string, reason?: string): Promise<AdminDocument> => {
-  try {
-    const response = await apiClient.post(`/admin/documents/${documentId}/reject`, { reason });
-    if (response.data) return response.data;
-  } catch (error) {
-    console.warn("Using mock reject document fallback", error);
-  }
-  await randomDelay();
-  const index = mockDocuments.findIndex((d) => d.id === documentId);
-  if (index === -1) throw new Error("Document not found");
-  
-  mockDocuments[index] = {
-    ...mockDocuments[index],
-    status: "rejected",
-  };
-  
-  const doc = mockDocuments[index];
+  const response = await apiClient.post(`/admin/documents/${documentId}/reject`, { reason });
+  const d = response.data?.data || response.data;
+
   if (reason) {
-    console.log(`[Email Notification Sent] To: ${doc.ownerEmail} | Subject: Document Rejection Notice | Reason: ${reason}`);
-    
-    userNotificationService.addUserNotification({
-      targetUserEmail: doc.ownerEmail || 'binh@example.com',
-      type: "document_rejected",
-      title: "Document rejected by admin",
-      message: `Your document "${doc.title}" was rejected by admin. Reason: ${reason}`,
-      documentId: doc.id,
-      documentName: doc.title,
-      reason: reason,
-      actionType: "rejected"
-    });
+    try {
+      userNotificationService.addUserNotification({
+        targetUserEmail: d.ownerEmail || 'binh@example.com',
+        type: "document_rejected",
+        title: "Document rejected by admin",
+        message: `Your document "${d.title}" was rejected by admin. Reason: ${reason}`,
+        documentId: d.id,
+        documentName: d.title,
+        reason: reason,
+        actionType: "rejected"
+      });
+    } catch (e) {
+      console.warn("Failed to add user notification for rejection", e);
+    }
   }
-  
-  return { ...mockDocuments[index] };
+
+  return {
+    id: String(d.id),
+    title: d.title,
+    ownerName: d.ownerName || '',
+    ownerEmail: d.ownerEmail || '',
+    fileType: d.fileType?.toLowerCase() || 'pdf',
+    sizeMB: d.fileSize ? Number((d.fileSize / (1024 * 1024)).toFixed(2)) : 0,
+    uploadedAt: d.createdAt ? d.createdAt.split('T')[0] : '',
+    status: d.status?.toLowerCase() || 'approved',
+    aiStatus: d.aiStatus?.toLowerCase() || 'analyzed',
+    category: d.subject || 'General',
+    sharedCount: d.sharedCount || 0,
+    isAiGenerated: d.isAiGenerated || false,
+    aiConfidenceScore: d.aiConfidenceScore || 0,
+    isFlagged: d.isFlagged || false,
+    bannedKeywords: d.bannedKeywords || [],
+    reportCount: d.reportCount || 0,
+    aiRiskLevel: d.aiRiskLevel?.toLowerCase() || 'low',
+    plagiarismScore: d.plagiarismScore || 0,
+    unsafeContentScore: d.unsafeContentScore || 0,
+    spamScore: d.spamScore || 0,
+    uploadSource: d.uploadSource || 'web_upload',
+    visibility: d.visibility || 'PRIVATE'
+  };
 };
 
 export const bulkApproveDocuments = async (documentIds: string[]): Promise<AdminDocument[]> => {
@@ -789,7 +811,7 @@ export const getDashboardSummary = async () => {
     getUsers(),
     getDocuments(),
   ]);
-  
+
   return {
     stats,
     users,
@@ -817,18 +839,21 @@ export const adminService = {
       const response = await apiClient.get('/admin/reports');
       if (response.data) return response.data;
     } catch (error) {
-      console.warn("Using mock reports fallback", error);
+      console.warn("Failed to load reports", error);
     }
-    return reportService.getReports();
+
+    return [];
   },
   updateReportStatus: async (id: string, status: 'pending' | 'resolved' | 'ignored') => {
     try {
       const response = await apiClient.put(`/admin/reports/${id}`, { status });
       if (response.data) return response.data;
     } catch (error) {
-      console.warn("Using mock update report status fallback", error);
+      console.warn("Failed to update report status", error);
+      throw error;
     }
-    return reportService.updateReport(id, { status });
+
+    throw new Error("No response data returned while updating report status");
   },
   getActivityLogs: async () => {
     try {

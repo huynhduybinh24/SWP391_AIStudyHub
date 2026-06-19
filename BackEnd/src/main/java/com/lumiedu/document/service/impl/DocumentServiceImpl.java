@@ -472,6 +472,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .userId(document.getUserId())
                 .ownerName(ownerName)
                 .ownerEmail(ownerEmail)
+                .status(document.getStatus() != null ? document.getStatus() : "PENDING")
                 .tags(tags)
                 .createdAt(document.getCreatedAt())
                 .updatedAt(document.getUpdatedAt())

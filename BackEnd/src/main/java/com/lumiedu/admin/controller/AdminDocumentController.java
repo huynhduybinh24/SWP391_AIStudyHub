@@ -50,4 +50,26 @@ public class AdminDocumentController {
             @RequestBody @Valid AdminDocumentModerationRequest request) {
         return ResponseEntity.ok(adminDocumentService.moderateDocument(id, request));
     }
+
+    // TODO: Protect this endpoint with ADMIN role after security is configured.
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<AdminDocumentResponse> approveDocument(@PathVariable Long id) {
+        AdminDocumentModerationRequest request = AdminDocumentModerationRequest.builder()
+                .status("APPROVED")
+                .build();
+        return ResponseEntity.ok(adminDocumentService.moderateDocument(id, request));
+    }
+
+    // TODO: Protect this endpoint with ADMIN role after security is configured.
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<AdminDocumentResponse> rejectDocument(
+            @PathVariable Long id,
+            @RequestBody(required = false) AdminDocumentModerationRequest requestBody) {
+        String reason = requestBody != null ? requestBody.getReason() : null;
+        AdminDocumentModerationRequest request = AdminDocumentModerationRequest.builder()
+                .status("REJECTED")
+                .reason(reason)
+                .build();
+        return ResponseEntity.ok(adminDocumentService.moderateDocument(id, request));
+    }
 }

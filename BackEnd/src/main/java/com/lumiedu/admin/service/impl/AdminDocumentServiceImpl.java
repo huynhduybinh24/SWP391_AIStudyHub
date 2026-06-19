@@ -113,7 +113,12 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
 
     @Override
     public AdminDocumentResponse moderateDocument(Long id, AdminDocumentModerationRequest request) {
-        // TODO: Map status and moderationReason once columns are configured in Document.java
-        throw new RuntimeException("Document moderation fields are not configured yet.");
+        Document doc = documentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Document not found with id: " + id));
+        doc.setStatus(request.getStatus().toUpperCase());
+        doc.setModerationReason(request.getReason());
+        doc = documentRepository.save(doc);
+        User owner = doc.getUserId() != null ? userRepository.findById(doc.getUserId()).orElse(null) : null;
+        return AdminDocumentMapper.toResponse(doc, owner);
     }
 }
