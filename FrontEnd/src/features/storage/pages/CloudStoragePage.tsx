@@ -27,6 +27,7 @@ import { env } from '@/config/env'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 import { storageService, type StorageUsage } from '@/services/storageService'
+import { documentService } from '@/services/documentService'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
@@ -91,7 +92,7 @@ export function CloudStoragePage() {
   const toast = useToast()
   
   const [storageData, setStorageData] = useState<StorageUsage | null>(null)
-  const [uploads, setUploads] = useState(INITIAL_UPLOADS)
+  const [uploads, setUploads] = useState<any[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [baseUsedStorage, setBaseUsedStorage] = useState(0) // stored in MB
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
@@ -109,6 +110,29 @@ export function CloudStoragePage() {
         .catch(err => {
           console.error("Failed to fetch storage usage:", err)
         })
+
+      documentService.getAllDocuments(Number(user.id))
+        .then(backendDocs => {
+          const mapped = backendDocs.map(doc => {
+            const fileName = doc.fileName || doc.originalFileName || 'Untitled'
+            const { icon, iconColor, bgColor } = getFileExtensionInfo(fileName);
+            return {
+              id: String(doc.id),
+              name: doc.title || fileName,
+              sizeBytes: doc.fileSize || 0,
+              time: doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('vi-VN') : 'Just now',
+              type: doc.fileType || '',
+              icon,
+              iconColor,
+              bgColor,
+              role: doc.role
+            }
+          });
+          setUploads(mapped);
+        })
+        .catch(err => {
+          console.error("Failed to fetch documents for CloudStoragePage:", err);
+        });
     }
   }, [user?.id])
 
@@ -160,9 +184,9 @@ export function CloudStoragePage() {
     },
   ]
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
+    if (files && files.length > 0 && user?.id) {
       const file = files[0];
       const newUploadSizeGB = file.size / (1024 * 1024 * 1024);
       const totalUsedGB = totalUsedMb / 1024;
@@ -174,28 +198,61 @@ export function CloudStoragePage() {
         }
         return;
       }
-      const { icon, iconColor, bgColor } = getFileExtensionInfo(file.name);
       
-      const newUpload = {
-        id: Math.random().toString(36).substring(7),
-        name: file.name,
-        sizeBytes: file.size,
-        time: 'Just now',
-        type: file.name.split('.').pop() || '',
-        icon,
-        iconColor,
-        bgColor
-      };
-      
-      setUploads(prev => [newUpload, ...prev]);
+      try {
+        const docTitle = file.name.includes('.') ? file.name.substring(0, file.name.lastIndexOf('.')) : file.name;
+        const response = await documentService.uploadDocument(
+          file,
+          docTitle,
+          'Uploaded via Cloud Storage',
+          'GENERAL',
+          'PRIVATE',
+          Number(user.id),
+          []
+        );
+
+        const { icon, iconColor, bgColor } = getFileExtensionInfo(file.name);
+        const newUpload = {
+          id: String(response.id),
+          name: response.title || file.name,
+          sizeBytes: file.size,
+          time: 'Just now',
+          type: file.name.split('.').pop() || '',
+          icon,
+          iconColor,
+          bgColor,
+          role: 'owner'
+        };
+
+        setUploads(prev => [newUpload, ...prev]);
+        toast.success('Uploaded successfully');
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to upload file');
+      }
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   }
 
-  const handleDelete = (id: string) => {
-    setUploads(prev => prev.filter(u => u.id !== id));
+  const handleDelete = async (id: string) => {
+    const fileToDelete = uploads.find(u => u.id === id);
+    if (!fileToDelete) return;
+
+    if (fileToDelete.role && fileToDelete.role !== 'owner') {
+      toast.error('Bạn không thể xóa tệp tin được chia sẻ!');
+      return;
+    }
+
+    try {
+      await documentService.deleteDocument(id);
+      setUploads(prev => prev.filter(u => u.id !== id));
+      toast.success('Deleted successfully');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete file');
+    }
   }
 
   const handleUploadClick = () => {

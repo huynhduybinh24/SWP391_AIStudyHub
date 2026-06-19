@@ -26,6 +26,7 @@ public class DocumentResponse {
     private Long userId;
     private String ownerName;
     private String ownerEmail;
+    private String role;
     private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

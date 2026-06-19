@@ -27,6 +27,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
 import { useTranslation } from '@/context/LanguageContext'
 import { storageService, type StorageUsage } from '@/services/storageService'
+import { documentService } from '@/services/documentService'
+import { useToast } from '@/components/ui/Toast'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
@@ -89,7 +91,8 @@ export function StorageExplorerPage() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const { t, language } = useTranslation()
-  
+  const toast = useToast()
+
   const [usage, setUsage] = useState<StorageUsage | null>(null)
 
   useEffect(() => {
@@ -102,6 +105,43 @@ export function StorageExplorerPage() {
           console.error("Failed to fetch storage usage:", err)
         })
     }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id) return
+    const fetchDocs = async () => {
+      try {
+        const backendDocs = await documentService.getAllDocuments(user.id)
+        const mappedFiles = backendDocs.map(doc => {
+          const ext = (doc.fileName || doc.originalFileName || '').split('.').pop()?.toLowerCase() || 'pdf'
+          let icon = FileText
+          let typeLabel = 'PDF'
+          if (ext === 'doc' || ext === 'docx') {
+            icon = FileText
+            typeLabel = 'DOCX'
+          } else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') {
+            icon = FileImage
+            typeLabel = 'Image'
+          }
+
+          return {
+            id: String(doc.id),
+            name: doc.title || doc.fileName || 'Untitled',
+            modified: doc.updatedAt
+              ? `Modified ${new Date(doc.updatedAt).toLocaleDateString('vi-VN')}`
+              : `Modified ${new Date(doc.createdAt).toLocaleDateString('vi-VN')}`,
+            icon,
+            type: typeLabel,
+            aiSummarized: true,
+            role: doc.role
+          }
+        })
+        setFiles(mappedFiles)
+      } catch (err) {
+        console.error("Failed to fetch documents for StorageExplorerPage:", err)
+      }
+    }
+    fetchDocs()
   }, [user?.id])
 
   const totalMb = getStorageLimitByPlan(user?.plan)
@@ -122,13 +162,13 @@ export function StorageExplorerPage() {
   const displayUsedGb = parseFloat(usedGb.toFixed(3))
   const displayTotalGb = parseFloat(totalGb.toFixed(1))
   const [folders, setFolders] = useState(INITIAL_FOLDERS)
-  const [files, setFiles] = useState(INITIAL_FILES)
+  const [files, setFiles] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   const [folderFilter, setFolderFilter] = useState('All Folders')
   const [typeFilter, setTypeFilter] = useState('All Types')
-  
+
   const [showFolderDropdown, setShowFolderDropdown] = useState(false)
   const [showTypeDropdown, setShowTypeDropdown] = useState(false)
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
@@ -173,9 +213,24 @@ export function StorageExplorerPage() {
     setFolders(folders.filter(f => f.id !== id))
   }
 
-  const handleDeleteFile = (id: string, e: React.MouseEvent) => {
+  const handleDeleteFile = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    setFiles(files.filter(f => f.id !== id))
+    const fileToDelete = files.find(f => f.id === id);
+    if (!fileToDelete) return;
+
+    if (fileToDelete.role && fileToDelete.role !== 'owner') {
+      toast.error('Báº¡n khÃ´ng thá»ƒ xÃ³a tá»‡p tin Ä‘Æ°á»£c chia sáº»!');
+      return;
+    }
+
+    try {
+      await documentService.deleteDocument(id);
+      setFiles(files.filter(f => f.id !== id))
+      toast.success('Deleted successfully');
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to delete file');
+    }
   }
 
   const filteredFolders = useMemo(() => {
@@ -251,8 +306,8 @@ export function StorageExplorerPage() {
     <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
       {/* Header Area */}
       <div>
-        <Link 
-          to="/dashboard/storage" 
+        <Link
+          to="/dashboard/storage"
           className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-foreground mb-4 transition-colors"
         >
           <ArrowLeft className="size-4" />
@@ -280,9 +335,9 @@ export function StorageExplorerPage() {
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted" />
-              <input 
-                type="text" 
-                placeholder={t.storageExplorer.findInExplorer} 
+              <input
+                type="text"
+                placeholder={t.storageExplorer.findInExplorer}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-10 pl-9 pr-4 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -290,7 +345,7 @@ export function StorageExplorerPage() {
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none" ref={folderDropdownRef}>
-                <button 
+                <button
                   onClick={() => setShowFolderDropdown(!showFolderDropdown)}
                   className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 justify-between whitespace-nowrap text-foreground"
                 >
@@ -317,7 +372,7 @@ export function StorageExplorerPage() {
               </div>
 
               <div className="relative flex-1 sm:flex-none" ref={typeDropdownRef}>
-                <button 
+                <button
                   onClick={() => setShowTypeDropdown(!showTypeDropdown)}
                   className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 justify-between whitespace-nowrap text-foreground"
                 >
@@ -344,13 +399,13 @@ export function StorageExplorerPage() {
               </div>
 
               <div className="flex items-center h-10 rounded-lg border border-border bg-white dark:bg-slate-900 p-1">
-                <button 
+                <button
                   onClick={() => setViewMode('grid')}
                   className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted hover:text-foreground'}`}
                 >
                   <LayoutGrid className="size-4" />
                 </button>
-                <button 
+                <button
                   onClick={() => setViewMode('list')}
                   className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-primary/10 text-primary' : 'text-muted hover:text-foreground'}`}
                 >
@@ -373,13 +428,13 @@ export function StorageExplorerPage() {
                   <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group">
                     <CardContent className="p-4 flex flex-col h-[120px] justify-between">
                       <div className="flex justify-between items-start">
-                        <div 
-                          className="w-10 h-10 rounded-lg flex items-center justify-center" 
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center"
                           style={{ backgroundColor: isDark ? `${folder.color}22` : folder.bgColor }}
                         >
                           <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
                         </div>
-                        <button 
+                        <button
                           onClick={(e) => handleDeleteFolder(folder.id, e)}
                           className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           title={t.storageExplorer.deleteFolder}
@@ -404,8 +459,8 @@ export function StorageExplorerPage() {
                   <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group">
                     <CardContent className="p-3 flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div 
-                          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" 
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                           style={{ backgroundColor: isDark ? `${folder.color}22` : folder.bgColor }}
                         >
                           <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
@@ -417,7 +472,7 @@ export function StorageExplorerPage() {
                           <span>{t.storageExplorer.itemsCount(folder.itemsCount)}</span>
                           <span>{folder.size}</span>
                         </div>
-                        <button 
+                        <button
                           onClick={(e) => handleDeleteFolder(folder.id, e)}
                           className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           title={t.storageExplorer.deleteFolder}
@@ -442,8 +497,8 @@ export function StorageExplorerPage() {
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredFiles.map((file) => (
-                  <Card 
-                    key={file.id} 
+                  <Card
+                    key={file.id}
                     onClick={() => navigate('/dashboard/storage/explorer/preview')}
                     className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group"
                   >
@@ -455,7 +510,7 @@ export function StorageExplorerPage() {
                           {t.storageExplorer.aiSummarized}
                         </div>
                       )}
-                      <button 
+                      <button
                         onClick={(e) => handleDeleteFile(file.id, e)}
                         className="absolute top-2 right-2 text-muted hover:text-red-500 p-1.5 bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
                         title={t.storageExplorer.deleteFile}
@@ -473,8 +528,8 @@ export function StorageExplorerPage() {
             ) : (
               <div className="flex flex-col gap-3">
                 {filteredFiles.map((file) => (
-                  <Card 
-                    key={file.id} 
+                  <Card
+                    key={file.id}
                     onClick={() => navigate('/dashboard/storage/explorer/preview')}
                     className="p-3 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group"
                   >
@@ -494,7 +549,7 @@ export function StorageExplorerPage() {
                           {t.storageExplorer.aiSummarized}
                         </div>
                       )}
-                      <button 
+                      <button
                         onClick={(e) => handleDeleteFile(file.id, e)}
                         className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         title={t.storageExplorer.deleteFile}
@@ -516,7 +571,7 @@ export function StorageExplorerPage() {
               <Cloud className="size-5 text-primary" />
               <h2 className="font-semibold text-foreground">{t.storageExplorer.storageStatus}</h2>
             </div>
-            
+
             <div className="w-[180px] h-[180px] relative mx-auto">
               {isMounted && (
                 <ResponsiveContainer width="100%" height={180}>
@@ -576,9 +631,9 @@ export function StorageExplorerPage() {
               <p className="text-[11px] text-muted mt-1.5 mb-4 leading-relaxed">
                 {t.storageExplorer.upgradeDesc}
               </p>
-              <Button 
+              <Button
                 onClick={() => setIsPlanModalOpen(true)}
-                variant="secondary" 
+                variant="secondary"
                 className="w-full bg-white dark:bg-slate-950 text-primary dark:text-blue-400 border border-primary/20 dark:border-blue-900/40 hover:bg-primary/5 dark:hover:bg-blue-950/30 h-9 text-sm transition-colors"
               >
                 {t.storageExplorer.viewPlans}
@@ -588,8 +643,8 @@ export function StorageExplorerPage() {
         </Card>
       </div>
 
-      <Modal 
-        isOpen={isPlanModalOpen} 
+      <Modal
+        isOpen={isPlanModalOpen}
         onClose={() => setIsPlanModalOpen(false)}
         title={t.storageExplorer.upgradeModalTitle}
         description={t.storageExplorer.upgradeModalDesc}
@@ -598,7 +653,7 @@ export function StorageExplorerPage() {
           <Card className="border-border dark:border-slate-800 flex flex-col shadow-none">
             <CardContent className="p-6 flex-1 flex flex-col">
               <h3 className="font-bold text-lg mb-2 text-foreground">{t.storageExplorer.basic}</h3>
-              <div className="text-3xl font-bold mb-4 text-foreground">{language === 'vi' ? '0đ' : '0 VND'}<span className="text-sm font-normal text-muted">{t.storageExplorer.mo}</span></div>
+              <div className="text-3xl font-bold mb-4 text-foreground">{language === 'vi' ? '0Ä‘' : '0 VND'}<span className="text-sm font-normal text-muted">{t.storageExplorer.mo}</span></div>
               <ul className="space-y-3 mb-6 flex-1">
                 <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> {t.storageExplorer.storageItem(user?.plan === 'pro' ? '50 GB' : '10 GB')}</li>
                 <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> {t.storageExplorer.basicAiTools}</li>
@@ -615,7 +670,7 @@ export function StorageExplorerPage() {
                 <h3 className="font-bold text-lg text-primary dark:text-blue-400">{t.storageExplorer.pro}</h3>
                 <Zap className="size-4 text-primary fill-primary/20 dark:text-blue-400 dark:fill-blue-400/20" />
               </div>
-              <div className="text-3xl font-bold mb-4 text-foreground">{language === 'vi' ? '200.000đ' : '200,000 VND'}<span className="text-sm font-normal text-muted">{t.storageExplorer.mo}</span></div>
+              <div className="text-3xl font-bold mb-4 text-foreground">{language === 'vi' ? '200.000Ä‘' : '200,000 VND'}<span className="text-sm font-normal text-muted">{t.storageExplorer.mo}</span></div>
               <ul className="space-y-3 mb-6 flex-1">
                 <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> {t.storageExplorer.storageItem('1 TB')}</li>
                 <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> {t.storageExplorer.advSummarization}</li>

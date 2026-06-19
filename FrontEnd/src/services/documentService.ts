@@ -15,6 +15,7 @@ export interface DocumentResponse {
   checksum: string
   ownerName?: string
   ownerEmail?: string
+  role?: string
   createdAt: string
   updatedAt: string
 }

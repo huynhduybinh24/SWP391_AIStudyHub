@@ -12,4 +12,5 @@ public interface DocumentShareRepository extends JpaRepository<DocumentShare, Lo
     List<DocumentShare> findByDocumentId(Long documentId);
     Optional<DocumentShare> findByDocumentIdAndShareeEmail(Long documentId, String shareeEmail);
     void deleteByDocumentIdAndShareeEmail(Long documentId, String shareeEmail);
+    List<DocumentShare> findByShareeEmail(String shareeEmail);
 }
