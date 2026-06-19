@@ -84,14 +84,17 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         List<ChatMessageDto> messages = new ArrayList<>();
         messages.add(ChatMessageDto.builder()
                 .role("system")
-                .content("You are a helpful educational AI assistant. Summarize the user's document in the requested language: " + lang + ". "
-                        + "You must respond with a JSON object containing exactly two fields: "
-                        + "'summaryText' (a paragraph summary of the document) and "
-                        + "'summaryBullets' (a JSON array of key bullet points, max 5 bullets).")
+                .content(
+                        "You are a helpful educational AI assistant. Summarize the user's document in the requested language: "
+                                + lang + ". "
+                                + "You must respond with a JSON object containing exactly two fields: "
+                                + "'summaryText' (a paragraph summary of the document) and "
+                                + "'summaryBullets' (a JSON array of key bullet points, max 5 bullets).")
                 .build());
         messages.add(ChatMessageDto.builder()
                 .role("user")
-                .content("Document Subject: " + doc.getSubject() + "\nDocument Title: " + doc.getTitle() + "\n\nContent:\n" + context)
+                .content("Document Subject: " + doc.getSubject() + "\nDocument Title: " + doc.getTitle()
+                        + "\n\nContent:\n" + context)
                 .build());
 
         // 5. Call OpenAI
@@ -117,7 +120,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             System.err.println("Failed to parse summary JSON response: " + e.getMessage());
             // Fallback
             summaryText = response.getContent();
-            summaryBulletsJson = gson.toJson(Arrays.asList("Tổng quan kiến thức cốt lõi.", "Chi tiết phương pháp và bài học."));
+            summaryBulletsJson = gson
+                    .toJson(Arrays.asList("Tổng quan kiến thức cốt lõi.", "Chi tiết phương pháp và bài học."));
         }
 
         AiSummary summary = AiSummary.builder()
@@ -157,7 +161,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 }
             }
             java.util.Collections.sort(sessionDocIds);
-            
+
             if (sessionDocIds.equals(sortedIds)) {
                 return s;
             }
@@ -196,11 +200,6 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .build();
 
         return aiChatSessionRepository.save(session);
-    }
-
-    @Override
-    public List<AiChatSession> getUserSessions(Long userId) {
-        return aiChatSessionRepository.findByUserId(userId);
     }
 
     @Override
@@ -243,7 +242,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             Document doc = documentRepository.findById(docId).orElse(null);
             if (doc != null) {
                 docMetaContext.append("Tài liệu: ").append(doc.getTitle());
-                if (doc.getSubject() != null) docMetaContext.append(" | Môn học: ").append(doc.getSubject());
+                if (doc.getSubject() != null)
+                    docMetaContext.append(" | Môn học: ").append(doc.getSubject());
                 if (doc.getDescription() != null && !doc.getDescription().isEmpty()) {
                     docMetaContext.append("\nMô tả: ").append(doc.getDescription());
                 }
@@ -277,10 +277,12 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 + "Help the student understand and discuss their documents. "
                 + "Answer primarily in Vietnamese unless the user writes in another language. ";
         if (!docMetaContext.isEmpty()) {
-            systemInstruction += "\n\nThe student has attached the following documents for this session:\n" + docMetaContext;
+            systemInstruction += "\n\nThe student has attached the following documents for this session:\n"
+                    + docMetaContext;
         }
         if (!ragContext.isEmpty()) {
-            systemInstruction += "\n\nHere is relevant content extracted from the documents to help you answer:\n" + ragContext;
+            systemInstruction += "\n\nHere is relevant content extracted from the documents to help you answer:\n"
+                    + ragContext;
         } else if (!docMetaContext.isEmpty()) {
             systemInstruction += "\n\nNote: The full text of the documents is not yet available for search, but please use the document titles and metadata above to help the student as best you can.";
         }
@@ -340,9 +342,10 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         List<ChatMessageDto> messages = new ArrayList<>();
         messages.add(ChatMessageDto.builder()
                 .role("system")
-                .content("You are an educational AI assistant. Create 5 useful study flashcards based on the document text. "
-                        + "You must respond with a JSON object containing a 'flashcards' array. "
-                        + "Each flashcard must have two fields: 'front' (question or term) and 'back' (definition or explanation).")
+                .content(
+                        "You are an educational AI assistant. Create 5 useful study flashcards based on the document text. "
+                                + "You must respond with a JSON object containing a 'flashcards' array. "
+                                + "Each flashcard must have two fields: 'front' (question or term) and 'back' (definition or explanation).")
                 .build());
         messages.add(ChatMessageDto.builder()
                 .role("user")
@@ -366,8 +369,10 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             }
         } catch (Exception e) {
             System.err.println("Failed to parse flashcards JSON response: " + e.getMessage());
-            list.add(new Flashcard(null, documentId, "Mẫu thiết kế Singleton dùng để làm gì?", "Đảm bảo một lớp chỉ có duy nhất một thực thể."));
-            list.add(new Flashcard(null, documentId, "Mẫu thiết kế Observer hoạt động theo cơ chế nào?", "Mối quan hệ phụ thuộc một-nhiều giữa các đối tượng."));
+            list.add(new Flashcard(null, documentId, "Mẫu thiết kế Singleton dùng để làm gì?",
+                    "Đảm bảo một lớp chỉ có duy nhất một thực thể."));
+            list.add(new Flashcard(null, documentId, "Mẫu thiết kế Observer hoạt động theo cơ chế nào?",
+                    "Mối quan hệ phụ thuộc một-nhiều giữa các đối tượng."));
         }
 
         return flashcardRepository.saveAll(list);
@@ -401,7 +406,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         List<ChatMessageDto> messages = new ArrayList<>();
         messages.add(ChatMessageDto.builder()
                 .role("system")
-                .content("You are an educational AI assistant. Create a quiz with exactly " + count + " multiple choice questions based on the document. "
+                .content("You are an educational AI assistant. Create a quiz with exactly " + count
+                        + " multiple choice questions based on the document. "
                         + "The difficulty level should be: " + difficulty + ". "
                         + "Custom request: " + customPrompt + ". "
                         + "You must respond with a JSON object containing a 'questions' array. "
@@ -497,7 +503,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         for (QuizQuestion qq : selectedQuestions) {
             List<String> optionsList;
             try {
-                optionsList = gson.fromJson(qq.getOptions(), new com.google.gson.reflect.TypeToken<List<String>>(){}.getType());
+                optionsList = gson.fromJson(qq.getOptions(), new com.google.gson.reflect.TypeToken<List<String>>() {
+                }.getType());
             } catch (Exception e) {
                 optionsList = Arrays.asList("Option A", "Option B", "Option C", "Option D");
             }
@@ -577,13 +584,15 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     @Override
-    public StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks, List<Long> documentIds) {
+    public StudyPlan generateStudyPlan(Long userId, String subject, String goal, int durationWeeks,
+            List<Long> documentIds) {
         StringBuilder docContextBuilder = new StringBuilder();
         Set<Document> sourceDocs = new HashSet<>();
 
         if (documentIds != null && !documentIds.isEmpty()) {
             for (Long documentId : documentIds) {
-                if (documentId == null) continue;
+                if (documentId == null)
+                    continue;
                 Document doc = documentRepository.findById(documentId).orElse(null);
                 if (doc != null) {
                     sourceDocs.add(doc);
@@ -594,7 +603,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                     }
                     for (int i = 0; i < Math.min(chunks.size(), 2); i++) {
                         docContextBuilder.append("[").append(doc.getTitle()).append("]: ")
-                                         .append(chunks.get(i).getContent()).append("\n");
+                                .append(chunks.get(i).getContent()).append("\n");
                     }
                 }
             }
@@ -604,19 +613,20 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         List<ChatMessageDto> messages = new ArrayList<>();
         messages.add(ChatMessageDto.builder()
                 .role("system")
-                .content("You are an expert academic counselor. Generate a structured week-by-week study plan roadmap in markdown. "
-                        + "You must respond with a JSON object containing: "
-                        + "'title' (a concise name for the plan), "
-                        + "'subject' (the academic subject), "
-                        + "'planText' (the markdown roadmap text, including weekly goals and active recall milestones), "
-                        + "'curriculum' (a JSON array representing modules of study). "
-                        + "Each module object in the 'curriculum' array must contain:\n"
-                        + "- 'title' (module/week title),\n"
-                        + "- 'description' (module description),\n"
-                        + "- 'lessons' (array of lesson objects, each having 'title', 'duration' (e.g., '25 min'), "
-                        + "'type' ('reading' or 'quiz' or 'video' or 'practice'), "
-                        + "'linkedDocName' (if reading type, matching the reference material filename, e.g. Co_Hoc_Luong_Tu_Chuong2.pdf), "
-                        + "and 'pageRange' (optional page range, e.g., 'Trang 15 - 30')).")
+                .content(
+                        "You are an expert academic counselor. Generate a structured week-by-week study plan roadmap in markdown. "
+                                + "You must respond with a JSON object containing: "
+                                + "'title' (a concise name for the plan), "
+                                + "'subject' (the academic subject), "
+                                + "'planText' (the markdown roadmap text, including weekly goals and active recall milestones), "
+                                + "'curriculum' (a JSON array representing modules of study). "
+                                + "Each module object in the 'curriculum' array must contain:\n"
+                                + "- 'title' (module/week title),\n"
+                                + "- 'description' (module description),\n"
+                                + "- 'lessons' (array of lesson objects, each having 'title', 'duration' (e.g., '25 min'), "
+                                + "'type' ('reading' or 'quiz' or 'video' or 'practice'), "
+                                + "'linkedDocName' (if reading type, matching the reference material filename, e.g. Co_Hoc_Luong_Tu_Chuong2.pdf), "
+                                + "and 'pageRange' (optional page range, e.g., 'Trang 15 - 30')).")
                 .build());
 
         String userQuery = "Subject: " + subject + "\nGoal: " + goal + "\nDuration: " + durationWeeks + " weeks.";
@@ -689,33 +699,33 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         if (documentIds == null || documentIds.isEmpty()) {
             return "";
         }
-        
+
         List<DocumentChunk> chunks = new java.util.ArrayList<>();
         for (Long documentId : documentIds) {
             chunks.addAll(documentChunkRepository.findByDocumentId(documentId));
         }
-        
+
         if (chunks.isEmpty()) {
             return "";
         }
 
         String[] keywords = query.toLowerCase().split("\\s+");
-        
+
         class ChunkScore implements Comparable<ChunkScore> {
             DocumentChunk chunk;
             int score;
-            
+
             ChunkScore(DocumentChunk chunk, int score) {
                 this.chunk = chunk;
                 this.score = score;
             }
-            
+
             @Override
             public int compareTo(ChunkScore o) {
                 return Integer.compare(o.score, this.score); // descending
             }
         }
-        
+
         List<ChunkScore> scoredChunks = new java.util.ArrayList<>();
         for (DocumentChunk chunk : chunks) {
             int score = 0;
@@ -729,7 +739,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 scoredChunks.add(new ChunkScore(chunk, score));
             }
         }
-        
+
         if (scoredChunks.isEmpty()) {
             StringBuilder fallback = new StringBuilder();
             for (Long documentId : documentIds) {
@@ -740,7 +750,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             }
             return fallback.toString();
         }
-        
+
         java.util.Collections.sort(scoredChunks);
         StringBuilder result = new StringBuilder();
         int limit = Math.min(scoredChunks.size(), 5);
@@ -749,7 +759,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             result.append("--- Source Document ID: ").append(c.getDocumentId()).append(" ---\n");
             result.append(c.getContent()).append("\n\n");
         }
-        
+
         return result.toString();
     }
 }

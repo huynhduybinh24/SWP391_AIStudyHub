@@ -40,5 +40,4 @@ public interface AiAssistantService {
 
     List<StudyPlan> getStudyPlans(Long userId);
 
-    List<AiChatSession> getUserSessions(Long userId);
 }
