@@ -267,7 +267,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={language === 'vi' ? 'Giáo trình' : language === 'ja' ? 'カリキュラム' : language === 'ko' ? '커리큘럼' : 'Curriculum'}
+      title={language === 'vi' ? 'Lộ trình' : language === 'ja' ? 'カリキュラム' : language === 'ko' ? '커리큘럼' : 'Curriculum'}
       description={localizedTitle}
       className="max-w-2xl"
     >
@@ -276,7 +276,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
         <div className="mb-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 flex flex-col gap-1.5">
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-450 dark:text-slate-500 flex items-center gap-1.5">
             <Link2 className="size-3.5 text-indigo-500 dark:text-indigo-400" />
-            {language === 'vi' ? 'TÀI LIỆU THAM KHẢO LIÊN KẾT' : language === 'ja' ? '関連する参照ドキュメント' : language === 'ko' ? '연결된 참조 문서' : 'LINKED REFERENCE DOCUMENTS'}
+            {language === 'vi' ? 'TÀI LIỆU LIÊN KẾT' : language === 'ja' ? '関連する参照ドキュメント' : language === 'ko' ? '연결된 참조 문서' : 'LINKED REFERENCE DOCUMENTS'}
           </span>
           <div className="flex flex-wrap gap-1.5">
             {plan.linkedDocs.map((docName, idx) => (
@@ -306,7 +306,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
         {[
           { icon: BookOpen, label: language === 'vi' ? 'Học phần' : language === 'ja' ? 'モジュール' : language === 'ko' ? '모듈' : 'Modules', value: String(plan.modules.length), color: 'text-[#2557E8] bg-[#e5eeff]' },
           { icon: Link2, label: language === 'vi' ? 'Bài học' : language === 'ja' ? 'レッスン' : language === 'ko' ? '레슨' : 'Lessons', value: `${completedCount}/${totalCount}`, color: 'text-emerald-700 bg-emerald-50' },
-          { icon: Clock, label: language === 'vi' ? 'Ước lượng' : language === 'ja' ? '予測時間' : language === 'ko' ? '예상 시간' : 'Est. Time', value: `${plan.hoursEst}h`, color: 'text-amber-700 bg-amber-50' },
+          { icon: Clock, label: language === 'vi' ? 'Giờ ước tính' : language === 'ja' ? '予測時間' : language === 'ko' ? '예상 시간' : 'Est. Time', value: `${plan.hoursEst}h`, color: 'text-amber-700 bg-amber-50' },
         ].map(({ icon: Icon, label, value, color }) => (
           <div key={label} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
@@ -443,7 +443,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
             className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white"
             onClick={onClose}
           >
-            {language === 'vi' ? '🎉 Hoàn tất giáo trình!' : language === 'ja' ? '🎉 カリキュラム完了！' : language === 'ko' ? '🎉 커리큘럼 완료!' : '🎉 Curriculum Complete!'}
+            {language === 'vi' ? '🎉 Hoàn tất lộ trình!' : language === 'ja' ? '🎉 カリキュラム完了！' : language === 'ko' ? '🎉 커리큘럼 완료!' : '🎉 Curriculum Complete!'}
           </Button>
         ) : (
           <Button

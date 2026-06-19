@@ -131,25 +131,25 @@ function NotificationCard({
   const localized = (() => {
     if (id === 'ai-summary') {
       return {
-        title: language === 'vi' ? 'Báº£n tÃ³m táº¯t AI Ä‘Ã£ sáºµn sÃ ng' : language === 'ja' ? 'AIè¦ç´„ã®æº–å‚™å®Œäº†' : language === 'ko' ? 'AI ìš”ì•½ ì™„ë£Œ' : 'AI Summary Ready',
+        title: language === 'vi' ? 'Bản tóm tắt AI đã sẵn sàng' : language === 'ja' ? 'AIè¦ç´„ã®æº–å‚™å®Œäº†' : language === 'ko' ? 'AI ìš”ì•½ ì™„ë£Œ' : 'AI Summary Ready',
         description: (
           <>
-            {language === 'vi' ? 'Báº£n tÃ³m táº¯t toÃ n diá»‡n cho tÃ i liá»‡u ' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆ ' : language === 'ko' ? 'ë‹¤ìŒ ë¬¸ì„œì— ëŒ€í•œ í¬ê´„ì ì¸ ìš”ì•½ ' : 'The comprehensive summary for your document '}
+            {language === 'vi' ? 'Bản tóm tắt toàn diện cho tài liệu ' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆ ' : language === 'ko' ? 'ë‹¤ìŒ ë¬¸ì„œì— ëŒ€í•œ í¬ê´„ì ì¸ ìš”ì•½ ' : 'The comprehensive summary for your document '}
             <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
               "Advanced Neuroscience Syllabus 2024.pdf"
             </strong>{' '}
-            {language === 'vi' ? 'cá»§a báº¡n Ä‘Ã£ hoÃ n thÃ nh vÃ  sáºµn sÃ ng Ä‘á»ƒ xem láº¡i.' : language === 'ja' ? 'ã®åŒ…æ‹¬çš„ãªè¦ç´„ãŒå®Œäº†ã—ã€ç¢ºèªã®æº–å‚™ãŒæ•´ã„ã¾ã—ãŸã€‚' : language === 'ko' ? 'ì´(ê°€) ì™„ë£Œë˜ì–´ ê²€í† í•  ì¤€ë¹„ê°€ ë˜ì—ˆìŠµë‹ˆë‹¤.' : 'is now complete and ready for review.'}
+            {language === 'vi' ? 'của bạn đã hoàn thành và sẵn sàng để xem lại.' : language === 'ja' ? 'ã®åŒ…æ‹¬çš„ãªè¦ç´„ãŒå®Œäº†ã—ã€ç¢ºèªã®æº–å‚™ãŒæ•´ã„ã¾ã—ãŸã€‚' : language === 'ko' ? 'ì´(ê°€) ì™„ë£Œë˜ì–´ ê²€í† í•  ì¤€ë¹„ê°€ ë˜ì—ˆìŠµë‹ˆë‹¤.' : 'is now complete and ready for review.'}
           </>
         ),
-        actionText: language === 'vi' ? 'Xem báº£n tÃ³m táº¯t' : language === 'ja' ? 'è¦ç´„ã‚’è¡¨ç¤º' : language === 'ko' ? 'ìš”ì•½ ë³´ê¸°' : 'View Summary',
+        actionText: language === 'vi' ? 'Xem bản tóm tắt' : language === 'ja' ? 'è¦ç´„ã‚’è¡¨ç¤º' : language === 'ko' ? 'ìš”ì•½ ë³´ê¸°' : 'View Summary',
       }
     }
     if (id === 'shared-folder') {
       return {
-        title: language === 'vi' ? 'Sarah Jenkins Ä‘Ã£ chia sáº» má»™t thÆ° má»¥c vá»›i báº¡n' : language === 'ja' ? 'Sarah Jenkins ãŒãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ã‚’å…±æœ‰ã—ã¾ã—ãŸ' : language === 'ko' ? 'Sarah Jenkinsê°€ í´ë”ë¥¼ ê³µìœ í–ˆìŠµë‹ˆë‹¤' : 'Sarah Jenkins shared a folder with you',
+        title: language === 'vi' ? 'Sarah Jenkins đã chia sẻ một thư mục với bạn' : language === 'ja' ? 'Sarah Jenkins ãŒãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ã‚’å…±æœ‰ã—ã¾ã—ãŸ' : language === 'ko' ? 'Sarah Jenkinsê°€ í´ë”ë¥¼ ê³µìœ í–ˆìŠµë‹ˆë‹¤' : 'Sarah Jenkins shared a folder with you',
         description: (
           <>
-            {language === 'vi' ? 'ThÆ° má»¥c: ' : language === 'ja' ? 'ãƒ•ã‚©ãƒ«ãƒ€ãƒ¼: ' : language === 'ko' ? 'í´ë”: ' : 'Folder: ' }
+            {language === 'vi' ? 'Thư mục: ' : language === 'ja' ? 'ãƒ•ã‚©ãƒ«ãƒ€ãƒ¼: ' : language === 'ko' ? 'í´ë”: ' : 'Folder: ' }
             <span className="font-semibold text-[#0b1c30] dark:text-slate-100">Group Project Research Materials</span>
           </>
         ),
@@ -157,12 +157,12 @@ function NotificationCard({
     }
     if (id === 'emily') {
       return {
-        title: language === 'vi' ? 'Emily R. Ä‘Ã£ nháº¯c Ä‘áº¿n báº¡n' : language === 'ja' ? 'Emily R. ãŒã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸ' : language === 'ko' ? 'Emily R.ë‹˜ì´ ë‹¹ì‹ ì„ ì–¸ê¸‰í–ˆìŠµë‹ˆë‹¤' : 'Emily R. mentioned you',
+        title: language === 'vi' ? 'Emily R. đã nhắc đến bạn' : language === 'ja' ? 'Emily R. ãŒã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸ' : language === 'ko' ? 'Emily R.ë‹˜ì´ ë‹¹ì‹ ì„ ì–¸ê¸‰í–ˆìŠµë‹ˆë‹¤' : 'Emily R. mentioned you',
         description: (
           <>
             <span className="text-[#3155F6] dark:text-blue-400 font-semibold">@User</span>
             {language === 'vi'
-              ? ', báº¡n nghÄ© tháº¿ nÃ o vá» pháº§n phÆ°Æ¡ng phÃ¡p luáº­n á»Ÿ trang 4 cá»§a bÃ i bÃ¡o "Cognitive Science"?'
+              ? ', bạn nghĩ thế nào về phần phương pháp luận ở trang 4 của bài báo "Cognitive Science"?'
               : language === 'ja'
               ? 'ã€"Cognitive Science"ã®è«–æ–‡ì˜ 4ãƒšãƒ¼ã‚¸ç›®ã«ã‚ã‚‹æ–¹æ³•è«–ã‚»ã‚¯ã‚·ãƒ§ãƒ³ã«ã¤ã„ã¦ã©ã†æ€ã„ã¾ã™ã‹ï¼Ÿ'
               : language === 'ko'
@@ -170,43 +170,43 @@ function NotificationCard({
               : ", what do you think about the methodology section on page 4 of the 'Cognitive Science' paper?"}
           </>
         ),
-        actionText: language === 'vi' ? 'Pháº£n há»“i' : language === 'ja' ? 'è¿”ä¿¡' : language === 'ko' ? 'ë‹µìž¥' : 'Reply',
+        actionText: language === 'vi' ? 'Phản hồi' : language === 'ja' ? 'è¿”ä¿¡' : language === 'ko' ? 'ë‹µìž¥' : 'Reply',
       }
     }
     if (id === 'all-3') {
       return {
-        title: language === 'vi' ? 'ÄÃ£ nháº¯c Ä‘áº¿n báº¡n' : language === 'ja' ? 'ã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸ' : language === 'ko' ? 'ì–¸ê¸‰ë¨' : 'Mentioned You',
+        title: language === 'vi' ? 'Đã nhắc đến bạn' : language === 'ja' ? 'ã ‚ã ªã Ÿã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã —ã ¾ã —ã Ÿ' : language === 'ko' ? 'ì–¸ê¸‰ë ¨' : 'Mentioned You',
         description: (
           <>
             {language === 'vi'
-              ? 'Emily R. Ä‘Ã£ nháº¯c Ä‘áº¿n báº¡n trong má»™t bÃ¬nh luáº­n á»Ÿ '
+              ? 'Emily R. đã nhắc đến bạn trong má»™t bÃ¬nh luáº­n á»Ÿ '
               : language === 'ja'
               ? 'Emily R. ãŒã‚³ãƒ¡ãƒ³ãƒˆã§ã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸï¼š'
               : language === 'ko'
               ? 'Emily R.ë‹˜ì´ ë‹¤ìŒ ë¬¸ì„œì˜ ëŒ“ê¸€ì—ì„œ ë‹¹ì‹ ì„ ì–¸ê¸‰í–ˆìŠµë‹ˆë‹¤: '
               : 'Emily R. mentioned you in a comment on '}
             <span className="text-[#3155F6] dark:text-blue-400 hover:underline cursor-pointer font-semibold">
-              {language === 'vi' ? 'Ghi chÃº bÃ i giáº£ng Tuáº§n 4.' : language === 'ja' ? 'è¬›ç¾©ãƒŽãƒ¼ãƒˆç¬¬4é€±ã€‚' : language === 'ko' ? 'ê°•ì˜ ë…¸íŠ¸ 4ì£¼ì°¨.' : 'Lecture Notes Week 4.'}
+              {language === 'vi' ? 'Ghi chú bài giảng Tuần 4.' : language === 'ja' ? 'è¬›ç¾©ãƒŽãƒ¼ãƒˆç¬¬4é€±ã€‚' : language === 'ko' ? 'ê°•ì˜ ë…¸íŠ¸ 4ì£¼ì°¨.' : 'Lecture Notes Week 4.'}
             </span>
           </>
         ),
         quote: language === 'vi'
-          ? '@You báº¡n cÃ³ thá»ƒ xÃ¡c minh cÃ¡c cÃ´ng thá»©c Ä‘Æ°á»£c sá»­ dá»¥ng trong pháº§n 3 khÃ´ng? ChÃºng cÃ³ váº» hÆ¡i khÃ¡c so vá»›i sÃ¡ch giÃ¡o khoa.'
+          ? '@You bạn có thể xác minh các công thức được sử dụng trong phần 3 không? Chúng có vẻ hơi khác so với sách giáo khoa.'
           : language === 'ja'
           ? '@You ã‚»ã‚¯ã‚·ãƒ§ãƒ³3ã§ä½¿ç”¨ã•ã‚Œã¦ã„ã‚‹æ•°å¼ã‚’ç¢ºèªã—ã¦ã„ãŸã ã‘ã¾ã™ã‹ï¼Ÿæ•™ç§‘æ›¸ã¨å°‘ã—ç•°ãªã‚‹ã‚ˆã†ã§ã™ã€‚'
           : language === 'ko'
           ? '@You ì„¹ì…˜ 3ì— ì‚¬ìš©ëœ ê³µì‹ì„ í™•ì¸í•´ ì£¼ì‹œê² ìŠµë‹ˆê¹Œ? êµê³¼ì„œì™€ ì•½ê°„ ë‹¤ë¥¸ ê²ƒ ê°™ìŠµë‹ˆë‹¤.'
           : '@You could you verify the formulas used in section 3? They seem slightly different from the textbook.',
-        actionText: language === 'vi' ? 'Pháº£n há»“i' : language === 'ja' ? 'è¿”ä¿¡' : language === 'ko' ? 'ë‹µìž¥' : 'Reply',
+        actionText: language === 'vi' ? 'Phản hồi' : language === 'ja' ? 'è¿”ä¿¡' : language === 'ko' ? 'ë‹µìž¥' : 'Reply',
       }
     }
     if (id === 'security-alert') {
       return {
-        title: language === 'vi' ? 'Cáº£nh bÃ¡o báº£o máº­t: ÄÄƒng nháº­p má»›i' : language === 'ja' ? 'ã‚»ã‚­ãƒ¥ãƒªãƒ†ã‚£è­¦å‘Š: æ–°è¦ãƒ­ã‚°ã‚¤ãƒ³' : language === 'ko' ? 'ë³´ì•ˆ ê²½ê³ : ìƒˆë¡œìš´ ë¡œê·¸ì¸' : 'Security Alert: New Login',
+        title: language === 'vi' ? 'Cảnh báo bảo mật: Đăng nhập mới' : language === 'ja' ? 'ã‚»ã‚­ãƒ¥ãƒªãƒ†ã‚£è­¦å‘Š: æ–°è¦ ãƒ­ã‚°ã‚¤ãƒ³' : language === 'ko' ? 'ë³´ì•ˆ ê²½ê³ : ìƒˆë¡œìš´ ë¡œê·¸ì ¸' : 'Security Alert: New Login',
         description: (
           <>
             {language === 'vi'
-              ? 'Má»™t Ä‘Äƒng nháº­p má»›i Ä‘Ã£ Ä‘Æ°á»£c phÃ¡t hiá»‡n trÃªn tÃ i khoáº£n cá»§a báº¡n tá»« trÃ¬nh duyá»‡t Chrome trÃªn thiáº¿t bá»‹ MacOS. Náº¿u Ä‘Ã¢y khÃ´ng pháº£i lÃ  báº¡n, vui lÃ²ng báº£o máº­t tÃ i khoáº£n ngay láº­p tá»©c.'
+              ? 'Một đăng nhập mới đã được phát hiện trên tài khoản của bạn từ trình duyệt Chrome trên thiết bị MacOS. Nếu đây không phải là bạn, vui lòng bảo mật tài khoản ngay lập tức.'
               : language === 'ja'
               ? 'MacOSãƒ‡ãƒã‚¤ã‚¹ã®Chromeãƒ–ãƒ©ã‚¦ã‚¶ã‹ã‚‰ã‚¢ã‚«ã‚¦ãƒ³ãƒˆã¸ã®æ–°ã—ã„ãƒ­ã‚°ã‚¤ãƒ³ãŒæ¤œå‡ºã•ã‚Œã¾ã—ãŸã€‚ã“ã‚ŒãŒã”è‡ªèº«ã§ãªã„å ´åˆã¯ã€ã™ãã«ã‚¢ã‚«ã‚¦ãƒ³ãƒˆã‚’ä¿è­·ã—ã¦ãã ã•ã„ã€‚'
               : language === 'ko'
@@ -218,21 +218,21 @@ function NotificationCard({
     }
     if (id === 'study-plan') {
       return {
-        title: language === 'vi' ? 'ÄÃ£ táº¡o káº¿ hoáº¡ch há»c táº­p' : language === 'ja' ? 'å­¦ç¿’è¨ˆç”»ãŒä½œæˆã•ã‚Œã¾ã—ãŸ' : language === 'ko' ? 'í•™ìŠµ ê³„íš ìƒì„±ë¨' : 'Study Plan Generated',
+        title: language === 'vi' ? 'Đã tạo kế hoạch học tập' : language === 'ja' ? 'å­¦ç¿’è¨ˆç”»ã Œä½œæˆ ã •ã‚Œã ¾ã —ã Ÿ' : language === 'ko' ? 'í•™ìŠµ ê³„íš  ìƒ ì„±ë ¨' : 'Study Plan Generated',
         description: (
           <>
             {language === 'vi'
-              ? 'AI Ä‘Ã£ táº¡o má»™t káº¿ hoáº¡ch há»c táº­p 4 tuáº§n Ä‘Æ°á»£c cÃ¡ nhÃ¢n hÃ³a cho '
+              ? 'AI đã tạo một kế hoạch học tập 4 tuần được cá nhân hóa cho '
               : language === 'ja'
               ? 'AIãŒãƒ‘ãƒ¼ã‚½ãƒŠãƒ©ã‚¤ã‚ºã•ã‚ŒãŸ4é€±é–“ã®å­¦ç¿’è¨ˆç”»ã‚’ä½œæˆã—ã¾ã—ãŸï¼š'
               : language === 'ko'
               ? 'AIê°€ ë‹¤ìŒ ê³¼ëª©ì— ëŒ€í•œ ë§žì¶¤í˜• 4ì£¼ í•™ìŠµ ê³„íšì„ ìƒì„±í–ˆìŠµë‹ˆë‹¤: '
               : 'AI has created a personalized 4-week study plan for '}
             <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
-              {language === 'vi' ? '"HÃ³a há»¯u cÆ¡"' : language === 'ja' ? 'ã€Œæœ‰æ©ŸåŒ–å­¦ã€' : language === 'ko' ? '"ìœ ê¸° í™”í•™"' : '"Organic Chemistry"'}
+              {language === 'vi' ? '"Hóa hữu cơ"' : language === 'ja' ? 'ã€Œæœ‰æ©ŸåŒ–å­¦ã€' : language === 'ko' ? '"ìœ ê¸° í™”í•™"' : '"Organic Chemistry"'}
             </strong>{' '}
             {language === 'vi'
-              ? 'dá»±a trÃªn cÃ¡c tá»‡p báº¡n Ä‘Ã£ táº£i lÃªn gáº§n Ä‘Ã¢y.'
+              ? 'dựa trên các tệp bạn đã tải lên gần đây.'
               : language === 'ja'
               ? 'ï¼ˆæœ€è¿‘ã®ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ã«åŸºã¥ãï¼‰ã€‚'
               : language === 'ko'
@@ -244,11 +244,11 @@ function NotificationCard({
     }
     if (id === 'mention-2') {
       return {
-        title: language === 'vi' ? 'Sarah Mitchell Ä‘Ã£ nháº¯c Ä‘áº¿n báº¡n' : language === 'ja' ? 'Sarah Mitchell ãŒã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸ' : language === 'ko' ? 'Sarah Mitchellë‹˜ì´ ë‹¹ì‹ ì„ ì–¸ê¸‰í–ˆìŠµë‹ˆë‹¤' : 'Sarah Mitchell mentioned you',
+        title: language === 'vi' ? 'Sarah Mitchell đã nhắc đến bạn' : language === 'ja' ? 'Sarah Mitchell ãŒã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸ' : language === 'ko' ? 'Sarah Mitchellë‹˜ì´ ë‹¹ì‹ ì„ ì–¸ê¸‰í–ˆìŠµë‹ˆë‹¤' : 'Sarah Mitchell mentioned you',
         description: (
           <>
             {language === 'vi'
-              ? 'Sarah Mitchell Ä‘Ã£ nháº¯c Ä‘áº¿n báº¡n trong má»™t bÃ¬nh luáº­n á»Ÿ '
+              ? 'Sarah Mitchell đã nhắc đến bạn trong má»™t bÃ¬nh luáº­n á»Ÿ '
               : language === 'ja'
               ? 'Sarah Mitchell ãŒã‚³ãƒ¡ãƒ³ãƒˆã§ã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸï¼š'
               : language === 'ko'
@@ -258,7 +258,7 @@ function NotificationCard({
               'Neuroscience_Ch4_Syn...'
             </strong>
             {language === 'vi'
-              ? ': "@Sarah Mitchell, hÃ£y kiá»ƒm tra sÆ¡ Ä‘á»“ tÃ­nh dáº»o cá»§a khá»›p tháº§n kinh á»Ÿ trang 12."'
+              ? ': "@Sarah Mitchell, hãy kiểm tra sơ đồ tính dẻo của khớp thần kinh ở trang 12."'
               : language === 'ja'
               ? ': ã€Œ@Sarah Mitchellã€12ãƒšãƒ¼ã‚¸ã®ã‚·ãƒŠãƒ—ã‚¹å¯å¡‘æ€§å›³ã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚ã€'
               : language === 'ko'
@@ -266,15 +266,15 @@ function NotificationCard({
               : ': "@Sarah Mitchell, check the synaptic plasticity diagram on page 12."'}
           </>
         ),
-        actionText: language === 'vi' ? 'Xem bÃ¬nh luáº­n' : language === 'ja' ? 'ã‚³ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ëŒ“ê¸€ ë³´ê¸°' : 'View Comment',
+        actionText: language === 'vi' ? 'Xem bình luận' : language === 'ja' ? 'ã‚³ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ëŒ“ê¸€ ë³´ê¸°' : 'View Comment',
       }
     }
     if (id === 'shared-doc-1') {
       return {
-        title: language === 'vi' ? 'Alex Chen Ä‘Ã£ chia sáº» má»™t tÃ i liá»‡u' : language === 'ja' ? 'Alex Chen ãŒãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’å…±æœ‰ã—ã¾ã—ãŸ' : language === 'ko' ? 'Alex Chenë‹˜ì´ ë¬¸ì„œë¥¼ ê³µìœ í–ˆìŠµë‹ˆë‹¤' : 'Alex Chen shared a document',
+        title: language === 'vi' ? 'Alex Chen đã chia sẻ một tài liệu' : language === 'ja' ? 'Alex Chen ãŒãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’å…±æœ‰ã—ã¾ã—ãŸ' : language === 'ko' ? 'Alex Chenë‹˜ì´ ë¬¸ì„œë¥¼ ê³µìœ í–ˆìŠµë‹ˆë‹¤' : 'Alex Chen shared a document',
         description: (
           <>
-            {language === 'vi' ? 'TÃ i liá»‡u: ' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆ: ' : language === 'ko' ? 'ë¬¸ì„œ: ' : 'Document: '}
+            {language === 'vi' ? 'Tài liệu: ' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆ: ' : language === 'ko' ? 'ë¬¸ì„œ: ' : 'Document: '}
             <span className="font-semibold text-[#0b1c30] dark:text-slate-100">Advanced Neuroscience Syllabus 2024.pdf</span>
           </>
         ),
@@ -282,18 +282,18 @@ function NotificationCard({
     }
     if (id === 'flashcards') {
       return {
-        title: language === 'vi' ? 'CÃ³ tháº» ghi nhá»› má»›i' : language === 'ja' ? 'æ–°ã—ã„ãƒ•ãƒ©ãƒƒã‚·ãƒ¥ã‚«ãƒ¼ãƒ‰ãŒã‚ã‚Šã¾ã™' : language === 'ko' ? 'ìƒˆë¡œìš´ í”Œëž˜ì‹œì¹´ë“œ ì‚¬ìš© ê°€ëŠ¥' : 'New Flashcards Available',
+        title: language === 'vi' ? 'Có thẻ ghi nhớ mới' : language === 'ja' ? 'æ–°ã—ã„ãƒ•ãƒ©ãƒƒã‚·ãƒ¥ã‚«ãƒ¼ãƒ‰ãŒã‚ã‚Šã¾ã™' : language === 'ko' ? 'ìƒˆë¡œìš´ í”Œëž˜ì‹œì¹´ë“œ ì‚¬ìš© ê°€ëŠ¥' : 'New Flashcards Available',
         description: (
           <>
             {language === 'vi'
-              ? '25 tháº» ghi nhá»› má»›i Ä‘Ã£ Ä‘Æ°á»£c táº¡o tá»± Ä‘á»™ng cho '
+              ? '25 thẻ ghi nhớ mới đã được tạo tự động cho '
               : language === 'ja'
               ? 'ã«å¯¾ã—ã¦25æžšã®æ–°ã—ã„ãƒ•ãƒ©ãƒƒã‚·ãƒ¥ã‚«ãƒ¼ãƒ‰ãŒè‡ªå‹•çš„ã«ç”Ÿæˆã•ã‚Œã¾ã—ãŸï¼š'
               : language === 'ko'
               ? 'ì— ëŒ€í•´ 25ê°œì˜ ìƒˆë¡œìš´ í”Œëž˜ì‹œì¹´ë“œê°€ ìžë™ìœ¼ë¡œ ìƒì„±ë˜ì—ˆìŠµë‹ˆë‹¤: '
               : '25 new flashcards have been automatically generated for '}
             <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
-              {language === 'vi' ? '"Sinh há»c táº¿ bÃ o - Tuáº§n 4"' : language === 'ja' ? 'ã€Œç´°èƒžç”Ÿç‰©å­¦ - ç¬¬4é€±ã€' : language === 'ko' ? '"ì„¸í¬ ìƒë¬¼í•™ - 4ì£¼ì°¨"' : '"Cell Biology - Week 4"'}
+              {language === 'vi' ? '"Sinh học tế bào - Tuần 4"' : language === 'ja' ? 'ã€Œç´°èƒžç”Ÿç‰©å­¦ - ç¬¬4é€±ã€ ' : language === 'ko' ? '"ì„¸í ¬ ìƒ ë¬¼í•™ - 4ì£¼ì°¨"' : '"Cell Biology - Week 4"'}
             </strong>
             {language === 'vi' ? '.' : ''}
           </>
@@ -302,20 +302,20 @@ function NotificationCard({
     }
     if (id === 'new-report-submitted') {
       return {
-        title: language === 'vi' ? 'CÃ³ bÃ¡o cÃ¡o má»›i' : language === 'ja' ? 'æ–°ã—ã„å ±å‘ŠãŒé€ä¿¡ã•ã‚Œã¾ã—ãŸ' : language === 'ko' ? 'ìƒˆ ë³´ê³ ì„œ ì œì¶œë¨' : 'New report submitted',
-        description: language === 'vi' ? 'Má»™t ngÆ°á»i dÃ¹ng Ä‘Ã£ bÃ¡o cÃ¡o tÃ i liá»‡u vÃ¬ Ä‘áº¡o vÄƒn.' : language === 'ja' ? 'ãƒ¦ãƒ¼ã‚¶ãƒ¼ãŒãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆì˜ ç›—ç”¨ã‚’å ±å‘Šã—ã¾ã—ãŸã€‚' : language === 'ko' ? 'ì‚¬ìš©ìžê°€ í‘œì ˆë¡œ ë¬¸ì„œë¥¼ ì‹ ê³ í–ˆìŠµë‹ˆë‹¤.' : 'A user reported a document for plagiarism.',
+        title: language === 'vi' ? 'Có báo cáo mới' : language === 'ja' ? 'æ–°ã—ã„å ±å‘ŠãŒé€ä¿¡ã•ã‚Œã¾ã—ãŸ' : language === 'ko' ? 'ìƒˆ ë³´ê³ ì„œ ì œì¶œë¨' : 'New report submitted',
+        description: language === 'vi' ? 'Một người dùng đã báo cáo tài liệu vì đạo văn.' : language === 'ja' ? 'ãƒ¦ãƒ¼ã‚¶ãƒ¼ã Œãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆì ˜ ç›—ç”¨ã‚’å ±å‘Šã —ã ¾ã —ã Ÿã€‚' : language === 'ko' ? 'ì‚¬ìš©ìž ê°€ í‘œì ˆë¡œ ë¬¸ì„œë¥¼ ì‹ ê³ í–ˆìŠµë‹ˆë‹¤.' : 'A user reported a document for plagiarism.',
       }
     }
     if (id === 'ai-audit-flagged') {
       return {
-        title: language === 'vi' ? 'AI phÃ¡t hiá»‡n tÃ i liá»‡u Ä‘Ã¡ng ngá»' : language === 'ja' ? 'AIç›£æŸ»ãƒ•ãƒ©ã‚°æ¤œå‡º' : language === 'ko' ? 'AI ì‹¬ì‚¬ í”Œëž˜ê·¸ ê°ì§€ë¨' : 'AI audit flagged a document',
-        description: language === 'vi' ? 'AI Guard Ä‘Ã£ phÃ¡t hiá»‡n vi pháº¡m chÃ­nh sÃ¡ch tiá»m áº©n.' : language === 'ja' ? 'AI GuardãŒæ½œåœ¨çš„ãªãƒãƒªã‚·ãƒ¼é•åã‚’æ¤œå‡ºã—ã¾ã—ãŸã€‚' : language === 'ko' ? 'AI Guardê°€ ìž ìž¬ì ì¸ ì •ì±… ìœ„ë°˜ì„ ê°ì§€í–ˆìŠµë‹ˆë‹¤.' : 'AI Guard detected a potential policy violation.',
+        title: language === 'vi' ? 'AI phát hiện tài liệu đáng ngờ' : language === 'ja' ? 'AIç›£æŸ»ãƒ•ãƒ©ã‚°æ¤œå‡º' : language === 'ko' ? 'AI ì‹¬ì‚¬ í”Œëž˜ê·¸ ê° ì§€ë ¨' : 'AI audit flagged a document',
+        description: language === 'vi' ? 'AI Guard đã phát hiện vi phạm chính sách tiềm ẩn.' : language === 'ja' ? 'AI Guardã Œæ½œåœ¨çš„ã ªãƒ ãƒªã‚·ãƒ¼é •å  ã‚’æ¤œå‡ºã —ã ¾ã —ã Ÿã€‚' : language === 'ko' ? 'AI Guardê°€ ìž ìž¬ì  ì ¸ ì •ì±… ìœ„ë°˜ì „ ê° ì§€í–ˆìŠµë‹ˆë‹¤.' : 'AI Guard detected a potential policy violation.',
       }
     }
     if (id === 'system-status-updated') {
       return {
-        title: language === 'vi' ? 'Tráº¡ng thÃ¡i há»‡ thá»‘ng Ä‘Ã£ cáº­p nháº­t' : language === 'ja' ? 'ã‚·ã‚¹ãƒ†ãƒ ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹æ›´æ–°' : language === 'ko' ? 'ì‹œìŠ¤í…œ ìƒíƒœ ì—…ë°ì´íŠ¸ë¨' : 'System status updated',
-        description: language === 'vi' ? 'Cháº¿ Ä‘á»™ báº£o trÃ¬ hoáº·c tráº¡ng thÃ¡i sá»± cá»‘ Ä‘Ã£ Ä‘Æ°á»£c thay Ä‘á»•i.' : language === 'ja' ? 'ãƒ¡ãƒ³ãƒ†ãƒŠãƒ³ã‚¹ãƒ¢ãƒ¼ãƒ‰ã¾ãŸã¯ã‚¤ãƒ³ã‚·ãƒ‡ãƒ³ãƒˆã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãŒå¤‰æ›´ã•ã‚Œã¾ã—ãŸã€‚' : language === 'ko' ? 'ìœ ì§€ ê´€ë¦¬ ëª¨ë“œ ë˜ëŠ” ìž¥ì•  ìƒíƒœê°€ ë³€ê²½ë˜ì—ˆìŠµë‹ˆë‹¤.' : 'Maintenance mode or incident status was changed.',
+        title: language === 'vi' ? 'Trạng thái hệ thống đã cập nhật' : language === 'ja' ? 'ã‚·ã‚¹ãƒ†ãƒ ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹æ›´æ–°' : language === 'ko' ? 'ì‹œìŠ¤í…œ ìƒíƒœ ì—…ë°ì´íŠ¸ë¨' : 'System status updated',
+        description: language === 'vi' ? 'Chế độ bảo trì hoặc trạng thái sự cố đã được thay đổi.' : language === 'ja' ? 'ãƒ¡ãƒ³ãƒ†ãƒŠãƒ³ã‚¹ãƒ¢ãƒ¼ãƒ‰ã¾ãŸã¯ã‚¤ãƒ³ã‚·ãƒ‡ãƒ³ãƒˆã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãŒå¤‰æ›´ã•ã‚Œã¾ã—ãŸã€‚' : language === 'ko' ? 'ìœ ì§€ ê´€ë¦¬ ëª¨ë“œ ë˜ëŠ” ìž¥ì•  ìƒíƒœê°€ ë³€ê²½ë˜ì—ˆìŠµë‹ˆë‹¤.' : 'Maintenance mode or incident status was changed.',
       }
     }
     if (type === 'document_deleted' || type === 'document_rejected') {
@@ -333,16 +333,16 @@ function NotificationCard({
           return rMatch ? rMatch[1].trim() : '';
         }
         return '';
-      })() || (language === 'vi' ? 'ChÆ°a cÃ³ lÃ½ do chi tiáº¿t.' : 'No reason details were provided.');
+      })() || (language === 'vi' ? 'Chưa có lý do chi tiết.' : 'No reason details were provided.');
 
       return {
         title: type === 'document_deleted'
-          ? (language === 'vi' ? 'TÃ i liá»‡u Ä‘Ã£ bá»‹ quáº£n trá»‹ viÃªn xÃ³a' : 'Document removed by admin')
-          : (language === 'vi' ? 'TÃ i liá»‡u Ä‘Ã£ bá»‹ quáº£n trá»‹ viÃªn tá»« chá»‘i' : 'Document rejected by admin'),
+          ? (language === 'vi' ? 'Tài liệu đã bị quản trị viên xóa' : 'Document removed by admin')
+          : (language === 'vi' ? 'Tài liệu đã bị quản trị viên từ chối' : 'Document rejected by admin'),
         description: (
           <>
             {language === 'vi'
-              ? `TÃ i liá»‡u "${docName}" cá»§a báº¡n Ä‘Ã£ bá»‹ quáº£n trá»‹ viÃªn ${type === 'document_deleted' ? 'xÃ³a' : 'tá»« chá»‘i'}. LÃ½ do: ${reasonText}`
+              ? `Tài liệu "${docName}" của bạn đã bị quản trị viên ${type === 'document_deleted' ? 'xóa' : 'từ chối'}. Lý do: ${reasonText}`
               : `Your document "${docName}" was ${type === 'document_deleted' ? 'removed' : 'rejected'} by admin. Reason: ${reasonText}`}
           </>
         ),
@@ -364,7 +364,7 @@ function NotificationCard({
   const formatTime = (tString: string) => {
     if (tString.endsWith('m ago')) {
       const mins = tString.split('m')[0]
-      return language === 'vi' ? `${mins} phÃºt trÆ°á»›c` : language === 'ja' ? `${mins}åˆ†å‰` : language === 'ko' ? `${mins}ë¶„ ì „` : `${mins}m ago`
+      return language === 'vi' ? `${mins} phút trước` : language === 'ja' ? `${mins}åˆ†å‰` : language === 'ko' ? `${mins}ë¶„ ì „` : `${mins}m ago`
     }
     if (tString.endsWith('h ago')) {
       const hours = tString.split('h')[0]
@@ -379,7 +379,7 @@ function NotificationCard({
   const handleActionClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     onMarkRead?.()
-    if (finalActionText === 'Reply' || finalActionText === 'Pháº£n há»“i' || finalActionText === 'è¿”ä¿¡' || finalActionText === 'ë‹µìž¥') {
+    if (finalActionText === 'Reply' || finalActionText === 'Phản hồi' || finalActionText === 'è¿”ä¿¡' || finalActionText === 'ë‹µìž¥') {
       if (onReplyClick) {
         onReplyClick()
       } else {
@@ -406,7 +406,7 @@ function NotificationCard({
         style={{ display: dragX < 0 ? 'flex' : 'none' }}
       >
         <Trash2 className="w-5 h-5 animate-pulse" />
-        <span>{language === 'vi' ? 'XÃ³a' : 'Delete'}</span>
+        <span>{language === 'vi' ? 'Xóa' : 'Delete'}</span>
       </div>
 
       {/* Card Inner Panel */}
@@ -481,7 +481,7 @@ function NotificationCard({
               <>
                 <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
                 <span className="text-[#3155F6] dark:text-blue-400">
-                  {language === 'vi' ? 'Má»›i' : language === 'ja' ? 'æ–°è¦' : language === 'ko' ? 'ìƒˆë¡œìš´' : 'New'}
+                  {language === 'vi' ? 'Mới' : language === 'ja' ? 'æ–°è¦' : language === 'ko' ? 'ìƒˆë¡œìš´' : 'New'}
                 </span>
                 <span className="w-2 h-2 rounded-full bg-[#3155F6] dark:bg-blue-500" />
               </>
@@ -522,19 +522,19 @@ function NotificationCard({
               // Localize button text
               let localizedBtnText = btn.text
               if (id === 'shared-folder' && btn.text === 'Open Folder') {
-                localizedBtnText = language === 'vi' ? 'Má»Ÿ thÆ° má»¥c' : language === 'ja' ? 'ãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ã‚’é–‹ã' : language === 'ko' ? 'í´ë” ì—´ê¸°' : 'Open Folder'
+                localizedBtnText = language === 'vi' ? 'Mở thư mục' : language === 'ja' ? 'ãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ã‚’é–‹ã' : language === 'ko' ? 'í´ë” ì—´ê¸°' : 'Open Folder'
               } else if (id === 'security-alert') {
                 if (btn.text === 'Review Activity') {
-                  localizedBtnText = language === 'vi' ? 'Xem láº¡i hoáº¡t Ä‘á»™ng' : language === 'ja' ? 'ã‚¢ã‚¯ãƒ†ã‚£ãƒ“ãƒ†ã‚£ã‚’ç¢ºèª' : language === 'ko' ? 'í™œë™ ê²€í† ' : 'Review Activity'
+                  localizedBtnText = language === 'vi' ? 'Xem lại hoạt động' : language === 'ja' ? 'ã‚¢ã‚¯ãƒ†ã‚£ãƒ“ãƒ†ã‚£ã‚’ç¢ºèª' : language === 'ko' ? 'í™œë™ ê²€í† ' : 'Review Activity'
                 } else if (btn.text === 'It was me') {
-                  localizedBtnText = language === 'vi' ? 'ChÃ­nh lÃ  tÃ´i' : language === 'ja' ? 'ç§ã§ã™' : language === 'ko' ? 'ë³¸ì¸ìž…ë‹ˆë‹¤' : 'It was me'
+                  localizedBtnText = language === 'vi' ? 'Chính là tôi' : language === 'ja' ? 'ç§ã§ã™' : language === 'ko' ? 'ë³¸ì¸ìž…ë‹ˆë‹¤' : 'It was me'
                 }
               } else if (id === 'study-plan' && btn.text === 'Open Plan') {
-                localizedBtnText = language === 'vi' ? 'Má»Ÿ káº¿ hoáº¡ch' : language === 'ja' ? 'è¨ˆç”»ã‚’é–‹ã' : language === 'ko' ? 'ê³„íš ì—´ê¸°' : 'Open Plan'
+                localizedBtnText = language === 'vi' ? 'Mở kế hoạch' : language === 'ja' ? 'è¨ˆç”»ã‚’é–‹ã' : language === 'ko' ? 'ê³„íš ì—´ê¸°' : 'Open Plan'
               } else if (id === 'shared-doc-1' && btn.text === 'View Document') {
-                localizedBtnText = language === 'vi' ? 'Xem tÃ i liá»‡u' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ë¬¸ì„œ ë³´ê¸°' : 'View Document'
+                localizedBtnText = language === 'vi' ? 'Xem tài liệu' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ë¬¸ì„œ ë³´ê¸°' : 'View Document'
               } else if (id === 'flashcards' && btn.text === 'Practice Now') {
-                localizedBtnText = language === 'vi' ? 'Luyá»‡n táº­p ngay' : language === 'ja' ? 'ä»Šã™ãç·´ç¿’' : language === 'ko' ? 'ì§€ê¸ˆ ì—°ìŠµí•˜ê¸°' : 'Practice Now'
+                localizedBtnText = language === 'vi' ? 'Luyện tập ngay' : language === 'ja' ? 'ä»Šã™ãç·´ç¿’' : language === 'ko' ? 'ì§€ê¸ˆ ì—°ìŠµí•˜ê¸°' : 'Practice Now'
               }
 
               return (
@@ -572,7 +572,7 @@ function NotificationCard({
               className="inline-flex items-center gap-1.5 bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] px-5 py-2.5 rounded-xl text-sm font-semibold mt-4 transition-colors cursor-pointer border border-[#E8EEFF] dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-400 dark:border-blue-950/40"
             >
               <span>{finalActionText}</span>
-              {(finalActionText === 'Reply' || finalActionText === 'Pháº£n há»“i' || finalActionText === 'è¿”ä¿¡' || finalActionText === 'ë‹µìž¥') ? (
+              {finalActionText === 'Reply' || finalActionText === 'Phản hồi' || finalActionText === 'è¿”ä¿¡' || finalActionText === 'ë‹µìž¥' ? (
                 <ReplyIcon className="w-3.5 h-3.5" />
               ) : (
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -585,7 +585,7 @@ function NotificationCard({
         {isActiveReply && (
           <div className="mt-3.5 flex flex-col gap-3.5 w-full" onClick={(e) => e.stopPropagation()}>
             <textarea
-              placeholder={language === 'vi' ? 'Nháº­p pháº£n há»“i cá»§a báº¡n á»Ÿ Ä‘Ã¢y...' : language === 'ja' ? 'è¿”ä¿¡ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„...' : language === 'ko' ? 'ì—¬ê¸°ì— ë‹µìž¥ì„ ìž…ë ¥í•˜ì„¸ìš”...' : 'Type your reply here...'}
+              placeholder={language === 'vi' ? 'Nhập phản hồi của bạn ở đây...' : language === 'ja' ? 'è¿”ä¿¡ã‚’å…¥åŠ›ã —ã ¦ã  ã  ã •ã „...' : language === 'ko' ? 'ì—¬ê¸°ì—  ë‹µìž¥ì „ ìž…ë ¥í•˜ì„¸ìš”...' : 'Type your reply here...'}
               value={replyText || ''}
               onChange={(e) => onReplyTextChange?.(e.target.value)}
               className="w-full bg-[#F4F7FE]/70 dark:bg-slate-950/70 border border-[#E8EEFF] dark:border-slate-800 rounded-2xl p-4 text-sm text-[#0b1c30] dark:text-slate-100 placeholder-[#737686] dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3155F6]/15 resize-none h-[100px]"
@@ -603,7 +603,7 @@ function NotificationCard({
                 onClick={() => onSendReplyClick?.(replyText || '')}
                 className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[#3155F6] shadow-sm shadow-[#3155F6]/10 dark:bg-blue-600 dark:hover:bg-blue-500 dark:border-blue-600"
               >
-                <span>{language === 'vi' ? 'Gá»­i pháº£n há»“i' : language === 'ja' ? 'è¿”ä¿¡ã‚’é€ä¿¡' : language === 'ko' ? 'ë‹µìž¥ ì „ì†¡' : 'Send Reply'}</span>
+                <span>{language === 'vi' ? 'Gửi phản hồi' : language === 'ja' ? 'è¿”ä¿¡ã‚’é€ ä¿¡' : language === 'ko' ? 'ë‹µìž¥ ì „ì†¡' : 'Send Reply'}</span>
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -614,7 +614,7 @@ function NotificationCard({
         {showReplyInput && !isReplied && (
           <div className="mt-4.5 relative" onClick={(e) => e.stopPropagation()}>
             <textarea
-              placeholder={language === 'vi' ? 'Nháº­p pháº£n há»“i...' : language === 'ja' ? 'è¿”ä¿¡ã‚’å…¥åŠ›...' : language === 'ko' ? 'ë‹µìž¥ ìž…ë ¥...' : 'Type a reply...'}
+              placeholder={language === 'vi' ? 'Nhập phản hồi...' : language === 'ja' ? 'è¿”ä¿¡ã‚’å…¥åŠ›...' : language === 'ko' ? 'ë‹µìž¥ ìž…ë ¥...' : 'Type a reply...'}
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => {
@@ -631,7 +631,7 @@ function NotificationCard({
               disabled={!commentText.trim()}
               className="absolute bottom-3 right-3 bg-[#3155F6] hover:bg-[#2563eb] dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
             >
-              {language === 'vi' ? 'Pháº£n há»“i' : language === 'ja' ? 'è¿”ä¿¡' : language === 'ko' ? 'ë‹µìž¥' : 'Reply'}
+              {language === 'vi' ? 'Phản hồi' : language === 'ja' ? 'è¿”ä¿¡' : language === 'ko' ? 'ë‹µìž¥' : 'Reply'}
             </button>
           </div>
         )}
@@ -640,7 +640,7 @@ function NotificationCard({
         {isReplied && (
           <div className="mt-4 flex gap-3" onClick={(e) => e.stopPropagation()}>
             <div className="w-8 h-8 rounded-full bg-[#3155F6] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              {language === 'vi' ? 'TÃ´i' : language === 'ja' ? 'è‡ªåˆ†' : language === 'ko' ? 'ë‚˜' : 'Me'}
+              {language === 'vi' ? 'Tôi' : language === 'ja' ? 'è‡ªåˆ†' : language === 'ko' ? 'ë‚˜' : 'Me'}
             </div>
             <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl rounded-tl-none p-3.5 text-sm text-[#434655] dark:text-slate-300">
               {replyContent}
@@ -681,13 +681,13 @@ export function NotificationsPage() {
       case 'All':
         return t.common.all
       case 'Unread':
-        return language === 'vi' ? 'ChÆ°a Ä‘á»c' : language === 'ja' ? 'æœªèª­' : language === 'ko' ? 'ì½ì§€ ì•ŠìŒ' : 'Unread'
+        return language === 'vi' ? 'Chưa đọc' : language === 'ja' ? 'æœªèª­' : language === 'ko' ? 'ì ½ì§€ ì•Šì Œ' : 'Unread'
       case 'Mentions':
-        return language === 'vi' ? 'LÆ°á»£t nháº¯c' : language === 'ja' ? 'ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³' : language === 'ko' ? 'ì–¸ê¸‰' : 'Mentions'
+        return language === 'vi' ? 'Lượt nhắc' : language === 'ja' ? 'ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³' : language === 'ko' ? 'ì–¸ê¸‰' : 'Mentions'
       case 'Shared Files':
         return t.sidebar.sharedFiles
       case 'AI Updates':
-        return language === 'vi' ? 'AI cáº­p nháº­t' : language === 'ja' ? 'AIæ›´æ–°' : language === 'ko' ? 'AI ì—…ë°ì´íŠ¸' : 'AI Updates'
+        return language === 'vi' ? 'AI cập nhật' : language === 'ja' ? 'AIæ›´æ–°' : language === 'ko' ? 'AI ì—…ë °ì ´íŠ¸' : 'AI Updates'
       default:
         return tab
     }
@@ -700,7 +700,7 @@ export function NotificationsPage() {
       const data = await notificationApi.getNotifications(filter)
       setNotifications(data)
     } catch (err) {
-      setError(language === 'vi' ? 'KhÃ´ng thá»ƒ táº£i thÃ´ng bÃ¡o' : language === 'ja' ? 'é€šçŸ¥ã®å–å¾—ã«å¤±æ•—ã—ã¾ã—ãŸ' : language === 'ko' ? 'ì•Œë¦¼ì„ ê°€ì ¸ì˜¤ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤' : 'Failed to fetch notifications')
+      setError(language === 'vi' ? 'Không thể tải thông báo' : language === 'ja' ? 'é€šçŸ¥ã ®å –å¾—ã «å¤±æ•—ã —ã ¾ã —ã Ÿ' : language === 'ko' ? 'ì•Œë¦¼ì „ ê°€ì ¸ì˜¤ëŠ” ë ° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤' : 'Failed to fetch notifications')
     } finally {
       if (!showSilent) setLoading(false)
     }
@@ -845,7 +845,7 @@ export function NotificationsPage() {
           >
             <Sparkles className="w-4 h-4 text-white" />
             <span className="hidden sm:inline">
-              {language === 'vi' ? 'Giáº£ láº­p thÃ´ng bÃ¡o' : language === 'ja' ? 'é€šçŸ¥ã‚’ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ãƒˆ' : language === 'ko' ? 'ì•Œë¦¼ ì‹œë®¬ë ˆì´ì…˜' : 'Simulate alert'}
+              {language === 'vi' ? 'Giả lập thông báo' : language === 'ja' ? 'é€šçŸ¥ã‚’ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ãƒˆ' : language === 'ko' ? 'ì•Œë¦¼ ì‹œë®¬ë ˆì ´ì…˜' : 'Simulate alert'}
             </span>
           </button>}
 
@@ -856,7 +856,7 @@ export function NotificationsPage() {
           >
             <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
             <span className="hidden sm:inline">
-              {language === 'vi' ? 'LÃ m má»›i' : language === 'ja' ? 'æ›´æ–°' : language === 'ko' ? 'ìƒˆë¡œê³ ì¹¨' : 'Refresh'}
+              {language === 'vi' ? 'Làm mới' : language === 'ja' ? 'æ›´æ–°' : language === 'ko' ? 'ìƒˆë¡œê³ ì¹¨' : 'Refresh'}
             </span>
           </button>
         </div>
@@ -893,23 +893,23 @@ export function NotificationsPage() {
               <RefreshCw className="w-6 h-6 text-[#3155F6] animate-spin" />
             </div>
             <h3 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100 mb-1">
-              {language === 'vi' ? 'Äang táº£i thÃ´ng bÃ¡o...' : language === 'ja' ? 'é€šçŸ¥ã‚’èª­ã¿è¾¼ã¿ä¸­...' : language === 'ko' ? 'ì•Œë¦¼ ë¡œë”© ì¤‘...' : 'Loading notifications...'}
+              {language === 'vi' ? 'Đang tải thông báo...' : language === 'ja' ? 'é€šçŸ¥ã‚’èª­ã ¿è¾¼ã ¿ä¸­...' : language === 'ko' ? 'ì•Œë¦¼ ë¡œë”© ì¤‘...' : 'Loading notifications...'}
             </h3>
             <p className="text-[#737686] font-medium text-sm">
-              {language === 'vi' ? 'Vui lÃ²ng Ä‘á»£i trong giÃ¢y lÃ¡t...' : language === 'ja' ? 'ãƒ‡ãƒ¼ã‚¿ã‚’å–å¾—ã™ã‚‹ã¾ã§ã—ã°ã‚‰ããŠå¾…ã¡ãã ã•ã„' : language === 'ko' ? 'ë°ì´í„°ë¥¼ ê°€ì ¸ì˜¤ëŠ” ë™ì•ˆ ìž ì‹œë§Œ ê¸°ë‹¤ë ¤ì£¼ì„¸ìš”' : 'Please wait a moment while we fetch your data'}
+              {language === 'vi' ? 'Vui lòng đợi trong giây lát...' : language === 'ja' ? 'ãƒ‡ãƒ¼ã‚¿ã‚’å –å¾—ã ™ã‚‹ã ¾ã §ã —ã °ã‚‰ã  ã Šå¾…ã ¡ã  ã  ã •ã „' : language === 'ko' ? 'ë °ì ´í„°ë¥¼ ê°€ì ¸ì˜¤ëŠ” ë ™ì•ˆ ìž ì‹œë§Œ ê¸°ë‹¤ë ¤ì£¼ì„¸ìš”' : 'Please wait a moment while we fetch your data'}
             </p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-20 bg-[#FFF0F0]/50 dark:bg-red-950/20 rounded-3xl border border-dashed border-red-200 dark:border-red-900/50">
             <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-1">
-              {language === 'vi' ? 'CÃ³ lá»—i xáº£y ra!' : language === 'ja' ? 'ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ' : language === 'ko' ? 'ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤' : 'Oops, something went wrong!'}
+              {language === 'vi' ? 'Có lỗi xảy ra!' : language === 'ja' ? 'ã‚¨ãƒ©ãƒ¼ã Œç™ºç”Ÿã —ã ¾ã —ã Ÿ' : language === 'ko' ? 'ì˜¤ë¥˜ê°€ ë°œìƒ í–ˆìŠµë‹ˆë‹¤' : 'Oops, something went wrong!'}
             </h3>
             <p className="text-red-500 font-medium text-sm mb-4">{error}</p>
             <button
               onClick={() => fetchNotifications(activeFilter)}
               className="px-4 py-2 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
             >
-              {language === 'vi' ? 'Thá»­ láº¡i' : language === 'ja' ? 'å†è©¦è¡Œ' : language === 'ko' ? 'ë‹¤ì‹œ ì‹œë„' : 'Try Again'}
+              {language === 'vi' ? 'Thử lại' : language === 'ja' ? 'å† è©¦è¡Œ' : language === 'ko' ? 'ë‹¤ì‹œ ì‹œë „' : 'Try Again'}
             </button>
           </div>
         ) : notifications.length > 0 ? (
@@ -917,7 +917,7 @@ export function NotificationsPage() {
             let cardButtons = notification.buttons;
             if (!cardButtons || cardButtons.length === 0) {
               cardButtons = [{
-                text: language === 'vi' ? 'Xem chi tiáº¿t' : 'View Details',
+                text: language === 'vi' ? 'Xem chi tiết' : 'View Details',
                 variant: 'secondary' as const,
                 onClick: () => setSelectedDetailNotification(notification)
               }];
@@ -960,8 +960,8 @@ export function NotificationsPage() {
             <h3 className="text-xl font-bold text-[#0b1c30] dark:text-slate-100 mb-2">{t.notificationsPage.noNotifications}</h3>
             <p className="text-[#737686] font-medium text-sm text-center max-w-[250px]">
               {activeTab === 'Unread'
-                ? (language === 'vi' ? 'Báº¡n Ä‘Ã£ Ä‘á»c háº¿t táº¥t cáº£ thÃ´ng bÃ¡o!' : language === 'ja' ? 'ã™ã¹ã¦ç¢ºèªæ¸ˆã¿ã§ã™ï¼æœªèª­ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚' : language === 'ko' ? 'ëª¨ë‘ ì½ìœ¼ì…¨ìŠµë‹ˆë‹¤! ì½ì§€ ì•Šì€ ë©”ì‹œì§€ê°€ ì—†ìŠµë‹ˆë‹¤.' : "You're all caught up! There are no unread messages.")
-                : (language === 'vi' ? 'Khi cÃ³ thÃ´ng bÃ¡o má»›i, chÃºng sáº½ hiá»ƒn thá»‹ á»Ÿ Ä‘Ã¢y.' : language === 'ja' ? 'æ–°ã—ã„é€šçŸ¥ãŒå±Šãã¨ã€ã“ã“ã«è¡¨ç¤ºã•ã‚Œã¾ã™ã€‚' : language === 'ko' ? 'ìƒˆë¡œìš´ ì•Œë¦¼ì´ ë„ì°©í•˜ë©´ ì—¬ê¸°ì— í‘œì‹œë©ë‹ˆë‹¤.' : "When you get new notifications, they'll show up here.")}
+                ? (language === 'vi' ? 'Bạn đã đọc hết tất cả thông báo!' : language === 'ja' ? 'ã ™ã ¹ã ¦ç¢ºèª æ¸ˆã ¿ã §ã ™ï¼ æœªèª­ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã ¯ã ‚ã‚Šã ¾ã ›ã‚“ã€‚' : language === 'ko' ? 'ëª¨ë‘  ì ½ìœ¼ì…¨ìŠµë‹ˆë‹¤! ì ½ì§€ ì•Šì € ë©”ì‹œì§€ê°€ ì—†ìŠµë‹ˆë‹¤.' : "You're all caught up! There are no unread messages.")
+                : (language === 'vi' ? 'Khi có thông báo mới, chúng sẽ hiển thị ở đây.' : language === 'ja' ? 'æ–°ã —ã „é€šçŸ¥ã Œå±Šã  ã ¨ã€ ã “ã “ã «è¡¨ç¤ºã •ã‚Œã ¾ã ™ã€‚' : language === 'ko' ? 'ìƒˆë¡œìš´ ì•Œë¦¼ì ´ ë „ì°©í•˜ë©´ ì—¬ê¸°ì—  í‘œì‹œë ©ë‹ˆë‹¤.' : "When you get new notifications, they'll show up here.")}
             </p>
           </div>
         )}
@@ -980,7 +980,7 @@ export function NotificationsPage() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    {language === 'vi' ? 'Chi tiáº¿t thÃ´ng bÃ¡o' : 'Message Details'}
+                    {language === 'vi' ? 'Chi tiết thông báo' : 'Message Details'}
                   </span>
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-355 leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                     {selectedDetailNotification.description}
@@ -989,7 +989,7 @@ export function NotificationsPage() {
                 {selectedDetailNotification.adminNote && (
                   <div className="space-y-1">
                     <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">
-                      {language === 'vi' ? 'Ã kiáº¿n pháº£n há»“i / LÃ½ do' : 'Feedback / Reason'}
+                      {language === 'vi' ? 'Ý kiến phản hồi / Lý do' : 'Feedback / Reason'}
                     </span>
                     <p className="text-sm font-semibold text-rose-700 dark:text-rose-455 bg-rose-50 dark:bg-rose-955/20 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/10">
                       {selectedDetailNotification.adminNote}
@@ -1116,7 +1116,7 @@ export function NotificationsPage() {
             onClick={handleUndoDelete}
             className="flex-shrink-0 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/10 cursor-pointer active:scale-95"
           >
-            {language === 'vi' ? 'HoÃ n tÃ¡c' : 'Undo'}
+            {language === 'vi' ? 'Hoàn tác' : 'Undo'}
           </button>
         </div>
       )}

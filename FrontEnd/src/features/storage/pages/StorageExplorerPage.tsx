@@ -219,7 +219,7 @@ export function StorageExplorerPage() {
     if (!fileToDelete) return;
 
     if (fileToDelete.role && fileToDelete.role !== 'owner') {
-      toast.error('Báº¡n khÃ´ng thá»ƒ xÃ³a tá»‡p tin Ä‘Æ°á»£c chia sáº»!');
+      toast.error('Bạn không thể xóa tệp tin được chia sẻ!');
       return;
     }
 
@@ -653,7 +653,7 @@ export function StorageExplorerPage() {
           <Card className="border-border dark:border-slate-800 flex flex-col shadow-none">
             <CardContent className="p-6 flex-1 flex flex-col">
               <h3 className="font-bold text-lg mb-2 text-foreground">{t.storageExplorer.basic}</h3>
-              <div className="text-3xl font-bold mb-4 text-foreground">{language === 'vi' ? '0Ä‘' : '0 VND'}<span className="text-sm font-normal text-muted">{t.storageExplorer.mo}</span></div>
+              <div className="text-3xl font-bold mb-4 text-foreground">{language === 'vi' ? '0đ' : '0 VND'}<span className="text-sm font-normal text-muted">{t.storageExplorer.mo}</span></div>
               <ul className="space-y-3 mb-6 flex-1">
                 <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> {t.storageExplorer.storageItem(user?.plan === 'pro' ? '50 GB' : '10 GB')}</li>
                 <li className="flex items-center gap-2 text-sm text-muted"><CheckCircle2 className="size-4 text-emerald-500"/> {t.storageExplorer.basicAiTools}</li>
@@ -670,7 +670,7 @@ export function StorageExplorerPage() {
                 <h3 className="font-bold text-lg text-primary dark:text-blue-400">{t.storageExplorer.pro}</h3>
                 <Zap className="size-4 text-primary fill-primary/20 dark:text-blue-400 dark:fill-blue-400/20" />
               </div>
-              <div className="text-3xl font-bold mb-4 text-foreground">{language === 'vi' ? '200.000Ä‘' : '200,000 VND'}<span className="text-sm font-normal text-muted">{t.storageExplorer.mo}</span></div>
+              <div className="text-3xl font-bold mb-4 text-foreground">{language === 'vi' ? '200.000đ' : '200,000 VND'}<span className="text-sm font-normal text-muted">{t.storageExplorer.mo}</span></div>
               <ul className="space-y-3 mb-6 flex-1">
                 <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> {t.storageExplorer.storageItem('1 TB')}</li>
                 <li className="flex items-center gap-2 text-sm text-foreground font-medium"><CheckCircle2 className="size-4 text-primary dark:text-blue-400"/> {t.storageExplorer.advSummarization}</li>

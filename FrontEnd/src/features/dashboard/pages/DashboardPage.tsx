@@ -59,13 +59,13 @@ export function DashboardPage() {
           <div className="relative z-10 space-y-1">
             <h3 className="text-xl font-bold">
               {language === 'vi'
-                ? 'ÄÄƒng kÃ½ tÃ i khoáº£n GiÃ¡o viÃªn thÃ nh cÃ´ng!'
-                : (language === 'ja' ? 'æ•™å“¡ã‚¢ã‚«ã‚¦ãƒ³ãƒˆã®ç™»éŒ²ãŒå®Œäº†ã—ã¾ã—ãŸï¼' : (language === 'ko' ? 'êµì‚¬ ê³„ì • ê°€ìž… ì„±ê³µ!' : 'Teacher Registration Successful!'))}
+                ? 'Đăng ký tài khoản Giáo viên thành công!'
+                : (language === 'ja' ? 'æ•™å“¡ã‚¢ã‚«ã‚¦ãƒ³ãƒˆã ®ç™»éŒ²ã Œå®Œäº†ã —ã ¾ã —ã Ÿï¼ ' : (language === 'ko' ? 'êµ ì‚¬ ê³„ì • ê°€ìž… ì„±ê³µ!' : 'Teacher Registration Successful!'))}
             </h3>
             <p className="text-sm text-blue-100 font-medium">
               {language === 'vi'
-                ? 'HÃ£y gá»­i liÃªn há»‡ há»£p tÃ¡c Ä‘á»ƒ Ä‘Æ°á»£c há»‡ thá»‘ng nÃ¢ng cáº¥p lÃªn tÃ i khoáº£n PRO (50 GB dung lÆ°á»£ng) miá»…n phÃ­!'
-                : (language === 'ja' ? 'ç„¡æ–™ã®PROã‚¢ã‚«ã‚¦ãƒ³ãƒˆï¼ˆå®¹é‡50GBï¼‰ã«ã‚¢ãƒƒãƒ—ã‚°ãƒ¬ãƒ¼ãƒ‰ã™ã‚‹ãŸã‚ã®ææºãƒªã‚¯ã‚¨ã‚¹ãƒˆã‚’é€ä¿¡ã—ã¦ãã ã•ã„ã€‚' : (language === 'ko' ? 'ë¬´ë£Œ PRO ê³„ì •(50GB ìš©ëŸ‰)ìœ¼ë¡œ ì—…ê·¸ë ˆì´ë“œí•˜ê¸° ìœ„í•´ íŒŒíŠ¸ë„ˆì‹­ ìš”ì²­ì„ ë³´ë‚´ì£¼ì„¸ìš”.' : 'Submit a partnership request to get upgraded to a PRO account (50 GB storage) for free!'))}
+                ? 'Hãy gửi liên hệ hợp tác để được hệ thống nâng cấp lên tài khoản PRO (50 GB dung lượng) miễn phí!'
+                : (language === 'ja' ? 'ç„¡æ–™ã ®PROã‚¢ã‚«ã‚¦ãƒ³ãƒˆï¼ˆå®¹é‡ 50GBï¼‰ã «ã‚¢ãƒƒãƒ—ã‚°ãƒ¬ãƒ¼ãƒ‰ã ™ã‚‹ã Ÿã‚ ã ®æ  æ ºãƒªã‚¯ã‚¨ã‚¹ãƒˆã‚’é€ ä¿¡ã —ã ¦ã  ã  ã •ã „ã€‚' : (language === 'ko' ? 'ë¬´ë£Œ PRO ê³„ì •(50GB ìš©ëŸ‰)ìœ¼ë¡œ ì—…ê·¸ë ˆì ´ë“œí•˜ê¸° ìœ„í•´ íŒŒíŠ¸ë„ˆì‹­ ìš”ì²­ì „ ë³´ë‚´ì£¼ì„¸ìš”.' : 'Submit a partnership request to get upgraded to a PRO account (50 GB storage) for free!'))}
             </p>
           </div>
           <Link
@@ -73,8 +73,8 @@ export function DashboardPage() {
             className="relative z-10 shrink-0 inline-flex items-center gap-2 bg-white text-blue-600 hover:bg-blue-50 px-5 py-3 rounded-2xl text-sm font-extrabold shadow-md active:scale-95 transition-all select-none cursor-pointer"
           >
             {language === 'vi'
-              ? 'Gá»­i yÃªu cáº§u Há»£p tÃ¡c'
-              : (language === 'ja' ? 'ææºãƒªã‚¯ã‚¨ã‚¹ãƒˆã‚’é€ä¿¡' : (language === 'ko' ? 'íŒŒíŠ¸ë„ˆì‹­ ì‹ ì²­í•˜ê¸°' : 'Submit Partnership Request'))}
+              ? 'Gửi yêu cầu Hợp tác'
+              : (language === 'ja' ? 'æ  æ ºãƒªã‚¯ã‚¨ã‚¹ãƒˆã‚’é€ ä¿¡' : (language === 'ko' ? 'íŒŒíŠ¸ë„ˆì‹­ ì‹ ì²­í•˜ê¸°' : 'Submit Partnership Request'))}
           </Link>
         </div>
       )}

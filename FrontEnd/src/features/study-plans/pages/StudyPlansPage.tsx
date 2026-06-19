@@ -718,12 +718,12 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                   </span>
                 ) : isUpcoming ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#e5eeff] text-[#2557E8] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
-                    {language === 'vi' ? 'Sắp diễn ra' : language === 'ja' ? '今後の予定' : language === 'ko' ? '예정됨' : 'Upcoming'}
+                    {language === 'vi' ? 'Sắp tới' : language === 'ja' ? '今後の予定' : language === 'ko' ? '예정됨' : 'Upcoming'}
                   </span>
                 ) : isAiTab ? (
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#2557E8] text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
-                      {language === 'vi' ? 'AI Tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'}
+                      {language === 'vi' ? 'AI tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'}
                     </span>
                     {plan.difficulty === 'Hard' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
@@ -744,7 +744,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                 ) : plan.isAiGenerated ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#ccfbf1] text-[#00897B] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
                     <Sparkles className="size-3" strokeWidth={2} />
-                    {language === 'vi' ? 'AI Tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'}
+                    {language === 'vi' ? 'AI tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'}
                   </span>
                 ) : null}
               </div>
@@ -832,7 +832,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                 <>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                     <Clock className="size-3.5 text-slate-400" />
-                    {language === 'vi' ? `Ước tính ${plan.hoursEst} giờ` : language === 'ja' ? `推定 ${plan.hoursEst} 時間` : language === 'ko' ? `예상 ${plan.hoursEst} 시간` : `${plan.hoursEst} Hours Est.`}
+                    {language === 'vi' ? `${plan.hoursEst} giờ ước tính` : language === 'ja' ? `推定 ${plan.hoursEst} 時間` : language === 'ko' ? `예상 ${plan.hoursEst} 시간` : `${plan.hoursEst} Hours Est.`}
                   </span>
                   {!isAiTab && <DifficultyPill level={plan.difficulty} />}
                 </>
@@ -875,7 +875,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
           {!isCompleted && !isUpcoming && !isAiTab && localizedPlanInfo.milestone && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-                {language === 'vi' ? 'Cột mốc tiếp theo' : language === 'ja' ? '次のマイルストーン' : language === 'ko' ? '다음 마일스톤' : 'Next Milestone'}
+                {language === 'vi' ? 'Mốc tiếp theo' : language === 'ja' ? '次のマイルストーン' : language === 'ko' ? '다음 마일스톤' : 'Next Milestone'}
               </p>
               <div className="flex items-start gap-3">
                 {/* Date block */}
@@ -926,7 +926,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
               >
                 {isCompleted 
                   ? (language === 'vi' ? 'Xem tóm tắt' : language === 'ja' ? '要約を表示' : language === 'ko' ? '요약 보기' : 'View Summary') 
-                  : (language === 'vi' ? 'Xem giáo trình' : language === 'ja' ? 'カリキュラム表示' : language === 'ko' ? '커리큘럼 보기' : 'View Curriculum')}
+                  : (language === 'vi' ? 'Xem lộ trình' : language === 'ja' ? 'カリキュラム表示' : language === 'ko' ? '커리큘럼 보기' : 'View Curriculum')}
               </Button>
             )}
           </div>
@@ -958,11 +958,11 @@ function FilterTabs({
       case 'Active':
         return language === 'vi' ? 'Đang học' : language === 'ja' ? '学習中' : language === 'ko' ? '학습 중' : 'Active'
       case 'Completed':
-        return language === 'vi' ? 'Đã hoàn thành' : language === 'ja' ? '完了' : language === 'ko' ? '완료됨' : 'Completed'
+        return language === 'vi' ? 'Hoàn thành' : language === 'ja' ? '完了' : language === 'ko' ? '완료됨' : 'Completed'
       case 'Upcoming':
-        return language === 'vi' ? 'Sắp diễn ra' : language === 'ja' ? '今後の予定' : language === 'ko' ? '예정됨' : 'Upcoming'
+        return language === 'vi' ? 'Sắp tới' : language === 'ja' ? '今後の予定' : language === 'ko' ? '예정됨' : 'Upcoming'
       case 'AI Generated':
-        return language === 'vi' ? 'AI Tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'
+        return language === 'vi' ? 'AI tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'
       default:
         return tab
     }
