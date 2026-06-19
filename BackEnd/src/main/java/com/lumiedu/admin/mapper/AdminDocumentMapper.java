@@ -32,6 +32,8 @@ public class AdminDocumentMapper {
                 .summaryPreview(summaryPreview)
                 .status("ACTIVE") // Mặc định do Document entity chưa có status
                 .moderationReason(null)
+                .subject(doc.getSubject())
+                .visibility(doc.getVisibility())
                 .build();
     }
 }

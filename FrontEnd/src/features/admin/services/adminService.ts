@@ -1,6 +1,6 @@
 import { userNotificationService } from '@/features/notifications/services/userNotificationService';
 import { UserRole } from '@/types/auth';
-
+import { apiClient } from '@/lib/axios';
 export type AdminUser = {
   id: string;
   name: string;
@@ -39,6 +39,7 @@ export type AdminDocument = {
   unsafeContentScore: number;
   spamScore: number;
   uploadSource: "web_upload" | "api_sync" | "partner_portal";
+  visibility?: string;
 };
 
 export type DeletedDocumentRecord = {
@@ -589,17 +590,17 @@ export const deleteUser = async (userId: string, reason?: string): Promise<{ suc
 
 export const getDocuments = async (): Promise<AdminDocument[]> => {
   try {
-    const response = await apiClient.get('/documents');
+    const response = await apiClient.get('/admin/documents?size=10000');
     const list = response.data?.data || response.data;
     if (Array.isArray(list)) {
       return list.map((d: any) => ({
         id: String(d.id),
         title: d.title,
-        ownerName: d.ownerName || 'User',
-        ownerEmail: d.ownerEmail || 'user@example.com',
+        ownerName: d.ownerName || '',
+        ownerEmail: d.ownerEmail || '',
         fileType: d.fileType?.toLowerCase() || 'pdf',
-        sizeMB: d.sizeMb || 0.5,
-        uploadedAt: d.createdAt ? d.createdAt.split('T')[0] : '2024-05-18',
+        sizeMB: d.fileSize ? Number((d.fileSize / (1024 * 1024)).toFixed(2)) : 0,
+        uploadedAt: d.createdAt ? d.createdAt.split('T')[0] : '',
         status: d.status?.toLowerCase() || 'approved',
         aiStatus: d.aiStatus?.toLowerCase() || 'analyzed',
         category: d.subject || 'General',
@@ -613,14 +614,15 @@ export const getDocuments = async (): Promise<AdminDocument[]> => {
         plagiarismScore: d.plagiarismScore || 0,
         unsafeContentScore: d.unsafeContentScore || 0,
         spamScore: d.spamScore || 0,
-        uploadSource: d.uploadSource || 'web_upload'
+        uploadSource: d.uploadSource || 'web_upload',
+        visibility: d.visibility || 'PRIVATE'
       }));
     }
+    return [];
   } catch (error) {
-    console.warn("Using mock documents fallback", error);
+    console.error("Failed to fetch admin documents", error);
+    return [];
   }
-  await randomDelay();
-  return [...mockDocuments];
 };
 
 export const updateDocument = async (
