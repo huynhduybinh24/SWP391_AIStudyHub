@@ -3,8 +3,10 @@ package com.lumiedu.document.controller;
 import com.lumiedu.document.dto.request.DocumentCreateRequest;
 import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.request.TagRequest;
+import com.lumiedu.document.dto.request.DocumentShareRequest;
 import com.lumiedu.document.dto.response.ApiResponse;
 import com.lumiedu.document.dto.response.DocumentResponse;
+import com.lumiedu.document.entity.DocumentShare;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
@@ -198,6 +200,43 @@ public class DocumentController {
     ) {
         documentService.removeTag(id, tagName);
         return ResponseEntity.ok(ApiResponse.ok("Tag removed successfully.", null));
+    }
+
+    // ------------------------------------------------------------------
+    // GET /api/documents/{id}/shares
+    // ------------------------------------------------------------------
+    @GetMapping("/{id}/shares")
+    public ResponseEntity<ApiResponse<List<DocumentShare>>> getDocumentShares(
+            @PathVariable Long id
+    ) {
+        List<DocumentShare> shares = documentService.getDocumentShares(id);
+        return ResponseEntity.ok(ApiResponse.ok("Shares retrieved successfully.", shares));
+    }
+
+    // ------------------------------------------------------------------
+    // POST /api/documents/{id}/shares
+    // ------------------------------------------------------------------
+    @PostMapping("/{id}/shares")
+    public ResponseEntity<ApiResponse<DocumentShare>> addOrUpdateDocumentShare(
+            @PathVariable Long id,
+            @RequestBody DocumentShareRequest request
+    ) {
+        DocumentShare response = documentService.addOrUpdateDocumentShare(
+                id, request.getEmail(), request.getRole()
+        );
+        return ResponseEntity.ok(ApiResponse.ok("Share added or updated successfully.", response));
+    }
+
+    // ------------------------------------------------------------------
+    // DELETE /api/documents/{id}/shares
+    // ------------------------------------------------------------------
+    @DeleteMapping("/{id}/shares")
+    public ResponseEntity<ApiResponse<Void>> deleteDocumentShare(
+            @PathVariable Long id,
+            @RequestParam String email
+    ) {
+        documentService.deleteDocumentShare(id, email);
+        return ResponseEntity.ok(ApiResponse.ok("Share deleted successfully.", null));
     }
 
     // ------------------------------------------------------------------

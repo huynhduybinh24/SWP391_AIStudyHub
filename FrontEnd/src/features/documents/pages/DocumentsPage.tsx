@@ -39,6 +39,8 @@ interface DocumentItem {
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
   essential?: boolean
+  ownerName?: string
+  ownerEmail?: string
 }
 
 interface SubjectContent {
@@ -858,7 +860,9 @@ export function DocumentsPage() {
       sizeKb: doc.fileSize ? Math.round(doc.fileSize / 1024) : 0,
       subject: (doc.subject || 'GENERAL') as any,
       status: 'ANALYZED',
-      type: mapMimeOrExtensionToType(doc.fileType, doc.fileName || doc.originalFileName || '')
+      type: mapMimeOrExtensionToType(doc.fileType, doc.fileName || doc.originalFileName || ''),
+      ownerName: doc.ownerName,
+      ownerEmail: doc.ownerEmail
     }
   }
 

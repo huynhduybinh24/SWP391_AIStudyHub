@@ -13,6 +13,8 @@ export interface DocumentResponse {
   visibility: string
   userId: number
   checksum: string
+  ownerName?: string
+  ownerEmail?: string
   createdAt: string
   updatedAt: string
 }
@@ -76,5 +78,19 @@ export const documentService = {
       responseType: 'blob',
     })
     return response.data
+  },
+
+  async getDocumentShares(documentId: number | string): Promise<any[]> {
+    const response = await apiClient.get<ApiResponse<any[]>>(`/documents/${documentId}/shares`)
+    return response.data.data
+  },
+
+  async addOrUpdateDocumentShare(documentId: number | string, email: string, role: string): Promise<any> {
+    const response = await apiClient.post<ApiResponse<any>>(`/documents/${documentId}/shares`, { email, role })
+    return response.data.data
+  },
+
+  async deleteDocumentShare(documentId: number | string, email: string): Promise<void> {
+    await apiClient.delete<ApiResponse<void>>(`/documents/${documentId}/shares?email=${encodeURIComponent(email)}`)
   }
 }

@@ -10,11 +10,15 @@ import com.lumiedu.document.entity.DocumentTag;
 import com.lumiedu.document.exception.DocumentNotFoundException;
 import com.lumiedu.document.exception.FileStorageException;
 import com.lumiedu.document.exception.InvalidFileTypeException;
+import com.lumiedu.document.entity.DocumentShare;
+import com.lumiedu.document.repository.DocumentShareRepository;
 import com.lumiedu.document.repository.AudioRecordRepository;
 import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.document.repository.DocumentTagRepository;
 import com.lumiedu.document.service.DocumentService;
+import com.lumiedu.user.entity.User;
+import com.lumiedu.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,6 +67,8 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentTagRepository documentTagRepository;
     private final DocumentDownloadRepository documentDownloadRepository;
     private final AudioRecordRepository audioRecordRepository;
+    private final UserRepository userRepository;
+    private final DocumentShareRepository documentShareRepository;
 
     // -------------------------------------------------------------------------
     // Upload
@@ -394,6 +400,16 @@ public class DocumentServiceImpl implements DocumentService {
                 .map(DocumentTag::getName)
                 .collect(Collectors.toList());
 
+        String ownerName = "Unknown";
+        String ownerEmail = "";
+        if (document.getUserId() != null) {
+            Optional<User> uploaderOpt = userRepository.findById(document.getUserId());
+            if (uploaderOpt.isPresent()) {
+                ownerName = uploaderOpt.get().getFullName();
+                ownerEmail = uploaderOpt.get().getEmail();
+            }
+        }
+
         return DocumentResponse.builder()
                 .id(document.getId())
                 .title(document.getTitle())
@@ -407,9 +423,58 @@ public class DocumentServiceImpl implements DocumentService {
                 .subject(document.getSubject())
                 .visibility(document.getVisibility())
                 .userId(document.getUserId())
+                .ownerName(ownerName)
+                .ownerEmail(ownerEmail)
                 .tags(tags)
                 .createdAt(document.getCreatedAt())
                 .updatedAt(document.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DocumentShare> getDocumentShares(Long documentId) {
+        return documentShareRepository.findByDocumentId(documentId);
+    }
+
+    @Override
+    public DocumentShare addOrUpdateDocumentShare(Long documentId, String email, String role) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Sharee email must not be null or empty");
+        }
+        String normalizedEmail = email.trim().toLowerCase();
+
+        String normalizedRole = "viewer";
+        if (role != null) {
+            String roleLower = role.trim().toLowerCase();
+            if ("editor".equals(roleLower) || "viewer".equals(roleLower)) {
+                normalizedRole = roleLower;
+            }
+        }
+
+        Optional<DocumentShare> existingOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, normalizedEmail);
+        DocumentShare documentShare;
+        if (existingOpt.isPresent()) {
+            documentShare = existingOpt.get();
+            documentShare.setRole(normalizedRole);
+        } else {
+            documentShare = DocumentShare.builder()
+                    .documentId(documentId)
+                    .shareeEmail(normalizedEmail)
+                    .role(normalizedRole)
+                    .build();
+        }
+
+        return documentShareRepository.save(documentShare);
+    }
+
+    @Override
+    public void deleteDocumentShare(Long documentId, String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Sharee email must not be null or empty");
+        }
+        String normalizedEmail = email.trim().toLowerCase();
+        documentShareRepository.findByDocumentIdAndShareeEmail(documentId, normalizedEmail)
+                .ifPresent(share -> documentShareRepository.delete(share));
     }
 }
