@@ -136,8 +136,15 @@ export function AdminDashboardPage() {
       setUsers((prev) => prev.map((u) => (u.id === userId ? updated : u)))
       
       // Sync updated user data to useAuthStore if the updated account is the active session
+      const cleanEmail = (email?: string): string => {
+        if (!email) return ''
+        return email.trim().toLowerCase().replace(/[^\x20-\x7E]/g, '')
+      }
+
       const currentUser = useAuthStore.getState().user
-      if (currentUser && currentUser.email?.toLowerCase() === updated.email?.toLowerCase()) {
+      const updatedEmailClean = cleanEmail(updated.email)
+      
+      if (currentUser && cleanEmail(currentUser.email) === updatedEmailClean) {
         useAuthStore.setState({
           user: {
             ...currentUser,
@@ -151,10 +158,10 @@ export function AdminDashboardPage() {
         localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify({
           id: updated.id,
           name: updated.name,
-          email: updated.email,
+          email: updatedEmailClean,
           role: updated.role,
           plan: updated.plan || 'free',
-          avatar: updated.avatar || '/logo.png'
+          avatar: (updated as any).avatar || '/logo.png'
         }))
       }
 
@@ -166,11 +173,12 @@ export function AdminDashboardPage() {
             const list = JSON.parse(stored)
             if (Array.isArray(list)) {
               const updatedList = list.map((acc: any) => {
-                if (acc.email?.toLowerCase() === updated.email?.toLowerCase()) {
+                if (cleanEmail(acc.email) === updatedEmailClean) {
                   return {
                     ...acc,
                     name: updated.name,
-                    role: updated.role === 'admin' ? 'admin' : updated.role === 'teacher' ? 'instructor' : 'student',
+                    email: updatedEmailClean,
+                    role: updated.role?.toLowerCase() === 'admin' ? 'admin' : 'user',
                     plan: (updated.plan || 'free').toUpperCase()
                   }
                 }
@@ -183,6 +191,14 @@ export function AdminDashboardPage() {
           console.error('Failed to sync updated user to quick switcher accounts list:', e)
         }
       }
+
+      // Re-fetch dashboard stats to ensure they remain synchronized with database
+      try {
+        const statsResponse = await adminService.getAdminStats()
+        setStats(statsResponse)
+      } catch (e) {
+        console.error('Failed to sync stats after user update:', e)
+      }
     } catch (err: any) {
       setError(err.message)
     }
@@ -192,6 +208,14 @@ export function AdminDashboardPage() {
     try {
       await adminService.deleteUser(userId, reason)
       setUsers((prev) => prev.filter((u) => u.id !== userId))
+
+      // Re-fetch dashboard stats to ensure they remain synchronized with database
+      try {
+        const statsResponse = await adminService.getAdminStats()
+        setStats(statsResponse)
+      } catch (e) {
+        console.error('Failed to sync stats after user delete:', e)
+      }
     } catch (err: any) {
       setError(err.message)
     }
@@ -474,6 +498,7 @@ export function AdminDashboardPage() {
         {activeTab === 'packages' && (
           <AdminPackagesTab
             users={users}
+            stats={stats}
             onUpdateUser={handleUpdateUser}
           />
         )}
@@ -483,7 +508,7 @@ export function AdminDashboardPage() {
         )}
 
         {activeTab === 'analytics' && (
-          <AdminAnalyticsTab />
+          <AdminAnalyticsTab stats={stats} />
         )}
 
         {activeTab === 'activity-logs' && (

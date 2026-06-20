@@ -18,6 +18,8 @@ public class DocumentResponse {
     private String fileName;
     private String originalFileName;
     private String fileUrl;
+    private String googleDriveFileId;
+    private String storageProvider;
     private String fileType;
     private String mimeType;
     private Long fileSize;

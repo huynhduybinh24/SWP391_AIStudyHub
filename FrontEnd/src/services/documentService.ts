@@ -82,17 +82,31 @@ export const documentService = {
     return response.data
   },
 
-  async getDocumentShares(documentId: number | string): Promise<any[]> {
-    const response = await apiClient.get<ApiResponse<any[]>>(`/documents/${documentId}/shares`)
-    return response.data.data
+  async previewDocument(id: number | string, userId?: number): Promise<string> {
+    const url = userId ? `/documents/${id}/preview?userId=${userId}` : `/documents/${id}/preview`
+    const response = await apiClient.get<string>(url, {
+      responseType: 'text',
+    })
+    return response.data
   },
 
-  async addOrUpdateDocumentShare(documentId: number | string, email: string, role: string): Promise<any> {
-    const response = await apiClient.post<ApiResponse<any>>(`/documents/${documentId}/shares`, { email, role })
-    return response.data.data
+  async previewDocumentBlob(id: number | string, userId?: number): Promise<Blob> {
+    const url = userId ? `/documents/${id}/preview?userId=${userId}` : `/documents/${id}/preview`
+    const response = await apiClient.get<Blob>(url, {
+      responseType: 'blob',
+    })
+    return response.data
   },
 
-  async deleteDocumentShare(documentId: number | string, email: string): Promise<void> {
-    await apiClient.delete<ApiResponse<void>>(`/documents/${documentId}/shares?email=${encodeURIComponent(email)}`)
+  async getSubjectStats(subjectId: string, userId: number): Promise<SubjectStats> {
+    const response = await apiClient.get<ApiResponse<SubjectStats>>(`/documents/subject/${subjectId}/stats?userId=${userId}`)
+    return response.data.data
   }
+}
+
+export interface SubjectStats {
+  studyProgress: number
+  averageScore: number | null
+  rank: string
+  aiRecommendation: string
 }

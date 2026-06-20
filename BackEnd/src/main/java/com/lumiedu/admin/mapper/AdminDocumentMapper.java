@@ -30,10 +30,8 @@ public class AdminDocumentMapper {
                 .createdAt(doc.getCreatedAt())
                 .updatedAt(doc.getUpdatedAt())
                 .summaryPreview(summaryPreview)
-                .status(doc.getStatus() != null ? doc.getStatus() : "PENDING")
-                .moderationReason(doc.getModerationReason())
-                .subject(doc.getSubject())
-                .visibility(doc.getVisibility())
+                .status(doc.getModerationStatus() != null ? doc.getModerationStatus().name() : "APPROVED")
+                .moderationReason(doc.getModerationNote())
                 .build();
     }
 }

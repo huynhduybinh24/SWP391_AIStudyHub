@@ -62,6 +62,9 @@ export function AdminUsersTab({
   // Search/Filter logic
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
+      // Exclude admin accounts from general user management
+      if (u.role === 'admin') return false
+
       const searchLower = searchTerm.toLowerCase()
       const planName = u.plan === 'pro' ? 'pro' : u.plan === 'free' ? 'free' : (u.plan || 'free').toLowerCase()
       const matchesSearch =
@@ -71,7 +74,9 @@ export function AdminUsersTab({
         planName.includes(searchLower)
       
       const matchesRole = roleFilter === 'all' || u.role === roleFilter
-      const matchesStatus = statusFilter === 'all' || u.status === statusFilter
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'inactive' && (u.status === 'inactive' || u.status === 'locked')) ||
+        u.status === statusFilter
 
       return matchesSearch && matchesRole && matchesStatus
     })
@@ -111,7 +116,7 @@ export function AdminUsersTab({
 
   const handleConfirmLockUser = () => {
     if (!lockUserConfirm) return
-    onUpdateUser(lockUserConfirm.id, { status: 'inactive' }, lockReason)
+    onUpdateUser(lockUserConfirm.id, { status: 'locked' }, lockReason)
     const label = language === 'vi'
       ? `Đã khóa tài khoản và gửi email thông báo lý do đến ${lockUserConfirm.email} thành công`
       : `Account locked and notification email with reason sent to ${lockUserConfirm.email} successfully`
@@ -145,7 +150,7 @@ export function AdminUsersTab({
   // Save Role Changes
   const handleSaveRole = () => {
     if (!editingRoleUser) return
-    onUpdateUser(editingRoleUser.id, { role: selectedRole })
+    onUpdateUser(editingRoleUser.id, { role: selectedRole as any })
     const msg = language === 'vi' 
       ? `Đã cập nhật vai trò của ${editingRoleUser.name} thành ${selectedRole}` 
       : `Updated ${editingRoleUser.name}'s role to ${selectedRole}`
@@ -178,7 +183,6 @@ export function AdminUsersTab({
             className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold focus:outline-none"
           >
             <option value="all">{language === 'vi' ? 'Mọi vai trò' : 'All Roles'}</option>
-            <option value="admin">Admin</option>
             <option value="teacher">Teacher</option>
             <option value="student">Student</option>
           </select>
@@ -254,7 +258,7 @@ export function AdminUsersTab({
                           "font-extrabold text-[10px] uppercase tracking-wider rounded-full px-2.5 py-0.5",
                           u.role === 'admin' && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
                           u.role === 'teacher' && "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
-                          u.role === 'student' && "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          (u.role as string) === 'student' && "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
                         )}>
                           {u.role}
                         </Badge>
@@ -267,9 +271,15 @@ export function AdminUsersTab({
                             "font-extrabold text-[10px] rounded-full px-2.5 py-0.5 uppercase tracking-wide",
                             u.plan === 'pro' 
                               ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15"
+                              : (u.plan === 'enterprise' || u.plan === 'premium' || u.plan === 'institutional')
+                              ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/15"
                               : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450"
                           )}>
-                            {u.plan === 'pro' ? 'Pro' : 'Free'}
+                            {u.plan === 'pro' 
+                              ? 'Pro' 
+                              : (u.plan === 'enterprise' || u.plan === 'premium' || u.plan === 'institutional')
+                              ? 'Premium' 
+                              : 'Free'}
                           </Badge>
                         ) : (
                           <span className="text-slate-400 dark:text-slate-600 font-bold">-</span>
@@ -278,7 +288,7 @@ export function AdminUsersTab({
 
                       {/* Storage used */}
                       <td className="p-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                        {(u.storageUsedMB / 1024).toFixed(2)} GB / {u.plan === 'pro' ? 50 : 10} GB
+                        {(u.storageUsedMB / 1024).toFixed(2)} GB / {((u.storageLimitMB || 1024) / 1024).toFixed(0)} GB
                       </td>
 
                       {/* Last Active */}
@@ -291,25 +301,26 @@ export function AdminUsersTab({
                       {/* Status */}
                       <td className="p-4">
                         {(() => {
-                          const isLocked = u.status === 'inactive' || u.status === 'banned';
-                          const isOnline = u.isOnline;
-                          
-                          let badgeBg = "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400";
-                          let dotBg = "bg-slate-400";
-                          let statusLabel = "";
+                          const s = u.status; // from DB: 'active' | 'inactive' | 'banned'
+                          let badgeBg: string;
+                          let dotBg: string;
+                          let statusLabel: string;
 
-                          if (isLocked) {
-                            badgeBg = "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/15";
+                          if ((s as string) === 'banned') {
+                            badgeBg = "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/15";
                             dotBg = "bg-rose-500";
-                            statusLabel = language === 'vi' ? 'Bị khoá' : 'Locked';
-                          } else if (isOnline) {
-                            badgeBg = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/15";
-                            dotBg = "bg-emerald-500 animate-pulse";
-                            statusLabel = 'Online';
+                            statusLabel = language === 'vi' ? 'Bị cấm' : 'Banned';
+                          } else if (s === 'inactive' || s === 'locked') {
+                            badgeBg = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/15";
+                            dotBg = "bg-amber-400";
+                            statusLabel = s === 'locked' 
+                              ? (language === 'vi' ? 'Bị khóa' : 'Locked')
+                              : (language === 'vi' ? 'Không hoạt động' : 'Inactive');
                           } else {
-                            badgeBg = "bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/15";
-                            dotBg = "bg-slate-400";
-                            statusLabel = 'Offline';
+                            // active
+                            badgeBg = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/15";
+                            dotBg = "bg-emerald-500";
+                            statusLabel = language === 'vi' ? 'Hoạt động' : 'Active';
                           }
 
                           return (
@@ -357,7 +368,7 @@ export function AdminUsersTab({
                               setSelectedRole(
                                 u.role === 'admin'
                                   ? 'admin'
-                                  : (u.role === 'teacher' || u.role === 'instructor')
+                                  : (u.role === 'teacher' || (u.role as string) === 'instructor')
                                     ? 'teacher'
                                     : 'student'
                               )
@@ -544,12 +555,12 @@ export function AdminUsersTab({
                   <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-blue-600 dark:bg-blue-500 rounded-full" 
-                      style={{ width: `${(selectedUser.storageUsedMB / (selectedUser.plan === 'pro' ? 51200 : 10240)) * 100}%` }}
+                      style={{ width: `${Math.min(100, (selectedUser.storageUsedMB / (selectedUser.storageLimitMB || 1024)) * 100)}%` }}
                     />
                   </div>
                   <div className="flex justify-between font-extrabold text-[10px] text-slate-450 dark:text-slate-500">
                     <span>{(selectedUser.storageUsedMB / 1024).toFixed(2)} GB {language === 'vi' ? 'đã dùng' : 'used'}</span>
-                    <span>{selectedUser.plan === 'pro' ? 50 : 10} GB</span>
+                    <span>{((selectedUser.storageLimitMB || 1024) / 1024).toFixed(0)} GB</span>
                   </div>
                 </div>
               </div>
@@ -752,7 +763,7 @@ export function AdminUsersTab({
               {language === 'vi' ? 'Chọn vai trò mới cho:' : 'Select role for:'} <span className="font-extrabold text-slate-800 dark:text-white block mt-0.5">{editingRoleUser.name}</span>
             </p>
             <div className="space-y-2">
-              {(['student', 'teacher', 'admin'] as const).map((r) => (
+              {(['student', 'teacher'] as const).map((r) => (
                 <label
                   key={r}
                   className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${

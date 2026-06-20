@@ -7,6 +7,7 @@ import com.lumiedu.admin.service.AdminSystemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,21 +17,20 @@ public class AdminSystemController {
 
     private final AdminSystemService adminSystemService;
 
-    // TODO: Protect this endpoint with ADMIN role after security is configured.
     @GetMapping("/status")
     public ResponseEntity<AdminSystemStatusResponse> getSystemStatus() {
         return ResponseEntity.ok(adminSystemService.getSystemStatus());
     }
 
-    // TODO: Protect this endpoint with ADMIN role after security is configured.
     @PutMapping("/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminSystemStatusResponse> updateSystemStatus(
             @RequestBody @Valid AdminSystemStatusRequest request) {
         return ResponseEntity.ok(adminSystemService.updateSystemStatus(request));
     }
 
-    // TODO: Protect this endpoint with ADMIN role after security is configured.
     @GetMapping("/health")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminHealthResponse> getSystemHealth() {
         return ResponseEntity.ok(adminSystemService.getSystemHealth());
     }

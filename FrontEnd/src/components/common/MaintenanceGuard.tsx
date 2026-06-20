@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Wrench, RefreshCw } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
-import { getSystemStatusSync, SystemStatusState } from '@/features/admin/services/systemStatusService'
+import { getSystemStatusSync, getSystemStatus, SystemStatusState } from '@/features/admin/services/systemStatusService'
 import { useAuthStore } from '@/stores/authStore'
 
 interface MaintenanceGuardProps {
@@ -16,6 +16,15 @@ export function MaintenanceGuard({ children }: MaintenanceGuardProps) {
   const [status, setStatus] = useState<SystemStatusState>(getSystemStatusSync())
 
   useEffect(() => {
+    // Tải trạng thái hệ thống từ Backend khi ứng dụng khởi chạy
+    getSystemStatus()
+      .then((newState) => {
+        setStatus(newState)
+      })
+      .catch((err) => {
+        console.error('Failed to load initial system status', err)
+      })
+
     const handleUpdate = () => {
       setStatus(getSystemStatusSync())
     }

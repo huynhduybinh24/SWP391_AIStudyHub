@@ -6,7 +6,7 @@ import com.lumiedu.user.entity.User;
 
 public class AdminUserMapper {
     
-    public static AdminUserResponse toResponse(User user, PlanType planType) {
+    public static AdminUserResponse toResponse(User user, PlanType planType, Long storageLimitMb) {
         if (user == null) {
             return null;
         }
@@ -19,7 +19,7 @@ public class AdminUserMapper {
                 .planType(planType != null ? planType : PlanType.FREE)
                 .avatarUrl(user.getAvatarUrl())
                 .storageUsedMb(user.getStorageUsedMb())
-                .storageLimitMb(user.getStorageLimitMb())
+                .storageLimitMb(storageLimitMb)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

@@ -31,6 +31,13 @@ import java.util.Optional;
 import java.util.UUID;
 import com.lumiedu.auth.dto.RegisterRequest;
 
+import com.lumiedu.auth.dto.ForgotPasswordRequest;
+import com.lumiedu.auth.dto.ResetPasswordRequest;
+import com.lumiedu.auth.service.AuthService;
+import com.lumiedu.common.config.JwtTokenProvider;
+import com.lumiedu.admin.repository.SystemSettingRepository;
+import com.lumiedu.admin.entity.SystemSetting;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -40,6 +47,9 @@ public class AuthController {
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final ThirdPartyAccountRepository thirdPartyAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final SystemSettingRepository systemSettingRepository;
+    private final AuthService authService;
 
     @Value("${google.client-id:123456789-dummy.apps.googleusercontent.com}")
     private String googleClientId;
@@ -118,6 +128,10 @@ public class AuthController {
             }
         }
 
+        if (googleId == null || googleId.trim().isEmpty() || email == null || email.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Google authentication did not return a valid user ID or email."));
+        }
+
         // Logic: find user by third-party account or email
         Optional<ThirdPartyAccount> tpAccountOpt = thirdPartyAccountRepository
                 .findByProviderTypeAndProviderUserId(ProviderType.GOOGLE, googleId);
@@ -159,7 +173,7 @@ public class AuthController {
                         .accountStatus(com.lumiedu.user.enums.AccountStatus.ACTIVE)
                         .twoFactorEnabled(false)
                         .storageUsedMb(0L)
-                        .storageLimitMb(500L)
+                        .storageLimitMb(1024L)
                         .build();
                 
                 user = userRepository.save(user);
@@ -173,6 +187,18 @@ public class AuthController {
                         .build();
                 thirdPartyAccountRepository.save(tpAccount);
             }
+        }
+
+        // Kiểm tra chế độ bảo trì hệ thống
+        String systemMode = systemSettingRepository.findById("SYSTEM_MODE")
+                .map(SystemSetting::getSettingValue)
+                .orElse("NORMAL");
+
+        if ("MAINTENANCE".equalsIgnoreCase(systemMode) && user.getRole() != com.lumiedu.user.enums.UserRole.ADMIN) {
+            String systemMessage = systemSettingRepository.findById("SYSTEM_MESSAGE")
+                    .map(SystemSetting::getSettingValue)
+                    .orElse("Hệ thống đang bảo trì / System is under maintenance");
+            return ResponseEntity.badRequest().body(Map.of("message", "Hệ thống đang bảo trì: " + systemMessage));
         }
 
         if (user.getAccountStatus() == com.lumiedu.user.enums.AccountStatus.LOCKED 
@@ -199,11 +225,15 @@ public class AuthController {
                 .role(user.getRole().name().toLowerCase())
                 .plan(plan)
                 .avatarUrl(user.getAvatarUrl() != null && !user.getAvatarUrl().trim().isEmpty() ? user.getAvatarUrl() : "/logo.png")
+                .university(user.getUniversity() != null ? user.getUniversity() : "FPT University")
+                .major(user.getMajor() != null ? user.getMajor() : "Software engineering")
+                .degree(user.getDegree() != null ? user.getDegree() : "Bachelor")
+                .twoFactorEnabled(user.getTwoFactorEnabled())
                 .build();
 
         AuthTokens tokens = AuthTokens.builder()
-                .accessToken("mock-jwt-token-for-dev")
-                .refreshToken("mock-refresh-token-for-dev")
+                .accessToken(jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name()))
+                .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail(), user.getRole().name()))
                 .build();
 
         LoginResponse response = LoginResponse.builder()
@@ -216,6 +246,18 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        // Kiểm tra chế độ bảo trì hệ thống
+        String systemMode = systemSettingRepository.findById("SYSTEM_MODE")
+                .map(SystemSetting::getSettingValue)
+                .orElse("NORMAL");
+
+        if ("MAINTENANCE".equalsIgnoreCase(systemMode)) {
+            String systemMessage = systemSettingRepository.findById("SYSTEM_MESSAGE")
+                    .map(SystemSetting::getSettingValue)
+                    .orElse("Hệ thống đang bảo trì / System is under maintenance");
+            return ResponseEntity.badRequest().body(Map.of("message", "Hệ thống đang bảo trì: " + systemMessage));
+        }
+
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Email already exists"));
         }
@@ -238,11 +280,15 @@ public class AuthController {
                 .role(user.getRole().name().toLowerCase())
                 .plan("free")
                 .avatarUrl("/logo.png")
+                .university(user.getUniversity() != null ? user.getUniversity() : "FPT University")
+                .major(user.getMajor() != null ? user.getMajor() : "Software engineering")
+                .degree(user.getDegree() != null ? user.getDegree() : "Bachelor")
+                .twoFactorEnabled(false)
                 .build();
 
         AuthTokens tokens = AuthTokens.builder()
-                .accessToken("mock-jwt-token-for-dev")
-                .refreshToken("mock-refresh-token-for-dev")
+                .accessToken(jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name()))
+                .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail(), user.getRole().name()))
                 .build();
 
         return ResponseEntity.ok(LoginResponse.builder()
@@ -261,6 +307,26 @@ public class AuthController {
         User user = userOpt.get();
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid credentials"));
+        }
+
+        // Kiểm tra chế độ bảo trì hệ thống (Admin được bỏ qua)
+        String systemMode = systemSettingRepository.findById("SYSTEM_MODE")
+                .map(SystemSetting::getSettingValue)
+                .orElse("NORMAL");
+
+        if ("MAINTENANCE".equalsIgnoreCase(systemMode) && user.getRole() != com.lumiedu.user.enums.UserRole.ADMIN) {
+            String systemMessage = systemSettingRepository.findById("SYSTEM_MESSAGE")
+                    .map(SystemSetting::getSettingValue)
+                    .orElse("Hệ thống đang bảo trì / System is under maintenance");
+            return ResponseEntity.badRequest().body(Map.of("message", "Hệ thống đang bảo trì: " + systemMessage));
+        }
+
+        // Intercept login if 2FA is enabled
+        if (Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+            return ResponseEntity.ok(Map.of(
+                "requires2fa", true,
+                "email", user.getEmail()
+            ));
         }
 
         // Determine current plan status
@@ -282,11 +348,15 @@ public class AuthController {
                 .role(user.getRole().name().toLowerCase())
                 .plan(plan)
                 .avatarUrl(user.getAvatarUrl() != null ? user.getAvatarUrl() : "/logo.png")
+                .university(user.getUniversity() != null ? user.getUniversity() : "FPT University")
+                .major(user.getMajor() != null ? user.getMajor() : "Software engineering")
+                .degree(user.getDegree() != null ? user.getDegree() : "Bachelor")
+                .twoFactorEnabled(user.getTwoFactorEnabled())
                 .build();
 
         AuthTokens tokens = AuthTokens.builder()
-                .accessToken("mock-jwt-token-for-dev")
-                .refreshToken("mock-refresh-token-for-dev")
+                .accessToken(jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name()))
+                .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail(), user.getRole().name()))
                 .build();
 
         LoginResponse response = LoginResponse.builder()
@@ -295,6 +365,67 @@ public class AuthController {
                 .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/login/verify-2fa")
+    public ResponseEntity<?> verify2faLogin(@RequestBody Verify2faLoginRequest request) {
+        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "User not found"));
+        }
+        User user = userOpt.get();
+
+        if (!Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "2FA is not enabled for this user"));
+        }
+
+        boolean isValid = com.lumiedu.common.util.TotpUtils.verifyCode(user.getTwoFactorSecret(), request.getCode());
+        if (!isValid) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Mã xác thực không đúng / Invalid 2FA code"));
+        }
+
+        // Determine current plan status
+        String plan = "free";
+        if (user.getRole() == com.lumiedu.user.enums.UserRole.ADMIN) {
+            plan = "enterprise";
+        } else {
+            Optional<UserSubscription> activeSub = userSubscriptionRepository
+                    .findFirstByUserIdAndStatusOrderByEndDateDesc(user.getId(), SubscriptionStatus.ACTIVE);
+            if (activeSub.isPresent()) {
+                plan = activeSub.get().getSubscriptionPlan().getPlanType().name().toLowerCase();
+            }
+        }
+
+        AuthUser authUser = AuthUser.builder()
+                .id(String.valueOf(user.getId()))
+                .name(user.getFullName())
+                .email(user.getEmail())
+                .role(user.getRole().name().toLowerCase())
+                .plan(plan)
+                .avatarUrl(user.getAvatarUrl() != null ? user.getAvatarUrl() : "/logo.png")
+                .university(user.getUniversity() != null ? user.getUniversity() : "FPT University")
+                .major(user.getMajor() != null ? user.getMajor() : "Software engineering")
+                .degree(user.getDegree() != null ? user.getDegree() : "Bachelor")
+                .twoFactorEnabled(true)
+                .build();
+
+        AuthTokens tokens = AuthTokens.builder()
+                .accessToken(jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name()))
+                .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getEmail(), user.getRole().name()))
+                .build();
+
+        LoginResponse response = LoginResponse.builder()
+                .user(authUser)
+                .tokens(tokens)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Data
+    public static class Verify2faLoginRequest {
+        private String email;
+        private String code;
     }
 
     @PostMapping("/logout")
@@ -328,6 +459,10 @@ public class AuthController {
         private String role;
         private String plan;
         private String avatarUrl;
+        private String university;
+        private String major;
+        private String degree;
+        private Boolean twoFactorEnabled;
     }
 
     @Data
@@ -343,5 +478,21 @@ public class AuthController {
     public static class GoogleLoginRequest {
         private String code;
         private String redirectUri;
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        String result = authService.forgotPassword(request);
+        return ResponseEntity.ok(Map.of("message", result));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            String result = authService.resetPassword(request);
+            return ResponseEntity.ok(Map.of("message", result));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 }

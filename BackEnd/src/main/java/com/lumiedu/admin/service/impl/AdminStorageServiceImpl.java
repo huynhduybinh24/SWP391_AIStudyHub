@@ -8,6 +8,7 @@ import com.lumiedu.billing.entity.UserSubscription;
 import com.lumiedu.billing.enums.PlanType;
 import com.lumiedu.billing.enums.SubscriptionStatus;
 import com.lumiedu.billing.repository.UserSubscriptionRepository;
+import com.lumiedu.billing.repository.SubscriptionPlanRepository;
 import com.lumiedu.document.entity.Document;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.user.entity.User;
@@ -31,6 +32,7 @@ public class AdminStorageServiceImpl implements AdminStorageService {
     private final UserRepository userRepository;
     private final DocumentRepository documentRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
 
     @Override
     public AdminStorageOverviewResponse getStorageOverview() {
@@ -71,10 +73,28 @@ public class AdminStorageServiceImpl implements AdminStorageService {
                     PlanType planType = PlanType.FREE;
                     Optional<UserSubscription> activeSub = userSubscriptionRepository
                             .findFirstByUserIdAndStatusOrderByEndDateDesc(user.getId(), SubscriptionStatus.ACTIVE);
+                    
+                    Long storageLimit = user.getStorageLimitMb();
+                    if (user.getRole() == com.lumiedu.user.enums.UserRole.ADMIN) {
+                        storageLimit = 51200L;
+                    } else {
+                        if (activeSub.isPresent()) {
+                            var plan = activeSub.get().getSubscriptionPlan();
+                            if (plan != null && plan.getStorageLimitMb() != null) {
+                                storageLimit = plan.getStorageLimitMb();
+                            }
+                        } else {
+                            var freePlan = subscriptionPlanRepository.findByPlanType(PlanType.FREE);
+                            if (freePlan.isPresent() && freePlan.get().getStorageLimitMb() != null) {
+                                storageLimit = freePlan.get().getStorageLimitMb();
+                            }
+                        }
+                    }
+
                     if (activeSub.isPresent() && activeSub.get().getSubscriptionPlan() != null) {
                         planType = activeSub.get().getSubscriptionPlan().getPlanType();
                     }
-                    return AdminUserMapper.toResponse(user, planType);
+                    return AdminUserMapper.toResponse(user, planType, storageLimit);
                 })
                 .collect(Collectors.toList());
 

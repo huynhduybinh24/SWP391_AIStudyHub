@@ -30,6 +30,8 @@ import { useTranslation } from '@/context/LanguageContext'
 import { ShareAccessModal } from '@/components/shared/share-access/ShareAccessModal'
 import type { Collaborator as ShareAccessCollab } from '@/components/shared/share-access/ShareAccessModal'
 import BackToSharedFilesButton from '@/components/shared/BackToSharedFilesButton'
+import { useAuthStore } from '@/stores/authStore'
+import { apiClient } from '@/lib/axios'
 
 export type SharedFolderFile = {
   id: string
@@ -51,7 +53,7 @@ export type Collaborator = {
   lastActive?: string
 }
 
-const mockFiles: SharedFolderFile[] = [
+const mockFiles: SharedFolderFile[] = []; const UNUSED_mockFiles: SharedFolderFile[] = [
   {
     id: "file-1",
     name: "Literature Review.pdf",
@@ -162,7 +164,7 @@ const mockFiles: SharedFolderFile[] = [
   }
 ]
 
-const mockCollaborators: Collaborator[] = [
+const mockCollaborators: Collaborator[] = []; const UNUSED_mockCollaborators: Collaborator[] = [
   {
     id: 'sarah',
     name: 'Sarah Jenkins',
@@ -205,7 +207,7 @@ export function SharedFolderPage() {
   const { t, language } = useTranslation()
 
   // Standard State Management matching requested names
-  const [files, setFiles] = useState<SharedFolderFile[]>(mockFiles)
+  const [files, setFiles] = useState<SharedFolderFile[]>([])
   const [selectedFile, setSelectedFile] = useState<SharedFolderFile | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [importConfirmOpen, setImportConfirmOpen] = useState(false)
@@ -218,27 +220,84 @@ export function SharedFolderPage() {
   const [sortBy, setSortBy] = useState('name')
 
   // Additional state hooks
-  const [collaborators, setCollaborators] = useState<Collaborator[]>(mockCollaborators)
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([])
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false)
   const [selectedCollaborator, setSelectedCollaborator] = useState<Collaborator | null>(null)
 
-  // Sync with localStorage documents list on mount
+  const { user } = useAuthStore()
+  const currentUserId = user?.id ? Number(user.id) : undefined
+  const [workspaceId, setWorkspaceId] = useState<number | null>(null)
+
+  // Fetch workspace on mount
   useEffect(() => {
-    const saved = localStorage.getItem('ai_study_hub_documents')
-    if (saved) {
+    if (!currentUserId) return
+
+    const fetchWorkspace = async () => {
       try {
-        const docs = JSON.parse(saved) as any[]
-        setFiles((prev) =>
-          prev.map((file) => {
-            const alreadyImported = docs.some((d) => d.fileName === file.name)
-            return alreadyImported ? { ...file, imported: true } : file
-          })
-        )
-      } catch (e) {
-        console.error(e)
+        const response = await apiClient.get<any>(`/workspaces?userId=${currentUserId}`)
+        const list = response.data.data || []
+        if (list.length > 0) {
+          const target = list.find((w: any) => w.name.toLowerCase().includes('research') || w.name.toLowerCase().includes('group')) || list[0]
+          setWorkspaceId(target.id)
+        }
+      } catch (err) {
+        console.error('Failed to load user workspaces:', err)
       }
     }
-  }, [])
+    fetchWorkspace()
+  }, [currentUserId])
+
+  // Load files and collaborators from workspace details
+  useEffect(() => {
+    if (!workspaceId || !currentUserId) return
+
+    const fetchWorkspaceDetails = async () => {
+      try {
+        const response = await apiClient.get<any>(`/workspaces/${workspaceId}?userId=${currentUserId}`)
+        const workspace = response.data.data
+        if (workspace) {
+          // Map documents
+          const mappedFiles: SharedFolderFile[] = (workspace.documents || []).map((doc: any) => ({
+            id: String(doc.documentId),
+            name: doc.originalFileName || doc.title || 'Untitled',
+            type: doc.fileType?.toLowerCase() || 'pdf',
+            size: doc.fileSize ? `${(doc.fileSize / (1024 * 1024)).toFixed(1)} MB` : '0 Bytes',
+            fileTypeLabel: doc.fileType || 'Document',
+            owner: doc.addedByName || 'System',
+            imported: false
+          }))
+
+          // Map members
+          const mappedCollabs: Collaborator[] = (workspace.members || []).map((mem: any) => ({
+            id: String(mem.userId),
+            name: mem.fullName || mem.email || 'Member',
+            email: mem.email || '',
+            role: mem.role === 'OWNER' ? 'Owner' : (mem.role === 'EDITOR' ? 'Editor' : 'Viewer'),
+            avatar: undefined,
+            lastActive: mem.status === 'ACCEPTED' ? 'Active' : 'Pending invite'
+          }))
+
+          // Check which files are already in user's personal list to mark as imported
+          try {
+            const personalResponse = await apiClient.get<any>(`/documents?userId=${currentUserId}`)
+            const personalDocs = personalResponse.data.data || []
+            const finalFiles = mappedFiles.map(file => {
+              const isImported = personalDocs.some((d: any) => d.originalFileName === file.name || String(d.id) === file.id)
+              return { ...file, imported: isImported }
+            })
+            setFiles(finalFiles)
+          } catch (e) {
+            setFiles(mappedFiles)
+          }
+
+          setCollaborators(mappedCollabs)
+        }
+      } catch (err) {
+        console.error('Failed to load workspace details:', err)
+      }
+    }
+    fetchWorkspaceDetails()
+  }, [workspaceId, currentUserId])
 
   // Action handlers
   const handleManageAccess = () => {
@@ -317,49 +376,23 @@ The combined research indicates a strong correlation between multivariable biolo
     setImportConfirmOpen(true)
   }
 
-  const handleConfirmImport = () => {
-    if (!selectedFile) return
+  const handleConfirmImport = async () => {
+    if (!selectedFile || !workspaceId || !currentUserId) return
 
-    const saved = localStorage.getItem('ai_study_hub_documents')
-    let currentDocs: any[] = []
-    if (saved) {
-      try {
-        currentDocs = JSON.parse(saved)
-      } catch (e) {
-        currentDocs = []
-      }
+    try {
+      await apiClient.post(`/workspaces/${workspaceId}/documents/${selectedFile.id}/import?userId=${currentUserId}`)
+
+      setFiles((prev) =>
+        prev.map((f) => (f.id === selectedFile.id ? { ...f, imported: true } : f))
+      )
+
+      toast.success(t.sharedFolder.fileImported || 'File imported to My Documents')
+    } catch (err) {
+      console.error('Failed to import document:', err)
+      toast.error('Failed to import document')
+    } finally {
+      setImportConfirmOpen(false)
     }
-
-    const mapFileTypeToDocType = (type: string): 'pdf' | 'word' | 'image' | 'text' | 'slides' => {
-      const ext = type.toLowerCase()
-      if (ext === 'pdf') return 'pdf'
-      if (ext === 'docx') return 'word'
-      if (ext === 'png' || ext === 'jpg') return 'image'
-      if (ext === 'pptx') return 'slides'
-      return 'text'
-    }
-
-    const newDoc = {
-      id: `doc-imported-${Date.now()}`,
-      title: selectedFile.name.replace(/\.[^/.]+$/, ''),
-      fileName: selectedFile.name,
-      uploadedAt: 'Imported Just Now',
-      uploadedDateObj: new Date().toISOString(),
-      size: selectedFile.size,
-      sizeKb: parseSizeToBytes(selectedFile.size) / 1024,
-      subject: 'GENERAL',
-      status: 'ANALYZED',
-      type: mapFileTypeToDocType(selectedFile.type)
-    }
-
-    localStorage.setItem('ai_study_hub_documents', JSON.stringify([newDoc, ...currentDocs]))
-
-    setFiles((prev) =>
-      prev.map((f) => (f.id === selectedFile.id ? { ...f, imported: true } : f))
-    )
-
-    toast.success(t.sharedFolder.fileImported || 'File imported to My Documents')
-    setImportConfirmOpen(false)
   }
 
   const handlePreviewOpen = (file: SharedFolderFile, e: React.MouseEvent) => {
@@ -729,6 +762,37 @@ The combined research indicates a strong correlation between multivariable biolo
         type="folder"
         collaborators={mappedShareCollabs}
         onCollaboratorsChange={handleCollaboratorsChange}
+        onShareSubmit={async (email, permission) => {
+          if (!workspaceId || !currentUserId) return
+          try {
+            const apiRole = permission === 'Editor' ? 'COLLABORATOR' : 'VIEWER'
+            await apiClient.post(`/workspaces/${workspaceId}/invite`, {
+              email,
+              role: apiRole,
+              inviterId: currentUserId
+            })
+            toast.success(language === 'vi' ? 'Đã gửi lời mời thành công!' : 'Invitation sent successfully!')
+            
+            // Refresh collaborators list
+            const response = await apiClient.get<any>(`/workspaces/${workspaceId}?userId=${currentUserId}`)
+            const workspace = response.data.data
+            if (workspace) {
+              const mappedCollabs: Collaborator[] = (workspace.members || []).map((mem: any) => ({
+                id: String(mem.userId),
+                name: mem.fullName || mem.email || 'Member',
+                email: mem.email || '',
+                role: mem.role === 'OWNER' ? 'Owner' : (mem.role === 'COLLABORATOR' ? 'Editor' : 'Viewer'),
+                avatar: undefined,
+                lastActive: mem.status === 'ACCEPTED' ? 'Active' : 'Pending invite'
+              }))
+              setCollaborators(mappedCollabs)
+            }
+          } catch (err: any) {
+            console.error('Failed to invite member:', err)
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to invite member'
+            toast.error(errorMsg)
+          }
+        }}
       />
 
       {/* Confirm Import dialog */}

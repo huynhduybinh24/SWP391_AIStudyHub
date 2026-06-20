@@ -8,6 +8,7 @@ import com.lumiedu.user.enums.UserRole;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,11 +16,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
 
-    // TODO: Protect this endpoint with ADMIN role after security is configured.
     @GetMapping
     public ResponseEntity<List<AdminUserResponse>> getUsers(
             @RequestParam(required = false) String keyword,
@@ -30,13 +31,11 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.getUsers(keyword, role, status, page, size));
     }
 
-    // TODO: Protect this endpoint with ADMIN role after security is configured.
     @GetMapping("/{id}")
     public ResponseEntity<AdminUserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(adminUserService.getUserById(id));
     }
 
-    // TODO: Protect this endpoint with ADMIN role after security is configured.
     @PutMapping("/{id}")
     public ResponseEntity<AdminUserResponse> updateUser(
             @PathVariable Long id,
@@ -44,7 +43,6 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.updateUser(id, request));
     }
 
-    // TODO: Protect this endpoint with ADMIN role after security is configured.
     @PatchMapping("/{id}/role")
     public ResponseEntity<AdminUserResponse> updateUserRole(
             @PathVariable Long id,
@@ -52,7 +50,6 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.updateUserRole(id, request));
     }
 
-    // TODO: Protect this endpoint with ADMIN role after security is configured.
     @PatchMapping("/{id}/status")
     public ResponseEntity<AdminUserResponse> updateUserStatus(
             @PathVariable Long id,
@@ -60,7 +57,6 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.updateUserStatus(id, request));
     }
 
-    // TODO: Protect this endpoint with ADMIN role after security is configured.
     @PatchMapping("/{id}/plan")
     public ResponseEntity<AdminUserResponse> updateUserPlan(
             @PathVariable Long id,
@@ -68,10 +64,11 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.updateUserPlan(id, request));
     }
 
-    // TODO: Protect this endpoint with ADMIN role after security is configured.
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        adminUserService.deleteUser(id);
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable Long id,
+            @RequestParam(required = false) String reason) {
+        adminUserService.deleteUser(id, reason);
         return ResponseEntity.noContent().build();
     }
 }

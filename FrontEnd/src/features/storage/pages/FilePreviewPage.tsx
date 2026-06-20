@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft,
   FileText,
@@ -14,81 +14,144 @@ import {
   Check,
   Loader2,
   X,
-  Plus
+  Plus,
+  AlertCircle
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Avatar } from '@/components/ui/Avatar'
 import { Modal } from '@/components/ui/Modal'
-
+import { documentService, type DocumentResponse } from '@/services/documentService'
 import { useTranslation } from '@/context/LanguageContext'
 
-const getFilePreviewPageContent = (pageNum: number) => {
-  if (pageNum === 1) {
-    return {
-      title: "Advanced Neuroscience: Neural Connectivity & Synaptic Plasticity",
-      subtitle: "NEURO-402 SYLLABUS 2024",
-      sectionTitle: "COURSE OVERVIEW",
-      body: "This course explores the fundamental mechanisms of neuronal communication and the dynamic processes of synaptic plasticity. We examine how molecular signaling pathways translate environmental stimuli into long-term changes in neural circuit architecture and behavior.",
-      showBrainImage: true
-    }
-  }
-  if (pageNum === 2) {
-    return {
-      title: "Chapter 1: Neuronal Foundations & Cable Theory",
-      subtitle: "NEURO-402 SYLLABUS 2024",
-      sectionTitle: "1.1 BIOPHYSICAL PROPERTIES",
-      body: "Analyzing passive electrical properties of dendrites and axons. We cover the mathematical formulation of cable equations, input resistance, length constants, and time constants governing electrical attenuation.",
-      showBrainImage: false
-    }
-  }
-  if (pageNum === 3) {
-    return {
-      title: "Chapter 2: Synaptic Transmission Mechanics",
-      subtitle: "NEURO-402 SYLLABUS 2024",
-      sectionTitle: "2.1 CHEMICAL NEUROTRANSMISSION",
-      body: "Detailed exploration of neurotransmitter synthesis, vesicle docking via SNARE complexes, and receptor activation. We contrast ionotropic ligand-gated channels with metabotropic G-protein coupled receptors.",
-      showBrainImage: false
-    }
-  }
-  return {
-    title: `Section ${Math.floor(pageNum / 3) + 1}: Appendix & Advanced Topics`,
-    subtitle: "NEURO-402 SYLLABUS 2024",
-    sectionTitle: `APPENDIX CHECKLIST — PAGE ${pageNum}`,
-    body: "Comprehensive summary of weekly lab assignments, scientific literature discussions, and core diagnostic parameters required for computational neuroscience modeling simulations.",
-    showBrainImage: false
-  }
-}
-
 export function FilePreviewPage() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
+  const [searchParams] = useSearchParams()
+  const docId = searchParams.get('id')
+
+  const [document, setDocument] = useState<DocumentResponse | null>(null)
+  const [previewText, setPreviewText] = useState<string>('')
+  const [imageUrl, setImageUrl] = useState<string>('')
+  const [pdfUrl, setPdfUrl] = useState<string>('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const [zoom, setZoom] = useState(100)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const pageContent = getFilePreviewPageContent(currentPage)
   const [isDownloading, setIsDownloading] = useState(false)
   const [isDownloaded, setIsDownloaded] = useState(false)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [isLinkCopied, setIsLinkCopied] = useState(false)
-  const [tags, setTags] = useState(['Biology', 'Exam Prep'])
+  const [tags, setTags] = useState(['Study Material'])
   const [newTag, setNewTag] = useState('')
   const [isAddingTag, setIsAddingTag] = useState(false)
-  const totalPages = 42
 
-  const handleZoomIn = () => setZoom(prev => Math.min(prev + 10, 150))
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 10, 50))
-  
-  const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1))
-  const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages))
+  useEffect(() => {
+    if (!docId) {
+      setError('Không tìm thấy tài liệu yêu cầu (No document ID specified)')
+      setLoading(false)
+      return
+    }
 
-  const handleDownload = () => {
+    const loadDocument = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const doc = await documentService.getDocumentById(docId)
+        setDocument(doc)
+
+        const ext = (doc.originalFileName || doc.fileName).split('.').pop()?.toLowerCase() || ''
+        const isImg = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)
+        const isPdf = ext === 'pdf'
+
+        if (isImg) {
+          const blob = await documentService.downloadDocument(docId)
+          const url = URL.createObjectURL(blob)
+          setImageUrl(url)
+        } else if (isPdf) {
+          const blob = await documentService.downloadDocument(docId)
+          const url = URL.createObjectURL(blob)
+          setPdfUrl(url)
+        } else {
+          try {
+            const text = await documentService.previewDocument(docId)
+            setPreviewText(text || '')
+          } catch (err) {
+            console.warn('No text preview available for this document:', err)
+            setPreviewText('')
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load document preview:', err)
+        setError('Không thể tải thông tin tệp tin này hoặc tệp không tồn tại.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDocument()
+  }, [docId])
+
+  // Clean up object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl)
+      }
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl)
+      }
+    }
+  }, [imageUrl, pdfUrl])
+
+  const pages = useMemo(() => {
+    if (!previewText) return []
+    // Split by Form Feed character commonly generated by PDFTextStripper
+    const splitPages = previewText.split('\f')
+    const filtered = splitPages.map((p) => p.trim()).filter(Boolean)
+    return filtered.length > 0 ? filtered : [previewText]
+  }, [previewText])
+
+  const totalPages = useMemo(() => {
+    if (imageUrl || pdfUrl) return 1
+    return pages.length || 1
+  }, [imageUrl, pdfUrl, pages])
+
+  // Reset page number when totalPages changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [totalPages])
+
+  const pageContent = pages[currentPage - 1] || ''
+
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 10, 150))
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 10, 50))
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1))
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+
+  const handleDownload = async () => {
+    if (!docId || !document) return
     setIsDownloading(true)
-    setTimeout(() => {
-      setIsDownloading(false)
+    try {
+      const blob = await documentService.downloadDocument(docId)
+      const url = URL.createObjectURL(blob)
+      const a = window.document.createElement('a')
+      a.href = url
+      a.download = document.originalFileName || document.fileName
+      window.document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
       setIsDownloaded(true)
       setTimeout(() => setIsDownloaded(false), 3000)
-    }, 1500)
+    } catch (err) {
+      console.error('Failed to download document:', err)
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   const handleShare = () => {
@@ -96,7 +159,7 @@ export function FilePreviewPage() {
   }
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(prev => prev.filter(t => t !== tagToRemove))
+    setTags((prev) => prev.filter((t) => t !== tagToRemove))
   }
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -113,6 +176,63 @@ export function FilePreviewPage() {
     }
   }
 
+  const formatSize = (bytes: number) => {
+    if (!bytes) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  }
+
+  const formatUploadedDate = (dateStr?: string) => {
+    if (!dateStr) return ''
+    try {
+      return new Date(dateStr).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })
+    } catch {
+      return dateStr
+    }
+  }
+
+  const fileExtension = useMemo(() => {
+    if (!document) return ''
+    return (document.originalFileName || document.fileName).split('.').pop()?.toUpperCase() || ''
+  }, [document])
+
+  const shareLinkValue = useMemo(() => {
+    if (!document) return ''
+    return `${window.location.origin}/api/documents/${document.id}/download`
+  }, [document])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <Loader2 className="size-10 animate-spin text-primary" />
+        <span className="text-sm font-semibold text-muted">Đang tải thông tin tài liệu...</span>
+      </div>
+    )
+  }
+
+  if (error || !document) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 max-w-md mx-auto text-center">
+        <AlertCircle className="size-12 text-destructive" />
+        <h3 className="text-lg font-bold text-foreground">{error || 'Không tìm thấy tài liệu'}</h3>
+        <p className="text-muted text-sm">
+          Tài liệu bạn yêu cầu không khả dụng, đã bị xóa hoặc bạn không có quyền truy cập.
+        </p>
+        <Link to="/dashboard/storage/explorer">
+          <Button variant="primary" className="bg-[#3155F6] hover:bg-[#2563eb] text-white">
+            Quay lại Explorer
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
       {/* Header */}
@@ -126,9 +246,9 @@ export function FilePreviewPage() {
         </Link>
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <h1 className="text-[32px] font-bold text-foreground leading-tight">{t.filePreview.title}</h1>
+            <h1 className="text-[32px] font-bold text-foreground leading-tight">{document.title}</h1>
             <p className="text-muted mt-2 text-sm">
-              {t.filePreview.subtitle}
+              {document.originalFileName || document.fileName}
             </p>
           </div>
           <div className="flex gap-3">
@@ -163,78 +283,111 @@ export function FilePreviewPage() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        {/* Left PDF Viewer */}
+        {/* Left Viewer */}
         <div className={isFullscreen ? "fixed inset-0 z-50 bg-[#f8fafc] dark:bg-slate-950 flex flex-col w-full h-full" : "flex-1 flex flex-col w-full"}>
-          {/* Viewer Toolbar */}
-          <div className={`h-12 bg-white dark:bg-slate-900 border-border dark:border-slate-800 flex items-center justify-between px-4 ${isFullscreen ? 'border-b' : 'border rounded-t-xl'}`}>
-            <div className="flex items-center gap-2">
-              <FileText className="size-4 text-[#ef4444]" />
-              <span className="text-sm font-semibold text-foreground truncate max-w-[150px] sm:max-w-none">Neuroscience_Ch4_Synap...</span>
+          {pdfUrl ? (
+            // Native PDF Viewer using iframe on Blob URL
+            <div className="border border-border dark:border-slate-800 rounded-xl overflow-hidden w-full bg-white dark:bg-slate-900 min-h-[700px] h-[750px] shadow-sm">
+              <iframe
+                src={pdfUrl}
+                className="w-full h-full border-none"
+                title={document.title}
+              />
             </div>
-            <div className="flex items-center gap-4 text-muted text-sm font-medium">
-              <div className="hidden sm:flex items-center gap-3">
-                <button onClick={handleZoomOut} className="hover:text-foreground transition-colors p-1" title={t.fileViewer.zoomOut}><ZoomOut className="size-4" /></button>
-                <span className="w-12 text-center select-none">{zoom}%</span>
-                <button onClick={handleZoomIn} className="hover:text-foreground transition-colors p-1" title={t.fileViewer.zoomIn}><ZoomIn className="size-4" /></button>
-              </div>
-              <div className="hidden sm:block w-px h-4 bg-border dark:bg-slate-800"></div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={handlePrevPage} 
-                  disabled={currentPage === 1}
-                  className="hover:text-foreground disabled:opacity-50 transition-colors p-1"
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                <span className="select-none min-w-[70px] text-center">
-                  {t.filePreview.pageText(currentPage, totalPages)}
-                </span>
-                <button 
-                  onClick={handleNextPage} 
-                  disabled={currentPage === totalPages}
-                  className="hover:text-foreground disabled:opacity-50 transition-colors p-1"
-                >
-                  <ChevronRight className="size-4" />
-                </button>
-              </div>
-              <div className="hidden sm:block w-px h-4 bg-border dark:bg-slate-800"></div>
-              <button onClick={() => setIsFullscreen(!isFullscreen)} className="hover:text-foreground transition-colors p-1 hidden sm:block" title={t.fileViewer.fullscreenViewer}>
-                {isFullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
-              </button>
-            </div>
-          </div>
-          
-          {/* Document Content */}
-          <div className={`bg-[#f8fafc] dark:bg-slate-950 border-border dark:border-slate-800 p-4 sm:p-8 flex justify-center overflow-auto ${isFullscreen ? 'flex-1' : 'border border-t-0 rounded-b-xl min-h-[600px]'}`}>
-            <div 
-              className="bg-white dark:bg-slate-900 w-full max-w-[600px] shadow-sm border border-border dark:border-slate-800 p-6 sm:p-10 flex flex-col h-fit transition-all duration-200"
-              style={{ zoom: `${zoom}%` } as React.CSSProperties}
-            >
-              <h2 className="text-2xl sm:text-[28px] font-bold leading-tight text-[#1e293b] mb-1">
-                {pageContent.title}
-              </h2>
-              <div className="flex justify-between items-center mb-6 mt-2">
-                <p className="text-[#3b82f6] text-[11px] font-bold tracking-widest uppercase">{pageContent.subtitle}</p>
-                <span className="text-[11px] text-muted font-bold bg-slate-100 px-2 py-1 rounded">
-                  {t.fileViewer.page} {currentPage}
-                </span>
-              </div>
-              
-              {pageContent.showBrainImage && (
-                <div className="w-full aspect-[2/1] bg-black rounded-lg mb-8 overflow-hidden relative border border-border">
-                  <img src="/brain-network.png" alt="Brain network" className="w-full h-full object-cover opacity-90 mix-blend-screen" />
+          ) : (
+            <>
+              {/* Viewer Toolbar */}
+              <div className={`h-12 bg-white dark:bg-slate-900 border-border dark:border-slate-800 flex items-center justify-between px-4 ${isFullscreen ? 'border-b' : 'border rounded-t-xl'}`}>
+                <div className="flex items-center gap-2">
+                  <FileText className="size-4 text-[#ef4444]" />
+                  <span className="text-sm font-semibold text-foreground truncate max-w-[150px] sm:max-w-none">
+                    {document.originalFileName || document.fileName}
+                  </span>
                 </div>
-              )}
-              
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-1 h-4 bg-[#3b82f6]"></div>
-                <h3 className="text-[13px] font-bold tracking-widest text-[#1e293b] uppercase">{pageContent.sectionTitle}</h3>
+                <div className="flex items-center gap-4 text-muted text-sm font-medium">
+                  <div className="hidden sm:flex items-center gap-3">
+                    <button onClick={handleZoomOut} className="hover:text-foreground transition-colors p-1" title={t.fileViewer.zoomOut}><ZoomOut className="size-4" /></button>
+                    <span className="w-12 text-center select-none">{zoom}%</span>
+                    <button onClick={handleZoomIn} className="hover:text-foreground transition-colors p-1" title={t.fileViewer.zoomIn}><ZoomIn className="size-4" /></button>
+                  </div>
+                  <div className="hidden sm:block w-px h-4 bg-border dark:bg-slate-800"></div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={handlePrevPage} 
+                      disabled={currentPage === 1}
+                      className="hover:text-foreground disabled:opacity-50 transition-colors p-1"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </button>
+                    <span className="select-none min-w-[70px] text-center">
+                      {t.filePreview.pageText(currentPage, totalPages)}
+                    </span>
+                    <button 
+                      onClick={handleNextPage} 
+                      disabled={currentPage === totalPages}
+                      className="hover:text-foreground disabled:opacity-50 transition-colors p-1"
+                    >
+                      <ChevronRight className="size-4" />
+                    </button>
+                  </div>
+                  <div className="hidden sm:block w-px h-4 bg-border dark:bg-slate-800"></div>
+                  <button onClick={() => setIsFullscreen(!isFullscreen)} className="hover:text-foreground transition-colors p-1 hidden sm:block" title={t.fileViewer.fullscreenViewer}>
+                    {isFullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
+                  </button>
+                </div>
               </div>
-              <p className="text-[13px] text-muted leading-relaxed mb-6">
-                {pageContent.body}
-              </p>
-            </div>
-          </div>
+              
+              {/* Document Content */}
+              <div className={`bg-[#f8fafc] dark:bg-slate-950 border-border dark:border-slate-800 p-4 sm:p-8 flex justify-center overflow-auto ${isFullscreen ? 'flex-1' : 'border border-t-0 rounded-b-xl min-h-[600px]'}`}>
+                {imageUrl ? (
+                  // Image Preview
+                  <div className="flex items-center justify-center p-4 min-h-[500px]">
+                    <img 
+                      src={imageUrl} 
+                      alt={document.title} 
+                      style={{ transform: `scale(${zoom / 100})`, transition: 'transform 0.1s ease' }} 
+                      className="max-h-[600px] object-contain shadow-md rounded-lg" 
+                    />
+                  </div>
+                ) : pageContent ? (
+                  // Text Preview Content
+                  <div 
+                    className="bg-white dark:bg-slate-900 w-full max-w-[600px] shadow-sm border border-border dark:border-slate-800 p-6 sm:p-10 flex flex-col h-fit transition-all duration-200"
+                    style={{ zoom: `${zoom}%` } as React.CSSProperties}
+                  >
+                    <h2 className="text-2xl sm:text-[28px] font-bold leading-tight text-[#1e293b] dark:text-white mb-2">
+                      {document.title}
+                    </h2>
+                    <div className="flex justify-between items-center mb-6 mt-2">
+                      <p className="text-[#3b82f6] text-[11px] font-bold tracking-widest uppercase">{document.originalFileName || document.fileName}</p>
+                      <span className="text-[11px] text-muted font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                        {t.fileViewer.page} {currentPage} / {totalPages}
+                      </span>
+                    </div>
+                    <div className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-350 leading-relaxed font-sans">
+                      {pageContent}
+                    </div>
+                  </div>
+                ) : (
+                  // No preview support template (e.g. word doc, zip, empty files)
+                  <div className="flex flex-col items-center justify-center py-20 px-4 text-center min-h-[500px] w-full">
+                    <FileText className="size-16 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-bold text-foreground mb-2">{document.title}</h3>
+                    <p className="text-muted text-sm max-w-sm mb-6">
+                      {language === 'vi' 
+                        ? 'Không có bản xem trước trực tuyến cho loại tệp này. Bạn có thể tải tệp tin về thiết bị để xem.'
+                        : 'No online preview is available for this file type. You can still download the file to view it on your device.'
+                      }
+                    </p>
+                    <Button onClick={handleDownload} className="bg-[#3155F6] hover:bg-[#2563eb] text-white gap-2 h-10 px-6 font-semibold">
+                      <Download className="size-4" />
+                      {language === 'vi' ? 'Tải tệp tin xuống' : 'Download File'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Right Details Panel */}
@@ -246,22 +399,24 @@ export function FilePreviewPage() {
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">{t.filePreview.type}</span>
                 <span className="text-[10px] font-bold bg-[#e5eeff] dark:bg-blue-950/40 text-[#2563eb] dark:text-blue-400 px-2 py-1 rounded">
-                  {t.filePreview.pdfDocument}
+                  {fileExtension}
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">{t.filePreview.size}</span>
-                <span className="font-semibold text-foreground text-right">4.2 MB</span>
+                <span className="font-semibold text-foreground text-right">{formatSize(document.fileSize)}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">{t.filePreview.uploaded}</span>
-                <span className="font-semibold text-foreground text-right">Oct 24, 2024</span>
+                <span className="font-semibold text-foreground text-right">{formatUploadedDate(document.createdAt)}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-medium">{t.filePreview.owner}</span>
                 <div className="flex items-center gap-2">
-                  <Avatar src="/logo.png" name="Me" className="size-6 border border-border dark:border-slate-800" />
-                  <span className="font-semibold text-foreground">{t.filePreview.you}</span>
+                  <Avatar src="/logo.png" name="Owner" className="size-6 border border-border dark:border-slate-800" />
+                  <span className="font-semibold text-foreground">
+                    {document.userId === Number(searchParams.get('userId')) || document.userId === 5 ? t.filePreview.you : 'User #' + document.userId}
+                  </span>
                 </div>
               </div>
             </div>
@@ -320,11 +475,12 @@ export function FilePreviewPage() {
               <input 
                 type="text" 
                 readOnly 
-                value="https://aistudyhub.com/s/Neuroscience_Ch4" 
+                value={shareLinkValue} 
                 className="flex-1 h-10 px-3 py-2 text-sm rounded-lg border border-border bg-slate-50 text-slate-500 focus:outline-none"
               />
               <Button 
                 onClick={() => {
+                  navigator.clipboard.writeText(shareLinkValue)
                   setIsLinkCopied(true);
                   setTimeout(() => setIsLinkCopied(false), 2000);
                 }}

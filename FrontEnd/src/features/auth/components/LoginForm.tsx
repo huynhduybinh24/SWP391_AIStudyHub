@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { loginSchema, type LoginFormValues } from '@/features/auth/schemas/loginSchema'
 import { useLogin } from '@/features/auth/hooks/useLogin'
+import { OTPInput } from '@/features/settings/components/OTPInput'
+import { authService } from '@/features/auth/services/authService'
+import { useAuthStore } from '@/stores/authStore'
 
 // Social Login Icon Components
 function GoogleIcon() {
@@ -23,13 +26,33 @@ function GoogleIcon() {
   )
 }
 
+interface LoginFormProps {
+  onMaintenanceMode?: (message: string) => void
+}
 
-export function LoginForm() {
+export function LoginForm({ onMaintenanceMode }: LoginFormProps) {
   const login = useLogin()
+  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
+  const [requires2fa, setRequires2fa] = useState(false)
+  const [twoFactorEmail, setTwoFactorEmail] = useState('')
+  const [twoFactorCode, setTwoFactorCode] = useState('')
+  const [twoFactorError, setTwoFactorError] = useState('')
+  const [isVerifying2fa, setIsVerifying2fa] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+
+  useEffect(() => {
+    if (login.isError && login.error instanceof Error) {
+      const errMsg = login.error.message
+      if (errMsg.includes('bảo trì') || errMsg.toLowerCase().includes('maintenance')) {
+        onMaintenanceMode?.(errMsg)
+      }
+    }
+  }, [login.isError, login.error, onMaintenanceMode])
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -58,6 +81,95 @@ export function LoginForm() {
     }
   }
 
+  const handle2faSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (twoFactorCode.length !== 6) {
+      setTwoFactorError('Vui lòng nhập đủ 6 chữ số / Code must be 6 digits')
+      return
+    }
+    setTwoFactorError('')
+    setIsVerifying2fa(true)
+    try {
+      const response = await authService.verify2fa(twoFactorEmail, twoFactorCode)
+      useAuthStore.getState().setSession(response.user, response.tokens)
+
+      const stored = sessionStorage.getItem('postLoginRedirect')
+      if (stored) sessionStorage.removeItem('postLoginRedirect')
+      
+      const from = response.user.role.toLowerCase() === 'admin'
+        ? '/dashboard/admin'
+        : (stored || '/dashboard')
+        
+      navigate(from, { replace: true })
+    } catch (err: any) {
+      setTwoFactorError(err?.response?.data?.message || err?.message || 'Mã xác thực không đúng / Invalid code.')
+    } finally {
+      setIsVerifying2fa(false)
+    }
+  }
+
+  if (requires2fa) {
+    return (
+      <div className="w-full max-w-[400px] mx-auto relative">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 rounded-t-2xl z-10"></div>
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 pt-8 shadow-xl text-slate-900 dark:text-slate-100">
+          <div className="flex flex-col items-center gap-1.5 text-center mb-6">
+            <div className="flex items-center justify-center gap-3">
+              <img src="/logo.png" alt="Logo" className="w-[52px] h-[52px] object-contain" />
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Xác thực 2FA</h1>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Nhập mã 6 chữ số từ ứng dụng xác thực của bạn.
+            </p>
+          </div>
+
+          <form className="space-y-5" onSubmit={handle2faSubmit}>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300 text-center" htmlFor="2fa-code">
+                Mã bảo mật (Security Code)
+              </label>
+              <OTPInput
+                value={twoFactorCode}
+                onChange={(val) => {
+                  setTwoFactorCode(val)
+                  if (twoFactorError) setTwoFactorError('')
+                }}
+              />
+              {twoFactorError && (
+                <p className="text-sm text-danger text-center mt-2 font-medium">
+                  {twoFactorError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <Button
+                type="submit"
+                className="w-full h-10 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm rounded-xl active:scale-[0.98] transition-all"
+                disabled={isVerifying2fa}
+              >
+                {isVerifying2fa ? 'Đang xác thực...' : 'Xác nhận'}
+              </Button>
+              
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full text-slate-550 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white"
+                onClick={() => {
+                  setRequires2fa(false)
+                  setTwoFactorCode('')
+                  setTwoFactorError('')
+                }}
+              >
+                Quay lại đăng nhập / Back to login
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="w-full max-w-[400px] mx-auto relative">
       {/* Top subtle gradient border */}
@@ -74,7 +186,30 @@ export function LoginForm() {
 
         <form
           className="space-y-4"
-          onSubmit={handleSubmit((values) => login.mutate(values))}
+          onSubmit={handleSubmit((values) => {
+            login.mutate({ ...values, remember: rememberMe }, {
+              onSuccess: (data) => {
+                if (data.requires2fa) {
+                  setRequires2fa(true)
+                  setTwoFactorEmail(data.email || values.email)
+                }
+              },
+              onError: (err: any) => {
+                const backendMessage = err?.response?.data?.message || err?.message || ''
+                if (backendMessage.includes('User not found')) {
+                  setError('email', {
+                    type: 'manual',
+                    message: 'This email is not registered.'
+                  })
+                } else if (backendMessage.includes('Invalid credentials')) {
+                  setError('password', {
+                    type: 'manual',
+                    message: 'Incorrect password.'
+                  })
+                }
+              }
+            })
+          })}
         >
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="email">
@@ -113,17 +248,28 @@ export function LoginForm() {
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <Checkbox id="remember" label={<span className="text-slate-650 dark:text-slate-400">Remember me</span>} />
+            <Checkbox
+              id="remember"
+              label={<span className="text-slate-650 dark:text-slate-400">Remember me</span>}
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
             <Link to="/reset-password" className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
               Forgot password?
             </Link>
           </div>
 
-          {login.isError ? (
-            <p className="text-sm text-danger text-center">
-              {login.error instanceof Error ? login.error.message : 'Login failed'}
-            </p>
-          ) : null}
+          {login.isError && (() => {
+            const msg = login.error instanceof Error ? login.error.message : ''
+            if (msg.includes('User not found') || msg.includes('Invalid credentials')) {
+              return null
+            }
+            return (
+              <p className="text-sm text-danger text-center">
+                {msg || 'Login failed'}
+              </p>
+            )
+          })()}
 
           <Button type="submit" className="w-full h-10 text-base font-semibold mt-2 bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm rounded-xl active:scale-[0.98] transition-all" disabled={login.isPending}>
             {login.isPending ? 'Logging in...' : 'Log in'}

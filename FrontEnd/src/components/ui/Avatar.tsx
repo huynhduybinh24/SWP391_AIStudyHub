@@ -2,13 +2,14 @@ import { cn } from '@/lib/utils'
 
 export interface AvatarProps {
   src?: string
-  name: string
+  name?: string
   className?: string
 }
 
-export function Avatar({ src, name, className }: AvatarProps) {
-  const initials = name
+export function Avatar({ src, name = '', className }: AvatarProps) {
+  const initials = (name || '')
     .split(' ')
+    .filter(Boolean)
     .map((n) => n[0])
     .join('')
     .slice(0, 2)

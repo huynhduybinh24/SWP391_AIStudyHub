@@ -5,7 +5,10 @@ import {
   FileText,
   X,
   Sparkles,
-  FileCode
+  FileCode,
+  ImageIcon,
+  BookOpen,
+  FolderDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -17,7 +20,7 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'
+  subject: string
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
   essential?: boolean
@@ -33,6 +36,42 @@ interface DocumentsLayoutContext {
 const AVAILABLE_TAGS = ['Notes', 'Assignment', 'Lecture', 'Midterm', 'Final Exam']
 
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { documentService } from '@/services/documentService'
+
+const mapMimeOrExtensionToType = (fileType: string, fileName: string): 'pdf' | 'word' | 'image' | 'text' | 'slides' => {
+  const nameLower = fileName.toLowerCase()
+  if (nameLower.endsWith('.pdf')) return 'pdf'
+  if (nameLower.endsWith('.doc') || nameLower.endsWith('.docx')) return 'word'
+  if (nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx')) return 'slides'
+  if (nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg')) return 'image'
+  if (nameLower.endsWith('.txt')) return 'text'
+  return 'text'
+}
+
+const formatBytes = (bytes: number) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
+const mapBackendDocToItem = (doc: any): DocumentItem => {
+  return {
+    id: String(doc.id),
+    title: doc.title,
+    fileName: doc.fileName || doc.originalFileName || 'Untitled',
+    uploadedAt: doc.createdAt ? `Uploaded ${new Date(doc.createdAt).toLocaleDateString('vi-VN')}` : 'Uploaded Just Now',
+    uploadedDateObj: doc.createdAt ? new Date(doc.createdAt) : new Date(),
+    size: doc.fileSize ? formatBytes(doc.fileSize) : '0 Bytes',
+    sizeKb: doc.fileSize ? Math.round(doc.fileSize / 1024) : 0,
+    subject: (doc.subject || 'GENERAL') as any,
+    status: 'ANALYZED',
+    type: mapMimeOrExtensionToType(doc.fileType, doc.fileName || doc.originalFileName || ''),
+    essential: doc.tags?.includes('Lecture') || doc.tags?.includes('Midterm')
+  }
+}
 
 export function UploadSubjectDocumentPage() {
   const { subjectId } = useParams<{ subjectId: string }>()
@@ -44,27 +83,27 @@ export function UploadSubjectDocumentPage() {
   const activeSubjectId = (subjectId || 'GENERAL').toUpperCase()
 
   // Form states
-  const [docTitle, setDocTitle] = useState('History_Midterm_Notes')
-  const [description, setDescription] = useState('Midterm preparation notes covering core history topics.')
+  const [docTitle, setDocTitle] = useState('')
+  const [description, setDescription] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>(['Notes']) // default Notes selected per Figma
-  const [fileType, setFileType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('word')
+  const [fileType, setFileType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
   const [visibility, setVisibility] = useState<'private' | 'shared' | 'public'>('private')
   const [generateSummary, setGenerateSummary] = useState(true)
   const [createFlashcards, setCreateFlashcards] = useState(true)
 
   // File Upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [fileAttached, setFileAttached] = useState(true) // Start with default mockup pdf file attached
-  const [uploadProgress, setUploadProgress] = useState(45) // Start at 45% per Figma mockup
+  const [fileAttached, setFileAttached] = useState(false) // Start empty, only true when user attaches file
+  const [uploadProgress, setUploadProgress] = useState(0) // Start at 0%
   const [uploadComplete, setUploadComplete] = useState(false)
-  const [fileName, setFileName] = useState('History_Midterm_Notes.docx')
-  const [fileSize, setFileSize] = useState('1.7 MB')
+  const [fileName, setFileName] = useState('')
+  const [fileSize, setFileSize] = useState('')
 
   const [isDragOver, setIsDragOver] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Smoothly animate simulated progress bar from 45% to 100% on mount
+  // Smoothly animate simulated progress bar from 0% to 100% when file is attached
   useEffect(() => {
     if (!fileAttached || uploadComplete) return
 
@@ -76,10 +115,10 @@ export function UploadSubjectDocumentPage() {
           return 100
         }
         // Increment progress randomly
-        const next = prev + Math.floor(Math.random() * 8) + 2
+        const next = prev + Math.floor(Math.random() * 12) + 8
         return next > 100 ? 100 : next
       })
-    }, 450)
+    }, 200)
 
     return () => clearInterval(interval)
   }, [fileAttached, uploadComplete])
@@ -170,7 +209,7 @@ export function UploadSubjectDocumentPage() {
     return tagMap[tag]?.[language] || tag
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!fileAttached) {
@@ -181,40 +220,77 @@ export function UploadSubjectDocumentPage() {
     const finalTitle = docTitle.trim() || fileName.split('.')[0].replace(/_/g, ' ')
     setIsProcessing(true)
 
-    // Premium short AI processing duration simulation for amazing feedback
-    setTimeout(() => {
-      const finalFileName = selectedFile?.name || fileName
-      const finalSize = selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB` : fileSize
-      const finalSizeKb = selectedFile ? Math.round(selectedFile.size / 1024) : 4300
+    try {
+      const user = useAuthStore.getState().user
+      const userId = Number(user?.id || 1)
 
-      const newDoc: DocumentItem = {
-        id: `doc-${Date.now()}`,
-        title: finalTitle,
-        fileName: finalFileName,
-        uploadedAt: 'Uploaded Just Now',
-        uploadedDateObj: new Date(),
-        size: finalSize,
-        sizeKb: finalSizeKb,
-        subject: activeSubjectId as any,
-        status: 'ANALYZED',
-        type: fileType,
-        essential: selectedTags.includes('Lecture') || selectedTags.includes('Midterm')
+      let fileToUpload = selectedFile
+      if (!fileToUpload) {
+        const mockContent = `History Midterm Notes\n\nStudy Guide:\n- Content: Core history topics for midterm preparation.\n- Subject: ${activeSubjectId}\n- Tags: ${selectedTags.join(', ')}`
+        const cleanName = finalTitle.replace(/\s+/g, '_') + '.txt'
+        fileToUpload = new File([mockContent], cleanName, { type: 'text/plain' })
       }
+
+      const response = await documentService.uploadDocument(
+        fileToUpload,
+        finalTitle,
+        description,
+        activeSubjectId,
+        visibility.toUpperCase(),
+        userId,
+        selectedTags
+      )
+
+      const newDoc = mapBackendDocToItem(response)
 
       // Save to global state
       setDocuments((prev) => [newDoc, ...prev])
 
       // Toast Success Alert
-      showToast(t.toasts.uploadSuccess)
+      showToast(t.toasts.uploadSuccess || 'Tải lên tài liệu thành công!')
 
       setIsProcessing(false)
 
       // Navigate back to Folder View
       navigate(`/dashboard/documents/subject/${subjectId}`)
-    }, 1200)
+    } catch (error) {
+      console.error('Failed to upload document:', error)
+      showToast(language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!')
+      setIsProcessing(false)
+    }
   }
 
   // Dynamically compute the document icon for card display
+  const getFileIconProps = (type: 'pdf' | 'word' | 'image' | 'text' | 'slides') => {
+    switch (type) {
+      case 'pdf':
+        return {
+          bg: 'bg-rose-50 border-rose-100 dark:bg-rose-955/20 dark:border-rose-900/30',
+          icon: <FileText className="h-5 w-5 text-rose-500" />
+        }
+      case 'word':
+        return {
+          bg: 'bg-blue-50 border-blue-100 dark:bg-blue-955/20 dark:border-blue-900/30',
+          icon: <FileText className="h-5 w-5 text-blue-500" />
+        }
+      case 'image':
+        return {
+          bg: 'bg-sky-50 border-sky-100 dark:bg-sky-955/20 dark:border-sky-900/30',
+          icon: <ImageIcon className="h-5 w-5 text-sky-500" />
+        }
+      case 'slides':
+        return {
+          bg: 'bg-amber-50 border-amber-100 dark:bg-amber-955/20 dark:border-amber-900/30',
+          icon: <FolderDown className="h-5 w-5 text-amber-500" />
+        }
+      case 'text':
+      default:
+        return {
+          bg: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-955/20 dark:border-emerald-900/30',
+          icon: <BookOpen className="h-5 w-5 text-emerald-500" />
+        }
+    }
+  }
 
 
   return (
@@ -285,53 +361,28 @@ export function UploadSubjectDocumentPage() {
             </p>
           </div>
 
-          {/* Ready to Upload (2) Card */}
+          {/* Ready to Upload Card */}
           {fileAttached && (
             <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-6 shadow-sm space-y-4 select-none">
               
               {/* Header Title with totals */}
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <span className="font-extrabold text-[#0B1A30] dark:text-slate-200 text-sm">
-                  {t.upload.readyUpload} (2)
+                  {t.upload.readyUpload} (1)
                 </span>
                 <span className="text-xs font-semibold text-[#8B98A5] dark:text-slate-500">
-                  14.2 MB {t.upload.total}
+                  {fileSize} {t.upload.total}
                 </span>
               </div>
 
               {/* Files Queue List Stack */}
               <div className="space-y-3">
                 
-                {/* File Item 1: Mocked/Static PDF from Figma mockup */}
-                <div className="relative rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center justify-between shadow-xs">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-50 border border-rose-100 dark:bg-rose-955/20 dark:border-rose-900/30">
-                      <FileText className="h-5 w-5 text-rose-500" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-[#0B1A30] dark:text-slate-200 text-sm truncate">
-                        Advanced_Calculus_Ch4.pdf
-                      </p>
-                      <p className="text-xs font-semibold text-[#8B98A5] dark:text-slate-500 mt-0.5">
-                        12.5 MB &bull; {t.upload.ready}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <button
-                    type="button"
-                    className="rounded-full p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-805 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer"
-                    aria-label="Remove file"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-
-                {/* File Item 2: Dynamic Uploading DOCX from Figma mockup */}
+                {/* File Item: Dynamic Uploading File */}
                 <div className="relative rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center justify-between shadow-xs overflow-hidden">
                   <div className="flex items-center gap-3 min-w-0 pb-1">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 border border-blue-100 dark:bg-blue-955/20 dark:border-blue-900/30">
-                      <FileCode className="h-5 w-5 text-blue-500" />
+                    <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border", getFileIconProps(fileType).bg)}>
+                      {getFileIconProps(fileType).icon}
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-[#0B1A30] dark:text-slate-200 text-sm truncate">
@@ -354,6 +405,10 @@ export function UploadSubjectDocumentPage() {
                       onClick={() => {
                         setFileAttached(false)
                         setSelectedFile(null)
+                        setFileName('')
+                        setFileSize('')
+                        setUploadProgress(0)
+                        setUploadComplete(false)
                       }}
                       className="rounded-full p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-805 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer"
                       aria-label="Cancel upload"

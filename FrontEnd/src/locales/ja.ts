@@ -449,6 +449,8 @@ export const ja: any = {
     subjectMaterials: "科目別ワークスペース",
     noMatches: "一致する結果が見つかりません",
     noMatchesSub: "検索対象のドキュメントがフィルターに一致しませんでした。科目またはフォーマットを変更してください。",
+    emptyWorkspace: "この学習グループにはまだドキュメントがありません",
+    emptyWorkspaceSub: "最初の学習資料をアップロードして、みんなで学習やコラボレーションを始めましょう！",
     resetFilterChoices: "フィルターをリセット",
     uploadFiles: "ファイルをアップロード",
     activeCourse: "有効なコース",

@@ -5,6 +5,7 @@ import com.lumiedu.auth.enums.ProviderType;
 import com.lumiedu.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "third_party_accounts")
@@ -32,4 +33,8 @@ public class ThirdPartyAccount extends BaseEntity {
 
     @Column(name = "provider_email", nullable = false)
     private String providerEmail;
+
+    @Column(name = "linked_at")
+    @Builder.Default
+    private LocalDateTime linkedAt = LocalDateTime.now();
 }

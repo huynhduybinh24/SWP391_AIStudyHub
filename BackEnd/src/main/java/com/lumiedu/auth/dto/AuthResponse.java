@@ -14,4 +14,8 @@ public class AuthResponse {
     private String role;
     private String accountStatus;
     private String message;
+    private String plan;
+    // JWT tokens
+    private String accessToken;
+    private String refreshToken;
 }

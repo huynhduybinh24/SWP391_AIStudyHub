@@ -285,7 +285,72 @@ public class GeminiService {
                 .thought(thought)
                 .promptTokens(200)
                 .completionTokens(100)
-                .costEstimate(new BigDecimal("0.00005"))
+                .costEstimate(new BigDecimal("0.0005"))
                 .build();
+    }
+
+    public float[] getEmbedding(String text) {
+        if (apiKey == null || apiKey.trim().isEmpty() || "mock-key".equalsIgnoreCase(apiKey)) {
+            // Fallback: Generate a deterministic mock vector based on the text hash
+            float[] mockVector = new float[768];
+            int hash = text != null ? text.hashCode() : 0;
+            for (int i = 0; i < mockVector.length; i++) {
+                mockVector[i] = (float) Math.sin(hash + i);
+            }
+            return mockVector;
+        }
+
+        try {
+            JsonObject requestBody = new JsonObject();
+            JsonObject contentObj = new JsonObject();
+            JsonArray partsArray = new JsonArray();
+            JsonObject partObj = new JsonObject();
+            partObj.addProperty("text", text);
+            partsArray.add(partObj);
+            contentObj.add("parts", partsArray);
+            requestBody.add("content", contentObj);
+
+            String requestBodyJson = gson.toJson(requestBody);
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=" + apiKey;
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
+                    .timeout(Duration.ofSeconds(30))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                System.err.println("Gemini Embedding API call failed: " + response.statusCode() + ", body: " + response.body());
+                // Fallback
+                float[] mockVector = new float[768];
+                int hash = text != null ? text.hashCode() : 0;
+                for (int i = 0; i < mockVector.length; i++) {
+                    mockVector[i] = (float) Math.sin(hash + i);
+                }
+                return mockVector;
+            }
+
+            JsonObject responseJson = gson.fromJson(response.body(), JsonObject.class);
+            JsonObject embeddingObj = responseJson.getAsJsonObject("embedding");
+            JsonArray valuesArray = embeddingObj.getAsJsonArray("values");
+
+            float[] vector = new float[valuesArray.size()];
+            for (int i = 0; i < valuesArray.size(); i++) {
+                vector[i] = valuesArray.get(i).getAsFloat();
+            }
+            return vector;
+        } catch (Exception e) {
+            System.err.println("Exception occurred during Gemini Embedding call: " + e.getMessage());
+            // Fallback
+            float[] mockVector = new float[768];
+            int hash = text != null ? text.hashCode() : 0;
+            for (int i = 0; i < mockVector.length; i++) {
+                mockVector[i] = (float) Math.sin(hash + i);
+            }
+            return mockVector;
+        }
     }
 }

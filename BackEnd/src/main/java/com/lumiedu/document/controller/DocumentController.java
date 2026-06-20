@@ -6,7 +6,7 @@ import com.lumiedu.document.dto.request.TagRequest;
 import com.lumiedu.document.dto.request.DocumentShareRequest;
 import com.lumiedu.document.dto.response.ApiResponse;
 import com.lumiedu.document.dto.response.DocumentResponse;
-import com.lumiedu.document.entity.DocumentShare;
+import com.lumiedu.document.dto.response.SubjectStatsResponse;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
@@ -96,9 +96,20 @@ public class DocumentController {
     // ------------------------------------------------------------------
     @GetMapping
     public ResponseEntity<ApiResponse<List<DocumentResponse>>> getAllDocuments(
-            @RequestParam(required = false) Long userId
+            @RequestParam(required = false) Long userId,
+            org.springframework.security.core.Authentication authentication
     ) {
-        List<DocumentResponse> documents = documentService.getAllDocuments(userId);
+        Long currentUserId = getCurrentUserId(authentication);
+        boolean isAdmin = false;
+        if (authentication != null) {
+            isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ADMIN"));
+        }
+        Long targetUserId = userId;
+        if (!isAdmin && targetUserId == null) {
+            targetUserId = currentUserId;
+        }
+        List<DocumentResponse> documents = documentService.getAllDocuments(targetUserId);
         return ResponseEntity.ok(ApiResponse.ok("Documents retrieved successfully.", documents));
     }
 
@@ -106,8 +117,12 @@ public class DocumentController {
     // GET /api/documents/{id}
     // ------------------------------------------------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<DocumentResponse>> getDocumentById(@PathVariable Long id) {
-        DocumentResponse document = documentService.getDocumentById(id);
+    public ResponseEntity<ApiResponse<DocumentResponse>> getDocumentById(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        DocumentResponse document = documentService.getDocumentById(id, currentUserId);
         return ResponseEntity.ok(ApiResponse.ok("Document retrieved successfully.", document));
     }
 
@@ -115,12 +130,16 @@ public class DocumentController {
     // GET /api/documents/{id}/preview
     // ------------------------------------------------------------------
     @GetMapping("/{id}/preview")
-    public ResponseEntity<Resource> previewDocument(@PathVariable Long id) {
-        Resource resource = documentService.previewDocument(id);
+    public ResponseEntity<Resource> previewDocument(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        Resource resource = documentService.previewDocument(id, currentUserId);
         String mimeType = resolveMimeType(id);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resolveFilename(id) + "\"")
                 .contentType(MediaType.parseMediaType(mimeType))
                 .body(resource);
     }
@@ -131,13 +150,14 @@ public class DocumentController {
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> downloadDocument(
             @PathVariable Long id,
-            @RequestParam(required = false) Long userId
+            org.springframework.security.core.Authentication authentication
     ) {
-        Resource resource = documentService.downloadDocument(id, userId);
+        Long currentUserId = getCurrentUserId(authentication);
+        Resource resource = documentService.downloadDocument(id, currentUserId);
         String mimeType = resolveMimeType(id);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resolveFilename(id) + "\"")
                 .contentType(MediaType.parseMediaType(mimeType))
                 .body(resource);
     }
@@ -148,9 +168,11 @@ public class DocumentController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<DocumentResponse>> updateDocument(
             @PathVariable Long id,
-            @RequestBody DocumentUpdateRequest request
+            @RequestBody DocumentUpdateRequest request,
+            org.springframework.security.core.Authentication authentication
     ) {
-        DocumentResponse response = documentService.updateDocument(id, request);
+        Long currentUserId = getCurrentUserId(authentication);
+        DocumentResponse response = documentService.updateDocument(id, request, currentUserId);
         return ResponseEntity.ok(ApiResponse.ok("Document updated successfully.", response));
     }
 
@@ -158,8 +180,12 @@ public class DocumentController {
     // DELETE /api/documents/{id}
     // ------------------------------------------------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteDocument(@PathVariable Long id) {
-        documentService.deleteDocument(id);
+    public ResponseEntity<ApiResponse<Void>> deleteDocument(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        documentService.deleteDocument(id, currentUserId);
         return ResponseEntity.ok(ApiResponse.ok("Document deleted successfully.", null));
     }
 
@@ -172,9 +198,20 @@ public class DocumentController {
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) String fileType,
             @RequestParam(required = false) String tag,
-            @RequestParam(required = false) Long userId
+            @RequestParam(required = false) Long userId,
+            org.springframework.security.core.Authentication authentication
     ) {
-        List<DocumentResponse> results = documentService.searchDocuments(keyword, subject, fileType, tag, userId);
+        Long currentUserId = getCurrentUserId(authentication);
+        boolean isAdmin = false;
+        if (authentication != null) {
+            isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ADMIN"));
+        }
+        Long targetUserId = userId;
+        if (!isAdmin && targetUserId == null) {
+            targetUserId = currentUserId;
+        }
+        List<DocumentResponse> results = documentService.searchDocuments(keyword, subject, fileType, tag, targetUserId);
         return ResponseEntity.ok(ApiResponse.ok("Search completed.", results));
     }
 
@@ -203,48 +240,40 @@ public class DocumentController {
     }
 
     // ------------------------------------------------------------------
-    // GET /api/documents/{id}/shares
+    // GET /api/documents/subject/{subjectId}/stats
     // ------------------------------------------------------------------
-    @GetMapping("/{id}/shares")
-    public ResponseEntity<ApiResponse<List<DocumentShare>>> getDocumentShares(
-            @PathVariable Long id
+    @GetMapping("/subject/{subjectId}/stats")
+    public ResponseEntity<ApiResponse<SubjectStatsResponse>> getSubjectStats(
+            @PathVariable String subjectId,
+            @RequestParam Long userId
     ) {
-        List<DocumentShare> shares = documentService.getDocumentShares(id);
-        return ResponseEntity.ok(ApiResponse.ok("Shares retrieved successfully.", shares));
-    }
-
-    // ------------------------------------------------------------------
-    // POST /api/documents/{id}/shares
-    // ------------------------------------------------------------------
-    @PostMapping("/{id}/shares")
-    public ResponseEntity<ApiResponse<DocumentShare>> addOrUpdateDocumentShare(
-            @PathVariable Long id,
-            @RequestBody DocumentShareRequest request
-    ) {
-        DocumentShare response = documentService.addOrUpdateDocumentShare(
-                id, request.getEmail(), request.getRole()
-        );
-        return ResponseEntity.ok(ApiResponse.ok("Share added or updated successfully.", response));
-    }
-
-    // ------------------------------------------------------------------
-    // DELETE /api/documents/{id}/shares
-    // ------------------------------------------------------------------
-    @DeleteMapping("/{id}/shares")
-    public ResponseEntity<ApiResponse<Void>> deleteDocumentShare(
-            @PathVariable Long id,
-            @RequestParam String email
-    ) {
-        documentService.deleteDocumentShare(id, email);
-        return ResponseEntity.ok(ApiResponse.ok("Share deleted successfully.", null));
+        SubjectStatsResponse stats = documentService.getSubjectStats(subjectId, userId);
+        return ResponseEntity.ok(ApiResponse.ok("Subject statistics retrieved successfully.", stats));
     }
 
     // ------------------------------------------------------------------
     // Helper
     // ------------------------------------------------------------------
+    private String resolveFilename(Long documentId) {
+        return documentRepository.findByIdAndDeletedFalse(documentId)
+                .map(d -> d.getOriginalFileName() != null ? d.getOriginalFileName() : d.getFileName())
+                .orElse("document.pdf");
+    }
+
     private String resolveMimeType(Long documentId) {
         return documentRepository.findByIdAndDeletedFalse(documentId)
                 .map(d -> d.getMimeType() != null ? d.getMimeType() : MediaType.APPLICATION_OCTET_STREAM_VALUE)
                 .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+    }
+
+    private Long getCurrentUserId(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null) {
+            return null;
+        }
+        Object details = authentication.getDetails();
+        if (details instanceof Long) {
+            return (Long) details;
+        }
+        return null;
     }
 }

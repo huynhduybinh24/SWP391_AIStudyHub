@@ -409,7 +409,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
                                 e.stopPropagation()
                                 const docId = getDocumentIdByName(lesson.linkedDocName || '')
                                 const pageNum = extractPageNumber(lesson.pageRange)
-                                const pageQuery = pageNum ? `?page=${pageNum}` : ''
+                                const pageQuery = `?page=${pageNum || 1}&planId=${plan.id}&lessonId=${lesson.id}`
                                 navigate(`/dashboard/documents/document/${docId}${pageQuery}`)
                                 onClose()
                               }}

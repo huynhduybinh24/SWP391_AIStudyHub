@@ -72,6 +72,7 @@ export function SharedFileViewer({
         onBackLink={backLink}
         fileUrl={file.url}
         onQuiz={() => setIsQuizOpen(true)}
+        documentId={file.id}
       />
 
       <QuizModal

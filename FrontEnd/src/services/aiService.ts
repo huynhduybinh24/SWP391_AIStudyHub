@@ -57,6 +57,7 @@ export interface StudyPlanResponse {
   documentId?: number
   sourceDocuments?: any[]
   curriculumJson?: string
+  completedLessonsJson?: string
   createdAt: string
 }
 
@@ -149,24 +150,49 @@ export const aiService = {
     count = 10,
     prompt = ''
   ): Promise<QuizQuestionResponse[]> {
-    const response = await apiClient.get<ApiResponse<QuizQuestionResponse[]>>(
+    const response = await apiClient.get<ApiResponse<any[]>>(
       `/ai/quiz/generate?documentId=${documentId}&difficulty=${difficulty}&count=${count}&prompt=${encodeURIComponent(prompt)}`
     )
-    return response.data.data
+    return (response.data.data || []).map(item => ({
+      id: item.id,
+      documentId: Number(documentId),
+      q: item.questionText || item.q || '',
+      options: typeof item.options === 'string' ? item.options : JSON.stringify(item.options),
+      answer: typeof item.answerIndex === 'number' ? item.answerIndex : (typeof item.answer === 'number' ? item.answer : 0),
+      explain: item.explanation || item.explain || '',
+      createdAt: item.createdAt || new Date().toISOString()
+    }))
   },
 
   async modifyQuizWithAi(documentId: number | string, prompt: string): Promise<QuizQuestionResponse[]> {
-    const response = await apiClient.post<ApiResponse<QuizQuestionResponse[]>>('/ai/quiz/modify', {
+    const response = await apiClient.post<ApiResponse<any[]>>('/ai/quiz/modify', {
       documentId: Number(documentId),
       prompt,
     })
-    return response.data.data
+    return (response.data.data || []).map(item => ({
+      id: item.id,
+      documentId: Number(documentId),
+      q: item.questionText || item.q || '',
+      options: typeof item.options === 'string' ? item.options : JSON.stringify(item.options),
+      answer: typeof item.answerIndex === 'number' ? item.answerIndex : (typeof item.answer === 'number' ? item.answer : 0),
+      explain: item.explanation || item.explain || '',
+      createdAt: item.createdAt || new Date().toISOString()
+    }))
   },
 
   async getQuiz(documentId: number | string): Promise<QuizQuestionResponse[]> {
-    const response = await apiClient.get<ApiResponse<QuizQuestionResponse[]>>(`/ai/quiz/${documentId}`)
-    return response.data.data
+    const response = await apiClient.get<ApiResponse<any[]>>(`/ai/quiz/${documentId}`)
+    return (response.data.data || []).map(item => ({
+      id: item.id,
+      documentId: Number(documentId),
+      q: item.questionText || item.q || '',
+      options: typeof item.options === 'string' ? item.options : JSON.stringify(item.options),
+      answer: typeof item.answerIndex === 'number' ? item.answerIndex : (typeof item.answer === 'number' ? item.answer : 0),
+      explain: item.explanation || item.explain || '',
+      createdAt: item.createdAt || new Date().toISOString()
+    }))
   },
+
 
   async generateStudyPlan(
     userId: number,
@@ -188,6 +214,37 @@ export const aiService = {
   async getStudyPlans(userId: number): Promise<StudyPlanResponse[]> {
     const response = await apiClient.get<ApiResponse<StudyPlanResponse[]>>(`/ai/study-plans/user/${userId}`)
     return response.data.data
+  },
+
+  async getCompletedLessons(planId: number | string): Promise<string[]> {
+    try {
+      const response = await apiClient.get<ApiResponse<string[]>>(`/ai/study-plans/${planId}/completed-lessons`)
+      return response.data.data || []
+    } catch {
+      return []
+    }
+  },
+
+  async updateCompletedLessons(planId: number | string, lessonIds: string[]): Promise<string[]> {
+    const response = await apiClient.put<ApiResponse<string[]>>(
+      `/ai/study-plans/${planId}/completed-lessons`,
+      { lessonIds }
+    )
+    return response.data.data || []
+  },
+
+  async saveStudyPlan(plan: Partial<StudyPlanResponse>): Promise<StudyPlanResponse> {
+    const response = await apiClient.post<ApiResponse<StudyPlanResponse>>('/ai/study-plans', plan)
+    return response.data.data
+  },
+
+  async updateStudyPlan(id: number | string, plan: Partial<StudyPlanResponse>): Promise<StudyPlanResponse> {
+    const response = await apiClient.put<ApiResponse<StudyPlanResponse>>(`/ai/study-plans/${id}`, plan)
+    return response.data.data
+  },
+
+  async deleteStudyPlan(id: number | string): Promise<void> {
+    await apiClient.delete<ApiResponse<void>>(`/ai/study-plans/${id}`)
   },
 
   // AI Studio Features

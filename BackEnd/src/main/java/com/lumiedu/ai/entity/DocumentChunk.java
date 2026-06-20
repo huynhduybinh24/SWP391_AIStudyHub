@@ -25,4 +25,7 @@ public class DocumentChunk extends BaseEntity {
 
     @Column(name = "content", columnDefinition = "LONGTEXT", nullable = false)
     private String content;
+
+    @Column(name = "embedding", columnDefinition = "LONGTEXT")
+    private String embedding;
 }

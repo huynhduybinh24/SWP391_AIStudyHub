@@ -41,7 +41,7 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
+  subject: string
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
   ownerName?: string
@@ -63,14 +63,38 @@ interface DocumentsContextType {
 }
 
 const SUBJECT_LIST = [
-  { value: 'COMPSCI', label: 'Computer Science' },
-  { value: 'MATHEMATICS', label: 'Mathematics' },
-  { value: 'BIOLOGY', label: 'Biology' },
-  { value: 'PHYSICS', label: 'Physics' },
-  { value: 'PHILOSOPHY', label: 'Philosophy' },
-  { value: 'ECONOMICS', label: 'Economics' },
-  { value: 'NEUROSCIENCE', label: 'Neuroscience' },
-  { value: 'PSYCHOLOGY', label: 'Psychology' },
+  // Semester 1
+  { value: 'PRF192', label: 'PRF192 - Programming Fundamentals' },
+  { value: 'MAE101', label: 'MAE101 - Mathematics for Engineering' },
+  { value: 'CEA201', label: 'CEA201 - Computer Organization' },
+  { value: 'MGT103', label: 'MGT103 - Introduction to Management' },
+  { value: 'ECO111', label: 'ECO111 - Microeconomics' },
+  // Semester 2
+  { value: 'PRO192', label: 'PRO192 - Object-Oriented Programming' },
+  { value: 'MAD101', label: 'MAD101 - Discrete Mathematics' },
+  { value: 'OSG202', label: 'OSG202 - Operating Systems' },
+  { value: 'MKT101', label: 'MKT101 - Basic Marketing' },
+  { value: 'ECO121', label: 'ECO121 - Macroeconomics' },
+  // Semester 3
+  { value: 'CSD201', label: 'CSD201 - Data Structures and Algorithms' },
+  { value: 'DBI202', label: 'DBI202 - Database Systems' },
+  { value: 'AIL302M', label: 'AIL302m - Machine Learning' },
+  { value: 'ACC101', label: 'ACC101 - Principles of Accounting' },
+  { value: 'FIN201', label: 'FIN201 - Corporate Finance' },
+  // Semester 4
+  { value: 'PRN211', label: 'PRN211 - Basic Cross-Platform (.NET)' },
+  { value: 'SWE201', label: 'SWE201 - Software Engineering' },
+  { value: 'AIP301', label: 'AIP301 - AI Project' },
+  { value: 'HRM201', label: 'HRM201 - Human Resource Management' },
+  // Semester 5
+  { value: 'SWP391', label: 'SWP391 - Software Project' },
+  { value: 'SWD392', label: 'SWD392 - Software Architecture' },
+  { value: 'SWT301', label: 'SWT301 - Software Testing' },
+  { value: 'DLN301', label: 'DLN301 - Deep Learning' },
+  // Semester 6
+  { value: 'PRM392', label: 'PRM392 - Mobile Programming' },
+  { value: 'PRN221', label: 'PRN221 - Advanced Cross-Platform (.NET)' },
+  // General fallback
   { value: 'GENERAL', label: 'General Studies' }
 ]
 

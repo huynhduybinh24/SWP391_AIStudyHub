@@ -108,6 +108,164 @@ export function Header() {
   const [searchResults, setSearchResults] = useState<typeof CHATBOT_SEARCH_DATA>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
+  const loadNotifications = () => {
+    const currentUser = getCurrentUser();
+    const userRole = currentUser.role;
+    const userEmail = currentUser.email;
+
+    let defaultNotifications: MockNotification[] = [];
+    if (userRole === 'admin') {
+      defaultNotifications = [
+        {
+          id: 'new-report-submitted',
+          title: language === 'vi' ? 'Có báo cáo mới' : 'New report submitted',
+          description: language === 'vi' ? 'Một người dùng đã báo cáo tài liệu vì đạo văn.' : 'A user reported a document for plagiarism.',
+          time: '10m ago',
+          type: 'doc',
+          isRead: false,
+        },
+        {
+          id: 'ai-audit-flagged',
+          title: language === 'vi' ? 'AI phát hiện tài liệu đáng ngờ' : 'AI audit flagged a document',
+          description: language === 'vi' ? 'AI Guard đã phát hiện vi phạm chính sách tiềm ẩn.' : 'AI Guard detected a potential policy violation.',
+          time: '1h ago',
+          type: 'chat',
+          isRead: false,
+        },
+        {
+          id: 'system-status-updated',
+          title: language === 'vi' ? 'Trạng thái hệ thống đã cập nhật' : 'System status updated',
+          description: language === 'vi' ? 'Chế độ bảo trì hoặc trạng thái sự cố đã được thay đổi.' : 'Maintenance mode or incident status was changed.',
+          time: '3h ago',
+          type: 'plan',
+          isRead: true,
+        }
+      ];
+    } else {
+      defaultNotifications = [
+        {
+          id: 'syllabus-analyzed',
+          title: 'Syllabus analyzed',
+          description: 'Your CS101 Syllabus was parsed successfully by AI.',
+          time: '5m ago',
+          type: 'doc',
+          isRead: false,
+        },
+        {
+          id: 'study-plan-starting',
+          title: 'Study plan starting',
+          description: 'Your midterm exam study plan starts tomorrow.',
+          time: '1h ago',
+          type: 'plan',
+          isRead: false,
+        },
+        {
+          id: 'new-shared-folder',
+          title: 'New shared folder',
+          description: 'Duy Binh shared "SWE Lab materials" with you.',
+          time: '3h ago',
+          type: 'share',
+          isRead: true,
+        },
+        {
+          id: 'ai-summary-generated',
+          title: 'AI Summary generated',
+          description: 'Summary is ready for Chapter 4: Computer Networking.',
+          time: '1d ago',
+          type: 'chat',
+          isRead: true,
+        },
+      ];
+    }
+
+    let localNotifications: MockNotification[] = []
+    try {
+      const savedNotifs = localStorage.getItem(`aiStudyHubUserNotifications:${userEmail}`)
+      if (savedNotifs) {
+        const parsed = JSON.parse(savedNotifs)
+        
+        // Filter out notifications older than 7 days
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const validList = parsed.filter((n: any) => {
+          const timestamp = n.createdAt ? new Date(n.createdAt).getTime() : Date.now();
+          return timestamp >= sevenDaysAgo;
+        });
+
+        if (validList.length !== parsed.length) {
+          localStorage.setItem(`aiStudyHubUserNotifications:${userEmail}`, JSON.stringify(validList));
+        }
+
+        localNotifications = validList.map((n: any) => ({
+          id: n.id,
+          title: n.title,
+          description: n.message,
+          time: n.time || 'Just now',
+          type: n.type,
+          isRead: n.isRead,
+          createdAt: n.createdAt,
+          reason: n.reason,
+          documentName: n.documentName,
+          documentId: n.documentId,
+          actionType: n.actionType,
+          adminNote: n.adminNote,
+          targetUserEmail: n.targetUserEmail
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to load user notifications:', err)
+    }
+
+    let allNotifs = [...localNotifications, ...defaultNotifications]
+
+    try {
+      const saved = localStorage.getItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`)
+      if (saved) {
+        const readMap = JSON.parse(saved)
+        allNotifs = allNotifs.map((n) => ({
+          ...n,
+          isRead: readMap[n.id] !== undefined ? readMap[n.id] : n.isRead,
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to load notifications read state:', err)
+    }
+
+    let deletedIds: string[] = []
+    try {
+      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`)
+      if (storedDeleted) {
+        deletedIds = JSON.parse(storedDeleted)
+      }
+    } catch (e) {
+      console.error('Failed to parse deleted notification IDs', e)
+    }
+
+    allNotifs = allNotifs.filter((n) => {
+      if (deletedIds.includes(n.id)) return false;
+
+      if (n.targetUserEmail && n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
+        return false;
+      }
+
+      if (userRole === 'admin') {
+        const typeStr = n.type || '';
+        if ((typeStr as string) === 'document_deleted' || (typeStr as string) === 'document_rejected' || (typeStr as string) === 'document_removed') {
+          if (!n.targetUserEmail || n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
+            return false;
+          }
+        }
+        const descStr = typeof n.description === 'string' ? n.description : '';
+        if ((descStr.startsWith('Your document') || descStr.startsWith('Tài liệu')) && !n.targetUserEmail) {
+          return false;
+        }
+      }
+
+      return true;
+    })
+
+    return allNotifs
+  }
+
   const [notifications, setNotifications] = useState<MockNotification[]>([])
 
   const refreshNotifications = async () => {
@@ -239,7 +397,12 @@ export function Header() {
   const { pathname } = useLocation()
   const { userMenuOpen, setUserMenuOpen, toggleUserMenu, setSidebarOpen } = useUiStore()
   const { profile } = useProfileStore()
-
+  const currentEmail = user?.email
+  const rawHeaderAvatar = currentEmail 
+    ? (localStorage.getItem(`aiStudyHubUserAvatar:${currentEmail}`) || profile.avatarUrl) 
+    : profile.avatarUrl
+  const headerAvatarUrl = (rawHeaderAvatar && rawHeaderAvatar !== '/logo.png') ? rawHeaderAvatar : undefined
+  
   const menuRef = useRef<HTMLDivElement>(null)
   const notificationRef = useRef<HTMLDivElement>(null)
   const searchContainerRef = useRef<HTMLFormElement>(null)
@@ -280,15 +443,18 @@ export function Header() {
             role: savedUser.role,
             plan: savedUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
             avatarUrl: savedUser.avatar || '/logo.png',
+            university: savedUser.university || 'FPT University',
+            major: savedUser.major || 'Software engineering',
+            degree: savedUser.degree || 'Bachelor',
           },
           isAuthenticated: true,
         })
         useProfileStore.setState({
           profile: {
             name: savedUser.name,
-            university: 'FPT University',
-            major: 'Software engineering',
-            degree: 'Bachelor',
+            university: savedUser.university || 'FPT University',
+            major: savedUser.major || 'Software engineering',
+            degree: savedUser.degree || 'Bachelor',
             avatarUrl: savedUser.avatar || '/logo.png',
           }
         })
@@ -778,7 +944,7 @@ export function Header() {
             aria-haspopup="menu"
             aria-label="User menu"
           >
-            <Avatar src={profile.avatarUrl} name={profile.name} className="cursor-pointer border border-slate-200/50 dark:border-slate-800" />
+            <Avatar src={headerAvatarUrl} name={profile.name} className="cursor-pointer border border-slate-200/50 dark:border-slate-800" />
           </button>
 
           <AnimatePresence>

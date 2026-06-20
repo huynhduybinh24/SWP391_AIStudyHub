@@ -56,13 +56,7 @@ class NotificationRealtimeManager {
     },
   ];
 
-  // List of pre-defined realistic notifications to simulate for Admin users
   private adminSimulationPool = [
-    {
-      type: 'security' as NotificationType,
-      title: 'New Partnership Request',
-      description: 'A new teacher partnership request has been submitted by Ngoc Tan (High School).',
-    },
     {
       type: 'security' as NotificationType,
       title: 'New Deletion/Plagiarism Report',

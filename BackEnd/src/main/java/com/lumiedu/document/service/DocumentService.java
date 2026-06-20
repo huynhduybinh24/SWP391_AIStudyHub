@@ -3,7 +3,7 @@ package com.lumiedu.document.service;
 import com.lumiedu.document.dto.request.DocumentCreateRequest;
 import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.response.DocumentResponse;
-import com.lumiedu.document.entity.DocumentShare;
+import com.lumiedu.document.dto.response.SubjectStatsResponse;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,15 +19,15 @@ public interface DocumentService {
 
     List<DocumentResponse> getAllDocuments(Long userId);
 
-    DocumentResponse getDocumentById(Long id);
+    DocumentResponse getDocumentById(Long id, Long currentUserId);
 
-    DocumentResponse updateDocument(Long id, DocumentUpdateRequest request);
+    DocumentResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId);
 
-    void deleteDocument(Long id);
+    void deleteDocument(Long id, Long currentUserId);
 
-    Resource downloadDocument(Long id, Long userId);
+    Resource downloadDocument(Long id, Long currentUserId);
 
-    Resource previewDocument(Long id);
+    Resource previewDocument(Long id, Long currentUserId);
 
     List<DocumentResponse> searchDocuments(
             String keyword,
@@ -41,9 +41,5 @@ public interface DocumentService {
 
     void removeTag(Long documentId, String tagName);
 
-    List<DocumentShare> getDocumentShares(Long documentId);
-
-    DocumentShare addOrUpdateDocumentShare(Long documentId, String email, String role);
-
-    void deleteDocumentShare(Long documentId, String email);
+    SubjectStatsResponse getSubjectStats(String subjectId, Long userId);
 }

@@ -17,6 +17,8 @@ import {
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { documentService } from '@/services/documentService'
 
 interface DocumentItem {
   id: string
@@ -26,7 +28,7 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
+  subject: string
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
@@ -46,14 +48,83 @@ interface DocumentsContextType {
 }
 
 const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
-  COMPSCI: { title: 'Software Engineering', courseCode: 'CS-402' },
-  MATHEMATICS: { title: 'Mathematics', courseCode: 'Calculus II' },
-  BIOLOGY: { title: 'Biology', courseCode: 'Genetics Lab' },
-  PHYSICS: { title: 'Physics', courseCode: 'PHY-301' },
-  PHILOSOPHY: { title: 'Philosophy', courseCode: 'PHIL-101' },
-  ECONOMICS: { title: 'Economics', courseCode: 'ECON-201' },
-  NEUROSCIENCE: { title: 'Neuroscience', courseCode: 'NEURO-301' },
-  PSYCHOLOGY: { title: 'Psychology', courseCode: 'PSYCH-101' },
+  // Semester 1 (K1)
+  PRF192: { title: 'Programming Fundamentals', courseCode: 'PRF192' },
+  MAE101: { title: 'Mathematics for Engineering', courseCode: 'MAE101' },
+  CEA201: { title: 'Computer Organization', courseCode: 'CEA201' },
+  CSI104: { title: 'Introduction to Computer Science', courseCode: 'CSI104' },
+  MGT103: { title: 'Introduction to Management', courseCode: 'MGT103' },
+  ECO111: { title: 'Microeconomics', courseCode: 'ECO111' },
+  FMA101: { title: 'Financial Mathematics', courseCode: 'FMA101' },
+  
+  // Semester 2 (K2)
+  PRO192: { title: 'Object-Oriented Programming', courseCode: 'PRO192' },
+  MAD101: { title: 'Discrete Mathematics', courseCode: 'MAD101' },
+  OSG202: { title: 'Operating Systems', courseCode: 'OSG202' },
+  SSG104: { title: 'Communication Skills', courseCode: 'SSG104' },
+  MKT101: { title: 'Basic Marketing', courseCode: 'MKT101' },
+  ECO121: { title: 'Macroeconomics', courseCode: 'ECO121' },
+  AMG111: { title: 'Art Management', courseCode: 'AMG111' },
+  
+  // Semester 3 (K3)
+  CSD201: { title: 'Data Structures and Algorithms', courseCode: 'CSD201' },
+  DBI202: { title: 'Database Systems', courseCode: 'DBI202' },
+  LAB211: { title: 'OOP Java Lab', courseCode: 'LAB211' },
+  AIL302M: { title: 'Machine Learning', courseCode: 'AIL302m' },
+  ACC101: { title: 'Principles of Accounting', courseCode: 'ACC101' },
+  FIN201: { title: 'Corporate Finance', courseCode: 'FIN201' },
+  BUL201: { title: 'Business Law', courseCode: 'BUL201' },
+  
+  // Semester 4 (K4)
+  PRN211: { title: 'Basic Cross-Platform Application (.NET)', courseCode: 'PRN211' },
+  SWE201: { title: 'Introduction to Software Engineering', courseCode: 'SWE201' },
+  JPD113: { title: 'Japanese Language 1', courseCode: 'JPD113' },
+  AIP301: { title: 'Artificial Intelligence Project', courseCode: 'AIP301' },
+  MTH202: { title: 'Probability and Statistics', courseCode: 'MTH202' },
+  HRM201: { title: 'Human Resource Management', courseCode: 'HRM201' },
+  OBH201: { title: 'Organizational Behavior', courseCode: 'OBH201' },
+  MRF301: { title: 'Marketing Research', courseCode: 'MRF301' },
+  
+  // Semester 5 (K5)
+  SWP391: { title: 'Software Development Project', courseCode: 'SWP391' },
+  SWD392: { title: 'Software Architecture and Design', courseCode: 'SWD392' },
+  SWT301: { title: 'Software Testing', courseCode: 'SWT301' },
+  DLN301: { title: 'Deep Learning', courseCode: 'DLN301' },
+  BIS301: { title: 'Business Information Systems', courseCode: 'BIS301' },
+  ENT301: { title: 'Entrepreneurship', courseCode: 'ENT301' },
+  POM201: { title: 'Production and Operations Management', courseCode: 'POM201' },
+  
+  // Semester 6 (K6)
+  OJT202: { title: 'On-the-Job Training (OJT)', courseCode: 'OJT202' },
+
+  // Semester 7 (K7)
+  PRM392: { title: 'Mobile Programming', courseCode: 'PRM392' },
+  PRN221: { title: 'Advanced Cross-Platform Application (.NET)', courseCode: 'PRN221' },
+  WDP301: { title: 'Web Development Project', courseCode: 'WDP301' },
+  NLP301: { title: 'Natural Language Processing', courseCode: 'NLP301' },
+  CVP301: { title: 'Computer Vision Project', courseCode: 'CVP301' },
+  IBM301: { title: 'International Business Management', courseCode: 'IBM301' },
+  SCM301: { title: 'Supply Chain Management', courseCode: 'SCM301' },
+  BRM301: { title: 'Business Research Methods', courseCode: 'BRM301' },
+
+  // Semester 8 (K8)
+  SEP490: { title: 'Capstone Project Preparation (SE)', courseCode: 'SEP490' },
+  CAP490: { title: 'Capstone Project Preparation (AI)', courseCode: 'CAP490' },
+  BAP490: { title: 'Capstone Project Preparation (BA)', courseCode: 'BAP490' },
+  EXE101: { title: 'Experiential Entrepreneurship 1', courseCode: 'EXE101' },
+  IAS301: { title: 'Information Assurance & Security', courseCode: 'IAS301' },
+  BDA301: { title: 'Big Data Analytics', courseCode: 'BDA301' },
+  SMA301: { title: 'Strategic Management', courseCode: 'SMA301' },
+
+  // Semester 9 (K9)
+  SEP490_DEF: { title: 'Capstone Project Graduation (SE)', courseCode: 'SEP490' },
+  CAP490_DEF: { title: 'Capstone Project Graduation (AI)', courseCode: 'CAP490' },
+  BAP490_DEF: { title: 'Capstone Project Graduation (BA)', courseCode: 'BAP490' },
+  EXE201: { title: 'Experiential Entrepreneurship 2', courseCode: 'EXE201' },
+  PMG201: { title: 'Project Management', courseCode: 'PMG201' },
+  EBU301: { title: 'E-Business', courseCode: 'EBU301' },
+
+  // General fallback
   GENERAL: { title: 'General Studies', courseCode: 'GEN-101' }
 }
 
@@ -81,6 +152,37 @@ export default function SubjectCategoryPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(false)
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
+
+  const { user } = useAuthStore()
+  const [stats, setStats] = useState<{
+    studyProgress: number
+    averageScore: number | null
+    rank: string
+    aiRecommendation: string
+  } | null>(null)
+  const [loadingStats, setLoadingStats] = useState(false)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const userId = user?.id ? Number(user.id) : 1
+      setLoadingStats(true)
+      try {
+        const data = await documentService.getSubjectStats(activeSubjectId, userId)
+        setStats(data)
+      } catch (err) {
+        console.error('Failed to fetch subject stats:', err)
+        setStats({
+          studyProgress: activeSubjectId === 'COMPSCI' ? 82 : 0,
+          averageScore: activeSubjectId === 'COMPSCI' ? 9.0 : null,
+          rank: activeSubjectId === 'COMPSCI' ? 'Top 5% of class' : 'Rank #--',
+          aiRecommendation: activeSubjectId === 'COMPSCI' ? 'Review UML Diagrams' : getAIRecommendation()
+        })
+      } finally {
+        setLoadingStats(false)
+      }
+    }
+    fetchStats()
+  }, [activeSubjectId, user])
 
   const handleOpenDocument = (docId: string) => {
     setActiveMenuId(null)
@@ -121,30 +223,31 @@ export default function SubjectCategoryPage() {
   // Dynamic AI study recommendation advice tailored to each subject
   const getAIRecommendation = () => {
     switch (activeSubjectId) {
-      case 'COMPSCI':
-        return 'Focus on reviewing the "Design Patterns" cheat-sheet and practicing solid MVC principles before the upcoming coding lab.'
-      case 'MATHEMATICS':
-        return 'Practice active derivation of double integrals. Try building a quiz from the chapter 4 polar coordinates study guide.'
-      case 'BIOLOGY':
-        return 'Review mitochondrial DNA replication slides. Flashcards on transcription factors are highly recommended for your quiz.'
-      case 'PHYSICS':
-        return 'Master the equations for electromagnetic wave propagation. Re-run the laboratory simulation on optics diffraction.'
-      case 'PHILOSOPHY':
-        return 'Analyze key epistemological viewpoints. Draft a short outline comparing rationalist and empiricist arguments.'
-      case 'ECONOMICS':
-        return 'Review marginal revenue calculations and game theory payoff matrices. Pay attention to Nash equilibrium concepts.'
+      case 'PRF192':
+      case 'PRO192':
+        return 'Tập trung ôn tập các khái niệm lập trình cơ bản, cú pháp Java/C, cấu trúc điều khiển và thực hành viết code trên giấy.'
+      case 'CSD201':
+        return 'Ôn tập kỹ các cấu trúc dữ liệu cơ bản (Danh sách liên kết, Cây nhị phân) và các thuật toán sắp xếp để chuẩn bị tốt cho bài thi PE.'
+      case 'DBI202':
+        return 'Luyện tập viết các câu truy vấn SQL phức tạp (JOIN, Subquery, Group By) và vẽ sơ đồ thực thể mối quan hệ ERD.'
+      case 'SWP391':
+        return 'Đảm bảo tiến độ sprint của nhóm trên Jira. Xem lại tài liệu thiết kế hệ thống và tích hợp liên tục (CI/CD) cho sản phẩm.'
+      case 'PRN211':
+      case 'PRN221':
+        return 'Thực hành các ứng dụng WinForms, WPF hoặc ASP.NET Core MVC. Đảm bảo hiểu rõ lập trình hướng sự kiện và kết nối Entity Framework.'
+      case 'AIL302M':
+      case 'DLN301':
+        return 'Ôn tập toán tối ưu, đại số tuyến tính cho Machine Learning và thiết lập kiến trúc mạng Neural (CNN, RNN) trong PyTorch/TensorFlow.'
+      case 'MKT101':
+        return 'Nghiên cứu mô hình 4P/7P và phân tích hành vi khách hàng. Chuẩn bị slide thuyết trình cho dự án nghiên cứu thị trường nhóm.'
       default:
-        return 'Review your uploaded study materials regularly and generate interactive AI quizzes to strengthen memory retention.'
+        return 'Hãy ôn tập tài liệu học tập thường xuyên và sử dụng tính năng tạo Quiz tự động bằng AI để củng cố kiến thức tốt nhất.'
     }
   }
 
   const handleRecommendationClick = () => {
     // Find a relevant document for the active subject to preview/chat
-    const relevantDoc = subjectDocuments.find(d => {
-      if (activeSubjectId === 'COMPSCI') return d.id === 'doc-design-patterns'
-      if (activeSubjectId === 'BIOLOGY') return d.id === 'doc-2' || d.id === 'doc-6'
-      return d.subject === activeSubjectId
-    }) || subjectDocuments[0]
+    const relevantDoc = subjectDocuments.find(d => d.subject === activeSubjectId) || subjectDocuments[0]
 
     if (relevantDoc) {
       // Open the preview modal or AI chat for this document
@@ -261,33 +364,55 @@ export default function SubjectCategoryPage() {
           
           {/* Card 1: Study Progress */}
           <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div>
-              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">STUDY PROGRESS</span>
-              <span className="text-3xl font-black text-slate-900 dark:text-white block mt-2.5 leading-none">82%</span>
-            </div>
-            <div className="mt-4">
-              <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-[#2563eb] h-2 rounded-full transition-all duration-500"
-                  style={{ width: '82%' }}
-                />
+            {loadingStats ? (
+              <div className="animate-pulse space-y-3">
+                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full w-24"></div>
+                <div className="h-8 bg-slate-100 dark:bg-slate-800 rounded-md w-16"></div>
+                <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full w-full mt-4"></div>
               </div>
-            </div>
+            ) : (
+              <>
+                <div>
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">STUDY PROGRESS</span>
+                  <span className="text-3xl font-black text-slate-900 dark:text-white block mt-2.5 leading-none">
+                    {stats?.studyProgress ?? 0}%
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-[#2563eb] h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${stats?.studyProgress ?? 0}%` }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Card 2: Average Score */}
           <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div>
-              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">AVERAGE SCORE</span>
-              <span className="text-3xl font-black text-slate-900 dark:text-white block mt-2.5 leading-none">
-                {activeSubjectId === 'COMPSCI' ? 'A-' : '9.0'}
-              </span>
-            </div>
-            <div className="mt-4">
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-extrabold">
-                {activeSubjectId === 'COMPSCI' ? 'Top 5% of class' : 'Rank #5'}
-              </p>
-            </div>
+            {loadingStats ? (
+              <div className="animate-pulse space-y-3">
+                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full w-24"></div>
+                <div className="h-8 bg-slate-100 dark:bg-slate-800 rounded-md w-16"></div>
+                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full w-28 mt-4"></div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">AVERAGE SCORE</span>
+                  <span className="text-3xl font-black text-slate-900 dark:text-white block mt-2.5 leading-none">
+                    {stats?.averageScore !== null && stats?.averageScore !== undefined ? stats.averageScore.toFixed(1) : 'N/A'}
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-extrabold">
+                    {stats?.rank || 'Rank #--'}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Card 3: AI Recommendation */}
@@ -305,42 +430,52 @@ export default function SubjectCategoryPage() {
               <Sparkles className="h-16 w-16 stroke-[1.2]" />
             </div>
             
-            <div className="z-10">
-              <span className={cn(
-                "text-[10px] font-black uppercase tracking-widest block",
-                activeSubjectId === 'COMPSCI' ? "text-[#4F46E5] dark:text-indigo-400" : "text-primary dark:text-blue-400"
-              )}>
-                AI Recommendation
-              </span>
-              <p className={cn(
-                "text-[15px] font-black tracking-tight mt-2.5 leading-snug",
-                activeSubjectId === 'COMPSCI' ? "text-[#3155F6] dark:text-blue-450" : "text-slate-800 dark:text-slate-100"
-              )}>
-                {activeSubjectId === 'COMPSCI' ? 'Review UML Diagrams' : getAIRecommendation()}
-              </p>
-            </div>
-            
-            <div className="mt-4 z-10 flex items-center justify-between">
-              <span className={cn(
-                "text-[10px] font-bold uppercase tracking-wider block",
-                activeSubjectId === 'COMPSCI' ? "text-indigo-400" : "text-primary/70 dark:text-blue-400/80"
-              )}>
-                Instant intelligence active
-              </span>
-              <span className={cn(
-                "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-white/90 dark:bg-slate-800 dark:text-slate-100 shadow-3xs transition-transform duration-200 group-hover:translate-x-0.5",
-                activeSubjectId === 'COMPSCI' ? "text-[#4F46E5] dark:text-indigo-400" : "text-primary"
-              )}>
-                Review Now &rarr;
-              </span>
-            </div>
+            {loadingStats ? (
+              <div className="animate-pulse space-y-3 z-10 w-full">
+                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full w-28"></div>
+                <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-full w-full"></div>
+                <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-full w-3/4"></div>
+              </div>
+            ) : (
+              <>
+                <div className="z-10">
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-widest block",
+                    activeSubjectId === 'COMPSCI' ? "text-[#4F46E5] dark:text-indigo-400" : "text-primary dark:text-blue-400"
+                  )}>
+                    AI Recommendation
+                  </span>
+                  <p className={cn(
+                    "text-[15px] font-black tracking-tight mt-2.5 leading-snug",
+                    activeSubjectId === 'COMPSCI' ? "text-[#3155F6] dark:text-blue-450" : "text-slate-800 dark:text-slate-100"
+                  )}>
+                    {stats?.aiRecommendation}
+                  </p>
+                </div>
+                
+                <div className="mt-4 z-10 flex items-center justify-between">
+                  <span className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider block",
+                    activeSubjectId === 'COMPSCI' ? "text-indigo-400" : "text-primary/70 dark:text-blue-400/80"
+                  )}>
+                    Instant intelligence active
+                  </span>
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-white/90 dark:bg-slate-800 dark:text-slate-100 shadow-3xs transition-transform duration-200 group-hover:translate-x-0.5",
+                    activeSubjectId === 'COMPSCI' ? "text-[#4F46E5] dark:text-indigo-400" : "text-primary"
+                  )}>
+                    Review Now &rarr;
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
         </div>
       </div>
 
       {/* Recent Materials Section */}
-      {(subjectDocuments.length > 2 || activeSubjectId === 'COMPSCI') && (
+      {subjectDocuments.length > 0 && (
         <div className="space-y-4 pt-1">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
             <h3 className="text-[11px] font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase">RECENT MATERIALS</h3>
@@ -352,105 +487,30 @@ export default function SubjectCategoryPage() {
             </button>
           </div>
           
-          {/* Exactly 2 Material Cards đúng như Figma */}
+          {/* Exactly 2 Material Cards dynamic */}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            {activeSubjectId === 'COMPSCI' ? (
-              <>
-                {/* Card 1: Design Patterns */}
-                <div
-                  onClick={() => {
-                    const doc = subjectDocuments.find(d => d.id === 'doc-design-patterns') || subjectDocuments[0]
-                    if (doc) openPreviewModal(doc)
-                  }}
-                  className="group relative flex flex-col justify-between rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs hover:border-blue-500/20 dark:hover:border-blue-500/30 hover:shadow-md hover:-translate-y-1 cursor-pointer transition-all duration-300 min-h-[178px]"
-                >
-                  <div>
-                    <div className="flex items-start justify-between">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">
-                        <svg className="h-5.5 w-5.5 stroke-[2] text-[#2563eb] dark:text-blue-450" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <rect x="3" y="3" width="7" height="9" rx="1" />
-                          <rect x="14" y="3" width="7" height="5" rx="1" />
-                          <rect x="14" y="12" width="7" height="9" rx="1" />
-                          <rect x="3" y="16" width="7" height="5" rx="1" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary dark:group-hover:text-blue-400 transition-colors">
-                        Design Patterns
-                      </h4>
-                      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500 leading-relaxed font-semibold">
-                        Comprehensive guide to Creational, Structural, and Behavioral patterns in Java.
-                      </p>
-                    </div>
+            {displayedDocuments.map((doc) => (
+              <div
+                key={doc.id}
+                onClick={() => openPreviewModal(doc)}
+                className="group relative flex flex-col justify-between rounded-2xl border border-border/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs hover:border-primary/20 dark:hover:border-blue-500/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer transition-all duration-300 min-h-[128px]"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg group-hover:bg-primary/5 transition-colors">
+                    {renderFileIcon(doc.type)}
                   </div>
-                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-4">
-                    <span className="text-xs text-slate-400 dark:text-slate-500 font-semibold">Updated 2h ago</span>
-                    <div className="flex -space-x-1.5 overflow-hidden">
-                      <div className="inline-flex h-6.5 w-6.5 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 text-white text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs" title="John Doe">JD</div>
-                      <div className="inline-flex h-6.5 w-6.5 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs" title="Alice Lam">AL</div>
-                    </div>
-                  </div>
+                  {renderStatusBadge(doc.status)}
                 </div>
-
-                {/* Card 2: Agile Methodologies */}
-                <div
-                  onClick={() => {
-                    const doc = subjectDocuments.find(d => d.id === 'doc-agile') || subjectDocuments[1]
-                    if (doc) openPreviewModal(doc)
-                  }}
-                  className="group relative flex flex-col justify-between rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs hover:border-blue-500/20 dark:hover:border-blue-500/30 hover:shadow-md hover:-translate-y-1 cursor-pointer transition-all duration-300 min-h-[178px]"
-                >
-                  <div>
-                    <div className="flex items-start justify-between">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-955/40 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/30">
-                        <svg className="h-5.5 w-5.5 text-[#7C3AED] dark:text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="15" cy="4" r="2" />
-                          <path d="M12 8l-3-1-3 3M10 13l2-4 3 2 3-2M9 13v4l-3 3M12 14v3l3 2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary dark:group-hover:text-blue-400 transition-colors">
-                        Agile Methodologies
-                      </h4>
-                      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500 leading-relaxed font-semibold">
-                        Deep dive into Scrum, Kanban, and Extreme Programming workflow management.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/60 pt-4">
-                    <span className="text-xs text-slate-400 dark:text-slate-500 font-semibold">Updated Yesterday</span>
-                    <span className="rounded bg-[#F5F3FF] dark:bg-purple-955/40 border border-[#DDD6FE]/40 dark:border-purple-900/30 px-2 py-0.5 text-[9px] font-bold text-[#7C3AED] dark:text-purple-400 tracking-wider uppercase">
-                      ESSENTIAL
-                    </span>
-                  </div>
+                <div className="mt-4">
+                  <h4 className="line-clamp-1 text-sm font-bold text-foreground dark:text-slate-100 group-hover:text-primary dark:group-hover:text-blue-400 transition-colors" title={doc.title || doc.fileName}>
+                    {doc.title || doc.fileName}
+                  </h4>
+                  <p className="mt-1 text-xs text-muted dark:text-slate-450 font-medium">
+                    {doc.uploadedAt} • {doc.size}
+                  </p>
                 </div>
-              </>
-            ) : (
-              displayedDocuments.map((doc) => (
-                <div
-                  key={doc.id}
-                  onClick={() => openPreviewModal(doc)}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-border/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs hover:border-primary/20 dark:hover:border-blue-500/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer transition-all duration-300 min-h-[128px]"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg group-hover:bg-primary/5 transition-colors">
-                      {renderFileIcon(doc.type)}
-                    </div>
-                    {renderStatusBadge(doc.status)}
-                  </div>
-                  <div className="mt-4">
-                    <h4 className="line-clamp-1 text-sm font-bold text-foreground dark:text-slate-100 group-hover:text-primary dark:group-hover:text-blue-400 transition-colors" title={doc.title || doc.fileName}>
-                      {doc.title || doc.fileName}
-                    </h4>
-                    <p className="mt-1 text-xs text-muted dark:text-slate-450 font-medium">
-                      {doc.uploadedAt} • {doc.size}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
         </div>
       )}

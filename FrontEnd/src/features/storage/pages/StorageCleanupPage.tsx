@@ -124,14 +124,14 @@ export function StorageCleanupPage() {
     }
   }
  
-  const totalMb = getStorageLimitByPlan(user?.plan)
+  const totalMb = usage ? usage.storageLimitMb : getStorageLimitByPlan(user?.plan)
   const totalGB = totalMb / 1024
 
   const usedMb = usage
     ? usage.storageUsedMb
     : user?.plan === 'pro'
       ? 2457.6
-      : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
+      : ((user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise')
         ? 8192
         : 8
 

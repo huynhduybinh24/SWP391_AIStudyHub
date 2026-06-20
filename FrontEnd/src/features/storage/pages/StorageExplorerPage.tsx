@@ -24,11 +24,11 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useAuthStore } from '@/stores/authStore'
+import { useToast } from '@/components/ui/Toast'
 import { env } from '@/config/env'
 import { useTranslation } from '@/context/LanguageContext'
 import { storageService, type StorageUsage } from '@/services/storageService'
-import { documentService } from '@/services/documentService'
-import { useToast } from '@/components/ui/Toast'
+import { documentService, type DocumentResponse } from '@/services/documentService'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
@@ -85,15 +85,62 @@ const INITIAL_FILES = [
   },
 ]
 
+const formatTimeAgo = (dateStr: string) => {
+  if (!dateStr) return 'Recently';
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Yesterday';
+    return `${diffDays}d ago`;
+  } catch (e) {
+    return 'Recently';
+  }
+};
+
+const mapDocumentToExplorerFile = (doc: DocumentResponse) => {
+  const ext = (doc.originalFileName || doc.fileName).split('.').pop()?.toUpperCase() || 'FILE';
+  let icon = FileIcon;
+  if (['PDF'].includes(ext)) icon = FileText;
+  else if (['DOC', 'DOCX'].includes(ext)) icon = FileText;
+  else if (['PNG', 'JPG', 'JPEG', 'WEBP', 'SVG'].includes(ext)) icon = FileImage;
+  
+  return {
+    id: doc.id,
+    name: doc.originalFileName || doc.fileName,
+    modified: `Modified ${formatTimeAgo(doc.createdAt)}`,
+    icon,
+    type: ext,
+    aiSummarized: doc.fileType === 'DOCUMENT'
+  };
+};
+
 export function StorageExplorerPage() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const { t, language } = useTranslation()
+  
   const toast = useToast()
-
   const [usage, setUsage] = useState<StorageUsage | null>(null)
+
+  const loadUserFiles = async () => {
+    if (!user?.id) return;
+    try {
+      const docs = await documentService.getAllDocuments(Number(user.id));
+      const mapped = docs.map(mapDocumentToExplorerFile);
+      setFiles(mapped);
+    } catch (err) {
+      console.error("Failed to load user files:", err);
+    }
+  };
 
   useEffect(() => {
     if (user?.id) {
@@ -104,54 +151,18 @@ export function StorageExplorerPage() {
         .catch(err => {
           console.error("Failed to fetch storage usage:", err)
         })
+      loadUserFiles();
     }
   }, [user?.id])
 
-  useEffect(() => {
-    if (!user?.id) return
-    const fetchDocs = async () => {
-      try {
-        const backendDocs = await documentService.getAllDocuments(user.id)
-        const mappedFiles = backendDocs.map(doc => {
-          const ext = (doc.fileName || doc.originalFileName || '').split('.').pop()?.toLowerCase() || 'pdf'
-          let icon = FileText
-          let typeLabel = 'PDF'
-          if (ext === 'doc' || ext === 'docx') {
-            icon = FileText
-            typeLabel = 'DOCX'
-          } else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') {
-            icon = FileImage
-            typeLabel = 'Image'
-          }
-
-          return {
-            id: String(doc.id),
-            name: doc.title || doc.fileName || 'Untitled',
-            modified: doc.updatedAt
-              ? `Modified ${new Date(doc.updatedAt).toLocaleDateString('vi-VN')}`
-              : `Modified ${new Date(doc.createdAt).toLocaleDateString('vi-VN')}`,
-            icon,
-            type: typeLabel,
-            aiSummarized: true,
-            role: doc.role
-          }
-        })
-        setFiles(mappedFiles)
-      } catch (err) {
-        console.error("Failed to fetch documents for StorageExplorerPage:", err)
-      }
-    }
-    fetchDocs()
-  }, [user?.id])
-
-  const totalMb = getStorageLimitByPlan(user?.plan)
+  const totalMb = usage ? usage.storageLimitMb : getStorageLimitByPlan(user?.plan)
   const totalGb = totalMb / 1024
 
   const usedMb = usage
     ? usage.storageUsedMb
     : user?.plan === 'pro'
       ? 2457.6
-      : (user?.plan === 'premium' || user?.plan === 'institutional' || user?.plan === 'enterprise')
+      : ((user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise')
         ? 8192
         : 8
 
@@ -213,22 +224,21 @@ export function StorageExplorerPage() {
     setFolders(folders.filter(f => f.id !== id))
   }
 
-  const handleDeleteFile = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteFile = async (id: string | number, e: React.MouseEvent) => {
     e.stopPropagation()
-    const fileToDelete = files.find(f => f.id === id);
-    if (!fileToDelete) return;
-
-    if (fileToDelete.role && fileToDelete.role !== 'owner') {
-      toast.error('Bạn không thể xóa tệp tin được chia sẻ!');
-      return;
-    }
-
     try {
       await documentService.deleteDocument(id);
-      setFiles(files.filter(f => f.id !== id))
-      toast.success('Deleted successfully');
+      toast.success('File deleted successfully');
+      loadUserFiles();
+      if (user?.id) {
+        storageService.getStorageUsage(Number(user.id))
+          .then(data => {
+            setUsage(data)
+          })
+          .catch(() => {})
+      }
     } catch (err) {
-      console.error(err)
+      console.error("Failed to delete document:", err);
       toast.error('Failed to delete file');
     }
   }
@@ -497,9 +507,9 @@ export function StorageExplorerPage() {
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredFiles.map((file) => (
-                  <Card
-                    key={file.id}
-                    onClick={() => navigate('/dashboard/storage/explorer/preview')}
+                  <Card 
+                    key={file.id} 
+                    onClick={() => navigate(`/dashboard/storage/explorer/preview?id=${file.id}`)}
                     className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group"
                   >
                     <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex items-center justify-center relative mb-3 overflow-hidden">
@@ -528,9 +538,9 @@ export function StorageExplorerPage() {
             ) : (
               <div className="flex flex-col gap-3">
                 {filteredFiles.map((file) => (
-                  <Card
-                    key={file.id}
-                    onClick={() => navigate('/dashboard/storage/explorer/preview')}
+                  <Card 
+                    key={file.id} 
+                    onClick={() => navigate(`/dashboard/storage/explorer/preview?id=${file.id}`)}
                     className="p-3 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group"
                   >
                     <div className="flex items-center gap-4">
