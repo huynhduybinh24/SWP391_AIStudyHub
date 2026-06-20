@@ -19,7 +19,7 @@ class NotificationRealtimeManager {
   private reconnectTimeout: any = null;
   private simulationInterval: any = null;
   private wsUrl: string = import.meta.env.VITE_API_REALTIME_URL || 'ws://localhost:8085/api/ws/notifications';
-  private isSimulationActive: boolean = false;
+
 
 
   // List of pre-defined realistic notifications to simulate for normal users
@@ -156,19 +156,10 @@ class NotificationRealtimeManager {
   }
 
   private startSimulation() {
-    if (this.isSimulationActive) return;
-    this.isSimulationActive = true;
-    console.log('[Realtime] Mock Real-time Simulator Activated. A mock notification will be sent every 60s.');
-    console.log('[Realtime] Pro-tip: You can trigger one manually by running `simulateNotification()` in your browser console!');
-
-    // Simulate a notification every 60 seconds
-    this.simulationInterval = setInterval(() => {
-      this.injectSimulatedNotification();
-    }, 60000);
+    // Simulator is disabled to prevent automatic fake/mock notifications.
   }
 
   private stopSimulation() {
-    this.isSimulationActive = false;
     if (this.simulationInterval) {
       clearInterval(this.simulationInterval);
       this.simulationInterval = null;
@@ -254,7 +245,7 @@ class NotificationRealtimeManager {
       const key = `aiStudyHubUserNotifications:${userEmail}`;
       const stored = localStorage.getItem(key);
       let currentNotifs = stored ? JSON.parse(stored) : [];
-      
+
       // Map to correct storage keys
       const mapped = {
         id: notif.id,
@@ -267,7 +258,7 @@ class NotificationRealtimeManager {
       };
 
       currentNotifs = [mapped, ...currentNotifs];
-      
+
       // Limit to 50 items to keep localStorage clean
       if (currentNotifs.length > 50) {
         currentNotifs = currentNotifs.slice(0, 50);
@@ -286,7 +277,7 @@ class NotificationRealtimeManager {
   private showToast(notif: RealtimeNotification) {
     // Map notification types to appropriate toast statuses
     let toastType: 'success' | 'info' | 'warning' | 'error' = 'info';
-    
+
     if (notif.type === 'security' || notif.type === 'document_deleted') {
       toastType = 'warning';
     } else if (notif.type === 'ai' || notif.type === 'flashcard' || notif.type === 'calendar') {

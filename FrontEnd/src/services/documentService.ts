@@ -13,6 +13,10 @@ export interface DocumentResponse {
   visibility: string
   userId: number
   checksum: string
+  ownerName?: string
+  ownerEmail?: string
+  role?: string
+  status?: string
   createdAt: string
   updatedAt: string
 }

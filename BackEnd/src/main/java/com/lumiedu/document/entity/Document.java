@@ -56,6 +56,13 @@ public class Document {
     @Column(name = "visibility", length = 20)
     private String visibility;
 
+    @Builder.Default
+    @Column(name = "status", length = 20)
+    private String status = "PENDING";
+
+    @Column(name = "moderation_reason", columnDefinition = "TEXT")
+    private String moderationReason;
+
     @Column(name = "user_id")
     private Long userId;
 
@@ -87,6 +94,9 @@ public class Document {
         this.updatedAt = now;
         if (this.deleted == null) {
             this.deleted = false;
+        }
+        if (this.status == null) {
+            this.status = "PENDING";
         }
     }
 

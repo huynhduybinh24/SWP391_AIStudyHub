@@ -337,7 +337,7 @@ export const ja: any = {
     genSummary: "要約を生成",
     createFlashcards: "フラッシュカードを作成",
     cancel: "キャンセル",
-    processAI: "AIで処理",
+    processAI: "処理",
     processing: "処理中...",
     uploadVideo: "ビデオをアップロード",
     uploadAudio: "オーディオをアップロード",

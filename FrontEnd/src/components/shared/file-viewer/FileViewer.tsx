@@ -655,6 +655,7 @@ export function FileViewer({
       <ShareAccessModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
+        fileId={documentId}
         fileName={fileName}
         showToast={showToast}
       />

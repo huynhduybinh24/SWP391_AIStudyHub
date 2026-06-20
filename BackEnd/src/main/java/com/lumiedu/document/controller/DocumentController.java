@@ -3,6 +3,7 @@ package com.lumiedu.document.controller;
 import com.lumiedu.document.dto.request.DocumentCreateRequest;
 import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.request.TagRequest;
+import com.lumiedu.document.dto.request.DocumentShareRequest;
 import com.lumiedu.document.dto.response.ApiResponse;
 import com.lumiedu.document.dto.response.DocumentResponse;
 import com.lumiedu.document.dto.response.SubjectStatsResponse;

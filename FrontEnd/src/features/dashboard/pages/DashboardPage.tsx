@@ -20,6 +20,16 @@ export function DashboardPage() {
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false)
   const { data, isLoading, isError, error, refetch } = useDashboard()
 
+  useEffect(() => {
+    const handleUpdate = () => refetch()
+    window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+    window.addEventListener('aiStudyHubUserChanged', handleUpdate)
+    return () => {
+      window.removeEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+      window.removeEventListener('aiStudyHubUserChanged', handleUpdate)
+    }
+  }, [refetch])
+
   if (user?.role?.toLowerCase() === 'admin') {
     return <Navigate to="/dashboard/admin" replace />
   }

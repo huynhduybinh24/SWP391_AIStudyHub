@@ -16,6 +16,7 @@ import { StudioPanel } from '../components/StudioPanel'
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 interface ChatMessage {
   id: string
@@ -53,6 +54,16 @@ export function ChatPage() {
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
 
+  // Consume initialPrompt from location state (e.g. from Dashboard Quick Ask)
+  useEffect(() => {
+    const state = location.state as { initialPrompt?: string } | null
+    if (state?.initialPrompt) {
+      setInput(state.initialPrompt)
+      // Clear/replace location state to prevent repopulating on reload
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [location, navigate])
+
   // Document management states
   const [allDocuments, setAllDocuments] = useState<DocumentResponse[]>([])
   const [selectedDocuments, setSelectedDocuments] = useState<DocumentResponse[]>([])
@@ -79,10 +90,10 @@ export function ChatPage() {
     const fetchUserDocsAndSessions = async () => {
       setLoadingDocs(true)
       try {
-        const docs = await documentService.getAllDocuments(userId)
+        const docs = await documentService.getAllDocuments(Number(userId))
         setAllDocuments(docs)
 
-        const sessions = await aiService.getUserSessions(userId)
+        const sessions = await aiService.getUserSessions(Number(userId))
         const mappedConv: ChatConversation[] = sessions.map(session => {
           const docIds = session.documents ? session.documents.map((d: any) => d.id) : (session.documentId ? [session.documentId] : []);
           return {
@@ -157,9 +168,9 @@ export function ChatPage() {
 
     try {
       setIsTyping(true)
-      const session = await aiService.createOrGetChatSession(docIds, userId)
+      const session = await aiService.createOrGetChatSession(docIds, Number(userId))
       const history = await aiService.getChatHistory(session.id)
-      
+
       const mappedHistory: ChatMessage[] = history.map(msg => ({
         id: String(msg.id),
         role: msg.sender.toLowerCase() === 'user' ? 'user' : 'assistant',
@@ -240,9 +251,9 @@ export function ChatPage() {
 
     try {
       const docIds = selectedDocuments.map(d => d.id)
-      const session = await aiService.createOrGetChatSession(docIds, userId)
+      const session = await aiService.createOrGetChatSession(docIds, Number(userId))
       const reply = await aiService.sendMessage(session.id, text, selectedMode === 'Thinking')
-      
+
       const botMsgId = String(reply.id || Date.now() + 1)
       const newBotMsg: ChatMessage = {
         id: botMsgId,
@@ -313,7 +324,7 @@ export function ChatPage() {
       setActiveConversationId(conv.id)
       setIsChatStarted(true)
       setInput('')
-      
+
       // Load corresponding documents from database for this session
       const docsToSelect = allDocuments.filter(d => conv.documentIds.includes(d.id))
       setSelectedDocuments(docsToSelect)
@@ -370,9 +381,9 @@ export function ChatPage() {
 
       try {
         const docIds = selectedDocuments.map(d => d.id)
-        const session = await aiService.createOrGetChatSession(docIds, userId)
+        const session = await aiService.createOrGetChatSession(docIds, Number(userId))
         const reply = await aiService.sendMessage(session.id, userMsg.content, selectedMode === 'Thinking')
-        
+
         const botMsgId = String(reply.id || Date.now() + 1)
         const newBotMsg: ChatMessage = {
           id: botMsgId,
@@ -778,7 +789,7 @@ export function ChatPage() {
 
             {/* Middle Column: Chat Workspace */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden pr-0 bg-slate-50/30 dark:bg-slate-950/10">
-              
+
               {/* Header / Top bar */}
               <div className="sticky top-0 z-20 bg-[#f5f7fb] dark:bg-slate-950 pt-2 -mt-2 flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800 pb-4 mb-4 select-none">
                 <div className="flex items-center gap-3">
@@ -938,7 +949,7 @@ export function ChatPage() {
                                 <Copy className="size-3" />
                                 <span>Copy</span>
                               </button>
-                              
+
                               {!isUser && (
                                 <>
                                   <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">•</span>
@@ -991,7 +1002,7 @@ export function ChatPage() {
                     2C. COMPOSER BAR
                    ================================================== */}
                 <div className="mt-2 border-t border-slate-200/50 dark:border-slate-800 pt-4 shrink-0 bg-[#f5f7fb] dark:bg-slate-950 z-20 sticky bottom-0 pb-2 flex flex-col gap-2">
-                  
+
                   {/* Linked source document chips list */}
                   <div className="flex flex-wrap gap-1.5 items-center mb-1.5">
                     {selectedDocuments.map((doc) => (
@@ -1019,7 +1030,7 @@ export function ChatPage() {
                   </div>
 
                   <div className="rounded-[24px] border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 p-4 px-5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] backdrop-blur-xl transition-all duration-300 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-blue-400 dark:focus-within:border-blue-500/85 focus-within:shadow-[0_4px_20px_-4px_rgba(59,130,246,0.12)] z-10 relative flex flex-col gap-2">
-                    
+
                     {replyingToMessage && (
                       <div className="mb-1 flex items-center justify-between gap-3 text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-850/50 rounded-xl px-3 py-2 border border-slate-100 dark:border-slate-800/80">
                         <div className="flex items-center gap-2.5 overflow-hidden">
@@ -1039,8 +1050,8 @@ export function ChatPage() {
                       disabled={selectedDocuments.length === 0}
                       className="min-h-[24px] max-h-[160px] w-full resize-none bg-transparent text-[14px] font-medium leading-relaxed text-slate-800 dark:text-slate-150 outline-none placeholder:text-slate-450 dark:placeholder:text-slate-550 border-none p-0 focus:ring-0 disabled:cursor-not-allowed"
                       placeholder={
-                        selectedDocuments.length === 0 
-                          ? "Hãy chọn ít nhất một tài liệu nguồn để bắt đầu..." 
+                        selectedDocuments.length === 0
+                          ? "Hãy chọn ít nhất một tài liệu nguồn để bắt đầu..."
                           : "Hỏi AI về các tài liệu nguồn đã đính kèm..."
                       }
                       rows={1}
@@ -1123,8 +1134,8 @@ export function ChatPage() {
 
             {/* Right Side AI Studio Panel (1/3 width) */}
             {isStudioOpen && (
-              <StudioPanel 
-                documentIds={selectedDocuments.map(d => d.id)} 
+              <StudioPanel
+                documentIds={selectedDocuments.map(d => d.id)}
                 language={language}
               />
             )}
@@ -1263,7 +1274,7 @@ export function ChatPage() {
           <p className="text-sm text-slate-650 dark:text-slate-300 text-center px-4 leading-relaxed font-semibold">
             {sharingMessage && sharingMessage.length > 120 ? sharingMessage.substring(0, 120) + '...' : sharingMessage}
           </p>
-          
+
           <div className="flex items-center justify-center gap-6">
             <button className="flex flex-col items-center gap-2 group cursor-pointer" onClick={() => {
               navigator.clipboard.writeText(sharingMessage || "")

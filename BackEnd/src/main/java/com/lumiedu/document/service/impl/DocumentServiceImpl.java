@@ -14,6 +14,8 @@ import com.lumiedu.document.entity.DocumentTag;
 import com.lumiedu.document.exception.DocumentNotFoundException;
 import com.lumiedu.document.exception.FileStorageException;
 import com.lumiedu.document.exception.InvalidFileTypeException;
+import com.lumiedu.document.entity.DocumentShare;
+import com.lumiedu.document.repository.DocumentShareRepository;
 import com.lumiedu.document.repository.AudioRecordRepository;
 import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
@@ -225,13 +227,60 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional(readOnly = true)
     public List<DocumentResponse> getAllDocuments(Long userId) {
-        List<Document> documents = (userId != null)
+        String userEmail = "";
+        if (userId != null) {
+            Optional<User> uOpt = userRepository.findById(userId);
+            if (uOpt.isPresent()) {
+                userEmail = uOpt.get().getEmail();
+            }
+        }
+
+        List<Document> ownedDocs = (userId != null)
                 ? documentRepository.findAllByUserIdAndDeletedFalse(userId)
                 : documentRepository.findAllByDeletedFalse();
 
-        return documents.stream()
-                .map(this::mapToResponse)
+        List<DocumentShare> shares = (userEmail != null && !userEmail.isBlank())
+                ? documentShareRepository.findByShareeEmail(userEmail.trim().toLowerCase())
+                : new ArrayList<>();
+
+        List<Long> sharedDocIds = shares.stream()
+                .map(DocumentShare::getDocumentId)
                 .collect(Collectors.toList());
+
+        List<Document> sharedDocs = new ArrayList<>();
+        if (!sharedDocIds.isEmpty()) {
+            sharedDocs = documentRepository.findAllById(sharedDocIds).stream()
+                    .filter(d -> d.getDeleted() != null && !d.getDeleted())
+                    .collect(Collectors.toList());
+        }
+
+        Set<Long> seenIds = new HashSet<>();
+        List<DocumentResponse> responseList = new ArrayList<>();
+
+        for (Document d : ownedDocs) {
+            if (seenIds.add(d.getId())) {
+                DocumentResponse res = mapToResponse(d);
+                res.setRole("owner");
+                responseList.add(res);
+            }
+        }
+
+        Map<Long, String> sharedRoleMap = shares.stream()
+                .collect(Collectors.toMap(
+                        DocumentShare::getDocumentId,
+                        DocumentShare::getRole,
+                        (r1, r2) -> r1
+                ));
+
+        for (Document d : sharedDocs) {
+            if (seenIds.add(d.getId())) {
+                DocumentResponse res = mapToResponse(d);
+                res.setRole(sharedRoleMap.getOrDefault(d.getId(), "viewer"));
+                responseList.add(res);
+            }
+        }
+
+        return responseList;
     }
 
     @Override
@@ -542,6 +591,16 @@ public class DocumentServiceImpl implements DocumentService {
                 .map(DocumentTag::getName)
                 .collect(Collectors.toList());
 
+        String ownerName = "Unknown";
+        String ownerEmail = "";
+        if (document.getUserId() != null) {
+            Optional<User> uploaderOpt = userRepository.findById(document.getUserId());
+            if (uploaderOpt.isPresent()) {
+                ownerName = uploaderOpt.get().getFullName();
+                ownerEmail = uploaderOpt.get().getEmail();
+            }
+        }
+
         return DocumentResponse.builder()
                 .id(document.getId())
                 .title(document.getTitle())
@@ -557,6 +616,9 @@ public class DocumentServiceImpl implements DocumentService {
                 .subject(document.getSubject())
                 .visibility(document.getVisibility())
                 .userId(document.getUserId())
+                .ownerName(ownerName)
+                .ownerEmail(ownerEmail)
+                .status(document.getStatus() != null ? document.getStatus() : "PENDING")
                 .tags(tags)
                 .createdAt(document.getCreatedAt())
                 .updatedAt(document.getUpdatedAt())
