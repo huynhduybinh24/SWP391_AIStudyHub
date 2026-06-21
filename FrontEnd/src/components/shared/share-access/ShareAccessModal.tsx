@@ -35,6 +35,8 @@ export interface ShareAccessModalProps {
   owner?: string
   type?: 'file' | 'folder'
   permission?: string
+  onUpdateCollaboratorRole?: (id: string, role: 'Editor' | 'Viewer') => void
+  onRemoveCollaborator?: (id: string) => void
 }
 
 export function ShareAccessModal({
@@ -53,7 +55,9 @@ export function ShareAccessModal({
   folderName,
   owner: _owner,
   type: _type = 'file',
-  permission: _permission
+  permission: _permission,
+  onUpdateCollaboratorRole,
+  onRemoveCollaborator
 }: ShareAccessModalProps) {
   const toast = useToast()
   const { t, language } = useTranslation()
@@ -351,6 +355,11 @@ export function ShareAccessModal({
     const collab = activeCollaborators.find(c => c.id === id)
     if (!collab) return
 
+    if (onRemoveCollaborator) {
+      onRemoveCollaborator(id)
+      return
+    }
+
     const isNumeric = fileId && /^\d+$/.test(fileId)
 
     if (isNumeric) {
@@ -373,6 +382,11 @@ export function ShareAccessModal({
   const handleChangeRole = async (id: string, _name: string, role: ShareRole) => {
     const collab = activeCollaborators.find(c => c.id === id)
     if (!collab) return
+
+    if (onUpdateCollaboratorRole) {
+      onUpdateCollaboratorRole(id, role === 'editor' ? 'Editor' : 'Viewer')
+      return
+    }
 
     const isNumeric = fileId && /^\d+$/.test(fileId)
     const resolvedRole = role === 'editor' ? 'editor' : 'viewer'

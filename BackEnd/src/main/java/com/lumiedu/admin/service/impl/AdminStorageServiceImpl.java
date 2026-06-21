@@ -19,9 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,9 +60,6 @@ public class AdminStorageServiceImpl implements AdminStorageService {
                 .limit(10)
                 .collect(Collectors.toList());
 
-        // Lấy danh sách sub của top users để tránh n+1 queries
-        List<Long> topUserIds = topUsers.stream().map(User::getId).collect(Collectors.toList());
-        
         // Query active subscriptions của top users
         // Chạy stream map thủ công do JPA query findFirstBy... là cho từng user.
         // Để đơn giản và chính xác, lấy từng sub cho mỗi top user
@@ -107,3 +102,4 @@ public class AdminStorageServiceImpl implements AdminStorageService {
                 .build();
     }
 }
+// Force JDT LS revalidation

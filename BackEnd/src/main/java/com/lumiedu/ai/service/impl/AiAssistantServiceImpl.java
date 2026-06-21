@@ -887,3 +887,4 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         return result.toString();
     }
 }
+// Force JDT LS revalidation 2
