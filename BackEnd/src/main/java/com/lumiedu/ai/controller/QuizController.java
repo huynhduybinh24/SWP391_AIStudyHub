@@ -33,8 +33,12 @@ public class QuizController {
 
     @PostMapping("/submit")
     public ResponseEntity<ApiResponse<QuizSubmitResponse>> submitQuiz(@RequestBody SubmitRequest request) {
+        Long userId = request.getUserId();
+        if (userId == null) {
+            userId = 1L;
+        }
         QuizSubmitResponse result = aiAssistantService.submitQuiz(
-                request.getUserId() != null ? request.getUserId() : 1L,
+                userId,
                 request.getDocumentId(),
                 request.getAnswers()
         );
@@ -54,3 +58,4 @@ public class QuizController {
         private Map<Long, Integer> answers;
     }
 }
+// Force JDT LS revalidation
