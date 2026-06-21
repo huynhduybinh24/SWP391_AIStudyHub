@@ -313,3 +313,4 @@ public class AiStudioServiceImpl implements AiStudioService {
         return list;
     }
 }
+// Force JDT LS revalidation
