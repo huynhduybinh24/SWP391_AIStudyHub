@@ -35,3 +35,4 @@ public class AdminDocumentMapper {
                 .build();
     }
 }
+// Force JDT LS revalidation
