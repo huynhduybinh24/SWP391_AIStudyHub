@@ -18,6 +18,7 @@ import com.lumiedu.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataAccessException;
 
 import com.lumiedu.admin.repository.SystemTrafficRepository;
 import java.math.BigDecimal;
@@ -145,7 +146,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 if (activeUsersCount != null) {
                     engagementRate = Math.min(100.0, (double) activeUsersCount / totalUsers * 100.0);
                 }
-            } catch (Exception e) {
+            } catch (DataAccessException e) {
                 // Keep default fallback
             }
         }
@@ -156,7 +157,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             if (totalAiUsageLogs != null && totalAiUsageLogs > 0) {
                 avgAiResponseTime = 1.0 + (double)(totalAiUsageLogs * 7 % 300) / 1000.0;
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             // Keep default fallback
         }
 
@@ -197,16 +198,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 if (dbAiCount != null) {
                     aiCount = dbAiCount;
                 }
-            } catch (Exception e) {
-                // ignore
-            }
-
-            long regCount = 0;
-            try {
-                LocalDateTime startDateTime = startOfMonth.atStartOfDay();
-                LocalDateTime endDateTime = endOfMonth.plusDays(1).atStartOfDay();
-                regCount = userRepository.countByCreatedAtBetween(startDateTime, endDateTime);
-            } catch (Exception e) {
+            } catch (DataAccessException e) {
                 // ignore
             }
 
@@ -216,7 +208,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 if (dbPv != null) {
                     pvCount = dbPv;
                 }
-            } catch (Exception e) {
+            } catch (DataAccessException e) {
                 // ignore
             }
 
@@ -251,7 +243,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
             Long quizCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM quiz_attempt", Long.class);
             if (quizCount != null) quizInteractions = quizCount;
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             aiChatInteractions = 852;
             fileStorageInteractions = Math.max(642, totalDocuments);
             studyPlanInteractions = 384;
@@ -294,7 +286,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             if (freeCount != null) {
                 freePlanUsersCount = freeCount;
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             // Fallback: if database tables aren't completely populated or query fails
             freePlanUsersCount = Math.max(0, totalUsers - totalAdmins - premiumUsers);
             proPlanUsersCount = 0;
@@ -338,3 +330,4 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .build();
     }
 }
+// Force JDT LS revalidation

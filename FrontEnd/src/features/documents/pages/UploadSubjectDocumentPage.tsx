@@ -5,7 +5,6 @@ import {
   FileText,
   X,
   Sparkles,
-  FileCode,
   ImageIcon,
   BookOpen,
   FolderDown
@@ -39,7 +38,7 @@ import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { documentService } from '@/services/documentService'
 
-const mapMimeOrExtensionToType = (fileType: string, fileName: string): 'pdf' | 'word' | 'image' | 'text' | 'slides' => {
+const mapMimeOrExtensionToType = (_fileType: string, fileName: string): 'pdf' | 'word' | 'image' | 'text' | 'slides' => {
   const nameLower = fileName.toLowerCase()
   if (nameLower.endsWith('.pdf')) return 'pdf'
   if (nameLower.endsWith('.doc') || nameLower.endsWith('.docx')) return 'word'
@@ -150,20 +149,17 @@ export function UploadSubjectDocumentPage() {
   }
 
   const processSelectedFile = (file: File) => {
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext !== 'pdf') {
+      showToast(language === 'vi' ? 'Hệ thống chỉ hỗ trợ tệp tin PDF!' : 'Only PDF files are supported!')
+      return
+    }
+
     setSelectedFile(file)
     setFileName(file.name)
     setFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB`)
 
-    // Auto-detect type
-    const ext = file.name.split('.').pop()?.toLowerCase()
-    let detectedType: 'pdf' | 'word' | 'image' | 'text' | 'slides' = 'pdf'
-    if (ext === 'pdf') detectedType = 'pdf'
-    else if (ext === 'docx' || ext === 'doc') detectedType = 'word'
-    else if (ext === 'txt') detectedType = 'text'
-    else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') detectedType = 'image'
-    else if (ext === 'pptx' || ext === 'ppt') detectedType = 'slides'
-
-    setFileType(detectedType)
+    setFileType('pdf')
     setFileAttached(true)
     setUploadProgress(0)
     setUploadComplete(false)
@@ -301,7 +297,7 @@ export function UploadSubjectDocumentPage() {
         ref={fileInputRef}
         onChange={handleFileChange}
         className="hidden"
-        accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.pptx,.ppt"
+        accept=".pdf"
       />
 
       {/* Header Title and Description */}
@@ -357,7 +353,7 @@ export function UploadSubjectDocumentPage() {
             </button>
 
             <p className="text-xs font-semibold text-[#8B98A5] dark:text-slate-500 mt-4">
-              {t.upload.supportFormatSubject}
+              {language === 'vi' ? 'Hỗ trợ tệp PDF (Tối đa 50MB)' : 'Support for PDF files (Max 50MB)'}
             </p>
           </div>
 
