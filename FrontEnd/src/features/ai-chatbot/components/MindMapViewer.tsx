@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+// @ts-ignore
 import mermaid from 'mermaid'
 
 mermaid.initialize({
