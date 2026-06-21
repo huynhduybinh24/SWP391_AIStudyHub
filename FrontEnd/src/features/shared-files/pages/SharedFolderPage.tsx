@@ -223,10 +223,63 @@ export function SharedFolderPage() {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([])
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false)
   const [selectedCollaborator, setSelectedCollaborator] = useState<Collaborator | null>(null)
+  const [ownerName, setOwnerName] = useState('Sarah Jenkins')
 
   const { user } = useAuthStore()
   const currentUserId = user?.id ? Number(user.id) : undefined
   const [workspaceId, setWorkspaceId] = useState<number | null>(null)
+
+  // Load files and collaborators from workspace details
+  const fetchWorkspaceDetails = async () => {
+    if (!workspaceId || !currentUserId) return
+    try {
+      const response = await apiClient.get<any>(`/workspaces/${workspaceId}?userId=${currentUserId}`)
+      const workspace = response.data.data
+      if (workspace) {
+        // Map documents
+        const mappedFiles: SharedFolderFile[] = (workspace.documents || []).map((doc: any) => ({
+          id: String(doc.documentId),
+          name: doc.originalFileName || doc.title || 'Untitled',
+          type: doc.fileType?.toLowerCase() || 'pdf',
+          size: doc.fileSize ? `${(doc.fileSize / (1024 * 1024)).toFixed(1)} MB` : '0 Bytes',
+          fileTypeLabel: doc.fileType || 'Document',
+          owner: doc.addedByName || 'System',
+          imported: false
+        }))
+
+        // Map members
+        const mappedCollabs: Collaborator[] = (workspace.members || []).map((mem: any) => ({
+          id: String(mem.id),
+          name: mem.fullName || mem.email || 'Member',
+          email: mem.email || '',
+          role: mem.role === 'OWNER' ? 'Owner' : (mem.role === 'COLLABORATOR' ? 'Editor' : 'Viewer'),
+          avatar: undefined,
+          lastActive: mem.status === 'ACCEPTED' ? 'Active' : 'Pending invite'
+        }))
+
+        if (workspace.ownerName) {
+          setOwnerName(workspace.ownerName)
+        }
+
+        // Check which files are already in user's personal list to mark as imported
+        try {
+          const personalResponse = await apiClient.get<any>(`/documents?userId=${currentUserId}`)
+          const personalDocs = personalResponse.data.data || []
+          const finalFiles = mappedFiles.map(file => {
+            const isImported = personalDocs.some((d: any) => d.originalFileName === file.name || String(d.id) === file.id)
+            return { ...file, imported: isImported }
+          })
+          setFiles(finalFiles)
+        } catch (e) {
+          setFiles(mappedFiles)
+        }
+
+        setCollaborators(mappedCollabs)
+      }
+    } catch (err) {
+      console.error('Failed to load workspace details:', err)
+    }
+  }
 
   // Fetch workspace on mount
   useEffect(() => {
@@ -249,53 +302,6 @@ export function SharedFolderPage() {
 
   // Load files and collaborators from workspace details
   useEffect(() => {
-    if (!workspaceId || !currentUserId) return
-
-    const fetchWorkspaceDetails = async () => {
-      try {
-        const response = await apiClient.get<any>(`/workspaces/${workspaceId}?userId=${currentUserId}`)
-        const workspace = response.data.data
-        if (workspace) {
-          // Map documents
-          const mappedFiles: SharedFolderFile[] = (workspace.documents || []).map((doc: any) => ({
-            id: String(doc.documentId),
-            name: doc.originalFileName || doc.title || 'Untitled',
-            type: doc.fileType?.toLowerCase() || 'pdf',
-            size: doc.fileSize ? `${(doc.fileSize / (1024 * 1024)).toFixed(1)} MB` : '0 Bytes',
-            fileTypeLabel: doc.fileType || 'Document',
-            owner: doc.addedByName || 'System',
-            imported: false
-          }))
-
-          // Map members
-          const mappedCollabs: Collaborator[] = (workspace.members || []).map((mem: any) => ({
-            id: String(mem.userId),
-            name: mem.fullName || mem.email || 'Member',
-            email: mem.email || '',
-            role: mem.role === 'OWNER' ? 'Owner' : (mem.role === 'EDITOR' ? 'Editor' : 'Viewer'),
-            avatar: undefined,
-            lastActive: mem.status === 'ACCEPTED' ? 'Active' : 'Pending invite'
-          }))
-
-          // Check which files are already in user's personal list to mark as imported
-          try {
-            const personalResponse = await apiClient.get<any>(`/documents?userId=${currentUserId}`)
-            const personalDocs = personalResponse.data.data || []
-            const finalFiles = mappedFiles.map(file => {
-              const isImported = personalDocs.some((d: any) => d.originalFileName === file.name || String(d.id) === file.id)
-              return { ...file, imported: isImported }
-            })
-            setFiles(finalFiles)
-          } catch (e) {
-            setFiles(mappedFiles)
-          }
-
-          setCollaborators(mappedCollabs)
-        }
-      } catch (err) {
-        console.error('Failed to load workspace details:', err)
-      }
-    }
     fetchWorkspaceDetails()
   }, [workspaceId, currentUserId])
 
@@ -477,21 +483,42 @@ The combined research indicates a strong correlation between multivariable biolo
     setCollaborators(updated)
   }
 
+  const totalFilesCount = files.length
+  const totalFilesSizeInBytes = files.reduce((acc, file) => acc + parseSizeToBytes(file.size), 0)
+  const totalFilesSizeMB = (totalFilesSizeInBytes / (1024 * 1024)).toFixed(1)
+
   // Popover / Detail handlers for collaborator
-  const handleUpdateCollaboratorRole = (collabId: string, role: 'Owner' | 'Editor' | 'Viewer') => {
-    const updated = collaborators.map((c) => (c.id === collabId ? { ...c, role } : c))
-    setCollaborators(updated)
-    if (selectedCollaborator && selectedCollaborator.id === collabId) {
-      setSelectedCollaborator({ ...selectedCollaborator, role })
+  const handleUpdateCollaboratorRole = async (collabId: string, role: 'Owner' | 'Editor' | 'Viewer') => {
+    if (!workspaceId || !currentUserId) return
+    try {
+      const apiRole = role === 'Owner' ? 'OWNER' : (role === 'Editor' ? 'COLLABORATOR' : 'VIEWER')
+      await apiClient.put(`/workspaces/${workspaceId}/members/${collabId}`, {
+        role: apiRole,
+        editorId: currentUserId
+      })
+      toast.success('Permission role updated')
+      fetchWorkspaceDetails()
+    } catch (err: any) {
+      console.error('Failed to update member role:', err)
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to update role'
+      toast.error(errorMsg)
     }
-    toast.success('Permission role updated')
   }
 
-  const handleRemoveCollaboratorAccess = (collabId: string) => {
-    const updated = collaborators.filter((c) => c.id !== collabId)
-    setCollaborators(updated)
-    setSelectedCollaborator(null)
-    toast.success('Access removed')
+  const handleRemoveCollaboratorAccess = async (collabId: string) => {
+    if (!workspaceId || !currentUserId) return
+    try {
+      await apiClient.delete(`/workspaces/${workspaceId}/members/${collabId}`, {
+        params: { requesterId: currentUserId }
+      })
+      toast.success('Access removed')
+      setSelectedCollaborator(null)
+      fetchWorkspaceDetails()
+    } catch (err: any) {
+      console.error('Failed to remove member:', err)
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to remove member'
+      toast.error(errorMsg)
+    }
   }
 
   return (
@@ -513,7 +540,7 @@ The combined research indicates a strong correlation between multivariable biolo
               <span>
                 {t.sharedFolder.collaborators}:{' '}
                 <strong className="font-extrabold text-[#0b1c30] dark:text-slate-200">
-                  Sarah Jenkins
+                  {ownerName}
                 </strong>
               </span>
             </span>
@@ -530,7 +557,7 @@ The combined research indicates a strong correlation between multivariable biolo
               <FileText className="w-4 h-4 text-[#3155F6] dark:text-blue-400" />
               <span>
                 <strong className="font-extrabold text-[#0b1c30] dark:text-slate-200">
-                  12 files &bull; 45 MB
+                  {totalFilesCount} files &bull; {totalFilesSizeMB} MB
                 </strong>
               </span>
             </span>
@@ -758,10 +785,12 @@ The combined research indicates a strong correlation between multivariable biolo
         onClose={() => setShareAccessOpen(false)}
         folderId="research-materials"
         folderName="Group Project: Research Materials"
-        owner="Sarah Jenkins"
+        owner={ownerName}
         type="folder"
         collaborators={mappedShareCollabs}
         onCollaboratorsChange={handleCollaboratorsChange}
+        onUpdateCollaboratorRole={handleUpdateCollaboratorRole}
+        onRemoveCollaborator={handleRemoveCollaboratorAccess}
         onShareSubmit={async (email, permission) => {
           if (!workspaceId || !currentUserId) return
           try {
@@ -772,21 +801,7 @@ The combined research indicates a strong correlation between multivariable biolo
               inviterId: currentUserId
             })
             toast.success(language === 'vi' ? 'Đã gửi lời mời thành công!' : 'Invitation sent successfully!')
-            
-            // Refresh collaborators list
-            const response = await apiClient.get<any>(`/workspaces/${workspaceId}?userId=${currentUserId}`)
-            const workspace = response.data.data
-            if (workspace) {
-              const mappedCollabs: Collaborator[] = (workspace.members || []).map((mem: any) => ({
-                id: String(mem.userId),
-                name: mem.fullName || mem.email || 'Member',
-                email: mem.email || '',
-                role: mem.role === 'OWNER' ? 'Owner' : (mem.role === 'COLLABORATOR' ? 'Editor' : 'Viewer'),
-                avatar: undefined,
-                lastActive: mem.status === 'ACCEPTED' ? 'Active' : 'Pending invite'
-              }))
-              setCollaborators(mappedCollabs)
-            }
+            fetchWorkspaceDetails()
           } catch (err: any) {
             console.error('Failed to invite member:', err)
             const errorMsg = err.response?.data?.message || err.message || 'Failed to invite member'
