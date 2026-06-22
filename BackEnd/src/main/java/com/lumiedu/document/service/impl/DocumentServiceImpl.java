@@ -90,6 +90,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final StudyPlanRepository studyPlanRepository;
     private final ObjectMapper objectMapper;
+    private final com.lumiedu.notification.service.NotificationService notificationService;
 
     // -------------------------------------------------------------------------
     // Upload
@@ -928,6 +929,49 @@ public class DocumentServiceImpl implements DocumentService {
                     .build();
         }
         share = documentShareRepository.save(share);
+
+        // 1. Google Drive permission sharing (best-effort)
+        if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+            String gDriveRole = "reader";
+            if ("editor".equalsIgnoreCase(role)) {
+                gDriveRole = "writer";
+            }
+            try {
+                googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole);
+            } catch (Exception e) {
+                log.error("Failed to share file on Google Drive for document {} and collaborator {}: {}",
+                        documentId, sharee.getEmail(), e.getMessage());
+            }
+        }
+
+        // 2. Send notification if it's a new share
+        if (existingShareOpt.isEmpty()) {
+            try {
+                User owner = userRepository.findById(document.getUserId()).orElse(null);
+                String ownerNameOrEmail = (owner != null) ? (owner.getFullName() != null && !owner.getFullName().isBlank() ? owner.getFullName() : owner.getEmail()) : "An owner";
+
+                String title = String.format("%s đã chia sẻ tài liệu", ownerNameOrEmail);
+                String message = String.format("đã chia sẻ tài liệu \"%s\" với bạn.", document.getTitle());
+
+                com.lumiedu.notification.dto.request.NotificationRequest notificationRequest = com.lumiedu.notification.dto.request.NotificationRequest.builder()
+                        .targetUserEmail(sharee.getEmail())
+                        .type("SHARED_FILE")
+                        .title(title)
+                        .message(message)
+                        .documentId(documentId)
+                        .documentName(document.getTitle())
+                        .actionType("shared-files")
+                        .actionText("Xem tài liệu")
+                        .actionUrl("/dashboard/shared")
+                        .build();
+
+                notificationService.createNotification(notificationRequest);
+                log.info("Created share notification for user: {} on document: {}", sharee.getEmail(), document.getTitle());
+            } catch (Exception e) {
+                log.error("Failed to create share notification: {}", e.getMessage());
+            }
+        }
+
         return mapToShareResponse(share);
     }
 
@@ -949,6 +993,16 @@ public class DocumentServiceImpl implements DocumentService {
         Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, email.trim().toLowerCase());
         if (existingShareOpt.isPresent()) {
             documentShareRepository.delete(existingShareOpt.get());
+
+            // Google Drive revoke (best-effort)
+            if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+                try {
+                    googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase());
+                } catch (Exception e) {
+                    log.error("Failed to revoke file share on Google Drive for document {} and collaborator {}: {}",
+                            documentId, email, e.getMessage());
+                }
+            }
         } else {
             throw new IllegalArgumentException("No share permission found for the given email.");
         }

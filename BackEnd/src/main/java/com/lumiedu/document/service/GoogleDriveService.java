@@ -26,4 +26,14 @@ public interface GoogleDriveService {
      * Xóa file khỏi Google Drive
      */
     void deleteFile(String googleDriveFileId) throws IOException;
+
+    /**
+     * Chia sẻ quyền truy cập file trên Google Drive
+     */
+    void shareFile(String googleDriveFileId, String email, String role) throws IOException;
+
+    /**
+     * Thu hồi quyền truy cập file trên Google Drive
+     */
+    void revokeShare(String googleDriveFileId, String email) throws IOException;
 }

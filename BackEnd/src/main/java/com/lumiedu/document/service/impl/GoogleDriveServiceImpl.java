@@ -233,4 +233,85 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
         }
         return filename.substring(dotIndex + 1);
     }
+
+    @Override
+    public void shareFile(String googleDriveFileId, String email, String role) throws IOException {
+        if (googleDriveFileId == null || googleDriveFileId.isBlank() ||
+            "mock-folder-id".equals(rootFolderId) || googleDriveFileId.startsWith("gdrive_")) {
+            log.info("MOCK GOOGLE DRIVE: Sharing file ID: {} with email: {} as role: {}", googleDriveFileId, email, role);
+            return;
+        }
+        try {
+            // First check if permission already exists
+            String existingPermissionId = null;
+            try {
+                var permissionsList = googleDrive.permissions().list(googleDriveFileId)
+                        .setFields("permissions(id, emailAddress)")
+                        .setSupportsAllDrives(true)
+                        .execute();
+                if (permissionsList.getPermissions() != null) {
+                    for (Permission p : permissionsList.getPermissions()) {
+                        if (email.equalsIgnoreCase(p.getEmailAddress())) {
+                            existingPermissionId = p.getId();
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to list existing permissions for Google Drive file {}: {}", googleDriveFileId, e.getMessage());
+            }
+
+            if (existingPermissionId != null) {
+                // Update existing permission
+                Permission permission = new Permission();
+                permission.setRole(role);
+                googleDrive.permissions().update(googleDriveFileId, existingPermissionId, permission)
+                        .setSupportsAllDrives(true)
+                        .execute();
+                log.info("GOOGLE DRIVE: Updated permission for file ID: {} for email: {} to role: {}", googleDriveFileId, email, role);
+            } else {
+                // Create new permission
+                Permission permission = new Permission();
+                permission.setType("user");
+                permission.setRole(role);
+                permission.setEmailAddress(email);
+                googleDrive.permissions().create(googleDriveFileId, permission)
+                        .setSupportsAllDrives(true)
+                        .execute();
+                log.info("GOOGLE DRIVE: Shared file ID: {} with email: {} as role: {}", googleDriveFileId, email, role);
+            }
+        } catch (Exception e) {
+            log.error("Google Drive sharing failed for file ID: {} and email: {}. Error: {}", googleDriveFileId, email, e.getMessage());
+            throw new IOException("Google Drive permission API failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void revokeShare(String googleDriveFileId, String email) throws IOException {
+        if (googleDriveFileId == null || googleDriveFileId.isBlank() ||
+            "mock-folder-id".equals(rootFolderId) || googleDriveFileId.startsWith("gdrive_")) {
+            log.info("MOCK GOOGLE DRIVE: Revoking share on file ID: {} for email: {}", googleDriveFileId, email);
+            return;
+        }
+        try {
+            var permissionsList = googleDrive.permissions().list(googleDriveFileId)
+                    .setFields("permissions(id, emailAddress)")
+                    .setSupportsAllDrives(true)
+                    .execute();
+            if (permissionsList.getPermissions() != null) {
+                for (Permission p : permissionsList.getPermissions()) {
+                    if (email.equalsIgnoreCase(p.getEmailAddress())) {
+                        googleDrive.permissions().delete(googleDriveFileId, p.getId())
+                                .setSupportsAllDrives(true)
+                                .execute();
+                        log.info("GOOGLE DRIVE: Revoked share on file ID: {} for email: {}", googleDriveFileId, email);
+                        return;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Google Drive revoking failed for file ID: {} and email: {}. Error: {}", googleDriveFileId, email, e.getMessage());
+            throw new IOException("Google Drive permission API failed: " + e.getMessage(), e);
+        }
+    }
 }
