@@ -16,6 +16,7 @@ import com.lumiedu.document.exception.FileStorageException;
 import com.lumiedu.document.exception.InvalidFileTypeException;
 import com.lumiedu.document.entity.DocumentShare;
 import com.lumiedu.document.repository.DocumentShareRepository;
+import com.lumiedu.user.entity.User;
 import com.lumiedu.document.repository.AudioRecordRepository;
 import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
@@ -73,6 +74,7 @@ public class DocumentServiceImpl implements DocumentService {
     private String uploadDir;
 
     private final DocumentRepository documentRepository;
+    private final DocumentShareRepository documentShareRepository;
     private final DocumentTagRepository documentTagRepository;
     private final DocumentDownloadRepository documentDownloadRepository;
     private final AudioRecordRepository audioRecordRepository;
