@@ -4,6 +4,7 @@ import com.lumiedu.document.dto.request.DocumentCreateRequest;
 import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.response.DocumentResponse;
 import com.lumiedu.document.dto.response.SubjectStatsResponse;
+import com.lumiedu.document.dto.response.DocumentShareResponse;
 import com.lumiedu.ai.repository.QuizAttemptRepository;
 import com.lumiedu.ai.repository.StudyPlanRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -85,7 +86,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
     private final com.lumiedu.workspace.repository.SharedWorkspaceRepository sharedWorkspaceRepository;
     private final com.lumiedu.user.repository.UserRepository userRepository;
-    
+
     private final QuizAttemptRepository quizAttemptRepository;
     private final StudyPlanRepository studyPlanRepository;
     private final ObjectMapper objectMapper;
@@ -631,14 +632,14 @@ public class DocumentServiceImpl implements DocumentService {
         if (subject == null || subject.isBlank() || "GENERAL".equalsIgnoreCase(subject)) {
             return java.util.List.of("General");
         }
-        
+
         String cleanSubject = subject.trim().toUpperCase();
-        
+
         // Cấu trúc phân cấp: Ngành học -> Kỳ học -> Môn học
         String majorName = null;
         String semesterName = null;
         String subjectDisplayName = null;
-        
+
         // Bản đồ môn học
         // K1
         if ("PRF192".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 1"; subjectDisplayName = "PRF192 - Programming Fundamentals"; }
@@ -648,7 +649,7 @@ public class DocumentServiceImpl implements DocumentService {
         else if ("MGT103".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 1"; subjectDisplayName = "MGT103 - Introduction to Management"; }
         else if ("ECO111".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 1"; subjectDisplayName = "ECO111 - Microeconomics"; }
         else if ("FMA101".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 1"; subjectDisplayName = "FMA101 - Financial Mathematics"; }
-        
+
         // K2
         else if ("PRO192".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 2"; subjectDisplayName = "PRO192 - Object-Oriented Programming"; }
         else if ("MAD101".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 2"; subjectDisplayName = "MAD101 - Discrete Mathematics"; }
@@ -657,7 +658,7 @@ public class DocumentServiceImpl implements DocumentService {
         else if ("MKT101".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 2"; subjectDisplayName = "MKT101 - Basic Marketing"; }
         else if ("ECO121".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 2"; subjectDisplayName = "ECO121 - Macroeconomics"; }
         else if ("AMG111".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 2"; subjectDisplayName = "AMG111 - Art Management"; }
-        
+
         // K3
         else if ("CSD201".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 3"; subjectDisplayName = "CSD201 - Data Structures and Algorithms"; }
         else if ("DBI202".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 3"; subjectDisplayName = "DBI202 - Database Systems"; }
@@ -666,7 +667,7 @@ public class DocumentServiceImpl implements DocumentService {
         else if ("ACC101".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 3"; subjectDisplayName = "ACC101 - Principles of Accounting"; }
         else if ("FIN201".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 3"; subjectDisplayName = "FIN201 - Corporate Finance"; }
         else if ("BUL201".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 3"; subjectDisplayName = "BUL201 - Business Law"; }
-        
+
         // K4
         else if ("PRN211".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 4"; subjectDisplayName = "PRN211 - Basic Cross-Platform Application (.NET)"; }
         else if ("SWE201".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 4"; subjectDisplayName = "SWE201 - Introduction to Software Engineering"; }
@@ -676,7 +677,7 @@ public class DocumentServiceImpl implements DocumentService {
         else if ("HRM201".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 4"; subjectDisplayName = "HRM201 - Human Resource Management"; }
         else if ("OBH201".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 4"; subjectDisplayName = "OBH201 - Organizational Behavior"; }
         else if ("MRF301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 4"; subjectDisplayName = "MRF301 - Marketing Research"; }
-        
+
         // K5
         else if ("SWP391".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 5"; subjectDisplayName = "SWP391 - Software Development Project"; }
         else if ("SWD392".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 5"; subjectDisplayName = "SWD392 - Software Architecture and Design"; }
@@ -685,10 +686,10 @@ public class DocumentServiceImpl implements DocumentService {
         else if ("BIS301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 5"; subjectDisplayName = "BIS301 - Business Information Systems"; }
         else if ("ENT301".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 5"; subjectDisplayName = "ENT301 - Entrepreneurship"; }
         else if ("POM201".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 5"; subjectDisplayName = "POM201 - Production and Operations Management"; }
-        
+
         // K6
         else if ("OJT202".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 6"; subjectDisplayName = "OJT202 - On-the-Job Training (OJT)"; }
-        
+
         // K7
         else if ("PRM392".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 7"; subjectDisplayName = "PRM392 - Mobile Programming"; }
         else if ("PRN221".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 7"; subjectDisplayName = "PRN221 - Advanced Cross-Platform Application (.NET)"; }
@@ -698,7 +699,7 @@ public class DocumentServiceImpl implements DocumentService {
         else if ("IBM301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 7"; subjectDisplayName = "IBM301 - International Business Management"; }
         else if ("SCM301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 7"; subjectDisplayName = "SCM301 - Supply Chain Management"; }
         else if ("BRM301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 7"; subjectDisplayName = "BRM301 - Business Research Methods"; }
-        
+
         // K8
         else if ("SEP490".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 8"; subjectDisplayName = "SEP490 - Capstone Project Preparation (SE)"; }
         else if ("CAP490".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 8"; subjectDisplayName = "CAP490 - Capstone Project Preparation (AI)"; }
@@ -707,7 +708,7 @@ public class DocumentServiceImpl implements DocumentService {
         else if ("IAS301".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 8"; subjectDisplayName = "IAS301 - Information Assurance & Security"; }
         else if ("BDA301".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 8"; subjectDisplayName = "BDA301 - Big Data Analytics"; }
         else if ("SMA301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 8"; subjectDisplayName = "SMA301 - Strategic Management"; }
-        
+
         // K9
         else if ("SEP490_DEF".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 9"; subjectDisplayName = "SEP490_DEF - Capstone Project Graduation (SE)"; }
         else if ("CAP490_DEF".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 9"; subjectDisplayName = "CAP490_DEF - Capstone Project Graduation (AI)"; }
@@ -715,7 +716,7 @@ public class DocumentServiceImpl implements DocumentService {
         else if ("EXE201".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 9"; subjectDisplayName = "EXE201 - Experiential Entrepreneurship 2"; }
         else if ("PMG201".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 9"; subjectDisplayName = "PMG201 - Project Management"; }
         else if ("EBU301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 9"; subjectDisplayName = "EBU301 - E-Business"; }
-        
+
         if (majorName == null) {
             return java.util.List.of("Khác", subject);
         }
@@ -867,6 +868,100 @@ public class DocumentServiceImpl implements DocumentService {
                 .averageScore(averageScore)
                 .rank(rankStr)
                 .aiRecommendation(aiRec)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DocumentShareResponse> getDocumentShares(Long documentId, Long currentUserId) {
+        Document document = documentRepository.findByIdAndDeletedFalse(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("Authentication is required.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new IllegalArgumentException("Only the document owner can view its shares.");
+        }
+
+        List<DocumentShare> shares = documentShareRepository.findByDocumentId(documentId);
+        return shares.stream()
+                .map(this::mapToShareResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public DocumentShareResponse addOrUpdateDocumentShare(Long documentId, String email, String role, Long currentUserId) {
+        Document document = documentRepository.findByIdAndDeletedFalse(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("Authentication is required.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new IllegalArgumentException("Only the document owner can share it.");
+        }
+
+        User sharee = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new IllegalArgumentException("Collaborator email must belong to an existing registered user."));
+
+        if (sharee.getId().equals(document.getUserId())) {
+            throw new IllegalArgumentException("You cannot share a document with yourself.");
+        }
+
+        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, sharee.getEmail());
+        DocumentShare share;
+        if (existingShareOpt.isPresent()) {
+            share = existingShareOpt.get();
+            share.setRole(role);
+        } else {
+            share = DocumentShare.builder()
+                    .documentId(documentId)
+                    .shareeEmail(sharee.getEmail())
+                    .role(role)
+                    .build();
+        }
+        share = documentShareRepository.save(share);
+        return mapToShareResponse(share);
+    }
+
+    @Override
+    public void deleteDocumentShare(Long documentId, String email, Long currentUserId) {
+        Document document = documentRepository.findByIdAndDeletedFalse(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("Authentication is required.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new IllegalArgumentException("Only the document owner can delete its shares.");
+        }
+
+        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, email.trim().toLowerCase());
+        if (existingShareOpt.isPresent()) {
+            documentShareRepository.delete(existingShareOpt.get());
+        } else {
+            throw new IllegalArgumentException("No share permission found for the given email.");
+        }
+    }
+
+    private DocumentShareResponse mapToShareResponse(DocumentShare share) {
+        return DocumentShareResponse.builder()
+                .id(share.getId())
+                .documentId(share.getDocumentId())
+                .shareeEmail(share.getShareeEmail())
+                .role(share.getRole())
+                .createdAt(share.getCreatedAt())
+                .updatedAt(share.getUpdatedAt())
                 .build();
     }
 
