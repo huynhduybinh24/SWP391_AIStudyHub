@@ -4,6 +4,7 @@ import com.lumiedu.document.dto.request.DocumentCreateRequest;
 import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.response.DocumentResponse;
 import com.lumiedu.document.dto.response.SubjectStatsResponse;
+import com.lumiedu.document.dto.response.DocumentShareResponse;
 import com.lumiedu.ai.repository.QuizAttemptRepository;
 import com.lumiedu.ai.repository.StudyPlanRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +17,7 @@ import com.lumiedu.document.exception.FileStorageException;
 import com.lumiedu.document.exception.InvalidFileTypeException;
 import com.lumiedu.document.entity.DocumentShare;
 import com.lumiedu.document.repository.DocumentShareRepository;
+import com.lumiedu.user.entity.User;
 import com.lumiedu.document.repository.AudioRecordRepository;
 import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
@@ -76,6 +78,7 @@ public class DocumentServiceImpl implements DocumentService {
     private String uploadDir;
 
     private final DocumentRepository documentRepository;
+    private final DocumentShareRepository documentShareRepository;
     private final DocumentTagRepository documentTagRepository;
     private final DocumentDownloadRepository documentDownloadRepository;
     private final AudioRecordRepository audioRecordRepository;
@@ -92,6 +95,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final StudyPlanRepository studyPlanRepository;
     private final ObjectMapper objectMapper;
+    private final com.lumiedu.notification.service.NotificationService notificationService;
 
     // -------------------------------------------------------------------------
     // Upload
@@ -779,6 +783,153 @@ public class DocumentServiceImpl implements DocumentService {
                 .averageScore(averageScore)
                 .rank(rankStr)
                 .aiRecommendation(aiRec)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DocumentShareResponse> getDocumentShares(Long documentId, Long currentUserId) {
+        Document document = documentRepository.findByIdAndDeletedFalse(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("Authentication is required.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new IllegalArgumentException("Only the document owner can view its shares.");
+        }
+
+        List<DocumentShare> shares = documentShareRepository.findByDocumentId(documentId);
+        return shares.stream()
+                .map(this::mapToShareResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public DocumentShareResponse addOrUpdateDocumentShare(Long documentId, String email, String role, Long currentUserId) {
+        Document document = documentRepository.findByIdAndDeletedFalse(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("Authentication is required.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new IllegalArgumentException("Only the document owner can share it.");
+        }
+
+        User sharee = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new IllegalArgumentException("Collaborator email must belong to an existing registered user."));
+
+        if (sharee.getId().equals(document.getUserId())) {
+            throw new IllegalArgumentException("You cannot share a document with yourself.");
+        }
+
+        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, sharee.getEmail());
+        DocumentShare share;
+        if (existingShareOpt.isPresent()) {
+            share = existingShareOpt.get();
+            share.setRole(role);
+        } else {
+            share = DocumentShare.builder()
+                    .documentId(documentId)
+                    .shareeEmail(sharee.getEmail())
+                    .role(role)
+                    .build();
+        }
+        share = documentShareRepository.save(share);
+
+        // 1. Google Drive permission sharing (best-effort)
+        if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+            String gDriveRole = "reader";
+            if ("editor".equalsIgnoreCase(role)) {
+                gDriveRole = "writer";
+            }
+            try {
+                googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole);
+            } catch (Exception e) {
+                log.error("Failed to share file on Google Drive for document {} and collaborator {}: {}",
+                        documentId, sharee.getEmail(), e.getMessage());
+            }
+        }
+
+        // 2. Send notification if it's a new share
+        if (existingShareOpt.isEmpty()) {
+            try {
+                User owner = userRepository.findById(document.getUserId()).orElse(null);
+                String ownerNameOrEmail = (owner != null) ? (owner.getFullName() != null && !owner.getFullName().isBlank() ? owner.getFullName() : owner.getEmail()) : "An owner";
+
+                String title = String.format("%s đã chia sẻ tài liệu", ownerNameOrEmail);
+                String message = String.format("đã chia sẻ tài liệu \"%s\" với bạn.", document.getTitle());
+
+                com.lumiedu.notification.dto.request.NotificationRequest notificationRequest = com.lumiedu.notification.dto.request.NotificationRequest.builder()
+                        .targetUserEmail(sharee.getEmail())
+                        .type("SHARED_FILE")
+                        .title(title)
+                        .message(message)
+                        .documentId(documentId)
+                        .documentName(document.getTitle())
+                        .actionType("shared-files")
+                        .actionText("Xem tài liệu")
+                        .actionUrl("/dashboard/shared")
+                        .build();
+
+                notificationService.createNotification(notificationRequest);
+                log.info("Created share notification for user: {} on document: {}", sharee.getEmail(), document.getTitle());
+            } catch (Exception e) {
+                log.error("Failed to create share notification: {}", e.getMessage());
+            }
+        }
+
+        return mapToShareResponse(share);
+    }
+
+    @Override
+    public void deleteDocumentShare(Long documentId, String email, Long currentUserId) {
+        Document document = documentRepository.findByIdAndDeletedFalse(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("Authentication is required.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new IllegalArgumentException("Only the document owner can delete its shares.");
+        }
+
+        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, email.trim().toLowerCase());
+        if (existingShareOpt.isPresent()) {
+            documentShareRepository.delete(existingShareOpt.get());
+
+            // Google Drive revoke (best-effort)
+            if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+                try {
+                    googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase());
+                } catch (Exception e) {
+                    log.error("Failed to revoke file share on Google Drive for document {} and collaborator {}: {}",
+                            documentId, email, e.getMessage());
+                }
+            }
+        } else {
+            throw new IllegalArgumentException("No share permission found for the given email.");
+        }
+    }
+
+    private DocumentShareResponse mapToShareResponse(DocumentShare share) {
+        return DocumentShareResponse.builder()
+                .id(share.getId())
+                .documentId(share.getDocumentId())
+                .shareeEmail(share.getShareeEmail())
+                .role(share.getRole())
+                .createdAt(share.getCreatedAt())
+                .updatedAt(share.getUpdatedAt())
                 .build();
     }
 
