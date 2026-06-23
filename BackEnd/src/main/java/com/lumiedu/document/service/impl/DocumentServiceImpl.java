@@ -84,7 +84,6 @@ public class DocumentServiceImpl implements DocumentService {
     private final AudioRecordRepository audioRecordRepository;
     private final GoogleDriveService googleDriveService;
     private final DocumentChunkingService documentChunkingService;
-    private final DocumentShareRepository documentShareRepository;
 
     private final com.lumiedu.workspace.repository.WorkspaceDocumentRepository workspaceDocumentRepository;
     private final com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
