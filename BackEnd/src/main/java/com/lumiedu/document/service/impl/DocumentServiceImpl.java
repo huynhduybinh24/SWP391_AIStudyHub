@@ -864,7 +864,7 @@ public class DocumentServiceImpl implements DocumentService {
                 gDriveRole = "writer";
             }
             try {
-                googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole);
+                googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole, document.getUserId());
             } catch (Exception e) {
                 log.error("Failed to share file on Google Drive for document {} and collaborator {}: {}",
                         documentId, sharee.getEmail(), e.getMessage());
@@ -924,7 +924,7 @@ public class DocumentServiceImpl implements DocumentService {
             // Google Drive revoke (best-effort)
             if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
                 try {
-                    googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase());
+                    googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase(), document.getUserId());
                 } catch (Exception e) {
                     log.error("Failed to revoke file share on Google Drive for document {} and collaborator {}: {}",
                             documentId, email, e.getMessage());

@@ -26,13 +26,14 @@ public interface GoogleDriveService {
     Resource downloadFile(String googleDriveFileId, Long userId) throws IOException;
     void deleteFile(String googleDriveFileId, Long userId) throws IOException;
 
-    /**
-     * Chia sẻ quyền truy cập file trên Google Drive
-     */
-    void shareFile(String googleDriveFileId, String email, String role) throws IOException;
+    default void shareFile(String googleDriveFileId, String email, String role) throws IOException {
+        shareFile(googleDriveFileId, email, role, null);
+    }
 
-    /**
-     * Thu hồi quyền truy cập file trên Google Drive
-     */
-    void revokeShare(String googleDriveFileId, String email) throws IOException;
+    default void revokeShare(String googleDriveFileId, String email) throws IOException {
+        revokeShare(googleDriveFileId, email, null);
+    }
+
+    void shareFile(String googleDriveFileId, String email, String role, Long userId) throws IOException;
+    void revokeShare(String googleDriveFileId, String email, Long userId) throws IOException;
 }
