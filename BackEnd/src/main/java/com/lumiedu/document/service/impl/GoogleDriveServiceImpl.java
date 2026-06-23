@@ -14,6 +14,13 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import com.lumiedu.integration.repository.UserGoogleDriveConnectionRepository;
+import com.lumiedu.integration.service.EncryptionService;
+import com.lumiedu.integration.entity.UserGoogleDriveConnection;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.UserCredentials;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +38,14 @@ import java.util.UUID;
 public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     private final Drive googleDrive;
+    private final UserGoogleDriveConnectionRepository connectionRepository;
+    private final EncryptionService encryptionService;
+
+    @Value("${google.drive.client-id:}")
+    private String clientId;
+
+    @Value("${google.drive.client-secret:}")
+    private String clientSecret;
 
     @Value("${google.drive.folder-id}")
     private String rootFolderId;
@@ -40,14 +55,48 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public String uploadFile(MultipartFile file, String folderName) throws IOException {
+        return uploadFile(file, folderName, null);
+    }
+
+    @Override
+    public String uploadFile(MultipartFile file, java.util.List<String> folderHierarchy) throws IOException {
+        return uploadFile(file, folderHierarchy, null);
+    }
+
+    @Override
+    public String uploadFile(MultipartFile file, String folderName, Long userId) throws IOException {
+        if (isUserDriveConnected(userId)) {
+            try {
+                Drive userDrive = getDriveClientForUser(userId);
+                String targetFolderId = getOrCreateFolder(userDrive, folderName, "root");
+
+                File fileMetadata = new File();
+                fileMetadata.setName(file.getOriginalFilename());
+                fileMetadata.setParents(Collections.singletonList(targetFolderId));
+
+                InputStreamContent mediaContent = new InputStreamContent(
+                        file.getContentType(),
+                        file.getInputStream()
+                );
+
+                File uploadedFile = userDrive.files().create(fileMetadata, mediaContent)
+                        .setFields("id, name, webViewLink")
+                        .setSupportsAllDrives(true)
+                        .execute();
+
+                log.info("USER GOOGLE DRIVE: Uploaded file '{}' with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
+                return uploadedFile.getId();
+            } catch (Exception e) {
+                log.error("Failed to upload file to user {}'s Google Drive. Falling back to default/mock storage. Error: {}", userId, e.getMessage());
+            }
+        }
+
         if ("mock-folder-id".equals(rootFolderId)) {
             return uploadFileMock(file, folderName);
         }
         try {
-            // 1. Tìm hoặc tạo subfolder trong LumiEdu_Workspace
-            String targetFolderId = getOrCreateFolder(folderName, rootFolderId);
+            String targetFolderId = getOrCreateFolder(googleDrive, folderName, rootFolderId);
 
-            // 2. Upload file lên Google Drive
             File fileMetadata = new File();
             fileMetadata.setName(file.getOriginalFilename());
             fileMetadata.setParents(Collections.singletonList(targetFolderId));
@@ -71,7 +120,38 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
     }
 
     @Override
-    public String uploadFile(MultipartFile file, java.util.List<String> folderHierarchy) throws IOException {
+    public String uploadFile(MultipartFile file, java.util.List<String> folderHierarchy, Long userId) throws IOException {
+        if (isUserDriveConnected(userId)) {
+            try {
+                Drive userDrive = getDriveClientForUser(userId);
+                String currentParentId = "root";
+                for (String folderName : folderHierarchy) {
+                    if (folderName != null && !folderName.isBlank()) {
+                        currentParentId = getOrCreateFolder(userDrive, folderName.trim(), currentParentId);
+                    }
+                }
+
+                File fileMetadata = new File();
+                fileMetadata.setName(file.getOriginalFilename());
+                fileMetadata.setParents(Collections.singletonList(currentParentId));
+
+                InputStreamContent mediaContent = new InputStreamContent(
+                        file.getContentType(),
+                        file.getInputStream()
+                );
+
+                File uploadedFile = userDrive.files().create(fileMetadata, mediaContent)
+                        .setFields("id, name, webViewLink")
+                        .setSupportsAllDrives(true)
+                        .execute();
+
+                log.info("USER GOOGLE DRIVE: Uploaded file '{}' to hierarchy with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
+                return uploadedFile.getId();
+            } catch (Exception e) {
+                log.error("Failed to upload file to user {}'s Google Drive. Falling back to default/mock storage. Error: {}", userId, e.getMessage());
+            }
+        }
+
         if ("mock-folder-id".equals(rootFolderId)) {
             String folderPath = String.join(java.io.File.separator, folderHierarchy);
             if (folderPath.isEmpty()) {
@@ -83,7 +163,7 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             String currentParentId = rootFolderId;
             for (String folderName : folderHierarchy) {
                 if (folderName != null && !folderName.isBlank()) {
-                    currentParentId = getOrCreateFolder(folderName.trim(), currentParentId);
+                    currentParentId = getOrCreateFolder(googleDrive, folderName.trim(), currentParentId);
                 }
             }
 
@@ -131,18 +211,35 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public Resource downloadFile(String googleDriveFileId) throws IOException {
+        return downloadFile(googleDriveFileId, null);
+    }
+
+    @Override
+    public Resource downloadFile(String googleDriveFileId, Long userId) throws IOException {
         if ("mock-folder-id".equals(rootFolderId) || (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_"))) {
             return downloadFileMock(googleDriveFileId);
         }
         try {
-            InputStream inputStream = googleDrive.files()
+            Drive driveClient = getDriveClientForUser(userId);
+            InputStream inputStream = driveClient.files()
                     .get(googleDriveFileId)
                     .setSupportsAllDrives(true)
                     .executeMediaAsInputStream();
 
             return new InputStreamResource(inputStream);
         } catch (Exception e) {
-            log.error("Google Drive download failed for ID {}. Falling back to local mock. Error: {}", googleDriveFileId, e.getMessage());
+            log.error("Google Drive download failed for ID {} and user {}. Falling back to default/mock. Error: {}", googleDriveFileId, userId, e.getMessage());
+            if (isUserDriveConnected(userId)) {
+                try {
+                    InputStream inputStream = googleDrive.files()
+                            .get(googleDriveFileId)
+                            .setSupportsAllDrives(true)
+                            .executeMediaAsInputStream();
+                    return new InputStreamResource(inputStream);
+                } catch (Exception ex) {
+                    log.error("Fallback Google Drive download failed. Error: {}", ex.getMessage());
+                }
+            }
             return downloadFileMock(googleDriveFileId);
         }
     }
@@ -159,17 +256,34 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public void deleteFile(String googleDriveFileId) throws IOException {
+        deleteFile(googleDriveFileId, null);
+    }
+
+    @Override
+    public void deleteFile(String googleDriveFileId, Long userId) throws IOException {
         if ("mock-folder-id".equals(rootFolderId) || (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_"))) {
             deleteFileMock(googleDriveFileId);
             return;
         }
         try {
-            googleDrive.files().delete(googleDriveFileId)
+            Drive driveClient = getDriveClientForUser(userId);
+            driveClient.files().delete(googleDriveFileId)
                     .setSupportsAllDrives(true)
                     .execute();
-            log.info("GOOGLE DRIVE: Deleted file ID: {}", googleDriveFileId);
+            log.info("GOOGLE DRIVE: Deleted file ID: {} using client for user: {}", googleDriveFileId, userId);
         } catch (Exception e) {
-            log.error("Google Drive delete failed for ID {}. Falling back to local mock. Error: {}", googleDriveFileId, e.getMessage());
+            log.error("Google Drive delete failed for ID {} and user {}. Falling back to default/mock. Error: {}", googleDriveFileId, userId, e.getMessage());
+            if (isUserDriveConnected(userId)) {
+                try {
+                    googleDrive.files().delete(googleDriveFileId)
+                            .setSupportsAllDrives(true)
+                            .execute();
+                    log.info("GOOGLE DRIVE: Deleted file ID: {} using default googleDrive", googleDriveFileId);
+                    return;
+                } catch (Exception ex) {
+                    log.error("Fallback Google Drive delete failed. Error: {}", ex.getMessage());
+                }
+            }
             deleteFileMock(googleDriveFileId);
         }
     }
@@ -193,14 +307,64 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
     // Helper: Tìm hoặc tạo subfolder
     // -------------------------------------------------------------------------
 
-    private String getOrCreateFolder(String folderName, String parentFolderId) throws IOException {
-        // Tìm folder đã tồn tại
+    private boolean isUserDriveConnected(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        return connectionRepository.findByUserId(userId)
+                .map(UserGoogleDriveConnection::getIsConnected)
+                .orElse(false);
+    }
+
+    private Drive getDriveClientForUser(Long userId) {
+        if (userId == null) {
+            return googleDrive;
+        }
+        var connectionOpt = connectionRepository.findByUserId(userId);
+        if (connectionOpt.isPresent() && Boolean.TRUE.equals(connectionOpt.get().getIsConnected())) {
+            UserGoogleDriveConnection conn = connectionOpt.get();
+            String encryptedToken = conn.getEncryptedRefreshToken();
+            if (encryptedToken != null && !encryptedToken.trim().isEmpty()) {
+                try {
+                    String refreshToken = encryptionService.decrypt(encryptedToken);
+                    com.google.auth.Credentials credentials = UserCredentials.newBuilder()
+                            .setClientId(clientId)
+                            .setClientSecret(clientSecret)
+                            .setRefreshToken(refreshToken)
+                            .build();
+
+                    com.google.api.client.http.HttpRequestInitializer requestInitializer = new com.google.api.client.http.HttpRequestInitializer() {
+                        private final HttpCredentialsAdapter credentialsAdapter = new HttpCredentialsAdapter(credentials);
+                        @Override
+                        public void initialize(com.google.api.client.http.HttpRequest request) throws IOException {
+                            credentialsAdapter.initialize(request);
+                            request.setConnectTimeout(5000);
+                            request.setReadTimeout(5000);
+                        }
+                    };
+
+                    return new Drive.Builder(
+                            new NetHttpTransport(),
+                            GsonFactory.getDefaultInstance(),
+                            requestInitializer)
+                            .setApplicationName("LumiEdu-StudyHub")
+                            .build();
+                } catch (Exception e) {
+                    log.error("Failed to build Google Drive client for user {}: {}. Falling back to default googleDrive.", userId, e.getMessage());
+                }
+            }
+        }
+        return googleDrive;
+    }
+
+    private String getOrCreateFolder(Drive driveClient, String folderName, String parentFolderId) throws IOException {
+        String cleanFolderName = folderName.replace("'", "\\'");
         String query = String.format(
                 "mimeType='application/vnd.google-apps.folder' and name='%s' and '%s' in parents and trashed=false",
-                folderName, parentFolderId
+                cleanFolderName, parentFolderId
         );
 
-        var result = googleDrive.files().list()
+        var result = driveClient.files().list()
                 .setQ(query)
                 .setFields("files(id, name)")
                 .setSupportsAllDrives(true)
@@ -211,19 +375,22 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             return result.getFiles().get(0).getId();
         }
 
-        // Tạo folder mới nếu chưa có
         File folderMetadata = new File();
         folderMetadata.setName(folderName);
         folderMetadata.setMimeType("application/vnd.google-apps.folder");
         folderMetadata.setParents(Collections.singletonList(parentFolderId));
 
-        File createdFolder = googleDrive.files().create(folderMetadata)
+        File createdFolder = driveClient.files().create(folderMetadata)
                 .setFields("id")
                 .setSupportsAllDrives(true)
                 .execute();
 
         log.info("GOOGLE DRIVE: Created folder '{}' with ID: {}", folderName, createdFolder.getId());
         return createdFolder.getId();
+    }
+
+    private String getOrCreateFolder(String folderName, String parentFolderId) throws IOException {
+        return getOrCreateFolder(this.googleDrive, folderName, parentFolderId);
     }
 
     private String getExtension(String filename) {
