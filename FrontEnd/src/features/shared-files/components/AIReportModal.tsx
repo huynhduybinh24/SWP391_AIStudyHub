@@ -75,7 +75,45 @@ export function AIReportModal({ isOpen, onClose, onOptimized }: AIReportModalPro
     }
   }
 
-  const duplicatesCount = duplicates.filter(d => d.matchType !== 'original').length
+  const parseSizeToBytes = (sizeStr: string): number => {
+    const num = parseFloat(sizeStr)
+    if (isNaN(num)) return 0
+    const lower = sizeStr.toLowerCase()
+    if (lower.includes('gb')) return num * 1024 * 1024 * 1024
+    if (lower.includes('mb')) return num * 1024 * 1024
+    if (lower.includes('kb')) return num * 1024
+    return num
+  }
+
+  const duplicateFiles = duplicates.filter(d => d.matchType !== 'original')
+  const duplicatesCount = duplicateFiles.length
+  
+  const totalRedundantBytes = duplicateFiles.reduce((acc, file) => acc + parseSizeToBytes(file.size), 0)
+  const totalRedundantMB = (totalRedundantBytes / (1024 * 1024)).toFixed(1)
+
+  const getDynamicDescription = () => {
+    if (language === 'vi') {
+      return `Phát hiện ${duplicatesCount} tệp có cấu trúc giống nhau trong thư mục chia sẻ, chiếm thêm ${totalRedundantMB} MB dung lượng.`
+    } else if (language === 'ja') {
+      return `共有フォルダ内に同一構造のファイルが${duplicatesCount}つ見つかりました。追加で${totalRedundantMB}MBの容量を消費しています。`
+    } else if (language === 'ko') {
+      return `공유 폴더 내에서 구조가 동일한 파일 ${duplicatesCount}개가 발견되어 ${totalRedundantMB}MB의 용량을 추가로 소모하고 있습니다.`
+    } else {
+      return `Found ${duplicatesCount} files with identical structures inside the shared folder, consuming an extra ${totalRedundantMB} MB of space.`
+    }
+  }
+
+  const getDynamicRecommendation = () => {
+    if (language === 'vi') {
+      return `Khuyến nghị giữ lại các tệp gốc và dọn dẹp ${duplicatesCount} tệp trùng lặp để giải phóng ${totalRedundantMB} MB dung lượng chia sẻ.`
+    } else if (language === 'ja') {
+      return `元のファイルを保持し、残りの${duplicatesCount}つの重複ファイルを削除して、共有スペースの${totalRedundantMB}MBを解放することをお勧めします。`
+    } else if (language === 'ko') {
+      return `원본 파일을 유지하고 나머지 ${duplicatesCount}개의 중복 파일을 정리하여 공유 공간 ${totalRedundantMB}MB를 확보하는 것을 권장합니다.`
+    } else {
+      return `We recommend keeping the original files and purging the ${duplicatesCount} redundant duplicates to free up ${totalRedundantMB} MB of shared space.`
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -146,9 +184,11 @@ export function AIReportModal({ isOpen, onClose, onOptimized }: AIReportModalPro
                     <AlertCircle className="size-4.5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-amber-900 dark:text-amber-450 uppercase tracking-wider">{t.aiGuardReport.biologicalRedundancyAlert}</h4>
+                    <h4 className="text-xs font-black text-amber-900 dark:text-amber-450 uppercase tracking-wider">
+                      {language === 'vi' ? 'Phát hiện trùng lặp' : (language === 'ja' ? '重複の検出' : (language === 'ko' ? '중복 감지' : 'Redundancy Detected'))}
+                    </h4>
                     <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 font-bold leading-relaxed mt-1">
-                      {t.aiGuardReport.biologicalRedundancyDescription}
+                      {getDynamicDescription()}
                     </p>
                   </div>
                 </div>
@@ -228,13 +268,13 @@ export function AIReportModal({ isOpen, onClose, onOptimized }: AIReportModalPro
               {/* AI Recommendation Quote Bubble */}
               <div className="relative overflow-hidden bg-gradient-to-r from-indigo-500/5 to-violet-500/5 dark:from-indigo-500/10 dark:to-violet-500/10 p-4 rounded-2xl border-l-[3px] border-indigo-500/80 shadow-inner">
                 <div className="flex gap-2.5 items-start">
-                  <div className="text-[11px] text-slate-650 dark:text-slate-350 font-bold leading-relaxed">
+                  <div className="text-[11px] text-slate-650 dark:text-slate-355 font-bold leading-relaxed">
                     <span className="inline-flex items-center gap-1 font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-wider text-[10px] mr-1.5">
                       💡 {t.aiGuardReport.aiRecommendation}
                     </span>
                     <span className="italic">
                       {duplicatesCount > 0 
-                        ? t.aiGuardReport.aiRecommendationText 
+                        ? getDynamicRecommendation() 
                         : (language === 'vi' 
                           ? 'Dung lượng và tài liệu của không gian làm việc đang ở trạng thái tốt nhất.' 
                           : 'Your workspace files and storage limits are currently optimized.')}

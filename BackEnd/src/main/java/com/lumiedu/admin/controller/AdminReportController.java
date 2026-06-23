@@ -135,3 +135,4 @@ public class AdminReportController {
         return ResponseEntity.ok(response);
     }
 }
+// Force JDT LS revalidation

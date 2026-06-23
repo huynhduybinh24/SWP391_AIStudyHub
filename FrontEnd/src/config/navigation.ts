@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Share2,
   Settings,
-  Upload,
   User,
   CalendarDays,
   type LucideIcon,
@@ -21,7 +20,6 @@ export interface NavItem {
 export const mainNavItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { label: 'My Documents', path: '/dashboard/documents', icon: FileText },
-  { label: 'Upload', path: '/dashboard/upload', icon: Upload },
   { label: 'AI Chatbot', path: '/dashboard/chat', icon: Bot },
   { label: 'Shared Files', path: '/dashboard/shared', icon: Share2 },
   { label: 'Cloud Storage', path: '/dashboard/storage', icon: Cloud },

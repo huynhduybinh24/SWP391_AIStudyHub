@@ -7,7 +7,7 @@ interface UploadDropzoneProps {
   onValidationError: (msg: string) => void
 }
 
-const ALLOWED_EXTENSIONS = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt', 'png', 'jpg', 'jpeg']
+const ALLOWED_EXTENSIONS = ['pdf']
 const MAX_FILE_SIZE_MB = 50
 
 export function UploadDropzone({ onFileSelect, onValidationError }: UploadDropzoneProps) {
@@ -34,7 +34,7 @@ export function UploadDropzone({ onFileSelect, onValidationError }: UploadDropzo
     // 2. Validate File Type
     const ext = file.name.split('.').pop()?.toLowerCase() || ''
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      onValidationError('Unsupported file type')
+      onValidationError('Unsupported file type. Please upload PDF only.')
       return
     }
 
@@ -79,7 +79,7 @@ export function UploadDropzone({ onFileSelect, onValidationError }: UploadDropzo
         ref={fileInputRef}
         onChange={handleFileChange}
         className="hidden"
-        accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.png,.jpg,.jpeg"
+        accept=".pdf"
       />
 
       {/* Cloud Upload Circle Icon */}
@@ -92,7 +92,7 @@ export function UploadDropzone({ onFileSelect, onValidationError }: UploadDropzo
       </h3>
 
       <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-1.5">
-        Support for PDF, DOCX, XLSX, PPTX files (Max 50MB)
+        Support for PDF files (Max 50MB)
       </p>
 
       <button

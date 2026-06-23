@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { LoadingOverlay } from '@/components/feedback/LoadingOverlay'
 import { ErrorState } from '@/components/feedback/ErrorState'
@@ -15,7 +15,7 @@ import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 
 export function DashboardPage() {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false)
   const { data, isLoading, isError, error, refetch } = useDashboard()

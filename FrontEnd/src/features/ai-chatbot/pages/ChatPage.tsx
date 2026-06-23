@@ -37,6 +37,8 @@ interface ChatConversation {
 }
 
 export function ChatPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
   const { language, t } = useTranslation()
   const toast = useToast()
   const user = useAuthStore(state => state.user)
