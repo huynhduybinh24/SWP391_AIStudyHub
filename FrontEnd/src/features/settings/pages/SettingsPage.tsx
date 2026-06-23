@@ -2,6 +2,7 @@ import { AccountSettingsCard } from '../components/AccountSettingsCard'
 import { SecurityCard } from '../components/SecurityCard'
 import { InterfaceCard } from '../components/InterfaceCard'
 import { NotificationCard } from '../components/NotificationCard'
+import { GoogleDriveCard } from '../components/GoogleDriveCard'
 import { BillingSettingsCard } from '../components/BillingSettingsCard'
 import { useTranslation } from '@/context/LanguageContext'
 
@@ -30,6 +31,7 @@ export function SettingsPage() {
         <div className="lg:col-span-1 space-y-6">
           <SecurityCard />
           <NotificationCard />
+          <GoogleDriveCard />
         </div>
       </div>
     </div>
