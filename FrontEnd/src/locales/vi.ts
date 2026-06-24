@@ -674,7 +674,17 @@ export const vi: typeof en = {
     avatarChangePhoto: "Đổi ảnh",
     avatarRemovePhoto: "Gỡ ảnh",
     avatarInvalidType: "Chỉ hỗ trợ định dạng JPG, PNG hoặc WEBP.",
-    avatarTooLarge: "Kích thước ảnh phải nhỏ hơn 2MB."
+    avatarTooLarge: "Kích thước ảnh phải nhỏ hơn 2MB.",
+    googleDriveTitle: "Tích hợp Google Drive",
+    googleDriveDesc: "Liên kết tài khoản Google Drive của bạn để đồng bộ và quản lý tài liệu.",
+    googleDriveStatus: "Trạng thái kết nối",
+    googleDriveConnected: "Đã kết nối",
+    googleDriveDisconnected: "Chưa kết nối",
+    googleDriveConnectedEmail: "Tài khoản Google liên kết",
+    googleDriveConnectBtn: "Kết nối Google Drive",
+    googleDriveDisconnectBtn: "Ngắt kết nối Google Drive",
+    googleDriveConnectSuccess: "Kết nối Google Drive thành công!",
+    googleDriveDisconnectSuccess: "Đã ngắt kết nối Google Drive.",
   },
   fileViewer: {
     backToDocuments: "Quay lại tài liệu",

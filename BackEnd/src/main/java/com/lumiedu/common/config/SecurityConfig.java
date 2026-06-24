@@ -37,6 +37,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/billing/plans").permitAll()
                 .requestMatchers("/api/billing/webhook").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/integrations/google-drive/callback").permitAll()
 
                 // Public document browsing (read-only)
                 .requestMatchers(HttpMethod.GET, "/api/documents/**").permitAll()
