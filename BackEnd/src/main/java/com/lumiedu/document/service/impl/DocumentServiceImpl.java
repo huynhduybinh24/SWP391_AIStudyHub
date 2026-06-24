@@ -116,6 +116,20 @@ public class DocumentServiceImpl implements DocumentService {
                                       Set<String> allowedExtensions) {
         validateFile(file);
 
+        // Security correction: get current authenticated user ID
+        Long authenticatedUserId = null;
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            Object details = auth.getDetails();
+            if (details instanceof Long) {
+                authenticatedUserId = (Long) details;
+            }
+        }
+        if (authenticatedUserId != null) {
+            request.setUserId(authenticatedUserId);
+        }
+
         String originalFileName = StringUtils.cleanPath(
                 Objects.requireNonNull(file.getOriginalFilename(), "Original filename must not be null")
         );
@@ -134,7 +148,7 @@ public class DocumentServiceImpl implements DocumentService {
             // Tài liệu: lưu trên Google Drive thật, tự động tạo thư mục theo Ngành -> Kỳ -> Môn học
             try {
                 java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(), request.getUserId());
-                googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy);
+                googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy, request.getUserId());
                 savedFileName = googleDriveFileId + "." + extension;
                 fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
             } catch (IOException e) {
@@ -355,7 +369,7 @@ public class DocumentServiceImpl implements DocumentService {
         // Delete from Google Drive if stored there
         if ("GOOGLE_DRIVE".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))) {
             try {
-                googleDriveService.deleteFile(document.getGoogleDriveFileId());
+                googleDriveService.deleteFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (Exception e) {
                 log.error("Failed to delete file from Google Drive for doc ID {}: {}", id, e.getMessage());
             }
@@ -394,7 +408,7 @@ public class DocumentServiceImpl implements DocumentService {
         Resource resource;
         if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
             try {
-                resource = googleDriveService.downloadFile(document.getGoogleDriveFileId());
+                resource = googleDriveService.downloadFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (IOException e) {
                 throw new FileStorageException("Failed to download file from Google Drive ID: " + document.getGoogleDriveFileId(), e);
             }
@@ -422,7 +436,7 @@ public class DocumentServiceImpl implements DocumentService {
         // Always return the actual binary resource for PDF/image file preview so that the viewer/iframe works correctly
         if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
             try {
-                return googleDriveService.downloadFile(document.getGoogleDriveFileId());
+                return googleDriveService.downloadFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (IOException e) {
                 throw new FileStorageException("Failed to load preview from Google Drive ID: " + document.getGoogleDriveFileId(), e);
             }
@@ -866,7 +880,7 @@ public class DocumentServiceImpl implements DocumentService {
                 gDriveRole = "writer";
             }
             try {
-                googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole);
+                googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole, document.getUserId());
             } catch (Exception e) {
                 log.error("Failed to share file on Google Drive for document {} and collaborator {}: {}",
                         documentId, sharee.getEmail(), e.getMessage());
@@ -926,7 +940,7 @@ public class DocumentServiceImpl implements DocumentService {
             // Google Drive revoke (best-effort)
             if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
                 try {
-                    googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase());
+                    googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase(), document.getUserId());
                 } catch (Exception e) {
                     log.error("Failed to revoke file share on Google Drive for document {} and collaborator {}: {}",
                             documentId, email, e.getMessage());
