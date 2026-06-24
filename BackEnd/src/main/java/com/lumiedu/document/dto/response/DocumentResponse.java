@@ -26,6 +26,10 @@ public class DocumentResponse {
     private String subject;
     private String visibility;
     private Long userId;
+    private String ownerName;
+    private String ownerEmail;
+    private String role;
+    private String status;
     private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

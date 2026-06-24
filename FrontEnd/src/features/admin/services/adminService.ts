@@ -359,7 +359,7 @@ export const getDashboardSummary = async () => {
     getUsers(),
     getDocuments(),
   ]);
-  
+
   return {
     stats,
     users,

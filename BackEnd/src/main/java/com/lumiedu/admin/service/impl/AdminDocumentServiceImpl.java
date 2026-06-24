@@ -230,3 +230,4 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
         return escaped;
     }
 }
+// Force JDT LS revalidation

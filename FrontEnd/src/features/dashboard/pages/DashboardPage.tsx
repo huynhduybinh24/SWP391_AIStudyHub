@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { LoadingOverlay } from '@/components/feedback/LoadingOverlay'
 import { ErrorState } from '@/components/feedback/ErrorState'
@@ -15,10 +15,20 @@ import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 
 export function DashboardPage() {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false)
   const { data, isLoading, isError, error, refetch } = useDashboard()
+
+  useEffect(() => {
+    const handleUpdate = () => refetch()
+    window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+    window.addEventListener('aiStudyHubUserChanged', handleUpdate)
+    return () => {
+      window.removeEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
+      window.removeEventListener('aiStudyHubUserChanged', handleUpdate)
+    }
+  }, [refetch])
 
   if (user?.role?.toLowerCase() === 'admin') {
     return <Navigate to="/dashboard/admin" replace />

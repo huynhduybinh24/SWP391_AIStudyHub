@@ -4,6 +4,7 @@ import com.lumiedu.document.dto.request.DocumentCreateRequest;
 import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.response.DocumentResponse;
 import com.lumiedu.document.dto.response.SubjectStatsResponse;
+import com.lumiedu.document.dto.response.DocumentShareResponse;
 import com.lumiedu.ai.repository.QuizAttemptRepository;
 import com.lumiedu.ai.repository.StudyPlanRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,9 @@ import com.lumiedu.document.entity.DocumentTag;
 import com.lumiedu.document.exception.DocumentNotFoundException;
 import com.lumiedu.document.exception.FileStorageException;
 import com.lumiedu.document.exception.InvalidFileTypeException;
+import com.lumiedu.document.entity.DocumentShare;
+import com.lumiedu.document.repository.DocumentShareRepository;
+import com.lumiedu.user.entity.User;
 import com.lumiedu.document.repository.AudioRecordRepository;
 import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
@@ -30,6 +34,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import com.lumiedu.user.entity.User;
+import com.lumiedu.document.entity.Subject;
+import com.lumiedu.document.repository.SubjectRepository;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,7 +59,7 @@ import java.util.stream.Collectors;
 public class DocumentServiceImpl implements DocumentService {
 
     private static final Set<String> ALLOWED_DOCUMENT_EXTENSIONS = Set.of(
-            "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "txt"
+            "pdf"
     );
 
     private static final Set<String> ALLOWED_MEDIA_EXTENSIONS = Set.of(
@@ -71,6 +78,7 @@ public class DocumentServiceImpl implements DocumentService {
     private String uploadDir;
 
     private final DocumentRepository documentRepository;
+    private final DocumentShareRepository documentShareRepository;
     private final DocumentTagRepository documentTagRepository;
     private final DocumentDownloadRepository documentDownloadRepository;
     private final AudioRecordRepository audioRecordRepository;
@@ -81,10 +89,12 @@ public class DocumentServiceImpl implements DocumentService {
     private final com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
     private final com.lumiedu.workspace.repository.SharedWorkspaceRepository sharedWorkspaceRepository;
     private final com.lumiedu.user.repository.UserRepository userRepository;
+    private final SubjectRepository subjectRepository;
     
     private final QuizAttemptRepository quizAttemptRepository;
     private final StudyPlanRepository studyPlanRepository;
     private final ObjectMapper objectMapper;
+    private final com.lumiedu.notification.service.NotificationService notificationService;
 
     // -------------------------------------------------------------------------
     // Upload
@@ -106,6 +116,20 @@ public class DocumentServiceImpl implements DocumentService {
                                       Set<String> allowedExtensions) {
         validateFile(file);
 
+        // Security correction: get current authenticated user ID
+        Long authenticatedUserId = null;
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            Object details = auth.getDetails();
+            if (details instanceof Long) {
+                authenticatedUserId = (Long) details;
+            }
+        }
+        if (authenticatedUserId != null) {
+            request.setUserId(authenticatedUserId);
+        }
+
         String originalFileName = StringUtils.cleanPath(
                 Objects.requireNonNull(file.getOriginalFilename(), "Original filename must not be null")
         );
@@ -123,8 +147,8 @@ public class DocumentServiceImpl implements DocumentService {
         if (FILE_TYPE_DOCUMENT.equals(fileType)) {
             // Tài liệu: lưu trên Google Drive thật, tự động tạo thư mục theo Ngành -> Kỳ -> Môn học
             try {
-                java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject());
-                googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy);
+                java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(), request.getUserId());
+                googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy, request.getUserId());
                 savedFileName = googleDriveFileId + "." + extension;
                 fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
             } catch (IOException e) {
@@ -225,13 +249,60 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional(readOnly = true)
     public List<DocumentResponse> getAllDocuments(Long userId) {
-        List<Document> documents = (userId != null)
+        String userEmail = "";
+        if (userId != null) {
+            Optional<User> uOpt = userRepository.findById(userId);
+            if (uOpt.isPresent()) {
+                userEmail = uOpt.get().getEmail();
+            }
+        }
+
+        List<Document> ownedDocs = (userId != null)
                 ? documentRepository.findAllByUserIdAndDeletedFalse(userId)
                 : documentRepository.findAllByDeletedFalse();
 
-        return documents.stream()
-                .map(this::mapToResponse)
+        List<DocumentShare> shares = (userEmail != null && !userEmail.isBlank())
+                ? documentShareRepository.findByShareeEmail(userEmail.trim().toLowerCase())
+                : new ArrayList<>();
+
+        List<Long> sharedDocIds = shares.stream()
+                .map(DocumentShare::getDocumentId)
                 .collect(Collectors.toList());
+
+        List<Document> sharedDocs = new ArrayList<>();
+        if (!sharedDocIds.isEmpty()) {
+            sharedDocs = documentRepository.findAllById(sharedDocIds).stream()
+                    .filter(d -> d.getDeleted() != null && !d.getDeleted())
+                    .collect(Collectors.toList());
+        }
+
+        Set<Long> seenIds = new HashSet<>();
+        List<DocumentResponse> responseList = new ArrayList<>();
+
+        for (Document d : ownedDocs) {
+            if (seenIds.add(d.getId())) {
+                DocumentResponse res = mapToResponse(d);
+                res.setRole("owner");
+                responseList.add(res);
+            }
+        }
+
+        Map<Long, String> sharedRoleMap = shares.stream()
+                .collect(Collectors.toMap(
+                        DocumentShare::getDocumentId,
+                        DocumentShare::getRole,
+                        (r1, r2) -> r1
+                ));
+
+        for (Document d : sharedDocs) {
+            if (seenIds.add(d.getId())) {
+                DocumentResponse res = mapToResponse(d);
+                res.setRole(sharedRoleMap.getOrDefault(d.getId(), "viewer"));
+                responseList.add(res);
+            }
+        }
+
+        return responseList;
     }
 
     @Override
@@ -247,7 +318,15 @@ public class DocumentServiceImpl implements DocumentService {
     public DocumentResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
-        checkDocumentAccess(document, currentUserId);
+        if (currentUserId == null) {
+            throw new SecurityException("Authentication is required to modify this document.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new SecurityException("You do not have permission to modify this document.");
+        }
 
         if (request.getTitle() != null) {
             document.setTitle(request.getTitle());
@@ -277,12 +356,20 @@ public class DocumentServiceImpl implements DocumentService {
     public void deleteDocument(Long id, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
-        checkDocumentAccess(document, currentUserId);
+        if (currentUserId == null) {
+            throw new SecurityException("Authentication is required to delete this document.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new SecurityException("You do not have permission to delete this document.");
+        }
 
         // Delete from Google Drive if stored there
         if ("GOOGLE_DRIVE".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))) {
             try {
-                googleDriveService.deleteFile(document.getGoogleDriveFileId());
+                googleDriveService.deleteFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (Exception e) {
                 log.error("Failed to delete file from Google Drive for doc ID {}: {}", id, e.getMessage());
             }
@@ -321,7 +408,7 @@ public class DocumentServiceImpl implements DocumentService {
         Resource resource;
         if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
             try {
-                resource = googleDriveService.downloadFile(document.getGoogleDriveFileId());
+                resource = googleDriveService.downloadFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (IOException e) {
                 throw new FileStorageException("Failed to download file from Google Drive ID: " + document.getGoogleDriveFileId(), e);
             }
@@ -346,45 +433,10 @@ public class DocumentServiceImpl implements DocumentService {
                 .orElseThrow(() -> new DocumentNotFoundException(id));
         checkDocumentAccess(document, currentUserId);
 
-        String filename = document.getOriginalFileName() != null ? document.getOriginalFileName() : document.getFileName();
-        String ext = "";
-        if (filename != null && filename.contains(".")) {
-            ext = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
-        }
-
-        if ("pdf".equals(ext)) {
-            try {
-                String extractedText = "";
-                if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
-                    Resource driveRes = googleDriveService.downloadFile(document.getGoogleDriveFileId());
-                    try (InputStream is = driveRes.getInputStream()) {
-                        try (PDDocument pdDoc = PDDocument.load(is)) {
-                            PDFTextStripper stripper = new PDFTextStripper();
-                            extractedText = stripper.getText(pdDoc);
-                        }
-                    }
-                } else {
-                    Path filePath = resolveUploadPath(document.getFileType()).resolve(document.getFileName()).normalize();
-                    File file = filePath.toFile();
-                    if (file.exists()) {
-                        try (PDDocument pdDoc = PDDocument.load(file)) {
-                            PDFTextStripper stripper = new PDFTextStripper();
-                            extractedText = stripper.getText(pdDoc);
-                        }
-                    }
-                }
-
-                if (extractedText != null && !extractedText.trim().isEmpty()) {
-                    return new org.springframework.core.io.ByteArrayResource(extractedText.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                }
-            } catch (Exception e) {
-                System.err.println("Failed to extract preview text from PDF: " + e.getMessage());
-            }
-        }
-
+        // Always return the actual binary resource for PDF/image file preview so that the viewer/iframe works correctly
         if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
             try {
-                return googleDriveService.downloadFile(document.getGoogleDriveFileId());
+                return googleDriveService.downloadFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (IOException e) {
                 throw new FileStorageException("Failed to load preview from Google Drive ID: " + document.getGoogleDriveFileId(), e);
             }
@@ -542,6 +594,16 @@ public class DocumentServiceImpl implements DocumentService {
                 .map(DocumentTag::getName)
                 .collect(Collectors.toList());
 
+        String ownerName = "Unknown";
+        String ownerEmail = "";
+        if (document.getUserId() != null) {
+            Optional<User> uploaderOpt = userRepository.findById(document.getUserId());
+            if (uploaderOpt.isPresent()) {
+                ownerName = uploaderOpt.get().getFullName();
+                ownerEmail = uploaderOpt.get().getEmail();
+            }
+        }
+
         return DocumentResponse.builder()
                 .id(document.getId())
                 .title(document.getTitle())
@@ -557,108 +619,58 @@ public class DocumentServiceImpl implements DocumentService {
                 .subject(document.getSubject())
                 .visibility(document.getVisibility())
                 .userId(document.getUserId())
+                .ownerName(ownerName)
+                .ownerEmail(ownerEmail)
+                .status(document.getStatus() != null ? document.getStatus() : "PENDING")
                 .tags(tags)
                 .createdAt(document.getCreatedAt())
                 .updatedAt(document.getUpdatedAt())
                 .build();
     }
 
-    private java.util.List<String> getGoogleDriveHierarchy(String subject) {
+    private java.util.List<String> getGoogleDriveHierarchy(String subject, Long userId) {
+        java.util.List<String> hierarchy = new java.util.ArrayList<>();
+        
+        // 1. Get user folder name to isolate user workspaces
+        String userFolder = "User_" + userId;
+        if (userId != null) {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isPresent()) {
+                userFolder = userOpt.get().getEmail();
+            }
+        }
+        hierarchy.add(userFolder);
+
         if (subject == null || subject.isBlank() || "GENERAL".equalsIgnoreCase(subject)) {
-            return java.util.List.of("General");
+            hierarchy.add("General");
+            return hierarchy;
         }
-        
+
         String cleanSubject = subject.trim().toUpperCase();
-        
-        // Cấu trúc phân cấp: Ngành học -> Kỳ học -> Môn học
-        String majorName = null;
-        String semesterName = null;
-        String subjectDisplayName = null;
-        
-        // Bản đồ môn học
-        // K1
-        if ("PRF192".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 1"; subjectDisplayName = "PRF192 - Programming Fundamentals"; }
-        else if ("MAE101".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 1"; subjectDisplayName = "MAE101 - Mathematics for Engineering"; }
-        else if ("CEA201".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 1"; subjectDisplayName = "CEA201 - Computer Organization"; }
-        else if ("CSI104".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 1"; subjectDisplayName = "CSI104 - Introduction to Computer Science"; }
-        else if ("MGT103".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 1"; subjectDisplayName = "MGT103 - Introduction to Management"; }
-        else if ("ECO111".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 1"; subjectDisplayName = "ECO111 - Microeconomics"; }
-        else if ("FMA101".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 1"; subjectDisplayName = "FMA101 - Financial Mathematics"; }
-        
-        // K2
-        else if ("PRO192".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 2"; subjectDisplayName = "PRO192 - Object-Oriented Programming"; }
-        else if ("MAD101".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 2"; subjectDisplayName = "MAD101 - Discrete Mathematics"; }
-        else if ("OSG202".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 2"; subjectDisplayName = "OSG202 - Operating Systems"; }
-        else if ("SSG104".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 2"; subjectDisplayName = "SSG104 - Communication Skills"; }
-        else if ("MKT101".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 2"; subjectDisplayName = "MKT101 - Basic Marketing"; }
-        else if ("ECO121".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 2"; subjectDisplayName = "ECO121 - Macroeconomics"; }
-        else if ("AMG111".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 2"; subjectDisplayName = "AMG111 - Art Management"; }
-        
-        // K3
-        else if ("CSD201".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 3"; subjectDisplayName = "CSD201 - Data Structures and Algorithms"; }
-        else if ("DBI202".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 3"; subjectDisplayName = "DBI202 - Database Systems"; }
-        else if ("LAB211".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 3"; subjectDisplayName = "LAB211 - OOP Java Lab"; }
-        else if ("AIL302M".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 3"; subjectDisplayName = "AIL302M - Machine Learning"; }
-        else if ("ACC101".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 3"; subjectDisplayName = "ACC101 - Principles of Accounting"; }
-        else if ("FIN201".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 3"; subjectDisplayName = "FIN201 - Corporate Finance"; }
-        else if ("BUL201".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 3"; subjectDisplayName = "BUL201 - Business Law"; }
-        
-        // K4
-        else if ("PRN211".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 4"; subjectDisplayName = "PRN211 - Basic Cross-Platform Application (.NET)"; }
-        else if ("SWE201".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 4"; subjectDisplayName = "SWE201 - Introduction to Software Engineering"; }
-        else if ("JPD113".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 4"; subjectDisplayName = "JPD113 - Japanese Language 1"; }
-        else if ("AIP301".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 4"; subjectDisplayName = "AIP301 - Artificial Intelligence Project"; }
-        else if ("MTH202".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 4"; subjectDisplayName = "MTH202 - Probability and Statistics"; }
-        else if ("HRM201".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 4"; subjectDisplayName = "HRM201 - Human Resource Management"; }
-        else if ("OBH201".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 4"; subjectDisplayName = "OBH201 - Organizational Behavior"; }
-        else if ("MRF301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 4"; subjectDisplayName = "MRF301 - Marketing Research"; }
-        
-        // K5
-        else if ("SWP391".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 5"; subjectDisplayName = "SWP391 - Software Development Project"; }
-        else if ("SWD392".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 5"; subjectDisplayName = "SWD392 - Software Architecture and Design"; }
-        else if ("SWT301".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 5"; subjectDisplayName = "SWT301 - Software Testing"; }
-        else if ("DLN301".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 5"; subjectDisplayName = "DLN301 - Deep Learning"; }
-        else if ("BIS301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 5"; subjectDisplayName = "BIS301 - Business Information Systems"; }
-        else if ("ENT301".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 5"; subjectDisplayName = "ENT301 - Entrepreneurship"; }
-        else if ("POM201".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 5"; subjectDisplayName = "POM201 - Production and Operations Management"; }
-        
-        // K6
-        else if ("OJT202".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 6"; subjectDisplayName = "OJT202 - On-the-Job Training (OJT)"; }
-        
-        // K7
-        else if ("PRM392".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 7"; subjectDisplayName = "PRM392 - Mobile Programming"; }
-        else if ("PRN221".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 7"; subjectDisplayName = "PRN221 - Advanced Cross-Platform Application (.NET)"; }
-        else if ("WDP301".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 7"; subjectDisplayName = "WDP301 - Web Development Project"; }
-        else if ("NLP301".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 7"; subjectDisplayName = "NLP301 - Natural Language Processing"; }
-        else if ("CVP301".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 7"; subjectDisplayName = "CVP301 - Computer Vision Project"; }
-        else if ("IBM301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 7"; subjectDisplayName = "IBM301 - International Business Management"; }
-        else if ("SCM301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 7"; subjectDisplayName = "SCM301 - Supply Chain Management"; }
-        else if ("BRM301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 7"; subjectDisplayName = "BRM301 - Business Research Methods"; }
-        
-        // K8
-        else if ("SEP490".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 8"; subjectDisplayName = "SEP490 - Capstone Project Preparation (SE)"; }
-        else if ("CAP490".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 8"; subjectDisplayName = "CAP490 - Capstone Project Preparation (AI)"; }
-        else if ("BAP490".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 8"; subjectDisplayName = "BAP490 - Capstone Project Preparation (BA)"; }
-        else if ("EXE101".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 8"; subjectDisplayName = "EXE101 - Experiential Entrepreneurship 1"; }
-        else if ("IAS301".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 8"; subjectDisplayName = "IAS301 - Information Assurance & Security"; }
-        else if ("BDA301".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 8"; subjectDisplayName = "BDA301 - Big Data Analytics"; }
-        else if ("SMA301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 8"; subjectDisplayName = "SMA301 - Strategic Management"; }
-        
-        // K9
-        else if ("SEP490_DEF".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 9"; subjectDisplayName = "SEP490_DEF - Capstone Project Graduation (SE)"; }
-        else if ("CAP490_DEF".equals(cleanSubject)) { majorName = "Trí tuệ nhân tạo (AI)"; semesterName = "Học kỳ 9"; subjectDisplayName = "CAP490_DEF - Capstone Project Graduation (AI)"; }
-        else if ("BAP490_DEF".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 9"; subjectDisplayName = "BAP490_DEF - Capstone Project Graduation (BA)"; }
-        else if ("EXE201".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 9"; subjectDisplayName = "EXE201 - Experiential Entrepreneurship 2"; }
-        else if ("PMG201".equals(cleanSubject)) { majorName = "Kỹ thuật phần mềm (SE)"; semesterName = "Học kỳ 9"; subjectDisplayName = "PMG201 - Project Management"; }
-        else if ("EBU301".equals(cleanSubject)) { majorName = "Quản trị kinh doanh (BA)"; semesterName = "Học kỳ 9"; subjectDisplayName = "EBU301 - E-Business"; }
-        
-        if (majorName == null) {
-            return java.util.List.of("Khác", subject);
+
+        // 2. Lookup subject in DB (either custom or system-wide)
+        // Find subject by code and userId first, then fall back to system defaults
+        Optional<Subject> subjectOpt = subjectRepository.findByCodeAndUserId(cleanSubject, userId);
+        if (subjectOpt.isEmpty()) {
+            subjectOpt = subjectRepository.findByCodeAndUserIdIsNull(cleanSubject);
         }
-        return java.util.List.of(majorName, semesterName, subjectDisplayName);
+
+        if (subjectOpt.isPresent()) {
+            Subject s = subjectOpt.get();
+            hierarchy.add(s.getSemesterName());
+            hierarchy.add(s.getCode() + " - " + s.getName());
+        } else {
+            hierarchy.add("Khác");
+            hierarchy.add(cleanSubject);
+        }
+
+        return hierarchy;
     }
 
     private void checkDocumentAccess(Document document, Long userId) {
+        if ("PUBLIC".equalsIgnoreCase(document.getVisibility())) {
+            return;
+        }
         if (userId == null) {
             throw new SecurityException("Authentication is required to access this document.");
         }
@@ -669,9 +681,6 @@ public class DocumentServiceImpl implements DocumentService {
             return;
         }
         if (userId.equals(document.getUserId())) {
-            return;
-        }
-        if ("PUBLIC".equalsIgnoreCase(document.getVisibility())) {
             return;
         }
         List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByDocumentId(document.getId());
@@ -803,6 +812,153 @@ public class DocumentServiceImpl implements DocumentService {
                 .averageScore(averageScore)
                 .rank(rankStr)
                 .aiRecommendation(aiRec)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DocumentShareResponse> getDocumentShares(Long documentId, Long currentUserId) {
+        Document document = documentRepository.findByIdAndDeletedFalse(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("Authentication is required.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new IllegalArgumentException("Only the document owner can view its shares.");
+        }
+
+        List<DocumentShare> shares = documentShareRepository.findByDocumentId(documentId);
+        return shares.stream()
+                .map(this::mapToShareResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public DocumentShareResponse addOrUpdateDocumentShare(Long documentId, String email, String role, Long currentUserId) {
+        Document document = documentRepository.findByIdAndDeletedFalse(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("Authentication is required.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new IllegalArgumentException("Only the document owner can share it.");
+        }
+
+        User sharee = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new IllegalArgumentException("Collaborator email must belong to an existing registered user."));
+
+        if (sharee.getId().equals(document.getUserId())) {
+            throw new IllegalArgumentException("You cannot share a document with yourself.");
+        }
+
+        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, sharee.getEmail());
+        DocumentShare share;
+        if (existingShareOpt.isPresent()) {
+            share = existingShareOpt.get();
+            share.setRole(role);
+        } else {
+            share = DocumentShare.builder()
+                    .documentId(documentId)
+                    .shareeEmail(sharee.getEmail())
+                    .role(role)
+                    .build();
+        }
+        share = documentShareRepository.save(share);
+
+        // 1. Google Drive permission sharing (best-effort)
+        if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+            String gDriveRole = "reader";
+            if ("editor".equalsIgnoreCase(role)) {
+                gDriveRole = "writer";
+            }
+            try {
+                googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole, document.getUserId());
+            } catch (Exception e) {
+                log.error("Failed to share file on Google Drive for document {} and collaborator {}: {}",
+                        documentId, sharee.getEmail(), e.getMessage());
+            }
+        }
+
+        // 2. Send notification if it's a new share
+        if (existingShareOpt.isEmpty()) {
+            try {
+                User owner = userRepository.findById(document.getUserId()).orElse(null);
+                String ownerNameOrEmail = (owner != null) ? (owner.getFullName() != null && !owner.getFullName().isBlank() ? owner.getFullName() : owner.getEmail()) : "An owner";
+
+                String title = String.format("%s đã chia sẻ tài liệu", ownerNameOrEmail);
+                String message = String.format("đã chia sẻ tài liệu \"%s\" với bạn.", document.getTitle());
+
+                com.lumiedu.notification.dto.request.NotificationRequest notificationRequest = com.lumiedu.notification.dto.request.NotificationRequest.builder()
+                        .targetUserEmail(sharee.getEmail())
+                        .type("SHARED_FILE")
+                        .title(title)
+                        .message(message)
+                        .documentId(documentId)
+                        .documentName(document.getTitle())
+                        .actionType("shared-files")
+                        .actionText("Xem tài liệu")
+                        .actionUrl("/dashboard/shared")
+                        .build();
+
+                notificationService.createNotification(notificationRequest);
+                log.info("Created share notification for user: {} on document: {}", sharee.getEmail(), document.getTitle());
+            } catch (Exception e) {
+                log.error("Failed to create share notification: {}", e.getMessage());
+            }
+        }
+
+        return mapToShareResponse(share);
+    }
+
+    @Override
+    public void deleteDocumentShare(Long documentId, String email, Long currentUserId) {
+        Document document = documentRepository.findByIdAndDeletedFalse(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        if (currentUserId == null) {
+            throw new IllegalArgumentException("Authentication is required.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new IllegalArgumentException("Only the document owner can delete its shares.");
+        }
+
+        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, email.trim().toLowerCase());
+        if (existingShareOpt.isPresent()) {
+            documentShareRepository.delete(existingShareOpt.get());
+
+            // Google Drive revoke (best-effort)
+            if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+                try {
+                    googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase(), document.getUserId());
+                } catch (Exception e) {
+                    log.error("Failed to revoke file share on Google Drive for document {} and collaborator {}: {}",
+                            documentId, email, e.getMessage());
+                }
+            }
+        } else {
+            throw new IllegalArgumentException("No share permission found for the given email.");
+        }
+    }
+
+    private DocumentShareResponse mapToShareResponse(DocumentShare share) {
+        return DocumentShareResponse.builder()
+                .id(share.getId())
+                .documentId(share.getDocumentId())
+                .shareeEmail(share.getShareeEmail())
+                .role(share.getRole())
+                .createdAt(share.getCreatedAt())
+                .updatedAt(share.getUpdatedAt())
                 .build();
     }
 

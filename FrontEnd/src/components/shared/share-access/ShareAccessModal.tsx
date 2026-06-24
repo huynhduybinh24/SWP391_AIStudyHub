@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 import { PermissionDropdown, type ShareRole } from './PermissionDropdown'
 import { GeneralAccessSelector } from './GeneralAccessSelector'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { documentService } from '@/services/documentService'
 
 export interface Collaborator {
   id: string
@@ -16,7 +18,7 @@ export interface Collaborator {
   avatarBg?: string
 }
 
-interface ShareAccessModalProps {
+export interface ShareAccessModalProps {
   isOpen: boolean
   onClose: () => void
   fileId?: string
@@ -33,31 +35,9 @@ interface ShareAccessModalProps {
   owner?: string
   type?: 'file' | 'folder'
   permission?: string
+  onUpdateCollaboratorRole?: (id: string, role: 'Editor' | 'Viewer') => void
+  onRemoveCollaborator?: (id: string) => void
 }
-
-const defaultCollaborators: Collaborator[] = [
-  {
-    id: 'owner',
-    name: 'Alex Rivera',
-    email: 'alex@example.com',
-    role: 'owner',
-    avatarBg: 'bg-[#0fbf7c]'
-  },
-  {
-    id: '1',
-    name: 'Huynh Duy Binh',
-    email: 'binh@example.com',
-    role: 'editor',
-    avatarBg: 'bg-[#5f6ffc]'
-  },
-  {
-    id: '2',
-    name: 'Ngoc Tan',
-    email: 'tan@example.com',
-    role: 'viewer',
-    avatarBg: 'bg-[#fc9d1c]'
-  }
-]
 
 export function ShareAccessModal({
   isOpen,
@@ -75,10 +55,16 @@ export function ShareAccessModal({
   folderName,
   owner: _owner,
   type: _type = 'file',
-  permission: _permission
+  permission: _permission,
+  onUpdateCollaboratorRole,
+  onRemoveCollaborator
 }: ShareAccessModalProps) {
   const toast = useToast()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
+  const { user } = useAuthStore()
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [hasError, setHasError] = useState(false)
 
   const activeFileId = fileId || folderId || 'default-file'
   const activeFileName = fileName || folderName || ''
@@ -116,12 +102,22 @@ export function ShareAccessModal({
       setNewEmail('')
       setNewRole('viewer')
 
-      if (collaborators) {
+      const isNumeric = fileId && /^\d+$/.test(fileId)
+      if (isNumeric) {
+        setLocalCollaborators([])
+      } else if (collaborators) {
         setLocalCollaborators(collaborators)
       } else if (initialCollaborators) {
         setLocalCollaborators(initialCollaborators)
       } else {
-        setLocalCollaborators(defaultCollaborators)
+        const ownerCollab: Collaborator = {
+          id: 'owner',
+          name: user?.name || 'Current User',
+          email: user?.email || '',
+          role: 'owner',
+          avatarBg: 'bg-[#0fbf7c]'
+        }
+        setLocalCollaborators([ownerCollab])
       }
 
       if (generalAccess) {
@@ -130,7 +126,79 @@ export function ShareAccessModal({
         setLocalGeneralAccess('restricted')
       }
     }
-  }, [isOpen, collaborators, generalAccess, initialCollaborators])
+  }, [isOpen, collaborators, generalAccess, initialCollaborators, fileId, user])
+
+  // Load owner and collaborators from API when fileId is numeric
+  useEffect(() => {
+    if (!isOpen) return
+    const isNumeric = fileId && /^\d+$/.test(fileId)
+    if (!isNumeric) return
+
+    let isMounted = true
+    const loadData = async () => {
+      setIsLoading(true)
+      setHasError(false)
+      try {
+        const [doc, shares] = await Promise.all([
+          documentService.getDocumentById(fileId),
+          documentService.getDocumentShares(fileId)
+        ])
+
+        if (!isMounted) return
+
+        const colors = [
+          'bg-[#5f6ffc]',
+          'bg-[#fc9d1c]',
+          'bg-[#ec4899]',
+          'bg-[#8b5cf6]',
+          'bg-[#0fbf7c]',
+          'bg-rose-500'
+        ]
+
+        const ownerName = doc.ownerName || user?.name || 'Current User'
+        const ownerEmail = doc.ownerEmail || user?.email || ''
+        const ownerCollab: Collaborator = {
+          id: 'owner',
+          name: ownerName,
+          email: ownerEmail,
+          role: 'owner',
+          avatarBg: 'bg-[#0fbf7c]'
+        }
+
+        const shareCollabs: Collaborator[] = shares.map((share, idx) => {
+          const email = share.shareeEmail
+          const namePart = email.split('@')[0]
+          const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1)
+          const randomColor = colors[idx % colors.length]
+
+          return {
+            id: String(share.id),
+            name: capitalizedName,
+            email: email,
+            role: share.role as any,
+            avatarBg: randomColor
+          }
+        })
+
+        setLocalCollaborators([ownerCollab, ...shareCollabs])
+      } catch (err) {
+        console.error('Failed to load sharing info from API:', err)
+        if (isMounted) {
+          setHasError(true)
+          setLocalCollaborators([])
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadData()
+    return () => {
+      isMounted = false
+    }
+  }, [isOpen, fileId, user])
 
   // Map controlled vs local values
   const activeCollaborators = collaborators !== undefined ? collaborators : localCollaborators
@@ -197,7 +265,7 @@ export function ShareAccessModal({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  const handleAddCollaborator = (e?: React.FormEvent) => {
+  const handleAddCollaborator = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!newEmail.trim()) return
 
@@ -212,48 +280,132 @@ export function ShareAccessModal({
       return
     }
 
-    const newCollabName = newEmail.split('@')[0]
-    const formattedName = newCollabName.charAt(0).toUpperCase() + newCollabName.slice(1)
+    const targetEmail = newEmail.trim().toLowerCase()
+    const resolvedRole = newRole === 'editor' ? 'editor' : 'viewer'
+    const isNumeric = fileId && /^\d+$/.test(fileId)
 
-    const colors = [
-      'bg-[#5f6ffc]',
-      'bg-[#fc9d1c]',
-      'bg-[#ec4899]',
-      'bg-[#8b5cf6]',
-      'bg-[#0fbf7c]',
-      'bg-rose-500'
-    ]
-    const randomColor = colors[Math.floor(Math.random() * colors.length)]
+    if (isNumeric) {
+      try {
+        const share = await documentService.addOrUpdateDocumentShare(fileId, targetEmail, resolvedRole)
 
-    const newCollab: Collaborator = {
-      id: `collab-${Date.now()}`,
-      name: formattedName,
-      email: newEmail.trim().toLowerCase(),
-      role: newRole,
-      avatarBg: randomColor
-    }
+        const namePart = targetEmail.split('@')[0]
+        const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1)
 
-    const updated = [...activeCollaborators, newCollab]
-    updateCollaborators(updated)
-    setNewEmail('')
+        const colors = [
+          'bg-[#5f6ffc]',
+          'bg-[#fc9d1c]',
+          'bg-[#ec4899]',
+          'bg-[#8b5cf6]',
+          'bg-[#0fbf7c]',
+          'bg-rose-500'
+        ]
+        const randomColor = colors[Math.floor(Math.random() * colors.length)]
 
-    if (onShareSubmit) {
-      onShareSubmit(newCollab.email, newRole === 'editor' ? 'Editor' : 'Viewer')
+        const newCollab: Collaborator = {
+          id: String(share.id),
+          name: capitalizedName,
+          email: targetEmail,
+          role: share.role as any,
+          avatarBg: randomColor
+        }
+
+        const updated = [...activeCollaborators, newCollab]
+        updateCollaborators(updated)
+        setNewEmail('')
+        triggerToast(t.shareModal.accessSharedSuccess)
+      } catch (err) {
+        console.error(err)
+        triggerToast(language === 'vi' ? 'Không thể thêm người cộng tác!' : 'Failed to add collaborator!', 'error')
+      }
     } else {
-      triggerToast(t.shareModal.accessSharedSuccess)
+      const newCollabName = targetEmail.split('@')[0]
+      const formattedName = newCollabName.charAt(0).toUpperCase() + newCollabName.slice(1)
+
+      const colors = [
+        'bg-[#5f6ffc]',
+        'bg-[#fc9d1c]',
+        'bg-[#ec4899]',
+        'bg-[#8b5cf6]',
+        'bg-[#0fbf7c]',
+        'bg-rose-500'
+      ]
+      const randomColor = colors[Math.floor(Math.random() * colors.length)]
+
+      const newCollab: Collaborator = {
+        id: `collab-${Date.now()}`,
+        name: formattedName,
+        email: targetEmail,
+        role: newRole,
+        avatarBg: randomColor
+      }
+
+      const updated = [...activeCollaborators, newCollab]
+      updateCollaborators(updated)
+      setNewEmail('')
+
+      if (onShareSubmit) {
+        onShareSubmit(newCollab.email, newRole === 'editor' ? 'Editor' : 'Viewer')
+      } else {
+        triggerToast(t.shareModal.accessSharedSuccess)
+      }
     }
   }
 
-  const handleRemoveCollaborator = (id: string, _name: string) => {
-    const updated = activeCollaborators.filter(c => c.id !== id)
-    updateCollaborators(updated)
-    triggerToast(t.shareModal.accessRemoved)
+  const handleRemoveCollaborator = async (id: string, _name: string) => {
+    const collab = activeCollaborators.find(c => c.id === id)
+    if (!collab) return
+
+    if (onRemoveCollaborator) {
+      onRemoveCollaborator(id)
+      return
+    }
+
+    const isNumeric = fileId && /^\d+$/.test(fileId)
+
+    if (isNumeric) {
+      try {
+        await documentService.deleteDocumentShare(fileId, collab.email)
+        const updated = activeCollaborators.filter(c => c.id !== id)
+        updateCollaborators(updated)
+        triggerToast(t.shareModal.accessRemoved)
+      } catch (err) {
+        console.error(err)
+        triggerToast(language === 'vi' ? 'Không thể xóa người cộng tác!' : 'Failed to remove collaborator!', 'error')
+      }
+    } else {
+      const updated = activeCollaborators.filter(c => c.id !== id)
+      updateCollaborators(updated)
+      triggerToast(t.shareModal.accessRemoved)
+    }
   }
 
-  const handleChangeRole = (id: string, _name: string, role: ShareRole) => {
-    const updated = activeCollaborators.map(c => c.id === id ? { ...c, role } : c)
-    updateCollaborators(updated)
-    triggerToast(t.shareModal.permissionUpdated)
+  const handleChangeRole = async (id: string, _name: string, role: ShareRole) => {
+    const collab = activeCollaborators.find(c => c.id === id)
+    if (!collab) return
+
+    if (onUpdateCollaboratorRole) {
+      onUpdateCollaboratorRole(id, role === 'editor' ? 'Editor' : 'Viewer')
+      return
+    }
+
+    const isNumeric = fileId && /^\d+$/.test(fileId)
+    const resolvedRole = role === 'editor' ? 'editor' : 'viewer'
+
+    if (isNumeric) {
+      try {
+        const share = await documentService.addOrUpdateDocumentShare(fileId, collab.email, resolvedRole)
+        const updated = activeCollaborators.map(c => c.id === id ? { ...c, role: share.role as any } : c)
+        updateCollaborators(updated)
+        triggerToast(t.shareModal.permissionUpdated)
+      } catch (err) {
+        console.error(err)
+        triggerToast(language === 'vi' ? 'Không thể cập nhật vai trò!' : 'Failed to update role!', 'error')
+      }
+    } else {
+      const updated = activeCollaborators.map(c => c.id === id ? { ...c, role } : c)
+      updateCollaborators(updated)
+      triggerToast(t.shareModal.permissionUpdated)
+    }
   }
 
   const handleCopyLink = () => {
@@ -436,54 +588,70 @@ export function ShareAccessModal({
                   </h3>
 
                   <div className="space-y-3">
-                    {activeCollaborators.map((c) => {
-                      const initials = c.name ? c.name.charAt(0).toUpperCase() : 'A'
-                      const isOwner = c.role === 'owner'
-                      return (
-                        <div key={c.id} className="flex items-center justify-between gap-3 py-1">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className={cn(
-                              "w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shadow-inner shrink-0 select-none text-white",
-                              c.avatarBg || "bg-blue-600"
-                            )}>
-                              {initials}
-                            </div>
+                    {isLoading ? (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium select-none">
+                        {language === 'vi' ? 'Đang tải quyền truy cập...' : 'Loading access details...'}
+                      </p>
+                    ) : hasError ? (
+                      <p className="text-xs text-red-500 dark:text-red-400 font-medium select-none">
+                        {language === 'vi' ? 'Không thể tải quyền truy cập.' : 'Failed to load access details.'}
+                      </p>
+                    ) : (
+                      activeCollaborators.map((c) => {
+                        const initials = c.name ? c.name.charAt(0).toUpperCase() : 'A'
+                        const isOwner = c.role === 'owner'
+                        return (
+                          <div key={c.id} className="flex items-center justify-between gap-3 py-1">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={cn(
+                                "w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shadow-inner shrink-0 select-none text-white",
+                                c.avatarBg || "bg-blue-600"
+                              )}>
+                                {initials}
+                              </div>
 
-                            <div className="min-w-0">
-                              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 leading-normal truncate">
-                                {c.name}
-                                {isOwner && (
-                                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider select-none">
-                                    {t.shareModal.ownerLabel}
-                                  </span>
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 leading-normal truncate">
+                                  {c.name}
+                                  {isOwner && (
+                                    <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider select-none">
+                                      {t.shareModal.ownerLabel}
+                                    </span>
+                                  )}
+                                </h4>
+                                {c.email ? (
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
+                                    {c.email}
+                                  </p>
+                                ) : (
+                                  <p className="text-xs text-slate-400 dark:text-slate-500 italic font-medium truncate mt-0.5 select-none">
+                                    {language === 'vi' ? 'Không có email' : 'No email available'}
+                                  </p>
                                 )}
-                              </h4>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
-                                {c.email}
-                              </p>
+                              </div>
                             </div>
-                          </div>
 
-                          {isOwner ? (
-                            <span className="text-xs font-semibold text-slate-550 dark:text-slate-500 select-none mr-2">
-                              {t.shareModal.roleOwner}
-                            </span>
-                          ) : (
-                            <div className="shrink-0">
-                              <PermissionDropdown
-                                value={c.role as ShareRole}
-                                onChange={(role) => handleChangeRole(c.id, c.name, role)}
-                                showRemove={true}
-                                onRemove={() => handleRemoveCollaborator(c.id, c.name)}
-                                align="right"
-                                className="h-[36px] px-3 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold"
-                                ariaLabel={t.shareModal.changePermissionFor(c.name)}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
+                            {isOwner ? (
+                              <span className="text-xs font-semibold text-slate-550 dark:text-slate-500 select-none mr-2">
+                                {t.shareModal.roleOwner}
+                              </span>
+                            ) : (
+                              <div className="shrink-0">
+                                <PermissionDropdown
+                                  value={c.role as ShareRole}
+                                  onChange={(role) => handleChangeRole(c.id, c.name, role)}
+                                  showRemove={true}
+                                  onRemove={() => handleRemoveCollaborator(c.id, c.name)}
+                                  align="right"
+                                  className="h-[36px] px-3 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold"
+                                  ariaLabel={t.shareModal.changePermissionFor(c.name)}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })
+                    )}
                   </div>
                 </div>
 

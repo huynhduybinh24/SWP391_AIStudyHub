@@ -23,4 +23,6 @@ public class AdminDocumentResponse {
     private String summaryPreview;
     private String status;
     private String moderationReason;
+    private String subject;
+    private String visibility;
 }

@@ -179,7 +179,7 @@ export function StorageExplorerPage() {
 
   const [folderFilter, setFolderFilter] = useState('All Folders')
   const [typeFilter, setTypeFilter] = useState('All Types')
-  
+
   const [showFolderDropdown, setShowFolderDropdown] = useState(false)
   const [showTypeDropdown, setShowTypeDropdown] = useState(false)
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
@@ -316,8 +316,8 @@ export function StorageExplorerPage() {
     <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
       {/* Header Area */}
       <div>
-        <Link 
-          to="/dashboard/storage" 
+        <Link
+          to="/dashboard/storage"
           className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-foreground mb-4 transition-colors"
         >
           <ArrowLeft className="size-4" />
@@ -345,9 +345,9 @@ export function StorageExplorerPage() {
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted" />
-              <input 
-                type="text" 
-                placeholder={t.storageExplorer.findInExplorer} 
+              <input
+                type="text"
+                placeholder={t.storageExplorer.findInExplorer}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-10 pl-9 pr-4 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -355,7 +355,7 @@ export function StorageExplorerPage() {
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none" ref={folderDropdownRef}>
-                <button 
+                <button
                   onClick={() => setShowFolderDropdown(!showFolderDropdown)}
                   className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 justify-between whitespace-nowrap text-foreground"
                 >
@@ -382,7 +382,7 @@ export function StorageExplorerPage() {
               </div>
 
               <div className="relative flex-1 sm:flex-none" ref={typeDropdownRef}>
-                <button 
+                <button
                   onClick={() => setShowTypeDropdown(!showTypeDropdown)}
                   className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 justify-between whitespace-nowrap text-foreground"
                 >
@@ -409,13 +409,13 @@ export function StorageExplorerPage() {
               </div>
 
               <div className="flex items-center h-10 rounded-lg border border-border bg-white dark:bg-slate-900 p-1">
-                <button 
+                <button
                   onClick={() => setViewMode('grid')}
                   className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted hover:text-foreground'}`}
                 >
                   <LayoutGrid className="size-4" />
                 </button>
-                <button 
+                <button
                   onClick={() => setViewMode('list')}
                   className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-primary/10 text-primary' : 'text-muted hover:text-foreground'}`}
                 >
@@ -438,13 +438,13 @@ export function StorageExplorerPage() {
                   <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group">
                     <CardContent className="p-4 flex flex-col h-[120px] justify-between">
                       <div className="flex justify-between items-start">
-                        <div 
-                          className="w-10 h-10 rounded-lg flex items-center justify-center" 
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center"
                           style={{ backgroundColor: isDark ? `${folder.color}22` : folder.bgColor }}
                         >
                           <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
                         </div>
-                        <button 
+                        <button
                           onClick={(e) => handleDeleteFolder(folder.id, e)}
                           className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           title={t.storageExplorer.deleteFolder}
@@ -469,8 +469,8 @@ export function StorageExplorerPage() {
                   <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group">
                     <CardContent className="p-3 flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div 
-                          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" 
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                           style={{ backgroundColor: isDark ? `${folder.color}22` : folder.bgColor }}
                         >
                           <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
@@ -482,7 +482,7 @@ export function StorageExplorerPage() {
                           <span>{t.storageExplorer.itemsCount(folder.itemsCount)}</span>
                           <span>{folder.size}</span>
                         </div>
-                        <button 
+                        <button
                           onClick={(e) => handleDeleteFolder(folder.id, e)}
                           className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           title={t.storageExplorer.deleteFolder}
@@ -520,7 +520,7 @@ export function StorageExplorerPage() {
                           {t.storageExplorer.aiSummarized}
                         </div>
                       )}
-                      <button 
+                      <button
                         onClick={(e) => handleDeleteFile(file.id, e)}
                         className="absolute top-2 right-2 text-muted hover:text-red-500 p-1.5 bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
                         title={t.storageExplorer.deleteFile}
@@ -559,7 +559,7 @@ export function StorageExplorerPage() {
                           {t.storageExplorer.aiSummarized}
                         </div>
                       )}
-                      <button 
+                      <button
                         onClick={(e) => handleDeleteFile(file.id, e)}
                         className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         title={t.storageExplorer.deleteFile}
@@ -581,7 +581,7 @@ export function StorageExplorerPage() {
               <Cloud className="size-5 text-primary" />
               <h2 className="font-semibold text-foreground">{t.storageExplorer.storageStatus}</h2>
             </div>
-            
+
             <div className="w-[180px] h-[180px] relative mx-auto">
               {isMounted && (
                 <ResponsiveContainer width="100%" height={180}>
@@ -641,9 +641,9 @@ export function StorageExplorerPage() {
               <p className="text-[11px] text-muted mt-1.5 mb-4 leading-relaxed">
                 {t.storageExplorer.upgradeDesc}
               </p>
-              <Button 
+              <Button
                 onClick={() => setIsPlanModalOpen(true)}
-                variant="secondary" 
+                variant="secondary"
                 className="w-full bg-white dark:bg-slate-950 text-primary dark:text-blue-400 border border-primary/20 dark:border-blue-900/40 hover:bg-primary/5 dark:hover:bg-blue-950/30 h-9 text-sm transition-colors"
               >
                 {t.storageExplorer.viewPlans}
@@ -653,8 +653,8 @@ export function StorageExplorerPage() {
         </Card>
       </div>
 
-      <Modal 
-        isOpen={isPlanModalOpen} 
+      <Modal
+        isOpen={isPlanModalOpen}
         onClose={() => setIsPlanModalOpen(false)}
         title={t.storageExplorer.upgradeModalTitle}
         description={t.storageExplorer.upgradeModalDesc}

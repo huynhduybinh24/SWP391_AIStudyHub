@@ -337,7 +337,7 @@ export const ko: any = {
     genSummary: "요약 생성",
     createFlashcards: "플래시카드 생성",
     cancel: "취소",
-    processAI: "AI로 처리",
+    processAI: "처리",
     processing: "처리 중...",
     uploadVideo: "비디오 업로드",
     uploadAudio: "오디오 업로드",

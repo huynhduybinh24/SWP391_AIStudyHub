@@ -40,6 +40,8 @@ interface DocumentItem {
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
   essential?: boolean
+  ownerName?: string
+  ownerEmail?: string
 }
 
 interface SubjectContent {
@@ -962,7 +964,9 @@ export function DocumentsPage() {
       sizeKb: doc.fileSize ? Math.round(doc.fileSize / 1024) : 0,
       subject: (doc.subject || 'GENERAL') as any,
       status: 'ANALYZED',
-      type: mapMimeOrExtensionToType(doc.fileType, doc.fileName || doc.originalFileName || '')
+      type: mapMimeOrExtensionToType(doc.fileType, doc.fileName || doc.originalFileName || ''),
+      ownerName: doc.ownerName,
+      ownerEmail: doc.ownerEmail
     }
   }
 
@@ -1686,7 +1690,7 @@ export function DocumentsPage() {
                   disabled={!selectedFile && !newDocTitle}
                   className="rounded-xl bg-[#2563eb] text-white font-semibold shadow-md shadow-blue-500/10 px-6"
                 >
-                  Process with AI
+                  {t.upload.processAI}
                 </Button>
               </div>
             </>

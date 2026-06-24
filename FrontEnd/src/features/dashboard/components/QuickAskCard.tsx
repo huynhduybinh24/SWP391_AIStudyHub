@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Bot, Send } from 'lucide-react'
-import { useUiStore } from '@/stores/uiStore'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -9,13 +9,11 @@ import { useTranslation } from '@/context/LanguageContext'
 export function QuickAskCard() {
   const { t } = useTranslation()
   const [inputText, setInputText] = useState('')
-  const setChatPopupOpen = useUiStore((s) => s.setChatPopupOpen)
-  const setInitialChatMessage = useUiStore((s) => s.setInitialChatMessage)
+  const navigate = useNavigate()
 
   const handleQuickAsk = (prompt: string) => {
     if (!prompt.trim()) return
-    setInitialChatMessage(prompt)
-    setChatPopupOpen(true)
+    navigate('/dashboard/chat', { state: { initialPrompt: prompt } })
     setInputText('')
   }
 

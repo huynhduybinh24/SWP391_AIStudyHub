@@ -3,9 +3,11 @@ package com.lumiedu.document.controller;
 import com.lumiedu.document.dto.request.DocumentCreateRequest;
 import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.request.TagRequest;
+import com.lumiedu.document.dto.request.DocumentShareRequest;
 import com.lumiedu.document.dto.response.ApiResponse;
 import com.lumiedu.document.dto.response.DocumentResponse;
 import com.lumiedu.document.dto.response.SubjectStatsResponse;
+import com.lumiedu.document.dto.response.DocumentShareResponse;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
@@ -248,6 +250,49 @@ public class DocumentController {
     ) {
         SubjectStatsResponse stats = documentService.getSubjectStats(subjectId, userId);
         return ResponseEntity.ok(ApiResponse.ok("Subject statistics retrieved successfully.", stats));
+    }
+
+    // ------------------------------------------------------------------
+    // GET /api/documents/{id}/shares
+    // ------------------------------------------------------------------
+    @GetMapping("/{id}/shares")
+    public ResponseEntity<ApiResponse<List<DocumentShareResponse>>> getDocumentShares(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        List<DocumentShareResponse> response = documentService.getDocumentShares(id, currentUserId);
+        return ResponseEntity.ok(ApiResponse.ok("Document shares retrieved successfully.", response));
+    }
+
+    // ------------------------------------------------------------------
+    // POST /api/documents/{id}/shares
+    // ------------------------------------------------------------------
+    @PostMapping("/{id}/shares")
+    public ResponseEntity<ApiResponse<DocumentShareResponse>> addOrUpdateDocumentShare(
+            @PathVariable Long id,
+            @RequestBody DocumentShareRequest request,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        DocumentShareResponse response = documentService.addOrUpdateDocumentShare(
+                id, request.getEmail(), request.getRole(), currentUserId
+        );
+        return ResponseEntity.ok(ApiResponse.ok("Document share saved successfully.", response));
+    }
+
+    // ------------------------------------------------------------------
+    // DELETE /api/documents/{id}/shares
+    // ------------------------------------------------------------------
+    @DeleteMapping("/{id}/shares")
+    public ResponseEntity<ApiResponse<Void>> deleteDocumentShare(
+            @PathVariable Long id,
+            @RequestParam("email") String email,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        documentService.deleteDocumentShare(id, email, currentUserId);
+        return ResponseEntity.ok(ApiResponse.ok("Document share deleted successfully.", null));
     }
 
     // ------------------------------------------------------------------
