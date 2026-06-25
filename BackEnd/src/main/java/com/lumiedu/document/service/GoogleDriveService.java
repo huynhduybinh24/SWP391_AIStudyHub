@@ -36,4 +36,5 @@ public interface GoogleDriveService {
 
     void shareFile(String googleDriveFileId, String email, String role, Long userId) throws IOException;
     void revokeShare(String googleDriveFileId, String email, Long userId) throws IOException;
+    boolean isUserDriveConnected(Long userId);
 }
