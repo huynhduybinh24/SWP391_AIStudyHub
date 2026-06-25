@@ -216,7 +216,7 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public Resource downloadFile(String googleDriveFileId, Long userId) throws IOException {
-        if ("mock-folder-id".equals(rootFolderId) || (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_"))) {
+        if (googleDriveFileId == null || googleDriveFileId.startsWith("gdrive_")) {
             return downloadFileMock(googleDriveFileId);
         }
         try {
@@ -261,7 +261,7 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public void deleteFile(String googleDriveFileId, Long userId) throws IOException {
-        if ("mock-folder-id".equals(rootFolderId) || (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_"))) {
+        if (googleDriveFileId == null || googleDriveFileId.startsWith("gdrive_")) {
             deleteFileMock(googleDriveFileId);
             return;
         }
@@ -307,7 +307,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
     // Helper: Tìm hoặc tạo subfolder
     // -------------------------------------------------------------------------
 
-    private boolean isUserDriveConnected(Long userId) {
+    @Override
+    public boolean isUserDriveConnected(Long userId) {
         if (userId == null) {
             return false;
         }
@@ -408,8 +409,7 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public void shareFile(String googleDriveFileId, String email, String role, Long userId) throws IOException {
-        if (googleDriveFileId == null || googleDriveFileId.isBlank() ||
-            "mock-folder-id".equals(rootFolderId) || googleDriveFileId.startsWith("gdrive_")) {
+        if (googleDriveFileId == null || googleDriveFileId.isBlank() || googleDriveFileId.startsWith("gdrive_")) {
             log.info("MOCK GOOGLE DRIVE: Sharing file ID: {} with email: {} as role: {} for user: {}", googleDriveFileId, email, role, userId);
             return;
         }
@@ -474,8 +474,7 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public void revokeShare(String googleDriveFileId, String email, Long userId) throws IOException {
-        if (googleDriveFileId == null || googleDriveFileId.isBlank() ||
-            "mock-folder-id".equals(rootFolderId) || googleDriveFileId.startsWith("gdrive_")) {
+        if (googleDriveFileId == null || googleDriveFileId.isBlank() || googleDriveFileId.startsWith("gdrive_")) {
             log.info("MOCK GOOGLE DRIVE: Revoking share on file ID: {} for email: {} for user: {}", googleDriveFileId, email, userId);
             return;
         }
