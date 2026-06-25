@@ -143,16 +143,41 @@ public class DocumentServiceImpl implements DocumentService {
         String googleDriveFileId = null;
         String fileUrl = null;
         String savedFileName = null;
+        boolean uploadedToGDrive = false;
 
         if (FILE_TYPE_DOCUMENT.equals(fileType)) {
-            // Tài liệu: lưu trên Google Drive thật, tự động tạo thư mục theo Ngành -> Kỳ -> Môn học
-            try {
-                java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(), request.getUserId());
-                googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy, request.getUserId());
-                savedFileName = googleDriveFileId + "." + extension;
-                fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
-            } catch (IOException e) {
-                throw new FileStorageException("Lỗi upload lên Google Drive: " + originalFileName, e);
+            // Check if user is connected
+            if (request.getUserId() != null && googleDriveService.isUserDriveConnected(request.getUserId())) {
+                try {
+                    java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(), request.getUserId());
+                    googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy, request.getUserId());
+                    if (googleDriveFileId != null && !googleDriveFileId.startsWith("gdrive_")) {
+                        savedFileName = googleDriveFileId + "." + extension;
+                        fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
+                        uploadedToGDrive = true;
+                    } else {
+                        log.warn("Google Drive upload returned a mock or null file ID: {}. Falling back to local storage.", googleDriveFileId);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to upload file to Google Drive: " + originalFileName, e);
+                }
+            } else {
+                log.info("User {} has not connected Google Drive. Storing file locally.", request.getUserId());
+            }
+
+            if (!uploadedToGDrive) {
+                // Keep storage provider as LOCAL and store the file locally
+                String newFileName = UUID.randomUUID() + "." + extension;
+                Path targetPath = resolveUploadPath(FILE_TYPE_DOCUMENT).resolve(newFileName);
+                try {
+                    Files.createDirectories(targetPath.getParent());
+                    Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    throw new FileStorageException("Failed to store file locally: " + originalFileName, e);
+                }
+                savedFileName = newFileName;
+                fileUrl = buildFileUrl(FILE_TYPE_DOCUMENT, newFileName);
+                googleDriveFileId = null;
             }
         } else {
             // Media/Audio: lưu local như cũ
@@ -860,7 +885,7 @@ public class DocumentServiceImpl implements DocumentService {
         // 1. Google Drive permission sharing (best-effort)
         if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
             String gDriveRole = "reader";
-            if ("editor".equalsIgnoreCase(role)) {
+            if ("editor".equalsIgnoreCase(role) || "writer".equalsIgnoreCase(role)) {
                 gDriveRole = "writer";
             }
             try {
