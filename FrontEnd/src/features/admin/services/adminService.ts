@@ -312,6 +312,21 @@ export const rejectDocument = async (documentId: string, reason?: string): Promi
   return mapBackendDocumentToAdminDocument(response.data?.data || response.data);
 };
 
+export const getPendingDocuments = async (): Promise<any[]> => {
+  const response = await apiClient.get('/admin/documents/pending');
+  return response.data;
+};
+
+export const approvePendingDocument = async (documentId: string): Promise<any> => {
+  const response = await apiClient.post(`/admin/documents/${documentId}/approve`);
+  return response.data;
+};
+
+export const rejectPendingDocument = async (documentId: string, reason: string): Promise<any> => {
+  const response = await apiClient.post(`/admin/documents/${documentId}/reject`, { reason });
+  return response.data;
+};
+
 export const bulkApproveDocuments = async (documentIds: string[]): Promise<AdminDocument[]> => {
   await apiClient.post('/admin/documents/bulk-approve', { ids: documentIds.map(Number) });
   const allDocs = await getDocuments();
@@ -407,6 +422,9 @@ export const adminService = {
   deleteDocument,
   approveDocument,
   rejectDocument,
+  getPendingDocuments,
+  approvePendingDocument,
+  rejectPendingDocument,
   bulkApproveDocuments,
   bulkRejectDocuments,
   bulkDeleteDocuments,

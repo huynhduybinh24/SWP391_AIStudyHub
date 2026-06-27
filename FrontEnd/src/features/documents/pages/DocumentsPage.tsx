@@ -1061,7 +1061,7 @@ export function DocumentsPage() {
           detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
         })
 
-        showToast(`Tài liệu "${finalTitle}" tải lên và phân tích AI thành công!`)
+        showToast(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.')
         
         const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
         navigate(`/dashboard/documents/subject/${finalSubjectKey}`)
