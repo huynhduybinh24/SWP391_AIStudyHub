@@ -76,6 +76,15 @@ public class Document {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    @Column(name = "reviewed_by")
+    private Long reviewedBy;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -195,6 +204,15 @@ public class Document {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+
+    public Long getReviewedBy() { return reviewedBy; }
+    public void setReviewedBy(Long reviewedBy) { this.reviewedBy = reviewedBy; }
+
+    public LocalDateTime getReviewedAt() { return reviewedAt; }
+    public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
+
     // --- Builder Pattern ---
     public static DocumentBuilder builder() {
         return new DocumentBuilder();
@@ -223,6 +241,9 @@ public class Document {
         private String moderationNote;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
+        private String rejectionReason;
+        private Long reviewedBy;
+        private LocalDateTime reviewedAt;
 
         public DocumentBuilder id(Long id) { this.id = id; return this; }
         public DocumentBuilder title(String title) { this.title = title; return this; }
@@ -246,6 +267,9 @@ public class Document {
         public DocumentBuilder moderationNote(String moderationNote) { this.moderationNote = moderationNote; return this; }
         public DocumentBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
         public DocumentBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
+        public DocumentBuilder rejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; return this; }
+        public DocumentBuilder reviewedBy(Long reviewedBy) { this.reviewedBy = reviewedBy; return this; }
+        public DocumentBuilder reviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; return this; }
 
         public Document build() {
             Document doc = new Document();
@@ -271,6 +295,9 @@ public class Document {
             doc.setModerationNote(this.moderationNote);
             doc.setCreatedAt(this.createdAt);
             doc.setUpdatedAt(this.updatedAt);
+            doc.setRejectionReason(this.rejectionReason);
+            doc.setReviewedBy(this.reviewedBy);
+            doc.setReviewedAt(this.reviewedAt);
             return doc;
         }
     }
