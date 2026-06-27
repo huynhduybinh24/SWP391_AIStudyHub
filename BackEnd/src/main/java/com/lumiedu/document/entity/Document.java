@@ -85,6 +85,12 @@ public class Document {
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
 
+    @Column(name = "drive_sync_status", length = 20)
+    private String driveSyncStatus = "SYNCED";
+
+    @Column(name = "drive_sync_error", columnDefinition = "TEXT")
+    private String driveSyncError;
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -95,6 +101,9 @@ public class Document {
         }
         if (this.status == null) {
             this.status = "PENDING";
+        }
+        if (this.driveSyncStatus == null) {
+            this.driveSyncStatus = "SYNCED";
         }
     }
 
@@ -213,6 +222,12 @@ public class Document {
     public LocalDateTime getReviewedAt() { return reviewedAt; }
     public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
 
+    public String getDriveSyncStatus() { return driveSyncStatus; }
+    public void setDriveSyncStatus(String driveSyncStatus) { this.driveSyncStatus = driveSyncStatus; }
+
+    public String getDriveSyncError() { return driveSyncError; }
+    public void setDriveSyncError(String driveSyncError) { this.driveSyncError = driveSyncError; }
+
     // --- Builder Pattern ---
     public static DocumentBuilder builder() {
         return new DocumentBuilder();
@@ -244,6 +259,8 @@ public class Document {
         private String rejectionReason;
         private Long reviewedBy;
         private LocalDateTime reviewedAt;
+        private String driveSyncStatus = "SYNCED";
+        private String driveSyncError;
 
         public DocumentBuilder id(Long id) { this.id = id; return this; }
         public DocumentBuilder title(String title) { this.title = title; return this; }
@@ -270,6 +287,8 @@ public class Document {
         public DocumentBuilder rejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; return this; }
         public DocumentBuilder reviewedBy(Long reviewedBy) { this.reviewedBy = reviewedBy; return this; }
         public DocumentBuilder reviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; return this; }
+        public DocumentBuilder driveSyncStatus(String driveSyncStatus) { this.driveSyncStatus = driveSyncStatus; return this; }
+        public DocumentBuilder driveSyncError(String driveSyncError) { this.driveSyncError = driveSyncError; return this; }
 
         public Document build() {
             Document doc = new Document();
@@ -298,6 +317,8 @@ public class Document {
             doc.setRejectionReason(this.rejectionReason);
             doc.setReviewedBy(this.reviewedBy);
             doc.setReviewedAt(this.reviewedAt);
+            doc.setDriveSyncStatus(this.driveSyncStatus);
+            doc.setDriveSyncError(this.driveSyncError);
             return doc;
         }
     }

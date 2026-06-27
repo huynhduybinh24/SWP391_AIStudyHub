@@ -141,10 +141,13 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         // Upload lên Google Drive
+        // Upload lên Google Drive
         String googleDriveFileId = null;
         String fileUrl = null;
         String savedFileName = null;
         boolean uploadedToGDrive = false;
+        String driveSyncStatus = "SYNCED";
+        String driveSyncError = null;
 
         if (FILE_TYPE_DOCUMENT.equals(fileType)) {
             // Check if user is connected
@@ -161,6 +164,21 @@ public class DocumentServiceImpl implements DocumentService {
                     }
                 } catch (Exception e) {
                     log.error("Failed to upload file to Google Drive: " + originalFileName, e);
+                    String tempId = "staging_" + UUID.randomUUID().toString().replace("-", "");
+                    String tempFileName = tempId + "." + extension;
+                    Path stagingPath = Paths.get(uploadDir, "google_drive_staging", tempFileName).toAbsolutePath().normalize();
+                    try {
+                        Files.createDirectories(stagingPath.getParent());
+                        Files.copy(file.getInputStream(), stagingPath, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException ioException) {
+                        throw new FileStorageException("Failed to store file in Google Drive staging: " + originalFileName, ioException);
+                    }
+                    googleDriveFileId = tempId;
+                    savedFileName = tempFileName;
+                    fileUrl = "https://drive.google.com/file/d/" + tempId + "/view";
+                    uploadedToGDrive = true;
+                    driveSyncStatus = "STAGING";
+                    driveSyncError = e.getMessage();
                 }
             } else {
                 log.info("User {} has not connected Google Drive. Storing file locally.", request.getUserId());
@@ -207,10 +225,12 @@ public class DocumentServiceImpl implements DocumentService {
                 .mimeType(file.getContentType())
                 .fileSize(file.getSize())
                 .googleDriveFileId(googleDriveFileId)
-                .storageProvider(googleDriveFileId != null ? "GOOGLE_DRIVE" : "LOCAL")
+                .storageProvider(googleDriveFileId != null ? ("STAGING".equals(driveSyncStatus) ? "GOOGLE_DRIVE_STAGING" : "GOOGLE_DRIVE") : "LOCAL")
                 .checksum(calculateChecksum(file))
                 .deleted(false)
                 .moderationStatus(FILE_TYPE_DOCUMENT.equals(fileType) ? DocumentStatus.PENDING_REVIEW : DocumentStatus.APPROVED)
+                .driveSyncStatus(driveSyncStatus)
+                .driveSyncError(driveSyncError)
                 .build();
 
         document = documentRepository.save(document);
@@ -405,7 +425,8 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         // Delete from Google Drive if stored there
-        if ("GOOGLE_DRIVE".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))) {
+        if ("GOOGLE_DRIVE".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))
+                || "GOOGLE_DRIVE_STAGING".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))) {
             try {
                 googleDriveService.deleteFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (Exception e) {
@@ -444,7 +465,8 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         Resource resource;
-        if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+        if (("GOOGLE_DRIVE".equals(document.getStorageProvider()) || "GOOGLE_DRIVE_STAGING".equals(document.getStorageProvider()))
+                && document.getGoogleDriveFileId() != null) {
             try {
                 resource = googleDriveService.downloadFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (IOException e) {
@@ -472,7 +494,8 @@ public class DocumentServiceImpl implements DocumentService {
         checkDocumentAccess(document, currentUserId);
 
         // Always return the actual binary resource for PDF/image file preview so that the viewer/iframe works correctly
-        if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+        if (("GOOGLE_DRIVE".equals(document.getStorageProvider()) || "GOOGLE_DRIVE_STAGING".equals(document.getStorageProvider()))
+                && document.getGoogleDriveFileId() != null) {
             try {
                 return googleDriveService.downloadFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (IOException e) {

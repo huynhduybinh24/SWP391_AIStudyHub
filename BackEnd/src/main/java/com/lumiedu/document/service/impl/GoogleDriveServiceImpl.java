@@ -87,7 +87,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                 log.info("USER GOOGLE DRIVE: Uploaded file '{}' with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
                 return uploadedFile.getId();
             } catch (Exception e) {
-                log.error("Failed to upload file to user {}'s Google Drive. Falling back to default/mock storage. Error: {}", userId, e.getMessage());
+                log.error("Failed to upload file to user {}'s Google Drive. Error: {}", userId, e.getMessage());
+                throw new RuntimeException("Failed to upload file to user's Google Drive: " + e.getMessage(), e);
             }
         }
 
@@ -114,8 +115,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             log.info("GOOGLE DRIVE: Uploaded file '{}' with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
             return uploadedFile.getId();
         } catch (Exception e) {
-            log.error("Google Drive upload failed. Falling back to local mock storage. Error: {}", e.getMessage());
-            return uploadFileMock(file, folderName);
+            log.error("Google Drive upload failed. Error: {}", e.getMessage());
+            throw new RuntimeException("Google Drive upload failed: " + e.getMessage(), e);
         }
     }
 
@@ -148,7 +149,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                 log.info("USER GOOGLE DRIVE: Uploaded file '{}' to hierarchy with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
                 return uploadedFile.getId();
             } catch (Exception e) {
-                log.error("Failed to upload file to user {}'s Google Drive. Falling back to default/mock storage. Error: {}", userId, e.getMessage());
+                log.error("Failed to upload file to user {}'s Google Drive. Error: {}", userId, e.getMessage());
+                throw new RuntimeException("Failed to upload file to user's Google Drive: " + e.getMessage(), e);
             }
         }
 
@@ -184,9 +186,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             log.info("GOOGLE DRIVE: Uploaded file '{}' to hierarchy with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
             return uploadedFile.getId();
         } catch (Exception e) {
-            log.error("Google Drive upload hierarchy failed. Falling back to local mock storage. Error: {}", e.getMessage());
-            String folderName = folderHierarchy.isEmpty() ? "Khác" : folderHierarchy.get(folderHierarchy.size() - 1);
-            return uploadFileMock(file, folderName);
+            log.error("Google Drive upload hierarchy failed. Error: {}", e.getMessage());
+            throw new RuntimeException("Google Drive upload hierarchy failed: " + e.getMessage(), e);
         }
     }
 
@@ -216,6 +217,9 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public Resource downloadFile(String googleDriveFileId, Long userId) throws IOException {
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("staging_")) {
+            return downloadFileStaging(googleDriveFileId);
+        }
         if (googleDriveFileId == null || googleDriveFileId.startsWith("gdrive_")) {
             return downloadFileMock(googleDriveFileId);
         }
@@ -254,6 +258,19 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
         }
     }
 
+    private Resource downloadFileStaging(String googleDriveFileId) throws IOException {
+        Path dirPath = Paths.get(uploadDir, "google_drive_staging").toAbsolutePath().normalize();
+        if (!Files.exists(dirPath)) {
+            throw new IOException("Staging directory not found: " + dirPath);
+        }
+        try (var files = Files.list(dirPath)) {
+            Path matchedFile = files.filter(p -> p.getFileName().toString().startsWith(googleDriveFileId))
+                    .findFirst()
+                    .orElseThrow(() -> new IOException("Không tìm thấy file trên Google Drive Staging: " + googleDriveFileId));
+            return new UrlResource(matchedFile.toUri());
+        }
+    }
+
     @Override
     public void deleteFile(String googleDriveFileId) throws IOException {
         deleteFile(googleDriveFileId, null);
@@ -261,6 +278,10 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public void deleteFile(String googleDriveFileId, Long userId) throws IOException {
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("staging_")) {
+            deleteFileStaging(googleDriveFileId);
+            return;
+        }
         if (googleDriveFileId == null || googleDriveFileId.startsWith("gdrive_")) {
             deleteFileMock(googleDriveFileId);
             return;
@@ -299,6 +320,21 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             if (matchedFile.isPresent()) {
                 Files.delete(matchedFile.get());
                 log.info("MOCK GOOGLE DRIVE: Đã xóa file ID: {}", googleDriveFileId);
+            }
+        }
+    }
+
+    private void deleteFileStaging(String googleDriveFileId) throws IOException {
+        Path dirPath = Paths.get(uploadDir, "google_drive_staging").toAbsolutePath().normalize();
+        if (!Files.exists(dirPath)) {
+            log.warn("GOOGLE DRIVE STAGING: Directory '{}' does not exist. Nothing to delete.", dirPath);
+            return;
+        }
+        try (var files = Files.list(dirPath)) {
+            var matchedFile = files.filter(p -> p.getFileName().toString().startsWith(googleDriveFileId)).findFirst();
+            if (matchedFile.isPresent()) {
+                Files.delete(matchedFile.get());
+                log.info("GOOGLE DRIVE STAGING: Deleted staged file ID: {}", googleDriveFileId);
             }
         }
     }
