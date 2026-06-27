@@ -5,6 +5,7 @@ import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.response.DocumentResponse;
 import com.lumiedu.document.dto.response.SubjectStatsResponse;
 import com.lumiedu.document.dto.response.DocumentShareResponse;
+import com.lumiedu.document.enums.DocumentStatus;
 import com.lumiedu.ai.repository.QuizAttemptRepository;
 import com.lumiedu.ai.repository.StudyPlanRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -209,6 +210,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .storageProvider(googleDriveFileId != null ? "GOOGLE_DRIVE" : "LOCAL")
                 .checksum(calculateChecksum(file))
                 .deleted(false)
+                .moderationStatus(FILE_TYPE_DOCUMENT.equals(fileType) ? DocumentStatus.PENDING_REVIEW : DocumentStatus.APPROVED)
                 .build();
 
         document = documentRepository.save(document);
@@ -305,7 +307,7 @@ public class DocumentServiceImpl implements DocumentService {
         List<DocumentResponse> responseList = new ArrayList<>();
 
         for (Document d : ownedDocs) {
-            if (seenIds.add(d.getId())) {
+            if (isApprovedForUser(d) && seenIds.add(d.getId())) {
                 DocumentResponse res = mapToResponse(d);
                 res.setRole("owner");
                 responseList.add(res);
@@ -320,7 +322,7 @@ public class DocumentServiceImpl implements DocumentService {
                 ));
 
         for (Document d : sharedDocs) {
-            if (seenIds.add(d.getId())) {
+            if (isApprovedForUser(d) && seenIds.add(d.getId())) {
                 DocumentResponse res = mapToResponse(d);
                 res.setRole(sharedRoleMap.getOrDefault(d.getId(), "viewer"));
                 responseList.add(res);
@@ -328,6 +330,17 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         return responseList;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DocumentResponse> getMyUploads(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID is required.");
+        }
+        return documentRepository.findAllByUserIdAndDeletedFalse(userId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -493,6 +506,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         return documents.stream()
+                .filter(this::isApprovedForUser)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -529,6 +543,11 @@ public class DocumentServiceImpl implements DocumentService {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private boolean isApprovedForUser(Document document) {
+        return document.getModerationStatus() == null
+                || document.getModerationStatus() == DocumentStatus.APPROVED;
+    }
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -631,9 +650,12 @@ public class DocumentServiceImpl implements DocumentService {
                 .ownerName(ownerName)
                 .ownerEmail(ownerEmail)
                 .status(document.getStatus() != null ? document.getStatus() : "PENDING")
+                .moderationStatus(document.getModerationStatus() != null ? document.getModerationStatus().name() : "APPROVED")
                 .tags(tags)
                 .createdAt(document.getCreatedAt())
                 .updatedAt(document.getUpdatedAt())
+                .rejectionReason(document.getRejectionReason())
+                .reviewedAt(document.getReviewedAt())
                 .build();
     }
 
