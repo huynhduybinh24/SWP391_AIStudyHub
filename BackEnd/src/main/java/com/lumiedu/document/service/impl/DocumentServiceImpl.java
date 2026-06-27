@@ -59,16 +59,13 @@ import java.util.stream.Collectors;
 public class DocumentServiceImpl implements DocumentService {
 
     private static final Set<String> ALLOWED_DOCUMENT_EXTENSIONS = Set.of(
-            "pdf"
-    );
+            "pdf");
 
     private static final Set<String> ALLOWED_MEDIA_EXTENSIONS = Set.of(
-            "jpg", "jpeg", "png", "mp4", "mp3", "wav"
-    );
+            "jpg", "jpeg", "png", "mp4", "mp3", "wav");
 
     private static final Set<String> ALLOWED_AUDIO_EXTENSIONS = Set.of(
-            "mp3", "wav", "webm", "m4a"
-    );
+            "mp3", "wav", "webm", "m4a");
 
     private static final String FILE_TYPE_DOCUMENT = "DOCUMENT";
     private static final String FILE_TYPE_MEDIA = "MEDIA";
@@ -84,14 +81,13 @@ public class DocumentServiceImpl implements DocumentService {
     private final AudioRecordRepository audioRecordRepository;
     private final GoogleDriveService googleDriveService;
     private final DocumentChunkingService documentChunkingService;
-    private final DocumentShareRepository documentShareRepository;
 
     private final com.lumiedu.workspace.repository.WorkspaceDocumentRepository workspaceDocumentRepository;
     private final com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
     private final com.lumiedu.workspace.repository.SharedWorkspaceRepository sharedWorkspaceRepository;
     private final com.lumiedu.user.repository.UserRepository userRepository;
     private final SubjectRepository subjectRepository;
-    
+
     private final QuizAttemptRepository quizAttemptRepository;
     private final StudyPlanRepository studyPlanRepository;
     private final ObjectMapper objectMapper;
@@ -112,14 +108,13 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     private DocumentResponse saveFile(MultipartFile file,
-                                      DocumentCreateRequest request,
-                                      String fileType,
-                                      Set<String> allowedExtensions) {
+            DocumentCreateRequest request,
+            String fileType,
+            Set<String> allowedExtensions) {
         validateFile(file);
 
         String originalFileName = StringUtils.cleanPath(
-                Objects.requireNonNull(file.getOriginalFilename(), "Original filename must not be null")
-        );
+                Objects.requireNonNull(file.getOriginalFilename(), "Original filename must not be null"));
         String extension = getExtension(originalFileName).toLowerCase();
 
         if (!allowedExtensions.contains(extension)) {
@@ -132,9 +127,11 @@ public class DocumentServiceImpl implements DocumentService {
         String savedFileName = null;
 
         if (FILE_TYPE_DOCUMENT.equals(fileType)) {
-            // Tài liệu: lưu trên Google Drive thật, tự động tạo thư mục theo Ngành -> Kỳ -> Môn học
+            // Tài liệu: lưu trên Google Drive thật, tự động tạo thư mục theo Ngành -> Kỳ ->
+            // Môn học
             try {
-                java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(), request.getUserId());
+                java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(),
+                        request.getUserId());
                 googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy);
                 savedFileName = googleDriveFileId + "." + extension;
                 fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
@@ -196,8 +193,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
         String originalFileName = StringUtils.cleanPath(
-                Objects.requireNonNull(file.getOriginalFilename(), "Original filename must not be null")
-        );
+                Objects.requireNonNull(file.getOriginalFilename(), "Original filename must not be null"));
         String extension = getExtension(originalFileName).toLowerCase();
 
         if (!ALLOWED_AUDIO_EXTENSIONS.contains(extension)) {
@@ -278,8 +274,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .collect(Collectors.toMap(
                         DocumentShare::getDocumentId,
                         DocumentShare::getRole,
-                        (r1, r2) -> r1
-                ));
+                        (r1, r2) -> r1));
 
         for (Document d : sharedDocs) {
             if (seenIds.add(d.getId())) {
@@ -362,14 +357,19 @@ public class DocumentServiceImpl implements DocumentService {
 
         // Enforce block download for viewers in shared workspaces
         if (currentUserId != null && !currentUserId.equals(document.getUserId())) {
-            List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByDocumentId(id);
+            List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository
+                    .findByDocumentId(id);
             for (com.lumiedu.workspace.entity.WorkspaceDocument wd : workspaceDocs) {
-                com.lumiedu.workspace.entity.SharedWorkspace workspace = sharedWorkspaceRepository.findById(wd.getWorkspaceId()).orElse(null);
+                com.lumiedu.workspace.entity.SharedWorkspace workspace = sharedWorkspaceRepository
+                        .findById(wd.getWorkspaceId()).orElse(null);
                 if (workspace != null && Boolean.TRUE.equals(workspace.getBlockDownloadForViewers())) {
-                    Optional<com.lumiedu.workspace.entity.WorkspaceMember> memberOpt = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.getId(), currentUserId);
-                    if (memberOpt.isPresent() && memberOpt.get().getStatus() == com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED) {
+                    Optional<com.lumiedu.workspace.entity.WorkspaceMember> memberOpt = workspaceMemberRepository
+                            .findByWorkspaceIdAndUserId(workspace.getId(), currentUserId);
+                    if (memberOpt.isPresent() && memberOpt.get()
+                            .getStatus() == com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED) {
                         if (memberOpt.get().getRole() == com.lumiedu.workspace.enums.WorkspaceMemberRole.VIEWER) {
-                            throw new SecurityException("Downloading and printing documents is blocked for viewers in this workspace.");
+                            throw new SecurityException(
+                                    "Downloading and printing documents is blocked for viewers in this workspace.");
                         }
                     }
                 }
@@ -381,7 +381,8 @@ public class DocumentServiceImpl implements DocumentService {
             try {
                 resource = googleDriveService.downloadFile(document.getGoogleDriveFileId());
             } catch (IOException e) {
-                throw new FileStorageException("Failed to download file from Google Drive ID: " + document.getGoogleDriveFileId(), e);
+                throw new FileStorageException(
+                        "Failed to download file from Google Drive ID: " + document.getGoogleDriveFileId(), e);
             }
         } else {
             resource = loadFileAsResource(document.getFileType(), document.getFileName());
@@ -404,12 +405,14 @@ public class DocumentServiceImpl implements DocumentService {
                 .orElseThrow(() -> new DocumentNotFoundException(id));
         checkDocumentAccess(document, currentUserId);
 
-        // Always return the actual binary resource for PDF/image file preview so that the viewer/iframe works correctly
+        // Always return the actual binary resource for PDF/image file preview so that
+        // the viewer/iframe works correctly
         if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
             try {
                 return googleDriveService.downloadFile(document.getGoogleDriveFileId());
             } catch (IOException e) {
-                throw new FileStorageException("Failed to load preview from Google Drive ID: " + document.getGoogleDriveFileId(), e);
+                throw new FileStorageException(
+                        "Failed to load preview from Google Drive ID: " + document.getGoogleDriveFileId(), e);
             }
         }
         return loadFileAsResource(document.getFileType(), document.getFileName());
@@ -436,10 +439,10 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional(readOnly = true)
     public List<DocumentResponse> searchDocuments(String keyword,
-                                                   String subject,
-                                                   String fileType,
-                                                   String tag,
-                                                   Long userId) {
+            String subject,
+            String fileType,
+            String tag,
+            Long userId) {
         List<Document> documents = documentRepository.searchDocuments(keyword, subject, fileType, userId);
 
         // Filter by tag in memory if tag param provided
@@ -508,7 +511,8 @@ public class DocumentServiceImpl implements DocumentService {
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
+                if (hex.length() == 1)
+                    hexString.append('0');
                 hexString.append(hex);
             }
             return hexString.toString();
@@ -601,7 +605,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     private java.util.List<String> getGoogleDriveHierarchy(String subject, Long userId) {
         java.util.List<String> hierarchy = new java.util.ArrayList<>();
-        
+
         // 1. Get user folder name to isolate user workspaces
         String userFolder = "User_" + userId;
         if (userId != null) {
@@ -654,10 +658,13 @@ public class DocumentServiceImpl implements DocumentService {
         if ("PUBLIC".equalsIgnoreCase(document.getVisibility())) {
             return;
         }
-        List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByDocumentId(document.getId());
+        List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository
+                .findByDocumentId(document.getId());
         for (com.lumiedu.workspace.entity.WorkspaceDocument wd : workspaceDocs) {
-            Optional<com.lumiedu.workspace.entity.WorkspaceMember> memberOpt = workspaceMemberRepository.findByWorkspaceIdAndUserId(wd.getWorkspaceId(), userId);
-            if (memberOpt.isPresent() && memberOpt.get().getStatus() == com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED) {
+            Optional<com.lumiedu.workspace.entity.WorkspaceMember> memberOpt = workspaceMemberRepository
+                    .findByWorkspaceIdAndUserId(wd.getWorkspaceId(), userId);
+            if (memberOpt.isPresent()
+                    && memberOpt.get().getStatus() == com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED) {
                 return;
             }
         }
@@ -672,7 +679,8 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         // 1. Calculate average score
-        List<com.lumiedu.ai.entity.QuizAttempt> userAttempts = quizAttemptRepository.findAllByUserIdAndSubject(userId, subjectId);
+        List<com.lumiedu.ai.entity.QuizAttempt> userAttempts = quizAttemptRepository.findAllByUserIdAndSubject(userId,
+                subjectId);
         Double averageScore = null;
         if (!userAttempts.isEmpty()) {
             double totalScore = userAttempts.stream()
@@ -729,7 +737,8 @@ public class DocumentServiceImpl implements DocumentService {
 
         // 3. Calculate study progress
         int studyProgress = 0;
-        List<com.lumiedu.ai.entity.StudyPlan> plans = studyPlanRepository.findByUserIdAndSubjectOrderByCreatedAtDesc(userId, subjectId);
+        List<com.lumiedu.ai.entity.StudyPlan> plans = studyPlanRepository
+                .findByUserIdAndSubjectOrderByCreatedAtDesc(userId, subjectId);
         boolean progressCalculated = false;
         if (!plans.isEmpty()) {
             com.lumiedu.ai.entity.StudyPlan plan = plans.get(0);
@@ -771,11 +780,14 @@ public class DocumentServiceImpl implements DocumentService {
         if (averageScore == null) {
             aiRec = getDefaultRecommendation(subjectId);
         } else if (averageScore < 5.0) {
-            aiRec = "Kết quả luyện tập còn thấp (" + averageScore + "/10). Hãy xem lại tài liệu môn học và thực hiện lại các Quiz để ôn tập kiến thức cơ bản.";
+            aiRec = "Kết quả luyện tập còn thấp (" + averageScore
+                    + "/10). Hãy xem lại tài liệu môn học và thực hiện lại các Quiz để ôn tập kiến thức cơ bản.";
         } else if (averageScore < 8.0) {
-            aiRec = "Tiến độ học tập khá tốt (" + averageScore + "/10). Hãy tiếp tục làm thêm các bài Quiz của môn học và xem lại các câu trả lời sai để tối ưu điểm số.";
+            aiRec = "Tiến độ học tập khá tốt (" + averageScore
+                    + "/10). Hãy tiếp tục làm thêm các bài Quiz của môn học và xem lại các câu trả lời sai để tối ưu điểm số.";
         } else {
-            aiRec = "Tuyệt vời! Bạn đang dẫn đầu với điểm trung bình " + averageScore + "/10. Hãy thử sức tạo các Quiz nâng cao hoặc giúp đỡ các bạn cùng lớp học tập.";
+            aiRec = "Tuyệt vời! Bạn đang dẫn đầu với điểm trung bình " + averageScore
+                    + "/10. Hãy thử sức tạo các Quiz nâng cao hoặc giúp đỡ các bạn cùng lớp học tập.";
         }
 
         return SubjectStatsResponse.builder()
@@ -809,7 +821,8 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public DocumentShareResponse addOrUpdateDocumentShare(Long documentId, String email, String role, Long currentUserId) {
+    public DocumentShareResponse addOrUpdateDocumentShare(Long documentId, String email, String role,
+            Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
@@ -824,13 +837,15 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         User sharee = userRepository.findByEmail(email.trim().toLowerCase())
-                .orElseThrow(() -> new IllegalArgumentException("Collaborator email must belong to an existing registered user."));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Collaborator email must belong to an existing registered user."));
 
         if (sharee.getId().equals(document.getUserId())) {
             throw new IllegalArgumentException("You cannot share a document with yourself.");
         }
 
-        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, sharee.getEmail());
+        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId,
+                sharee.getEmail());
         DocumentShare share;
         if (existingShareOpt.isPresent()) {
             share = existingShareOpt.get();
@@ -862,12 +877,16 @@ public class DocumentServiceImpl implements DocumentService {
         if (existingShareOpt.isEmpty()) {
             try {
                 User owner = userRepository.findById(document.getUserId()).orElse(null);
-                String ownerNameOrEmail = (owner != null) ? (owner.getFullName() != null && !owner.getFullName().isBlank() ? owner.getFullName() : owner.getEmail()) : "An owner";
+                String ownerNameOrEmail = (owner != null)
+                        ? (owner.getFullName() != null && !owner.getFullName().isBlank() ? owner.getFullName()
+                                : owner.getEmail())
+                        : "An owner";
 
                 String title = String.format("%s đã chia sẻ tài liệu", ownerNameOrEmail);
                 String message = String.format("đã chia sẻ tài liệu \"%s\" với bạn.", document.getTitle());
 
-                com.lumiedu.notification.dto.request.NotificationRequest notificationRequest = com.lumiedu.notification.dto.request.NotificationRequest.builder()
+                com.lumiedu.notification.dto.request.NotificationRequest notificationRequest = com.lumiedu.notification.dto.request.NotificationRequest
+                        .builder()
                         .targetUserEmail(sharee.getEmail())
                         .type("SHARED_FILE")
                         .title(title)
@@ -880,7 +899,8 @@ public class DocumentServiceImpl implements DocumentService {
                         .build();
 
                 notificationService.createNotification(notificationRequest);
-                log.info("Created share notification for user: {} on document: {}", sharee.getEmail(), document.getTitle());
+                log.info("Created share notification for user: {} on document: {}", sharee.getEmail(),
+                        document.getTitle());
             } catch (Exception e) {
                 log.error("Failed to create share notification: {}", e.getMessage());
             }
@@ -904,12 +924,14 @@ public class DocumentServiceImpl implements DocumentService {
             throw new IllegalArgumentException("Only the document owner can delete its shares.");
         }
 
-        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, email.trim().toLowerCase());
+        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId,
+                email.trim().toLowerCase());
         if (existingShareOpt.isPresent()) {
             documentShareRepository.delete(existingShareOpt.get());
 
             // Google Drive revoke (best-effort)
-            if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+            if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider())
+                    && document.getGoogleDriveFileId() != null) {
                 try {
                     googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase());
                 } catch (Exception e) {
@@ -934,17 +956,26 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     private String getDefaultRecommendation(String subject) {
-        if (subject == null) return "Hãy ôn tập tài liệu học tập thường xuyên và sử dụng tính năng tạo Quiz tự động bằng AI để củng cố kiến thức tốt nhất.";
+        if (subject == null)
+            return "Hãy ôn tập tài liệu học tập thường xuyên và sử dụng tính năng tạo Quiz tự động bằng AI để củng cố kiến thức tốt nhất.";
         String cleanSubject = subject.trim().toUpperCase();
         return switch (cleanSubject) {
-            case "PRF192", "PRO192" -> "Tập trung ôn tập các khái niệm lập trình cơ bản, cú pháp Java/C, cấu trúc điều khiển và thực hành viết code trên giấy.";
-            case "CSD201" -> "Ôn tập kỹ các cấu trúc dữ liệu cơ bản (Danh sách liên kết, Cây nhị phân) và các thuật toán sắp xếp để chuẩn bị tốt cho bài thi PE.";
-            case "DBI202" -> "Luyện tập viết các câu truy vấn SQL phức tạp (JOIN, Subquery, Group By) và vẽ sơ đồ thực thể mối quan hệ ERD.";
-            case "SWP391" -> "Đảm bảo tiến độ sprint của nhóm trên Jira. Xem lại tài liệu thiết kế hệ thống và tích hợp liên tục (CI/CD) cho sản phẩm.";
-            case "PRN211", "PRN221" -> "Thực hành các ứng dụng WinForms, WPF hoặc ASP.NET Core MVC. Đảm bảo hiểu rõ lập trình hướng sự kiện và kết nối Entity Framework.";
-            case "AIL302M", "DLN301" -> "Ôn tập toán tối ưu, đại số tuyến tính cho Machine Learning và thiết lập kiến trúc mạng Neural (CNN, RNN) trong PyTorch/TensorFlow.";
-            case "MKT101" -> "Nghiên cứu mô hình 4P/7P và phân tích hành vi khách hàng. Chuẩn bị slide thuyết trình cho dự án nghiên cứu thị trường nhóm.";
-            default -> "Hãy ôn tập tài liệu học tập thường xuyên và sử dụng tính năng tạo Quiz tự động bằng AI để củng cố kiến thức tốt nhất.";
+            case "PRF192", "PRO192" ->
+                "Tập trung ôn tập các khái niệm lập trình cơ bản, cú pháp Java/C, cấu trúc điều khiển và thực hành viết code trên giấy.";
+            case "CSD201" ->
+                "Ôn tập kỹ các cấu trúc dữ liệu cơ bản (Danh sách liên kết, Cây nhị phân) và các thuật toán sắp xếp để chuẩn bị tốt cho bài thi PE.";
+            case "DBI202" ->
+                "Luyện tập viết các câu truy vấn SQL phức tạp (JOIN, Subquery, Group By) và vẽ sơ đồ thực thể mối quan hệ ERD.";
+            case "SWP391" ->
+                "Đảm bảo tiến độ sprint của nhóm trên Jira. Xem lại tài liệu thiết kế hệ thống và tích hợp liên tục (CI/CD) cho sản phẩm.";
+            case "PRN211", "PRN221" ->
+                "Thực hành các ứng dụng WinForms, WPF hoặc ASP.NET Core MVC. Đảm bảo hiểu rõ lập trình hướng sự kiện và kết nối Entity Framework.";
+            case "AIL302M", "DLN301" ->
+                "Ôn tập toán tối ưu, đại số tuyến tính cho Machine Learning và thiết lập kiến trúc mạng Neural (CNN, RNN) trong PyTorch/TensorFlow.";
+            case "MKT101" ->
+                "Nghiên cứu mô hình 4P/7P và phân tích hành vi khách hàng. Chuẩn bị slide thuyết trình cho dự án nghiên cứu thị trường nhóm.";
+            default ->
+                "Hãy ôn tập tài liệu học tập thường xuyên và sử dụng tính năng tạo Quiz tự động bằng AI để củng cố kiến thức tốt nhất.";
         };
     }
 }
