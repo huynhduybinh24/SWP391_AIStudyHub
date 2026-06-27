@@ -1,2 +1,12 @@
 target/
 BackEnd/target/
+
+# Local configuration and credentials
+BackEnd/src/main/resources/application-local.properties
+BackEnd/src/test/resources/application-local.properties
+BackEnd/src/main/resources/google-credentials.json
+**/google-credentials.json
+FrontEnd/.env.local
+FrontEnd/.env.*.local
+.env
+.env.local
