@@ -1451,10 +1451,16 @@ export function DocumentsPage() {
           </span>
         )
       case 'QUEUED':
-      default:
         return (
           <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-550">
             QUEUED
+          </span>
+        )
+      default:
+        const displayVal = status ? status.toUpperCase() : 'UNKNOWN';
+        return (
+          <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-550">
+            {displayVal}
           </span>
         )
     }
