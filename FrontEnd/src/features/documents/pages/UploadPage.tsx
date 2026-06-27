@@ -346,9 +346,9 @@ export function UploadPage() {
     }
     return {
       dragDrop: t.upload.dragDrop || 'Drag and drop your files here',
-      support: t.upload.supportFormat || 'Support for PDF, DOCX, and PPTX files (Max 50MB)',
+      support: t.upload.supportFormatOnlyPdf || 'Support for PDF files only (Max 50MB)',
       browse: t.upload.browse || 'Browse Files',
-      extensions: '.pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.pptx,.ppt'
+      extensions: '.pdf'
     };
   };
 
