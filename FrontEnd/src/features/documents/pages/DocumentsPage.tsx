@@ -857,6 +857,8 @@ export function DocumentsPage() {
   }
 
   // Upload Modal States
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false)
+  const [uploadedSubjectKey, setUploadedSubjectKey] = useState('')
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -1064,7 +1066,8 @@ export function DocumentsPage() {
         showToast(`Tài liệu "${finalTitle}" tải lên và phân tích AI thành công!`)
         
         const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
-        navigate(`/dashboard/documents/subject/${finalSubjectKey}`)
+        setUploadedSubjectKey(finalSubjectKey)
+        setApprovalModalOpen(true)
 
         setNewDocTitle('')
         setUploadMajor('SE')
@@ -2591,6 +2594,62 @@ export function DocumentsPage() {
           </div>
         </Modal>
       )}
+      {/* Approval Pending Modal */}
+      <Modal
+        isOpen={approvalModalOpen}
+        onClose={() => {
+          setApprovalModalOpen(false)
+          if (uploadedSubjectKey) {
+            navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+          }
+        }}
+        title={language === 'en' ? 'Moderation Pending' : 'Chờ kiểm duyệt'}
+        description={
+          language === 'en'
+            ? 'Your document has been successfully uploaded to Google Drive.'
+            : 'Tài liệu của bạn đã được tải lên Google Drive thành công.'
+        }
+        className="max-w-[480px]"
+      >
+        <div className="space-y-6 text-center py-2 select-none">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400">
+            <FileText className="h-8 w-8" />
+          </div>
+
+          <div className="space-y-2 max-w-sm mx-auto">
+            <p className="text-sm text-slate-605 dark:text-slate-400 font-medium leading-relaxed">
+              {language === 'en'
+                ? 'Your document is now waiting for administrative approval. It will become visible to others once approved.'
+                : 'Tài liệu đang chờ Admin phê duyệt. Tài liệu sẽ được hiển thị công khai sau khi được duyệt.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setApprovalModalOpen(false)
+                navigate('/dashboard/documents/upload-history')
+              }}
+              className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+            >
+              {language === 'en' ? 'View Upload History' : 'Xem lịch sử tải lên'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setApprovalModalOpen(false)
+                if (uploadedSubjectKey) {
+                  navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+                }
+              }}
+              className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
+            >
+              {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   )
