@@ -20,7 +20,8 @@ import {
   Upload,
   Cpu,
   ArrowUpDown,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Loader2
 } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
