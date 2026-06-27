@@ -91,7 +91,7 @@ export function AccountSettingsCard() {
     resolver: zodResolver(accountSchema),
     defaultValues: {
       email: currentEmail,
-      name: account.name,
+      name: profile.name || account.name,
       language: initialLanguage,
       timezone: account.timezone,
     },
@@ -101,6 +101,12 @@ export function AccountSettingsCard() {
   useEffect(() => {
     setValue('email', currentEmail)
   }, [currentEmail, setValue])
+
+  useEffect(() => {
+    if (profile.name) {
+      setValue('name', profile.name)
+    }
+  }, [profile.name, setValue])
 
   useEffect(() => {
     setValue('language', language)
@@ -187,7 +193,7 @@ export function AccountSettingsCard() {
       <AvatarUploader
         avatarPreview={avatarPreview}
         hasCustomAvatar={hasCustomAvatar}
-        displayName={account.name}
+        displayName={profile.name || account.name}
         onAvatarChange={handleAvatarChange}
         onAvatarRemove={handleAvatarRemove}
       />
