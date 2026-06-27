@@ -205,7 +205,7 @@ export function UploadPage() {
 
       const newDoc = mapBackendDocToItem(response);
 
-      if (setDocuments) {
+      if (response.moderationStatus === 'APPROVED' && setDocuments) {
         setDocuments((prev: any) => [newDoc, ...prev]);
       }
 

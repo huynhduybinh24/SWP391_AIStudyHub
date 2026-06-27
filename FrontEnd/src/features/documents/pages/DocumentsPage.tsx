@@ -1037,7 +1037,9 @@ export function DocumentsPage() {
 
       setTimeout(() => {
         const newDocItem = mapBackendDocToItem(response)
-        setDocuments((prev) => [newDocItem, ...prev])
+        if (response.moderationStatus === 'APPROVED') {
+          setDocuments((prev) => [newDocItem, ...prev])
+        }
         setIsUploading(false)
         setUploadProgress(0)
         setIsUploadModalOpen(false)

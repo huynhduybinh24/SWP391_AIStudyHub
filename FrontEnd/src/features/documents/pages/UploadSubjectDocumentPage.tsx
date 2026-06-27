@@ -241,8 +241,10 @@ export function UploadSubjectDocumentPage() {
 
       const newDoc = mapBackendDocToItem(response)
 
-      // Save to global state
-      setDocuments((prev) => [newDoc, ...prev])
+      // Save to global state only if approved
+      if (response.moderationStatus === 'APPROVED') {
+        setDocuments((prev) => [newDoc, ...prev])
+      }
 
       // Toast Success Alert
       showToast(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.')
