@@ -243,7 +243,7 @@ export function UploadSubjectDocumentPage() {
       setDocuments((prev) => [newDoc, ...prev])
 
       // Toast Success Alert
-      showToast(t.toasts.uploadSuccess || 'Tải lên tài liệu thành công!')
+      showToast(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.')
 
       setIsProcessing(false)
 

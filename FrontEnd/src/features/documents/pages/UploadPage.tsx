@@ -218,7 +218,7 @@ export function UploadPage() {
         detailsTextVi: `Tải lên thành công tài liệu '${finalTitle}'.`
       });
 
-      toast.success(language === 'en' ? 'Document uploaded successfully' : 'Tải lên tài liệu thành công!');
+      toast.success(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.');
       setIsProcessing(false);
       navigate(`/dashboard/documents/subject/${selectedSubjectKey.toLowerCase()}`);
     } catch (err) {

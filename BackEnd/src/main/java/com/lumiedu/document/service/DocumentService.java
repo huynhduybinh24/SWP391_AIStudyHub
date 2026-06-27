@@ -20,6 +20,8 @@ public interface DocumentService {
 
     List<DocumentResponse> getAllDocuments(Long userId);
 
+    List<DocumentResponse> getMyUploads(Long userId);
+
     DocumentResponse getDocumentById(Long id, Long currentUserId);
 
     DocumentResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId);

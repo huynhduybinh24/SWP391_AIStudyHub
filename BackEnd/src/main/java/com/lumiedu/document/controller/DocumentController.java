@@ -51,7 +51,7 @@ public class DocumentController {
                 .build();
 
         DocumentResponse response = documentService.uploadDocument(file, request);
-        return ResponseEntity.ok(ApiResponse.ok("Document uploaded successfully.", response));
+        return ResponseEntity.ok(ApiResponse.ok("Your document has been uploaded and is waiting for admin approval.", response));
     }
 
     // ------------------------------------------------------------------
@@ -78,6 +78,21 @@ public class DocumentController {
 
         DocumentResponse response = documentService.uploadMedia(file, request);
         return ResponseEntity.ok(ApiResponse.ok("Media uploaded successfully.", response));
+    }
+
+    // ------------------------------------------------------------------
+    // GET /api/documents/my-uploads
+    // ------------------------------------------------------------------
+    @GetMapping("/my-uploads")
+    public ResponseEntity<ApiResponse<List<DocumentResponse>>> getMyUploads(
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        if (currentUserId == null) {
+            throw new SecurityException("Authentication is required to view upload history.");
+        }
+        List<DocumentResponse> uploads = documentService.getMyUploads(currentUserId);
+        return ResponseEntity.ok(ApiResponse.ok("Upload history retrieved successfully.", uploads));
     }
 
     // ------------------------------------------------------------------
