@@ -440,14 +440,21 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public void shareFile(String googleDriveFileId, String email, String role) throws IOException {
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_")) {
+            throw new IOException("This document does not have a real Google Drive file ID.");
+        }
+        if (googleDriveFileId == null || googleDriveFileId.isBlank() ||
+            "mock-folder-id".equals(rootFolderId)) {
+            log.info("MOCK GOOGLE DRIVE: Sharing file ID: {} with email: {} as role: {}", googleDriveFileId, email, role);
+            return;
+        }
         shareFile(googleDriveFileId, email, role, null);
     }
 
     @Override
     public void shareFile(String googleDriveFileId, String email, String role, Long userId) throws IOException {
-        if (googleDriveFileId == null || googleDriveFileId.isBlank() || googleDriveFileId.startsWith("gdrive_")) {
-            log.info("MOCK GOOGLE DRIVE: Sharing file ID: {} with email: {} as role: {} for user: {}", googleDriveFileId, email, role, userId);
-            return;
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_")) {
+            throw new IOException("This document does not have a real Google Drive file ID.");
         }
         try {
             Drive driveClient = getDriveClientForUser(userId);
@@ -505,14 +512,21 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public void revokeShare(String googleDriveFileId, String email) throws IOException {
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_")) {
+            throw new IOException("This document does not have a real Google Drive file ID.");
+        }
+        if (googleDriveFileId == null || googleDriveFileId.isBlank() ||
+            "mock-folder-id".equals(rootFolderId)) {
+            log.info("MOCK GOOGLE DRIVE: Revoking share on file ID: {} for email: {}", googleDriveFileId, email);
+            return;
+        }
         revokeShare(googleDriveFileId, email, null);
     }
 
     @Override
     public void revokeShare(String googleDriveFileId, String email, Long userId) throws IOException {
-        if (googleDriveFileId == null || googleDriveFileId.isBlank() || googleDriveFileId.startsWith("gdrive_")) {
-            log.info("MOCK GOOGLE DRIVE: Revoking share on file ID: {} for email: {} for user: {}", googleDriveFileId, email, userId);
-            return;
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_")) {
+            throw new IOException("This document does not have a real Google Drive file ID.");
         }
         try {
             Drive driveClient = getDriveClientForUser(userId);
