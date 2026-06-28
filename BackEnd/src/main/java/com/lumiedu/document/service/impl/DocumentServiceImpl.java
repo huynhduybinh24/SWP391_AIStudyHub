@@ -163,7 +163,9 @@ public class DocumentServiceImpl implements DocumentService {
                         log.warn("Google Drive upload returned a mock or null file ID: {}. Falling back to local storage.", googleDriveFileId);
                     }
                 } catch (Exception e) {
-                    log.error("Failed to upload file to Google Drive: " + originalFileName, e);
+                    log.error("Real Google Drive upload failed for userId={}: {}", request.getUserId(), e.getMessage(), e);
+                    driveSyncStatus = "FAILED";
+                    driveSyncError = e.getMessage();
                 }
             } else {
                 log.info("User {} has not connected Google Drive. Storing file locally.", request.getUserId());
@@ -182,6 +184,9 @@ public class DocumentServiceImpl implements DocumentService {
                 savedFileName = newFileName;
                 fileUrl = buildFileUrl(FILE_TYPE_DOCUMENT, newFileName);
                 googleDriveFileId = null;
+                if (!"FAILED".equals(driveSyncStatus)) {
+                    driveSyncStatus = null;
+                }
             }
         } else {
             // Media/Audio: lưu local như cũ
