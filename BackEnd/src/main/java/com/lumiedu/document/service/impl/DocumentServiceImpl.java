@@ -164,21 +164,6 @@ public class DocumentServiceImpl implements DocumentService {
                     }
                 } catch (Exception e) {
                     log.error("Failed to upload file to Google Drive: " + originalFileName, e);
-                    String tempId = "staging_" + UUID.randomUUID().toString().replace("-", "");
-                    String tempFileName = tempId + "." + extension;
-                    Path stagingPath = Paths.get(uploadDir, "google_drive_staging", tempFileName).toAbsolutePath().normalize();
-                    try {
-                        Files.createDirectories(stagingPath.getParent());
-                        Files.copy(file.getInputStream(), stagingPath, StandardCopyOption.REPLACE_EXISTING);
-                    } catch (IOException ioException) {
-                        throw new FileStorageException("Failed to store file in Google Drive staging: " + originalFileName, ioException);
-                    }
-                    googleDriveFileId = tempId;
-                    savedFileName = tempFileName;
-                    fileUrl = "https://drive.google.com/file/d/" + tempId + "/view";
-                    uploadedToGDrive = true;
-                    driveSyncStatus = "STAGING";
-                    driveSyncError = e.getMessage();
                 }
             } else {
                 log.info("User {} has not connected Google Drive. Storing file locally.", request.getUserId());
@@ -935,6 +920,9 @@ public class DocumentServiceImpl implements DocumentService {
             }
             try {
                 googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole, document.getUserId());
+            } catch (IOException e) {
+                log.warn("Google Drive permission sharing skipped/failed for document {} and collaborator {}: {}",
+                        documentId, sharee.getEmail(), e.getMessage());
             } catch (Exception e) {
                 log.error("Failed to share file on Google Drive for document {} and collaborator {}: {}",
                         documentId, sharee.getEmail(), e.getMessage());
@@ -991,10 +979,12 @@ public class DocumentServiceImpl implements DocumentService {
         if (existingShareOpt.isPresent()) {
             documentShareRepository.delete(existingShareOpt.get());
 
-            // Google Drive revoke (best-effort)
             if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
                 try {
                     googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase(), document.getUserId());
+                } catch (IOException e) {
+                    log.warn("Google Drive revoke share skipped/failed for document {} and collaborator {}: {}",
+                            documentId, email, e.getMessage());
                 } catch (Exception e) {
                     log.error("Failed to revoke file share on Google Drive for document {} and collaborator {}: {}",
                             documentId, email, e.getMessage());
