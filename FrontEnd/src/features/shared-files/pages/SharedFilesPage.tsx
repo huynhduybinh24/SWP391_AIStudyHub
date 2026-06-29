@@ -323,6 +323,7 @@ export function SharedFilesPage() {
             id: String(doc.documentId),
             name: fileName,
             owner: doc.addedByName || 'System',
+            ownerEmail: doc.addedByEmail || '',
             permission: (doc.role === 'OWNER' ? 'Owner' : (doc.role === 'COLLABORATOR' ? 'Editor' : 'Viewer')) as any,
             dateShared: doc.createdAt ? doc.createdAt.substring(0, 10) : 'Just now',
             type: fileType,
@@ -1037,7 +1038,10 @@ export function SharedFilesPage() {
 
     let matchesPeople = true
     if (peopleFilter !== 'All') {
-      matchesPeople = file.owner?.toLowerCase().includes(peopleFilter.toLowerCase()) || false
+      matchesPeople = 
+        file.owner?.toLowerCase().includes(peopleFilter.toLowerCase()) || 
+        file.ownerEmail?.toLowerCase() === peopleFilter.toLowerCase() || 
+        false
     }
 
     let matchesLastModified = true
@@ -1117,6 +1121,13 @@ export function SharedFilesPage() {
 
   // activeCollaborators state is now used instead of the static collaboratorsCountList
 
+  const peopleList = Array.from(
+    new Set([
+      ...files.map(f => f.ownerEmail).filter(Boolean),
+      ...activeCollaborators.map(c => c.email).filter(Boolean)
+    ])
+  ) as string[]
+
   return (
     <motion.div
       variants={pageContainerVariants}
@@ -1175,6 +1186,7 @@ export function SharedFilesPage() {
               onLastModifiedFilterChange={setLastModifiedFilter}
               sourceFilter={sourceFilter}
               onSourceFilterChange={setSourceFilter}
+              peopleList={peopleList}
             />
           </motion.div>
 
