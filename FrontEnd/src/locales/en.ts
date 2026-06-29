@@ -73,7 +73,7 @@ export const en = {
     premiumUsers: "Premium Users",
     usedCapacity: "Used Capacity",
     flaggedDocs: "Violating Documents",
-    newRegistrations: "New Student Registrations",
+    newRegistrations: "New User Registrations",
     storageDistribution: "Storage Distribution",
     activeAdminGlow: "System Active",
     trackingLive: "Tracking Live",
@@ -736,7 +736,7 @@ export const en = {
     documentTextStream: (subject: string) => `Document Text Stream • ${subject} Scope`,
     executiveOverview: "1. Executive Overview",
     coreObjectives: "2. Core Objectives & Conceptual Models",
-    docxBodyDesc: "The primary focus is to analyze, integrate, and synthesize complex subject components. Students should practice active retrieval to consolidate long-term retention of these models.",
+    docxBodyDesc: "The primary focus is to analyze, integrate, and synthesize complex subject components. Users should practice active retrieval to consolidate long-term retention of these models.",
     docxBullet1: "Formulate fundamental understandings of related theories.",
     docxBullet2: "Perform practical sweeps and verify analytical calculations.",
     docxBullet3: "Sync study guides to active AI workspaces for automated quizzes.",
@@ -744,7 +744,7 @@ export const en = {
     learningObjectives: "Learning Objectives",
     pageSuffix: (pageNum: number) => `Page ${pageNum}`,
     foundationalTheories: (pageNum: number) => `Section ${pageNum - 1}.1 Foundational Theories & Core Precepts`,
-    docxPageDesc: (courseTitle: string) => `This section details the critical theoretical frameworks and experimental protocols that apply to ${courseTitle}. Students are expected to understand the historical context, analyze key variables, and verify equations within their study groups.`,
+    docxPageDesc: (courseTitle: string) => `This section details the critical theoretical frameworks and experimental protocols that apply to ${courseTitle}. Users are expected to understand the historical context, analyze key variables, and verify equations within their study groups.`,
     recommendedReading: "Recommended Reading & Assessment",
     readBullet1: "Review formulas and reference literature mentioned in Section 1.",
     readBullet2: "Draft a detailed concept summary explaining main derivations.",
@@ -1345,7 +1345,7 @@ export const en = {
       userAccountLocked: "User account david.k@university.edu locked due to repeated violation reports.",
       accountPackageUpgraded: "Payment completed successfully through Stripe for Pro package (50GB).",
       documentApproved: "Approved document Neuroscience Fall Syllabus 2024 as clean after moderation.",
-      systemNotificationBroadcast: "Sent a system-wide notification about AI server maintenance in June to 15,248 students.",
+      systemNotificationBroadcast: "Sent a system-wide notification about AI server maintenance in June to 15,248 users.",
       paymentTransactionFailed: "Credit card expired or insufficient balance during automatic Pro subscription renewal."
     },
     status: {
@@ -1395,9 +1395,9 @@ export const en = {
     switched: "Switched to {name}",
     current: "Current",
     adminDescription: "Full access to admin dashboard and system settings.",
-    studentDescription: "Standard learner account with documents and study features.",
-    instructorDescription: "Can manage shared course materials and student collaboration.",
-    proStudentDescription: "Student account with upgraded storage and premium features."
+    studentDescription: "Standard user account with documents and study features.",
+    instructorDescription: "User account with shared learning materials and collaboration features.",
+    proStudentDescription: "User account with upgraded storage and premium features."
   }
 };
 

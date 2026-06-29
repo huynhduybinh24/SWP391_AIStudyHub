@@ -4,7 +4,7 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'teacher' | 'user';
+  role: 'admin' | 'user';
   status: 'active' | 'inactive' | 'suspended';
   joinedAt: string;
   documentsCount: number;
@@ -177,7 +177,7 @@ export const getUsers = async (
         id: String(u.id),
         name: u.fullName || u.name || 'Anonymous',
         email: u.email,
-        role: u.role?.toLowerCase() === 'admin' ? 'admin' : u.role?.toLowerCase() === 'teacher' ? 'teacher' : 'user',
+        role: u.role?.toLowerCase() === 'admin' ? 'admin' : 'user',
         status: u.accountStatus?.toLowerCase() || 'active',
         joinedAt: u.createdAt ? u.createdAt.split('T')[0] : '2023-01-15',
         documentsCount: u.documentsCount || 0,
@@ -224,7 +224,7 @@ export const updateUser = async (
         id: String(u.id),
         name: u.fullName || u.name || 'Anonymous',
         email: u.email,
-        role: u.role?.toLowerCase() === 'admin' ? 'admin' : u.role?.toLowerCase() === 'teacher' ? 'teacher' : 'user',
+        role: u.role?.toLowerCase() === 'admin' ? 'admin' : 'user',
         status: u.accountStatus?.toLowerCase() || 'active',
         joinedAt: u.createdAt ? u.createdAt.split('T')[0] : '2023-01-15',
         documentsCount: u.documentsCount || 0,
