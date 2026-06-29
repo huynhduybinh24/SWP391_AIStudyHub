@@ -41,6 +41,7 @@ import { Sparkles, Folder, FileCheck, AlertCircle, Video as VideoIcon, Music, X 
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/context/LanguageContext';
 import { motion } from 'framer-motion';
+import { Modal } from '@/components/ui/Modal';
 
 import { useMediaUpload } from '@/components/shared/media-upload/useMediaUpload';
 import { logActivity } from '@/services/activityLogService';
@@ -151,6 +152,7 @@ export function UploadPage() {
   const [recentUploads, setRecentUploads] = useState<UploadedMedia[]>([]);
 
   // Modal states
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [previewModalMedia, setPreviewModalMedia] = useState<UploadedMedia | null>(null);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
@@ -203,7 +205,7 @@ export function UploadPage() {
 
       const newDoc = mapBackendDocToItem(response);
 
-      if (setDocuments) {
+      if (response.moderationStatus === 'APPROVED' && setDocuments) {
         setDocuments((prev: any) => [newDoc, ...prev]);
       }
 
@@ -220,7 +222,7 @@ export function UploadPage() {
 
       toast.success(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.');
       setIsProcessing(false);
-      navigate(`/dashboard/documents/subject/${selectedSubjectKey.toLowerCase()}`);
+      setApprovalModalOpen(true);
     } catch (err) {
       console.error('Failed to upload document:', err);
       toast.error(language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!');
@@ -346,9 +348,9 @@ export function UploadPage() {
     }
     return {
       dragDrop: t.upload.dragDrop || 'Drag and drop your files here',
-      support: t.upload.supportFormat || 'Support for PDF, DOCX, and PPTX files (Max 50MB)',
+      support: t.upload.supportFormatOnlyPdf || 'Support for PDF files only (Max 50MB)',
       browse: t.upload.browse || 'Browse Files',
-      extensions: '.pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.pptx,.ppt'
+      extensions: '.pdf'
     };
   };
 
@@ -791,6 +793,60 @@ export function UploadPage() {
           </div>
         </div>
       )}
+
+      {/* Approval Pending Modal */}
+      <Modal
+        isOpen={approvalModalOpen}
+        onClose={() => {
+          setApprovalModalOpen(false);
+          navigate(`/dashboard/documents/subject/${selectedSubjectKey.toLowerCase()}`);
+        }}
+        title={language === 'en' ? 'Moderation Pending' : 'Chờ kiểm duyệt'}
+        description={
+          language === 'en'
+            ? 'Your document has been successfully uploaded to Google Drive.'
+            : 'Tài liệu của bạn đã được tải lên Google Drive thành công.'
+        }
+        className="max-w-[480px]"
+      >
+        <div className="space-y-6 text-center py-2 select-none">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400">
+            <FileCheck className="h-8 w-8" />
+          </div>
+
+          <div className="space-y-2 max-w-sm mx-auto">
+            <p className="text-sm text-slate-605 dark:text-slate-400 font-medium leading-relaxed">
+              {language === 'en'
+                ? 'Your document is now waiting for administrative approval. It will become visible to others once approved.'
+                : 'Tài liệu đang chờ Admin phê duyệt. Tài liệu sẽ được hiển thị công khai sau khi được duyệt.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setApprovalModalOpen(false);
+                clearAllState();
+                navigate('/dashboard/documents/upload-history');
+              }}
+              className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+            >
+              {language === 'en' ? 'View Upload History' : 'Xem lịch sử tải lên'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setApprovalModalOpen(false);
+                navigate(`/dashboard/documents/subject/${selectedSubjectKey.toLowerCase()}`);
+              }}
+              className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
+            >
+              {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

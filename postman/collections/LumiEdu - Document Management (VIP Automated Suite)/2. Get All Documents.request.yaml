@@ -1,0 +1,39 @@
+$kind: http-request
+url: http://localhost:8080/api/documents
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      // 1. Status Code & Performance Tests
+      pm.test("TC-02-A | HTTP Status is 200 OK", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("TC-02-B | Performance - Response time <800ms", function () {
+          pm.expect(pm.response.responseTime).to.be.below(800);
+      });
+
+      // 2. Data Structure & Fields Assertions
+      pm.test("TC-02-C | Response format matches API standard", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData.success).to.eql(true);
+          pm.expect(jsonData.message).to.eql("Documents retrieved successfully.");
+          pm.expect(jsonData.data).to.be.an('array');
+      });
+
+      pm.test("TC-02-D | Verify objects in list have required attributes", function () {
+          var jsonData = pm.response.json();
+          if (jsonData.data.length > 0) {
+              var firstDoc = jsonData.data[0];
+              pm.expect(firstDoc).to.have.all.keys(
+                  'id', 'title', 'description', 'fileName', 'originalFileName', 
+                  'fileUrl', 'googleDriveFileId', 'storageProvider', 'fileType', 
+                  'mimeType', 'fileSize', 'subject', 'visibility', 'userId', 
+                  'ownerName', 'ownerEmail', 'role', 'status', 'tags', 
+                  'createdAt', 'updatedAt'
+              );
+              pm.expect(firstDoc.id).to.be.a('number');
+              pm.expect(firstDoc.visibility).to.be.oneOf(['PUBLIC', 'PRIVATE', 'SHARED', 'private', 'public', 'shared']);
+          }
+      });
+    language: text/javascript
+order: 2000

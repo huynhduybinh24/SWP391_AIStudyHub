@@ -28,6 +28,9 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
+    private final com.lumiedu.notification.service.NotificationService notificationService;
+    private final com.lumiedu.email.service.EmailService emailService;
+    private final com.lumiedu.document.service.GoogleDriveService googleDriveService;
 
     @Override
     @Transactional(readOnly = true)
@@ -197,6 +200,7 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
         StringBuilder csv = new StringBuilder();
+        csv.append("\uFEFF");
         csv.append("Document ID,Title,Uploader Email,Uploader Name,File Type,File Size (MB),Moderation Status,Created At\n");
 
         for (Document d : docs) {
@@ -229,5 +233,145 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
         }
         return escaped;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminDocumentResponse> getPendingDocuments() {
+        List<Document> docs = documentRepository.findAllByDeletedFalse().stream()
+                .filter(d -> d.getModerationStatus() == DocumentStatus.PENDING_REVIEW)
+                .collect(Collectors.toList());
+
+        docs.sort(Comparator.comparing(Document::getId).reversed());
+
+        List<Long> userIds = docs.stream()
+                .map(Document::getUserId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        return docs.stream()
+                .map(d -> {
+                    User owner = d.getUserId() != null ? userMap.get(d.getUserId()) : null;
+                    return AdminDocumentMapper.toResponse(d, owner);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public AdminDocumentResponse approveDocument(Long id, Long adminId) {
+        Document doc = documentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Document not found with id: " + id));
+
+        doc.setModerationStatus(DocumentStatus.APPROVED);
+        doc.setRejectionReason(null);
+        doc.setReviewedBy(adminId);
+        doc.setReviewedAt(java.time.LocalDateTime.now());
+        documentRepository.save(doc);
+
+        User owner = doc.getUserId() != null ? userRepository.findById(doc.getUserId()).orElse(null) : null;
+
+        if (owner != null && notificationService != null) {
+            try {
+                com.lumiedu.notification.dto.request.NotificationRequest notifReq = com.lumiedu.notification.dto.request.NotificationRequest.builder()
+                        .type("DOCUMENT")
+                        .title("Document Approved")
+                        .message("Your document '" + doc.getTitle() + "' has been approved by admin.")
+                        .targetUserEmail(owner.getEmail())
+                        .documentId(doc.getId())
+                        .documentName(doc.getTitle())
+                        .actionType("view_document")
+                        .actionUrl("/dashboard/documents/" + doc.getId())
+                        .build();
+                notificationService.createNotification(notifReq);
+            } catch (Exception e) {
+                System.err.println("Failed to send approval notification: " + e.getMessage());
+            }
+        }
+
+        if (owner != null && emailService != null) {
+            try {
+                String subject = "[LumiEdu] Your document has been approved";
+                String heading = "Document approved";
+                String body = "<p>Hello " + owner.getFullName() + ",</p>" +
+                        "<p>Your document <strong>" + doc.getTitle() + "</strong> has been approved by an administrator.</p>" +
+                        "<p>You can now view and use this document in the system.</p>";
+                String html = emailService.buildHtmlTemplate(subject, heading, body);
+                emailService.sendEmail(owner.getEmail(), subject, html, true);
+            } catch (Exception e) {
+                System.err.println("Failed to send approval email: " + e.getMessage());
+            }
+        }
+
+        return AdminDocumentMapper.toResponse(doc, owner);
+    }
+
+    @Override
+    public AdminDocumentResponse rejectDocument(Long id, String reason, Long adminId) {
+        if (reason == null || reason.trim().isBlank()) {
+            throw new IllegalArgumentException("Rejection reason is required.");
+        }
+        String cleanReason = reason.trim();
+
+        Document doc = documentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Document not found with id: " + id));
+
+        doc.setModerationStatus(DocumentStatus.REJECTED);
+        doc.setRejectionReason(cleanReason);
+        doc.setReviewedBy(adminId);
+        doc.setReviewedAt(java.time.LocalDateTime.now());
+
+        if (doc.getGoogleDriveFileId() != null && !doc.getGoogleDriveFileId().isBlank()) {
+            try {
+                googleDriveService.deleteFile(doc.getGoogleDriveFileId(), doc.getUserId());
+            } catch (Exception e) {
+                System.err.println("Failed to delete file from Google Drive for rejected doc: " + e.getMessage());
+            }
+        }
+
+        documentRepository.save(doc);
+
+        User owner = doc.getUserId() != null ? userRepository.findById(doc.getUserId()).orElse(null) : null;
+
+        if (owner != null && notificationService != null) {
+            try {
+                com.lumiedu.notification.dto.request.NotificationRequest notifReq = com.lumiedu.notification.dto.request.NotificationRequest.builder()
+                        .type("DOCUMENT")
+                        .title("Document Rejected")
+                        .message("Your document '" + doc.getTitle() + "' has been rejected. Reason: " + cleanReason)
+                        .targetUserEmail(owner.getEmail())
+                        .documentId(doc.getId())
+                        .documentName(doc.getTitle())
+                        .actionType("view_history")
+                        .actionUrl("/dashboard/documents")
+                        .reason(cleanReason)
+                        .build();
+                notificationService.createNotification(notifReq);
+            } catch (Exception e) {
+                System.err.println("Failed to send rejection notification: " + e.getMessage());
+            }
+        }
+
+        if (owner != null && emailService != null) {
+            try {
+                String subject = "[LumiEdu] Your document has been rejected";
+                String heading = "Document rejected";
+                String body = "<p>Hello " + owner.getFullName() + ",</p>" +
+                        "<p>Your document <strong>" + doc.getTitle() + "</strong> was rejected by an administrator.</p>" +
+                        "<div class=\"highlight-card\">" +
+                        "  <strong>Reason:</strong><br/>" +
+                        "  " + cleanReason + "" +
+                        "</div>" +
+                        "<p>The uploaded file has been removed from Google Drive, but you can still see this rejection status in your upload history.</p>";
+                String html = emailService.buildHtmlTemplate(subject, heading, body);
+                emailService.sendEmail(owner.getEmail(), subject, html, true);
+            } catch (Exception e) {
+                System.err.println("Failed to send rejection email: " + e.getMessage());
+            }
+        }
+
+        return AdminDocumentMapper.toResponse(doc, owner);
+    }
 }
-// Force JDT LS revalidation

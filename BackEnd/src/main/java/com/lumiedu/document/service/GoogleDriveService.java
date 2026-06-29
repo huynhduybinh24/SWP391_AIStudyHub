@@ -5,35 +5,36 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 public interface GoogleDriveService {
-    /**
-     * Upload file lên Google Drive
-     * @return googleDriveFileId
-     */
-    String uploadFile(MultipartFile file, String folderName) throws IOException;
+    default String uploadFile(MultipartFile file, String folderName) throws IOException {
+        return uploadFile(file, folderName, null);
+    }
 
-    /**
-     * Upload file lên Google Drive theo cấu trúc phân cấp thư mục (Ngành học -> Kỳ học -> Môn học)
-     * @return googleDriveFileId
-     */
-    String uploadFile(MultipartFile file, java.util.List<String> folderHierarchy) throws IOException;
+    default String uploadFile(MultipartFile file, java.util.List<String> folderHierarchy) throws IOException {
+        return uploadFile(file, folderHierarchy, null);
+    }
 
-    /**
-     * Tải file từ Google Drive
-     */
-    Resource downloadFile(String googleDriveFileId) throws IOException;
+    default Resource downloadFile(String googleDriveFileId) throws IOException {
+        return downloadFile(googleDriveFileId, null);
+    }
 
-    /**
-     * Xóa file khỏi Google Drive
-     */
-    void deleteFile(String googleDriveFileId) throws IOException;
+    default void deleteFile(String googleDriveFileId) throws IOException {
+        deleteFile(googleDriveFileId, null);
+    }
 
-    /**
-     * Chia sẻ quyền truy cập file trên Google Drive
-     */
-    void shareFile(String googleDriveFileId, String email, String role) throws IOException;
+    String uploadFile(MultipartFile file, String folderName, Long userId) throws IOException;
+    String uploadFile(MultipartFile file, java.util.List<String> folderHierarchy, Long userId) throws IOException;
+    Resource downloadFile(String googleDriveFileId, Long userId) throws IOException;
+    void deleteFile(String googleDriveFileId, Long userId) throws IOException;
 
-    /**
-     * Thu hồi quyền truy cập file trên Google Drive
-     */
-    void revokeShare(String googleDriveFileId, String email) throws IOException;
+    default void shareFile(String googleDriveFileId, String email, String role) throws IOException {
+        shareFile(googleDriveFileId, email, role, null);
+    }
+
+    default void revokeShare(String googleDriveFileId, String email) throws IOException {
+        revokeShare(googleDriveFileId, email, null);
+    }
+
+    void shareFile(String googleDriveFileId, String email, String role, Long userId) throws IOException;
+    void revokeShare(String googleDriveFileId, String email, Long userId) throws IOException;
+    boolean isUserDriveConnected(Long userId);
 }

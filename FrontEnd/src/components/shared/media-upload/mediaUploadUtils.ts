@@ -16,11 +16,11 @@ export const validateFile = (file: File, activeTab: MediaType, language: string 
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
 
   if (activeTab === 'document') {
-    const allowed = ['pdf', 'docx', 'doc', 'txt', 'png', 'jpg', 'jpeg', 'pptx', 'ppt'];
+    const allowed = ['pdf'];
     if (!allowed.includes(ext)) {
       return {
         valid: false,
-        error: language === 'vi' ? 'Định dạng tài liệu không hỗ trợ!' : 'Unsupported document format'
+        error: language === 'vi' ? 'Hệ thống chỉ hỗ trợ tệp tin PDF!' : 'Only PDF files are supported!'
       };
     }
     if (file.size > 50 * 1024 * 1024) {

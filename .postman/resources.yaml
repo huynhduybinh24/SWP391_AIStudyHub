@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: f3426932-1922-435a-8d63-d355f59d7a9e
+
+cloudResources:
+  collections:
+    ..\postman\collections\LumiEdu - Document Management (VIP Automated Suite): 584a77cf-3b48-4df2-b33f-cb7136d28d1b
+
+# All resources in the `postman/` folder are automatically registered in Local View.
+# Point to additional files outside the `postman/` folder to register them individually. Example:
+#localResources:
+#  collections:
+#    - ../tests/E2E Test Collection/

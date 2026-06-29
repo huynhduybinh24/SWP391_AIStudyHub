@@ -67,6 +67,19 @@ interface FptSubjectInfo {
   majors: ('SE' | 'AI' | 'BA')[]
 }
 
+const formatSemesterName = (name: string, lang: string) => {
+  const match = name.trim().match(/^K([0-9]+)$/i)
+  if (match) {
+    const num = match[1]
+    if (lang === 'vi') return `Học kỳ ${num}`
+    if (lang === 'en') return `Semester ${num}`
+    if (lang === 'ja') return `学期 ${num}`
+    if (lang === 'ko') return `학기 ${num}`
+    return `Semester ${num}`
+  }
+  return name
+}
+
 export default function MyDocumentsPage() {
   const navigate = useNavigate()
   const { language, t } = useTranslation()
@@ -469,8 +482,8 @@ export default function MyDocumentsPage() {
             { key: 'ALL', labelEn: 'All Semesters', labelVi: 'Tất cả học kỳ' },
             ...semesters.map((s) => ({
               key: s.name,
-              labelEn: s.name,
-              labelVi: s.name
+              labelEn: formatSemesterName(s.name, 'en'),
+              labelVi: formatSemesterName(s.name, 'vi')
             }))
           ].map((sem) => (
             <button
@@ -999,7 +1012,7 @@ export default function MyDocumentsPage() {
                             onClick={() => setExpandedSemesters((prev) => ({ ...prev, [sem.name]: !isExpanded }))}
                             className="font-bold text-sm text-slate-800 dark:text-slate-200 cursor-pointer truncate flex items-center gap-2"
                           >
-                            {sem.name}
+                            {formatSemesterName(sem.name, language)}
                             {!isCustomSem && (
                               <span className="text-[10px] bg-slate-150 text-slate-500 px-1.5 py-0.5 rounded font-bold dark:bg-slate-800 dark:text-slate-400">
                                 {language === 'vi' ? 'Mặc định' : 'Default'}
@@ -1057,7 +1070,7 @@ export default function MyDocumentsPage() {
                         {isAddingSubject && (
                           <div className="p-3.5 border border-dashed border-blue-200 rounded-xl bg-blue-50/10 dark:border-blue-900/40 dark:bg-blue-955/10 space-y-3">
                             <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                              {language === 'vi' ? `Thêm môn học vào ${sem.name}` : `Add subject to ${sem.name}`}
+                              {language === 'vi' ? `Thêm môn học vào ${formatSemesterName(sem.name, language)}` : `Add subject to ${formatSemesterName(sem.name, language)}`}
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <input

@@ -2,6 +2,7 @@ package com.lumiedu.admin.controller;
 
 import com.lumiedu.admin.dto.request.AdminDocumentModerationRequest;
 import com.lumiedu.admin.dto.request.BulkDocumentRequest;
+import com.lumiedu.admin.dto.request.DocumentRejectRequest;
 import com.lumiedu.admin.dto.response.AdminDocumentResponse;
 import com.lumiedu.admin.service.AdminDocumentService;
 import jakarta.validation.Valid;
@@ -42,6 +43,45 @@ public class AdminDocumentController {
         adminDocumentService.deleteDocument(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/pending")
+    public ResponseEntity<List<AdminDocumentResponse>> getPendingDocuments() {
+        return ResponseEntity.ok(adminDocumentService.getPendingDocuments());
+    }
+
+    @PostMapping("/{documentId}/approve")
+    public ResponseEntity<AdminDocumentResponse> approveDocument(
+            @PathVariable Long documentId,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long adminId = getCurrentUserId(authentication);
+        return ResponseEntity.ok(adminDocumentService.approveDocument(documentId, adminId));
+    }
+
+    @PostMapping("/{documentId}/reject")
+    public ResponseEntity<AdminDocumentResponse> rejectDocument(
+            @PathVariable Long documentId,
+            @RequestBody @Valid DocumentRejectRequest request,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long adminId = getCurrentUserId(authentication);
+        if (request == null || request.getReason() == null || request.getReason().trim().isEmpty()) {
+            throw new IllegalArgumentException("Rejection reason is required.");
+        }
+        return ResponseEntity.ok(adminDocumentService.rejectDocument(documentId, request.getReason(), adminId));
+    }
+
+    private Long getCurrentUserId(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null) {
+            return null;
+        }
+        Object details = authentication.getDetails();
+        if (details instanceof Long) {
+            return (Long) details;
+        }
+        return null;
+    }
+
 
     @PatchMapping("/{id}/moderate")
     public ResponseEntity<AdminDocumentResponse> moderateDocument(

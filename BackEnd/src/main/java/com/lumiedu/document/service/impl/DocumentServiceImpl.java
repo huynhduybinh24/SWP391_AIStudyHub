@@ -5,6 +5,7 @@ import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.response.DocumentResponse;
 import com.lumiedu.document.dto.response.SubjectStatsResponse;
 import com.lumiedu.document.dto.response.DocumentShareResponse;
+import com.lumiedu.document.enums.DocumentStatus;
 import com.lumiedu.ai.repository.QuizAttemptRepository;
 import com.lumiedu.ai.repository.StudyPlanRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -113,6 +114,20 @@ public class DocumentServiceImpl implements DocumentService {
             Set<String> allowedExtensions) {
         validateFile(file);
 
+        // Security correction: get current authenticated user ID
+        Long authenticatedUserId = null;
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            Object details = auth.getDetails();
+            if (details instanceof Long) {
+                authenticatedUserId = (Long) details;
+            }
+        }
+        if (authenticatedUserId != null) {
+            request.setUserId(authenticatedUserId);
+        }
+
         String originalFileName = StringUtils.cleanPath(
                 Objects.requireNonNull(file.getOriginalFilename(), "Original filename must not be null"));
         String extension = getExtension(originalFileName).toLowerCase();
@@ -122,21 +137,62 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         // Upload lên Google Drive
+        // Upload lên Google Drive
         String googleDriveFileId = null;
         String fileUrl = null;
         String savedFileName = null;
+        boolean uploadedToGDrive = false;
+        String driveSyncStatus = "SYNCED";
+        String driveSyncError = null;
 
         if (FILE_TYPE_DOCUMENT.equals(fileType)) {
-            // Tài liệu: lưu trên Google Drive thật, tự động tạo thư mục theo Ngành -> Kỳ ->
-            // Môn học
-            try {
-                java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(),
-                        request.getUserId());
-                googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy);
-                savedFileName = googleDriveFileId + "." + extension;
-                fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
-            } catch (IOException e) {
-                throw new FileStorageException("Lỗi upload lên Google Drive: " + originalFileName, e);
+            // Check if user is connected
+            if (request.getUserId() != null && googleDriveService.isUserDriveConnected(request.getUserId())) {
+                try {
+                    java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(), request.getUserId());
+                    googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy, request.getUserId());
+                    if (googleDriveFileId != null && !googleDriveFileId.startsWith("gdrive_")) {
+                        savedFileName = googleDriveFileId + "." + extension;
+                        fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
+                        uploadedToGDrive = true;
+                    } else {
+                        log.warn("Google Drive upload returned a mock or null file ID: {}. Falling back to local storage.", googleDriveFileId);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to upload file to Google Drive: " + originalFileName, e);
+                    String tempId = "staging_" + UUID.randomUUID().toString().replace("-", "");
+                    String tempFileName = tempId + "." + extension;
+                    Path stagingPath = Paths.get(uploadDir, "google_drive_staging", tempFileName).toAbsolutePath().normalize();
+                    try {
+                        Files.createDirectories(stagingPath.getParent());
+                        Files.copy(file.getInputStream(), stagingPath, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException ioException) {
+                        throw new FileStorageException("Failed to store file in Google Drive staging: " + originalFileName, ioException);
+                    }
+                    googleDriveFileId = tempId;
+                    savedFileName = tempFileName;
+                    fileUrl = "https://drive.google.com/file/d/" + tempId + "/view";
+                    uploadedToGDrive = true;
+                    driveSyncStatus = "STAGING";
+                    driveSyncError = e.getMessage();
+                }
+            } else {
+                log.info("User {} has not connected Google Drive. Storing file locally.", request.getUserId());
+            }
+
+            if (!uploadedToGDrive) {
+                // Keep storage provider as LOCAL and store the file locally
+                String newFileName = UUID.randomUUID() + "." + extension;
+                Path targetPath = resolveUploadPath(FILE_TYPE_DOCUMENT).resolve(newFileName);
+                try {
+                    Files.createDirectories(targetPath.getParent());
+                    Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    throw new FileStorageException("Failed to store file locally: " + originalFileName, e);
+                }
+                savedFileName = newFileName;
+                fileUrl = buildFileUrl(FILE_TYPE_DOCUMENT, newFileName);
+                googleDriveFileId = null;
             }
         } else {
             // Media/Audio: lưu local như cũ
@@ -165,9 +221,12 @@ public class DocumentServiceImpl implements DocumentService {
                 .mimeType(file.getContentType())
                 .fileSize(file.getSize())
                 .googleDriveFileId(googleDriveFileId)
-                .storageProvider(googleDriveFileId != null ? "GOOGLE_DRIVE" : "LOCAL")
+                .storageProvider(googleDriveFileId != null ? ("STAGING".equals(driveSyncStatus) ? "GOOGLE_DRIVE_STAGING" : "GOOGLE_DRIVE") : "LOCAL")
                 .checksum(calculateChecksum(file))
                 .deleted(false)
+                .moderationStatus(FILE_TYPE_DOCUMENT.equals(fileType) ? DocumentStatus.PENDING_REVIEW : DocumentStatus.APPROVED)
+                .driveSyncStatus(driveSyncStatus)
+                .driveSyncError(driveSyncError)
                 .build();
 
         document = documentRepository.save(document);
@@ -263,7 +322,7 @@ public class DocumentServiceImpl implements DocumentService {
         List<DocumentResponse> responseList = new ArrayList<>();
 
         for (Document d : ownedDocs) {
-            if (seenIds.add(d.getId())) {
+            if (isApprovedForUser(d) && seenIds.add(d.getId())) {
                 DocumentResponse res = mapToResponse(d);
                 res.setRole("owner");
                 responseList.add(res);
@@ -277,7 +336,7 @@ public class DocumentServiceImpl implements DocumentService {
                         (r1, r2) -> r1));
 
         for (Document d : sharedDocs) {
-            if (seenIds.add(d.getId())) {
+            if (isApprovedForUser(d) && seenIds.add(d.getId())) {
                 DocumentResponse res = mapToResponse(d);
                 res.setRole(sharedRoleMap.getOrDefault(d.getId(), "viewer"));
                 responseList.add(res);
@@ -285,6 +344,17 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         return responseList;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DocumentResponse> getMyUploads(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID is required.");
+        }
+        return documentRepository.findAllByUserIdAndDeletedFalse(userId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -300,7 +370,15 @@ public class DocumentServiceImpl implements DocumentService {
     public DocumentResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
-        checkDocumentAccess(document, currentUserId);
+        if (currentUserId == null) {
+            throw new SecurityException("Authentication is required to modify this document.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new SecurityException("You do not have permission to modify this document.");
+        }
 
         if (request.getTitle() != null) {
             document.setTitle(request.getTitle());
@@ -330,12 +408,21 @@ public class DocumentServiceImpl implements DocumentService {
     public void deleteDocument(Long id, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
-        checkDocumentAccess(document, currentUserId);
+        if (currentUserId == null) {
+            throw new SecurityException("Authentication is required to delete this document.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new SecurityException("You do not have permission to delete this document.");
+        }
 
         // Delete from Google Drive if stored there
-        if ("GOOGLE_DRIVE".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))) {
+        if ("GOOGLE_DRIVE".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))
+                || "GOOGLE_DRIVE_STAGING".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))) {
             try {
-                googleDriveService.deleteFile(document.getGoogleDriveFileId());
+                googleDriveService.deleteFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (Exception e) {
                 log.error("Failed to delete file from Google Drive for doc ID {}: {}", id, e.getMessage());
             }
@@ -377,9 +464,10 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         Resource resource;
-        if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+        if (("GOOGLE_DRIVE".equals(document.getStorageProvider()) || "GOOGLE_DRIVE_STAGING".equals(document.getStorageProvider()))
+                && document.getGoogleDriveFileId() != null) {
             try {
-                resource = googleDriveService.downloadFile(document.getGoogleDriveFileId());
+                resource = googleDriveService.downloadFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (IOException e) {
                 throw new FileStorageException(
                         "Failed to download file from Google Drive ID: " + document.getGoogleDriveFileId(), e);
@@ -405,11 +493,11 @@ public class DocumentServiceImpl implements DocumentService {
                 .orElseThrow(() -> new DocumentNotFoundException(id));
         checkDocumentAccess(document, currentUserId);
 
-        // Always return the actual binary resource for PDF/image file preview so that
-        // the viewer/iframe works correctly
-        if ("GOOGLE_DRIVE".equals(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+        // Always return the actual binary resource for PDF/image file preview so that the viewer/iframe works correctly
+        if (("GOOGLE_DRIVE".equals(document.getStorageProvider()) || "GOOGLE_DRIVE_STAGING".equals(document.getStorageProvider()))
+                && document.getGoogleDriveFileId() != null) {
             try {
-                return googleDriveService.downloadFile(document.getGoogleDriveFileId());
+                return googleDriveService.downloadFile(document.getGoogleDriveFileId(), document.getUserId());
             } catch (IOException e) {
                 throw new FileStorageException(
                         "Failed to load preview from Google Drive ID: " + document.getGoogleDriveFileId(), e);
@@ -458,6 +546,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         return documents.stream()
+                .filter(this::isApprovedForUser)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -494,6 +583,11 @@ public class DocumentServiceImpl implements DocumentService {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private boolean isApprovedForUser(Document document) {
+        return document.getModerationStatus() == null
+                || document.getModerationStatus() == DocumentStatus.APPROVED;
+    }
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -597,9 +691,12 @@ public class DocumentServiceImpl implements DocumentService {
                 .ownerName(ownerName)
                 .ownerEmail(ownerEmail)
                 .status(document.getStatus() != null ? document.getStatus() : "PENDING")
+                .moderationStatus(document.getModerationStatus() != null ? document.getModerationStatus().name() : "APPROVED")
                 .tags(tags)
                 .createdAt(document.getCreatedAt())
                 .updatedAt(document.getUpdatedAt())
+                .rejectionReason(document.getRejectionReason())
+                .reviewedAt(document.getReviewedAt())
                 .build();
     }
 
@@ -643,6 +740,9 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     private void checkDocumentAccess(Document document, Long userId) {
+        if ("PUBLIC".equalsIgnoreCase(document.getVisibility())) {
+            return;
+        }
         if (userId == null) {
             throw new SecurityException("Authentication is required to access this document.");
         }
@@ -655,11 +755,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (userId.equals(document.getUserId())) {
             return;
         }
-        if ("PUBLIC".equalsIgnoreCase(document.getVisibility())) {
-            return;
-        }
-        List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository
-                .findByDocumentId(document.getId());
+        List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByDocumentId(document.getId());
         for (com.lumiedu.workspace.entity.WorkspaceDocument wd : workspaceDocs) {
             Optional<com.lumiedu.workspace.entity.WorkspaceMember> memberOpt = workspaceMemberRepository
                     .findByWorkspaceIdAndUserId(wd.getWorkspaceId(), userId);
@@ -862,11 +958,11 @@ public class DocumentServiceImpl implements DocumentService {
         // 1. Google Drive permission sharing (best-effort)
         if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
             String gDriveRole = "reader";
-            if ("editor".equalsIgnoreCase(role)) {
+            if ("editor".equalsIgnoreCase(role) || "writer".equalsIgnoreCase(role)) {
                 gDriveRole = "writer";
             }
             try {
-                googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole);
+                googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole, document.getUserId());
             } catch (Exception e) {
                 log.error("Failed to share file on Google Drive for document {} and collaborator {}: {}",
                         documentId, sharee.getEmail(), e.getMessage());
@@ -933,7 +1029,7 @@ public class DocumentServiceImpl implements DocumentService {
             if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider())
                     && document.getGoogleDriveFileId() != null) {
                 try {
-                    googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase());
+                    googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase(), document.getUserId());
                 } catch (Exception e) {
                     log.error("Failed to revoke file share on Google Drive for document {} and collaborator {}: {}",
                             documentId, email, e.getMessage());

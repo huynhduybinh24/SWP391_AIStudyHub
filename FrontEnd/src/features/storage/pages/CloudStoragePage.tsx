@@ -211,6 +211,14 @@ export function CloudStoragePage() {
     const files = e.target.files;
     if (files && files.length > 0 && user?.id) {
       const file = files[0];
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext !== 'pdf') {
+        toast.error('Only PDF files are supported!');
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
       const newUploadSizeGB = file.size / (1024 * 1024 * 1024);
       const totalUsedGB = totalUsedMb / 1024;
       
@@ -281,6 +289,7 @@ export function CloudStoragePage() {
         type="file" 
         ref={fileInputRef} 
         onChange={handleFileUpload} 
+        accept=".pdf"
         className="hidden" 
       />
 
