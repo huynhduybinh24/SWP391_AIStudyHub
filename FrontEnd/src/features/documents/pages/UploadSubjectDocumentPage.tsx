@@ -7,7 +7,8 @@ import {
   Sparkles,
   ImageIcon,
   BookOpen,
-  FolderDown
+  FolderDown,
+  History
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Modal } from '@/components/ui/Modal'
@@ -792,8 +793,9 @@ export function UploadSubjectDocumentPage() {
                 setUploadComplete(false)
                 navigate('/dashboard/documents/upload-history')
               }}
-              className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+              className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
             >
+              <History className="h-4 w-4" />
               {language === 'en' ? 'View Upload History' : 'Xem lịch sử tải lên'}
             </button>
             <button
