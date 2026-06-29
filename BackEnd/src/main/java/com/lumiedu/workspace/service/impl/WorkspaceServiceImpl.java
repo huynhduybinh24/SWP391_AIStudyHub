@@ -458,6 +458,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             String adderName = adder != null ? adder.getFullName() : "Unknown";
 
             if (doc != null) {
+                String adderEmail = adder != null ? adder.getEmail() : "";
                 return WorkspaceDocumentResponse.builder()
                         .id(wd.getId())
                         .workspaceId(workspace.getId())
@@ -471,6 +472,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                         .fileSize(doc.getFileSize())
                         .addedBy(wd.getAddedBy())
                         .addedByName(adderName)
+                        .addedByEmail(adderEmail)
                         .createdAt(wd.getCreatedAt())
                         .build();
             }
