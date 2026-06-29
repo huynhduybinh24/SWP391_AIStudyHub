@@ -71,6 +71,9 @@ public class DocumentServiceTest {
     @Mock
     private com.lumiedu.user.repository.UserRepository userRepository;
 
+    @Mock
+    private com.lumiedu.document.repository.SubjectRepository subjectRepository;
+
     @InjectMocks
     private DocumentServiceImpl documentService;
 
@@ -126,7 +129,8 @@ public class DocumentServiceTest {
                 .deleted(false)
                 .build();
 
-        when(googleDriveService.uploadFile(any(), any(List.class))).thenReturn("mock-drive-id");
+        when(googleDriveService.isUserDriveConnected(org.mockito.ArgumentMatchers.anyLong())).thenReturn(true);
+        when(googleDriveService.uploadFile(any(), any(List.class), org.mockito.ArgumentMatchers.anyLong())).thenReturn("mock-drive-id");
         when(documentRepository.save(any(Document.class))).thenReturn(mockSavedDoc);
         when(documentTagRepository.findAllByDocumentId(100L)).thenReturn(
                 List.of(
