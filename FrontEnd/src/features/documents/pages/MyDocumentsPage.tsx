@@ -21,7 +21,8 @@ import {
   ChevronDown,
   ChevronRight,
   Check,
-  X
+  X,
+  History
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -428,6 +429,7 @@ export default function MyDocumentsPage() {
               onClick={() => navigate('/dashboard/documents/upload-history')}
               className="flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
             >
+              <History className="h-4.5 w-4.5" />
               {language === 'en' ? 'View upload history' : 'Lịch sử tải lên'}
             </Button>
 
