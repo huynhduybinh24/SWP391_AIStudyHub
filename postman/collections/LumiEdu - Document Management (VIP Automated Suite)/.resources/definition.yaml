@@ -1,0 +1,2 @@
+$kind: collection
+description: Premium automated test suite verifying functional correctness, headers, JSON schema, data integrity, security logic, and response time metrics.

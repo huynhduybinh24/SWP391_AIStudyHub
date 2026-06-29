@@ -366,7 +366,15 @@ public class DocumentServiceImpl implements DocumentService {
     public DocumentResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
-        checkDocumentAccess(document, currentUserId);
+        if (currentUserId == null) {
+            throw new SecurityException("Authentication is required to modify this document.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new SecurityException("You do not have permission to modify this document.");
+        }
 
         if (request.getTitle() != null) {
             document.setTitle(request.getTitle());
@@ -396,7 +404,15 @@ public class DocumentServiceImpl implements DocumentService {
     public void deleteDocument(Long id, Long currentUserId) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
-        checkDocumentAccess(document, currentUserId);
+        if (currentUserId == null) {
+            throw new SecurityException("Authentication is required to delete this document.");
+        }
+        boolean isAdmin = userRepository.findById(currentUserId)
+                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                .orElse(false);
+        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
+            throw new SecurityException("You do not have permission to delete this document.");
+        }
 
         // Delete from Google Drive if stored there
         if ("GOOGLE_DRIVE".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))
@@ -712,6 +728,9 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     private void checkDocumentAccess(Document document, Long userId) {
+        if ("PUBLIC".equalsIgnoreCase(document.getVisibility())) {
+            return;
+        }
         if (userId == null) {
             throw new SecurityException("Authentication is required to access this document.");
         }
@@ -722,9 +741,6 @@ public class DocumentServiceImpl implements DocumentService {
             return;
         }
         if (userId.equals(document.getUserId())) {
-            return;
-        }
-        if ("PUBLIC".equalsIgnoreCase(document.getVisibility())) {
             return;
         }
         List<com.lumiedu.workspace.entity.WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByDocumentId(document.getId());

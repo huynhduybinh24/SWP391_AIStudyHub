@@ -160,6 +160,11 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
         toast.error("Vui lòng đăng nhập để gửi tệp.")
         return
       }
+      const ext = file.name.split('.').pop()?.toLowerCase()
+      if (ext !== 'pdf') {
+        toast.error(t.toasts.onlyPdfAllowed || "Hệ thống chỉ hỗ trợ tải tệp tin PDF.")
+        return
+      }
       if (selectedFiles.length >= 3) {
         toast.error(t.aiChatbot.maxFilesLimit || "You can attach up to 3 files.")
         return
@@ -518,6 +523,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
                 className="hidden" 
                 ref={fileInputRef}
                 onChange={handleLocalFileChange}
+                accept=".pdf"
               />
               
               {/* Direct file upload button */}

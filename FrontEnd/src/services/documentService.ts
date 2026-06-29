@@ -17,6 +17,9 @@ export interface DocumentResponse {
   ownerEmail?: string
   role?: string
   status?: string
+  moderationStatus?: string
+  rejectionReason?: string
+  reviewedAt?: string
   createdAt: string
   updatedAt: string
 }
@@ -118,6 +121,11 @@ export const documentService = {
 
   async deleteDocumentShare(documentId: number | string, email: string): Promise<void> {
     await apiClient.delete<ApiResponse<void>>(`/documents/${documentId}/shares?email=${encodeURIComponent(email)}`)
+  },
+
+  async getMyUploads(): Promise<DocumentResponse[]> {
+    const response = await apiClient.get<ApiResponse<DocumentResponse[]>>('/documents/my-uploads')
+    return response.data.data
   }
 }
 

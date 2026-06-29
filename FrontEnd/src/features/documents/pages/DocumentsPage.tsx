@@ -869,6 +869,7 @@ export function DocumentsPage() {
   const [newDocSubject, setNewDocSubject] = useState<string>('PRF192')
   const [newDocType, setNewDocType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [hasUploadError, setHasUploadError] = useState(false)
 
   // Reset newDocSubject when uploadMajor or uploadSemester changes
   useEffect(() => {
@@ -1036,7 +1037,9 @@ export function DocumentsPage() {
 
       setTimeout(() => {
         const newDocItem = mapBackendDocToItem(response)
-        setDocuments((prev) => [newDocItem, ...prev])
+        if (response.moderationStatus === 'APPROVED') {
+          setDocuments((prev) => [newDocItem, ...prev])
+        }
         setIsUploading(false)
         setUploadProgress(0)
         setIsUploadModalOpen(false)
@@ -1063,7 +1066,7 @@ export function DocumentsPage() {
           detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
         })
 
-        showToast(`Tài liệu "${finalTitle}" tải lên và phân tích AI thành công!`)
+        showToast(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.')
         
         const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
         setUploadedSubjectKey(finalSubjectKey)
@@ -1511,6 +1514,7 @@ export function DocumentsPage() {
           if (!isUploading) {
             setIsUploadModalOpen(false)
             setSelectedFile(null)
+            setHasUploadError(false)
           }
         }}
         title="Upload Study Material"
@@ -1626,13 +1630,10 @@ export function DocumentsPage() {
                     id="type-select"
                     value={newDocType}
                     onChange={(e) => setNewDocType(e.target.value as any)}
-                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
+                    disabled
+                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-3 pr-10 text-base text-slate-500 dark:text-slate-400 cursor-not-allowed focus-visible:outline-none"
                   >
                     <option value="pdf">{language === 'en' ? 'PDF File (.pdf)' : 'Tệp PDF (.pdf)'}</option>
-                    <option value="word">{language === 'en' ? 'Word Document (.docx)' : 'Tài liệu Word (.docx)'}</option>
-                    <option value="text">{language === 'en' ? 'Text File (.txt)' : 'Tệp văn bản (.txt)'}</option>
-                    <option value="image">{language === 'en' ? 'Image Note (.png, .jpg)' : 'Hình ảnh (.png, .jpg)'}</option>
-                    <option value="slides">{language === 'en' ? 'Presentation Slides (.pptx)' : 'Slide trình chiếu (.pptx)'}</option>
                   </select>
                 </div>
               </div>
@@ -1643,12 +1644,21 @@ export function DocumentsPage() {
                   onClick={() => {
                     const input = document.createElement('input')
                     input.type = 'file'
+                    input.accept = '.pdf'
                     input.onchange = (e) => {
                       const files = (e.target as HTMLInputElement).files
                       if (files && files[0]) {
-                        setSelectedFile(files[0])
+                        const file = files[0]
+                        const ext = file.name.split('.').pop()?.toLowerCase()
+                        if (ext !== 'pdf') {
+                          setHasUploadError(true)
+                          setSelectedFile(null)
+                          return
+                        }
+                        setHasUploadError(false)
+                        setSelectedFile(file)
                         if (!newDocTitle) {
-                          const cleanName = files[0].name.split('.')[0].replace(/[_-]/g, ' ')
+                          const cleanName = file.name.split('.')[0].replace(/[_-]/g, ' ')
                           setNewDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
                         }
                       }
@@ -1656,15 +1666,21 @@ export function DocumentsPage() {
                     input.click()
                   }}
                   className={cn(
-                    'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-8 text-center cursor-pointer transition-all duration-300',
-                    selectedFile
-                      ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20'
-                      : 'hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 bg-slate-50/30'
+                    'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center cursor-pointer transition-all duration-300',
+                    hasUploadError
+                      ? 'border-red-500 bg-red-50/10 dark:bg-red-950/10'
+                      : selectedFile
+                        ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20'
+                        : 'hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700 bg-slate-50/30'
                   )}
                 >
                   <div className={cn(
                     'flex h-12 w-12 items-center justify-center rounded-full shadow-xs transition-colors',
-                    selectedFile ? 'bg-[#2563eb] text-white' : 'bg-blue-50 dark:bg-slate-800 text-[#2563eb] dark:text-blue-400'
+                    hasUploadError
+                      ? 'bg-red-500 text-white'
+                      : selectedFile
+                        ? 'bg-[#2563eb] text-white'
+                        : 'bg-blue-50 dark:bg-slate-800 text-[#2563eb] dark:text-blue-400'
                   )}>
                     <CloudUpload className="h-6 w-6" />
                   </div>
@@ -1676,10 +1692,17 @@ export function DocumentsPage() {
                   ) : (
                     <div className="mt-4">
                       <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Drag and drop your document here</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">or click to browse your folders (PDF, DOCX, TXT, PNG, PPTX up to 50MB)</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">or click to browse your folders (PDF only, up to 50MB)</p>
                     </div>
                   )}
                 </div>
+                {hasUploadError && (
+                  <p className="text-sm font-bold text-red-500 mt-2 text-left">
+                    {language === 'vi'
+                      ? 'Hệ thống chỉ hỗ trợ tệp tin PDF! Vui lòng chọn lại.'
+                      : 'The system only supports PDF files! Please choose another.'}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-8">
@@ -1696,7 +1719,7 @@ export function DocumentsPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!selectedFile && !newDocTitle}
+                  disabled={!selectedFile || hasUploadError}
                   className="rounded-xl bg-[#2563eb] text-white font-semibold shadow-md shadow-blue-500/10 px-6"
                 >
                   {t.upload.processAI}

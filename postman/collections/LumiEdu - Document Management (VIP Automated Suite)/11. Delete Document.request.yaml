@@ -1,0 +1,26 @@
+$kind: http-request
+url: http://localhost:8080/api/documents/{{documentId}}
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      // 1. Status Code & Performance Tests
+      pm.test("TC-11-A | HTTP Status is 200 OK", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("TC-11-B | Performance - Delete from Drive time <1500ms", function () {
+          pm.expect(pm.response.responseTime).to.be.below(1500);
+      });
+
+      // 2. Response Message Assertions
+      pm.test("TC-11-C | Document deleted successfully confirmation", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData.success).to.eql(true);
+          pm.expect(jsonData.message).to.eql("Document deleted successfully.");
+      });
+    language: text/javascript
+order: 11000

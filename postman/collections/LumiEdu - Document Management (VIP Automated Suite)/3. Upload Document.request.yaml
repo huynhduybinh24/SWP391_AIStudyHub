@@ -1,0 +1,59 @@
+$kind: http-request
+url: http://localhost:8080/api/documents/upload
+method: POST
+body:
+  type: formdata
+  content:
+    - type: file
+      key: file
+      src: []
+    - type: text
+      key: title
+      value: Document de test VIP
+    - type: text
+      key: userId
+      value: "{{userId}}"
+    - type: text
+      key: visibility
+      value: PUBLIC
+    - type: text
+      key: description
+      value: Kịch bản tự động kiểm thử VIP 10 chức năng
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      // 1. Status Code & Performance Tests
+      pm.test("TC-03-A | HTTP Status is 200 OK", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("TC-03-B | Performance - Upload to Drive time <5000ms", function () {
+          pm.expect(pm.response.responseTime).to.be.below(5000);
+      });
+
+      // 2. Data Integrity Checks
+      pm.test("TC-03-C | Success fields and message verified", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData.success).to.eql(true);
+          pm.expect(jsonData.message).to.eql("Document uploaded successfully.");
+      });
+
+      pm.test("TC-03-D | Verify Google Drive details and dynamic variable store", function () {
+          var jsonData = pm.response.json();
+          var doc = jsonData.data;
+          
+          pm.expect(doc.id).to.be.a('number');
+          pm.expect(doc.title).to.eql("Document de test VIP");
+          pm.expect(doc.visibility).to.eql("PUBLIC");
+          pm.expect(doc.storageProvider).to.eql("GOOGLE_DRIVE");
+          pm.expect(doc.googleDriveFileId).to.not.be.null;
+          pm.expect(doc.fileUrl).to.include("https://drive.google.com/file/d/");
+          
+          // Save ID for subsequent requests
+          pm.globals.set("documentId", doc.id);
+      });
+    language: text/javascript
+order: 3000

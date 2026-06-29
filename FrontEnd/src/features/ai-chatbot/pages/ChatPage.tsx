@@ -43,8 +43,6 @@ export function ChatPage() {
   const toast = useToast()
   const user = useAuthStore(state => state.user)
   const userId = Number(user?.id || 1)
-  const location = useLocation()
-  const navigate = useNavigate()
 
   // --- States ---
   const [conversations, setConversations] = useState<ChatConversation[]>([])

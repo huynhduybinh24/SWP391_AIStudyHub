@@ -200,6 +200,7 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
         StringBuilder csv = new StringBuilder();
+        csv.append("\uFEFF");
         csv.append("Document ID,Title,Uploader Email,Uploader Name,File Type,File Size (MB),Moderation Status,Created At\n");
 
         for (Document d : docs) {

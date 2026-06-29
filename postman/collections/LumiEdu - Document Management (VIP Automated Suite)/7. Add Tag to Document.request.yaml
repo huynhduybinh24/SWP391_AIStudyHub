@@ -1,0 +1,30 @@
+$kind: http-request
+url: http://localhost:8080/api/documents/{{documentId}}/tags
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "VIP_TEST"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      // 1. Status Code & Timing
+      pm.test("TC-07-A | HTTP Status is 200 OK", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("TC-07-B | Performance - Response time <600ms", function () {
+          pm.expect(pm.response.responseTime).to.be.below(600);
+      });
+
+      // 2. Business Response Validation
+      pm.test("TC-07-C | Tag added successfully confirmation", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData.success).to.eql(true);
+          pm.expect(jsonData.message).to.eql("Tag added successfully.");
+      });
+    language: text/javascript
+order: 7000
