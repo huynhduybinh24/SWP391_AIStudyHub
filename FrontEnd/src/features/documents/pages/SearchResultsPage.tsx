@@ -962,6 +962,17 @@ export function SearchResultsPage() {
                               Rejected
                             </Badge>
                           )
+                        default:
+                          const statusStr = doc.status as string;
+                          const displayStatus = statusStr
+                            ? statusStr.charAt(0).toUpperCase() + statusStr.slice(1)
+                            : 'Unknown';
+                          return (
+                            <Badge className="bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/15 flex items-center gap-1.5 w-fit rounded-full px-2.5 py-0.5 font-extrabold text-[11px] select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                              {displayStatus}
+                            </Badge>
+                          )
                       }
                     };
 
