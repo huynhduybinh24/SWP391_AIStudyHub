@@ -33,4 +33,7 @@ public class DocumentResponse {
     private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String rejectionReason;
+    private java.time.LocalDateTime reviewedAt;
+    private String moderationStatus;
 }

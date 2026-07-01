@@ -65,7 +65,16 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public String uploadFile(MultipartFile file, String folderName, Long userId) throws IOException {
-        if (isUserDriveConnected(userId)) {
+        boolean connected = isUserDriveConnected(userId);
+        log.info("Drive upload check: userId={}, connected={}, folderId={}", userId, connected, rootFolderId);
+        if (connected) {
+            if ("mock-folder-id".equals(rootFolderId)) {
+                throw new IllegalStateException("Google Drive is in mock mode (mock-folder-id), real upload is disabled.");
+            }
+            if (clientId == null || clientId.trim().isEmpty() || clientSecret == null || clientSecret.trim().isEmpty()) {
+                throw new IllegalStateException("Google Drive Client ID or Client Secret is not configured.");
+            }
+            log.info("Attempting real Google Drive upload for userId={}", userId);
             try {
                 Drive userDrive = getDriveClientForUser(userId);
                 String targetFolderId = getOrCreateFolder(userDrive, folderName, "root");
@@ -87,7 +96,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                 log.info("USER GOOGLE DRIVE: Uploaded file '{}' with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
                 return uploadedFile.getId();
             } catch (Exception e) {
-                log.error("Failed to upload file to user {}'s Google Drive. Falling back to default/mock storage. Error: {}", userId, e.getMessage());
+                log.error("Real Google Drive upload failed for userId={}: {}", userId, e.getMessage(), e);
+                throw new RuntimeException("Failed to upload file to user's Google Drive: " + e.getMessage(), e);
             }
         }
 
@@ -114,14 +124,23 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             log.info("GOOGLE DRIVE: Uploaded file '{}' with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
             return uploadedFile.getId();
         } catch (Exception e) {
-            log.error("Google Drive upload failed. Falling back to local mock storage. Error: {}", e.getMessage());
-            return uploadFileMock(file, folderName);
+            log.error("Google Drive upload failed. Error: {}", e.getMessage());
+            throw new RuntimeException("Google Drive upload failed: " + e.getMessage(), e);
         }
     }
 
     @Override
     public String uploadFile(MultipartFile file, java.util.List<String> folderHierarchy, Long userId) throws IOException {
-        if (isUserDriveConnected(userId)) {
+        boolean connected = isUserDriveConnected(userId);
+        log.info("Drive upload check: userId={}, connected={}, folderId={}", userId, connected, rootFolderId);
+        if (connected) {
+            if ("mock-folder-id".equals(rootFolderId)) {
+                throw new IllegalStateException("Google Drive is in mock mode (mock-folder-id), real upload is disabled.");
+            }
+            if (clientId == null || clientId.trim().isEmpty() || clientSecret == null || clientSecret.trim().isEmpty()) {
+                throw new IllegalStateException("Google Drive Client ID or Client Secret is not configured.");
+            }
+            log.info("Attempting real Google Drive upload for userId={}", userId);
             try {
                 Drive userDrive = getDriveClientForUser(userId);
                 String currentParentId = "root";
@@ -148,7 +167,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                 log.info("USER GOOGLE DRIVE: Uploaded file '{}' to hierarchy with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
                 return uploadedFile.getId();
             } catch (Exception e) {
-                log.error("Failed to upload file to user {}'s Google Drive. Falling back to default/mock storage. Error: {}", userId, e.getMessage());
+                log.error("Real Google Drive upload failed for userId={}: {}", userId, e.getMessage(), e);
+                throw new RuntimeException("Failed to upload file to user's Google Drive: " + e.getMessage(), e);
             }
         }
 
@@ -184,9 +204,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             log.info("GOOGLE DRIVE: Uploaded file '{}' to hierarchy with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
             return uploadedFile.getId();
         } catch (Exception e) {
-            log.error("Google Drive upload hierarchy failed. Falling back to local mock storage. Error: {}", e.getMessage());
-            String folderName = folderHierarchy.isEmpty() ? "Khác" : folderHierarchy.get(folderHierarchy.size() - 1);
-            return uploadFileMock(file, folderName);
+            log.error("Google Drive upload hierarchy failed. Error: {}", e.getMessage());
+            throw new RuntimeException("Google Drive upload hierarchy failed: " + e.getMessage(), e);
         }
     }
 
@@ -216,6 +235,9 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public Resource downloadFile(String googleDriveFileId, Long userId) throws IOException {
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("staging_")) {
+            return downloadFileStaging(googleDriveFileId);
+        }
         if (googleDriveFileId == null || googleDriveFileId.startsWith("gdrive_")) {
             return downloadFileMock(googleDriveFileId);
         }
@@ -254,6 +276,19 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
         }
     }
 
+    private Resource downloadFileStaging(String googleDriveFileId) throws IOException {
+        Path dirPath = Paths.get(uploadDir, "google_drive_staging").toAbsolutePath().normalize();
+        if (!Files.exists(dirPath)) {
+            throw new IOException("Staging directory not found: " + dirPath);
+        }
+        try (var files = Files.list(dirPath)) {
+            Path matchedFile = files.filter(p -> p.getFileName().toString().startsWith(googleDriveFileId))
+                    .findFirst()
+                    .orElseThrow(() -> new IOException("Không tìm thấy file trên Google Drive Staging: " + googleDriveFileId));
+            return new UrlResource(matchedFile.toUri());
+        }
+    }
+
     @Override
     public void deleteFile(String googleDriveFileId) throws IOException {
         deleteFile(googleDriveFileId, null);
@@ -261,6 +296,10 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public void deleteFile(String googleDriveFileId, Long userId) throws IOException {
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("staging_")) {
+            deleteFileStaging(googleDriveFileId);
+            return;
+        }
         if (googleDriveFileId == null || googleDriveFileId.startsWith("gdrive_")) {
             deleteFileMock(googleDriveFileId);
             return;
@@ -303,6 +342,21 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
         }
     }
 
+    private void deleteFileStaging(String googleDriveFileId) throws IOException {
+        Path dirPath = Paths.get(uploadDir, "google_drive_staging").toAbsolutePath().normalize();
+        if (!Files.exists(dirPath)) {
+            log.warn("GOOGLE DRIVE STAGING: Directory '{}' does not exist. Nothing to delete.", dirPath);
+            return;
+        }
+        try (var files = Files.list(dirPath)) {
+            var matchedFile = files.filter(p -> p.getFileName().toString().startsWith(googleDriveFileId)).findFirst();
+            if (matchedFile.isPresent()) {
+                Files.delete(matchedFile.get());
+                log.info("GOOGLE DRIVE STAGING: Deleted staged file ID: {}", googleDriveFileId);
+            }
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Helper: Tìm hoặc tạo subfolder
     // -------------------------------------------------------------------------
@@ -325,34 +379,36 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
         if (connectionOpt.isPresent() && Boolean.TRUE.equals(connectionOpt.get().getIsConnected())) {
             UserGoogleDriveConnection conn = connectionOpt.get();
             String encryptedToken = conn.getEncryptedRefreshToken();
-            if (encryptedToken != null && !encryptedToken.trim().isEmpty()) {
-                try {
-                    String refreshToken = encryptionService.decrypt(encryptedToken);
-                    com.google.auth.Credentials credentials = UserCredentials.newBuilder()
-                            .setClientId(clientId)
-                            .setClientSecret(clientSecret)
-                            .setRefreshToken(refreshToken)
-                            .build();
+            if (encryptedToken == null || encryptedToken.trim().isEmpty()) {
+                throw new IllegalStateException("Google Drive refresh token is missing.");
+            }
+            try {
+                String refreshToken = encryptionService.decrypt(encryptedToken);
+                com.google.auth.Credentials credentials = UserCredentials.newBuilder()
+                        .setClientId(clientId)
+                        .setClientSecret(clientSecret)
+                        .setRefreshToken(refreshToken)
+                        .build();
 
-                    com.google.api.client.http.HttpRequestInitializer requestInitializer = new com.google.api.client.http.HttpRequestInitializer() {
-                        private final HttpCredentialsAdapter credentialsAdapter = new HttpCredentialsAdapter(credentials);
-                        @Override
-                        public void initialize(com.google.api.client.http.HttpRequest request) throws IOException {
-                            credentialsAdapter.initialize(request);
-                            request.setConnectTimeout(5000);
-                            request.setReadTimeout(5000);
-                        }
-                    };
+                com.google.api.client.http.HttpRequestInitializer requestInitializer = new com.google.api.client.http.HttpRequestInitializer() {
+                    private final HttpCredentialsAdapter credentialsAdapter = new HttpCredentialsAdapter(credentials);
+                    @Override
+                    public void initialize(com.google.api.client.http.HttpRequest request) throws IOException {
+                        credentialsAdapter.initialize(request);
+                        request.setConnectTimeout(5000);
+                        request.setReadTimeout(5000);
+                    }
+                };
 
-                    return new Drive.Builder(
-                            new NetHttpTransport(),
-                            GsonFactory.getDefaultInstance(),
-                            requestInitializer)
-                            .setApplicationName("LumiEdu-StudyHub")
-                            .build();
-                } catch (Exception e) {
-                    log.error("Failed to build Google Drive client for user {}: {}. Falling back to default googleDrive.", userId, e.getMessage());
-                }
+                return new Drive.Builder(
+                        new NetHttpTransport(),
+                        GsonFactory.getDefaultInstance(),
+                        requestInitializer)
+                        .setApplicationName("LumiEdu-StudyHub")
+                        .build();
+            } catch (Exception e) {
+                log.error("Failed to build Google Drive client for user {}: {}", userId, e.getMessage());
+                throw new RuntimeException("Failed to build Google Drive client: " + e.getMessage(), e);
             }
         }
         return googleDrive;
@@ -404,14 +460,21 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public void shareFile(String googleDriveFileId, String email, String role) throws IOException {
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_")) {
+            throw new IOException("This document does not have a real Google Drive file ID.");
+        }
+        if (googleDriveFileId == null || googleDriveFileId.isBlank() ||
+            "mock-folder-id".equals(rootFolderId)) {
+            log.info("MOCK GOOGLE DRIVE: Sharing file ID: {} with email: {} as role: {}", googleDriveFileId, email, role);
+            return;
+        }
         shareFile(googleDriveFileId, email, role, null);
     }
 
     @Override
     public void shareFile(String googleDriveFileId, String email, String role, Long userId) throws IOException {
-        if (googleDriveFileId == null || googleDriveFileId.isBlank() || googleDriveFileId.startsWith("gdrive_")) {
-            log.info("MOCK GOOGLE DRIVE: Sharing file ID: {} with email: {} as role: {} for user: {}", googleDriveFileId, email, role, userId);
-            return;
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_")) {
+            throw new IOException("This document does not have a real Google Drive file ID.");
         }
         try {
             Drive driveClient = getDriveClientForUser(userId);
@@ -469,14 +532,21 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     @Override
     public void revokeShare(String googleDriveFileId, String email) throws IOException {
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_")) {
+            throw new IOException("This document does not have a real Google Drive file ID.");
+        }
+        if (googleDriveFileId == null || googleDriveFileId.isBlank() ||
+            "mock-folder-id".equals(rootFolderId)) {
+            log.info("MOCK GOOGLE DRIVE: Revoking share on file ID: {} for email: {}", googleDriveFileId, email);
+            return;
+        }
         revokeShare(googleDriveFileId, email, null);
     }
 
     @Override
     public void revokeShare(String googleDriveFileId, String email, Long userId) throws IOException {
-        if (googleDriveFileId == null || googleDriveFileId.isBlank() || googleDriveFileId.startsWith("gdrive_")) {
-            log.info("MOCK GOOGLE DRIVE: Revoking share on file ID: {} for email: {} for user: {}", googleDriveFileId, email, userId);
-            return;
+        if (googleDriveFileId != null && googleDriveFileId.startsWith("gdrive_")) {
+            throw new IOException("This document does not have a real Google Drive file ID.");
         }
         try {
             Drive driveClient = getDriveClientForUser(userId);

@@ -423,6 +423,15 @@ export default function MyDocumentsPage() {
             </Button>
 
             <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/dashboard/documents/upload-history')}
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              {language === 'en' ? 'View upload history' : 'Lịch sử tải lên'}
+            </Button>
+
+            <Button
               onClick={openUploadModal}
               className="group flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
             >

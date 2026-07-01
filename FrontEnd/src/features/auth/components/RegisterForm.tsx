@@ -200,17 +200,6 @@ export function RegisterForm() {
     ? 'Xác nhận mật khẩu'
     : (language === 'ja' ? 'パスワードの確認' : (language === 'ko' ? '비밀번호 확인' : 'Confirm Password'))
 
-  const occupationLabel = language === 'vi' 
-    ? 'Vai trò / Công việc' 
-    : (language === 'ja' ? '役職 / 職業' : (language === 'ko' ? '역할 / 직업' : 'Role / Occupation'))
-
-  const studentLabel = language === 'vi' 
-    ? 'Học sinh' 
-    : (language === 'ja' ? '学生' : (language === 'ko' ? '학생' : 'Student'))
-
-  const teacherLabel = language === 'vi' 
-    ? 'Giáo viên' 
-    : (language === 'ja' ? '教師' : (language === 'ko' ? '교사' : 'Teacher'))
 
   const agreeText = language === 'vi'
     ? 'Tôi đồng ý với các'

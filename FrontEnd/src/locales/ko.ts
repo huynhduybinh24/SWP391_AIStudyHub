@@ -713,7 +713,7 @@ export const ko: any = {
     documentTextStream: (subject: string) => `문서 텍스트 스트림 • 영역: ${subject}`,
     executiveOverview: "1. 개요",
     coreObjectives: "2. 핵심 목표 및 개념 모델",
-    docxBodyDesc: "핵심적인 초점은 복잡한 학습 영역의 구성 요소를 분석하고 통합하며 요약하는 것입니다. 학생들은 이러한 모델의 장기적인 기억 유지를 강화하기 위해 능동적 회상(active recall)을 연습해야 합니다.",
+    docxBodyDesc: "핵심적인 초점은 복잡한 학습 영역의 구성 요소를 분석하고 통합하며 요약하는 것입니다. 사용자들은 이러한 모델의 장기적인 기억 유지를 강화하기 위해 능동적 회상(active recall)을 연습해야 합니다.",
     docxBullet1: "관련 이론에 대한 기초적 이해 정립.",
     docxBullet2: "실용적인 검토 수행 및 분석적 계산 검증.",
     docxBullet3: "자동 퀴즈를 위해 활성 워크스페이스에 학습 가이드 동기화.",
@@ -721,7 +721,7 @@ export const ko: any = {
     learningObjectives: "학습 목표",
     pageSuffix: (pageNum: number) => `${pageNum} 페이지`,
     foundationalTheories: (pageNum: number) => `섹션 ${pageNum - 1}.1 기초 이론 및 핵심 원칙`,
-    docxPageDesc: (courseTitle: string) => `이 섹션에서는 ${courseTitle}에 적용되는 중요한 이론적 프레임워크와 실험 프로토콜에 대해 자세히 다룹니다. 학생들은 역사적 배경을 이해하고, 핵심 변수를 분석하며, 학습 그룹 내에서 방정식을 검증할 것으로 기대됩니다.`,
+    docxPageDesc: (courseTitle: string) => `이 섹션에서는 ${courseTitle}에 적용되는 중요한 이론적 프레임워크와 실험 프로토콜에 대해 자세히 다룹니다. 사용자들은 역사적 배경을 이해하고, 핵심 변수를 분석하며, 학습 그룹 내에서 방정식을 검증할 것으로 기대됩니다.`,
     recommendedReading: "권장 독서 및 평가",
     readBullet1: "섹션 1에 언급된 수식 및 참고 문헌 검토.",
     readBullet2: "주요 유도 과정을 설명하는 상세한 개념 요약서 초안 작성.",
@@ -1297,9 +1297,9 @@ export const ko: any = {
     switched: "Switched to {name}",
     current: "Current",
     adminDescription: "Full access to admin dashboard and system settings.",
-    studentDescription: "Standard learner account with documents and study features.",
-    instructorDescription: "Can manage shared course materials and student collaboration.",
-    proStudentDescription: "Student account with upgraded storage and premium features."
+    studentDescription: "Standard user account with documents and study features.",
+    instructorDescription: "User account with shared learning materials and collaboration features.",
+    proStudentDescription: "User account with upgraded storage and premium features."
   }
 };
 

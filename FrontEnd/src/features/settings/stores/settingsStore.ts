@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { useProfileStore } from '@/features/profile/stores/profileStore'
+import { useAuthStore } from '@/stores/authStore'
 import { settingsService } from '../services/settingsService'
 import { getCurrentUser } from '@/features/notifications/services/userNotificationService'
 
@@ -56,8 +57,13 @@ export const useSettingsStore = create<SettingsState>()(
       loadUserSettings: (email) => {
         const settings = settingsService.getSettings(email)
         const authUser = useAuthStore.getState().user
+        const currentProfile = useProfileStore.getState().profile
         if (authUser && authUser.email.toLowerCase() === email.toLowerCase()) {
           settings.security.isTwoFactorEnabled = !!authUser.twoFactorEnabled
+          if (currentProfile && currentProfile.name && settings.account.name !== currentProfile.name) {
+            settings.account.name = currentProfile.name
+            settingsService.updateSettings(email, { account: settings.account })
+          }
         }
         set({
           account: settings.account,
