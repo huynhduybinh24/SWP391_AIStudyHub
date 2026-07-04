@@ -67,10 +67,14 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         // 2. Ensure chunks exist
-        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        List<DocumentChunk> chunks = getOrWaitForChunks(documentId);
         if (chunks.isEmpty()) {
-            documentChunkingService.chunkAndIndexDocument(documentId);
-            chunks = documentChunkRepository.findByDocumentId(documentId);
+            return AiSummary.builder()
+                    .documentId(documentId)
+                    .language(lang)
+                    .summaryText("Tài liệu đang được hệ thống phân tích và chia nhỏ dữ liệu. Vui lòng đợi trong giây lát và tải lại trang.")
+                    .summaryBullets("[]")
+                    .build();
         }
 
         // 3. Build summary context from first few chunks
@@ -337,10 +341,9 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             throw new IllegalArgumentException("Document not found.");
         }
 
-        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        List<DocumentChunk> chunks = getOrWaitForChunks(documentId);
         if (chunks.isEmpty()) {
-            documentChunkingService.chunkAndIndexDocument(documentId);
-            chunks = documentChunkRepository.findByDocumentId(documentId);
+            throw new IllegalStateException("Tài liệu đang được phân tích hoặc không chứa nội dung văn bản. Vui lòng thử lại sau.");
         }
 
         StringBuilder sb = new StringBuilder();
@@ -401,10 +404,9 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             throw new RuntimeException("Bạn đã vượt quá hạn mức sử dụng AI Quiz hàng ngày của gói dịch vụ hiện tại.");
         }
 
-        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        List<DocumentChunk> chunks = getOrWaitForChunks(documentId);
         if (chunks.isEmpty()) {
-            documentChunkingService.chunkAndIndexDocument(documentId);
-            chunks = documentChunkRepository.findByDocumentId(documentId);
+            throw new IllegalStateException("Tài liệu đang được phân tích hoặc không chứa nội dung văn bản. Vui lòng thử lại sau.");
         }
 
         StringBuilder sb = new StringBuilder();
@@ -606,10 +608,10 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 Document doc = documentRepository.findById(documentId).orElse(null);
                 if (doc != null) {
                     sourceDocs.add(doc);
-                    List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+                    List<DocumentChunk> chunks = getOrWaitForChunks(documentId);
                     if (chunks.isEmpty()) {
-                        documentChunkingService.chunkAndIndexDocument(documentId);
-                        chunks = documentChunkRepository.findByDocumentId(documentId);
+                        docContextBuilder.append("[").append(doc.getTitle()).append("]: (Tài liệu đang được phân tích)\n");
+                        continue;
                     }
                     for (int i = 0; i < Math.min(chunks.size(), 2); i++) {
                         docContextBuilder.append("[").append(doc.getTitle()).append("]: ")
@@ -885,6 +887,28 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         return result.toString();
+    }
+
+    private List<DocumentChunk> getOrWaitForChunks(Long documentId) {
+        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        if (chunks.isEmpty()) {
+            if (!documentChunkingService.isProcessing(documentId)) {
+                documentChunkingService.chunkAndIndexDocument(documentId);
+            }
+            // Polling wait for async task to complete
+            for (int i = 0; i < 15; i++) {
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                chunks = documentChunkRepository.findByDocumentId(documentId);
+                if (!chunks.isEmpty()) {
+                    break;
+                }
+            }
+        }
+        return chunks;
     }
 }
 // Force JDT LS revalidation 2

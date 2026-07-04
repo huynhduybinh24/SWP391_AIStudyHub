@@ -228,7 +228,7 @@ public class DocumentServiceImpl implements DocumentService {
         // Tự động chunk & index cho tài liệu
         if (FILE_TYPE_DOCUMENT.equals(fileType)) {
             final Long docId = document.getId();
-            documentChunkingService.chunkAndIndexDocument(docId);
+            triggerChunkingAfterCommit(docId);
         }
 
         return mapToResponse(document);
@@ -1067,5 +1067,20 @@ public class DocumentServiceImpl implements DocumentService {
             default ->
                 "Hãy ôn tập tài liệu học tập thường xuyên và sử dụng tính năng tạo Quiz tự động bằng AI để củng cố kiến thức tốt nhất.";
         };
+    }
+
+    private void triggerChunkingAfterCommit(Long docId) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        documentChunkingService.chunkAndIndexDocument(docId);
+                    }
+                }
+            );
+        } else {
+            documentChunkingService.chunkAndIndexDocument(docId);
+        }
     }
 }

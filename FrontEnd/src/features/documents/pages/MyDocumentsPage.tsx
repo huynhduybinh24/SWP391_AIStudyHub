@@ -21,7 +21,8 @@ import {
   ChevronDown,
   ChevronRight,
   Check,
-  X
+  X,
+  History
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -401,10 +402,10 @@ export default function MyDocumentsPage() {
               variant="secondary"
               size="sm"
               onClick={() => setSettingsModalOpen(true)}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+              className="flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
             >
               <Settings className="h-4.5 w-4.5" />
-              {language === 'en' ? 'Manage' : (language === 'vi' ? 'Quản lý' : 'Manage')}
+              <span className="hidden sm:inline">{language === 'en' ? 'Manage' : (language === 'vi' ? 'Quản lý' : 'Manage')}</span>
             </Button>
 
             <Button
@@ -412,31 +413,32 @@ export default function MyDocumentsPage() {
               size="sm"
               onClick={() => setShowFilters(prev => !prev)}
               className={cn(
-                "flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
+                "flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
                 showFilters 
                   ? "border-[#2563eb]/40 bg-blue-50 text-[#2563eb] dark:bg-blue-955/30 dark:border-blue-500/50 dark:text-blue-450" 
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               )}
             >
               <SlidersHorizontal className="h-4.5 w-4.5" />
-              {language === 'en' ? 'Filter' : (language === 'vi' ? 'Bộ lọc' : (language === 'ja' ? 'フィルター' : '필터'))}
+              <span className="hidden sm:inline">{language === 'en' ? 'Filter' : (language === 'vi' ? 'Bộ lọc' : (language === 'ja' ? 'フィルター' : '필터'))}</span>
             </Button>
 
             <Button
               variant="secondary"
               size="sm"
               onClick={() => navigate('/dashboard/documents/upload-history')}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+              className="flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
             >
-              {language === 'en' ? 'View upload history' : 'Lịch sử tải lên'}
+              <History className="h-4.5 w-4.5" />
+              <span className="hidden sm:inline">{language === 'en' ? 'View upload history' : 'Lịch sử tải lên'}</span>
             </Button>
 
             <Button
               onClick={openUploadModal}
-              className="group flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
+              className="group flex items-center justify-center gap-2 rounded-xl bg-[#2563eb] w-[42px] sm:w-auto px-0 sm:px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
             >
               <Plus className="h-4.5 w-4.5" />
-              {language === 'en' ? 'Upload New' : (language === 'vi' ? 'Tải lên mới' : (language === 'ja' ? '新規アップロード' : '새로 업로드'))}
+              <span className="hidden sm:inline">{language === 'en' ? 'Upload New' : (language === 'vi' ? 'Tải lên mới' : (language === 'ja' ? '新規アップロード' : '새로 업로드'))}</span>
             </Button>
           </div>
         </div>
