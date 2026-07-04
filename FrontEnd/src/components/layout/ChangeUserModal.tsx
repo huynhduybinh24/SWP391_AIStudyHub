@@ -498,7 +498,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
     const savedPassword = getTargetPassword()
     const isGoogleAccount = selectedUser.isGoogle === true
 
-    if (isGoogleAccount) {
+    if (isGoogleAccount && !targetIsAdmin) {
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '299923810846-kfk4pv295irthtmvfdpuj91gijqkilmh.apps.googleusercontent.com'
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
       
