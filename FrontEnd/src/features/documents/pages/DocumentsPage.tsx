@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { apiClient } from '@/lib/axios'
 
 // Types
 interface DocumentItem {
@@ -871,15 +872,38 @@ export function DocumentsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [hasUploadError, setHasUploadError] = useState(false)
 
+  const [subjectsList, setSubjectsList] = useState<FptSubjectInfo[]>(FPT_SUBJECTS)
+
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const urlSubj = userId ? `/subjects?userId=${userId}` : '/subjects'
+        const response = await apiClient.get<any[]>(urlSubj)
+        const mapped = response.data.map((s: any) => ({
+          id: s.code,
+          title: s.name,
+          courseCode: s.code,
+          semester: s.semesterName,
+          majors: s.majors ? s.majors.split(',').map((m: string) => m.trim().toUpperCase()) : []
+        }))
+        setSubjectsList(mapped)
+      } catch (err) {
+        console.error('Failed to fetch subjects in DocumentsPage:', err)
+        setSubjectsList(FPT_SUBJECTS)
+      }
+    }
+    fetchSubjects()
+  }, [userId, isUploadModalOpen])
+
   // Reset newDocSubject when uploadMajor or uploadSemester changes
   useEffect(() => {
-    const filtered = FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester)
+    const filtered = subjectsList.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester)
     if (filtered.length > 0) {
       setNewDocSubject(filtered[0].id)
     } else {
       setNewDocSubject('GENERAL')
     }
-  }, [uploadMajor, uploadSemester])
+  }, [uploadMajor, uploadSemester, subjectsList])
 
   // Preview Modal States
   const [activePreviewDoc, setActivePreviewDoc] = useState<DocumentItem | null>(null)
@@ -1610,12 +1634,12 @@ export function DocumentsPage() {
                     onChange={(e) => setNewDocSubject(e.target.value)}
                     className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
-                    {FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).map((subj) => (
+                    {subjectsList.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).map((subj) => (
                       <option key={subj.id} value={subj.id}>
                         {subj.courseCode} - {subj.title}
                       </option>
                     ))}
-                    {FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).length === 0 && (
+                    {subjectsList.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).length === 0 && (
                       <option value="GENERAL">General/Other</option>
                     )}
                   </select>
