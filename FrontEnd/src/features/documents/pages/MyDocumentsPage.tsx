@@ -216,6 +216,13 @@ export default function MyDocumentsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [activeMenuId])
 
+  // Reset subject filter when selected semester or major changes
+  useEffect(() => {
+    setSubjectFilter('All')
+  }, [selectedSemester, selectedMajor])
+
+
+
   // Filter logic
   const filteredDocuments = documents.filter((doc) => {
     const titleMatch = doc.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -225,7 +232,12 @@ export default function MyDocumentsPage() {
     const subjectMatch = subjectFilter === 'All' ? true : doc.subject === subjectFilter.toUpperCase()
     const typeMatch = typeFilter === 'All' ? true : doc.type === typeFilter.toLowerCase()
 
-    return queryMatch && subjectMatch && typeMatch
+    // Filter by selected semester and major if they are not 'ALL'
+    const foundSubj = dynamicSubjects.find(s => s.id.toUpperCase() === doc.subject.toUpperCase())
+    const semesterMatch = selectedSemester === 'ALL' || (foundSubj && foundSubj.semester === selectedSemester)
+    const majorMatch = selectedMajor === 'ALL' || (foundSubj && foundSubj.majors.includes(selectedMajor as any))
+
+    return queryMatch && subjectMatch && typeMatch && semesterMatch && majorMatch
   })
 
   // Filter FPT subjects based on selected major and semester
@@ -587,15 +599,11 @@ export default function MyDocumentsPage() {
                 className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
               >
                 <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('All')}</option>
-                <option value="Mathematics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Mathematics')}</option>
-                <option value="Biology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Biology')}</option>
-                <option value="Physics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Physics')}</option>
-                <option value="Compsci" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Compsci')}</option>
-                <option value="Philosophy" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Philosophy')}</option>
-                <option value="Economics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Economics')}</option>
-                <option value="Neuroscience" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Neuroscience')}</option>
-                <option value="Psychology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Psychology')}</option>
-                <option value="General" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('General')}</option>
+                {displayedSubjects.map((sub) => (
+                  <option key={sub.id} value={sub.id} className="dark:bg-slate-900 dark:text-slate-100">
+                    {sub.courseCode === sub.title ? sub.courseCode : `${sub.courseCode} - ${sub.title}`}
+                  </option>
+                ))}
               </select>
             </div>
 
