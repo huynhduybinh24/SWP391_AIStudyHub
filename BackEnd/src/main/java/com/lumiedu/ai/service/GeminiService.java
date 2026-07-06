@@ -196,7 +196,7 @@ public class GeminiService {
             requestBody.add("content", contentObj);
 
             String requestBodyJson = gson.toJson(requestBody);
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=" + apiKey;
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=" + apiKey;
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))

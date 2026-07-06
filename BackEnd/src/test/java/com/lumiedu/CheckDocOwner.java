@@ -15,18 +15,37 @@ public class CheckDocOwner {
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection conn = DriverManager.getConnection(url, user, password);
             Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT d.id, d.title, d.user_id, u.email, u.full_name FROM documents d LEFT JOIN users u ON d.user_id = u.id WHERE d.id = 4");
-            if (rs.next()) {
-                System.out.printf("Doc ID: %d | Title: %s | UserID: %s | UserEmail: %s | UserFullName: %s\n",
-                        rs.getLong("id"),
-                        rs.getString("title"),
-                        rs.getString("user_id"),
-                        rs.getString("email"),
-                        rs.getString("full_name")
+            
+            System.out.println("=== DOCUMENTS ===");
+            ResultSet rsDoc = stmt.executeQuery("SELECT id, title, file_name, file_url, storage_provider FROM documents WHERE title LIKE '%Presentation%'");
+            long docId = -1;
+            while (rsDoc.next()) {
+                docId = rsDoc.getLong("id");
+                System.out.printf("Doc ID: %d | Title: %s | FileName: %s | Storage: %s\n",
+                        docId,
+                        rsDoc.getString("title"),
+                        rsDoc.getString("file_name"),
+                        rsDoc.getString("storage_provider")
                 );
-            } else {
-                System.out.println("Doc not found");
             }
+            
+            if (docId != -1) {
+                System.out.println("\n=== CHUNKS FOR LAST PRESENTATION DOCUMENT ===");
+                ResultSet rsChunks = stmt.executeQuery("SELECT id, chunk_index, content FROM document_chunks WHERE document_id = " + docId);
+                int count = 0;
+                while (rsChunks.next()) {
+                    count++;
+                    String content = rsChunks.getString("content");
+                    System.out.printf("  Chunk ID: %d | Index: %d | Content (len %d): %s\n",
+                            rsChunks.getLong("id"),
+                            rsChunks.getInt("chunk_index"),
+                            content.length(),
+                            content.replace("\n", " [NL] ")
+                    );
+                }
+                System.out.println("Total chunks: " + count);
+            }
+            
             conn.close();
         } catch (Exception e) {
             e.printStackTrace();

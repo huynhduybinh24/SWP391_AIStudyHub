@@ -336,22 +336,22 @@ export default function SubjectCategoryPage() {
               size="sm"
               onClick={() => setShowFilters(prev => !prev)}
               className={cn(
-                "flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
+                "flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
                 showFilters 
                   ? "border-[#2563eb]/40 bg-blue-50 text-[#2563eb] dark:bg-blue-955/30 dark:border-blue-500/50 dark:text-blue-400" 
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               )}
             >
               <SlidersHorizontal className="h-4.5 w-4.5" />
-              Filter
+              <span className="hidden sm:inline">Filter</span>
             </Button>
 
             <Button
               onClick={() => navigate(`/dashboard/documents/subject/${subjectId}/upload`)}
-              className="group flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
+              className="group flex items-center justify-center gap-2 rounded-xl bg-[#2563eb] w-[42px] sm:w-auto px-0 sm:px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
             >
               <Plus className="h-4.5 w-4.5" />
-              Upload New
+              <span className="hidden sm:inline">Upload New</span>
             </Button>
           </div>
         </div>

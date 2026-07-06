@@ -37,12 +37,12 @@ const SEARCH_SUGGESTION_TOPICS: SearchSuggestion[] = [
 
 const ADMIN_SUGGESTION_TOPICS: SearchSuggestion[] = [
   // Mock Users
-  { id: 'usr-1', title: 'Huynh Duy Binh', category: 'User (Student)' },
-  { id: 'usr-2', title: 'Alex Rivera', category: 'User (Student)' },
-  { id: 'usr-3', title: 'Sarah Jenkins', category: 'User (Teacher)' },
-  { id: 'usr-4', title: 'Ngoc Tan', category: 'User (Student)' },
-  { id: 'usr-5', title: 'Marcus Knight', category: 'User (Student)' },
-  { id: 'usr-6', title: 'Emily R.', category: 'User (Teacher)' },
+  { id: 'usr-1', title: 'Huynh Duy Binh', category: 'User' },
+  { id: 'usr-2', title: 'Alex Rivera', category: 'User' },
+  { id: 'usr-3', title: 'Sarah Jenkins', category: 'User' },
+  { id: 'usr-4', title: 'Ngoc Tan', category: 'User' },
+  { id: 'usr-5', title: 'Marcus Knight', category: 'User' },
+  { id: 'usr-6', title: 'Emily R.', category: 'User' },
 
   // Mock Documents
   { id: 'doc-1', title: 'Advanced Neuroscience Syllabus 2024', category: 'Syllabus' },

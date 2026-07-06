@@ -498,7 +498,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
     const savedPassword = getTargetPassword()
     const isGoogleAccount = selectedUser.isGoogle === true
 
-    if (isGoogleAccount) {
+    if (isGoogleAccount && !targetIsAdmin) {
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '299923810846-kfk4pv295irthtmvfdpuj91gijqkilmh.apps.googleusercontent.com'
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
       
@@ -679,18 +679,18 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
     }
     if (cleanUserEmail === 'binh@example.com') {
       return language === 'vi'
-        ? 'Tài khoản học viên tiêu chuẩn với tài liệu và tính năng học tập.'
-        : 'Standard learner account with documents and study features.'
+        ? 'Tài khoản người dùng tiêu chuẩn với tài liệu và tính năng học tập.'
+        : 'Standard user account with documents and study features.'
     }
     if (cleanUserEmail === 'sarah@school.edu') {
       return language === 'vi'
-        ? 'Có thể quản lý tài liệu khóa học và cộng tác với học viên.'
-        : 'Can manage shared course materials and student collaboration.'
+        ? 'Tài khoản người dùng có thể quản lý tài liệu học tập và cộng tác.'
+        : 'User account with shared learning materials and collaboration features.'
     }
     if (cleanUserEmail === 'tan@example.com') {
       return language === 'vi'
-        ? 'Tài khoản học viên có dung lượng nâng cấp và tính năng cao cấp.'
-        : 'Student account with upgraded storage and premium features.'
+        ? 'Tài khoản người dùng có dung lượng nâng cấp và tính năng cao cấp.'
+        : 'User account with upgraded storage and premium features.'
     }
 
     // Dynamic date parsing for other logged in accounts
