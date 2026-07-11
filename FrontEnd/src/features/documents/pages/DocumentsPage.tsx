@@ -5,6 +5,7 @@ import { aiService } from '@/services/aiService'
 import type { AiSummaryResponse, FlashcardResponse, QuizQuestionResponse } from '@/services/aiService'
 import { useAuthStore } from '@/stores/authStore'
 import { documentService } from '@/services/documentService'
+import { useSubjects } from '@/hooks/useSubjects'
 import {
   X,
   Send,
@@ -792,6 +793,7 @@ export function DocumentsPage() {
   const user = useAuthStore(state => state.user)
   const userId = Number(user?.id || 1)
   const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const { subjects: dynamicSubjects, refreshSubjects } = useSubjects()
 
   // Quiz Modal States
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false)
@@ -871,15 +873,21 @@ export function DocumentsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [hasUploadError, setHasUploadError] = useState(false)
 
-  // Reset newDocSubject when uploadMajor or uploadSemester changes
+  // Reset newDocSubject when uploadMajor, uploadSemester, or dynamicSubjects changes
   useEffect(() => {
-    const filtered = FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester)
-    if (filtered.length > 0) {
-      setNewDocSubject(filtered[0].id)
-    } else {
-      setNewDocSubject('GENERAL')
+    if (dynamicSubjects && dynamicSubjects.length > 0) {
+      const filtered = dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester)
+      if (filtered.length > 0) {
+        if (!filtered.some(s => s.id === newDocSubject)) {
+          setNewDocSubject(filtered[0].id)
+        }
+      } else {
+        if (newDocSubject !== 'GENERAL') {
+          setNewDocSubject('GENERAL')
+        }
+      }
     }
-  }, [uploadMajor, uploadSemester])
+  }, [uploadMajor, uploadSemester, dynamicSubjects, newDocSubject])
 
   // Preview Modal States
   const [activePreviewDoc, setActivePreviewDoc] = useState<DocumentItem | null>(null)
@@ -973,18 +981,19 @@ export function DocumentsPage() {
     }
   }
 
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        const backendDocs = await documentService.getAllDocuments(userId)
-        if (backendDocs) {
-          setDocuments(backendDocs.map(mapBackendDocToItem))
-        }
-      } catch (e) {
-        console.error('Failed to load documents from backend:', e)
-        showToast('Không thể tải danh sách tài liệu từ máy chủ.')
+  const fetchDocuments = async () => {
+    try {
+      const backendDocs = await documentService.getAllDocuments(userId)
+      if (backendDocs) {
+        setDocuments(backendDocs.map(mapBackendDocToItem))
       }
+    } catch (e) {
+      console.error('Failed to load documents from backend:', e)
+      showToast('Không thể tải danh sách tài liệu từ máy chủ.')
     }
+  }
+
+  useEffect(() => {
     fetchDocuments()
   }, [userId])
 
@@ -1035,11 +1044,7 @@ export function DocumentsPage() {
       setUploadProgress(100)
       setUploadStepMsg('Finished!')
 
-      setTimeout(() => {
-        const newDocItem = mapBackendDocToItem(response)
-        if (response.moderationStatus === 'APPROVED') {
-          setDocuments((prev) => [newDocItem, ...prev])
-        }
+      setTimeout(async () => {
         setIsUploading(false)
         setUploadProgress(0)
         setIsUploadModalOpen(false)
@@ -1078,6 +1083,17 @@ export function DocumentsPage() {
         setNewDocSubject('PRF192')
         setNewDocType('pdf')
         setSelectedFile(null)
+
+        // Refresh documents from backend
+        try {
+          await fetchDocuments()
+        } catch (err) {
+          console.error('Failed to refresh documents:', err)
+          const newDocItem = mapBackendDocToItem(response)
+          if (response.moderationStatus === 'APPROVED') {
+            setDocuments((prev) => [newDocItem, ...prev])
+          }
+        }
       }, 500)
     } catch (error) {
       clearInterval(progressInterval)
@@ -1488,7 +1504,21 @@ export function DocumentsPage() {
           // Shared Context
           documents,
           setDocuments,
-          openUploadModal: () => setIsUploadModalOpen(true),
+          dynamicSubjects,
+          refreshSubjects,
+          refreshDocuments: fetchDocuments,
+          openUploadModal: (defaultSubjectCode?: string) => {
+            setIsUploadModalOpen(true)
+            if (defaultSubjectCode) {
+              const upperCode = defaultSubjectCode.toUpperCase()
+              const found = dynamicSubjects.find(s => s.courseCode.toUpperCase() === upperCode || s.id.toUpperCase() === upperCode)
+              if (found) {
+                setUploadMajor(found.majors[0] as any || 'SE')
+                setUploadSemester(found.semester || 'K1')
+                setNewDocSubject(found.id)
+              }
+            }
+          },
           openChatDrawer: handleOpenChat,
           openPreviewModal: handleOpenPreview,
           handleOpenPreview,
@@ -1610,12 +1640,12 @@ export function DocumentsPage() {
                     onChange={(e) => setNewDocSubject(e.target.value)}
                     className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
-                    {FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).map((subj) => (
+                    {dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).map((subj) => (
                       <option key={subj.id} value={subj.id}>
                         {subj.courseCode} - {subj.title}
                       </option>
                     ))}
-                    {FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).length === 0 && (
+                    {dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).length === 0 && (
                       <option value="GENERAL">General/Other</option>
                     )}
                   </select>
