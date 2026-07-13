@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import TagInput from '@/features/shared-files/components/TagInput';
+import { apiClient } from '@/lib/axios';
+import { useAuthStore } from '@/stores/authStore';
 
 interface MediaMetadataFormProps {
   title: string;
@@ -132,23 +134,65 @@ export function MediaMetadataForm({
   permissionLabel = 'Permissions'
 }: MediaMetadataFormProps) {
   const [selectedMajor, setSelectedMajor] = useState<'SE' | 'AI' | 'BA'>('SE');
+  const [majorSubjects, setMajorSubjects] = useState<Record<'SE' | 'AI' | 'BA', { value: string; label: string }[]>>(MAJOR_SUBJECTS);
+
+  const { user } = useAuthStore();
+  const userId = user?.id ? Number(user.id) : null;
+
+  useEffect(() => {
+    const url = userId ? `/subjects?userId=${userId}` : '/subjects';
+    
+    apiClient.get(url)
+      .then(res => {
+        const list = res.data;
+        const subjectsList = Array.isArray(list) ? list : (res.data?.data || []);
+        
+        if (subjectsList.length > 0) {
+          const seList: { value: string; label: string }[] = [];
+          const aiList: { value: string; label: string }[] = [];
+          const baList: { value: string; label: string }[] = [];
+          
+          subjectsList.forEach((s: any) => {
+            const item = {
+              value: s.code,
+              label: `${s.code} - ${s.name}`
+            };
+            const majorsStr = s.majors || '';
+            const majorsArr = majorsStr.split(',').map((m: string) => m.trim().toUpperCase());
+            
+            if (majorsArr.includes('SE')) seList.push(item);
+            if (majorsArr.includes('AI')) aiList.push(item);
+            if (majorsArr.includes('BA')) baList.push(item);
+          });
+          
+          setMajorSubjects({
+            SE: seList,
+            AI: aiList,
+            BA: baList
+          });
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load dynamic subjects in MediaMetadataForm:", err);
+      });
+  }, [userId]);
 
   useEffect(() => {
     if (subject) {
       const upperSubj = subject.toUpperCase();
-      if (MAJOR_SUBJECTS.SE.some(s => s.value === upperSubj)) {
+      if (majorSubjects.SE.some(s => s.value === upperSubj)) {
         setSelectedMajor('SE');
-      } else if (MAJOR_SUBJECTS.AI.some(s => s.value === upperSubj)) {
+      } else if (majorSubjects.AI.some(s => s.value === upperSubj)) {
         setSelectedMajor('AI');
-      } else if (MAJOR_SUBJECTS.BA.some(s => s.value === upperSubj)) {
+      } else if (majorSubjects.BA.some(s => s.value === upperSubj)) {
         setSelectedMajor('BA');
       }
     }
-  }, [subject]);
+  }, [subject, majorSubjects]);
 
   const handleMajorChange = (major: 'SE' | 'AI' | 'BA') => {
     setSelectedMajor(major);
-    const subjects = MAJOR_SUBJECTS[major];
+    const subjects = majorSubjects[major];
     if (subjects && subjects.length > 0) {
       const hasCurrentSubj = subjects.some(s => s.value === subject.toUpperCase());
       if (!hasCurrentSubj) {
@@ -157,7 +201,7 @@ export function MediaMetadataForm({
     }
   };
 
-  const currentSubjects = MAJOR_SUBJECTS[selectedMajor] || [];
+  const currentSubjects = majorSubjects[selectedMajor] || [];
   const RECOMMENDED_TAGS = ['Notes', 'Assignment', 'Lecture', 'Midterm', 'Final Exam'];
 
   return (
