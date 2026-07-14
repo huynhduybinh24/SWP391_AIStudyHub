@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import TagInput from '@/features/shared-files/components/TagInput';
-<<<<<<<< < Temporary merge branch 1
-import { useSubjects } from '@/hooks/useSubjects';
+import { apiClient } from '@/lib/axios';
+import { useAuthStore } from '@/stores/authStore';
 
 interface MediaMetadataFormProps {
   title: string;
@@ -24,6 +24,95 @@ interface MediaMetadataFormProps {
   permissionLabel?: string;
 }
 
+const MAJOR_SUBJECTS: Record<'SE' | 'AI' | 'BA', { value: string; label: string }[]> = {
+  SE: [
+    { value: 'PRF192', label: 'PRF192 - Programming Fundamentals' },
+    { value: 'MAE101', label: 'MAE101 - Mathematics for Engineering' },
+    { value: 'CEA201', label: 'CEA201 - Computer Organization' },
+    { value: 'CSI104', label: 'CSI104 - Introduction to Computer Science' },
+    { value: 'PRO192', label: 'PRO192 - Object-Oriented Programming' },
+    { value: 'MAD101', label: 'MAD101 - Discrete Mathematics' },
+    { value: 'OSG202', label: 'OSG202 - Operating Systems' },
+    { value: 'SSG104', label: 'SSG104 - Communication Skills' },
+    { value: 'CSD201', label: 'CSD201 - Data Structures and Algorithms' },
+    { value: 'DBI202', label: 'DBI202 - Database Systems' },
+    { value: 'LAB211', label: 'LAB211 - OOP Java Lab' },
+    { value: 'PRN211', label: 'PRN211 - Basic Cross-Platform (.NET)' },
+    { value: 'SWE201', label: 'SWE201 - Software Engineering' },
+    { value: 'JPD113', label: 'JPD113 - Japanese Language 1' },
+    { value: 'MTH202', label: 'MTH202 - Probability and Statistics' },
+    { value: 'SWP391', label: 'SWP391 - Software Project' },
+    { value: 'SWD392', label: 'SWD392 - Software Architecture' },
+    { value: 'SWT301', label: 'SWT301 - Software Testing' },
+    { value: 'ENT301', label: 'ENT301 - Entrepreneurship' },
+    { value: 'OJT202', label: 'OJT202 - On-the-Job Training' },
+    { value: 'PRM392', label: 'PRM392 - Mobile Programming' },
+    { value: 'PRN221', label: 'PRN221 - Advanced Cross-Platform (.NET)' },
+    { value: 'WDP301', label: 'WDP301 - Web Development Project' },
+    { value: 'SEP490', label: 'SEP490 - Capstone Project Prep' },
+    { value: 'EXE101', label: 'EXE101 - Experiential Entrepreneurship 1' },
+    { value: 'IAS301', label: 'IAS301 - Information Assurance' },
+    { value: 'EXE201', label: 'EXE201 - Experiential Entrepreneurship 2' },
+    { value: 'PMG201', label: 'PMG201 - Project Management' }
+  ],
+  AI: [
+    { value: 'PRF192', label: 'PRF192 - Programming Fundamentals' },
+    { value: 'MAE101', label: 'MAE101 - Mathematics for Engineering' },
+    { value: 'CEA201', label: 'CEA201 - Computer Organization' },
+    { value: 'CSI104', label: 'CSI104 - Introduction to Computer Science' },
+    { value: 'PRO192', label: 'PRO192 - Object-Oriented Programming' },
+    { value: 'MAD101', label: 'MAD101 - Discrete Mathematics' },
+    { value: 'OSG202', label: 'OSG202 - Operating Systems' },
+    { value: 'SSG104', label: 'SSG104 - Communication Skills' },
+    { value: 'CSD201', label: 'CSD201 - Data Structures and Algorithms' },
+    { value: 'DBI202', label: 'DBI202 - Database Systems' },
+    { value: 'AIL302M', label: 'AIL302m - Machine Learning' },
+    { value: 'JPD113', label: 'JPD113 - Japanese Language 1' },
+    { value: 'AIP301', label: 'AIP301 - AI Project' },
+    { value: 'MTH202', label: 'MTH202 - Probability and Statistics' },
+    { value: 'SWP391', label: 'SWP391 - Software Project' },
+    { value: 'DLN301', label: 'DLN301 - Deep Learning' },
+    { value: 'ENT301', label: 'ENT301 - Entrepreneurship' },
+    { value: 'OJT202', label: 'OJT202 - On-the-Job Training' },
+    { value: 'PRM392', label: 'PRM392 - Mobile Programming' },
+    { value: 'NLP301', label: 'NLP301 - Natural Language Processing' },
+    { value: 'CVP301', label: 'CVP301 - Computer Vision Project' },
+    { value: 'CAP490', label: 'CAP490 - Capstone Project Prep' },
+    { value: 'EXE101', label: 'EXE101 - Experiential Entrepreneurship 1' },
+    { value: 'BDA301', label: 'BDA301 - Big Data Analytics' },
+    { value: 'EXE201', label: 'EXE201 - Experiential Entrepreneurship 2' },
+    { value: 'PMG201', label: 'PMG201 - Project Management' }
+  ],
+  BA: [
+    { value: 'MGT103', label: 'MGT103 - Introduction to Management' },
+    { value: 'ECO111', label: 'ECO111 - Microeconomics' },
+    { value: 'FMA101', label: 'FMA101 - Financial Mathematics' },
+    { value: 'SSG104', label: 'SSG104 - Communication Skills' },
+    { value: 'MKT101', label: 'MKT101 - Basic Marketing' },
+    { value: 'ECO121', label: 'ECO121 - Macroeconomics' },
+    { value: 'AMG111', label: 'AMG111 - Art Management' },
+    { value: 'DBI202', label: 'DBI202 - Database Systems' },
+    { value: 'ACC101', label: 'ACC101 - Principles of Accounting' },
+    { value: 'FIN201', label: 'FIN201 - Corporate Finance' },
+    { value: 'BUL201', label: 'BUL201 - Business Law' },
+    { value: 'HRM201', label: 'HRM201 - Human Resource Management' },
+    { value: 'OBH201', label: 'OBH201 - Organizational Behavior' },
+    { value: 'MRF301', label: 'MRF301 - Marketing Research' },
+    { value: 'BIS301', label: 'BIS301 - Business Information Systems' },
+    { value: 'ENT301', label: 'ENT301 - Entrepreneurship' },
+    { value: 'POM201', label: 'POM201 - Production Operations' },
+    { value: 'OJT202', label: 'OJT202 - On-the-Job Training' },
+    { value: 'IBM301', label: 'IBM301 - International Business' },
+    { value: 'SCM301', label: 'SCM301 - Supply Chain Management' },
+    { value: 'BRM301', label: 'BRM301 - Business Research' },
+    { value: 'BAP490', label: 'BAP490 - Capstone Project Prep' },
+    { value: 'EXE101', label: 'EXE101 - Experiential Entrepreneurship 1' },
+    { value: 'SMA301', label: 'SMA301 - Strategic Management' },
+    { value: 'EXE201', label: 'EXE201 - Experiential Entrepreneurship 2' },
+    { value: 'EBU301', label: 'EBU301 - E-Business' }
+  ]
+};
+
 export function MediaMetadataForm({
   title,
   onTitleChange,
@@ -44,66 +133,75 @@ export function MediaMetadataForm({
   tagsLabel,
   permissionLabel = 'Permissions'
 }: MediaMetadataFormProps) {
+  const [selectedMajor, setSelectedMajor] = useState<'SE' | 'AI' | 'BA'>('SE');
+  const [majorSubjects, setMajorSubjects] = useState<Record<'SE' | 'AI' | 'BA', { value: string; label: string }[]>>(MAJOR_SUBJECTS);
+
   const { user } = useAuthStore();
   const userId = user?.id ? Number(user.id) : null;
-  const { subjects: dynamicSubjects } = useSubjects(userId);
-  const [selectedMajor, setSelectedMajor] = useState<'SE' | 'AI' | 'BA'>('SE');
 
   useEffect(() => {
-    if (subject && dynamicSubjects.length > 0) {
-      const upperSubj = subject.toUpperCase();
-      const foundSubj = dynamicSubjects.find(s => s.courseCode.toUpperCase() === upperSubj);
-      if (foundSubj && foundSubj.majors) {
-        if (foundSubj.majors.includes('SE')) {
-          setSelectedMajor('SE');
-        } else if (foundSubj.majors.includes('AI')) {
-          setSelectedMajor('AI');
-        } else if (foundSubj.majors.includes('BA')) {
-          setSelectedMajor('BA');
+    const url = userId ? `/subjects?userId=${userId}` : '/subjects';
+
+    apiClient.get(url)
+      .then(res => {
+        const list = res.data;
+        const subjectsList = Array.isArray(list) ? list : (res.data?.data || []);
+
+        if (subjectsList.length > 0) {
+          const seList: { value: string; label: string }[] = [];
+          const aiList: { value: string; label: string }[] = [];
+          const baList: { value: string; label: string }[] = [];
+
+          subjectsList.forEach((s: any) => {
+            const item = {
+              value: s.code,
+              label: `${s.code} - ${s.name}`
+            };
+            const majorsStr = s.majors || '';
+            const majorsArr = majorsStr.split(',').map((m: string) => m.trim().toUpperCase());
+
+            if (majorsArr.includes('SE')) seList.push(item);
+            if (majorsArr.includes('AI')) aiList.push(item);
+            if (majorsArr.includes('BA')) baList.push(item);
+          });
+
+          setMajorSubjects({
+            SE: seList,
+            AI: aiList,
+            BA: baList
+          });
         }
+      })
+      .catch(err => {
+        console.error("Failed to load dynamic subjects in MediaMetadataForm:", err);
+      });
+  }, [userId]);
+
+  useEffect(() => {
+    if (subject) {
+      const upperSubj = subject.toUpperCase();
+      if (majorSubjects.SE.some(s => s.value === upperSubj)) {
+        setSelectedMajor('SE');
+      } else if (majorSubjects.AI.some(s => s.value === upperSubj)) {
+        setSelectedMajor('AI');
+      } else if (majorSubjects.BA.some(s => s.value === upperSubj)) {
+        setSelectedMajor('BA');
       }
     }
-  }, [subject, dynamicSubjects]);
+  }, [subject, majorSubjects]);
 
   const handleMajorChange = (major: 'SE' | 'AI' | 'BA') => {
     setSelectedMajor(major);
-    const filtered = dynamicSubjects.filter(s => s.majors.includes(major));
-    if (filtered.length > 0) {
-      const hasCurrentSubj = filtered.some(s => s.courseCode.toUpperCase() === subject.toUpperCase());
+    const subjects = majorSubjects[major];
+    if (subjects && subjects.length > 0) {
+      const hasCurrentSubj = subjects.some(s => s.value === subject.toUpperCase());
       if (!hasCurrentSubj) {
-        onSubjectChange(filtered[0].courseCode);
+        onSubjectChange(subjects[0].value);
       }
     }
   };
 
-  // Only auto-select a subject when the current selected subject is empty or invalid after filtering.
-  // Do not override a valid user-selected subject.
-  useEffect(() => {
-    if (dynamicSubjects.length > 0) {
-      const filtered = dynamicSubjects.filter(s => s.majors.includes(selectedMajor));
-      if (filtered.length > 0) {
-        const hasCurrentSubj = filtered.some(s => s.courseCode.toUpperCase() === subject.toUpperCase());
-        if (!hasCurrentSubj) {
-          onSubjectChange(filtered[0].courseCode);
-        }
-      } else {
-        if (subject !== 'GENERAL') {
-          onSubjectChange('GENERAL');
-        }
-      }
-    }
-  }, [selectedMajor, dynamicSubjects, subject, onSubjectChange]);
-
-  const currentSubjects = dynamicSubjects
-    .filter(s => s.majors.includes(selectedMajor))
-    .map(s => ({
-      value: s.courseCode,
-      label: `${s.courseCode} - ${s.title}`
-    }));
-
-=========
   const currentSubjects = majorSubjects[selectedMajor] || [];
->>>>>>>>> Temporary merge branch 2
   const RECOMMENDED_TAGS = ['Notes', 'Assignment', 'Lecture', 'Midterm', 'Final Exam'];
 
   return (
@@ -180,9 +278,6 @@ export function MediaMetadataForm({
                 {opt.label}
               </option>
             ))}
-            {currentSubjects.length === 0 && (
-              <option value="GENERAL">General/Other</option>
-            )}
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 dark:text-slate-500">
             <svg className="fill-current h-4 w-4" viewBox="0 0 20 20">
