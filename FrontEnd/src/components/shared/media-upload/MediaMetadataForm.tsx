@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import TagInput from '@/features/shared-files/components/TagInput';
 import { useSubjects } from '@/hooks/useSubjects';
+import { useAuthStore } from '@/stores/authStore';
 
 interface MediaMetadataFormProps {
   title: string;
@@ -43,50 +44,10 @@ export function MediaMetadataForm({
   tagsLabel,
   permissionLabel = 'Permissions'
 }: MediaMetadataFormProps) {
-  const { subjects: dynamicSubjects } = useSubjects();
-  const [selectedMajor, setSelectedMajor] = useState<'SE' | 'AI' | 'BA'>('SE');
-  const [majorSubjects, setMajorSubjects] = useState<Record<'SE' | 'AI' | 'BA', { value: string; label: string }[]>>(MAJOR_SUBJECTS);
-
   const { user } = useAuthStore();
   const userId = user?.id ? Number(user.id) : null;
-
-  useEffect(() => {
-    const url = userId ? `/subjects?userId=${userId}` : '/subjects';
-    
-    apiClient.get(url)
-      .then(res => {
-        const list = res.data;
-        const subjectsList = Array.isArray(list) ? list : (res.data?.data || []);
-        
-        if (subjectsList.length > 0) {
-          const seList: { value: string; label: string }[] = [];
-          const aiList: { value: string; label: string }[] = [];
-          const baList: { value: string; label: string }[] = [];
-          
-          subjectsList.forEach((s: any) => {
-            const item = {
-              value: s.code,
-              label: `${s.code} - ${s.name}`
-            };
-            const majorsStr = s.majors || '';
-            const majorsArr = majorsStr.split(',').map((m: string) => m.trim().toUpperCase());
-            
-            if (majorsArr.includes('SE')) seList.push(item);
-            if (majorsArr.includes('AI')) aiList.push(item);
-            if (majorsArr.includes('BA')) baList.push(item);
-          });
-          
-          setMajorSubjects({
-            SE: seList,
-            AI: aiList,
-            BA: baList
-          });
-        }
-      })
-      .catch(err => {
-        console.error("Failed to load dynamic subjects in MediaMetadataForm:", err);
-      });
-  }, [userId]);
+  const { subjects: dynamicSubjects } = useSubjects(userId);
+  const [selectedMajor, setSelectedMajor] = useState<'SE' | 'AI' | 'BA'>('SE');
 
   useEffect(() => {
     if (subject && dynamicSubjects.length > 0) {
