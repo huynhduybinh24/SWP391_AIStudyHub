@@ -49,7 +49,7 @@ interface DocumentItem {
 interface DocumentsContextType {
   documents: DocumentItem[]
   setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>
-  openUploadModal: () => void
+  openUploadModal: (defaultSubjectCode?: string) => void
   openChatDrawer: (doc: DocumentItem) => void
   openPreviewModal: (doc: DocumentItem) => void
   openQuizModal: (doc?: DocumentItem) => void
@@ -58,6 +58,7 @@ interface DocumentsContextType {
   handleDeleteDocument: (id: string) => void
   renderFileIcon: (type: string) => React.ReactNode
   renderStatusBadge: (status: string) => React.ReactNode
+  refreshSubjects?: () => void
 }
 
 interface FptSubjectInfo {
@@ -93,8 +94,9 @@ export default function MyDocumentsPage() {
     handleDownloadFile,
     handleDeleteDocument,
     renderFileIcon,
-    renderStatusBadge
-  } = useOutletContext<DocumentsContextType>()
+    renderStatusBadge,
+    refreshSubjects
+  } = useOutletContext<any>()
 
   const { user } = useAuthStore()
   const currentUserId = user?.id ? Number(user.id) : null
@@ -338,6 +340,7 @@ export default function MyDocumentsPage() {
       setAddingSubjectToSemester(null)
       toast.success(language === 'vi' ? 'Thêm môn học mới thành công!' : 'New subject added!')
       fetchSemestersAndSubjects()
+      if (refreshSubjects) refreshSubjects()
     } catch (err) {
       console.error(err)
       toast.error('Failed to create subject')
@@ -358,6 +361,7 @@ export default function MyDocumentsPage() {
       setEditingSubjectMajors('')
       toast.success(language === 'vi' ? 'Cập nhật môn học thành công!' : 'Subject updated!')
       fetchSemestersAndSubjects()
+      if (refreshSubjects) refreshSubjects()
     } catch (err) {
       console.error(err)
       toast.error('Failed to update subject')
@@ -369,6 +373,7 @@ export default function MyDocumentsPage() {
       await apiClient.delete(`/subjects/${id}`)
       toast.success(language === 'vi' ? 'Đã xóa môn học!' : 'Subject deleted!')
       fetchSemestersAndSubjects()
+      if (refreshSubjects) refreshSubjects()
     } catch (err) {
       console.error(err)
       toast.error('Failed to delete subject')
