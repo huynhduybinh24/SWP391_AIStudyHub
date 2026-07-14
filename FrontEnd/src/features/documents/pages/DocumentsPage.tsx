@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { apiClient } from '@/lib/axios'
 
 // Types
 interface DocumentItem {
