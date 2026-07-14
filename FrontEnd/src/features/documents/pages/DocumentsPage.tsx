@@ -794,7 +794,7 @@ export function DocumentsPage() {
   const user = useAuthStore(state => state.user)
   const userId = Number(user?.id || 1)
   const [documents, setDocuments] = useState<DocumentItem[]>([])
-  const { subjects: dynamicSubjects, refreshSubjects } = useSubjects()
+  const { subjects: dynamicSubjects, refreshSubjects } = useSubjects(userId)
 
   // Quiz Modal States
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false)
