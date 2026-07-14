@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import TagInput from '@/features/shared-files/components/TagInput';
-import { useAuthStore } from '@/stores/authStore';
+<<<<<<<< < Temporary merge branch 1
 import { useSubjects } from '@/hooks/useSubjects';
 
 interface MediaMetadataFormProps {
@@ -100,6 +100,10 @@ export function MediaMetadataForm({
       value: s.courseCode,
       label: `${s.courseCode} - ${s.title}`
     }));
+
+=========
+  const currentSubjects = majorSubjects[selectedMajor] || [];
+>>>>>>>>> Temporary merge branch 2
   const RECOMMENDED_TAGS = ['Notes', 'Assignment', 'Lecture', 'Midterm', 'Final Exam'];
 
   return (
