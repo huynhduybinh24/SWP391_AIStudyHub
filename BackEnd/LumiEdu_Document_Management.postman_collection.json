@@ -368,7 +368,7 @@
 							"    pm.expect(pm.response.headers.get(\"Content-Disposition\")).to.include(\"filename=\");",
 							"});",
 							"pm.test(\"TC-06-D | Verify file content is present\", function () {",
-							"    pm.expect(pm.response.body.length).to.be.above(0);",
+							"    pm.expect(pm.response.text().length).to.be.above(0);",
 							"});"
 						],
 						"type": "text/javascript"
