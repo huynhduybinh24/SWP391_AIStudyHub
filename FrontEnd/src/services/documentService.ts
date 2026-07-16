@@ -59,18 +59,30 @@ export const documentService = {
         'Content-Type': 'multipart/form-data',
       },
     })
-    return response.data.data
+    const doc = response.data.data
+    if (doc && doc.subject === 'BIOLOGY') {
+      doc.subject = 'GENERAL'
+    }
+    return doc
   },
 
   async getAllDocuments(userId?: number): Promise<DocumentResponse[]> {
     const url = userId ? `/documents?userId=${userId}` : '/documents'
     const response = await apiClient.get<ApiResponse<DocumentResponse[]>>(url)
-    return response.data.data
+    const list = response.data.data || []
+    return list.map(doc => ({
+      ...doc,
+      subject: doc.subject === 'BIOLOGY' ? 'GENERAL' : doc.subject
+    }))
   },
 
   async getDocumentById(id: number | string): Promise<DocumentResponse> {
     const response = await apiClient.get<ApiResponse<DocumentResponse>>(`/documents/${id}`)
-    return response.data.data
+    const doc = response.data.data
+    if (doc && doc.subject === 'BIOLOGY') {
+      doc.subject = 'GENERAL'
+    }
+    return doc
   },
 
   async deleteDocument(id: number | string): Promise<void> {
@@ -125,7 +137,11 @@ export const documentService = {
 
   async getMyUploads(): Promise<DocumentResponse[]> {
     const response = await apiClient.get<ApiResponse<DocumentResponse[]>>('/documents/my-uploads')
-    return response.data.data
+    const list = response.data.data || []
+    return list.map(doc => ({
+      ...doc,
+      subject: doc.subject === 'BIOLOGY' ? 'GENERAL' : doc.subject
+    }))
   }
 }
 

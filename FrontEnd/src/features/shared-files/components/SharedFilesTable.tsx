@@ -9,6 +9,8 @@ export interface SharedFile {
   name: string
   type: 'pdf' | 'docx' | 'xlsx' | 'txt' | 'image' | 'folder' | 'doc' | 'spreadsheet' | 'video' | string
   owner?: string
+  ownerName?: string
+  ownerEmail?: string
   sharedWith?: string
   permission: 'View Only' | 'Viewer' | 'Editor' | 'Owner'
   dateShared: string

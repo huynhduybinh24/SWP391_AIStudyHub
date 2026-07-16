@@ -26,6 +26,12 @@ public class LumiEduApplication {
             } catch (Exception e) {
                 System.err.println("Could not modify users.avatar_url column: " + e.getMessage());
             }
+            try {
+                jdbcTemplate.execute("UPDATE documents SET subject = 'GENERAL' WHERE subject = 'BIOLOGY'");
+                System.out.println("Successfully updated BIOLOGY subjects in documents table to GENERAL");
+            } catch (Exception e) {
+                System.err.println("Could not update documents subject column: " + e.getMessage());
+            }
         };
     }
 }

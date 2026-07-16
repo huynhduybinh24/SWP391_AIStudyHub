@@ -49,7 +49,7 @@ interface DocumentItem {
 interface DocumentsContextType {
   documents: DocumentItem[]
   setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>
-  openUploadModal: () => void
+  openUploadModal: (defaultSubjectCode?: string) => void
   openChatDrawer: (doc: DocumentItem) => void
   openPreviewModal: (doc: DocumentItem) => void
   openQuizModal: (doc?: DocumentItem) => void
@@ -58,6 +58,7 @@ interface DocumentsContextType {
   handleDeleteDocument: (id: string) => void
   renderFileIcon: (type: string) => React.ReactNode
   renderStatusBadge: (status: string) => React.ReactNode
+  refreshSubjects?: () => void
 }
 
 interface FptSubjectInfo {
@@ -93,8 +94,9 @@ export default function MyDocumentsPage() {
     handleDownloadFile,
     handleDeleteDocument,
     renderFileIcon,
-    renderStatusBadge
-  } = useOutletContext<DocumentsContextType>()
+    renderStatusBadge,
+    refreshSubjects
+  } = useOutletContext<any>()
 
   const { user } = useAuthStore()
   const currentUserId = user?.id ? Number(user.id) : null
@@ -216,6 +218,13 @@ export default function MyDocumentsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [activeMenuId])
 
+  // Reset subject filter when selected semester or major changes
+  useEffect(() => {
+    setSubjectFilter('All')
+  }, [selectedSemester, selectedMajor])
+
+
+
   // Filter logic
   const filteredDocuments = documents.filter((doc) => {
     const titleMatch = doc.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -225,7 +234,12 @@ export default function MyDocumentsPage() {
     const subjectMatch = subjectFilter === 'All' ? true : doc.subject === subjectFilter.toUpperCase()
     const typeMatch = typeFilter === 'All' ? true : doc.type === typeFilter.toLowerCase()
 
-    return queryMatch && subjectMatch && typeMatch
+    // Filter by selected semester and major if they are not 'ALL'
+    const foundSubj = dynamicSubjects.find(s => s.id.toUpperCase() === doc.subject.toUpperCase())
+    const semesterMatch = selectedSemester === 'ALL' || (foundSubj && foundSubj.semester === selectedSemester)
+    const majorMatch = selectedMajor === 'ALL' || (foundSubj && foundSubj.majors.includes(selectedMajor as any))
+
+    return queryMatch && subjectMatch && typeMatch && semesterMatch && majorMatch
   })
 
   // Filter FPT subjects based on selected major and semester
@@ -326,6 +340,7 @@ export default function MyDocumentsPage() {
       setAddingSubjectToSemester(null)
       toast.success(language === 'vi' ? 'Thêm môn học mới thành công!' : 'New subject added!')
       fetchSemestersAndSubjects()
+      if (refreshSubjects) refreshSubjects()
     } catch (err) {
       console.error(err)
       toast.error('Failed to create subject')
@@ -346,6 +361,7 @@ export default function MyDocumentsPage() {
       setEditingSubjectMajors('')
       toast.success(language === 'vi' ? 'Cập nhật môn học thành công!' : 'Subject updated!')
       fetchSemestersAndSubjects()
+      if (refreshSubjects) refreshSubjects()
     } catch (err) {
       console.error(err)
       toast.error('Failed to update subject')
@@ -357,6 +373,7 @@ export default function MyDocumentsPage() {
       await apiClient.delete(`/subjects/${id}`)
       toast.success(language === 'vi' ? 'Đã xóa môn học!' : 'Subject deleted!')
       fetchSemestersAndSubjects()
+      if (refreshSubjects) refreshSubjects()
     } catch (err) {
       console.error(err)
       toast.error('Failed to delete subject')
@@ -587,15 +604,11 @@ export default function MyDocumentsPage() {
                 className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
               >
                 <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('All')}</option>
-                <option value="Mathematics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Mathematics')}</option>
-                <option value="Biology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Biology')}</option>
-                <option value="Physics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Physics')}</option>
-                <option value="Compsci" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Compsci')}</option>
-                <option value="Philosophy" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Philosophy')}</option>
-                <option value="Economics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Economics')}</option>
-                <option value="Neuroscience" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Neuroscience')}</option>
-                <option value="Psychology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Psychology')}</option>
-                <option value="General" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('General')}</option>
+                {displayedSubjects.map((sub) => (
+                  <option key={sub.id} value={sub.id} className="dark:bg-slate-900 dark:text-slate-100">
+                    {sub.courseCode === sub.title ? sub.courseCode : `${sub.courseCode} - ${sub.title}`}
+                  </option>
+                ))}
               </select>
             </div>
 
