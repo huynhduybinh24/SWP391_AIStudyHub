@@ -15,6 +15,8 @@ export interface DocumentResponse {
   checksum: string
   createdAt: string
   updatedAt: string
+  moderationStatus?: 'PENDING' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED'
+  moderationReason?: string
 }
 
 export interface ApiResponse<T> {
