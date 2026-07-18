@@ -727,6 +727,14 @@ export function AdminDocumentsTab({
                               ))}
                             </div>
                           )}
+
+                          {/* AI Moderation Warning Badge */}
+                          {doc.moderationReason && (
+                            <div className="mt-1.5 bg-rose-50 dark:bg-rose-955/20 text-rose-700 dark:text-rose-400 text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-rose-100 dark:border-rose-900/30 flex items-center gap-1.5 max-w-sm">
+                              <AlertTriangle className="size-3.5 shrink-0 text-rose-500" />
+                              <span className="leading-snug">{doc.moderationReason}</span>
+                            </div>
+                          )}
                         </div>
                       </td>
 
