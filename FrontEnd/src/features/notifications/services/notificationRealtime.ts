@@ -18,7 +18,17 @@ class NotificationRealtimeManager {
   private socket: WebSocket | null = null;
   private reconnectTimeout: any = null;
   private simulationInterval: any = null;
-  private wsUrl: string = import.meta.env.VITE_API_REALTIME_URL || 'ws://localhost:8085/api/ws/notifications';
+
+  private getWsUrl(): string {
+    const apiRealtimeUrl = import.meta.env.VITE_API_REALTIME_URL;
+    if (apiRealtimeUrl) return apiRealtimeUrl;
+
+    if (typeof window !== 'undefined') {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//${window.location.host}/api/ws/notifications`;
+    }
+    return 'ws://localhost:8080/api/ws/notifications';
+  }
 
 
 
@@ -99,7 +109,8 @@ class NotificationRealtimeManager {
 
     const currentUser = getCurrentUser();
     const userEmail = currentUser?.email || '';
-    const url = userEmail ? `${this.wsUrl}?email=${encodeURIComponent(userEmail)}` : this.wsUrl;
+    const wsUrl = this.getWsUrl();
+    const url = userEmail ? `${wsUrl}?email=${encodeURIComponent(userEmail)}` : wsUrl;
 
     console.log(`[Realtime] Attempting connection to WebSocket: ${url}`);
     try {
@@ -167,6 +178,11 @@ class NotificationRealtimeManager {
   }
 
   private handleIncomingNotification(data: any) {
+    if (data && data.syncAction === 'REFRESH') {
+      this.dispatchUpdateEvent();
+      return;
+    }
+
     if (typeof window !== 'undefined') {
       const isAuthenticated = useAuthStore.getState().isAuthenticated;
       const currentUser = localStorage.getItem('aiStudyHubCurrentUser');
@@ -253,7 +269,7 @@ class NotificationRealtimeManager {
         title: notif.title,
         message: notif.description,
         time: notif.time,
-        isRead: notif.isRead,
+        isRead: notif.isRead !== undefined ? notif.isRead : notif.read,
         createdAt: notif.createdAt,
       };
 

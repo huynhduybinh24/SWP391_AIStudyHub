@@ -25,14 +25,15 @@ export function normalizeSemester(sem: any): string {
   return semStr.toUpperCase();
 }
 
-export function useSubjects() {
+export function useSubjects(userId?: number | null) {
   const [subjects, setSubjects] = useState<FptSubjectInfo[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchSubjects = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get<any[]>('/subjects');
+      const url = userId ? `/subjects?userId=${userId}` : '/subjects';
+      const response = await apiClient.get<any[]>(url);
       const mapped = response.data.map((s: any) => {
         const codeVal = s.code || s.subjectCode || s.id || '';
         const nameVal = s.name || s.subjectName || '';
@@ -60,7 +61,7 @@ export function useSubjects() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     fetchSubjects();
