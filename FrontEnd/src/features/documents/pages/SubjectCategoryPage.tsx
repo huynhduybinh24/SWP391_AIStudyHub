@@ -669,7 +669,10 @@ export default function SubjectCategoryPage() {
                 return (
                   <div 
                      key={doc.id}
-                     className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-500/20 dark:hover:border-blue-500/30 cursor-pointer h-[200px]"
+                     className={cn(
+                       "group relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-500/20 dark:hover:border-blue-500/30 cursor-pointer h-[200px]",
+                       activeMenuId === doc.id ? "z-25" : "z-0"
+                     )}
                      onClick={() => handleOpenDocument(doc.id)}
                   >
                     {/* Top action block */}
@@ -739,7 +742,10 @@ export default function SubjectCategoryPage() {
                 return (
                   <div 
                     key={doc.id}
-                    className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-500/20 dark:hover:border-blue-500/30 cursor-pointer h-[200px]"
+                    className={cn(
+                      "group relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-500/20 dark:hover:border-blue-500/30 cursor-pointer h-[200px]",
+                      activeMenuId === doc.id ? "z-25" : "z-0"
+                    )}
                     onClick={() => handleOpenDocument(doc.id)}
                   >
                     {/* Top action block */}
@@ -806,7 +812,10 @@ export default function SubjectCategoryPage() {
               return (
                 <div 
                   key={doc.id}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-500/20 dark:hover:border-blue-500/30 cursor-pointer h-[200px]"
+                  className={cn(
+                    "group relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-blue-500/20 dark:hover:border-blue-500/30 cursor-pointer h-[200px]",
+                    activeMenuId === doc.id ? "z-25" : "z-0"
+                  )}
                   onClick={() => handleOpenDocument(doc.id)}
                 >
                   <div className="flex items-start justify-between" onClick={(e) => e.stopPropagation()}>
