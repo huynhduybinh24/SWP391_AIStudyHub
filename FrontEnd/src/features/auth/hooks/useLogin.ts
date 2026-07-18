@@ -14,7 +14,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: (values: LoginFormValues & { remember?: boolean }) => authService.login(values),
     onSuccess: (data, variables) => {
-      if (data.requires2fa) {
+      if (data.requires2fa || !data.user || !data.tokens) {
         return
       }
       // Capture actual login credentials to match on the switcher

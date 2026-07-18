@@ -321,7 +321,24 @@ public class DocumentController {
 
     private String resolveMimeType(Long documentId) {
         return documentRepository.findByIdAndDeletedFalse(documentId)
-                .map(d -> d.getMimeType() != null ? d.getMimeType() : MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                .map(d -> {
+                    String mime = d.getMimeType();
+                    // Nếu mimeType trống hoặc là kiểu chung chung octet-stream, thử đoán qua đuôi file
+                    if (mime == null || mime.trim().isEmpty() || MediaType.APPLICATION_OCTET_STREAM_VALUE.equalsIgnoreCase(mime)) {
+                        String filename = d.getOriginalFileName() != null ? d.getOriginalFileName() : d.getFileName();
+                        if (filename != null) {
+                            String lowerName = filename.toLowerCase();
+                            if (lowerName.endsWith(".pdf")) {
+                                return MediaType.APPLICATION_PDF_VALUE;
+                            } else if (lowerName.endsWith(".png")) {
+                                return MediaType.IMAGE_PNG_VALUE;
+                            } else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
+                                return MediaType.IMAGE_JPEG_VALUE;
+                            }
+                        }
+                    }
+                    return mime != null ? mime : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                })
                 .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
     }
 
