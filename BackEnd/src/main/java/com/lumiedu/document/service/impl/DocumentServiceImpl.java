@@ -210,7 +210,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .storageProvider(googleDriveFileId != null ? ("STAGING".equals(driveSyncStatus) ? "GOOGLE_DRIVE_STAGING" : "GOOGLE_DRIVE") : "LOCAL")
                 .checksum(calculateChecksum(file))
                 .deleted(false)
-                .moderationStatus(FILE_TYPE_DOCUMENT.equals(fileType) ? DocumentStatus.PENDING_REVIEW : DocumentStatus.APPROVED)
+                .moderationStatus(FILE_TYPE_DOCUMENT.equals(fileType) ? DocumentStatus.PENDING : DocumentStatus.APPROVED)
                 .driveSyncStatus(driveSyncStatus)
                 .driveSyncError(driveSyncError)
                 .build();
@@ -575,6 +575,7 @@ public class DocumentServiceImpl implements DocumentService {
                 || document.getModerationStatus() == DocumentStatus.APPROVED;
     }
 
+
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File must not be null or empty.");
@@ -828,16 +829,27 @@ public class DocumentServiceImpl implements DocumentService {
                 String curriculumJson = plan.getCurriculumJson();
                 String completedJson = plan.getCompletedLessonsJson();
                 if (curriculumJson != null && !curriculumJson.isBlank()) {
-                    List<?> totalLessons = objectMapper.readValue(curriculumJson, List.class);
-                    int totalCount = totalLessons.size();
-                    if (totalCount > 0) {
-                        int completedCount = 0;
-                        if (completedJson != null && !completedJson.isBlank()) {
-                            List<?> completedLessons = objectMapper.readValue(completedJson, List.class);
-                            completedCount = completedLessons.size();
+                    List<?> totalModules = null;
+                    if (curriculumJson.trim().startsWith("[")) {
+                        totalModules = objectMapper.readValue(curriculumJson, List.class);
+                    } else if (curriculumJson.trim().startsWith("{")) {
+                        java.util.Map<?, ?> map = objectMapper.readValue(curriculumJson, java.util.Map.class);
+                        Object modulesObj = map.get("modules");
+                        if (modulesObj instanceof List) {
+                            totalModules = (List<?>) modulesObj;
                         }
-                        studyProgress = Math.min(100, (completedCount * 100) / totalCount);
-                        progressCalculated = true;
+                    }
+                    if (totalModules != null) {
+                        int totalCount = totalModules.size();
+                        if (totalCount > 0) {
+                            int completedCount = 0;
+                            if (completedJson != null && !completedJson.isBlank()) {
+                                List<?> completedLessons = objectMapper.readValue(completedJson, List.class);
+                                completedCount = completedLessons.size();
+                            }
+                            studyProgress = Math.min(100, (completedCount * 100) / totalCount);
+                            progressCalculated = true;
+                        }
                     }
                 }
             } catch (Exception e) {

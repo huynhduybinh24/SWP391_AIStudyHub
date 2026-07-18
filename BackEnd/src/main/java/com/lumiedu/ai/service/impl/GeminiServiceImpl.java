@@ -15,16 +15,16 @@ import org.springframework.http.MediaType;
 @Service
 public class GeminiServiceImpl {
 
-    @Value("${gemini.api-key:}")
+    @Value("${gemini.api.key:}")
     private String apiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
     public String chat(String systemPrompt, String userMessage) {
-        if (apiKey != null && !apiKey.trim().isEmpty()) {
+        if (apiKey != null && !apiKey.trim().isEmpty() && !"mock-gemini-key".equalsIgnoreCase(apiKey) && !"mock-key".equalsIgnoreCase(apiKey)) {
             try {
                 log.info("Querying Google Gemini API for content moderation...");
-                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
@@ -85,19 +85,23 @@ public class GeminiServiceImpl {
 
         if (isSuspicious) {
             String violationDetail = "Phát hiện từ khóa nghi vấn liên quan đến gian lận thi cử hoặc nội dung không lành mạnh.";
+            String violationDetailEn = "Suspicious keyword detected related to academic dishonesty or inappropriate content.";
             if (textLower.contains("làm hộ bài thi") || textLower.contains("thi hộ")) {
                 violationDetail = "Phát hiện dịch vụ thi hộ/làm hộ bài thi vi phạm quy chế học thuật.";
+                violationDetailEn = "Cheating service / exam proxy service detected violating academic integrity.";
             } else if (textLower.contains("quảng cáo cờ bạc") || textLower.contains("cá độ")) {
                 violationDetail = "Nội dung chứa quảng cáo cờ bạc hoặc cá độ trái phép.";
+                violationDetailEn = "Content contains gambling or sports betting advertisement.";
             } else if (textLower.contains("lộ đề thi")) {
                 violationDetail = "Phát hiện từ khóa liên quan đến rò rỉ đề thi.";
+                violationDetailEn = "Detected keywords related to exam paper leaks.";
             }
             return String.format(
-                "{\"riskLevel\": \"SUSPICIOUS\", \"reason\": \"%s\", \"confidenceScore\": 0.95}", 
-                violationDetail
+                "{\"riskLevel\": \"SUSPICIOUS\", \"reasonEn\": \"%s\", \"reasonVi\": \"%s\", \"confidenceScore\": 0.95}", 
+                violationDetailEn, violationDetail
             );
         } else {
-            return "{\"riskLevel\": \"SAFE\", \"reason\": \"Tài liệu học tập an toàn\", \"confidenceScore\": 0.99}";
+            return "{\"riskLevel\": \"SAFE\", \"reasonEn\": \"Approved automatically by keyword scan fallback.\", \"reasonVi\": \"Được duyệt tự động bằng bộ quét từ khóa dự phòng.\", \"confidenceScore\": 1.0}";
         }
     }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { logActivity } from '@/services/activityLogService'
 import { aiService } from '@/services/aiService'
@@ -862,6 +862,18 @@ export function DocumentsPage() {
   // Upload Modal States
   const [approvalModalOpen, setApprovalModalOpen] = useState(false)
   const [uploadedSubjectKey, setUploadedSubjectKey] = useState('')
+  const [moderationState, setModerationState] = useState<'scanning' | 'approved' | 'pending_review' | 'timeout'>('scanning')
+  const [uploadedDocId, setUploadedDocId] = useState<string | number>('')
+  const pollingIntervalRef = useRef<any>(null)
+
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+      }
+    }
+  }, [])
+
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -1072,10 +1084,12 @@ export function DocumentsPage() {
           detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
         })
 
-        showToast(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.')
+        showToast(language === 'en' ? 'Document uploaded successfully.' : 'Tải lên tài liệu thành công.')
         
         const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
         setUploadedSubjectKey(finalSubjectKey)
+        setUploadedDocId(response.id)
+        setModerationState('scanning')
         setApprovalModalOpen(true)
 
         setNewDocTitle('')
@@ -1085,16 +1099,42 @@ export function DocumentsPage() {
         setNewDocType('pdf')
         setSelectedFile(null)
 
-        // Refresh documents from backend
-        try {
-          await fetchDocuments()
-        } catch (err) {
-          console.error('Failed to refresh documents:', err)
-          const newDocItem = mapBackendDocToItem(response)
-          if (response.moderationStatus === 'APPROVED') {
-            setDocuments((prev) => [newDocItem, ...prev])
-          }
+        // Clear any existing polling interval
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current)
         }
+
+        // Start polling for AI moderation resolution
+        let attempts = 0
+        const maxAttempts = 6
+        pollingIntervalRef.current = setInterval(async () => {
+          try {
+            const doc = await documentService.getDocumentById(response.id)
+            if (doc.moderationStatus === 'APPROVED') {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
+              setModerationState('approved')
+              fetchDocuments()
+            } else if (doc.moderationStatus === 'PENDING_REVIEW' || doc.moderationStatus === 'REJECTED') {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
+              setModerationState('pending_review')
+              fetchDocuments()
+            }
+          } catch (err) {
+            console.error('Failed to poll document status:', err)
+          }
+
+          attempts++
+          if (attempts >= maxAttempts) {
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
+              setModerationState('timeout')
+              fetchDocuments()
+            }
+          }
+        }, 1000)
       }, 500)
     } catch (error) {
       clearInterval(progressInterval)
@@ -2654,7 +2694,6 @@ export function DocumentsPage() {
           </div>
         </Modal>
       )}
-      {/* Approval Pending Modal */}
       <Modal
         isOpen={approvalModalOpen}
         onClose={() => {
@@ -2663,50 +2702,140 @@ export function DocumentsPage() {
             navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
           }
         }}
-        title={language === 'en' ? 'Moderation Pending' : 'Chờ kiểm duyệt'}
+        title={
+          moderationState === 'scanning'
+            ? (language === 'en' ? 'AI Security Scanning...' : 'AI đang quét kiểm duyệt...')
+            : moderationState === 'approved'
+            ? (language === 'en' ? 'Upload Successful' : 'Tải lên thành công')
+            : moderationState === 'pending_review'
+            ? (language === 'en' ? 'Moderation Pending' : 'Chờ kiểm duyệt')
+            : (language === 'en' ? 'Document Processing' : 'Đang xử lý tài liệu')
+        }
         description={
-          language === 'en'
-            ? 'Your document has been successfully uploaded to Google Drive.'
-            : 'Tài liệu của bạn đã được tải lên Google Drive thành công.'
+          moderationState === 'scanning'
+            ? (language === 'en' ? 'AI is running safety and policy checks on your document.' : 'Hệ thống AI đang thực hiện kiểm tra an toàn và nội dung tài liệu.')
+            : moderationState === 'approved'
+            ? (language === 'en' ? 'Your document is verified and ready to use!' : 'Tài liệu của bạn đã được kiểm duyệt và sẵn sàng để sử dụng!')
+            : moderationState === 'pending_review'
+            ? (language === 'en' ? 'Potential content violations detected.' : 'Phát hiện nội dung cần được xem xét thêm.')
+            : (language === 'en' ? 'AI analysis is running in the background.' : 'AI đang tiếp tục xử lý phân tích tài liệu chạy ẩn.')
         }
         className="max-w-[480px]"
       >
         <div className="space-y-6 text-center py-2 select-none">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400">
-            <FileText className="h-8 w-8" />
-          </div>
+          {moderationState === 'scanning' && (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          )}
+          {moderationState === 'approved' && (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-955/30 text-emerald-500">
+              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            </div>
+          )}
+          {moderationState === 'pending_review' && (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-955/30 text-amber-500">
+              <FileText className="h-8 w-8 text-amber-500" />
+            </div>
+          )}
+          {moderationState === 'timeout' && (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-sky-50 dark:bg-sky-955/30 text-sky-500">
+              <FileText className="h-8 w-8 text-sky-500" />
+            </div>
+          )}
 
           <div className="space-y-2 max-w-sm mx-auto">
             <p className="text-sm text-slate-605 dark:text-slate-400 font-medium leading-relaxed">
-              {language === 'en'
-                ? 'Your document is now waiting for administrative approval. It will become visible to others once approved.'
-                : 'Tài liệu đang chờ Admin phê duyệt. Tài liệu sẽ được hiển thị công khai sau khi được duyệt.'}
+              {moderationState === 'scanning' &&
+                (language === 'en'
+                  ? 'AI is verifying your document. Please wait a few seconds...'
+                  : 'AI đang tiến hành xác thực tài liệu của bạn. Vui lòng đợi trong giây lát...')}
+              {moderationState === 'approved' &&
+                (language === 'en'
+                  ? 'Congratulations! Your document has been automatically moderated and approved.'
+                  : 'Chúc mừng! Tài liệu của bạn đã được kiểm duyệt tự động và phê chuẩn thành công.')}
+              {moderationState === 'pending_review' &&
+                (language === 'en'
+                  ? 'AI flagged potential violations. It has been sent to admin for manual review, and is only listed in Upload History.'
+                  : 'AI phát hiện tài liệu chứa nội dung cần xem xét. Tài liệu đã được chuyển tới Admin duyệt thủ công và hiện chỉ hiển thị trong Lịch sử tải lên.')}
+              {moderationState === 'timeout' &&
+                (language === 'en'
+                  ? 'Your document is being processed in the background. You can check its status later in your Upload History.'
+                  : 'Tài liệu của bạn vẫn đang tiếp tục được xử lý chạy ẩn. Bạn có thể kiểm tra lại trạng thái sau tại Lịch sử tải lên.')}
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => {
-                setApprovalModalOpen(false)
-                navigate('/dashboard/documents/upload-history')
-              }}
-              className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
-            >
-              {language === 'en' ? 'View Upload History' : 'Xem lịch sử tải lên'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setApprovalModalOpen(false)
-                if (uploadedSubjectKey) {
-                  navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
-                }
-              }}
-              className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
-            >
-              {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
-            </button>
+            {moderationState === 'scanning' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setApprovalModalOpen(false)
+                  if (uploadedSubjectKey) {
+                    navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+                  }
+                }}
+                className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+              >
+                {language === 'en' ? 'Run in Background' : 'Chạy ẩn'}
+              </button>
+            )}
+
+            {moderationState === 'approved' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApprovalModalOpen(false)
+                    if (uploadedDocId) {
+                      navigate(`/dashboard/documents/document/${uploadedDocId}`)
+                    }
+                  }}
+                  className="w-full sm:w-auto rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+                >
+                  {language === 'en' ? 'View Document' : 'Xem tài liệu'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApprovalModalOpen(false)
+                    if (uploadedSubjectKey) {
+                      navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+                    }
+                  }}
+                  className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
+                >
+                  {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
+                </button>
+              </>
+            )}
+
+            {(moderationState === 'pending_review' || moderationState === 'timeout') && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApprovalModalOpen(false)
+                    navigate('/dashboard/documents/upload-history')
+                  }}
+                  className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+                >
+                  {language === 'en' ? 'View Upload History' : 'Xem lịch sử tải lên'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApprovalModalOpen(false)
+                    if (uploadedSubjectKey) {
+                      navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+                    }
+                  }}
+                  className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
+                >
+                  {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </Modal>

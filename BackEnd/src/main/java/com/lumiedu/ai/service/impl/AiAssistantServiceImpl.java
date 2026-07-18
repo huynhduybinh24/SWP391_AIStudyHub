@@ -630,6 +630,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                                 + "You must respond with a JSON object containing: "
                                 + "'title' (a concise name for the plan), "
                                 + "'subject' (the academic subject), "
+                                + "'difficulty' (either 'Easy', 'Medium', or 'Hard' based on subject complexity), "
+                                + "'hoursEst' (estimated study hours required, e.g., 20, as a number), "
                                 + "'planText' (the markdown roadmap text, including weekly goals and active recall milestones), "
                                 + "'curriculum' (a JSON array representing modules of study). "
                                 + "Each module object in the 'curriculum' array must contain:\n"
@@ -658,9 +660,21 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
             title = jsonObj.get("title").getAsString();
             planText = jsonObj.get("planText").getAsString();
+            JsonObject wrapper = new JsonObject();
             if (jsonObj.has("curriculum")) {
-                curriculumJson = gson.toJson(jsonObj.get("curriculum"));
+                wrapper.add("modules", jsonObj.get("curriculum"));
             }
+            if (jsonObj.has("difficulty")) {
+                wrapper.addProperty("difficulty", jsonObj.get("difficulty").getAsString());
+            } else {
+                wrapper.addProperty("difficulty", "Medium");
+            }
+            if (jsonObj.has("hoursEst")) {
+                wrapper.addProperty("hoursEst", jsonObj.get("hoursEst").getAsNumber());
+            } else {
+                wrapper.addProperty("hoursEst", 28);
+            }
+            curriculumJson = gson.toJson(wrapper);
         } catch (Exception e) {
             System.err.println("Failed to parse study plan JSON: " + e.getMessage());
         }
