@@ -43,6 +43,12 @@ public class User extends BaseEntity {
     @Column(name = "two_factor_enabled")
     private Boolean twoFactorEnabled = false;
 
+    @Column(name = "two_factor_secret")
+    private String twoFactorSecret;
+
+    @Column(name = "temp_two_factor_secret")
+    private String tempTwoFactorSecret;
+
     @Builder.Default
     @Column(name = "storage_used_mb")
     private Long storageUsedMb = 0L;
@@ -50,4 +56,13 @@ public class User extends BaseEntity {
     @Builder.Default
     @Column(name = "storage_limit_mb")
     private Long storageLimitMb = 1024L;
+
+    @Column(name = "university", length = 150)
+    private String university;
+
+    @Column(name = "major", length = 150)
+    private String major;
+
+    @Column(name = "degree", length = 50)
+    private String degree;
 }

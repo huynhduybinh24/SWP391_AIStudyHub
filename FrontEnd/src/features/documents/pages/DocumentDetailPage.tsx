@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
-import { useParams, useOutletContext } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useParams, useOutletContext, useSearchParams } from 'react-router-dom'
 import BackButton from '@/components/shared/BackButton'
 import { FileViewer } from '@/components/shared/file-viewer/FileViewer'
+import { documentService } from '@/services/documentService'
 
 interface DocumentItem {
   id: string
@@ -86,6 +87,10 @@ const SUBJECT_DETAILS_MOCK: Record<
 
 export default function DocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>()
+  const [searchParams] = useSearchParams()
+  const pageParam = searchParams.get('page')
+  const [previewContent, setPreviewContent] = useState<string>('')
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
   
   const {
     documents,
@@ -93,6 +98,27 @@ export default function DocumentDetailPage() {
     handleDownloadFile,
     openQuizModal
   } = useOutletContext<DocumentsContextType>()
+
+  useEffect(() => {
+    if (!documentId) return
+    setIsLoadingPreview(true)
+    documentService.previewDocument(documentId)
+      .then((content) => {
+        // Only set preview if it's not a binary file
+        if (content && !content.startsWith('%PDF') && content.length < 500000) {
+          setPreviewContent(content)
+        } else {
+          setPreviewContent('')
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch document preview:', err)
+        setPreviewContent('')
+      })
+      .finally(() => {
+        setIsLoadingPreview(false)
+      })
+  }, [documentId])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -148,6 +174,9 @@ export default function DocumentDetailPage() {
       onBackLink={backLink}
       permission="Owner"
       onQuiz={activeDoc ? () => openQuizModal(activeDoc) : undefined}
+      initialPage={pageParam ? Number(pageParam) : undefined}
+      documentId={documentId}
+      previewContent={previewContent}
     />
   )
 }

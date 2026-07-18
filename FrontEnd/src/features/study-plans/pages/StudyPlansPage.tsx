@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Clock,
@@ -29,6 +29,9 @@ import { LearningProgressModal, type LearningProgressPlan } from '@/features/stu
 import { CurriculumModal, type CurriculumPlan, getDocumentIdByName } from '@/features/study-plans/pages/CurriculumModal'
 import { useTranslation } from '@/context/LanguageContext'
 import { Language } from '@/locales'
+import { useAuthStore } from '@/stores/authStore'
+import { documentService } from '@/services/documentService'
+import { aiService } from '@/services/aiService'
 
 // ─────────────────────────────────────────────
 // Types
@@ -66,6 +69,7 @@ type StudyPlan = {
   tasks?: number
   iconType?: 'flask' | 'rocket' | 'bot' | 'cpu' | 'languages'
   linkedDocs?: string[]
+  curriculumJson?: string
 }
 
 // Helper to localize mock plan strings
@@ -143,7 +147,7 @@ function localizePlan(plan: StudyPlan, language: Language): StudyPlan {
 // Mock data
 // ─────────────────────────────────────────────
 
-const STUDY_PLANS: StudyPlan[] = [
+const STUDY_PLANS: StudyPlan[] = []; const UNUSED_STUDY_PLANS: StudyPlan[] = [
   {
     id: '1',
     title: 'Quantum Mechanics Mastery',
@@ -717,12 +721,12 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                   </span>
                 ) : isUpcoming ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#e5eeff] text-[#2557E8] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
-                    {language === 'vi' ? 'Sắp diễn ra' : language === 'ja' ? '今後の予定' : language === 'ko' ? '예정됨' : 'Upcoming'}
+                    {language === 'vi' ? 'Sắp tới' : language === 'ja' ? '今後の予定' : language === 'ko' ? '예정됨' : 'Upcoming'}
                   </span>
                 ) : isAiTab ? (
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#2557E8] text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
-                      {language === 'vi' ? 'AI Tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'}
+                      {language === 'vi' ? 'AI tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'}
                     </span>
                     {plan.difficulty === 'Hard' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-600 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider shrink-0">
@@ -743,7 +747,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                 ) : plan.isAiGenerated ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#ccfbf1] text-[#00897B] text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wide shrink-0">
                     <Sparkles className="size-3" strokeWidth={2} />
-                    {language === 'vi' ? 'AI Tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'}
+                    {language === 'vi' ? 'AI tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'}
                   </span>
                 ) : null}
               </div>
@@ -831,7 +835,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                 <>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
                     <Clock className="size-3.5 text-slate-400" />
-                    {language === 'vi' ? `Ước tính ${plan.hoursEst} giờ` : language === 'ja' ? `推定 ${plan.hoursEst} 時間` : language === 'ko' ? `예상 ${plan.hoursEst} 시간` : `${plan.hoursEst} Hours Est.`}
+                    {language === 'vi' ? `${plan.hoursEst} giờ ước tính` : language === 'ja' ? `推定 ${plan.hoursEst} 時間` : language === 'ko' ? `예상 ${plan.hoursEst} 시간` : `${plan.hoursEst} Hours Est.`}
                   </span>
                   {!isAiTab && <DifficultyPill level={plan.difficulty} />}
                 </>
@@ -874,7 +878,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
           {!isCompleted && !isUpcoming && !isAiTab && localizedPlanInfo.milestone && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-                {language === 'vi' ? 'Cột mốc tiếp theo' : language === 'ja' ? '次のマイルストーン' : language === 'ko' ? '다음 마일스톤' : 'Next Milestone'}
+                {language === 'vi' ? 'Mốc tiếp theo' : language === 'ja' ? '次のマイルストーン' : language === 'ko' ? '다음 마일스톤' : 'Next Milestone'}
               </p>
               <div className="flex items-start gap-3">
                 {/* Date block */}
@@ -925,7 +929,7 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
               >
                 {isCompleted 
                   ? (language === 'vi' ? 'Xem tóm tắt' : language === 'ja' ? '要約を表示' : language === 'ko' ? '요약 보기' : 'View Summary') 
-                  : (language === 'vi' ? 'Xem giáo trình' : language === 'ja' ? 'カリキュラム表示' : language === 'ko' ? '커리큘럼 보기' : 'View Curriculum')}
+                  : (language === 'vi' ? 'Xem lộ trình' : language === 'ja' ? 'カリキュラム表示' : language === 'ko' ? '커리큘럼 보기' : 'View Curriculum')}
               </Button>
             )}
           </div>
@@ -957,11 +961,11 @@ function FilterTabs({
       case 'Active':
         return language === 'vi' ? 'Đang học' : language === 'ja' ? '学習中' : language === 'ko' ? '학습 중' : 'Active'
       case 'Completed':
-        return language === 'vi' ? 'Đã hoàn thành' : language === 'ja' ? '完了' : language === 'ko' ? '완료됨' : 'Completed'
+        return language === 'vi' ? 'Hoàn thành' : language === 'ja' ? '完了' : language === 'ko' ? '완료됨' : 'Completed'
       case 'Upcoming':
-        return language === 'vi' ? 'Sắp diễn ra' : language === 'ja' ? '今後の予定' : language === 'ko' ? '예정됨' : 'Upcoming'
+        return language === 'vi' ? 'Sắp tới' : language === 'ja' ? '今後の予定' : language === 'ko' ? '예정됨' : 'Upcoming'
       case 'AI Generated':
-        return language === 'vi' ? 'AI Tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'
+        return language === 'vi' ? 'AI tạo' : language === 'ja' ? 'AI生成' : language === 'ko' ? 'AI 생성됨' : 'AI Generated'
       default:
         return tab
     }
@@ -1020,23 +1024,320 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   )
 }
 
+// Helper to build CurriculumPlan from a StudyPlan
+function getPlanCurriculum(plan: StudyPlan, language: Language): CurriculumPlan {
+  const completedLessonsRaw = localStorage.getItem(`study_plan_completed_lessons_${plan.id}`)
+  const completedLessonIds: string[] = completedLessonsRaw ? JSON.parse(completedLessonsRaw) : []
+
+  // 1. If it's mock, use CURRICULUM_DATA
+  if (CURRICULUM_DATA[plan.id]) {
+    const mockCurric = CURRICULUM_DATA[plan.id]
+    let foundFirstIncomplete = false
+    const modules = mockCurric.modules.map(mod => {
+      const lessons = mod.lessons.map(les => {
+        const isCompleted = completedLessonIds.includes(les.id) || les.status === 'completed'
+        let status: 'completed' | 'in-progress' | 'locked' = 'locked'
+        if (isCompleted) {
+          status = 'completed'
+        } else if (!foundFirstIncomplete) {
+          status = 'in-progress'
+          foundFirstIncomplete = true
+        }
+        return {
+          ...les,
+          status
+        }
+      })
+      return {
+        ...mod,
+        lessons
+      }
+    })
+    return {
+      ...mockCurric,
+      modules,
+      linkedDocs: plan.linkedDocs
+    }
+  }
+
+  // 2. Parse from curriculumJson or default fallback
+  let parsedModules: any[] = []
+  if (plan.curriculumJson) {
+    try {
+      const parsed = JSON.parse(plan.curriculumJson)
+      if (Array.isArray(parsed)) {
+        parsedModules = parsed
+      }
+    } catch (e) {
+      console.error('Failed to parse curriculumJson:', e)
+    }
+  }
+
+  if (parsedModules.length === 0) {
+    parsedModules = plan.segments.map((seg, sIdx) => ({
+      title: seg.label,
+      description: language === 'vi' 
+        ? `Nội dung học tập chi tiết được AI trích xuất và lên kế hoạch dựa trên tài liệu liên kết.`
+        : `Detailed study topics compiled by AI based on your linked reference documents.`,
+      lessons: [
+        { id: `l-${sIdx}-1-${plan.id}`, title: language === 'vi' ? 'Đọc và hiểu tài liệu tham khảo chính' : 'Read & Understand Core References', duration: '25 min', type: 'reading' },
+        { id: `l-${sIdx}-2-${plan.id}`, title: language === 'vi' ? 'Trắc nghiệm tự luyện cùng AI' : 'AI-Assisted Practice Quiz', duration: '30 min', type: 'quiz' }
+      ]
+    }))
+  }
+
+  let foundFirstIncomplete = false
+  const modules = parsedModules.map((mod: any, mIdx: number) => {
+    const lessons = (mod.lessons || []).map((lesson: any, lIdx: number) => {
+      const id = lesson.id || `lesson-${mIdx}-${lIdx}-${plan.id}`
+      const isCompleted = completedLessonIds.includes(id)
+      let status: 'completed' | 'in-progress' | 'locked' = 'locked'
+      if (isCompleted) {
+        status = 'completed'
+      } else if (!foundFirstIncomplete) {
+        status = 'in-progress'
+        foundFirstIncomplete = true
+      }
+
+      return {
+        id,
+        title: lesson.title,
+        duration: lesson.duration || '20 min',
+        type: lesson.type || 'reading',
+        status,
+        linkedDocName: lesson.linkedDocName || plan.linkedDocs?.[0] || undefined,
+        pageRange: lesson.pageRange || undefined
+      }
+    })
+
+    return {
+      id: mod.id || `m-${mIdx}-${plan.id}`,
+      title: mod.title || `Module ${mIdx + 1}`,
+      description: mod.description || '',
+      lessons
+    }
+  })
+
+  return {
+    id: plan.id,
+    title: plan.title,
+    documents: plan.documents,
+    hoursEst: plan.hoursEst,
+    difficulty: plan.difficulty,
+    modules,
+    linkedDocs: plan.linkedDocs
+  }
+}
+
+// Helper to build LearningProgressPlan from a StudyPlan
+function getPlanLearningProgress(plan: StudyPlan, language: Language): LearningProgressPlan {
+  const completedLessonsRaw = localStorage.getItem(`study_plan_completed_lessons_${plan.id}`)
+  const completedLessonIds: string[] = completedLessonsRaw ? JSON.parse(completedLessonsRaw) : []
+
+  // 1. If it's mock, use LEARNING_DATA but merge the completed status from localStorage
+  if (LEARNING_DATA[plan.id]) {
+    const mockPlan = LEARNING_DATA[plan.id]
+    const sections = mockPlan.sections.map(sec => {
+      const lessons = sec.lessons.map(les => {
+        const isCompletedLocal = completedLessonIds.includes(les.id)
+        return {
+          ...les,
+          completed: les.completed || isCompletedLocal
+        }
+      })
+      const completedCount = lessons.filter(l => l.completed).length
+      const value = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0
+      return {
+        ...sec,
+        lessons,
+        value
+      }
+    })
+    
+    const totalLessons = sections.flatMap(s => s.lessons)
+    const totalCount = totalLessons.length
+    const completedCount = totalLessons.filter(l => l.completed).length
+    const overallProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+
+    return {
+      ...mockPlan,
+      overallProgress,
+      sections
+    }
+  }
+
+  // 2. Build from curriculum
+  const curriculum = getPlanCurriculum(plan, language)
+  const sections = curriculum.modules.map(mod => {
+    const lessons = mod.lessons.map(les => ({
+      id: les.id,
+      title: les.title,
+      duration: les.duration,
+      type: les.type as any,
+      completed: completedLessonIds.includes(les.id),
+      linkedDocName: les.linkedDocName,
+      pageRange: les.pageRange
+    }))
+    const completedCount = lessons.filter(l => l.completed).length
+    const value = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0
+    return {
+      label: mod.title,
+      value,
+      lessons
+    }
+  })
+
+  const totalLessons = sections.flatMap(s => s.lessons)
+  const totalCount = totalLessons.length
+  const completedCount = totalLessons.filter(l => l.completed).length
+  const overallProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+
+  return {
+    id: plan.id,
+    title: plan.title,
+    description: plan.description,
+    isAiGenerated: plan.isAiGenerated,
+    overallProgress,
+    sections,
+    linkedDocs: plan.linkedDocs
+  }
+}
+
 // ─────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────
 
+function mapResponseToStudyPlan(response: any): StudyPlan {
+  let segments: ProgressSegment[] = []
+  if (response.curriculumJson) {
+    try {
+      const parsed = JSON.parse(response.curriculumJson)
+      if (Array.isArray(parsed)) {
+        segments = parsed.map((mod: any) => ({
+          label: mod.title || 'Bài học',
+          value: 0
+        }))
+      }
+    } catch (e) {
+      console.error('Failed to parse curriculumJson for segments:', e)
+    }
+  }
+
+  if (segments.length === 0) {
+    segments = [
+      { label: 'Khái niệm cốt lõi', value: 0 },
+      { label: 'Lý thuyết nâng cao', value: 0 },
+      { label: 'Thi thử', value: 0 }
+    ]
+  }
+
+  const docNames = response.sourceDocuments ? response.sourceDocuments.map((d: any) => d.title || d.fileName) : []
+
+  return {
+    id: String(response.id),
+    title: response.title,
+    description: response.planText || '',
+    isAiGenerated: true,
+    status: 'Active',
+    documents: docNames.length,
+    hoursEst: 28,
+    difficulty: 'Medium',
+    overallProgress: 0,
+    segments,
+    linkedDocs: docNames,
+    curriculumJson: response.curriculumJson,
+    themeColor: 'blue'
+  }
+}
+
 export function StudyPlansPage() {
   const { t, language } = useTranslation()
   const [activeTab, setActiveTab]     = useState<FilterTab>('All')
-  const [plans, setPlans]             = useState<StudyPlan[]>(STUDY_PLANS)
+  const [plans, setPlans]             = useState<StudyPlan[]>([])
   const [createOpen, setCreateOpen]   = useState(false)
   const [learningPlan, setLearningPlan] = useState<LearningProgressPlan | null>(null)
   const [curriculumPlan, setCurriculumPlan] = useState<CurriculumPlan | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<StudyPlan | null>(null)
   
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const keyword = searchParams.get('keyword') || ''
 
-  const filteredPlans = plans.filter((plan) => {
+  const preselectedDocId = searchParams.get('documentId') || undefined
+  const autoGenerate = searchParams.get('generate') === 'true'
+
+  const { user } = useAuthStore()
+  const userId = user?.id ? Number(user.id) : undefined
+
+  // Load plans from backend
+  useEffect(() => {
+    if (!userId) return
+
+    const loadPlans = async () => {
+      try {
+        const dbPlans = await aiService.getStudyPlans(userId)
+        // Map and display DB plans
+        const mapped = dbPlans.map(mapResponseToStudyPlan)
+        setPlans(mapped)
+      } catch (err) {
+        console.error('Failed to load study plans:', err)
+      }
+    }
+
+    loadPlans()
+  }, [userId])
+
+  // Clear mock local storage keys on mount
+  useEffect(() => {
+    localStorage.removeItem('study_plans')
+    localStorage.removeItem('ai_study_hub_documents')
+  }, [])
+
+  // Automatically open create modal if documentId is present in URL query
+  useEffect(() => {
+    if (preselectedDocId) {
+      setCreateOpen(true)
+    }
+  }, [preselectedDocId])
+
+  // Dynamically load user's real documents to map names to database IDs
+  useEffect(() => {
+    const syncDocumentNamesToIds = async () => {
+      try {
+        const docs = await documentService.getAllDocuments(userId)
+        if (docs) {
+          const map: Record<string, string> = {}
+          docs.forEach(doc => {
+            const title = doc.title || doc.originalFileName || doc.fileName
+            if (title) {
+              map[title] = String(doc.id)
+            }
+          })
+          localStorage.setItem('document_name_to_id_map', JSON.stringify(map))
+        }
+      } catch (err) {
+        console.error('Failed to sync document_name_to_id_map:', err)
+      }
+    }
+    syncDocumentNamesToIds()
+  }, [userId])
+
+  const enhancedPlans = useMemo(() => {
+    return plans.map(p => {
+      const progressInfo = getPlanLearningProgress(p, language)
+      const segments = progressInfo.sections.map(sec => ({
+        label: sec.label,
+        value: sec.value
+      }))
+      return {
+        ...p,
+        overallProgress: progressInfo.overallProgress,
+        segments
+      }
+    })
+  }, [plans, language])
+
+  const filteredPlans = enhancedPlans.filter((plan) => {
     // Search filter
     if (keyword) {
       const q = keyword.toLowerCase()
@@ -1050,18 +1351,52 @@ export function StudyPlansPage() {
     return plan.status === activeTab
   })
 
-  const handleDuplicate = (plan: StudyPlan) => {
-    const copy: StudyPlan = { ...plan, id: `${plan.id}-copy-${Date.now()}`, title: `${plan.title} (Copy)` }
-    setPlans((prev) => [...prev, copy])
+  const handleDuplicate = async (plan: StudyPlan) => {
+    try {
+      const docIdMap = localStorage.getItem('document_name_to_id_map')
+      const docMap: Record<string, string> = docIdMap ? JSON.parse(docIdMap) : {}
+      const docIds = (plan.linkedDocs || []).map(name => Number(docMap[name])).filter(n => !isNaN(n) && n > 0)
+
+      const savedResponse = await aiService.saveStudyPlan({
+        userId: userId || 1,
+        title: `${plan.title} (Copy)`,
+        subject: plan.title.split(' ').pop() || 'Tổng hợp',
+        planText: plan.description,
+        curriculumJson: plan.curriculumJson || '',
+        documentId: docIds.length > 0 ? docIds[0] : undefined
+      })
+      const mapped = mapResponseToStudyPlan(savedResponse)
+      setPlans((prev) => [mapped, ...prev])
+    } catch (err) {
+      console.error('Failed to duplicate study plan:', err)
+    }
   }
 
-  const handleArchive = (plan: StudyPlan) => {
-    setPlans((prev) => prev.filter((p) => p.id !== plan.id))
+  const handleArchive = async (plan: StudyPlan) => {
+    try {
+      const planIdNum = Number(plan.id)
+      if (!isNaN(planIdNum) && planIdNum > 0) {
+        await aiService.deleteStudyPlan(planIdNum)
+      }
+      setPlans((prev) => prev.filter((p) => p.id !== plan.id))
+    } catch (err) {
+      console.error('Failed to archive study plan:', err)
+    }
   }
 
-  const confirmDelete = () => {
-    if (deleteTarget) setPlans((prev) => prev.filter((p) => p.id !== deleteTarget.id))
-    setDeleteTarget(null)
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      const planIdNum = Number(deleteTarget.id)
+      if (!isNaN(planIdNum) && planIdNum > 0) {
+        await aiService.deleteStudyPlan(planIdNum)
+      }
+      setPlans((prev) => prev.filter((p) => p.id !== deleteTarget.id))
+    } catch (err) {
+      console.error('Failed to delete study plan:', err)
+    } finally {
+      setDeleteTarget(null)
+    }
   }
 
   return (
@@ -1097,31 +1432,8 @@ export function StudyPlansPage() {
                 key={plan.id}
                 plan={plan}
                 isAiTab={activeTab === 'AI Generated'}
-                onContinue={() => setLearningPlan(LEARNING_DATA[plan.id] ?? null)}
-                onCurriculum={() => {
-                  const baseCurriculum = CURRICULUM_DATA[plan.id] || {
-                    id: plan.id,
-                    title: plan.title,
-                    documents: plan.documents,
-                    hoursEst: plan.hoursEst,
-                    difficulty: plan.difficulty,
-                    modules: plan.segments.map((seg, sIdx) => ({
-                      id: `m-${sIdx}-${Date.now()}`,
-                      title: seg.label,
-                      description: language === 'vi' 
-                        ? `Nội dung học tập chi tiết được AI trích xuất và lên kế hoạch dựa trên tài liệu liên kết.`
-                        : `Detailed study topics compiled by AI based on your linked reference documents.`,
-                      lessons: [
-                        { id: `l-${sIdx}-1`, title: language === 'vi' ? 'Đọc và hiểu tài liệu tham khảo chính' : 'Read & Understand Core References', duration: '25 min', type: 'reading', status: 'in-progress' },
-                        { id: `l-${sIdx}-2`, title: language === 'vi' ? 'Trắc nghiệm tự luyện cùng AI' : 'AI-Assisted Practice Quiz', duration: '30 min', type: 'quiz', status: 'locked' }
-                      ]
-                    }))
-                  }
-                  setCurriculumPlan({
-                    ...baseCurriculum,
-                    linkedDocs: plan.linkedDocs
-                  })
-                }}
+                onContinue={() => setLearningPlan(getPlanLearningProgress(plan, language))}
+                onCurriculum={() => setCurriculumPlan(getPlanCurriculum(plan, language))}
                 onEdit={() => setCreateOpen(true)}
                 onDuplicate={() => handleDuplicate(plan)}
                 onArchive={() => handleArchive(plan)}
@@ -1135,14 +1447,23 @@ export function StudyPlansPage() {
       {/* ── Create Plan Modal ── */}
       <CreateStudyPlanModal
         isOpen={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false)
+          if (preselectedDocId) {
+            navigate('/dashboard/study-plans', { replace: true })
+          }
+        }}
         onCreate={(newPlan) => setPlans((prev) => [newPlan, ...prev])}
+        preselectedDocId={preselectedDocId}
+        autoGenerate={autoGenerate}
       />
 
-      {/* ── Learning Progress Modal ── */}
       <LearningProgressModal
         isOpen={learningPlan !== null}
-        onClose={() => setLearningPlan(null)}
+        onClose={() => {
+          setLearningPlan(null)
+          setPlans((prev) => [...prev])
+        }}
         plan={learningPlan}
       />
 

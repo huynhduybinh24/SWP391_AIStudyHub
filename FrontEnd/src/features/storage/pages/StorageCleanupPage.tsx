@@ -8,6 +8,8 @@ import { env } from '@/config/env'
 import { useTranslation } from '@/context/LanguageContext'
 import { storageService, type StorageUsage } from '@/services/storageService'
 import { useToast } from '@/components/ui/Toast'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
 const INITIAL_DUPLICATES = [
   {
@@ -122,19 +124,23 @@ export function StorageCleanupPage() {
     }
   }
  
-  const usedGB = usage 
-    ? (usage.storageUsedMb + 8.3) / 1024 
-    : 8.3 / 1024
+  const totalMb = usage ? usage.storageLimitMb : getStorageLimitByPlan(user?.plan)
+  const totalGB = totalMb / 1024
 
-  const totalGB = usage 
-    ? usage.storageLimitMb / 1024 
-    : user?.plan === 'pro' 
-      ? env.PRO_STORAGE_LIMIT 
-      : user?.plan === 'enterprise' || user?.plan === 'premium'
-        ? env.PREMIUM_STORAGE_LIMIT
-        : env.FREE_STORAGE_LIMIT
+  const usedMb = usage
+    ? usage.storageUsedMb
+    : user?.plan === 'pro'
+      ? 2457.6
+      : ((user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise')
+        ? 8192
+        : 8
 
-  const percentage = (usedGB / totalGB) * 100
+  const usedGB = usedMb / 1024
+  const usageInfo = calculateStorageUsage(usedMb, totalMb)
+  const percentage = usageInfo.percentage
+
+  const displayUsedGB = parseFloat(usedGB.toFixed(3))
+  const displayTotalGB = parseFloat(totalGB.toFixed(1))
 
   const getLocalizedModified = (modified: string) => {
     if (modified.includes('2 days ago')) return t.storageCleanup.modified2d
@@ -254,7 +260,7 @@ export function StorageCleanupPage() {
             <div className="mb-6">
               <div className="flex justify-between items-end mb-2">
                 <span className="text-sm font-medium text-muted">{t.storageCleanup.usedSpace}</span>
-                <span className="text-sm font-bold text-foreground">{t.storageCleanup.usedOfText(usedGB, totalGB)}</span>
+                <span className="text-sm font-bold text-foreground">{t.storageCleanup.usedOfText(displayUsedGB, displayTotalGB)}</span>
               </div>
               <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div 

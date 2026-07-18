@@ -143,11 +143,12 @@ export function ConfirmModal({
                 </Button>
                 <Button
                   type="button"
+                  variant="danger"
                   onClick={() => {
                     onConfirm()
                     onClose()
                   }}
-                  className="bg-red-650 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-colors duration-200"
+                  className="px-4 py-2 text-xs font-semibold"
                 >
                   {confirmText}
                 </Button>

@@ -1,10 +1,13 @@
-import { useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CalendarDays, Sparkles, Share2, Cloud, FileText, AlertTriangle } from 'lucide-react'
 import { StatisticItem } from './StatisticsCard'
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { env } from '@/config/env'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { calculateStorageUsage, formatStorageSize } from '@/utils/storageFormat'
+import { storageService } from '@/services/storageService'
 
 interface StatisticsDetailModalProps {
   isOpen: boolean
@@ -23,12 +26,28 @@ export function StatisticsDetailModal({
   const { t, language } = useTranslation()
   const user = useAuthStore((s) => s.user)
 
-  const isPro = user?.plan === 'pro'
-  const isInstitutional = user?.plan === 'institutional'
-  
-  const totalGb = isPro ? env.PRO_STORAGE_LIMIT : isInstitutional ? 1000 : env.FREE_STORAGE_LIMIT
-  const usedGb = isPro ? 18.0 : isInstitutional ? 12.4 : 2.4
-  const percentage = Math.round((usedGb / totalGb) * 100)
+  const [storageData, setStorageData] = useState<any>(null)
+
+  useEffect(() => {
+    if (isOpen && item?.id === 'storageUsed' && user?.id) {
+      storageService.getStorageUsage(Number(user.id))
+        .then(data => setStorageData(data))
+        .catch(err => console.error("Failed to fetch storage usage in modal:", err))
+    }
+  }, [isOpen, item?.id, user?.id])
+
+  const totalMb = storageData ? storageData.storageLimitMb : getStorageLimitByPlan(user?.plan)
+  const totalGb = totalMb / 1024
+  const usedMb = storageData 
+    ? storageData.storageUsedMb 
+    : user?.plan === 'pro' 
+      ? 2457.6 
+      : ((user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise')
+        ? 8192
+        : 8
+  const usedGb = usedMb / 1024
+  const usageInfo = calculateStorageUsage(usedMb, totalMb)
+  const percentage = usageInfo.percentage
 
   // Focus trap & ESC key handler
   useEffect(() => {
@@ -197,7 +216,7 @@ export function StatisticsDetailModal({
                       <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">PDF, DOCX, PPTX</p>
                     </div>
                   </div>
-                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-305">{(usedGb * 0.6).toFixed(1)} GB</span>
+                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-305">{formatStorageSize(usedMb * 0.6)}</span>
                 </div>
 
                 {/* Category 2: AI Summaries */}
@@ -211,7 +230,7 @@ export function StatisticsDetailModal({
                       <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Summaries & Quizzes</p>
                     </div>
                   </div>
-                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-305">{(usedGb * 0.3).toFixed(1)} GB</span>
+                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-305">{formatStorageSize(usedMb * 0.3)}</span>
                 </div>
 
                 {/* Category 3: Shared Workspace */}
@@ -225,7 +244,7 @@ export function StatisticsDetailModal({
                       <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Collaborators Share</p>
                     </div>
                   </div>
-                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-305">{(usedGb * 0.1).toFixed(1)} GB</span>
+                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-305">{formatStorageSize(usedMb * 0.1)}</span>
                 </div>
               </div>
             </div>

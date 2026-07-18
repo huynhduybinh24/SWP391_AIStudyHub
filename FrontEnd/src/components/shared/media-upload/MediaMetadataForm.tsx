@@ -1,4 +1,8 @@
+import { useState, useEffect } from 'react';
 import TagInput from '@/features/shared-files/components/TagInput';
+import { useSubjects } from '@/hooks/useSubjects';
+import { useAuthStore } from '@/stores/authStore';
+import { apiClient } from '@/lib/axios';
 
 interface MediaMetadataFormProps {
   title: string;
@@ -41,15 +45,97 @@ export function MediaMetadataForm({
   tagsLabel,
   permissionLabel = 'Permissions'
 }: MediaMetadataFormProps) {
-  const SUBJECTS = [
-    { value: 'BIOLOGY', label: 'Biology / Molecular Biology' },
-    { value: 'COMPSCI', label: 'Computer Science / Software Engineering' },
-    { value: 'MATHEMATICS', label: 'Mathematics / Calculus II' },
-    { value: 'PHYSICS', label: 'Physics' },
-    { value: 'PHILOSOPHY', label: 'Philosophy' },
-    { value: 'ECONOMICS', label: 'Economics' },
-    { value: 'GENERAL', label: 'General Studies' }
-  ];
+  const { subjects: dynamicSubjects } = useSubjects();
+  const [selectedMajor, setSelectedMajor] = useState<'SE' | 'AI' | 'BA'>('SE');
+
+  const { user } = useAuthStore();
+  const userId = user?.id ? Number(user.id) : null;
+
+  useEffect(() => {
+    const url = userId ? `/subjects?userId=${userId}` : '/subjects';
+    
+    apiClient.get(url)
+      .then(res => {
+        const list = res.data;
+        const subjectsList = Array.isArray(list) ? list : (res.data?.data || []);
+        
+        if (subjectsList.length > 0) {
+          const seList: { value: string; label: string }[] = [];
+          const aiList: { value: string; label: string }[] = [];
+          const baList: { value: string; label: string }[] = [];
+          
+          subjectsList.forEach((s: any) => {
+            const item = {
+              value: s.code,
+              label: `${s.code} - ${s.name}`
+            };
+            const majorsStr = s.majors || '';
+            const majorsArr = majorsStr.split(',').map((m: string) => m.trim().toUpperCase());
+            
+            if (majorsArr.includes('SE')) seList.push(item);
+            if (majorsArr.includes('AI')) aiList.push(item);
+            if (majorsArr.includes('BA')) baList.push(item);
+          });
+          
+          // no-op
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load dynamic subjects in MediaMetadataForm:", err);
+      });
+  }, [userId]);
+
+  useEffect(() => {
+    if (subject && dynamicSubjects.length > 0) {
+      const upperSubj = subject.toUpperCase();
+      const foundSubj = dynamicSubjects.find(s => s.courseCode.toUpperCase() === upperSubj);
+      if (foundSubj && foundSubj.majors) {
+        if (foundSubj.majors.includes('SE')) {
+          setSelectedMajor('SE');
+        } else if (foundSubj.majors.includes('AI')) {
+          setSelectedMajor('AI');
+        } else if (foundSubj.majors.includes('BA')) {
+          setSelectedMajor('BA');
+        }
+      }
+    }
+  }, [subject, dynamicSubjects]);
+
+  const handleMajorChange = (major: 'SE' | 'AI' | 'BA') => {
+    setSelectedMajor(major);
+    const filtered = dynamicSubjects.filter(s => s.majors.includes(major));
+    if (filtered.length > 0) {
+      const hasCurrentSubj = filtered.some(s => s.courseCode.toUpperCase() === subject.toUpperCase());
+      if (!hasCurrentSubj) {
+        onSubjectChange(filtered[0].courseCode);
+      }
+    }
+  };
+
+  // Only auto-select a subject when the current selected subject is empty or invalid after filtering.
+  // Do not override a valid user-selected subject.
+  useEffect(() => {
+    if (dynamicSubjects.length > 0) {
+      const filtered = dynamicSubjects.filter(s => s.majors.includes(selectedMajor));
+      if (filtered.length > 0) {
+        const hasCurrentSubj = filtered.some(s => s.courseCode.toUpperCase() === subject.toUpperCase());
+        if (!hasCurrentSubj) {
+          onSubjectChange(filtered[0].courseCode);
+        }
+      } else {
+        if (subject !== 'GENERAL') {
+          onSubjectChange('GENERAL');
+        }
+      }
+    }
+  }, [selectedMajor, dynamicSubjects, subject, onSubjectChange]);
+
+  const currentSubjects = dynamicSubjects
+    .filter(s => s.majors.includes(selectedMajor))
+    .map(s => ({
+      value: s.courseCode,
+      label: `${s.courseCode} - ${s.title}`
+    }));
 
   const RECOMMENDED_TAGS = ['Notes', 'Assignment', 'Lecture', 'Midterm', 'Final Exam'];
 
@@ -84,6 +170,31 @@ export function MediaMetadataForm({
         />
       </div>
 
+      {/* 1.5 Major Selection */}
+      <div className="space-y-2">
+        <label htmlFor="media-form-major" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          Ngành học
+        </label>
+        <div className="relative">
+          <select
+            id="media-form-major"
+            value={selectedMajor}
+            onChange={(e) => handleMajorChange(e.target.value as any)}
+            disabled={isProcessing}
+            className="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-55 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:border-[#3155F6] focus:outline-none transition-colors px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white cursor-pointer shadow-sm pr-10"
+          >
+            <option value="SE">Kỹ thuật phần mềm (SE)</option>
+            <option value="AI">Trí tuệ nhân tạo (AI)</option>
+            <option value="BA">Quản trị kinh doanh (BA)</option>
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 dark:text-slate-500">
+            <svg className="fill-current h-4 w-4" viewBox="0 0 20 20">
+              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
       {/* 2. Subject Select */}
       <div className="space-y-2">
         <label htmlFor="media-form-subject" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -97,11 +208,14 @@ export function MediaMetadataForm({
             disabled={isProcessing}
             className="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-55 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:border-[#3155F6] focus:outline-none transition-colors px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white cursor-pointer shadow-sm pr-10"
           >
-            {SUBJECTS.map((opt) => (
+            {currentSubjects.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
+            {currentSubjects.length === 0 && (
+              <option value="GENERAL">General/Other</option>
+            )}
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 dark:text-slate-500">
             <svg className="fill-current h-4 w-4" viewBox="0 0 20 20">

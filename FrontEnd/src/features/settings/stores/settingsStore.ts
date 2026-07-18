@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { useProfileStore } from '@/features/profile/stores/profileStore'
+import { useAuthStore } from '@/stores/authStore'
+import { settingsService } from '../services/settingsService'
+import { getCurrentUser } from '@/features/notifications/services/userNotificationService'
 
 export type ThemePreference = 'light' | 'dark' | 'system'
 
@@ -26,6 +29,7 @@ interface SettingsState {
   security: SecuritySettings
   notifications: NotificationSettings
   theme: ThemePreference
+  loadUserSettings: (email: string) => void
   updateAccount: (data: Partial<AccountSettings>) => void
   toggleTwoFactor: () => void
   updateNotifications: (data: Partial<NotificationSettings>) => void
@@ -38,7 +42,7 @@ export const useSettingsStore = create<SettingsState>()(
       account: {
         email: 'student@university.edu',
         name: 'Alex Morgan',
-        language: 'English (US)',
+        language: 'en',
         timezone: 'Pacific Time (PT)',
       },
       security: {
@@ -46,29 +50,52 @@ export const useSettingsStore = create<SettingsState>()(
         lastPasswordChanged: '3 months ago',
       },
       notifications: {
-        emailNotifications: typeof window !== 'undefined' && localStorage.getItem('ai-study-hub-email-notifications') !== 'false',
-        pushNotifications: typeof window !== 'undefined' && localStorage.getItem('ai-study-hub-push-notifications') === 'true',
+        emailNotifications: true,
+        pushNotifications: false,
       },
-      theme: (typeof window !== 'undefined' && localStorage.getItem('ai-study-hub-theme') as ThemePreference) || 'light',
-      updateAccount: (data) => {
-        set((state) => ({
-          account: { ...state.account, ...data },
-        }))
-        // Sync display name with profileStore
-        if (data.name) {
-          useProfileStore.getState().updateProfile({ name: data.name })
+      theme: 'light',
+      loadUserSettings: (email) => {
+        const settings = settingsService.getSettings(email)
+        const authUser = useAuthStore.getState().user
+        const currentProfile = useProfileStore.getState().profile
+        if (authUser && authUser.email.toLowerCase() === email.toLowerCase()) {
+          settings.security.isTwoFactorEnabled = !!authUser.twoFactorEnabled
+          if (currentProfile && currentProfile.name && settings.account.name !== currentProfile.name) {
+            settings.account.name = currentProfile.name
+            settingsService.updateSettings(email, { account: settings.account })
+          }
         }
+        set({
+          account: settings.account,
+          security: settings.security,
+          notifications: settings.notifications,
+          theme: settings.theme,
+        })
       },
-      toggleTwoFactor: () =>
-        set((state) => ({
-          security: {
+      updateAccount: (data) => {
+        set((state) => {
+          const nextAccount = { ...state.account, ...data }
+          settingsService.updateSettings(state.account.email, { account: nextAccount })
+          if (data.name) {
+            useProfileStore.getState().updateProfile({ name: data.name })
+          }
+          return { account: nextAccount }
+        })
+      },
+      toggleTwoFactor: () => {
+        set((state) => {
+          const nextSecurity = {
             ...state.security,
             isTwoFactorEnabled: !state.security.isTwoFactorEnabled,
-          },
-        })),
+          }
+          settingsService.updateSettings(state.account.email, { security: nextSecurity })
+          return { security: nextSecurity }
+        })
+      },
       updateNotifications: (data) => {
         set((state) => {
           const nextNotifications = { ...state.notifications, ...data }
+          settingsService.updateSettings(state.account.email, { notifications: nextNotifications })
           if (typeof window !== 'undefined') {
             if (data.emailNotifications !== undefined) {
               localStorage.setItem('ai-study-hub-email-notifications', String(data.emailNotifications))
@@ -81,25 +108,28 @@ export const useSettingsStore = create<SettingsState>()(
         })
       },
       setTheme: (newTheme) => {
-        set({ theme: newTheme })
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('ai-study-hub-theme', newTheme)
-        }
-
-        const applyTheme = (isDark: boolean) => {
-          if (isDark) {
-            document.documentElement.classList.add('dark')
-          } else {
-            document.documentElement.classList.remove('dark')
+        set((state) => {
+          settingsService.updateSettings(state.account.email, { theme: newTheme })
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ai-study-hub-theme', newTheme)
           }
-        }
 
-        if (newTheme === 'system') {
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-          applyTheme(prefersDark)
-        } else {
-          applyTheme(newTheme === 'dark')
-        }
+          const applyTheme = (isDark: boolean) => {
+            if (isDark) {
+              document.documentElement.classList.add('dark')
+            } else {
+              document.documentElement.classList.remove('dark')
+            }
+          }
+
+          if (newTheme === 'system') {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+            applyTheme(prefersDark)
+          } else {
+            applyTheme(newTheme === 'dark')
+          }
+          return { theme: newTheme }
+        })
       },
     }),
     {
@@ -107,4 +137,23 @@ export const useSettingsStore = create<SettingsState>()(
     }
   )
 )
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('aiStudyHubUserChanged', () => {
+    try {
+      const email = getCurrentUser().email;
+      useSettingsStore.getState().loadUserSettings(email);
+    } catch (e) {
+      console.error('Failed to load user settings on user changed event', e);
+    }
+  });
+  
+  setTimeout(() => {
+    try {
+      const email = getCurrentUser().email;
+      useSettingsStore.getState().loadUserSettings(email);
+    } catch (e) {}
+  }, 100);
+}
+
 export default useSettingsStore

@@ -81,9 +81,23 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
     }
   }, [searchParams, setSearchParams, toast, language])
 
-  // Dynamically load pricing configurations from localStorage
+  const [dbPlans, setDbPlans] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const response = await apiClient.get('/billing/plans')
+        setDbPlans(response.data)
+      } catch (err) {
+        console.error('Failed to fetch pricing plans', err)
+      }
+    }
+    fetchPlans()
+  }, [])
+
+  // Dynamically load pricing configurations and merge with dbPlans
   const packagesList = useMemo(() => {
-    let list = [
+    const list = [
       {
         id: 'pkg-free',
         name: language === 'vi' ? 'Gói Miễn phí' : 'Free Plan',
@@ -124,46 +138,34 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
       }
     ]
 
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('aiStudyHubPackages')
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const hasOldData = parsed.some((p: any) => 
-              (p.id === 'pkg-free' && p.storageLimit === 10) || 
-              (p.id === 'pkg-pro' && (p.priceMonthly === 12 || p.storageLimit === 50)) ||
-              (p.id === 'pkg-enterprise' && p.priceMonthly === 2000000)
-            )
-            if (hasOldData) {
-              localStorage.removeItem('aiStudyHubPackages')
-            } else {
-              list = parsed.map((pkg: any) => {
-                let name = pkg.name
-                if (pkg.id === 'pkg-free') {
-                  name = language === 'vi' ? 'Gói Miễn phí' : 'Free Plan'
-                } else if (pkg.id === 'pkg-pro') {
-                  name = language === 'vi' ? 'Gói Pro' : 'Pro Plan'
-                } else if (pkg.id === 'pkg-enterprise') {
-                  name = language === 'vi' ? 'Gói Premium' : 'Premium Plan'
-                }
-                return {
-                  id: pkg.id,
-                  name: name,
-                  storageLimit: pkg.storageLimit,
-                  priceMonthly: pkg.priceMonthly,
-                  perks: pkg.perks || []
-                }
-              })
-            }
+    return list.map(pkg => {
+      let type: 'FREE' | 'PRO' | 'ENTERPRISE' | null = null
+      if (pkg.id === 'pkg-free') type = 'FREE'
+      else if (pkg.id === 'pkg-pro') type = 'PRO'
+      else if (pkg.id === 'pkg-enterprise') type = 'ENTERPRISE'
+
+      if (type) {
+        const matched = dbPlans.find(p => p.planType === type)
+        if (matched) {
+          const limitGb = Math.round(matched.storageLimitMb / 1024)
+          return {
+            ...pkg,
+            priceMonthly: matched.price,
+            storageLimit: limitGb,
+            perks: pkg.perks.map((perk, i) => {
+              if (i === 0) {
+                return language === 'vi'
+                  ? `Dung lượng lưu trữ ${limitGb} GB`
+                  : `${limitGb} GB storage limit`
+              }
+              return perk
+            })
           }
-        } catch (e) {
-          console.error('Error loading packages in PricingPage:', e)
         }
       }
-    }
-    return list
-  }, [language])
+      return pkg
+    })
+  }, [language, dbPlans])
 
   const normalizePlan = (p?: string) => {
     const planLower = (p || 'free').toLowerCase()

@@ -25,4 +25,7 @@ public class AiChatMessage extends BaseEntity {
 
     @Column(name = "message_text", columnDefinition = "TEXT")
     private String messageText;
+
+    @Column(name = "thought", columnDefinition = "TEXT")
+    private String thought;
 }

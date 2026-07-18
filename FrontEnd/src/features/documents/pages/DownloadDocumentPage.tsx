@@ -23,7 +23,7 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
+  subject: string
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
@@ -157,8 +157,24 @@ export default function DownloadDocumentPage() {
 
   // 1. Resolve active document or mock fallback
   const activeDoc = documents.find(d => d.id === documentId)
-  const subjectKey = (activeDoc?.subject || 'NEUROSCIENCE').toUpperCase()
-  const mockDetails = SUBJECT_DETAILS_MOCK[subjectKey] || SUBJECT_DETAILS_MOCK.NEUROSCIENCE
+  const subjectKey = (activeDoc?.subject || 'GENERAL').toUpperCase()
+  
+  let mockDetails = SUBJECT_DETAILS_MOCK[subjectKey]
+  if (!mockDetails) {
+    mockDetails = {
+      courseTitle: `Môn học ${subjectKey}`,
+      courseCode: `${subjectKey} Study Guide`,
+      overview: `Đây là kho lưu trữ tài liệu môn học ${subjectKey} của sinh viên Đại học FPT. Tài liệu bao gồm các slide bài giảng, bài tập thực hành, đề thi thử và tài liệu ôn tập được tổng hợp để hỗ trợ quá trình học tập tốt nhất.`,
+      objectives: [
+        `Nắm vững các kiến thức cốt lõi của môn học ${subjectKey}.`,
+        'Hoàn thành các bài tập lớn và dự án môn học đúng tiến độ.',
+        'Đạt kết quả cao trong các kỳ thi Midterm và Final Exam.'
+      ],
+      tags: [`#${subjectKey}`, '#FPTU', '#StudyGuide'],
+      description: `Tài liệu học tập và hướng dẫn ôn tập chi tiết môn ${subjectKey} tại Đại học FPT.`,
+      pagesCount: 25
+    }
+  }
 
   const docTitle = activeDoc?.title || mockDetails.courseTitle
   const docFileName = activeDoc?.fileName || `${mockDetails.courseTitle.toLowerCase().replace(/\s+/g, '_')}.pdf`

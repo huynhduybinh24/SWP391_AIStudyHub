@@ -19,15 +19,22 @@ public class DocumentResponse {
     private String fileName;
     private String originalFileName;
     private String fileUrl;
+    private String googleDriveFileId;
+    private String storageProvider;
     private String fileType;
     private String mimeType;
     private Long fileSize;
     private String subject;
     private String visibility;
     private Long userId;
+    private String ownerName;
+    private String ownerEmail;
+    private String role;
+    private String status;
     private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private DocumentStatus moderationStatus;
-    private String moderationReason;
+    private String rejectionReason;
+    private java.time.LocalDateTime reviewedAt;
+    private String moderationStatus;
 }

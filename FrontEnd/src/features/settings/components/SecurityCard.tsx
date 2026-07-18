@@ -7,6 +7,8 @@ import { TwoFactorModal } from './TwoFactorModal'
 import { ConfirmModal } from './ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
+import { apiClient } from '@/lib/axios'
 
 export function SecurityCard() {
   const { t, language } = useTranslation()
@@ -16,9 +18,20 @@ export function SecurityCard() {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
   const toast = useToast()
 
-  const handleConfirmDisable = () => {
-    toggleTwoFactor()
-    toast.success(language === 'vi' ? 'Đã tắt xác thực hai yếu tố' : 'Two-factor authentication disabled')
+  const handleConfirmDisable = async () => {
+    try {
+      const { user, tokens, setSession } = useAuthStore.getState()
+      if (user?.id) {
+        await apiClient.post(`/users/${user.id}/2fa/disable`)
+        if (tokens) {
+          setSession({ ...user, twoFactorEnabled: false }, tokens)
+        }
+      }
+      toggleTwoFactor()
+      toast.success(language === 'vi' ? 'Đã tắt xác thực hai yếu tố' : 'Two-factor authentication disabled')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to disable Two-factor authentication')
+    }
   }
 
   return (

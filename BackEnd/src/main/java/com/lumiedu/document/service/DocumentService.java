@@ -3,6 +3,8 @@ package com.lumiedu.document.service;
 import com.lumiedu.document.dto.request.DocumentCreateRequest;
 import com.lumiedu.document.dto.request.DocumentUpdateRequest;
 import com.lumiedu.document.dto.response.DocumentResponse;
+import com.lumiedu.document.dto.response.SubjectStatsResponse;
+import com.lumiedu.document.dto.response.DocumentShareResponse;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,15 +20,17 @@ public interface DocumentService {
 
     List<DocumentResponse> getAllDocuments(Long userId);
 
-    DocumentResponse getDocumentById(Long id);
+    List<DocumentResponse> getMyUploads(Long userId);
 
-    DocumentResponse updateDocument(Long id, DocumentUpdateRequest request);
+    DocumentResponse getDocumentById(Long id, Long currentUserId);
 
-    void deleteDocument(Long id);
+    DocumentResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId);
 
-    Resource downloadDocument(Long id, Long userId);
+    void deleteDocument(Long id, Long currentUserId);
 
-    Resource previewDocument(Long id);
+    Resource downloadDocument(Long id, Long currentUserId);
+
+    Resource previewDocument(Long id, Long currentUserId);
 
     List<DocumentResponse> searchDocuments(
             String keyword,
@@ -39,4 +43,12 @@ public interface DocumentService {
     void addTag(Long documentId, String tagName);
 
     void removeTag(Long documentId, String tagName);
+
+    SubjectStatsResponse getSubjectStats(String subjectId, Long userId);
+
+    List<DocumentShareResponse> getDocumentShares(Long documentId, Long currentUserId);
+
+    DocumentShareResponse addOrUpdateDocumentShare(Long documentId, String email, String role, Long currentUserId);
+
+    void deleteDocumentShare(Long documentId, String email, Long currentUserId);
 }

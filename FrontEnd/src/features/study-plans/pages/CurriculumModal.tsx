@@ -31,6 +31,8 @@ export type CurriculumLesson = {
   duration: string
   type: LessonType
   status: LessonStatus
+  linkedDocName?: string
+  pageRange?: string
 }
 
 export type CurriculumModule = {
@@ -59,6 +61,21 @@ interface Props {
 
 export function getDocumentIdByName(name: string): string {
   const n = name.toLowerCase()
+
+  // Try to lookup in localStorage name-to-id map
+  try {
+    const localMapRaw = localStorage.getItem('document_name_to_id_map')
+    if (localMapRaw) {
+      const map = JSON.parse(localMapRaw)
+      const foundKey = Object.keys(map).find(k => k.toLowerCase() === n || name.includes(k) || k.includes(name))
+      if (foundKey) {
+        return map[foundKey]
+      }
+    }
+  } catch (e) {
+    console.error('Error reading document_name_to_id_map:', e)
+  }
+
   if (n.includes('lượng tử') || n.includes('quantum') || n.includes('vật lý') || n.includes('physics')) {
     return 'doc-3' // Introduction to Quantum Mechanics
   }
@@ -76,6 +93,12 @@ export function getDocumentIdByName(name: string): string {
     return 'doc-5' // Philosophy 101 Notes
   }
   return 'doc-1' // Mathematics Cheat Sheet
+}
+
+function extractPageNumber(range?: string): number | undefined {
+  if (!range) return undefined
+  const match = range.match(/\d+/)
+  return match ? parseInt(match[0], 10) : undefined
 }
 
 // Helper to localize module titles
@@ -183,7 +206,6 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
   const [expandedModule, setExpandedModule] = useState<string | null>(null)
   const [highlightedModule] = useState<string | null>(null)
   const activeModuleRef = useRef<HTMLDivElement | null>(null)
-  const activeLessonRef = useRef<HTMLButtonElement | null>(null)
   const addToast = useToastStore((s) => s.addToast)
 
   // Localize plan title
@@ -219,7 +241,6 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
     m.lessons.some((l) => l.status !== 'completed')
   )
 
-  const firstActiveLessonId = firstActiveModule?.lessons.find(l => l.status !== 'completed')?.id
 
   // ── Handlers ─────────────────────────────────────────────
 
@@ -246,7 +267,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={language === 'vi' ? 'Giáo trình' : language === 'ja' ? 'カリキュラム' : language === 'ko' ? '커리큘럼' : 'Curriculum'}
+      title={language === 'vi' ? 'Lộ trình' : language === 'ja' ? 'カリキュラム' : language === 'ko' ? '커리큘럼' : 'Curriculum'}
       description={localizedTitle}
       className="max-w-2xl"
     >
@@ -255,7 +276,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
         <div className="mb-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 flex flex-col gap-1.5">
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-450 dark:text-slate-500 flex items-center gap-1.5">
             <Link2 className="size-3.5 text-indigo-500 dark:text-indigo-400" />
-            {language === 'vi' ? 'TÀI LIỆU THAM KHẢO LIÊN KẾT' : language === 'ja' ? '関連する参照ドキュメント' : language === 'ko' ? '연결된 참조 문서' : 'LINKED REFERENCE DOCUMENTS'}
+            {language === 'vi' ? 'TÀI LIỆU LIÊN KẾT' : language === 'ja' ? '関連する参照ドキュメント' : language === 'ko' ? '연결된 참조 문서' : 'LINKED REFERENCE DOCUMENTS'}
           </span>
           <div className="flex flex-wrap gap-1.5">
             {plan.linkedDocs.map((docName, idx) => (
@@ -285,7 +306,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
         {[
           { icon: BookOpen, label: language === 'vi' ? 'Học phần' : language === 'ja' ? 'モジュール' : language === 'ko' ? '모듈' : 'Modules', value: String(plan.modules.length), color: 'text-[#2557E8] bg-[#e5eeff]' },
           { icon: Link2, label: language === 'vi' ? 'Bài học' : language === 'ja' ? 'レッスン' : language === 'ko' ? '레슨' : 'Lessons', value: `${completedCount}/${totalCount}`, color: 'text-emerald-700 bg-emerald-50' },
-          { icon: Clock, label: language === 'vi' ? 'Ước lượng' : language === 'ja' ? '予測時間' : language === 'ko' ? '예상 시간' : 'Est. Time', value: `${plan.hoursEst}h`, color: 'text-amber-700 bg-amber-50' },
+          { icon: Clock, label: language === 'vi' ? 'Giờ ước tính' : language === 'ja' ? '予測時間' : language === 'ko' ? '예상 시간' : 'Est. Time', value: `${plan.hoursEst}h`, color: 'text-amber-700 bg-amber-50' },
         ].map(({ icon: Icon, label, value, color }) => (
           <div key={label} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
@@ -358,35 +379,52 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
                 <div className="border-t border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
                   {mod.lessons.map((lesson) => {
                     const isLocked = lesson.status === 'locked'
-                    const attachRef = lesson.id === firstActiveLessonId
                     const localizedDuration = lesson.duration
                       ? lesson.duration.replace('min', language === 'vi' ? 'phút' : language === 'ja' ? '分' : language === 'ko' ? '분' : 'min')
                       : ''
 
                     return (
-                      <button
-                        type="button"
+                      <div
                         key={lesson.id}
-                        ref={attachRef ? activeLessonRef : undefined}
-                        onClick={() => handleLessonClick(lesson)}
                         className={`w-full flex items-center text-left gap-3 px-4 py-2.5 transition-colors ${isLocked
-                          ? 'opacity-40 cursor-not-allowed bg-slate-50/50'
-                          : 'hover:bg-slate-50/70 cursor-pointer'
+                          ? 'opacity-40 bg-slate-50/50'
+                          : 'hover:bg-slate-50/70'
                           }`}
                       >
                         <StatusIcon status={lesson.status} />
                         <LessonTypeIcon type={lesson.type} />
                         <span className={`flex-1 text-sm ${lesson.status === 'completed'
                           ? 'text-slate-400 line-through'
-                          : 'text-slate-700'
+                          : 'text-slate-700 font-medium'
                           }`}>
-                          {getLocalizedLessonTitle(lesson.title, language)}
+                          <div 
+                            className={isLocked ? 'cursor-not-allowed' : 'cursor-pointer hover:text-indigo-600'}
+                            onClick={() => !isLocked && handleLessonClick(lesson)}
+                          >
+                            {getLocalizedLessonTitle(lesson.title, language)}
+                          </div>
+                          {lesson.linkedDocName && (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const docId = getDocumentIdByName(lesson.linkedDocName || '')
+                                const pageNum = extractPageNumber(lesson.pageRange)
+                                const pageQuery = `?page=${pageNum || 1}&planId=${plan.id}&lessonId=${lesson.id}`
+                                navigate(`/dashboard/documents/document/${docId}${pageQuery}`)
+                                onClose()
+                              }}
+                              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 flex items-center gap-1 cursor-pointer font-normal"
+                            >
+                              <span>📖 Tài liệu: {lesson.linkedDocName}</span>
+                              {lesson.pageRange && <span className="text-[11px] text-slate-450 dark:text-slate-500">({lesson.pageRange})</span>}
+                            </div>
+                          )}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
                           <Clock className="size-3 text-slate-400 dark:text-slate-500" />
                           <span className="text-xs text-slate-400 dark:text-slate-500">{localizedDuration}</span>
                         </div>
-                      </button>
+                      </div>
                     )
                   })}
                 </div>
@@ -405,7 +443,7 @@ export function CurriculumModal({ isOpen, onClose, onStart, plan }: Props) {
             className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white"
             onClick={onClose}
           >
-            {language === 'vi' ? '🎉 Hoàn tất giáo trình!' : language === 'ja' ? '🎉 カリキュラム完了！' : language === 'ko' ? '🎉 커리큘럼 완료!' : '🎉 Curriculum Complete!'}
+            {language === 'vi' ? '🎉 Hoàn tất lộ trình!' : language === 'ja' ? '🎉 カリキュラム完了！' : language === 'ko' ? '🎉 커리큘럼 완료!' : '🎉 Curriculum Complete!'}
           </Button>
         ) : (
           <Button

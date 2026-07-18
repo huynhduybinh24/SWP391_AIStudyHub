@@ -38,18 +38,33 @@ export function AccountSettingsCard() {
   // ── Avatar State ───────────────────────────────────────────────────────
   const [avatarPreview, setAvatarPreview] = useState<string | null>(() => {
     // Load from localStorage first, fallback to profileStore
-    const stored = localStorage.getItem('aiStudyHubUserAvatar')
+    const stored = localStorage.getItem(`aiStudyHubUserAvatar:${currentEmail}`)
     if (stored) return stored
     // If profileStore has a non-default avatar, use that
     if (profile.avatarUrl && profile.avatarUrl !== '/logo.png') return profile.avatarUrl
     return null
   })
   const [hasCustomAvatar, setHasCustomAvatar] = useState(() => {
-    return !!localStorage.getItem('aiStudyHubUserAvatar') ||
+    return !!localStorage.getItem(`aiStudyHubUserAvatar:${currentEmail}`) ||
       (!!profile.avatarUrl && profile.avatarUrl !== '/logo.png')
   })
   const [pendingAvatarRemoval, setPendingAvatarRemoval] = useState(false)
   const [isAvatarDirty, setIsAvatarDirty] = useState(false)
+
+  // Sync avatar states when user switches accounts
+  useEffect(() => {
+    const stored = localStorage.getItem(`aiStudyHubUserAvatar:${currentEmail}`)
+    if (stored) {
+      setAvatarPreview(stored)
+      setHasCustomAvatar(true)
+    } else if (profile.avatarUrl && profile.avatarUrl !== '/logo.png') {
+      setAvatarPreview(profile.avatarUrl)
+      setHasCustomAvatar(true)
+    } else {
+      setAvatarPreview(null)
+      setHasCustomAvatar(false)
+    }
+  }, [currentEmail, profile.avatarUrl])
 
   const handleAvatarChange = (dataUrl: string) => {
     setAvatarPreview(dataUrl)
@@ -76,7 +91,7 @@ export function AccountSettingsCard() {
     resolver: zodResolver(accountSchema),
     defaultValues: {
       email: currentEmail,
-      name: account.name,
+      name: profile.name || account.name,
       language: initialLanguage,
       timezone: account.timezone,
     },
@@ -88,6 +103,12 @@ export function AccountSettingsCard() {
   }, [currentEmail, setValue])
 
   useEffect(() => {
+    if (profile.name) {
+      setValue('name', profile.name)
+    }
+  }, [profile.name, setValue])
+
+  useEffect(() => {
     setValue('language', language)
   }, [language, setValue])
 
@@ -96,7 +117,7 @@ export function AccountSettingsCard() {
     setShowConfirmModal(true)
   }
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     if (!pendingData) return
     try {
       const lang = pendingData.language as Language
@@ -111,22 +132,22 @@ export function AccountSettingsCard() {
       if (isAvatarDirty) {
         if (pendingAvatarRemoval) {
           // Remove custom avatar
+          await updateProfile({ avatarUrl: '/logo.png' })
           try {
-            localStorage.removeItem('aiStudyHubUserAvatar')
+            localStorage.removeItem(`aiStudyHubUserAvatar:${currentEmail}`)
           } catch (e) {
             console.error('Error removing avatar from localStorage:', e)
           }
-          updateProfile({ avatarUrl: '/logo.png' })
           setPendingAvatarRemoval(false)
         } else if (avatarPreview && avatarPreview.startsWith('data:image')) {
           // Save custom avatar
+          await updateProfile({ avatarUrl: avatarPreview })
           try {
-            localStorage.setItem('aiStudyHubUserAvatar', avatarPreview)
+            localStorage.setItem(`aiStudyHubUserAvatar:${currentEmail}`, avatarPreview)
           } catch (e) {
             console.error('Error saving avatar to localStorage:', e)
             toast.error(language === 'vi' ? 'Không thể lưu ảnh đại diện do dung lượng lưu trữ đầy!' : 'Could not save avatar due to quota limits!')
           }
-          updateProfile({ avatarUrl: avatarPreview })
         }
         setIsAvatarDirty(false)
       }
@@ -172,7 +193,7 @@ export function AccountSettingsCard() {
       <AvatarUploader
         avatarPreview={avatarPreview}
         hasCustomAvatar={hasCustomAvatar}
-        displayName={account.name}
+        displayName={profile.name || account.name}
         onAvatarChange={handleAvatarChange}
         onAvatarRemove={handleAvatarRemove}
       />

@@ -15,11 +15,23 @@ import {
   FileText,
   SlidersHorizontal,
   Pencil,
-  BrainCircuit
+  BrainCircuit,
+  Share2,
+  Settings,
+  ChevronDown,
+  ChevronRight,
+  Check,
+  X,
+  History
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { ShareDocumentModal } from '../components/ShareDocumentModal'
+import { Modal } from '@/components/ui/Modal'
+import { useToast } from '@/components/ui/Toast'
+import { apiClient } from '@/lib/axios'
+import { useAuthStore } from '@/stores/authStore'
 
 interface DocumentItem {
   id: string
@@ -29,7 +41,7 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
+  subject: string
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
@@ -37,7 +49,7 @@ interface DocumentItem {
 interface DocumentsContextType {
   documents: DocumentItem[]
   setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>
-  openUploadModal: () => void
+  openUploadModal: (defaultSubjectCode?: string) => void
   openChatDrawer: (doc: DocumentItem) => void
   openPreviewModal: (doc: DocumentItem) => void
   openQuizModal: (doc?: DocumentItem) => void
@@ -46,11 +58,34 @@ interface DocumentsContextType {
   handleDeleteDocument: (id: string) => void
   renderFileIcon: (type: string) => React.ReactNode
   renderStatusBadge: (status: string) => React.ReactNode
+  refreshSubjects?: () => void
+}
+
+interface FptSubjectInfo {
+  id: string
+  title: string
+  courseCode: string
+  semester: string
+  majors: ('SE' | 'AI' | 'BA')[]
+}
+
+const formatSemesterName = (name: string, lang: string) => {
+  const match = name.trim().match(/^K([0-9]+)$/i)
+  if (match) {
+    const num = match[1]
+    if (lang === 'vi') return `Học kỳ ${num}`
+    if (lang === 'en') return `Semester ${num}`
+    if (lang === 'ja') return `学期 ${num}`
+    if (lang === 'ko') return `학기 ${num}`
+    return `Semester ${num}`
+  }
+  return name
 }
 
 export default function MyDocumentsPage() {
   const navigate = useNavigate()
   const { language, t } = useTranslation()
+  const toast = useToast()
   const {
     documents,
     openUploadModal,
@@ -59,8 +94,37 @@ export default function MyDocumentsPage() {
     handleDownloadFile,
     handleDeleteDocument,
     renderFileIcon,
-    renderStatusBadge
-  } = useOutletContext<DocumentsContextType>()
+    renderStatusBadge,
+    refreshSubjects
+  } = useOutletContext<any>()
+
+  const { user } = useAuthStore()
+  const currentUserId = user?.id ? Number(user.id) : null
+
+  // Semesters & Subjects dynamic database state
+  const [semesters, setSemesters] = useState<any[]>([])
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [dynamicSubjects, setDynamicSubjects] = useState<FptSubjectInfo[]>([])
+
+  // UI state
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+  const [expandedSemesters, setExpandedSemesters] = useState<Record<string, boolean>>({})
+
+  // Semester input state
+  const [newSemesterName, setNewSemesterName] = useState('')
+  const [editingSemesterId, setEditingSemesterId] = useState<number | null>(null)
+  const [editingSemesterName, setEditingSemesterName] = useState('')
+
+  // Subject input state
+  const [newSubjectCode, setNewSubjectCode] = useState('')
+  const [newSubjectName, setNewSubjectName] = useState('')
+  const [newSubjectMajors, setNewSubjectMajors] = useState('SE')
+  const [addingSubjectToSemester, setAddingSubjectToSemester] = useState<string | null>(null)
+
+  const [editingSubjectId, setEditingSubjectId] = useState<number | null>(null)
+  const [editingSubjectCode, setEditingSubjectCode] = useState('')
+  const [editingSubjectName, setEditingSubjectName] = useState('')
+  const [editingSubjectMajors, setEditingSubjectMajors] = useState('')
 
   const [searchQuery, setSearchQuery] = useState('')
   const [subjectFilter, setSubjectFilter] = useState('All')
@@ -68,6 +132,10 @@ export default function MyDocumentsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(false)
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
+  const [shareDocModalOpen, setShareDocModalOpen] = useState(false)
+  const [selectedShareDoc, setSelectedShareDoc] = useState<DocumentItem | null>(null)
+  const [selectedMajor, setSelectedMajor] = useState<'SE' | 'AI' | 'BA' | 'ALL'>('SE')
+  const [selectedSemester, setSelectedSemester] = useState<string>('ALL')
 
   const handleOpenDocument = (docId: string) => {
     setActiveMenuId(null)
@@ -92,6 +160,37 @@ export default function MyDocumentsPage() {
 
   const menuRef = useRef<HTMLDivElement>(null)
   const filterContainerRef = useRef<HTMLDivElement>(null)
+
+  const fetchSemestersAndSubjects = async () => {
+    try {
+      const urlSem = currentUserId ? `/semesters?userId=${currentUserId}` : '/semesters'
+      const urlSubj = currentUserId ? `/subjects?userId=${currentUserId}` : '/subjects'
+      
+      const [semRes, subjRes] = await Promise.all([
+        apiClient.get<any[]>(urlSem),
+        apiClient.get<any[]>(urlSubj)
+      ])
+      
+      setSemesters(semRes.data)
+      setSubjects(subjRes.data)
+
+      const mapped = subjRes.data.map((s: any) => ({
+        id: s.code,
+        title: s.name,
+        courseCode: s.code,
+        semester: s.semesterName,
+        majors: s.majors ? s.majors.split(',').map((m: string) => m.trim().toUpperCase()) : []
+      }))
+      setDynamicSubjects(mapped)
+    } catch (err) {
+      console.error('Failed to fetch semesters or subjects:', err)
+    }
+  }
+
+  // Load from backend on mount/userId change
+  useEffect(() => {
+    fetchSemestersAndSubjects()
+  }, [currentUserId])
 
   // Auto-reset filters on collapse, and smooth scroll to filter panel on open
   useEffect(() => {
@@ -119,6 +218,13 @@ export default function MyDocumentsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [activeMenuId])
 
+  // Reset subject filter when selected semester or major changes
+  useEffect(() => {
+    setSubjectFilter('All')
+  }, [selectedSemester, selectedMajor])
+
+
+
   // Filter logic
   const filteredDocuments = documents.filter((doc) => {
     const titleMatch = doc.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -128,13 +234,26 @@ export default function MyDocumentsPage() {
     const subjectMatch = subjectFilter === 'All' ? true : doc.subject === subjectFilter.toUpperCase()
     const typeMatch = typeFilter === 'All' ? true : doc.type === typeFilter.toLowerCase()
 
-    return queryMatch && subjectMatch && typeMatch
+    // Filter by selected semester and major if they are not 'ALL'
+    const foundSubj = dynamicSubjects.find(s => s.id.toUpperCase() === doc.subject.toUpperCase())
+    const semesterMatch = selectedSemester === 'ALL' || (foundSubj && foundSubj.semester === selectedSemester)
+    const majorMatch = selectedMajor === 'ALL' || (foundSubj && foundSubj.majors.includes(selectedMajor as any))
+
+    return queryMatch && subjectMatch && typeMatch && semesterMatch && majorMatch
   })
 
-  // Dynamic counts for top folder cards
-  const compsCount = documents.filter(d => d.subject === 'COMPSCI').length
-  const mathCount = documents.filter(d => d.subject === 'MATHEMATICS').length
-  const bioCount = documents.filter(d => d.subject === 'BIOLOGY').length
+  // Filter FPT subjects based on selected major and semester
+  const displayedSubjects = dynamicSubjects.filter(subj => {
+    // Filter by Major
+    const majorMatch = selectedMajor === 'ALL' || subj.majors.includes(selectedMajor as any)
+    // Filter by Semester
+    const semesterMatch = selectedSemester === 'ALL' || subj.semester === selectedSemester
+    return majorMatch && semesterMatch
+  })
+
+  const getDocCountForSubject = (subjId: string) => {
+    return documents.filter(d => String(d.subject).toUpperCase() === subjId.toUpperCase()).length
+  }
 
   const getDocumentsCountLabel = (count: number) => {
     if (language === 'en') {
@@ -144,7 +263,7 @@ export default function MyDocumentsPage() {
       return `${count} Tài liệu`
     }
     if (language === 'ja') {
-      return `${count} 件のドキュメント`
+      return `${count} 件 of ドキュメント`
     }
     if (language === 'ko') {
       return `${count}개의 문서`
@@ -153,21 +272,112 @@ export default function MyDocumentsPage() {
   }
 
   const getSubjectName = (subject: string) => {
-    const s = subject.toLowerCase()
-    if (s === 'all') return language === 'en' ? 'All Subjects' : (language === 'vi' ? 'Tất cả môn học' : (language === 'ja' ? 'すべての科目' : '모든 과목'))
-    if (s === 'mathematics' || s === 'math') return t.myDocuments.math
-    if (s === 'biology' || s === 'bio') return t.myDocuments.bio
-    if (s === 'compsci') return t.myDocuments.compsci
+    const s = subject.toUpperCase()
+    if (s === 'ALL') return language === 'en' ? 'All Subjects' : (language === 'vi' ? 'Tất cả môn học' : (language === 'ja' ? 'すべての科目' : '모든 과목'))
+    const found = dynamicSubjects.find(x => x.id === s)
+    if (found) return found.title
+    return subject
+  }
 
-    const subjectMap: Record<string, Record<string, string>> = {
-      physics: { en: 'Physics', vi: 'Vật lý', ja: '物理学', ko: '물리학' },
-      philosophy: { en: 'Philosophy', vi: 'Triết học', ja: '哲学', ko: '철학' },
-      economics: { en: 'Economics', vi: 'Kinh tế học', ja: '経済学', ko: '経済学' },
-      neuroscience: { en: 'Neuroscience', vi: 'Thần kinh học', ja: '神経科学', ko: '신경과학' },
-      psychology: { en: 'Psychology', vi: 'Tâm lý học', ja: '心理学', ko: '심리학' },
-      general: { en: 'General Studies', vi: 'Đại cương', ja: '一般教養', ko: '교양' }
+  // --- Semester CRUD ---
+  const handleCreateSemester = async () => {
+    if (!newSemesterName.trim() || !currentUserId) return
+    try {
+      await apiClient.post('/semesters', {
+        name: newSemesterName.trim(),
+        userId: currentUserId
+      })
+      setNewSemesterName('')
+      toast.success(language === 'vi' ? 'Đã thêm học kỳ mới!' : 'New semester created!')
+      fetchSemestersAndSubjects()
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to create semester')
     }
-    return subjectMap[s]?.[language] || subject
+  }
+
+  const handleUpdateSemester = async (id: number) => {
+    if (!editingSemesterName.trim()) return
+    try {
+      await apiClient.put(`/semesters/${id}`, {
+        name: editingSemesterName.trim()
+      })
+      setEditingSemesterId(null)
+      setEditingSemesterName('')
+      toast.success(language === 'vi' ? 'Cập nhật học kỳ thành công!' : 'Semester updated!')
+      fetchSemestersAndSubjects()
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to update semester')
+    }
+  }
+
+  const handleDeleteSemester = async (id: number) => {
+    try {
+      await apiClient.delete(`/semesters/${id}`)
+      toast.success(language === 'vi' ? 'Đã xóa học kỳ!' : 'Semester deleted!')
+      fetchSemestersAndSubjects()
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to delete semester')
+    }
+  }
+
+  // --- Subject CRUD ---
+  const handleCreateSubject = async (semesterName: string) => {
+    if (!newSubjectCode.trim() || !newSubjectName.trim() || !currentUserId) return
+    try {
+      await apiClient.post('/subjects', {
+        code: newSubjectCode.trim().toUpperCase(),
+        name: newSubjectName.trim(),
+        semesterName: semesterName,
+        majors: newSubjectMajors,
+        userId: currentUserId
+      })
+      setNewSubjectCode('')
+      setNewSubjectName('')
+      setNewSubjectMajors('SE')
+      setAddingSubjectToSemester(null)
+      toast.success(language === 'vi' ? 'Thêm môn học mới thành công!' : 'New subject added!')
+      fetchSemestersAndSubjects()
+      if (refreshSubjects) refreshSubjects()
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to create subject')
+    }
+  }
+
+  const handleUpdateSubject = async (id: number) => {
+    if (!editingSubjectCode.trim() || !editingSubjectName.trim()) return
+    try {
+      await apiClient.put(`/subjects/${id}`, {
+        code: editingSubjectCode.trim().toUpperCase(),
+        name: editingSubjectName.trim(),
+        majors: editingSubjectMajors
+      })
+      setEditingSubjectId(null)
+      setEditingSubjectCode('')
+      setEditingSubjectName('')
+      setEditingSubjectMajors('')
+      toast.success(language === 'vi' ? 'Cập nhật môn học thành công!' : 'Subject updated!')
+      fetchSemestersAndSubjects()
+      if (refreshSubjects) refreshSubjects()
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to update subject')
+    }
+  }
+
+  const handleDeleteSubject = async (id: number) => {
+    try {
+      await apiClient.delete(`/subjects/${id}`)
+      toast.success(language === 'vi' ? 'Đã xóa môn học!' : 'Subject deleted!')
+      fetchSemestersAndSubjects()
+      if (refreshSubjects) refreshSubjects()
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to delete subject')
+    }
   }
 
   const getTypeName = (type: string) => {
@@ -208,88 +418,148 @@ export default function MyDocumentsPage() {
             <Button
               variant="secondary"
               size="sm"
+              onClick={() => setSettingsModalOpen(true)}
+              className="flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              <Settings className="h-4.5 w-4.5" />
+              <span className="hidden sm:inline">{language === 'en' ? 'Manage' : (language === 'vi' ? 'Quản lý' : 'Manage')}</span>
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setShowFilters(prev => !prev)}
               className={cn(
-                "flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
+                "flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
                 showFilters 
                   ? "border-[#2563eb]/40 bg-blue-50 text-[#2563eb] dark:bg-blue-955/30 dark:border-blue-500/50 dark:text-blue-450" 
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               )}
             >
               <SlidersHorizontal className="h-4.5 w-4.5" />
-              {language === 'en' ? 'Filter' : (language === 'vi' ? 'Bộ lọc' : (language === 'ja' ? 'フィルター' : '필터'))}
+              <span className="hidden sm:inline">{language === 'en' ? 'Filter' : (language === 'vi' ? 'Bộ lọc' : (language === 'ja' ? 'フィルター' : '필터'))}</span>
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/dashboard/documents/upload-history')}
+              className="flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              <History className="h-4.5 w-4.5" />
+              <span className="hidden sm:inline">{language === 'en' ? 'View upload history' : 'Lịch sử tải lên'}</span>
             </Button>
 
             <Button
               onClick={openUploadModal}
-              className="group flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
+              className="group flex items-center justify-center gap-2 rounded-xl bg-[#2563eb] w-[42px] sm:w-auto px-0 sm:px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
             >
               <Plus className="h-4.5 w-4.5" />
-              {language === 'en' ? 'Upload New' : (language === 'vi' ? 'Tải lên mới' : (language === 'ja' ? '新規アップロード' : '새로 업로드'))}
+              <span className="hidden sm:inline">{language === 'en' ? 'Upload New' : (language === 'vi' ? 'Tải lên mới' : (language === 'ja' ? '新規アップロード' : '새로 업로드'))}</span>
             </Button>
           </div>
         </div>
       </div>
 
 
-      {/* Folders List Grid Section */}
-      <div className="space-y-3.5">
-        <h3 className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">{t.myDocuments.folders}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-          {/* Software Engineering Folder Card */}
-          <div 
-            onClick={() => navigate('/dashboard/documents/subject/COMPSCI')}
-            className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-[#2563eb]/45 hover:shadow-md cursor-pointer transition-all duration-300 hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/40"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-primary border border-blue-500/20 group-hover:bg-[#2563eb] group-hover:text-white transition-all duration-300 dark:border-blue-500/30">
-              <FolderPlus className="h-5.5 w-5.5 text-[#2563eb] group-hover:text-white dark:text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors truncate">
-                {t.myDocuments.compsci}
-              </h4>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
-                CS-402 &bull; {getDocumentsCountLabel(compsCount)}
-              </p>
-            </div>
-          </div>
-          
-          {/* Mathematics Folder Card */}
-          <div 
-            onClick={() => navigate('/dashboard/documents/subject/MATHEMATICS')}
-            className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-[#2563eb]/45 hover:shadow-md cursor-pointer transition-all duration-300 hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/40"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-primary border border-blue-500/20 group-hover:bg-[#2563eb] group-hover:text-white transition-all duration-300 dark:border-blue-500/30">
-              <FolderPlus className="h-5.5 w-5.5 text-[#2563eb] group-hover:text-white dark:text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors truncate">
-                {t.myDocuments.math}
-              </h4>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
-                Calculus II &bull; {getDocumentsCountLabel(mathCount)}
-              </p>
-            </div>
+      {/* FPT University Classification & Filters */}
+      <div className="space-y-5 bg-slate-50/50 dark:bg-slate-900/40 p-6 rounded-3xl border border-slate-150 dark:border-slate-800/80 shadow-xs">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h3 className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+              {language === 'en' ? 'FPT UNIVERSITY ROADMAP' : 'LỘ TRÌNH ĐẠI HỌC FPT'}
+            </h3>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {language === 'en' ? 'Select your major and semester to view subjects' : 'Chọn ngành học và học kỳ để xem danh sách môn học'}
+            </p>
           </div>
 
-          {/* Biology Folder Card */}
-          <div 
-            onClick={() => navigate('/dashboard/documents/subject/BIOLOGY')}
-            className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-[#2563eb]/45 hover:shadow-md cursor-pointer transition-all duration-300 hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/40"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-primary border border-blue-500/20 group-hover:bg-[#2563eb] group-hover:text-white transition-all duration-300 dark:border-blue-500/30">
-              <FolderPlus className="h-5.5 w-5.5 text-[#2563eb] group-hover:text-white dark:text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors truncate">
-                {t.myDocuments.bio}
-              </h4>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
-                Genetics Lab &bull; {getDocumentsCountLabel(bioCount)}
-              </p>
-            </div>
+          {/* Major Select Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
+              {language === 'en' ? 'Major:' : 'Ngành học:'}
+            </span>
+            <select
+              value={selectedMajor}
+              onChange={(e) => {
+                setSelectedMajor(e.target.value as any)
+                setSelectedSemester('ALL') // Reset semester to avoid showing empty screens
+              }}
+              className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm outline-none focus:border-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-350 cursor-pointer"
+            >
+              <option value="SE">{language === 'en' ? 'Software Engineering (SE)' : 'Kỹ thuật phần mềm (SE)'}</option>
+              <option value="AI">{language === 'en' ? 'Artificial Intelligence (AI)' : 'Trí tuệ nhân tạo (AI)'}</option>
+              <option value="BA">{language === 'en' ? 'Business Administration (BA)' : 'Quản trị kinh doanh (BA)'}</option>
+              <option value="ALL">{language === 'en' ? 'All Majors' : 'Tất cả các ngành'}</option>
+            </select>
           </div>
         </div>
+
+        {/* Semester Tab Switcher */}
+        <div className="flex flex-wrap gap-2 border-t border-slate-200/60 dark:border-slate-800/50 pt-4 overflow-x-auto scrollbar-none">
+          {[
+            { key: 'ALL', labelEn: 'All Semesters', labelVi: 'Tất cả học kỳ' },
+            ...semesters.map((s) => ({
+              key: s.name,
+              labelEn: formatSemesterName(s.name, 'en'),
+              labelVi: formatSemesterName(s.name, 'vi')
+            }))
+          ].map((sem) => (
+            <button
+              key={sem.key}
+              onClick={() => setSelectedSemester(sem.key)}
+              className={cn(
+                "rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 border cursor-pointer select-none whitespace-nowrap",
+                selectedSemester === sem.key
+                  ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/20"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-[#1e293b] dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-900"
+              )}
+            >
+              {language === 'en' ? sem.labelEn : sem.labelVi}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Folders List Grid Section */}
+      <div className="space-y-4">
+        <h3 className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+          {language === 'en' ? 'SUBJECT FOLDERS' : 'THƯ MỤC MÔN HỌC'}
+        </h3>
+        
+        {displayedSubjects.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+            {displayedSubjects.map((subject) => {
+              const docCount = getDocCountForSubject(subject.id)
+              return (
+                <div 
+                  key={subject.id}
+                  onClick={() => navigate(`/dashboard/documents/subject/${subject.id.toLowerCase()}`)}
+                  className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-blue-500/45 hover:shadow-md cursor-pointer transition-all duration-300 hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/40"
+                >
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-primary border border-blue-500/20 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 dark:border-blue-500/30">
+                    <FolderPlus className="h-5.5 w-5.5 text-blue-600 group-hover:text-white dark:text-blue-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-[15px] font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 transition-colors truncate">
+                      {subject.title}
+                    </h4>
+                    <p className="text-xs font-semibold text-slate-400 mt-0.5 dark:text-slate-500">
+                      {subject.courseCode} &bull; {getDocumentsCountLabel(docCount)}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30">
+            <FolderPlus className="h-10 w-10 text-slate-300 dark:text-slate-700 mb-2 stroke-[1.5]" />
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+              {language === 'en' ? 'No subjects found for this selection.' : 'Không tìm thấy môn học nào cho lựa chọn này.'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Filter and List Workspace */}
@@ -334,15 +604,11 @@ export default function MyDocumentsPage() {
                 className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
               >
                 <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('All')}</option>
-                <option value="Mathematics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Mathematics')}</option>
-                <option value="Biology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Biology')}</option>
-                <option value="Physics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Physics')}</option>
-                <option value="Compsci" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Compsci')}</option>
-                <option value="Philosophy" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Philosophy')}</option>
-                <option value="Economics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Economics')}</option>
-                <option value="Neuroscience" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Neuroscience')}</option>
-                <option value="Psychology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Psychology')}</option>
-                <option value="General" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('General')}</option>
+                {displayedSubjects.map((sub) => (
+                  <option key={sub.id} value={sub.id} className="dark:bg-slate-900 dark:text-slate-100">
+                    {sub.courseCode === sub.title ? sub.courseCode : `${sub.courseCode} - ${sub.title}`}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -464,7 +730,7 @@ export default function MyDocumentsPage() {
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-[#2563eb] transition-colors dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-400 cursor-pointer"
                         >
                           <BrainCircuit className="h-4 w-4 text-indigo-500" />
-                          🎯 Làm trắc nghiệm AI
+                          🎯 {t.actionMenu.practiceQuiz}
                         </button>
                         <button
                           onClick={() => handleOpenDocument(doc.id)}
@@ -486,6 +752,18 @@ export default function MyDocumentsPage() {
                         >
                           <Download className="h-4 w-4" />
                           {t.actionMenu.download}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveMenuId(null)
+                            setSelectedShareDoc(doc)
+                            setShareDocModalOpen(true)
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <Share2 className="h-4 w-4 text-emerald-500" />
+                          {language === 'vi' ? 'Chia sẻ nhóm' : 'Share to workspace'}
                         </button>
                         <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
                         <button
@@ -592,7 +870,7 @@ export default function MyDocumentsPage() {
                             size="icon"
                             onClick={() => openQuizModal(doc)}
                             className="rounded-lg text-indigo-600 hover:bg-indigo-50/50 dark:text-indigo-400 dark:hover:bg-indigo-955/50"
-                            title="Làm trắc nghiệm AI"
+                            title={t.actionMenu.practiceQuiz}
                           >
                             <BrainCircuit className="h-4.5 w-4.5" />
                           </Button>
@@ -604,6 +882,18 @@ export default function MyDocumentsPage() {
                             title={t.actionMenu.chatAI}
                           >
                             <MessageSquare className="h-4.5 w-4.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedShareDoc(doc)
+                              setShareDocModalOpen(true)
+                            }}
+                            className="rounded-lg text-emerald-600 hover:bg-emerald-50/50 dark:text-emerald-400 dark:hover:bg-emerald-955/50"
+                            title={language === 'vi' ? 'Chia sẻ nhóm' : 'Share to workspace'}
+                          >
+                            <Share2 className="h-4.5 w-4.5" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -642,6 +932,380 @@ export default function MyDocumentsPage() {
           </div>
         )}
       </div>
+
+      <ShareDocumentModal
+        isOpen={shareDocModalOpen}
+        onClose={() => {
+          setShareDocModalOpen(false)
+          setSelectedShareDoc(null)
+        }}
+        documentId={selectedShareDoc?.id || ''}
+        documentTitle={selectedShareDoc?.title || selectedShareDoc?.fileName || ''}
+      />
+
+      <Modal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        title={language === 'vi' ? 'Quản lý Học kỳ & Môn học' : 'Manage Semesters & Subjects'}
+        description={language === 'vi' ? 'Thêm mới hoặc chỉnh sửa các học kỳ và môn học tùy chỉnh của bạn. Các học kỳ mặc định là chỉ đọc.' : 'Create and manage your custom semesters and subjects. Default roadmaps are read-only.'}
+        className="max-w-2xl text-slate-800 dark:text-slate-100"
+      >
+        <div className="space-y-6">
+          {/* Create Semester Form */}
+          <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl dark:bg-slate-900/60 dark:border-slate-800/80">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 dark:text-slate-400">
+              {language === 'vi' ? 'Thêm Học kỳ Mới' : 'Add New Semester'}
+            </label>
+            <div className="flex gap-2.5">
+              <input
+                type="text"
+                value={newSemesterName}
+                onChange={(e) => setNewSemesterName(e.target.value)}
+                placeholder={language === 'vi' ? 'Tên học kỳ (ví dụ: K10, Summer 2026)' : 'Semester name (e.g. K10, Summer 2026)'}
+                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold outline-none focus:border-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+              />
+              <Button
+                onClick={handleCreateSemester}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold px-4 flex items-center gap-1.5 shadow-sm shadow-blue-500/10 cursor-pointer h-10 text-xs"
+              >
+                <Plus className="h-4 w-4" />
+                {language === 'vi' ? 'Thêm' : 'Add'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Semesters & Subjects List */}
+          <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            {semesters.length > 0 ? (
+              semesters.map((sem) => {
+                const isCustomSem = sem.userId !== null
+                const isEditingSem = editingSemesterId === sem.id
+                const isExpanded = !!expandedSemesters[sem.name]
+                const semSubjects = subjects.filter((s) => s.semesterName === sem.name)
+                const isAddingSubject = addingSubjectToSemester === sem.name
+
+                return (
+                  <div key={sem.id} className="border border-slate-200 rounded-2xl dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900/40">
+                    {/* Semester Header */}
+                    <div className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-slate-900/20 border-b border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <button
+                          onClick={() => setExpandedSemesters((prev) => ({ ...prev, [sem.name]: !isExpanded }))}
+                          className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                        >
+                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </button>
+
+                        {isEditingSem ? (
+                          <div className="flex items-center gap-2 flex-1 max-w-xs" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              value={editingSemesterName}
+                              onChange={(e) => setEditingSemesterName(e.target.value)}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold outline-none focus:border-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                            />
+                            <button
+                              onClick={() => handleUpdateSemester(sem.id)}
+                              className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-lg dark:hover:bg-emerald-950/20"
+                              title={language === 'vi' ? 'Lưu' : 'Save'}
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingSemesterId(null)
+                                setEditingSemesterName('')
+                              }}
+                              className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg dark:hover:bg-rose-950/20"
+                              title={language === 'vi' ? 'Hủy' : 'Cancel'}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            onClick={() => setExpandedSemesters((prev) => ({ ...prev, [sem.name]: !isExpanded }))}
+                            className="font-bold text-sm text-slate-800 dark:text-slate-200 cursor-pointer truncate flex items-center gap-2"
+                          >
+                            {formatSemesterName(sem.name, language)}
+                            {!isCustomSem && (
+                              <span className="text-[10px] bg-slate-150 text-slate-500 px-1.5 py-0.5 rounded font-bold dark:bg-slate-800 dark:text-slate-400">
+                                {language === 'vi' ? 'Mặc định' : 'Default'}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        {/* Add Subject to this Semester */}
+                        <button
+                          onClick={() => {
+                            setAddingSubjectToSemester(isAddingSubject ? null : sem.name)
+                            setExpandedSemesters((prev) => ({ ...prev, [sem.name]: true }))
+                            setNewSubjectCode('')
+                            setNewSubjectName('')
+                            setNewSubjectMajors('SE')
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/30 transition-colors"
+                          title={language === 'vi' ? 'Thêm môn học' : 'Add subject'}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+
+                        {/* Custom Semester Actions */}
+                        {isCustomSem && !isEditingSem && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingSemesterId(sem.id)
+                                setEditingSemesterName(sem.name)
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl dark:hover:bg-slate-850 dark:hover:text-slate-200 transition-colors"
+                              title={language === 'vi' ? 'Sửa học kỳ' : 'Edit semester'}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSemester(sem.id)}
+                              className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-55/20 rounded-xl dark:hover:bg-rose-950/20 transition-colors"
+                              title={language === 'vi' ? 'Xóa học kỳ' : 'Delete semester'}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Semester Content (expanded subjects & add form) */}
+                    {isExpanded && (
+                      <div className="p-4 bg-slate-50/30 dark:bg-slate-900/10 space-y-3 border-t border-slate-100 dark:border-slate-800">
+                        {/* New Subject Form */}
+                        {isAddingSubject && (
+                          <div className="p-3.5 border border-dashed border-blue-200 rounded-xl bg-blue-50/10 dark:border-blue-900/40 dark:bg-blue-955/10 space-y-3">
+                            <div className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                              {language === 'vi' ? `Thêm môn học vào ${formatSemesterName(sem.name, language)}` : `Add subject to ${formatSemesterName(sem.name, language)}`}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <input
+                                type="text"
+                                value={newSubjectCode}
+                                onChange={(e) => setNewSubjectCode(e.target.value)}
+                                placeholder={language === 'vi' ? 'Mã môn (ví dụ: SWP391)' : 'Subject Code (e.g. SWP391)'}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold outline-none focus:border-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                              />
+                              <input
+                                type="text"
+                                value={newSubjectName}
+                                onChange={(e) => setNewSubjectName(e.target.value)}
+                                placeholder={language === 'vi' ? 'Tên môn học' : 'Subject Name'}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold outline-none focus:border-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                              />
+                            </div>
+
+                            {/* Majors checklist */}
+                            <div className="flex flex-wrap items-center gap-4">
+                              <span className="text-xs font-bold text-slate-500">{language === 'vi' ? 'Ngành học:' : 'Majors:'}</span>
+                              {['SE', 'AI', 'BA'].map((major) => {
+                                const list = newSubjectMajors ? newSubjectMajors.split(',') : []
+                                const checked = list.includes(major)
+                                return (
+                                  <label key={major} className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => {
+                                        let newList
+                                        if (checked) {
+                                          newList = list.filter((m) => m !== major)
+                                        } else {
+                                          newList = [...list, major]
+                                        }
+                                        setNewSubjectMajors(newList.join(','))
+                                      }}
+                                      className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    />
+                                    {major}
+                                  </label>
+                                )
+                              })}
+                            </div>
+
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setAddingSubjectToSemester(null)}
+                                className="rounded-lg px-3 py-1 text-xs font-semibold cursor-pointer border border-slate-200 hover:bg-slate-50 dark:border-slate-800"
+                              >
+                                {language === 'vi' ? 'Hủy' : 'Cancel'}
+                              </Button>
+                              <Button
+                                onClick={() => handleCreateSubject(sem.name)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-3 py-1 text-xs font-bold cursor-pointer"
+                              >
+                                {language === 'vi' ? 'Thêm' : 'Add'}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* List of Subjects */}
+                        {semSubjects.length > 0 ? (
+                          <div className="space-y-2">
+                            {semSubjects.map((subj) => {
+                              const isCustomSubj = subj.userId !== null
+                              const isEditingSubj = editingSubjectId === subj.id
+
+                              return (
+                                <div key={subj.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white dark:border-slate-800/60 dark:bg-slate-900/50 hover:border-slate-200 dark:hover:border-slate-800">
+                                  {isEditingSubj ? (
+                                    <div className="flex flex-col gap-3 w-full">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <input
+                                          type="text"
+                                          value={editingSubjectCode}
+                                          onChange={(e) => setEditingSubjectCode(e.target.value)}
+                                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold outline-none focus:border-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                        />
+                                        <input
+                                          type="text"
+                                          value={editingSubjectName}
+                                          onChange={(e) => setEditingSubjectName(e.target.value)}
+                                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold outline-none focus:border-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                                        />
+                                      </div>
+
+                                      {/* Editing Majors Checklist */}
+                                      <div className="flex flex-wrap items-center gap-4">
+                                        <span className="text-xs font-bold text-slate-500">{language === 'vi' ? 'Ngành học:' : 'Majors:'}</span>
+                                        {['SE', 'AI', 'BA'].map((major) => {
+                                          const list = editingSubjectMajors ? editingSubjectMajors.split(',') : []
+                                          const checked = list.includes(major)
+                                          return (
+                                            <label key={major} className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                                              <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={() => {
+                                                  let newList
+                                                  if (checked) {
+                                                    newList = list.filter((m) => m !== major)
+                                                  } else {
+                                                    newList = [...list, major]
+                                                  }
+                                                  setEditingSubjectMajors(newList.join(','))
+                                                }}
+                                                className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                              />
+                                              {major}
+                                            </label>
+                                          )
+                                        })}
+                                      </div>
+
+                                      <div className="flex justify-end gap-2">
+                                        <Button
+                                          variant="secondary"
+                                          size="sm"
+                                          onClick={() => {
+                                            setEditingSubjectId(null)
+                                            setEditingSubjectCode('')
+                                            setEditingSubjectName('')
+                                            setEditingSubjectMajors('')
+                                          }}
+                                          className="rounded-lg px-2.5 py-0.5 text-[11px] font-semibold cursor-pointer border border-slate-200 hover:bg-slate-50 dark:border-slate-800"
+                                        >
+                                          {language === 'vi' ? 'Hủy' : 'Cancel'}
+                                        </Button>
+                                        <Button
+                                          onClick={() => handleUpdateSubject(subj.id)}
+                                          className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-0.5 text-[11px] font-bold cursor-pointer"
+                                        >
+                                          {language === 'vi' ? 'Lưu' : 'Save'}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="font-bold text-xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded dark:bg-slate-800 dark:text-slate-200">
+                                            {subj.code}
+                                          </span>
+                                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            {subj.name}
+                                          </span>
+                                        </div>
+                                        <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                                          {subj.majors?.split(',').map((m: string) => (
+                                            <span key={m} className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded dark:bg-blue-955/40 dark:text-blue-400">
+                                              {m.trim()}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {/* Custom Subject Actions */}
+                                      {isCustomSubj && (
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <button
+                                            onClick={() => {
+                                              setEditingSubjectId(subj.id)
+                                              setEditingSubjectCode(subj.code)
+                                              setEditingSubjectName(subj.name)
+                                              setEditingSubjectMajors(subj.majors || '')
+                                            }}
+                                            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-150 rounded-xl dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+                                            title={language === 'vi' ? 'Sửa môn học' : 'Edit subject'}
+                                          >
+                                            <Pencil className="h-3 w-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteSubject(subj.id)}
+                                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-55/20 rounded-xl dark:hover:bg-rose-950/20 transition-colors"
+                                            title={language === 'vi' ? 'Xóa môn học' : 'Delete subject'}
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-4 text-xs font-medium text-slate-400 dark:text-slate-600">
+                            {language === 'vi' ? 'Chưa có môn học nào.' : 'No subjects found.'}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            ) : (
+              <div className="text-center py-8 text-sm text-slate-400 dark:text-slate-600">
+                {language === 'vi' ? 'Không có dữ liệu học kỳ.' : 'No semesters found.'}
+              </div>
+            )}
+          </div>
+
+          {/* Close button */}
+          <div className="flex justify-end pt-4 border-t border-slate-150 dark:border-slate-800">
+            <Button
+              variant="secondary"
+              onClick={() => setSettingsModalOpen(false)}
+              className="rounded-xl border border-slate-200 dark:border-slate-800 font-bold text-xs"
+            >
+              {language === 'vi' ? 'Đóng' : 'Close'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

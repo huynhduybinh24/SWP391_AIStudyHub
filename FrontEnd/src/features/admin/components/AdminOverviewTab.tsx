@@ -84,28 +84,52 @@ export function AdminOverviewTab({
     return () => clearTimeout(timer)
   }, [])
 
-  // Line Chart Data: New registrations per day
+  // Line Chart Data: New registrations per day (last 7 days from DB)
   const registrationsData = useMemo(() => {
-    return [
-      { day: t.dashboard.weekdays?.[0] || 'T2', count: 145 },
-      { day: t.dashboard.weekdays?.[1] || 'T3', count: 185 },
-      { day: t.dashboard.weekdays?.[2] || 'T4', count: 168 },
-      { day: t.dashboard.weekdays?.[3] || 'T5', count: 234 },
-      { day: t.dashboard.weekdays?.[4] || 'T6', count: 215 },
-      { day: t.dashboard.weekdays?.[5] || 'T7', count: 290 },
-      { day: t.dashboard.weekdays?.[6] || 'CN', count: 345 }
-    ]
-  }, [t])
+    const counts = stats?.newRegistrationsLast7Days || [0, 0, 0, 0, 0, 0, 0]
+    const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const viWeekdayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+    const today = new Date()
+    return counts.map((count, i) => {
+      const date = new Date(today)
+      date.setDate(today.getDate() - (6 - i))
+      const dayIndex = date.getDay()
+      const label = language === 'vi' ? (viWeekdayLabels[dayIndex]) : (weekdayLabels[dayIndex])
+      return { day: label, count: Number(count) }
+    })
+  }, [stats, language])
 
-  // Pie Chart Data: Storage distribution breakdown
+  // Pie Chart Data: Storage distribution breakdown (real data from backend)
   const storageData = useMemo(() => {
+    const pdf = stats?.pdfStorageMb || 0
+    const office = stats?.officeStorageMb || 0
+    const spreadsheet = stats?.spreadsheetStorageMb || 0
+    const other = stats?.otherStorageMb || 0
+    const total = pdf + office + spreadsheet + other
+    const pct = (v: number) => total > 0 ? Math.round((v / total) * 100) : 0
+    const fmt = (v: number) => Number(v.toFixed(1))
     return [
-      { name: 'PDF Documents', value: 111.8, percentage: 45, color: '#3b82f6' },
-      { name: 'Word & Office Docs', value: 62.1, percentage: 25, color: '#10b981' },
-      { name: 'Spreadsheets', value: 44.7, percentage: 18, color: '#8b5cf6' },
-      { name: 'Other Assets', value: 29.9, percentage: 12, color: '#f59e0b' }
+      { name: language === 'vi' ? 'Tài liệu PDF' : 'PDF Documents', value: fmt(pdf), percentage: pct(pdf), color: '#3b82f6' },
+      { name: language === 'vi' ? 'Tài liệu Office' : 'Word & Office Docs', value: fmt(office), percentage: pct(office), color: '#10b981' },
+      { name: language === 'vi' ? 'Bảng tính' : 'Spreadsheets', value: fmt(spreadsheet), percentage: pct(spreadsheet), color: '#8b5cf6' },
+      { name: language === 'vi' ? 'Tài sản khác' : 'Other Assets', value: fmt(other), percentage: pct(other), color: '#f59e0b' }
     ]
-  }, [])
+  }, [stats, language])
+
+  const usedPercent = useMemo(() => {
+    if (!stats || !stats.storageLimitGB) return 0
+    const rawPct = (stats.storageUsedGB / stats.storageLimitGB) * 100
+    return parseFloat(rawPct.toFixed(1))
+  }, [stats])
+
+  const capacityText = useMemo(() => {
+    if (!stats || !stats.storageLimitGB) return '0 GB'
+    const limitGB = stats.storageLimitGB
+    if (limitGB >= 1024) {
+      return `${(limitGB / 1024).toFixed(1)} TB`
+    }
+    return `${limitGB.toFixed(1)} GB`
+  }, [stats])
 
   const totalUsedStorage = useMemo(() => {
     return storageData.reduce((acc, curr) => acc + curr.value, 0).toFixed(1)
@@ -153,7 +177,7 @@ export function AdminOverviewTab({
                   {t.admin.premiumUsers}
                 </p>
                 <h4 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                  {stats?.activeUsers || 0}
+                  {stats?.premiumUsers || 0}
                 </h4>
               </div>
               <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 dark:text-amber-400">
@@ -194,12 +218,12 @@ export function AdminOverviewTab({
               <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-violet-600 dark:bg-violet-500 rounded-full transition-all duration-1000" 
-                  style={{ width: '24%' }}
+                  style={{ width: `${Math.min(usedPercent, 100)}%` }}
                 />
               </div>
               <div className="flex items-center justify-between text-[10px] font-extrabold text-slate-400 dark:text-slate-500">
-                <span>24.8% Used</span>
-                <span>1.0 PB Capacity</span>
+                <span>{usedPercent}% {t.admin.capacityUsedRatio}</span>
+                <span>{capacityText} {t.admin.capacityTotal}</span>
               </div>
             </div>
           </CardContent>
@@ -266,9 +290,9 @@ export function AdminOverviewTab({
                   Total registrations
                 </p>
                 <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                  1,507
+                  {(stats?.newRegistrationsLast7Days || []).reduce((a, b) => a + b, 0).toLocaleString()}
                   <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 ml-1.5">
-                    this week
+                    {language === 'vi' ? 'tuần này' : 'this week'}
                   </span>
                 </p>
               </div>
@@ -372,7 +396,7 @@ export function AdminOverviewTab({
                   {activePieIndex !== undefined ? storageData[activePieIndex].value : totalUsedStorage}
                 </span>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider mt-0.5">
-                  {activePieIndex !== undefined ? 'GB Used' : 'Total TB'}
+                  {activePieIndex !== undefined ? 'MB' : 'MB Total'}
                 </span>
               </div>
             </div>

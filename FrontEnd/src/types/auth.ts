@@ -1,5 +1,6 @@
 export type UserRole = 'user' | 'admin'
 
+
 export interface AuthUser {
   id: string
   name: string
@@ -7,6 +8,10 @@ export interface AuthUser {
   role: UserRole
   avatarUrl?: string
   plan: 'free' | 'pro' | 'institutional'
+  university?: string
+  major?: string
+  degree?: string
+  twoFactorEnabled?: boolean
 }
 
 export interface AuthTokens {

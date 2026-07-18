@@ -16,7 +16,7 @@ import {
   Zap
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
@@ -27,6 +27,9 @@ import { env } from '@/config/env'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 import { storageService, type StorageUsage } from '@/services/storageService'
+import { documentService, type DocumentResponse } from '@/services/documentService'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
 const formatFileTime = (time: string) => time;
 
@@ -81,7 +84,41 @@ const formatSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+const formatTimeAgo = (dateStr: string) => {
+  if (!dateStr) return 'Recently';
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Yesterday';
+    return `${diffDays}d ago`;
+  } catch (e) {
+    return 'Recently';
+  }
+};
+
+const mapDocumentToCloudFile = (doc: DocumentResponse) => {
+  const { icon, iconColor, bgColor } = getFileExtensionInfo(doc.originalFileName || doc.fileName);
+  return {
+    id: doc.id,
+    name: doc.originalFileName || doc.fileName,
+    sizeBytes: doc.fileSize,
+    time: formatTimeAgo(doc.createdAt),
+    type: (doc.originalFileName || doc.fileName).split('.').pop() || 'file',
+    icon,
+    iconColor,
+    bgColor,
+  };
+};
+
 export function CloudStoragePage() {
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -89,123 +126,156 @@ export function CloudStoragePage() {
   const toast = useToast()
   
   const [storageData, setStorageData] = useState<StorageUsage | null>(null)
-  const [uploads, setUploads] = useState(INITIAL_UPLOADS)
+  const [uploads, setUploads] = useState<any[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [baseUsedStorage, setBaseUsedStorage] = useState(0)
+  const [baseUsedStorage, setBaseUsedStorage] = useState(0) // stored in MB
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
   const [trashSize, setTrashSize] = useState(0)
   const [tempSize, setTempSize] = useState(0)
   const [isMounted, setIsMounted] = useState(false)
+
+  const loadUserDocuments = async () => {
+    if (!user?.id) return;
+    try {
+      const docs = await documentService.getAllDocuments(Number(user.id));
+      const mapped = docs.map(mapDocumentToCloudFile);
+      setUploads(mapped);
+    } catch (err) {
+      console.error("Failed to load user documents:", err);
+    }
+  };
 
   useEffect(() => {
     if (user?.id) {
       storageService.getStorageUsage(Number(user.id))
         .then(data => {
           setStorageData(data)
-          setBaseUsedStorage(data.storageUsedMb / 1024.0)
+          setBaseUsedStorage(data.storageUsedMb)
         })
         .catch(err => {
           console.error("Failed to fetch storage usage:", err)
         })
+      loadUserDocuments();
     }
   }, [user?.id])
 
-  const TOTAL_STORAGE_GB = storageData 
-    ? storageData.storageLimitMb / 1024 
-    : user?.plan === 'pro' 
-      ? env.PRO_STORAGE_LIMIT 
-      : user?.plan === 'enterprise' || user?.plan === 'premium'
-        ? env.PREMIUM_STORAGE_LIMIT
-        : env.FREE_STORAGE_LIMIT;
+  const totalStorageMb = storageData ? storageData.storageLimitMb : getStorageLimitByPlan(user?.plan)
+  const TOTAL_STORAGE_GB = totalStorageMb / 1024;
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 200)
     return () => clearTimeout(timer)
   }, [])
 
-  const totalUsedMb = useMemo(() => {
+  const recentUploadsMb = useMemo(() => {
     const recentUploadsBytes = uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0)
-    const recentUploadsMb = recentUploadsBytes / (1024 * 1024)
-    return (baseUsedStorage * 1024) + recentUploadsMb
-  }, [baseUsedStorage, uploads])
+    return recentUploadsBytes / (1024 * 1024)
+  }, [uploads])
 
-  const totalStorageMb = TOTAL_STORAGE_GB * 1024
-  const remainingMb = Math.max(0, totalStorageMb - totalUsedMb)
-  const usedPercentage = Math.min(100, Math.round((totalUsedMb / totalStorageMb) * 100))
+  const totalUsedMb = useMemo(() => {
+    return baseUsedStorage + recentUploadsMb
+  }, [baseUsedStorage, recentUploadsMb])
 
-  const displayUsedStorage = totalUsedMb >= 100 
-    ? `${(totalUsedMb / 1024).toFixed(1)} GB` 
-    : `${totalUsedMb.toFixed(0)} MB`
-
-  const displayRemaining = remainingMb >= 100 
-    ? `${(remainingMb / 1024).toFixed(1)} GB` 
-    : `${remainingMb.toFixed(0)} MB`
+  const usageInfo = calculateStorageUsage(totalUsedMb, totalStorageMb)
+  const usedPercentage = usageInfo.percentage
+  const displayUsedStorage = formatStorageSize(totalUsedMb)
+  const displayRemaining = formatStorageSize(usageInfo.remainingMB)
 
   const chartData = [
     { name: 'Used', value: usedPercentage, color: '#2563eb' },
     { name: 'Remaining', value: 100 - usedPercentage, color: isDark ? '#1e293b' : '#e5eeff' },
   ]
 
-  const formatMbOrGb = (mb: number) => {
-    return mb >= 100 ? `${(mb / 1024).toFixed(1)} GB` : `${mb.toFixed(0)} MB`
-  }
-
   const subjects = [
     { 
       name: 'Computer Science', 
-      size: formatMbOrGb((baseUsedStorage * 1024) * 0.6 + (uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0) / (1024 * 1024))), 
-      progress: Math.min(100, (((baseUsedStorage * 1024) * 0.6 + (uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0) / (1024 * 1024))) / totalStorageMb) * 100), 
+      size: formatStorageSize(baseUsedStorage * 0.6 + recentUploadsMb), 
+      progress: Math.min(100, (((baseUsedStorage * 0.6 + recentUploadsMb) / totalStorageMb) * 100)), 
       color: '#2563eb' 
     },
     { 
       name: 'Mathematics', 
-      size: formatMbOrGb((baseUsedStorage * 1024) * 0.3), 
-      progress: Math.min(100, (((baseUsedStorage * 1024) * 0.3) / totalStorageMb) * 100), 
+      size: formatStorageSize(baseUsedStorage * 0.3), 
+      progress: Math.min(100, (((baseUsedStorage * 0.3) / totalStorageMb) * 100)), 
       color: '#8b5cf6' 
     },
     { 
       name: 'Literature', 
-      size: formatMbOrGb((baseUsedStorage * 1024) * 0.1), 
-      progress: Math.min(100, (((baseUsedStorage * 1024) * 0.1) / totalStorageMb) * 100), 
+      size: formatStorageSize(baseUsedStorage * 0.1), 
+      progress: Math.min(100, (((baseUsedStorage * 0.1) / totalStorageMb) * 100)), 
       color: '#0f766e' 
     },
   ]
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
+    if (files && files.length > 0 && user?.id) {
       const file = files[0];
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext !== 'pdf') {
+        toast.error('Only PDF files are supported!');
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
       const newUploadSizeGB = file.size / (1024 * 1024 * 1024);
+      const totalUsedGB = totalUsedMb / 1024;
       
-      if (parseFloat(totalUsedGB) + newUploadSizeGB > TOTAL_STORAGE_GB) {
+      if (totalUsedGB + newUploadSizeGB > TOTAL_STORAGE_GB) {
         toast.error(`Storage limit exceeded. Upgrade to Pro for ${env.PRO_STORAGE_LIMIT}GB storage.`);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
         return;
       }
-      const { icon, iconColor, bgColor } = getFileExtensionInfo(file.name);
       
-      const newUpload = {
-        id: Math.random().toString(36).substring(7),
-        name: file.name,
-        sizeBytes: file.size,
-        time: 'Just now',
-        type: file.name.split('.').pop() || '',
-        icon,
-        iconColor,
-        bgColor
-      };
-      
-      setUploads(prev => [newUpload, ...prev]);
+      try {
+        const title = file.name.split('.').slice(0, -1).join('.') || file.name;
+        await documentService.uploadDocument(
+          file,
+          title,
+          'Uploaded via Cloud Storage Workspace',
+          'GENERAL',
+          'PRIVATE',
+          Number(user.id),
+          []
+        );
+        toast.success('File uploaded to Cloud Storage successfully');
+        loadUserDocuments();
+        storageService.getStorageUsage(Number(user.id))
+          .then(data => {
+            setStorageData(data)
+            setBaseUsedStorage(data.storageUsedMb)
+          })
+          .catch(() => {})
+      } catch (err) {
+        console.error("Failed to upload document:", err);
+        toast.error('Failed to upload file');
+      }
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   }
 
-  const handleDelete = (id: string) => {
-    setUploads(prev => prev.filter(u => u.id !== id));
+  const handleDelete = async (id: string | number) => {
+    try {
+      await documentService.deleteDocument(id);
+      toast.success('File deleted successfully');
+      loadUserDocuments();
+      if (user?.id) {
+        storageService.getStorageUsage(Number(user.id))
+          .then(data => {
+            setStorageData(data)
+            setBaseUsedStorage(data.storageUsedMb)
+          })
+          .catch(() => {})
+      }
+    } catch (err) {
+      console.error("Failed to delete document:", err);
+      toast.error('Failed to delete file');
+    }
   }
 
   const handleUploadClick = () => {
@@ -219,6 +289,7 @@ export function CloudStoragePage() {
         type="file" 
         ref={fileInputRef} 
         onChange={handleFileUpload} 
+        accept=".pdf"
         className="hidden" 
       />
 
@@ -350,15 +421,16 @@ export function CloudStoragePage() {
               uploads.map((file, i) => (
                 <div
                   key={file.id}
-                  className={`flex items-center gap-4 p-5 group ${
+                  className={`flex items-center gap-4 p-5 group cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors ${
                     i !== uploads.length - 1 ? 'border-b border-border' : ''
                   }`}
+                  onClick={() => navigate(`/dashboard/storage/explorer/preview?id=${file.id}`)}
                 >
                   <div className={`p-2.5 rounded-lg ${file.bgColor}`}>
                     <file.icon className={`size-6 ${file.iconColor}`} />
                   </div>
                   <div className="flex-1 flex flex-col">
-                    <span className="font-medium text-foreground text-[15px]">
+                    <span className="font-medium text-foreground text-[15px] group-hover:text-primary transition-colors">
                       {file.name}
                     </span>
                     <span className="text-muted text-xs mt-0.5">
@@ -366,7 +438,10 @@ export function CloudStoragePage() {
                     </span>
                   </div>
                   <button 
-                    onClick={() => handleDelete(file.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(file.id);
+                    }}
                     className="p-2 text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
                     title={t.common.delete}
                   >

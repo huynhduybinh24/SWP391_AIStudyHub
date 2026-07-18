@@ -1,9 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useAuthStore } from '@/stores/authStore';
+import { documentService } from '@/services/documentService';
+
+const mapMimeOrExtensionToType = (fileType: string, fileName: string): 'pdf' | 'word' | 'image' | 'text' | 'slides' => {
+  const nameLower = fileName.toLowerCase()
+  if (nameLower.endsWith('.pdf')) return 'pdf'
+  if (nameLower.endsWith('.doc') || nameLower.endsWith('.docx')) return 'word'
+  if (nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx')) return 'slides'
+  if (nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg')) return 'image'
+  if (nameLower.endsWith('.txt')) return 'text'
+  return 'text'
+}
+
+const formatBytes = (bytes: number) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
+const mapBackendDocToItem = (doc: any): DocumentItem => {
+  return {
+    id: String(doc.id),
+    title: doc.title,
+    fileName: doc.fileName || doc.originalFileName || 'Untitled',
+    uploadedAt: doc.createdAt ? `Uploaded ${new Date(doc.createdAt).toLocaleDateString('vi-VN')}` : 'Uploaded Just Now',
+    uploadedDateObj: doc.createdAt ? new Date(doc.createdAt) : new Date(),
+    size: doc.fileSize ? formatBytes(doc.fileSize) : '0 Bytes',
+    sizeKb: doc.fileSize ? Math.round(doc.fileSize / 1024) : 0,
+    subject: (doc.subject || 'GENERAL') as any,
+    status: 'ANALYZED',
+    type: mapMimeOrExtensionToType(doc.fileType, doc.fileName || doc.originalFileName || ''),
+    essential: doc.tags?.includes('Lecture') || doc.tags?.includes('Midterm')
+  }
+}
+
 import { Sparkles, Folder, FileCheck, AlertCircle, Video as VideoIcon, Music, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/context/LanguageContext';
 import { motion } from 'framer-motion';
+import { Modal } from '@/components/ui/Modal';
 
 import { useMediaUpload } from '@/components/shared/media-upload/useMediaUpload';
 import { logActivity } from '@/services/activityLogService';
@@ -32,7 +70,7 @@ interface DocumentItem {
   essential?: boolean;
 }
 
-const INITIAL_DOCUMENTS: DocumentItem[] = [
+const INITIAL_DOCUMENTS: DocumentItem[] = []; const UNUSED_DOCUMENTS: DocumentItem[] = [
   {
     id: 'doc-design-patterns',
     title: 'Design Patterns',
@@ -65,6 +103,8 @@ export function UploadPage() {
   const toast = useToast();
   const { language, t: tRaw } = useTranslation();
   const t = tRaw as any;
+  const context = useOutletContext<any>();
+  const setDocuments = context?.setDocuments;
 
   const {
     activeTab,
@@ -112,6 +152,7 @@ export function UploadPage() {
   const [recentUploads, setRecentUploads] = useState<UploadedMedia[]>([]);
 
   // Modal states
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [previewModalMedia, setPreviewModalMedia] = useState<UploadedMedia | null>(null);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
@@ -132,7 +173,7 @@ export function UploadPage() {
     }
   }, []);
 
-  const handleDocumentSubmit = (e: React.FormEvent) => {
+  const handleDocumentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!uploadedDocument) {
@@ -148,32 +189,26 @@ export function UploadPage() {
 
     setIsProcessing(true);
 
-    setTimeout(() => {
-      const finalFileName = uploadedDocument.name;
-      const finalSize = `${(uploadedDocument.size / (1024 * 1024)).toFixed(1)} MB`;
-      const finalSizeKb = Math.round(uploadedDocument.size / 1024);
+    try {
+      const user = useAuthStore.getState().user;
+      const userId = Number(user?.id || 1);
 
-      const newDoc: DocumentItem = {
-        id: `doc-${Date.now()}`,
-        title: finalTitle,
-        fileName: finalFileName,
-        uploadedAt: 'Uploaded Just Now',
-        uploadedDateObj: new Date(),
-        size: finalSize,
-        sizeKb: finalSizeKb,
-        subject: selectedSubjectKey,
-        status: 'ANALYZED',
-        type: fileType,
-        essential: selectedTags.includes('Lecture') || selectedTags.includes('Midterm')
-      };
+      const response = await documentService.uploadDocument(
+        uploadedDocument,
+        finalTitle,
+        description,
+        selectedSubjectKey,
+        visibility.toUpperCase(),
+        userId,
+        selectedTags
+      );
 
-      const savedDocsStr = localStorage.getItem('ai_study_hub_documents');
-      let currentDocs: DocumentItem[] = savedDocsStr ? JSON.parse(savedDocsStr) : INITIAL_DOCUMENTS;
-      currentDocs = currentDocs.filter((d) => d.id !== newDoc.id);
-      const updatedDocs = [newDoc, ...currentDocs];
+      const newDoc = mapBackendDocToItem(response);
 
-      localStorage.setItem('ai_study_hub_documents', JSON.stringify(updatedDocs));
-      
+      if (response.moderationStatus === 'APPROVED' && setDocuments) {
+        setDocuments((prev: any) => [newDoc, ...prev]);
+      }
+
       // Log document upload activity
       logActivity({
         eventKey: 'documentUploaded',
@@ -181,14 +216,18 @@ export function UploadPage() {
         status: 'success',
         eventTextEn: 'Document uploaded',
         eventTextVi: 'Tải lên tài liệu',
-        detailsTextEn: `Uploaded document '${finalTitle}' (${finalSize}) successfully.`,
-        detailsTextVi: `Tải lên thành công tài liệu '${finalTitle}' (${finalSize}).`
+        detailsTextEn: `Uploaded document '${finalTitle}' successfully.`,
+        detailsTextVi: `Tải lên thành công tài liệu '${finalTitle}'.`
       });
 
-      toast.success('Document uploaded successfully');
+      toast.success(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.');
       setIsProcessing(false);
-      navigate(`/dashboard/documents/subject/${selectedSubjectKey}`);
-    }, 1200);
+      setApprovalModalOpen(true);
+    } catch (err) {
+      console.error('Failed to upload document:', err);
+      toast.error(language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!');
+      setIsProcessing(false);
+    }
   };
 
   const handleSaveMedia = () => {
@@ -309,9 +348,9 @@ export function UploadPage() {
     }
     return {
       dragDrop: t.upload.dragDrop || 'Drag and drop your files here',
-      support: t.upload.supportFormat || 'Support for PDF, DOCX, and PPTX files (Max 50MB)',
+      support: t.upload.supportFormatOnlyPdf || 'Support for PDF files only (Max 50MB)',
       browse: t.upload.browse || 'Browse Files',
-      extensions: '.pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.pptx,.ppt'
+      extensions: '.pdf'
     };
   };
 
@@ -754,6 +793,60 @@ export function UploadPage() {
           </div>
         </div>
       )}
+
+      {/* Approval Pending Modal */}
+      <Modal
+        isOpen={approvalModalOpen}
+        onClose={() => {
+          setApprovalModalOpen(false);
+          navigate(`/dashboard/documents/subject/${selectedSubjectKey.toLowerCase()}`);
+        }}
+        title={language === 'en' ? 'Moderation Pending' : 'Chờ kiểm duyệt'}
+        description={
+          language === 'en'
+            ? 'Your document has been successfully uploaded to Google Drive.'
+            : 'Tài liệu của bạn đã được tải lên Google Drive thành công.'
+        }
+        className="max-w-[480px]"
+      >
+        <div className="space-y-6 text-center py-2 select-none">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400">
+            <FileCheck className="h-8 w-8" />
+          </div>
+
+          <div className="space-y-2 max-w-sm mx-auto">
+            <p className="text-sm text-slate-605 dark:text-slate-400 font-medium leading-relaxed">
+              {language === 'en'
+                ? 'Your document is now waiting for administrative approval. It will become visible to others once approved.'
+                : 'Tài liệu đang chờ Admin phê duyệt. Tài liệu sẽ được hiển thị công khai sau khi được duyệt.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setApprovalModalOpen(false);
+                clearAllState();
+                navigate('/dashboard/documents/upload-history');
+              }}
+              className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+            >
+              {language === 'en' ? 'View Upload History' : 'Xem lịch sử tải lên'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setApprovalModalOpen(false);
+                navigate(`/dashboard/documents/subject/${selectedSubjectKey.toLowerCase()}`);
+              }}
+              className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
+            >
+              {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

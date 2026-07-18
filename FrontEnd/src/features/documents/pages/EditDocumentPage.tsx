@@ -31,6 +31,8 @@ import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 
+import { documentService } from '@/services/documentService'
+
 interface DocumentItem {
   id: string
   title: string
@@ -39,9 +41,11 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
+  subject: string
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
+  ownerName?: string
+  ownerEmail?: string
 }
 
 interface DocumentsContextType {
@@ -59,14 +63,38 @@ interface DocumentsContextType {
 }
 
 const SUBJECT_LIST = [
-  { value: 'COMPSCI', label: 'Computer Science' },
-  { value: 'MATHEMATICS', label: 'Mathematics' },
-  { value: 'BIOLOGY', label: 'Biology' },
-  { value: 'PHYSICS', label: 'Physics' },
-  { value: 'PHILOSOPHY', label: 'Philosophy' },
-  { value: 'ECONOMICS', label: 'Economics' },
-  { value: 'NEUROSCIENCE', label: 'Neuroscience' },
-  { value: 'PSYCHOLOGY', label: 'Psychology' },
+  // Semester 1
+  { value: 'PRF192', label: 'PRF192 - Programming Fundamentals' },
+  { value: 'MAE101', label: 'MAE101 - Mathematics for Engineering' },
+  { value: 'CEA201', label: 'CEA201 - Computer Organization' },
+  { value: 'MGT103', label: 'MGT103 - Introduction to Management' },
+  { value: 'ECO111', label: 'ECO111 - Microeconomics' },
+  // Semester 2
+  { value: 'PRO192', label: 'PRO192 - Object-Oriented Programming' },
+  { value: 'MAD101', label: 'MAD101 - Discrete Mathematics' },
+  { value: 'OSG202', label: 'OSG202 - Operating Systems' },
+  { value: 'MKT101', label: 'MKT101 - Basic Marketing' },
+  { value: 'ECO121', label: 'ECO121 - Macroeconomics' },
+  // Semester 3
+  { value: 'CSD201', label: 'CSD201 - Data Structures and Algorithms' },
+  { value: 'DBI202', label: 'DBI202 - Database Systems' },
+  { value: 'AIL302M', label: 'AIL302m - Machine Learning' },
+  { value: 'ACC101', label: 'ACC101 - Principles of Accounting' },
+  { value: 'FIN201', label: 'FIN201 - Corporate Finance' },
+  // Semester 4
+  { value: 'PRN211', label: 'PRN211 - Basic Cross-Platform (.NET)' },
+  { value: 'SWE201', label: 'SWE201 - Software Engineering' },
+  { value: 'AIP301', label: 'AIP301 - AI Project' },
+  { value: 'HRM201', label: 'HRM201 - Human Resource Management' },
+  // Semester 5
+  { value: 'SWP391', label: 'SWP391 - Software Project' },
+  { value: 'SWD392', label: 'SWD392 - Software Architecture' },
+  { value: 'SWT301', label: 'SWT301 - Software Testing' },
+  { value: 'DLN301', label: 'DLN301 - Deep Learning' },
+  // Semester 6
+  { value: 'PRM392', label: 'PRM392 - Mobile Programming' },
+  { value: 'PRN221', label: 'PRN221 - Advanced Cross-Platform (.NET)' },
+  // General fallback
   { value: 'GENERAL', label: 'General Studies' }
 ]
 
@@ -115,29 +143,7 @@ export default function EditDocumentPage() {
   const [folder, setFolder] = useState(FOLDERS_LIST[0])
   
   // Google Drive sharing states
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([
-    {
-      id: 'owner-1',
-      name: 'Alex Rivera',
-      email: 'alex@example.com',
-      role: 'owner',
-      avatarBg: 'bg-[#0fbf7c] text-white font-bold'
-    },
-    {
-      id: 'collab-1',
-      name: 'Huynh Duy Binh',
-      email: 'binh@example.com',
-      role: 'editor',
-      avatarBg: 'bg-[#5f6ffc] text-white font-bold'
-    },
-    {
-      id: 'collab-2',
-      name: 'Ngoc Tan',
-      email: 'tan@example.com',
-      role: 'commenter',
-      avatarBg: 'bg-[#fc9d1c] text-white font-bold'
-    }
-  ])
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([])
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [isSettingsViewOpen, setIsSettingsViewOpen] = useState(false)
   const [newEmail, setNewEmail] = useState('')
@@ -205,10 +211,66 @@ Bạn muốn tôi làm gì?
     }
   }, [activeDoc])
 
+  // Load document shares from backend
+  useEffect(() => {
+    if (!documentId) return
+    let isMounted = true
+
+    const fetchShares = async () => {
+      try {
+        const shares = await documentService.getDocumentShares(documentId)
+        if (!isMounted) return
+
+        const colors = [
+          'bg-[#5f6ffc] text-white font-bold',
+          'bg-[#fc9d1c] text-white font-bold',
+          'bg-[#ec4899] text-white font-bold',
+          'bg-[#8b5cf6] text-white font-bold',
+          'bg-[#0fbf7c] text-white font-bold',
+          'bg-rose-500 text-white font-bold'
+        ]
+
+        const ownerName = activeDoc?.ownerName || 'Unknown'
+        const ownerEmail = activeDoc?.ownerEmail || ''
+        const ownerCollab: Collaborator = {
+          id: 'owner',
+          name: ownerName,
+          email: ownerEmail,
+          role: 'owner',
+          avatarBg: 'bg-[#0fbf7c] text-white font-bold'
+        }
+
+        const shareCollabs: Collaborator[] = shares.map((share, idx) => {
+          const email = share.shareeEmail
+          const namePart = email.split('@')[0]
+          const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1)
+          const randomColor = colors[idx % colors.length]
+
+          return {
+            id: String(share.id),
+            name: capitalizedName,
+            email: email,
+            role: share.role as any,
+            avatarBg: randomColor
+          }
+        })
+
+        setCollaborators([ownerCollab, ...shareCollabs])
+      } catch (err) {
+        console.error('Failed to fetch document shares', err)
+      }
+    }
+
+    fetchShares()
+    return () => {
+      isMounted = false
+    }
+  }, [documentId, activeDoc])
+
   // Collaborator sharing handlers
-  const handleAddCollaborator = (e: React.FormEvent) => {
+  const handleAddCollaborator = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newEmail.trim()) return
+    if (!newEmail.trim() || !documentId) return
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(newEmail.trim())) {
@@ -221,41 +283,72 @@ Bạn muốn tôi làm gì?
       return
     }
 
-    const namePart = newEmail.split('@')[0]
-    const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1)
-    
-    // Choose a random color for avatar
-    const colors = [
-      'bg-[#5f6ffc] text-white font-bold',
-      'bg-[#fc9d1c] text-white font-bold',
-      'bg-[#ec4899] text-white font-bold',
-      'bg-[#8b5cf6] text-white font-bold',
-      'bg-[#0fbf7c] text-white font-bold',
-      'bg-rose-500 text-white font-bold'
-    ]
-    const randomColor = colors[Math.floor(Math.random() * colors.length)]
+    const targetEmail = newEmail.trim().toLowerCase()
+    const resolvedRole = (newRole === 'editor') ? 'editor' : 'viewer'
 
-    const newCollaborator: Collaborator = {
-      id: Math.random().toString(),
-      name: capitalizedName,
-      email: newEmail.trim().toLowerCase(),
-      role: newRole,
-      avatarBg: randomColor
+    try {
+      const share = await documentService.addOrUpdateDocumentShare(documentId, targetEmail, resolvedRole)
+
+      const namePart = targetEmail.split('@')[0]
+      const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1)
+
+      const colors = [
+        'bg-[#5f6ffc] text-white font-bold',
+        'bg-[#fc9d1c] text-white font-bold',
+        'bg-[#ec4899] text-white font-bold',
+        'bg-[#8b5cf6] text-white font-bold',
+        'bg-[#0fbf7c] text-white font-bold',
+        'bg-rose-500 text-white font-bold'
+      ]
+      const randomColor = colors[Math.floor(Math.random() * colors.length)]
+
+      const newCollaborator: Collaborator = {
+        id: String(share.id),
+        name: capitalizedName,
+        email: targetEmail,
+        role: share.role as any,
+        avatarBg: randomColor
+      }
+
+      setCollaborators([...collaborators, newCollaborator])
+      setNewEmail('')
+      showToast(`👥 Đã thêm ${capitalizedName} làm ${share.role === 'editor' ? 'Người chỉnh sửa' : 'Người xem'}`)
+    } catch (err) {
+      console.error(err)
+      showToast('❌ Không thể thêm người cộng tác!')
     }
-
-    setCollaborators([...collaborators, newCollaborator])
-    setNewEmail('')
-    showToast(`👥 Đã thêm ${capitalizedName} làm ${newRole === 'editor' ? 'Người chỉnh sửa' : newRole === 'commenter' ? 'Người nhận xét' : 'Người xem'}`)
   }
 
-  const handleRemoveCollaborator = (id: string, name: string) => {
-    setCollaborators(collaborators.filter(c => c.id !== id))
-    showToast(`🗑️ Đã xóa quyền truy cập của ${name}`)
+  const handleRemoveCollaborator = async (id: string, name: string) => {
+    if (!documentId) return
+    const collab = collaborators.find(c => c.id === id)
+    if (!collab) return
+
+    try {
+      await documentService.deleteDocumentShare(documentId, collab.email)
+      setCollaborators(collaborators.filter(c => c.id !== id))
+      showToast(`🗑️ Đã xóa quyền truy cập của ${name}`)
+    } catch (err) {
+      console.error(err)
+      showToast('❌ Không thể xóa người cộng tác!')
+    }
   }
 
-  const handleRoleChange = (id: string, role: 'editor' | 'commenter' | 'viewer') => {
-    setCollaborators(collaborators.map(c => c.id === id ? { ...c, role } : c))
-    showToast(`✏️ Đã cập nhật vai trò thành ${role === 'editor' ? 'Người chỉnh sửa' : role === 'commenter' ? 'Người nhận xét' : 'Người xem'}`)
+  const handleRoleChange = async (id: string, role: 'editor' | 'commenter' | 'viewer') => {
+    if (!documentId) return
+    const collab = collaborators.find(c => c.id === id)
+    if (!collab) return
+
+    const resolvedRole = (role === 'editor') ? 'editor' : 'viewer'
+
+    try {
+      const share = await documentService.addOrUpdateDocumentShare(documentId, collab.email, resolvedRole)
+      setCollaborators(collaborators.map(c => c.id === id ? { ...c, role: share.role as any } : c))
+      showToast(`✏️ Đã cập nhật vai trò thành ${share.role === 'editor' ? 'Người chỉnh sửa' : 'Người xem'}`)
+    } catch (err) {
+      console.error(err)
+      showToast('❌ Không thể cập nhật vai trò!')
+    }
   }
 
   const handleCopyLink = () => {
@@ -927,7 +1020,7 @@ Dưới đây là tóm tắt nhanh từ trợ lý AI:
                 <div className="flex justify-between items-center text-xs font-semibold">
                   <span className="text-slate-450 dark:text-slate-500 font-bold select-none">Owner</span>
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-955/20 border border-blue-100 dark:border-blue-900/30 text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest scale-95 shadow-sm">
-                    You
+                    {activeDoc?.ownerName || 'Unknown'}
                   </span>
                 </div>
               </div>

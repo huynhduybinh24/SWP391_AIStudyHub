@@ -6,8 +6,15 @@ target/
 .factorypath
 .vscode/
 *.class
-<<<<<<< HEAD
 uploads/
-=======
+test-uploads/
 maven/
->>>>>>> 7167afb331e078b4db90871ed7b1bca22f264d18
+
+# Local application properties containing credentials
+src/main/resources/application-local.properties
+
+# Google Service Account credentials (NEVER commit this!)
+src/main/resources/google-credentials.json
+
+# Local database file
+data/

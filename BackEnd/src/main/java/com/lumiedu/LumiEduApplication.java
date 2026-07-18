@@ -7,8 +7,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableAsync;
 
-@EnableAsync
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 @SpringBootApplication
+@EnableScheduling
+@EnableAsync
 public class LumiEduApplication {
     public static void main(String[] args) {
         SpringApplication.run(LumiEduApplication.class, args);
@@ -22,6 +26,12 @@ public class LumiEduApplication {
                 System.out.println("Successfully modified users.avatar_url column definition to LONGTEXT");
             } catch (Exception e) {
                 System.err.println("Could not modify users.avatar_url column: " + e.getMessage());
+            }
+            try {
+                jdbcTemplate.execute("UPDATE documents SET subject = 'GENERAL' WHERE subject = 'BIOLOGY'");
+                System.out.println("Successfully updated BIOLOGY subjects in documents table to GENERAL");
+            } catch (Exception e) {
+                System.err.println("Could not update documents subject column: " + e.getMessage());
             }
         };
     }

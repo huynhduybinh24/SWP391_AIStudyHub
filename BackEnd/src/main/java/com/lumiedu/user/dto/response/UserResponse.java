@@ -19,8 +19,12 @@ public class UserResponse {
     private UserRole role;
     private AccountStatus accountStatus;
     private Boolean twoFactorEnabled;
+    private String plan;
     private Long storageUsedMb;
     private Long storageLimitMb;
+    private String university;
+    private String major;
+    private String degree;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

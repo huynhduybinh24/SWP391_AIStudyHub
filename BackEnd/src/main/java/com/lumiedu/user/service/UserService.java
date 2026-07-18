@@ -18,4 +18,9 @@ public interface UserService {
     java.util.List<com.lumiedu.auth.dto.ThirdPartyAccountResponse> getLinkedAccounts(Long userId);
     void linkThirdPartyAccount(Long userId, String code, String redirectUri, String provider);
     void unlinkThirdPartyAccount(Long userId, String provider);
+
+    // 2FA methods
+    java.util.Map<String, String> setupTwoFactor(Long userId);
+    boolean enableTwoFactor(Long userId, String code);
+    boolean disableTwoFactor(Long userId);
 }

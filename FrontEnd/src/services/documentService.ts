@@ -13,6 +13,13 @@ export interface DocumentResponse {
   visibility: string
   userId: number
   checksum: string
+  ownerName?: string
+  ownerEmail?: string
+  role?: string
+  status?: string
+  moderationStatus?: string
+  rejectionReason?: string
+  reviewedAt?: string
   createdAt: string
   updatedAt: string
   moderationStatus?: 'PENDING' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED'
@@ -54,18 +61,30 @@ export const documentService = {
         'Content-Type': 'multipart/form-data',
       },
     })
-    return response.data.data
+    const doc = response.data.data
+    if (doc && doc.subject === 'BIOLOGY') {
+      doc.subject = 'GENERAL'
+    }
+    return doc
   },
 
   async getAllDocuments(userId?: number): Promise<DocumentResponse[]> {
     const url = userId ? `/documents?userId=${userId}` : '/documents'
     const response = await apiClient.get<ApiResponse<DocumentResponse[]>>(url)
-    return response.data.data
+    const list = response.data.data || []
+    return list.map(doc => ({
+      ...doc,
+      subject: doc.subject === 'BIOLOGY' ? 'GENERAL' : doc.subject
+    }))
   },
 
   async getDocumentById(id: number | string): Promise<DocumentResponse> {
     const response = await apiClient.get<ApiResponse<DocumentResponse>>(`/documents/${id}`)
-    return response.data.data
+    const doc = response.data.data
+    if (doc && doc.subject === 'BIOLOGY') {
+      doc.subject = 'GENERAL'
+    }
+    return doc
   },
 
   async deleteDocument(id: number | string): Promise<void> {
@@ -78,5 +97,68 @@ export const documentService = {
       responseType: 'blob',
     })
     return response.data
+  },
+
+  async previewDocument(id: number | string, userId?: number): Promise<string> {
+    const url = userId ? `/documents/${id}/preview?userId=${userId}` : `/documents/${id}/preview`
+    const response = await apiClient.get<string>(url, {
+      responseType: 'text',
+    })
+    return response.data
+  },
+
+  async previewDocumentBlob(id: number | string, userId?: number): Promise<Blob> {
+    const url = userId ? `/documents/${id}/preview?userId=${userId}` : `/documents/${id}/preview`
+    const response = await apiClient.get<Blob>(url, {
+      responseType: 'blob',
+    })
+    return response.data
+  },
+
+  async getSubjectStats(subjectId: string, userId: number): Promise<SubjectStats> {
+    const response = await apiClient.get<ApiResponse<SubjectStats>>(`/documents/subject/${subjectId}/stats?userId=${userId}`)
+    return response.data.data
+  },
+
+  async getDocumentShares(documentId: number | string): Promise<DocumentShareResponse[]> {
+    const response = await apiClient.get<ApiResponse<DocumentShareResponse[]>>(`/documents/${documentId}/shares`)
+    return response.data.data
+  },
+
+  async addOrUpdateDocumentShare(documentId: number | string, email: string, role: string): Promise<DocumentShareResponse> {
+    const response = await apiClient.post<ApiResponse<DocumentShareResponse>>(`/documents/${documentId}/shares`, {
+      email,
+      role
+    })
+    return response.data.data
+  },
+
+  async deleteDocumentShare(documentId: number | string, email: string): Promise<void> {
+    await apiClient.delete<ApiResponse<void>>(`/documents/${documentId}/shares?email=${encodeURIComponent(email)}`)
+  },
+
+  async getMyUploads(): Promise<DocumentResponse[]> {
+    const response = await apiClient.get<ApiResponse<DocumentResponse[]>>('/documents/my-uploads')
+    const list = response.data.data || []
+    return list.map(doc => ({
+      ...doc,
+      subject: doc.subject === 'BIOLOGY' ? 'GENERAL' : doc.subject
+    }))
   }
+}
+
+export interface DocumentShareResponse {
+  id: number
+  documentId: number
+  shareeEmail: string
+  role: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SubjectStats {
+  studyProgress: number
+  averageScore: number | null
+  rank: string
+  aiRecommendation: string
 }

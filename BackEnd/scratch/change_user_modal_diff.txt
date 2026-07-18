@@ -1,0 +1,997 @@
+﻿diff --git a/FrontEnd/src/components/layout/ChangeUserModal.tsx b/FrontEnd/src/components/layout/ChangeUserModal.tsx
+index ec98a78..65db31a 100644
+--- a/FrontEnd/src/components/layout/ChangeUserModal.tsx
++++ b/FrontEnd/src/components/layout/ChangeUserModal.tsx
+@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast'
+ import { useTranslation } from '@/context/LanguageContext'
+ import { Check, Shield, GraduationCap, Sparkles, Lock, Trash2, X } from 'lucide-react'
+ import { authService } from '@/features/auth/services/authService'
++import { apiClient } from '@/lib/axios'
+ 
+ interface ChangeUserModalProps {
+   isOpen: boolean
+@@ -18,7 +19,7 @@ interface MockUser {
+   name: string
+   email: string
+   role: 'admin' | 'user'
+-  plan: 'FREE' | 'PRO'
++  plan: string
+   avatar?: string
+   initials: string
+   description: string
+@@ -27,6 +28,39 @@ interface MockUser {
+   tokens?: any
+ }
+ 
++function cleanEmail(email?: string): string {
++  if (!email) return ''
++  return email.trim().toLowerCase().replace(/[^\x20-\x7E]/g, '')
++}
++
++function deduplicateAccounts(list: MockUser[]): MockUser[] {
++  const uniqueMap = new Map<string, MockUser>()
++  for (const u of list) {
++    if (!u.email) continue
++    const emailKey = cleanEmail(u.email)
++    const cleanUser = {
++      ...u,
++      email: emailKey
++    }
++    if (!uniqueMap.has(emailKey)) {
++      uniqueMap.set(emailKey, cleanUser)
++    } else {
++      const existing = uniqueMap.get(emailKey)!
++      const hasTokens = !!u.tokens && !!u.tokens.accessToken
++      const existingHasTokens = !!existing.tokens && !!existing.tokens.accessToken
++      
++      uniqueMap.set(emailKey, {
++        ...existing,
++        ...cleanUser,
++        remembered: existing.remembered || cleanUser.remembered,
++        tokens: existingHasTokens ? existing.tokens : (hasTokens ? cleanUser.tokens : existing.tokens),
++        password: existing.password || cleanUser.password || undefined
++      })
++    }
++  }
++  return Array.from(uniqueMap.values())
++}
++
+ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+   const { t, language } = useTranslation()
+   const toast = useToast()
+@@ -64,11 +98,17 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+         if (Array.isArray(parsed)) {
+           // Filter out old mock emails so only database-supported accounts show up
+           const filtered = parsed.filter(u => 
+-            u.email && !virtualEmails.includes(u.email.toLowerCase())
++            u.email && !virtualEmails.includes(cleanEmail(u.email))
+           )
+           
++          // Deduplicate by email to avoid displaying duplicate cards
++          const uniqueList = deduplicateAccounts(filtered)
++          if (uniqueList.length !== filtered.length) {
++            changedInStorage = true
++          }
++          
+           // Migrate any student/instructor role to user, rename student/instructor users
+-          list = filtered.map(u => {
++          list = uniqueList.map(u => {
+             let role = u.role
+             let name = u.name
+             let initials = u.initials
+@@ -146,24 +186,106 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+     setMockUsers(list)
+   }, [language, isOpen])
+ 
++  // Listen for login/sync updates from other components
++  useEffect(() => {
++    const handleSync = () => {
++      const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
++      if (stored) {
++        try {
++          const parsed = JSON.parse(stored)
++          if (Array.isArray(parsed)) {
++            setMockUsers(deduplicateAccounts(parsed))
++          }
++        } catch (e) {}
++      }
++    }
++    window.addEventListener('aiStudyHubLoggedInAccountsUpdated', handleSync)
++    return () => window.removeEventListener('aiStudyHubLoggedInAccountsUpdated', handleSync)
++  }, [])
++
++  // Synchronize mockUsers with their real profiles from the database when modal opens
++  useEffect(() => {
++    if (!isOpen || mockUsers.length === 0) return
++
++    const fetchRealProfiles = async () => {
++      let uniqueList = deduplicateAccounts([...mockUsers])
++      let listChanged = uniqueList.length !== mockUsers.length
++
++      for (let i = 0; i < uniqueList.length; i++) {
++        const acc = uniqueList[i]
++        try {
++          const response = await apiClient.get<any>(`/users/by-email?email=${encodeURIComponent(cleanEmail(acc.email))}`)
++          if (response.data) {
++            const dbUser = response.data
++            const planFormatted = (dbUser.plan || 'free').toUpperCase()
++            const roleFormatted = dbUser.role?.toLowerCase() === 'admin' ? 'admin' : 'user'
++            const nameFormatted = dbUser.fullName || dbUser.name || acc.name
++            const initialsFormatted = nameFormatted.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'LU'
++            
++            // Resolve custom avatar from database, falling back to local storage scoped cache, then user.avatar
++            const localCachedAvatar = localStorage.getItem(`aiStudyHubUserAvatar:${cleanEmail(acc.email)}`)
++            const avatarFormatted = dbUser.avatarUrl || localCachedAvatar || acc.avatar || '/logo.png'
++
++            // If the database has an avatar but local storage doesn't, sync it to local storage as well!
++            if (dbUser.avatarUrl && dbUser.avatarUrl.startsWith('data:image') && !localCachedAvatar) {
++              try {
++                localStorage.setItem(`aiStudyHubUserAvatar:${cleanEmail(acc.email)}`, dbUser.avatarUrl)
++              } catch (e) {
++                console.warn('Failed to sync avatar to local storage:', e)
++              }
++            }
++
++            // Check if any value changed
++            if (
++              acc.name !== nameFormatted ||
++              acc.role !== roleFormatted ||
++              acc.plan !== planFormatted ||
++              acc.avatar !== avatarFormatted ||
++              acc.initials !== initialsFormatted
++            ) {
++              uniqueList[i] = {
++                ...acc,
++                name: nameFormatted,
++                role: roleFormatted,
++                plan: planFormatted,
++                initials: initialsFormatted,
++                avatar: avatarFormatted
++              }
++              listChanged = true
++            }
++          }
++        } catch (e) {
++          console.warn(`Failed to fetch real profile for ${acc.email} from database`, e)
++        }
++      }
++
++      if (listChanged) {
++        localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(uniqueList))
++        setMockUsers(uniqueList)
++      }
++    }
++
++    fetchRealProfiles()
++  }, [isOpen, mockUsers.length])
++
+   // Sync selected mock user
+   useEffect(() => {
+     if (mockUsers.length > 0) {
+-      const idx = mockUsers.findIndex(u => u.email?.toLowerCase() === authUser?.email?.toLowerCase())
++      const idx = mockUsers.findIndex(u => cleanEmail(u.email) === cleanEmail(authUser?.email))
+       setSelectedUser(idx !== -1 ? mockUsers[idx] : mockUsers[0])
+     }
+   }, [mockUsers, authUser])
+ 
+   const getTargetPassword = () => {
+     if (!selectedUser) return ''
+-    let pwd = selectedUser.email?.toLowerCase().endsWith('@lumiedu.com') ? '123456' : ''
++    let pwd = cleanEmail(selectedUser.email).endsWith('@lumiedu.com') ? '123456' : ''
+ 
+     // 1. Search dynamically in the logged-in accounts registry (captured during login)
+     const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
+     if (stored) {
+       try {
+         const list = JSON.parse(stored)
+-        const found = list.find((u: any) => u.email?.toLowerCase() === selectedUser.email?.toLowerCase())
++        const found = list.find((u: any) => cleanEmail(u.email) === cleanEmail(selectedUser.email))
+         if (found && found.password) {
+           return found.password
+         }
+@@ -177,7 +299,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+     if (savedUsersStr) {
+       try {
+         const users = JSON.parse(savedUsersStr)
+-        const found = users.find((u: any) => u.email?.toLowerCase() === selectedUser.email?.toLowerCase())
++        const found = users.find((u: any) => cleanEmail(u.email) === cleanEmail(selectedUser.email))
+         if (found && found.password) {
+           pwd = found.password
+         }
+@@ -189,12 +311,12 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+   }
+ 
+   const getPasswordForEmail = (email: string) => {
+-    let pwd = email?.toLowerCase().endsWith('@lumiedu.com') ? '123456' : '' // Fallback
++    let pwd = cleanEmail(email).endsWith('@lumiedu.com') ? '123456' : '' // Fallback
+     const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
+     if (stored) {
+       try {
+         const list = JSON.parse(stored)
+-        const found = list.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
++        const found = list.find((u: any) => cleanEmail(u.email) === cleanEmail(email))
+         if (found && found.password) {
+           return found.password
+         }
+@@ -204,7 +326,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+     if (savedUsersStr) {
+       try {
+         const users = JSON.parse(savedUsersStr)
+-        const found = users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
++        const found = users.find((u: any) => cleanEmail(u.email) === cleanEmail(email))
+         if (found && found.password) {
+           return found.password
+         }
+@@ -217,13 +339,13 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+     if (!authUser) return
+ 
+     try {
+-      const activeEmail = authUser.email?.toLowerCase()
++      const activeEmail = cleanEmail(authUser.email)
+       const stored = localStorage.getItem('aiStudyHubLoggedInAccounts')
+       if (stored) {
+         const list = JSON.parse(stored)
+         if (Array.isArray(list)) {
+           const updated = list.map((u: any) => {
+-            if (u.email?.toLowerCase() === activeEmail) {
++            if (cleanEmail(u.email) === activeEmail) {
+               return {
+                 ...u,
+                 remembered: remembered,
+@@ -273,13 +395,16 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+       }
+ 
+       // If we have a backend response, use the real user details from the database!
+-      const userToUse = loggedInResponse ? loggedInResponse.user : {
++      const userToUse = loggedInResponse ? {
++        ...loggedInResponse.user,
++        avatarUrl: localStorage.getItem(`aiStudyHubUserAvatar:${cleanEmail(loggedInResponse.user.email)}`) || loggedInResponse.user.avatarUrl || '/logo.png'
++      } : {
+         id: finalUser.id,
+         name: finalUser.name,
+-        email: finalUser.email,
++        email: cleanEmail(finalUser.email),
+         role: finalUser.role,
+         plan: finalUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
+-        avatarUrl: finalUser.avatar || '/logo.png',
++        avatarUrl: localStorage.getItem(`aiStudyHubUserAvatar:${cleanEmail(finalUser.email)}`) || finalUser.avatar || '/logo.png',
+       }
+       
+       const tokensToUse = loggedInResponse ? loggedInResponse.tokens : { accessToken: 'mock-db-token' }
+@@ -288,7 +413,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+       localStorage.setItem('aiStudyHubCurrentUser', JSON.stringify({
+         id: userToUse.id,
+         name: userToUse.name,
+-        email: userToUse.email,
++        email: cleanEmail(userToUse.email),
+         role: userToUse.role,
+         plan: userToUse.plan,
+         avatar: userToUse.avatarUrl || '/logo.png'
+@@ -304,9 +429,9 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+       useProfileStore.setState({
+         profile: {
+           name: userToUse.name,
+-          university: 'FPT University',
+-          major: 'Software engineering',
+-          degree: 'Bachelor',
++          university: userToUse.university || 'FPT University',
++          major: userToUse.major || 'Software engineering',
++          degree: userToUse.degree || 'Bachelor',
+           avatarUrl: userToUse.avatarUrl || '/logo.png',
+         }
+       })
+@@ -343,7 +468,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+     if (!selectedUser) return
+ 
+     // Avoid switching if selected is already the currently active user
+-    const isCurrentlyActive = authUser?.email?.toLowerCase() === selectedUser.email?.toLowerCase()
++    const isCurrentlyActive = cleanEmail(authUser?.email) === cleanEmail(selectedUser.email)
+     if (isCurrentlyActive) {
+       toast.error(language === 'vi' ? 'Bß║ín ─æang sß╗¡ dß╗Ñng t├ái khoß║ún n├áy!' : 'You are already using this account!')
+       return
+@@ -353,12 +478,12 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+ 
+     // Try to switch instantly using saved session tokens if available (instant 0ms bypass)
+     // For admin security, always require password prompt unless already verifying password
+-    if (!targetIsAdmin && selectedUser.tokens && selectedUser.tokens.accessToken) {
++    if (!targetIsAdmin && selectedUser.remembered && selectedUser.tokens && selectedUser.tokens.accessToken) {
+       executeUserSwitch(selectedUser.remembered || false, {
+         user: {
+           id: selectedUser.id.startsWith('u-') ? selectedUser.id.replace('u-', '') : selectedUser.id,
+           name: selectedUser.name,
+-          email: selectedUser.email,
++          email: cleanEmail(selectedUser.email),
+           role: selectedUser.role,
+           plan: selectedUser.plan.toLowerCase() as any,
+           avatarUrl: selectedUser.avatar || '/logo.png',
+@@ -383,12 +508,12 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+         return
+       }
+       
+-      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email%20profile&login_hint=${encodeURIComponent(selectedUser.email)}`
++      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email%20profile&login_hint=${encodeURIComponent(cleanEmail(selectedUser.email))}`
+       return
+     }
+ 
+     // Step 1: Prompt to save the *currently logged-in* active user's credentials first (if not already asked or remembered & not admin)
+-    const activeEmail = authUser?.email?.toLowerCase()
++    const activeEmail = cleanEmail(authUser?.email)
+     const isCurrentAdmin = authUser?.role === 'admin'
+     
+     let isActiveAlreadyAskedOrRemembered = false
+@@ -396,7 +521,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+     if (stored) {
+       try {
+         const list = JSON.parse(stored)
+-        const found = list.find((u: any) => u.email?.toLowerCase() === activeEmail)
++        const found = list.find((u: any) => cleanEmail(u.email) === activeEmail)
+         if (found && (found.remembered === true || found.askedRemember === true)) {
+           isActiveAlreadyAskedOrRemembered = true
+         }
+@@ -415,7 +540,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+     // For admin security, always require password prompt
+     if (!targetIsAdmin && isRemembered && savedPassword) {
+       try {
+-        const response = await authService.login({ email: selectedUser.email, password: savedPassword })
++        const response = await authService.login({ email: cleanEmail(selectedUser.email), password: savedPassword })
+         executeUserSwitch(true, response)
+         return
+       } catch (err) {
+@@ -435,22 +560,35 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+     // Verify target B's password using the real backend login API
+     if (showPasswordPrompt) {
+       try {
+-        const response = await authService.login({ email: selectedUser.email, password: passwordInput })
++        const response = await authService.login({ email: cleanEmail(selectedUser.email), password: passwordInput })
+         
+-        // If the target user was set to remembered, save the password to local storage history
+-        if (selectedUser.remembered) {
+-          const storedAccs = localStorage.getItem('aiStudyHubLoggedInAccounts')
+-          if (storedAccs) {
+-            try {
+-              const list = JSON.parse(storedAccs)
+-              const updated = list.map((u: any) => {
+-                if (u.email?.toLowerCase() === selectedUser.email.toLowerCase()) {
+-                  return { ...u, password: passwordInput }
++        // Sync updated details from the database login response
++        const storedAccs = localStorage.getItem('aiStudyHubLoggedInAccounts')
++        if (storedAccs) {
++          try {
++            const list = JSON.parse(storedAccs)
++            const updated = list.map((u: any) => {
++              if (cleanEmail(u.email) === cleanEmail(selectedUser.email)) {
++                const planFormatted = (response.user.plan || 'free').toUpperCase()
++                const roleFormatted = response.user.role?.toLowerCase() === 'admin' ? 'admin' : 'user'
++                const nameFormatted = response.user.name || u.name
++                const initialsFormatted = nameFormatted.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'LU'
++                return {
++                  ...u,
++                  name: nameFormatted,
++                  role: roleFormatted,
++                  plan: planFormatted,
++                  initials: initialsFormatted,
++                  avatar: response.user.avatarUrl || u.avatar,
++                  password: selectedUser.remembered ? passwordInput : u.password
+                 }
+-                return u
+-              })
+-              localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(updated))
+-            } catch (e) {}
++              }
++              return u
++            })
++            localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(updated))
++            setMockUsers(updated)
++          } catch (e) {
++            console.error('Failed to sync login updates to switcher list:', e)
+           }
+         }
+ 
+@@ -469,7 +607,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+         const list = JSON.parse(stored)
+         if (Array.isArray(list)) {
+           const updated = list.map((u: any) => {
+-            if (u.email?.toLowerCase() === targetUser.email?.toLowerCase()) {
++            if (cleanEmail(u.email) === cleanEmail(targetUser.email)) {
+               return {
+                 ...u,
+                 remembered: false,
+@@ -480,10 +618,10 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+             return u
+           })
+           localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(updated))
+-          setMockUsers(updated.slice(0, 4))
++          setMockUsers(updated)
+           
+           // If the currently selected user is this targetUser, sync the state as well!
+-          if (selectedUser?.email?.toLowerCase() === targetUser.email?.toLowerCase()) {
++          if (cleanEmail(selectedUser?.email) === cleanEmail(targetUser.email)) {
+             setSelectedUser({
+               ...selectedUser,
+               remembered: false
+@@ -509,12 +647,12 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+       if (stored) {
+         const list = JSON.parse(stored)
+         if (Array.isArray(list)) {
+-          const updated = list.filter((u: any) => u.email?.toLowerCase() !== targetUser.email?.toLowerCase())
++          const updated = list.filter((u: any) => cleanEmail(u.email) !== cleanEmail(targetUser.email))
+           localStorage.setItem('aiStudyHubLoggedInAccounts', JSON.stringify(updated))
+-          setMockUsers(updated.slice(0, 4))
++          setMockUsers(updated)
+           
+           // If the currently selected user was this targetUser, select the first available account card
+-          if (selectedUser?.email?.toLowerCase() === targetUser.email?.toLowerCase() && updated.length > 0) {
++          if (cleanEmail(selectedUser?.email) === cleanEmail(targetUser.email) && updated.length > 0) {
+             setSelectedUser(updated[0])
+           }
+ 
+@@ -532,22 +670,23 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+   }
+ 
+   const getUserCardDescription = (user: MockUser) => {
+-    if (user.email?.toLowerCase() === 'admin@example.com') {
++    const cleanUserEmail = cleanEmail(user.email)
++    if (cleanUserEmail === 'admin@example.com') {
+       return language === 'vi'
+         ? 'C├│ to├án quyß╗ün truy cß║¡p trang quß║ún trß╗ï v├á c├ái ─æß║╖t hß╗ç thß╗æng.'
+         : 'Full access to admin dashboard and system settings.'
+     }
+-    if (user.email?.toLowerCase() === 'binh@example.com') {
++    if (cleanUserEmail === 'binh@example.com') {
+       return language === 'vi'
+         ? 'T├ái khoß║ún hß╗ìc vi├¬n ti├¬u chuß║⌐n vß╗¢i t├ái liß╗çu v├á t├¡nh n─âng hß╗ìc tß║¡p.'
+         : 'Standard learner account with documents and study features.'
+     }
+-    if (user.email?.toLowerCase() === 'sarah@school.edu') {
++    if (cleanUserEmail === 'sarah@school.edu') {
+       return language === 'vi'
+         ? 'C├│ thß╗â quß║ún l├╜ t├ái liß╗çu kh├│a hß╗ìc v├á cß╗Öng t├íc vß╗¢i hß╗ìc vi├¬n.'
+         : 'Can manage shared course materials and student collaboration.'
+     }
+-    if (user.email?.toLowerCase() === 'tan@example.com') {
++    if (cleanUserEmail === 'tan@example.com') {
+       return language === 'vi'
+         ? 'T├ái khoß║ún hß╗ìc vi├¬n c├│ dung l╞░ß╗úng n├óng cß║Ñp v├á t├¡nh n─âng cao cß║Ñp.'
+         : 'Student account with upgraded storage and premium features.'
+@@ -585,6 +724,291 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+     }
+   }
+ 
++  const renderModalContent = () => {
++    if (showSavePrompt && authUser) {
++      return (
++        <div className="space-y-6 py-4 flex flex-col items-center text-center">
++          {/* Save Credentials Pulsing Icon */}
++          <div className="flex size-14 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-500 border border-blue-100 dark:border-blue-900/30 animate-pulse">
++            <Sparkles className="size-6 text-blue-600 dark:text-blue-400" />
++          </div>
++
++          <div className="space-y-2 max-w-sm">
++            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
++              {language === 'vi' ? `L╞░u t├ái khoß║ún cß╗ºa ${authUser.name}?` : `Save credentials for ${authUser.name}?`}
++            </h3>
++            <p className="text-xs font-semibold text-slate-450 dark:text-slate-400 leading-relaxed">
++              {language === 'vi'
++                ? `L╞░u lß║íi th├┤ng tin ─æ─âng nhß║¡p cß╗ºa t├ái khoß║ún n├áy tr├¬n thiß║┐t bß╗ï hiß╗çn tß║íi? Lß║ºn tß╗¢i chuyß╗ân ng╞░ß╗úc lß║íi bß║▒ng tr├¼nh ─æß╗òi t├ái khoß║ún nhanh sß║╜ kh├┤ng cß║ºn nhß║¡p lß║íi mß║¡t khß║⌐u.`
++                : `Save this account credentials on this device? Next time switching back using quick switch won't require password authentication.`}
++            </p>
++          </div>
++
++          {/* Actions */}
++          <div className="flex justify-center gap-3 w-full max-w-xs pt-4 border-t border-slate-100 dark:border-slate-800">
++            <Button
++              variant="secondary"
++              onClick={() => handleSaveActiveUserPreference(false)}
++              className="flex-1 border border-slate-200 dark:border-slate-800 rounded-xl font-bold cursor-pointer text-xs py-2.5"
++            >
++              {language === 'vi' ? 'Kh├┤ng l╞░u' : 'No, Thanks'}
++            </Button>
++            <Button
++              variant="primary"
++              onClick={() => handleSaveActiveUserPreference(true)}
++              className="flex-1 bg-blue-600 hover:bg-blue-550 text-white rounded-xl font-bold cursor-pointer text-xs py-2.5 shadow-md shadow-blue-500/10"
++            >
++              {language === 'vi' ? 'L╞░u th├┤ng tin' : 'Save Info'}
++            </Button>
++          </div>
++        </div>
++      )
++    }
++
++    if (showPasswordPrompt && selectedUser) {
++      return (
++        <div className="space-y-6 py-4 flex flex-col items-center text-center">
++          {/* Account Card Preview of the target user */}
++          <div className="w-full max-w-xs p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-left shadow-sm">
++            <div className="flex items-center gap-3">
++              {/* Avatar Image or Initials */}
++              {(() => {
++                const selectedUserAvatar = localStorage.getItem(`aiStudyHubUserAvatar:${selectedUser.email.trim()}`) || selectedUser.avatar || '/logo.png'
++                return selectedUserAvatar && selectedUserAvatar !== '/logo.png' ? (
++                  <img
++                    src={selectedUserAvatar}
++                    alt={selectedUser.name}
++                    className="flex-shrink-0 w-10 h-10 rounded-lg object-cover border border-slate-200 dark:border-slate-800"
++                  />
++                ) : (
++                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-850 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800">
++                    {selectedUser.initials}
++                  </div>
++                )
++              })()}
++
++              <div className="min-w-0 flex-1">
++                <p className="text-sm font-bold text-slate-900 dark:text-white truncate leading-snug">
++                  {selectedUser.name}
++                </p>
++                <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-snug mt-0.5">
++                  {selectedUser.email}
++                </p>
++              </div>
++            </div>
++
++            {/* Badges */}
++            <div className="flex items-center gap-1.5 mt-3 shrink-0">
++              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wide border shadow-2xs ${getRoleBadgeClass(selectedUser.role)}`}>
++                {getRoleIcon(selectedUser.role)}
++                {selectedUser.role}
++              </span>
++              
++              {selectedUser.role !== 'admin' && (
++                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs ${
++                  selectedUser.plan === 'PRO'
++                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/30'
++                    : (selectedUser.plan === 'PREMIUM' || selectedUser.plan === 'INSTITUTIONAL' || selectedUser.plan === 'ENTERPRISE')
++                    ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/30'
++                    : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
++                }`}>
++                  {selectedUser.plan}
++                </span>
++              )}
++
++              {selectedUser.isGoogle && (
++                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-450 dark:border-amber-900/30">
++                  Google
++                </span>
++              )}
++            </div>
++
++            <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed font-medium line-clamp-2">
++              {getUserCardDescription(selectedUser)}
++            </p>
++          </div>
++
++          {/* Pulsing Lock Icon */}
++          <div className="flex size-12 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-500 border border-rose-100 dark:border-rose-900/30 animate-pulse">
++            <Lock className="size-5" />
++          </div>
++
++          <div className="space-y-2 max-w-sm">
++            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
++              {language === 'vi' ? `X├íc minh T├ái khoß║ún ${selectedUser.name}` : `Verify Account ${selectedUser.name}`}
++            </h3>
++            <p className="text-xs font-semibold text-slate-450 dark:text-slate-400 leading-relaxed">
++              {language === 'vi'
++                ? `─Éß╗â chuyß╗ân sang t├ái khoß║ún n├áy, vui l├▓ng nhß║¡p mß║¡t khß║⌐u t├ái khoß║ún (Mß║¡t khß║⌐u: ${getTargetPassword()}).`
++                : `To switch to this account, please enter the account password (Password: ${getTargetPassword()}).`}
++            </p>
++          </div>
++
++          <div className="w-full max-w-xs space-y-2">
++            <input
++              type="password"
++              placeholder={language === 'vi' ? 'Nhß║¡p mß║¡t khß║⌐u...' : 'Enter password...'}
++              value={passwordInput}
++              onChange={(e) => setPasswordInput(e.target.value)}
++              onKeyDown={(e) => {
++                if (e.key === 'Enter') handleSwitchUser()
++              }}
++              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-sm font-semibold transition-all"
++              autoFocus
++            />
++            {passwordError && (
++              <p className="text-left text-xs font-bold text-rose-500 dark:text-rose-450 animate-shake flex items-center gap-1">
++                ΓÜá∩╕Å {passwordError}
++              </p>
++            )}
++          </div>
++
++          {/* Actions */}
++          <div className="flex justify-center gap-3 w-full max-w-xs pt-4 border-t border-slate-100 dark:border-slate-800">
++            <Button
++              variant="secondary"
++              onClick={() => {
++                setShowPasswordPrompt(false)
++                setPasswordInput('')
++                setPasswordError('')
++              }}
++              className="flex-1 border border-slate-200 dark:border-slate-800 rounded-xl font-bold cursor-pointer text-xs py-2.5"
++            >
++              {language === 'vi' ? 'Quay lß║íi' : 'Back'}
++            </Button>
++            <Button
++              variant="primary"
++              onClick={handleSwitchUser}
++              className="flex-1 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold cursor-pointer text-xs py-2.5 shadow-md shadow-rose-500/10"
++            >
++              {language === 'vi' ? 'X├íc thß╗▒c' : 'Verify'}
++            </Button>
++          </div>
++        </div>
++      )
++    }
++
++    return (
++      <>
++        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
++          {mockUsers.map((user) => {
++            const isSelected = selectedUser?.email?.trim().toLowerCase() === user.email?.trim().toLowerCase()
++            const isCurrentlyActive = authUser?.email?.trim().toLowerCase() === user.email?.trim().toLowerCase()
++
++            return (
++              <div
++                key={user.id}
++                onClick={() => setSelectedUser(user)}
++                onDoubleClick={handleSwitchUser}
++                className={`relative flex flex-col p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer group select-none ${
++                  isSelected
++                    ? 'border-blue-600 bg-blue-50/30 ring-1 ring-blue-500/30 dark:border-blue-500 dark:bg-blue-950/15'
++                    : 'border-slate-200 hover:border-slate-350 dark:border-slate-800 dark:hover:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850'
++                }`}
++              >
++                {/* Active Indicator Badge */}
++                {isCurrentlyActive && (
++                  <span className="absolute top-3 right-3 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-green-50 text-green-700 border border-green-250 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900/30">
++                    ≡ƒƒó {language === 'vi' ? t.userSwitch.current || '─Éang d├╣ng' : t.userSwitch.current || 'Current'}
++                  </span>
++                )}
++
++                <div className="flex items-start justify-between gap-3 w-full">
++                  <div className="flex items-center gap-3 min-w-0 flex-1">
++                    {/* Avatar Image or Initials */}
++                    {(() => {
++                      const userAvatarUrl = localStorage.getItem(`aiStudyHubUserAvatar:${user.email.trim()}`) || user.avatar || '/logo.png'
++                      return userAvatarUrl && userAvatarUrl !== '/logo.png' ? (
++                        <img
++                          src={userAvatarUrl}
++                          alt={user.name}
++                          className="flex-shrink-0 w-10 h-10 rounded-lg object-cover border border-slate-200 dark:border-slate-800"
++                        />
++                      ) : (
++                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-850 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800">
++                          {user.initials}
++                        </div>
++                      )
++                    })()}
++
++                    <div className="min-w-0 flex-1">
++                      <p className="text-sm font-bold text-slate-900 dark:text-white truncate leading-snug">
++                        {user.name}
++                      </p>
++                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-snug mt-0.5">
++                        {user.email}
++                      </p>
++                    </div>
++                  </div>
++                </div>
++
++                {/* Badges */}
++                <div className="flex items-center gap-1.5 mt-3 shrink-0">
++                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wide border shadow-2xs ${getRoleBadgeClass(user.role)}`}>
++                    {getRoleIcon(user.role)}
++                    {user.role}
++                  </span>
++                  
++                  {user.role !== 'admin' && (
++                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs ${
++                      user.plan === 'PRO'
++                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/30'
++                        : (user.plan === 'PREMIUM' || user.plan === 'INSTITUTIONAL' || user.plan === 'ENTERPRISE')
++                        ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/30'
++                        : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
++                    }`}>
++                      {user.plan}
++                    </span>
++                  )}
++
++                  {user.isGoogle && (
++                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-450 dark:border-amber-900/30">
++                      Google
++                    </span>
++                  )}
++
++                  {user.remembered && !user.isGoogle && getPasswordForEmail(user.email) && (
++                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/30" title="─É─âng nhß║¡p nhanh ─æ├ú l╞░u">
++                      ΓÜí {language === 'vi' ? 'Chuyß╗ân nhanh' : 'Quick'}
++                    </span>
++                  )}
++                </div>
++
++                <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed font-medium line-clamp-2 pr-6">
++                  {getUserCardDescription(user)}
++                </p>
++
++                {/* Selection Checkmark */}
++                {isSelected && (
++                  <div className="absolute bottom-3 right-3 flex size-5 items-center justify-center rounded-full bg-blue-600 text-white dark:bg-blue-500 animate-scale-in shadow-sm">
++                    <Check className="size-3" strokeWidth={3} />
++                  </div>
++                )}
++              </div>
++            )
++          })}
++        </div>
++
++        <div className="flex justify-end gap-3 pt-2">
++          <Button
++            variant="secondary"
++            onClick={onClose}
++            className="rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer"
++          >
++            {language === 'vi' ? t.userSwitch.cancel || 'Hß╗ºy' : t.userSwitch.cancel || 'Cancel'}
++          </Button>
++          <Button
++            variant="primary"
++            onClick={handleSwitchUser}
++            className="bg-blue-600 hover:bg-blue-500 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl font-bold cursor-pointer"
++          >
++            {language === 'vi' ? t.userSwitch.switch || 'Chuyß╗ân ng╞░ß╗¥i d├╣ng' : t.userSwitch.switch || 'Switch User'}
++          </Button>
++        </div>
++      </>
++    )
++  }
++
+   return (
+     <Modal
+       isOpen={isOpen}
+@@ -610,248 +1034,7 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
+       className="max-w-xl"
+     >
+       <div className="space-y-6">
+-        {showSavePrompt && authUser ? (
+-          <div className="space-y-6 py-4 flex flex-col items-center text-center">
+-            {/* Save Credentials Pulsing Icon */}
+-            <div className="flex size-14 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-500 border border-blue-100 dark:border-blue-900/30 animate-pulse">
+-              <Sparkles className="size-6 text-blue-600 dark:text-blue-400" />
+-            </div>
+-
+-            <div className="space-y-2 max-w-sm">
+-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+-                {language === 'vi' ? `L╞░u th├┤ng tin t├ái khoß║ún ${authUser.name}?` : `Remember account ${authUser.name}?`}
+-              </h3>
+-              <p className="text-xs font-semibold text-slate-450 dark:text-slate-400 leading-relaxed">
+-                {language === 'vi'
+-                  ? `Bß║ín c├│ muß╗æn l╞░u lß║íi th├┤ng tin cß╗ºa t├ái khoß║ún ─æang ─æ─âng nhß║¡p (${authUser.name}) ─æß╗â lß║ºn sau chuyß╗ân ─æß╗òi nhanh quay lß║íi t├ái khoß║ún n├áy kh├┤ng?`
+-                  : `Would you like to save your currently logged-in account (${authUser.name}) on this device for instant switching back next time?`}
+-              </p>
+-            </div>
+-
+-            {/* Actions */}
+-            <div className="flex justify-center gap-3 w-full max-w-xs pt-4 border-t border-slate-100 dark:border-slate-800">
+-              <Button
+-                variant="secondary"
+-                onClick={() => handleSaveActiveUserPreference(false)}
+-                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer text-xs font-bold py-2.5"
+-              >
+-                {language === 'vi' ? 'Kh├┤ng l╞░u' : "Don't Save"}
+-              </Button>
+-              <Button
+-                variant="primary"
+-                onClick={() => handleSaveActiveUserPreference(true)}
+-                className="flex-1 bg-blue-600 hover:bg-blue-550 text-white rounded-xl font-bold cursor-pointer text-xs py-2.5 shadow-md shadow-blue-500/10"
+-              >
+-                {language === 'vi' ? 'L╞░u th├┤ng tin' : 'Save Info'}
+-              </Button>
+-            </div>
+-          </div>
+-        ) : showPasswordPrompt && selectedUser ? (
+-          <div className="space-y-6 py-4 flex flex-col items-center text-center">
+-            {/* Pulsing Lock Icon */}
+-            <div className="flex size-14 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-500 border border-rose-100 dark:border-rose-900/30 animate-pulse">
+-              <Lock className="size-6" />
+-            </div>
+-
+-            <div className="space-y-2 max-w-sm">
+-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+-                {language === 'vi' ? `X├íc minh T├ái khoß║ún ${selectedUser.name}` : `Verify Account ${selectedUser.name}`}
+-              </h3>
+-              <p className="text-xs font-semibold text-slate-450 dark:text-slate-400 leading-relaxed">
+-                {language === 'vi'
+-                  ? `─Éß╗â chuyß╗ân sang t├ái khoß║ún n├áy, vui l├▓ng nhß║¡p mß║¡t khß║⌐u t├ái khoß║ún (Mß║¡t khß║⌐u: ${getTargetPassword()}).`
+-                  : `To switch to this account, please enter the account password (Password: ${getTargetPassword()}).`}
+-              </p>
+-            </div>
+-
+-            {/* Input field */}
+-            <div className="w-full max-w-xs space-y-2">
+-              <input
+-                type="password"
+-                placeholder={language === 'vi' ? 'Nhß║¡p mß║¡t khß║⌐u...' : 'Enter password...'}
+-                value={passwordInput}
+-                onChange={(e) => {
+-                  setPasswordInput(e.target.value)
+-                  setPasswordError('')
+-                }}
+-                className={`w-full px-4 py-3 rounded-xl border text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rose-550/20 transition-all ${
+-                  passwordError
+-                    ? 'border-rose-500 bg-rose-50/20 text-rose-600 focus:border-rose-500'
+-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:border-rose-500'
+-                }`}
+-                onKeyDown={(e) => {
+-                  if (e.key === 'Enter') handleSwitchUser()
+-                }}
+-                autoFocus
+-              />
+-              {passwordError && (
+-                <p className="text-[11px] font-bold text-rose-600 dark:text-rose-450">
+-                  {passwordError}
+-                </p>
+-              )}
+-            </div>
+-
+-            {/* Actions */}
+-            <div className="flex justify-center gap-3 w-full max-w-xs pt-4 border-t border-slate-100 dark:border-slate-800">
+-              <Button
+-                variant="secondary"
+-                onClick={() => {
+-                  // Simply close the password verification screen back to card list selection
+-                  setShowPasswordPrompt(false)
+-                  setPasswordInput('')
+-                  setPasswordError('')
+-                }}
+-                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer text-xs font-bold py-2.5"
+-              >
+-                {language === 'vi' ? 'Quay lß║íi' : 'Back'}
+-              </Button>
+-              <Button
+-                variant="primary"
+-                onClick={handleSwitchUser}
+-                className="flex-1 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold cursor-pointer text-xs py-2.5 shadow-md shadow-rose-500/10"
+-              >
+-                {language === 'vi' ? 'X├íc thß╗▒c' : 'Verify'}
+-              </Button>
+-            </div>
+-          </div>
+-        ) : (
+-          <>
+-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+-              {mockUsers.map((user) => {
+-                const isSelected = selectedUser?.id === user.id
+-                const isCurrentlyActive = authUser?.email?.toLowerCase() === user.email?.toLowerCase()
+-
+-                return (
+-                  <div
+-                    key={user.id}
+-                    onClick={() => setSelectedUser(user)}
+-                    onDoubleClick={handleSwitchUser}
+-                    className={`relative flex flex-col p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer group select-none ${
+-                      isSelected
+-                        ? 'border-blue-600 bg-blue-50/30 ring-1 ring-blue-500/30 dark:border-blue-500 dark:bg-blue-950/15'
+-                        : 'border-slate-200 hover:border-slate-350 dark:border-slate-800 dark:hover:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850'
+-                    }`}
+-                  >
+-                    {/* Current Badge */}
+-                    {isCurrentlyActive && (
+-                      <span className="absolute top-3 right-3 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/30 uppercase tracking-wider scale-90">
+-                        {language === 'vi' ? t.userSwitch.current || '─Éang d├╣ng' : t.userSwitch.current || 'Current'}
+-                      </span>
+-                    )}
+-
+-                    {/* Remembered Status Key Icon */}
+-                    {user.remembered && !user.isGoogle && getPasswordForEmail(user.email) && (
+-                      <span className="absolute bottom-3 right-10 inline-flex items-center text-[10px] font-bold text-blue-500 dark:text-blue-400 scale-90" title="─É─âng nhß║¡p nhanh ─æ├ú l╞░u">
+-                        ΓÜí {language === 'vi' ? 'Chuyß╗ân nhanh' : 'Quick'}
+-                      </span>
+-                    )}
+-
+-                    <div className="flex items-start justify-between gap-3 w-full">
+-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+-                        {/* Initials Avatar */}
+-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-850 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800">
+-                          {user.initials}
+-                        </div>
+-
+-                        <div className="min-w-0 flex-1">
+-                          <p className="text-sm font-bold text-slate-900 dark:text-white truncate leading-snug">
+-                            {user.name}
+-                          </p>
+-                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-snug mt-0.5">
+-                            {user.email}
+-                          </p>
+-                        </div>
+-                      </div>
+-
+-                      {/* Action buttons */}
+-                      <div className="flex items-center gap-1 shrink-0">
+-                        {user.remembered && (
+-                          <button
+-                            type="button"
+-                            onClick={(e) => {
+-                              e.stopPropagation()
+-                              handleForgetPassword(user)
+-                            }}
+-                            className="p-1 rounded-lg text-slate-450 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-500 dark:hover:text-rose-450 dark:hover:bg-rose-950/30 transition-all cursor-pointer"
+-                            title={language === 'vi' ? 'X├│a th├┤ng tin chuyß╗ân nhanh' : 'Forget quick switch password'}
+-                          >
+-                            <Trash2 className="size-4" />
+-                          </button>
+-                        )}
+-
+-                        {!isCurrentlyActive && (
+-                          <button
+-                            type="button"
+-                            onClick={(e) => {
+-                              e.stopPropagation()
+-                              handleRemoveAccountCard(user)
+-                            }}
+-                            className="p-1 rounded-lg text-slate-450 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-500 dark:hover:text-rose-450 dark:hover:bg-rose-950/30 transition-all cursor-pointer"
+-                            title={language === 'vi' ? 'X├│a t├ái khoß║ún khß╗Åi thiß║┐t bß╗ï n├áy' : 'Remove account from this device'}
+-                          >
+-                            <X className="size-4" />
+-                          </button>
+-                        )}
+-                      </div>
+-                    </div>
+-
+-                    {/* Badges */}
+-                    <div className="flex items-center gap-1.5 mt-3 shrink-0">
+-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wide border shadow-2xs ${getRoleBadgeClass(user.role)}`}>
+-                        {getRoleIcon(user.role)}
+-                        {user.role}
+-                      </span>
+-                      
+-                      {user.role !== 'admin' && (
+-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs ${
+-                          user.plan === 'PRO'
+-                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/30'
+-                            : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+-                        }`}>
+-                          {user.plan}
+-                        </span>
+-                      )}
+-
+-                      {user.isGoogle && (
+-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border shadow-2xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-450 dark:border-amber-900/30">
+-                          Google
+-                        </span>
+-                      )}
+-                    </div>
+-
+-                    <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed font-medium line-clamp-2">
+-                      {getUserCardDescription(user)}
+-                    </p>
+-
+-                    {/* Selection Checkmark */}
+-                    {isSelected && (
+-                      <div className="absolute bottom-3 right-3 flex size-5 items-center justify-center rounded-full bg-blue-600 text-white dark:bg-blue-500 animate-scale-in shadow-sm">
+-                        <Check className="size-3" strokeWidth={3} />
+-                      </div>
+-                    )}
+-                  </div>
+-                )
+-              })}
+-            </div>
+-
+-            <div className="flex justify-end gap-3 pt-2">
+-              <Button
+-                variant="secondary"
+-                onClick={onClose}
+-                className="rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer"
+-              >
+-                {language === 'vi' ? t.userSwitch.cancel || 'Hß╗ºy' : t.userSwitch.cancel || 'Cancel'}
+-              </Button>
+-              <Button
+-                variant="primary"
+-                onClick={handleSwitchUser}
+-                className="bg-blue-600 hover:bg-blue-500 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl font-bold cursor-pointer"
+-              >
+-                {language === 'vi' ? t.userSwitch.switch || 'Chuyß╗ân ng╞░ß╗¥i d├╣ng' : t.userSwitch.switch || 'Switch User'}
+-              </Button>
+-            </div>
+-          </>
+-        )}
++        {renderModalContent()}
+       </div>
+     </Modal>
+   )

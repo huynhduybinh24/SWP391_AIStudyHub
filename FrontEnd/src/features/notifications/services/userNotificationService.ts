@@ -1,26 +1,4 @@
-export type UserNotificationType =
-  | "document_deleted"
-  | "document_rejected"
-  | "document_approved"
-  | "system"
-  | "shared_file"
-  | "ai_update";
-
-export interface UserNotification {
-  id: string;
-  type: UserNotificationType;
-  title: string;
-  message: string;
-  documentId?: string;
-  documentName?: string;
-  reason?: string;
-  actionType?: "removed" | "rejected" | "approved" | "system";
-  adminNote?: string;
-  createdAt: string;
-  time?: string;
-  isRead: boolean;
-  targetUserEmail?: string;
-}
+import { apiClient } from '@/lib/axios';
 
 export const getCurrentUser = () => {
   if (typeof window === 'undefined') {
@@ -43,123 +21,60 @@ export const getCurrentUser = () => {
   }
 };
 
-const getNotificationStorageKey = (email: string) => {
-  return `aiStudyHubUserNotifications:${email}`;
-};
+
+
+export interface UserNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  createdAt: string;
+  time?: string;
+  isRead: boolean;
+  targetUserEmail?: string;
+  documentId?: string;
+  documentName?: string;
+  reason?: string;
+  actionType?: string;
+}
 
 export const userNotificationService = {
-  getUserNotifications(email?: string): UserNotification[] {
-    try {
-      const targetEmail = email || getCurrentUser().email;
-      const key = getNotificationStorageKey(targetEmail);
-      const data = localStorage.getItem(key);
-      if (!data) return [];
-      const list: UserNotification[] = JSON.parse(data);
-
-      // Filter out notifications older than 7 days
-      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      const validList = list.filter((n: any) => {
-        const timestamp = n.createdAt ? new Date(n.createdAt).getTime() : Date.now();
-        return timestamp >= sevenDaysAgo;
-      });
-
-      if (validList.length !== list.length) {
-        localStorage.setItem(key, JSON.stringify(validList));
-      }
-
-      return validList;
-    } catch (error) {
-      console.error('Failed to parse user notifications from localStorage', error);
-      return [];
+  async getNotifications(currentUser?: any): Promise<UserNotification[]> {
+    const email = currentUser?.email || '';
+    const response = await apiClient.get(`/notifications?email=${encodeURIComponent(email)}`);
+    const list = response.data?.data || response.data;
+    if (Array.isArray(list)) {
+      return list;
     }
+    return [];
   },
 
-  saveUserNotifications(notifications: UserNotification[], email?: string): void {
-    try {
-      const targetEmail = email || getCurrentUser().email;
-      const key = getNotificationStorageKey(targetEmail);
-      localStorage.setItem(key, JSON.stringify(notifications));
-    } catch (error) {
-      console.error('Failed to save user notifications to localStorage', error);
-    }
+  async deleteNotification(id: string, _email?: string): Promise<void> {
+    await apiClient.delete(`/notifications/${id}`);
   },
 
-  addUserNotification(notification: Omit<UserNotification, "id" | "createdAt" | "isRead" | "time"> & { targetUserEmail?: string }): UserNotification {
-    const targetEmail = notification.targetUserEmail || getCurrentUser().email;
-    const notifications = this.getUserNotifications(targetEmail);
-    
-    // Deduplicate: remove older duplicate notifications (type, documentId, reason) to avoid spam
-    const filteredNotifications = notifications.filter(n => {
-      const isDuplicate = n.type === notification.type &&
-                          n.documentId === notification.documentId &&
-                          n.reason === notification.reason;
-      return !isDuplicate;
-    });
-
-    const newNotification: UserNotification = {
-      ...notification,
-      id: `usr-ntf-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      createdAt: new Date().toISOString(),
-      time: "Just now",
-      isRead: false
-    };
-
-    const updatedNotifications = [newNotification, ...filteredNotifications];
-    this.saveUserNotifications(updatedNotifications, targetEmail);
-    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
-
-    // Trigger toast if the active user is the one receiving it and is logged in
-    if (typeof window !== 'undefined') {
-      import('@/stores/authStore').then((auth) => {
-        const { isAuthenticated } = auth.useAuthStore.getState();
-        if (!isAuthenticated) return;
-
-        const activeUserStr = localStorage.getItem('aiStudyHubCurrentUser');
-        if (activeUserStr) {
-          try {
-            const activeUser = JSON.parse(activeUserStr);
-            if (activeUser?.email?.toLowerCase() === targetEmail.toLowerCase()) {
-              import('@/stores/toastStore').then((m) => {
-                let toastType: 'success' | 'info' | 'warning' | 'error' = 'info';
-                if (notification.type === 'document_deleted' || notification.type === 'document_rejected') {
-                  toastType = 'warning';
-                } else if (notification.type === 'document_approved') {
-                  toastType = 'success';
-                }
-                const messageSummary = notification.message.length > 60 
-                  ? notification.message.substring(0, 60) + '...'
-                  : notification.message;
-                m.useToastStore.getState().addToast(
-                  `${notification.title}: ${messageSummary}`,
-                  toastType,
-                  4000
-                );
-              });
-            }
-          } catch (e) {}
-        }
-      });
-    }
-
-    return newNotification;
+  async markAsRead(id: string): Promise<void> {
+    await apiClient.put(`/notifications/${id}/read`);
   },
 
-  markUserNotificationAsRead(id: string, email?: string): void {
-    const targetEmail = email || getCurrentUser().email;
-    const notifications = this.getUserNotifications(targetEmail);
-    const updatedNotifications = notifications.map(n => 
-      n.id === id ? { ...n, isRead: true } : n
-    );
-    this.saveUserNotifications(updatedNotifications, targetEmail);
-    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+  async markUserNotificationAsRead(id: string, email?: string): Promise<void> {
+    return this.markAsRead(id);
   },
 
-  markAllUserNotificationsAsRead(email?: string): void {
-    const targetEmail = email || getCurrentUser().email;
-    const notifications = this.getUserNotifications(targetEmail);
-    const updatedNotifications = notifications.map(n => ({ ...n, isRead: true }));
-    this.saveUserNotifications(updatedNotifications, targetEmail);
-    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+  async markAllAsRead(email?: string): Promise<void> {
+    await apiClient.put(`/notifications/read-all?email=${encodeURIComponent(email || '')}`);
+  },
+
+  async markAllUserNotificationsAsRead(email?: string): Promise<void> {
+    return this.markAllAsRead(email);
+  },
+
+  async addUserNotification(notification: any): Promise<any> {
+    const response = await apiClient.post('/notifications', notification);
+    return response.data?.data || response.data;
+  },
+
+  async addNotification(payload: any): Promise<any> {
+    return this.addUserNotification(payload);
   }
 };
-

@@ -25,10 +25,13 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { useTheme } from '@/features/settings/components/ThemeProvider'
 import { useAuthStore } from '@/stores/authStore'
+import { useToast } from '@/components/ui/Toast'
 import { env } from '@/config/env'
 import { useTranslation } from '@/context/LanguageContext'
 import { storageService, type StorageUsage } from '@/services/storageService'
 import { documentService, type DocumentResponse } from '@/services/documentService'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
 const INITIAL_FOLDERS = [
   { id: '1', name: 'Physics 101', itemsCount: 12, size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe', category: 'Study' },
@@ -83,6 +86,42 @@ const INITIAL_FILES = [
   },
 ]
 
+const formatTimeAgo = (dateStr: string) => {
+  if (!dateStr) return 'Recently';
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Yesterday';
+    return `${diffDays}d ago`;
+  } catch (e) {
+    return 'Recently';
+  }
+};
+
+const mapDocumentToExplorerFile = (doc: DocumentResponse) => {
+  const ext = (doc.originalFileName || doc.fileName).split('.').pop()?.toUpperCase() || 'FILE';
+  let icon = FileIcon;
+  if (['PDF'].includes(ext)) icon = FileText;
+  else if (['DOC', 'DOCX'].includes(ext)) icon = FileText;
+  else if (['PNG', 'JPG', 'JPEG', 'WEBP', 'SVG'].includes(ext)) icon = FileImage;
+  
+  return {
+    id: doc.id,
+    name: doc.originalFileName || doc.fileName,
+    modified: `Modified ${formatTimeAgo(doc.createdAt)}`,
+    icon,
+    type: ext,
+    aiSummarized: doc.fileType === 'DOCUMENT'
+  };
+};
+
 export function StorageExplorerPage() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -90,8 +129,20 @@ export function StorageExplorerPage() {
   const user = useAuthStore((s) => s.user)
   const { t, language } = useTranslation()
   
+  const toast = useToast()
   const [usage, setUsage] = useState<StorageUsage | null>(null)
   const [dbFiles, setDbFiles] = useState<DocumentResponse[]>([])
+
+  const loadUserFiles = async () => {
+    if (!user?.id) return;
+    try {
+      const docs = await documentService.getAllDocuments(Number(user.id));
+      const mapped = docs.map(mapDocumentToExplorerFile);
+      setFiles(mapped);
+    } catch (err) {
+      console.error("Failed to load user files:", err);
+    }
+  };
 
   useEffect(() => {
     if (user?.id) {
@@ -102,60 +153,35 @@ export function StorageExplorerPage() {
         .catch(err => {
           console.error("Failed to fetch storage usage:", err)
         })
+      loadUserFiles();
     }
   }, [user?.id])
 
-  useEffect(() => {
-    if (user?.id) {
-      documentService.getAllDocuments(Number(user.id))
-        .then(data => {
-          setDbFiles(data || [])
-        })
-        .catch(err => {
-          console.error("Failed to fetch documents:", err)
-        })
-    }
-  }, [user?.id])
+  const totalMb = usage ? usage.storageLimitMb : getStorageLimitByPlan(user?.plan)
+  const totalGb = totalMb / 1024
 
-  useEffect(() => {
-    if (!user?.id) return
-    const hasPending = dbFiles.some(f => f.moderationStatus === 'PENDING')
-    if (!hasPending) return
+  const usedMb = usage
+    ? usage.storageUsedMb
+    : user?.plan === 'pro'
+      ? 2457.6
+      : ((user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise')
+        ? 8192
+        : 8
 
-    const interval = setInterval(() => {
-      documentService.getAllDocuments(Number(user.id))
-        .then(data => {
-          setDbFiles(data || [])
-        })
-        .catch(err => {
-          console.error("Polling documents failed:", err)
-        })
-    }, 3000)
+  const usedGb = usedMb / 1024
+  const usageInfo = calculateStorageUsage(usedMb, totalMb)
+  const usedPercentage = usageInfo.percentage
 
-    return () => clearInterval(interval)
-  }, [dbFiles, user?.id])
-
-  const totalGb = usage 
-    ? usage.storageLimitMb / 1024 
-    : user?.plan === 'pro' 
-      ? env.PRO_STORAGE_LIMIT 
-      : user?.plan === 'enterprise' || user?.plan === 'premium'
-        ? env.PREMIUM_STORAGE_LIMIT
-        : env.FREE_STORAGE_LIMIT
-
-  const usedGb = usage 
-    ? Number(((usage.storageUsedMb + 8.3) / 1024).toFixed(3)) 
-    : 8.3 / 1024
-
-  const usedPercentage = Math.round((usedGb / totalGb) * 100)
+  const displayUsedGb = parseFloat(usedGb.toFixed(3))
+  const displayTotalGb = parseFloat(totalGb.toFixed(1))
   const [folders, setFolders] = useState(INITIAL_FOLDERS)
-  const [files, setFiles] = useState(INITIAL_FILES)
+  const [files, setFiles] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   const [folderFilter, setFolderFilter] = useState('All Folders')
   const [typeFilter, setTypeFilter] = useState('All Types')
-  
+
   const [showFolderDropdown, setShowFolderDropdown] = useState(false)
   const [showTypeDropdown, setShowTypeDropdown] = useState(false)
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
@@ -200,9 +226,23 @@ export function StorageExplorerPage() {
     setFolders(folders.filter(f => f.id !== id))
   }
 
-  const handleDeleteFile = (id: string, e: React.MouseEvent) => {
+  const handleDeleteFile = async (id: string | number, e: React.MouseEvent) => {
     e.stopPropagation()
-    setFiles(files.filter(f => f.id !== id))
+    try {
+      await documentService.deleteDocument(id);
+      toast.success('File deleted successfully');
+      loadUserFiles();
+      if (user?.id) {
+        storageService.getStorageUsage(Number(user.id))
+          .then(data => {
+            setUsage(data)
+          })
+          .catch(() => {})
+      }
+    } catch (err) {
+      console.error("Failed to delete document:", err);
+      toast.error('Failed to delete file');
+    }
   }
 
   const filteredFolders = useMemo(() => {
@@ -251,14 +291,17 @@ export function StorageExplorerPage() {
   }, [allFilesList, searchQuery, typeFilter])
 
   const chartData = useMemo(() => {
-    const isPro = user?.plan === 'pro'
+    const pctDoc = Math.round(usedPercentage * 0.6)
+    const pctImg = Math.round(usedPercentage * 0.3)
+    const pctOther = Math.round(usedPercentage * 0.1)
+    const pctRemaining = Math.max(0, 100 - (pctDoc + pctImg + pctOther))
     return [
-      { name: 'Documents', value: isPro ? 45 : 1.2, color: '#2563eb' },
-      { name: 'Images', value: isPro ? 20.5 : 0.8, color: '#0d9488' },
-      { name: 'Other', value: isPro ? 9.5 : 0.4, color: isDark ? '#334155' : '#cbd5e1' },
-      { name: 'Remaining', value: isPro ? 25 : 7.6, color: isDark ? '#1e293b' : '#e5eeff' },
+      { name: 'Documents', value: pctDoc, color: '#2563eb' },
+      { name: 'Images', value: pctImg, color: '#0d9488' },
+      { name: 'Other', value: pctOther, color: isDark ? '#334155' : '#cbd5e1' },
+      { name: 'Remaining', value: pctRemaining, color: isDark ? '#1e293b' : '#e5eeff' },
     ]
-  }, [user, isDark])
+  }, [usedPercentage, isDark])
 
   const folderOptions = ['All Folders', 'Study', 'Archived', 'New']
   const typeOptions = ['All Types', 'PDF', 'DOCX', 'Image', 'ZIP']
@@ -298,8 +341,8 @@ export function StorageExplorerPage() {
     <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-10">
       {/* Header Area */}
       <div>
-        <Link 
-          to="/dashboard/storage" 
+        <Link
+          to="/dashboard/storage"
           className="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-foreground mb-4 transition-colors"
         >
           <ArrowLeft className="size-4" />
@@ -327,9 +370,9 @@ export function StorageExplorerPage() {
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted" />
-              <input 
-                type="text" 
-                placeholder={t.storageExplorer.findInExplorer} 
+              <input
+                type="text"
+                placeholder={t.storageExplorer.findInExplorer}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-10 pl-9 pr-4 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -337,7 +380,7 @@ export function StorageExplorerPage() {
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none" ref={folderDropdownRef}>
-                <button 
+                <button
                   onClick={() => setShowFolderDropdown(!showFolderDropdown)}
                   className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 justify-between whitespace-nowrap text-foreground"
                 >
@@ -364,7 +407,7 @@ export function StorageExplorerPage() {
               </div>
 
               <div className="relative flex-1 sm:flex-none" ref={typeDropdownRef}>
-                <button 
+                <button
                   onClick={() => setShowTypeDropdown(!showTypeDropdown)}
                   className="w-full sm:w-auto flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-white dark:bg-slate-900 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 justify-between whitespace-nowrap text-foreground"
                 >
@@ -391,13 +434,13 @@ export function StorageExplorerPage() {
               </div>
 
               <div className="flex items-center h-10 rounded-lg border border-border bg-white dark:bg-slate-900 p-1">
-                <button 
+                <button
                   onClick={() => setViewMode('grid')}
                   className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted hover:text-foreground'}`}
                 >
                   <LayoutGrid className="size-4" />
                 </button>
-                <button 
+                <button
                   onClick={() => setViewMode('list')}
                   className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-primary/10 text-primary' : 'text-muted hover:text-foreground'}`}
                 >
@@ -420,13 +463,13 @@ export function StorageExplorerPage() {
                   <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group">
                     <CardContent className="p-4 flex flex-col h-[120px] justify-between">
                       <div className="flex justify-between items-start">
-                        <div 
-                          className="w-10 h-10 rounded-lg flex items-center justify-center" 
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center"
                           style={{ backgroundColor: isDark ? `${folder.color}22` : folder.bgColor }}
                         >
                           <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
                         </div>
-                        <button 
+                        <button
                           onClick={(e) => handleDeleteFolder(folder.id, e)}
                           className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           title={t.storageExplorer.deleteFolder}
@@ -451,8 +494,8 @@ export function StorageExplorerPage() {
                   <Card key={folder.id} className="hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group">
                     <CardContent className="p-3 flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div 
-                          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" 
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                           style={{ backgroundColor: isDark ? `${folder.color}22` : folder.bgColor }}
                         >
                           <Folder className="size-5" style={{ color: folder.color }} fill="currentColor" fillOpacity={0.2} />
@@ -464,7 +507,7 @@ export function StorageExplorerPage() {
                           <span>{t.storageExplorer.itemsCount(folder.itemsCount)}</span>
                           <span>{folder.size}</span>
                         </div>
-                        <button 
+                        <button
                           onClick={(e) => handleDeleteFolder(folder.id, e)}
                           className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           title={t.storageExplorer.deleteFolder}
@@ -491,7 +534,7 @@ export function StorageExplorerPage() {
                 {filteredFiles.map((file) => (
                   <Card 
                     key={file.id} 
-                    onClick={() => navigate('/dashboard/storage/explorer/preview')}
+                    onClick={() => navigate(`/dashboard/storage/explorer/preview?id=${file.id}`)}
                     className="p-3 flex flex-col hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group"
                   >
                     <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex items-center justify-center relative mb-3 overflow-hidden">
@@ -520,7 +563,7 @@ export function StorageExplorerPage() {
                           {t.storageExplorer.aiSummarized}
                         </div>
                       )}
-                      <button 
+                      <button
                         onClick={(e) => handleDeleteFile(file.id, e)}
                         className="absolute top-2 right-2 text-muted hover:text-red-500 p-1.5 bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
                         title={t.storageExplorer.deleteFile}
@@ -540,7 +583,7 @@ export function StorageExplorerPage() {
                 {filteredFiles.map((file) => (
                   <Card 
                     key={file.id} 
-                    onClick={() => navigate('/dashboard/storage/explorer/preview')}
+                    onClick={() => navigate(`/dashboard/storage/explorer/preview?id=${file.id}`)}
                     className="p-3 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer border-border dark:border-slate-800 group"
                   >
                     <div className="flex items-center gap-4">
@@ -577,7 +620,7 @@ export function StorageExplorerPage() {
                           {t.storageExplorer.aiSummarized}
                         </div>
                       )}
-                      <button 
+                      <button
                         onClick={(e) => handleDeleteFile(file.id, e)}
                         className="text-muted hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         title={t.storageExplorer.deleteFile}
@@ -599,7 +642,7 @@ export function StorageExplorerPage() {
               <Cloud className="size-5 text-primary" />
               <h2 className="font-semibold text-foreground">{t.storageExplorer.storageStatus}</h2>
             </div>
-            
+
             <div className="w-[180px] h-[180px] relative mx-auto">
               {isMounted && (
                 <ResponsiveContainer width="100%" height={180}>
@@ -627,7 +670,7 @@ export function StorageExplorerPage() {
             </div>
 
             <div className="text-center mt-6 mb-8">
-              <h3 className="font-bold text-foreground text-[15px]">{t.storageExplorer.usedOfText(usedGb, totalGb)}</h3>
+              <h3 className="font-bold text-foreground text-[15px]">{t.storageExplorer.usedOfText(displayUsedGb, displayTotalGb)}</h3>
             </div>
 
             <div className="flex flex-col gap-3 mb-8">
@@ -636,21 +679,21 @@ export function StorageExplorerPage() {
                   <div className="w-2.5 h-2.5 rounded-full bg-[#2563eb]"></div>
                   <span className="text-foreground font-medium">{t.storageExplorer.documents}</span>
                 </div>
-                <span className="text-muted font-medium">{user?.plan === 'pro' ? '45.0 GB' : '1.2 GB'}</span>
+                <span className="text-muted font-medium">{formatStorageSize(usedMb * 0.6)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#0d9488]"></div>
                   <span className="text-foreground font-medium">{t.storageExplorer.images}</span>
                 </div>
-                <span className="text-muted font-medium">{user?.plan === 'pro' ? '20.5 GB' : '0.8 GB'}</span>
+                <span className="text-muted font-medium">{formatStorageSize(usedMb * 0.3)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1] dark:bg-slate-700"></div>
                   <span className="text-foreground font-medium">{t.storageExplorer.other}</span>
                 </div>
-                <span className="text-muted font-medium">{user?.plan === 'pro' ? '9.5 GB' : '0.4 GB'}</span>
+                <span className="text-muted font-medium">{formatStorageSize(usedMb * 0.1)}</span>
               </div>
             </div>
 
@@ -659,9 +702,9 @@ export function StorageExplorerPage() {
               <p className="text-[11px] text-muted mt-1.5 mb-4 leading-relaxed">
                 {t.storageExplorer.upgradeDesc}
               </p>
-              <Button 
+              <Button
                 onClick={() => setIsPlanModalOpen(true)}
-                variant="secondary" 
+                variant="secondary"
                 className="w-full bg-white dark:bg-slate-950 text-primary dark:text-blue-400 border border-primary/20 dark:border-blue-900/40 hover:bg-primary/5 dark:hover:bg-blue-950/30 h-9 text-sm transition-colors"
               >
                 {t.storageExplorer.viewPlans}
@@ -671,8 +714,8 @@ export function StorageExplorerPage() {
         </Card>
       </div>
 
-      <Modal 
-        isOpen={isPlanModalOpen} 
+      <Modal
+        isOpen={isPlanModalOpen}
         onClose={() => setIsPlanModalOpen(false)}
         title={t.storageExplorer.upgradeModalTitle}
         description={t.storageExplorer.upgradeModalDesc}

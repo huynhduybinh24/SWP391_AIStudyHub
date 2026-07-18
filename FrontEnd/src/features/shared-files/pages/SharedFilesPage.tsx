@@ -4,8 +4,13 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
-import { env } from '@/config/env'
 import { cn } from '@/lib/utils'
+import { reportService } from '../services/reportService'
+import { sharedFileService } from '../services/sharedFileService'
+import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
+import { getCurrentUserStorageSummary } from '@/services/storageService'
+import { apiClient } from '@/lib/axios'
+import { documentService } from '@/services/documentService'
 
 // Workspace Components
 import SharedWorkspaceHeader from '../components/SharedWorkspaceHeader'
@@ -20,6 +25,7 @@ import SharedFilesUploadModal from '../components/SharedFilesUploadModal'
 
 // Modals & Overlays
 import InviteModal from '../components/InviteModal'
+import { CreateWorkspaceModal } from '../components/CreateWorkspaceModal'
 import AIReportModal from '../components/AIReportModal'
 import SummaryModal from '../components/SummaryModal'
 import QuizModal from '../components/QuizModal'
@@ -39,17 +45,21 @@ import { FileTypeIcon } from '../components/FileTypeIcon'
 interface QuotaDetailsModalProps {
   isOpen: boolean
   onClose: () => void
-  usedGb: number
-  totalGb: number
+  usedMb: number
+  totalMb: number
 }
 
-function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsModalProps) {
+function QuotaDetailsModal({ isOpen, onClose, usedMb, totalMb }: QuotaDetailsModalProps) {
   const { t, language } = useTranslation()
   
-  const isPro = totalGb > 10;
-  const pdfGb = isPro ? '6.2 GB' : '1.2 GB';
-  const officeGb = isPro ? '3.8 GB' : '0.8 GB';
-  const foldersGb = isPro ? '2.4 GB' : '0.4 GB';
+  const usage = calculateStorageUsage(usedMb, totalMb)
+  const percentage = usage.percentage
+  
+  // Compute breakdown proportionally from actual usedMb
+  const pdfGb    = formatStorageSize(usedMb * 0.50)
+  const officeGb = formatStorageSize(usedMb * 0.30)
+  const foldersGb = formatStorageSize(usedMb * 0.20)
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -58,8 +68,6 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
-
-  const percentage = (usedGb / totalGb) * 100
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isOpen ? 'block' : 'hidden'}`}>
@@ -104,13 +112,13 @@ function QuotaDetailsModal({ isOpen, onClose, usedGb, totalGb }: QuotaDetailsMod
         <div className="space-y-5 text-left">
           <div className="flex items-end justify-between">
             <div>
-              <span className="text-3xl font-black text-slate-900 dark:text-white">{usedGb}GB</span>
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{formatStorageSize(usedMb)}</span>
               <span className="text-sm font-bold text-slate-400 dark:text-slate-550 ml-1 font-sans">
-                {t.sharedFiles.usedOf} {totalGb}GB {t.sharedFiles.used.toLowerCase()}
+                {t.sharedFiles.usedOf} {formatStorageSize(totalMb)} {t.sharedFiles.used.toLowerCase()}
               </span>
             </div>
             <span className="text-sm font-bold text-[#3155F6] dark:text-blue-450">
-              {percentage.toFixed(0)}% {t.sharedFiles.used}
+              {percentage}% {t.sharedFiles.used}
             </span>
           </div>
 
@@ -203,95 +211,179 @@ export function SharedFilesPage() {
   const { fileId } = useParams<{ fileId: string }>()
 
   // State Management
-  const [files, setFiles] = useState<SharedFile[]>([
-    {
-      id: 'file-1',
-      name: 'Biology 101 Midterm Notes.pdf',
-      owner: 'Sarah Jenkins',
-      permission: 'Viewer',
-      dateShared: '2h ago',
-      type: 'pdf',
-      size: '2.4 MB',
-      totalPages: 42,
-      description: 'Comprehensive study guide and midterm summary for General Biology 101, containing cellular respiration diagrams, metabolic pathway notes, and mitosis stages.',
-      tags: ['CellBiology', 'KrebsCycle'],
-      previewContent: 'Biology 101 Midterm Notes preview content.',
-      url: '',
-      editHistory: [
-        { id: 'h-1-1', user: 'Sarah Jenkins', action: 'Đã tạo tài liệu', time: '5 ngày trước', avatarBg: 'bg-emerald-500' },
-        { id: 'h-1-2', user: 'Sarah Jenkins', action: 'Đã chia sẻ tài liệu với bạn', time: '2 giờ trước', avatarBg: 'bg-emerald-500' }
-      ]
-    },
-    {
-      id: 'file-2',
-      name: 'Group Project Assets',
-      owner: 'David Kim',
-      permission: 'Editor',
-      dateShared: 'Oct 22, 2023',
-      type: 'folder',
-      size: '15.8 MB',
-      description: 'Group assets folder containing images, mock data, design specifications, and reference links.',
-      tags: ['GroupProject', 'Assets'],
-      previewContent: 'Folder contents: assets, design specifications.',
-      url: '',
-      editHistory: [
-        { id: 'h-2-1', user: 'David Kim', action: 'Đã tạo thư mục', time: '1 tháng trước', avatarBg: 'bg-blue-500' },
-        { id: 'h-2-2', user: 'David Kim', action: 'Đã chia sẻ quyền chỉnh sửa (Editor) cho bạn', time: 'Oct 22, 2023', avatarBg: 'bg-blue-500' }
-      ]
-    },
-    {
-      id: 'file-3',
-      name: 'Physics Lab Data.xlsx',
-      owner: 'Emily Chen',
-      permission: 'Viewer',
-      dateShared: 'Oct 18, 2023',
-      type: 'xlsx',
-      size: '1.2 MB',
-      totalPages: 10,
-      description: 'Tabulated values of raw experimental logs, voltage sweeps, and resistance indexes from the electromagnetism laboratory session.',
-      tags: ['Physics', 'LabData'],
-      previewContent: 'Voltage, Current, Resistance sweep tables.',
-      url: '',
-      editHistory: [
-        { id: 'h-3-1', user: 'Emily Chen', action: 'Đã tạo tài liệu', time: 'Oct 15, 2023', avatarBg: 'bg-purple-500' },
-        { id: 'h-3-2', user: 'Emily Chen', action: 'Đã chia sẻ quyền xem (Viewer) cho bạn', time: 'Oct 18, 2023', avatarBg: 'bg-purple-500' }
-      ]
-    },
-    {
-      id: 'file-4',
-      name: 'Chemistry 101 Lab Report.docx',
-      owner: 'me',
-      permission: 'Owner',
-      dateShared: 'Yesterday',
-      type: 'docx',
-      size: '1.8 MB',
-      description: 'My chemistry lab report shared with Sarah and David.',
-      tags: ['Chemistry', 'LabReport'],
-      previewContent: 'Chemistry lab report contents.',
-      url: '',
-      editHistory: [
-        { id: 'h-4-1', user: 'Tôi', action: 'Đã tạo tài liệu', time: '2 ngày trước', avatarBg: 'bg-indigo-600' },
-        { id: 'h-4-2', user: 'Tôi', action: 'Đã chia sẻ quyền xem cho Sarah Jenkins', time: '1 ngày trước', avatarBg: 'bg-indigo-600' },
-        { id: 'h-4-3', user: 'Tôi', action: 'Đã chia sẻ quyền chỉnh sửa cho David Kim', time: '1 ngày trước', avatarBg: 'bg-indigo-600' }
-      ]
-    },
-    {
-      id: 'file-5',
-      name: 'Math Calculus Exercises.pdf',
-      owner: 'me',
-      permission: 'Owner',
-      dateShared: '3 days ago',
-      type: 'pdf',
-      size: '3.1 MB',
-      description: 'Calculus assignment worksheet with solved exercises.',
-      tags: ['Math', 'Calculus'],
-      previewContent: 'Calculus exercises content.',
-      url: '',
-      editHistory: [
-        { id: 'h-5-1', user: 'Tôi', action: 'Đã tạo tài liệu', time: '3 ngày trước', avatarBg: 'bg-indigo-600' }
-      ]
+  const [files, setFiles] = useState<SharedFile[]>([])
+  const [workspaces, setWorkspaces] = useState<any[]>([])
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | 'all'>('all')
+
+  const fetchWorkspaces = async () => {
+    if (!user?.id) return
+    try {
+      const response = await apiClient.get(`/workspaces?userId=${user.id}`)
+      const list = response.data?.data || response.data || []
+      setWorkspaces(list)
+    } catch (err) {
+      console.error("Failed to load user workspaces", err)
     }
-  ])
+  }
+
+  const mapMimeOrExtensionToType = (fileType: string, fileName: string): 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'image' | 'txt' | 'folder' => {
+    const nameLower = fileName.toLowerCase()
+    if (nameLower.endsWith('.pdf')) return 'pdf'
+    if (nameLower.endsWith('.doc') || nameLower.endsWith('.docx')) return 'docx'
+    if (nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx')) return 'pptx'
+    if (nameLower.endsWith('.xls') || nameLower.endsWith('.xlsx')) return 'xlsx'
+    if (nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg')) return 'image'
+    if (nameLower.endsWith('.txt')) return 'txt'
+    
+    const typeLower = (fileType || '').toLowerCase()
+    if (typeLower.includes('pdf')) return 'pdf'
+    if (typeLower.includes('word') || typeLower.includes('msword') || typeLower.includes('officedocument.wordprocessingml')) return 'docx'
+    if (typeLower.includes('powerpoint') || typeLower.includes('officedocument.presentationml')) return 'pptx'
+    if (typeLower.includes('excel') || typeLower.includes('spreadsheet') || typeLower.includes('officedocument.spreadsheetml')) return 'xlsx'
+    if (typeLower.includes('image') || typeLower.includes('png') || typeLower.includes('jpeg')) return 'image'
+    return 'txt'
+  }
+
+  const fetchSharedFiles = async () => {
+    try {
+      const fetched = await sharedFileService.getSharedFiles()
+      const mapped = fetched.map((f: any) => {
+        const fileName = f.originalFileName || f.name || f.title || 'Untitled'
+        const normalizedType = mapMimeOrExtensionToType(f.fileType || f.type, f.fileName || f.originalFileName || f.name || f.title || '')
+        return {
+          ...f,
+          id: String(f.documentId || f.id),
+          name: fileName,
+          description: f.description || '',
+          type: normalizedType,
+          url: f.url || `/api/documents/${f.documentId || f.id}/preview`
+        }
+      })
+      setFiles(mapped)
+    } catch (err) {
+      console.error("Failed to load shared files", err)
+    }
+  }
+
+  const fetchCombinedCollaborators = async () => {
+    if (!user?.id) return
+    try {
+      const wsResponse = await apiClient.get(`/workspaces?userId=${user.id}`)
+      const list = wsResponse.data?.data || wsResponse.data || []
+      
+      const allMembersMap: Record<string, ActiveCollaborator> = {}
+      for (const ws of list) {
+        try {
+          const detailRes = await apiClient.get(`/workspaces/${ws.id}?userId=${user.id}`)
+          const detail = detailRes.data?.data || detailRes.data
+          if (detail && detail.members) {
+            detail.members.forEach((mem: any) => {
+              const role = mem.role === 'OWNER' ? 'Owner' : (mem.role === 'COLLABORATOR' ? 'Editor' : 'View Only')
+              allMembersMap[mem.userId] = {
+                id: String(mem.userId),
+                name: mem.fullName || mem.email || 'Member',
+                email: mem.email || '',
+                role: role
+              }
+            })
+          }
+        } catch (e) {
+          // ignore error
+        }
+      }
+      
+      const collabsList = Object.values(allMembersMap)
+      if (collabsList.length > 0) {
+        setActiveCollaborators(collabsList)
+      } else {
+        setActiveCollaborators([
+          {
+            id: String(user.id),
+            name: user.name || 'Me',
+            email: user.email || '',
+            role: 'Owner'
+          }
+        ])
+      }
+    } catch (err) {
+      console.error("Failed to load combined collaborators", err)
+    }
+  }
+
+  const fetchWorkspaceDetails = async (workspaceId: string) => {
+    if (!user?.id) return
+    try {
+      const response = await apiClient.get(`/workspaces/${workspaceId}?userId=${user.id}`)
+      const workspace = response.data?.data || response.data
+      if (workspace) {
+        const mappedFiles: SharedFile[] = (workspace.documents || []).map((doc: any) => {
+          const fileName = doc.originalFileName || doc.title || 'Untitled'
+          const fileType = mapMimeOrExtensionToType(doc.mimeType || doc.fileType, doc.fileName || doc.originalFileName || doc.title || '')
+          return {
+            id: String(doc.documentId),
+            name: fileName,
+            owner: doc.addedByName || 'System',
+            ownerEmail: doc.addedByEmail || '',
+            permission: (doc.role === 'OWNER' ? 'Owner' : (doc.role === 'COLLABORATOR' ? 'Editor' : 'Viewer')) as any,
+            dateShared: doc.createdAt ? doc.createdAt.substring(0, 10) : 'Just now',
+            type: fileType,
+            size: doc.fileSize ? formatStorageSize(doc.fileSize) : '0 Bytes',
+            totalPages: 10,
+            description: doc.description || 'No description available.',
+            tags: [],
+            previewContent: doc.description,
+            url: `/api/documents/${doc.documentId}/preview`
+          }
+        })
+        setFiles(mappedFiles)
+
+        const mappedCollabs: ActiveCollaborator[] = (workspace.members || []).map((mem: any) => ({
+          id: String(mem.userId),
+          name: mem.fullName || mem.email || 'Member',
+          email: mem.email || '',
+          role: mem.role === 'OWNER' ? 'Owner' : (mem.role === 'COLLABORATOR' ? 'Editor' : 'View Only'),
+          avatarUrl: undefined
+        }))
+        setActiveCollaborators(mappedCollabs)
+      }
+    } catch (err) {
+      console.error("Failed to load workspace details", err)
+      toast.error(language === 'vi' ? 'Không thể tải chi tiết nhóm' : 'Failed to load workspace details')
+    }
+  }
+
+  useEffect(() => {
+    fetchWorkspaces()
+  }, [user])
+
+  useEffect(() => {
+    if (selectedWorkspaceId === 'all') {
+      fetchSharedFiles()
+      fetchCombinedCollaborators()
+    } else {
+      fetchWorkspaceDetails(selectedWorkspaceId)
+    }
+  }, [selectedWorkspaceId, user])
+
+  useEffect(() => {
+    let totalBytes = 0
+    files.forEach(f => {
+      let bytes = 0
+      const matches = f.size.match(/^([\d.]+)\s*([A-Za-z]+)/)
+      if (matches) {
+        const value = parseFloat(matches[1])
+        const unit = matches[2].toUpperCase()
+        if (unit === 'GB') bytes = value * 1024 * 1024 * 1024
+        else if (unit === 'MB') bytes = value * 1024 * 1024
+        else if (unit === 'KB') bytes = value * 1024
+        else bytes = value
+      }
+      totalBytes += bytes
+    })
+    const totalMb = Math.round((totalBytes / (1024 * 1024)) * 100) / 100
+    localStorage.setItem('aiStudyHubStorageUsedMb', totalMb.toString())
+    window.dispatchEvent(new Event('aiStudyHubUserChanged'))
+  }, [files])
 
   // Modals Visibility
   const [modals, setModals] = useState({
@@ -307,6 +399,7 @@ export function SharedFilesPage() {
     share: false,
     confirmDelete: false,
     addCollaborator: false,
+    createWorkspace: false,
   })
 
   // Workspace Configurations
@@ -323,64 +416,23 @@ export function SharedFilesPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
 
+  const handleUploadClick = () => {
+    if (selectedWorkspaceId === 'all') {
+      const msg = language === 'vi'
+        ? 'Vui lòng chọn một nhóm học tập ở góc trên bên trái trước khi tải lên tài liệu!'
+        : 'Please select a study group from the top-left dropdown before uploading documents!'
+      toast.error(msg)
+    } else {
+      setUploadModalOpen(true)
+    }
+  }
+
   // Report Document States
   const [reportDoc, setReportDoc] = useState<SharedFile | null>(null)
   const [reportReason, setReportReason] = useState('')
   const [isSubmittingReport, setIsSubmittingReport] = useState(false)
 
-  const [activeCollaborators, setActiveCollaborators] = useState<ActiveCollaborator[]>([
-    {
-      id: '1',
-      name: 'Sarah Jenkins',
-      email: 'sarah.jenkins@example.com',
-      role: 'Owner',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80'
-    },
-    {
-      id: '2',
-      name: 'David Kim',
-      email: 'david.kim@example.com',
-      role: 'Editor',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'
-    },
-    {
-      id: '3',
-      name: 'Emily Chen',
-      email: 'emily.chen@example.com',
-      role: 'View Only',
-      avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80'
-    },
-    {
-      id: '4',
-      name: 'Marcus Knight',
-      email: 'marcus@example.com',
-      role: 'Editor'
-    },
-    {
-      id: '5',
-      name: 'Emma Watson',
-      email: 'emma.watson@example.com',
-      role: 'Editor'
-    },
-    {
-      id: '6',
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      role: 'View Only'
-    },
-    {
-      id: '7',
-      name: 'Alex Chen',
-      email: 'alex.chen@example.com',
-      role: 'View Only'
-    },
-    {
-      id: '8',
-      name: 'Alex Rivera',
-      email: 'alex@example.com',
-      role: 'Owner'
-    }
-  ])
+  const [activeCollaborators, setActiveCollaborators] = useState<ActiveCollaborator[]>([])
 
   const handleUpdateCollaboratorRole = (id: string, newRole: 'Owner' | 'Editor' | 'View Only') => {
     setActiveCollaborators(prev =>
@@ -402,22 +454,42 @@ export function SharedFilesPage() {
     )
   }
 
-  const handleAddNewCollaborator = (name: string, email: string, role: 'Owner' | 'Editor' | 'View Only') => {
-    const newCollab: ActiveCollaborator = {
-      id: `collab-${Date.now()}`,
-      name,
-      email,
-      role
+  const handleAddNewCollaborator = async (name: string, email: string, role: 'Owner' | 'Editor' | 'View Only') => {
+    try {
+      if (selectedWorkspaceId && selectedWorkspaceId !== 'all') {
+        const apiRole = role === 'Editor' ? 'COLLABORATOR' : (role === 'Owner' ? 'OWNER' : 'VIEWER')
+        await apiClient.post(`/workspaces/${selectedWorkspaceId}/invite`, {
+          email,
+          role: apiRole,
+          inviterId: user?.id
+        })
+        const msg = language === 'vi'
+          ? `Đã gửi lời mời thành công đến ${email} với vai trò ${role}`
+          : `Invitation sent successfully to ${email} as ${role}`
+        toast.success(msg)
+        fetchWorkspaceDetails(selectedWorkspaceId)
+      } else {
+        const newCollab: ActiveCollaborator = {
+          id: `collab-${Date.now()}`,
+          name,
+          email,
+          role
+        }
+        setActiveCollaborators(prev => [...prev, newCollab])
+        const msg = language === 'vi'
+          ? `Đã thêm ${name} làm ${role}`
+          : (language === 'ja'
+            ? `${name}を${role}として追加しました`
+            : (language === 'ko'
+              ? `${name}님을 ${role}(으)로 추가했습니다`
+              : `Added ${name} as ${role}`))
+        toast.success(msg)
+      }
+    } catch (err: any) {
+      console.error('Failed to invite member:', err)
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to invite member'
+      toast.error(errorMsg)
     }
-    setActiveCollaborators(prev => [...prev, newCollab])
-    const msg = language === 'vi'
-      ? `Đã thêm ${name} làm ${role}`
-      : (language === 'ja'
-        ? `${name}を${role}として追加しました`
-        : (language === 'ko'
-          ? `${name}님을 ${role}(으)로 추가했습니다`
-          : `Added ${name} as ${role}`))
-    toast.success(msg)
   }
 
   const [peopleFilter, setPeopleFilter] = useState('All')
@@ -862,10 +934,24 @@ export function SharedFilesPage() {
     setModals(prev => ({ ...prev, permission: false }))
   }
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!selectedFile) return
-    setFiles(prev => prev.filter(f => f.id !== selectedFile.id))
-    toast.success(t.toasts.deleteSuccess)
+    if (selectedWorkspaceId !== 'all') {
+      try {
+        await apiClient.delete(
+          `/workspaces/${selectedWorkspaceId}/documents/${selectedFile.id}?userId=${user?.id}`
+        )
+        toast.success(t.toasts.deleteSuccess || 'Document removed from workspace successfully')
+        fetchWorkspaceDetails(selectedWorkspaceId)
+      } catch (err: any) {
+        console.error('Failed to remove document from workspace:', err)
+        const errMsg = err.response?.data?.message || err.message || 'Failed to delete file'
+        toast.error(errMsg)
+      }
+    } else {
+      setFiles(prev => prev.filter(f => f.id !== selectedFile.id))
+      toast.success(t.toasts.deleteSuccess)
+    }
     setSelectedFile(null)
     setViewingFile(null)
     setModals(prev => ({ ...prev, confirmDelete: false }))
@@ -952,7 +1038,10 @@ export function SharedFilesPage() {
 
     let matchesPeople = true
     if (peopleFilter !== 'All') {
-      matchesPeople = file.owner?.toLowerCase().includes(peopleFilter.toLowerCase()) || false
+      matchesPeople = 
+        file.owner?.toLowerCase().includes(peopleFilter.toLowerCase()) || 
+        file.ownerEmail?.toLowerCase() === peopleFilter.toLowerCase() || 
+        false
     }
 
     let matchesLastModified = true
@@ -1032,6 +1121,13 @@ export function SharedFilesPage() {
 
   // activeCollaborators state is now used instead of the static collaboratorsCountList
 
+  const peopleList = Array.from(
+    new Set([
+      ...files.map(f => f.ownerEmail).filter(Boolean),
+      ...activeCollaborators.map(c => c.email).filter(Boolean)
+    ])
+  ) as string[]
+
   return (
     <motion.div
       variants={pageContainerVariants}
@@ -1047,10 +1143,14 @@ export function SharedFilesPage() {
         >
           <motion.div variants={pageItemVariants}>
             <SharedWorkspaceHeader
-              onUploadClick={() => setUploadModalOpen(true)}
+              onUploadClick={handleUploadClick}
               onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
               onAIAnalyzeClick={handleAIAnalyze}
+              onCreateWorkspaceClick={() => setModals(prev => ({ ...prev, createWorkspace: true }))}
               isAnalyzing={isAnalyzing}
+              workspaces={workspaces}
+              selectedWorkspaceId={selectedWorkspaceId}
+              onSelectWorkspace={setSelectedWorkspaceId}
             />
           </motion.div>
 
@@ -1086,6 +1186,7 @@ export function SharedFilesPage() {
               onLastModifiedFilterChange={setLastModifiedFilter}
               sourceFilter={sourceFilter}
               onSourceFilterChange={setSourceFilter}
+              peopleList={peopleList}
             />
           </motion.div>
 
@@ -1100,6 +1201,8 @@ export function SharedFilesPage() {
               onSelectFile={handleSelectFile}
               onOpenFile={handleOpenFile}
               onStarToggle={handleStarToggle}
+              isWorkspaceEmpty={files.length === 0}
+              onUploadClick={handleUploadClick}
               onRename={(file) => {
                 setSelectedFile(file)
                 setModals(prev => ({ ...prev, rename: true }))
@@ -1165,8 +1268,8 @@ export function SharedFilesPage() {
       <QuotaDetailsModal
         isOpen={modals.quota}
         onClose={() => setModals(prev => ({ ...prev, quota: false }))}
-        usedGb={user?.plan === 'pro' ? 12.4 : 2.4}
-        totalGb={user?.plan === 'pro' ? env.PRO_STORAGE_LIMIT : env.FREE_STORAGE_LIMIT}
+        usedMb={getCurrentUserStorageSummary().usedMb}
+        totalMb={getCurrentUserStorageSummary().totalMb}
       />
 
       <CollaboratorsModal
@@ -1193,19 +1296,45 @@ export function SharedFilesPage() {
       <InviteModal
         isOpen={modals.invite}
         onClose={() => setModals(prev => ({ ...prev, invite: false }))}
-        onInviteSubmit={(email, role) => {
-          const msg = language === 'vi' ? `Đã gửi lời mời thành công đến ${email} với vai trò ${role}` : (language === 'ja' ? `${email}へ${role}として招待メールを正常に送信しました` : (language === 'ko' ? `${email}님에게 ${role}(으)로 초대를 성공적으로 보냈습니다` : `Invitation sent successfully to ${email} as ${role}`))
-          toast.success(msg)
-          setModals(prev => ({ ...prev, invite: false }))
+        defaultWorkspaceId={selectedWorkspaceId}
+        onInviteSubmit={async (email, role, workspaceId) => {
+          try {
+            const apiRole = role === 'Editor' ? 'COLLABORATOR' : 'VIEWER'
+            await apiClient.post(`/workspaces/${workspaceId}/invite`, {
+              email,
+              role: apiRole,
+              inviterId: user?.id
+            })
+            const msg = language === 'vi' 
+              ? `Đã gửi lời mời thành công đến ${email} với vai trò ${role}` 
+              : `Invitation sent successfully to ${email} as ${role}`
+            toast.success(msg)
+          } catch (err: any) {
+            console.error('Failed to invite member:', err)
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to invite member'
+            toast.error(errorMsg)
+          } finally {
+            setModals(prev => ({ ...prev, invite: false }))
+          }
+        }}
+      />
+
+      <CreateWorkspaceModal
+        isOpen={modals.createWorkspace}
+        onClose={() => setModals(prev => ({ ...prev, createWorkspace: false }))}
+        onSuccess={(newWs) => {
+          if (newWs) {
+            setWorkspaces(prev => [newWs, ...prev])
+            setSelectedWorkspaceId(newWs.id.toString())
+          }
         }}
       />
 
       <AIReportModal
         isOpen={modals.aiReport}
         onClose={() => setModals(prev => ({ ...prev, aiReport: false }))}
-        onOptimize={() => {
-          const msg = language === 'vi' ? 'Đã tối ưu hóa không gian làm việc AI thành công' : (language === 'ja' ? 'AIワークスペースの最適化に成功しました' : (language === 'ko' ? 'AI 워크스페이스가 성공적으로 최적화되었습니다' : 'AI Workspace optimized successfully'))
-          toast.success(msg)
+        onOptimized={() => {
+          fetchSharedFiles()
           setModals(prev => ({ ...prev, aiReport: false }))
         }}
       />
@@ -1350,10 +1479,36 @@ export function SharedFilesPage() {
       <SharedFilesUploadModal
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
-        onSave={(newFile) => {
-          setFiles(prev => [newFile, ...prev])
-          setSelectedFile(newFile)
-          toast.success(t.toasts?.uploadSuccess || 'File uploaded successfully')
+        onSave={async (newFile, rawFile, metadata) => {
+          if (rawFile && selectedWorkspaceId !== 'all') {
+            try {
+              const title = newFile.name.substring(0, newFile.name.lastIndexOf('.')) || newFile.name
+              const uploadedDoc = await documentService.uploadDocument(
+                rawFile,
+                title,
+                metadata?.description || '',
+                metadata?.subject || 'GENERAL',
+                'SHARED', // visibility
+                Number(user?.id || 1),
+                metadata?.tags || []
+              )
+              
+              await apiClient.post(
+                `/workspaces/${selectedWorkspaceId}/documents/${uploadedDoc.id}?userId=${user?.id}`
+              )
+              
+              toast.success(t.toasts?.uploadSuccess || 'File uploaded successfully')
+              fetchWorkspaceDetails(selectedWorkspaceId)
+            } catch (err: any) {
+              console.error('Failed to upload file to backend:', err)
+              const errMsg = err.response?.data?.message || err.message || 'Upload failed'
+              toast.error(errMsg)
+            }
+          } else {
+            setFiles(prev => [newFile, ...prev])
+            setSelectedFile(newFile)
+            toast.success(t.toasts?.uploadSuccess || 'File uploaded successfully')
+          }
         }}
       />
 
@@ -1443,22 +1598,15 @@ export function SharedFilesPage() {
                 onClick={async () => {
                   setIsSubmittingReport(true)
                   try {
-                    // Let's call the report submission logic:
-                    // 1. Create a reported ticket in localStorage
-                    const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
-                    localReports.push({
-                      id: `rep-${Date.now()}`,
-                      reportedFile: reportDoc.name,
+                    // Let's call the report submission logic via reportService
+                    await reportService.reportDocument({
                       documentId: reportDoc.id,
+                      reason: "Document violation report",
+                      details: reportReason.trim(),
+                      reportedFile: reportDoc.name,
                       reporterName: user?.name || 'Alex Rivera',
                       reporterEmail: user?.email || 'alex@example.com',
-                      reason: reportReason.trim(),
-                      reportedAt: new Date().toISOString()
                     })
-                    localStorage.setItem('aiStudyHubDocumentReports', JSON.stringify(localReports))
-
-                    // 2. Dispatch event so other components know if they're listening
-                    window.dispatchEvent(new Event('aiStudyHubDocumentReportsUpdated'))
 
                     // 3. Show beautiful notification
                     const successMsg = language === 'vi'

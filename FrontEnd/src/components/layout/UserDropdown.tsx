@@ -20,6 +20,10 @@ export function UserDropdown({ onClose, onLogoutClick, onChangeUserClick }: User
   const { profile } = useProfileStore()
   const toast = useToast()
   const { t } = useTranslation()
+  const rawAvatar = user?.email
+    ? (localStorage.getItem(`aiStudyHubUserAvatar:${user.email}`) || profile.avatarUrl)
+    : profile.avatarUrl
+  const dropdownAvatarUrl = (rawAvatar && rawAvatar !== '/logo.png') ? rawAvatar : undefined
 
   async function handleLogout() {
     try {
@@ -49,7 +53,13 @@ export function UserDropdown({ onClose, onLogoutClick, onChangeUserClick }: User
     >
       <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-3">
         <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#E8EEFF] dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-800 overflow-hidden">
-          <img src={profile.avatarUrl} alt="Avatar" referrerPolicy="no-referrer" className="w-8 h-8 object-cover rounded-full" />
+          {dropdownAvatarUrl ? (
+            <img src={dropdownAvatarUrl} alt="Avatar" referrerPolicy="no-referrer" className="w-10 h-10 object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+              {profile.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+            </div>
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 min-w-0">

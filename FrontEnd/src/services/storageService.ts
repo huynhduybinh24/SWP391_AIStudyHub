@@ -1,4 +1,38 @@
 import { apiClient } from '@/lib/axios'
+import { getStorageLimitByPlan } from '@/constants/storagePlans'
+
+export interface StorageSummary {
+  plan: string
+  totalMb: number
+  usedMb: number
+  remainingMb: number
+  percentage: number
+}
+
+export function getCurrentUserStorageSummary(): StorageSummary {
+  let plan = 'free'
+  let usedMb = 0
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('aiStudyHubCurrentUser')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        plan = (parsed?.plan ?? 'free').toLowerCase()
+      }
+      const storedUsed = localStorage.getItem('aiStudyHubStorageUsedMb')
+      if (storedUsed) {
+        usedMb = parseFloat(storedUsed)
+      }
+    } catch (_) {}
+  }
+
+  const totalMb = getStorageLimitByPlan(plan)
+  const remainingMb = Math.max(totalMb - usedMb, 0)
+  const percentage = Math.min(Math.round((usedMb / totalMb) * 100), 100)
+
+  return { plan, totalMb, usedMb, remainingMb, percentage }
+}
 
 export interface StorageUsage {
   userId: number
@@ -41,6 +75,16 @@ export const storageService = {
 
   async getStorageAnalytics(userId: number): Promise<StorageAnalytics> {
     const response = await apiClient.get<StorageAnalytics>(`/storage/analytics?userId=${userId}`)
+    return response.data
+  },
+
+  async getStorageOverview(userId: number): Promise<any> {
+    const response = await apiClient.get(`/storage/overview?userId=${userId}`)
+    return response.data
+  },
+
+  async getRecentUploads(userId: number): Promise<any[]> {
+    const response = await apiClient.get(`/storage/recent-uploads?userId=${userId}`)
     return response.data
   },
 

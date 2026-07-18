@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { logActivity } from '@/services/activityLogService'
 import { aiService } from '@/services/aiService'
 import type { AiSummaryResponse, FlashcardResponse, QuizQuestionResponse } from '@/services/aiService'
+import { useAuthStore } from '@/stores/authStore'
+import { documentService } from '@/services/documentService'
+import { useSubjects } from '@/hooks/useSubjects'
 import {
   X,
   Send,
@@ -16,12 +19,15 @@ import {
   Image as ImageIcon,
   FolderDown,
   HardDrive,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/context/LanguageContext'
+import { apiClient } from '@/lib/axios'
 
 // Types
 interface DocumentItem {
@@ -32,10 +38,12 @@ interface DocumentItem {
   uploadedDateObj: Date
   size: string
   sizeKb: number
-  subject: 'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL' | 'NEUROSCIENCE' | 'PSYCHOLOGY'
+  subject: string
   status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
   essential?: boolean
+  ownerName?: string
+  ownerEmail?: string
 }
 
 interface SubjectContent {
@@ -44,8 +52,94 @@ interface SubjectContent {
   flashcards: Array<{ q: string; a: string }>
 }
 
+interface FptSubjectInfo {
+  id: string
+  title: string
+  courseCode: string
+  semester: string
+  majors: ('SE' | 'AI' | 'BA')[]
+}
+
+const FPT_SUBJECTS: FptSubjectInfo[] = [
+  // Semester 1 (K1)
+  { id: 'PRF192', title: 'Programming Fundamentals', courseCode: 'PRF192', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'MAE101', title: 'Mathematics for Engineering', courseCode: 'MAE101', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'CEA201', title: 'Computer Organization', courseCode: 'CEA201', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'CSI104', title: 'Introduction to Computer Science', courseCode: 'CSI104', semester: 'K1', majors: ['SE', 'AI'] },
+  { id: 'MGT103', title: 'Introduction to Management', courseCode: 'MGT103', semester: 'K1', majors: ['BA'] },
+  { id: 'ECO111', title: 'Microeconomics', courseCode: 'ECO111', semester: 'K1', majors: ['BA'] },
+  { id: 'FMA101', title: 'Financial Mathematics', courseCode: 'FMA101', semester: 'K1', majors: ['BA'] },
+
+  // Semester 2 (K2)
+  { id: 'PRO192', title: 'Object-Oriented Programming', courseCode: 'PRO192', semester: 'K2', majors: ['SE', 'AI'] },
+  { id: 'MAD101', title: 'Discrete Mathematics', courseCode: 'MAD101', semester: 'K2', majors: ['SE', 'AI'] },
+  { id: 'OSG202', title: 'Operating Systems', courseCode: 'OSG202', semester: 'K2', majors: ['SE', 'AI'] },
+  { id: 'SSG104', title: 'Communication Skills', courseCode: 'SSG104', semester: 'K2', majors: ['SE', 'AI', 'BA'] },
+  { id: 'MKT101', title: 'Basic Marketing', courseCode: 'MKT101', semester: 'K2', majors: ['BA'] },
+  { id: 'ECO121', title: 'Macroeconomics', courseCode: 'ECO121', semester: 'K2', majors: ['BA'] },
+  { id: 'AMG111', title: 'Art Management', courseCode: 'AMG111', semester: 'K2', majors: ['BA'] },
+
+  // Semester 3 (K3)
+  { id: 'CSD201', title: 'Data Structures and Algorithms', courseCode: 'CSD201', semester: 'K3', majors: ['SE', 'AI'] },
+  { id: 'DBI202', title: 'Database Systems', courseCode: 'DBI202', semester: 'K3', majors: ['SE', 'AI', 'BA'] },
+  { id: 'LAB211', title: 'OOP Java Lab', courseCode: 'LAB211', semester: 'K3', majors: ['SE'] },
+  { id: 'AIL302M', title: 'Machine Learning', courseCode: 'AIL302m', semester: 'K3', majors: ['AI'] },
+  { id: 'ACC101', title: 'Principles of Accounting', courseCode: 'ACC101', semester: 'K3', majors: ['BA'] },
+  { id: 'FIN201', title: 'Corporate Finance', courseCode: 'FIN201', semester: 'K3', majors: ['BA'] },
+  { id: 'BUL201', title: 'Business Law', courseCode: 'BUL201', semester: 'K3', majors: ['BA'] },
+
+  // Semester 4 (K4)
+  { id: 'PRN211', title: 'Basic Cross-Platform Application (.NET)', courseCode: 'PRN211', semester: 'K4', majors: ['SE'] },
+  { id: 'SWE201', title: 'Introduction to Software Engineering', courseCode: 'SWE201', semester: 'K4', majors: ['SE'] },
+  { id: 'JPD113', title: 'Japanese Language 1', courseCode: 'JPD113', semester: 'K4', majors: ['SE', 'AI'] },
+  { id: 'AIP301', title: 'Artificial Intelligence Project', courseCode: 'AIP301', semester: 'K4', majors: ['AI'] },
+  { id: 'MTH202', title: 'Probability and Statistics', courseCode: 'MTH202', semester: 'K4', majors: ['SE', 'AI'] },
+  { id: 'HRM201', title: 'Human Resource Management', courseCode: 'HRM201', semester: 'K4', majors: ['BA'] },
+  { id: 'OBH201', title: 'Organizational Behavior', courseCode: 'OBH201', semester: 'K4', majors: ['BA'] },
+  { id: 'MRF301', title: 'Marketing Research', courseCode: 'MRF301', semester: 'K4', majors: ['BA'] },
+
+  // Semester 5 (K5)
+  { id: 'SWP391', title: 'Software Development Project', courseCode: 'SWP391', semester: 'K5', majors: ['SE', 'AI'] },
+  { id: 'SWD392', title: 'Software Architecture and Design', courseCode: 'SWD392', semester: 'K5', majors: ['SE'] },
+  { id: 'SWT301', title: 'Software Testing', courseCode: 'SWT301', semester: 'K5', majors: ['SE'] },
+  { id: 'DLN301', title: 'Deep Learning', courseCode: 'DLN301', semester: 'K5', majors: ['AI'] },
+  { id: 'BIS301', title: 'Business Information Systems', courseCode: 'BIS301', semester: 'K5', majors: ['BA'] },
+  { id: 'ENT301', title: 'Entrepreneurship', courseCode: 'ENT301', semester: 'K5', majors: ['SE', 'AI', 'BA'] },
+  { id: 'POM201', title: 'Production and Operations Management', courseCode: 'POM201', semester: 'K5', majors: ['BA'] },
+
+  // Semester 6 (K6)
+  { id: 'OJT202', title: 'On-the-Job Training (OJT)', courseCode: 'OJT202', semester: 'K6', majors: ['SE', 'AI', 'BA'] },
+
+  // Semester 7 (K7)
+  { id: 'PRM392', title: 'Mobile Programming', courseCode: 'PRM392', semester: 'K7', majors: ['SE', 'AI'] },
+  { id: 'PRN221', title: 'Advanced Cross-Platform Application (.NET)', courseCode: 'PRN221', semester: 'K7', majors: ['SE'] },
+  { id: 'WDP301', title: 'Web Development Project', courseCode: 'WDP301', semester: 'K7', majors: ['SE'] },
+  { id: 'NLP301', title: 'Natural Language Processing', courseCode: 'NLP301', semester: 'K7', majors: ['AI'] },
+  { id: 'CVP301', title: 'Computer Vision Project', courseCode: 'CVP301', semester: 'K7', majors: ['AI'] },
+  { id: 'IBM301', title: 'International Business Management', courseCode: 'IBM301', semester: 'K7', majors: ['BA'] },
+  { id: 'SCM301', title: 'Supply Chain Management', courseCode: 'SCM301', semester: 'K7', majors: ['BA'] },
+  { id: 'BRM301', title: 'Business Research Methods', courseCode: 'BRM301', semester: 'K7', majors: ['BA'] },
+
+  // Semester 8 (K8)
+  { id: 'SEP490', title: 'Capstone Project Preparation (SE)', courseCode: 'SEP490', semester: 'K8', majors: ['SE'] },
+  { id: 'CAP490', title: 'Capstone Project Preparation (AI)', courseCode: 'CAP490', semester: 'K8', majors: ['AI'] },
+  { id: 'BAP490', title: 'Capstone Project Preparation (BA)', courseCode: 'BAP490', semester: 'K8', majors: ['BA'] },
+  { id: 'EXE101', title: 'Experiential Entrepreneurship 1', courseCode: 'EXE101', semester: 'K8', majors: ['SE', 'AI', 'BA'] },
+  { id: 'IAS301', title: 'Information Assurance & Security', courseCode: 'IAS301', semester: 'K8', majors: ['SE'] },
+  { id: 'BDA301', title: 'Big Data Analytics', courseCode: 'BDA301', semester: 'K8', majors: ['AI'] },
+  { id: 'SMA301', title: 'Strategic Management', courseCode: 'SMA301', semester: 'K8', majors: ['BA'] },
+
+  // Semester 9 (K9)
+  { id: 'SEP490_DEF', title: 'Capstone Project Graduation (SE)', courseCode: 'SEP490', semester: 'K9', majors: ['SE'] },
+  { id: 'CAP490_DEF', title: 'Capstone Project Graduation (AI)', courseCode: 'CAP490', semester: 'K9', majors: ['AI'] },
+  { id: 'BAP490_DEF', title: 'Capstone Project Graduation (BA)', courseCode: 'BAP490', semester: 'K9', majors: ['BA'] },
+  { id: 'EXE201', title: 'Experiential Entrepreneurship 2', courseCode: 'EXE201', semester: 'K9', majors: ['SE', 'AI', 'BA'] },
+  { id: 'PMG201', title: 'Project Management', courseCode: 'PMG201', semester: 'K9', majors: ['SE', 'AI'] },
+  { id: 'EBU301', title: 'E-Business', courseCode: 'EBU301', semester: 'K9', majors: ['BA'] }
+]
+
 // Initial Mock Data
-const INITIAL_DOCUMENTS: DocumentItem[] = [
+export const INITIAL_DOCUMENTS: DocumentItem[] = []; const UNUSED_DOCUMENTS: DocumentItem[] = [
   // Existing files
   {
     id: 'doc-design-patterns',
@@ -695,25 +789,12 @@ const QUIZ_QUESTIONS = [
 ]
 
 export function DocumentsPage() {
-  const [documents, setDocuments] = useState<DocumentItem[]>(() => {
-    const saved = localStorage.getItem('ai_study_hub_documents')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as DocumentItem[]
-        return parsed.map(doc => ({
-          ...doc,
-          uploadedDateObj: new Date(doc.uploadedDateObj)
-        }))
-      } catch (e) {
-        return INITIAL_DOCUMENTS
-      }
-    }
-    return INITIAL_DOCUMENTS
-  })
-
-  useEffect(() => {
-    localStorage.setItem('ai_study_hub_documents', JSON.stringify(documents))
-  }, [documents])
+  const { language, t } = useTranslation()
+  const navigate = useNavigate()
+  const user = useAuthStore(state => state.user)
+  const userId = Number(user?.id || 1)
+  const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const { subjects: dynamicSubjects, refreshSubjects } = useSubjects()
 
   // Quiz Modal States
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false)
@@ -722,15 +803,92 @@ export function DocumentsPage() {
   const [quizScore, setQuizScore] = useState(0)
   const [showQuizResults, setShowQuizResults] = useState(false)
 
+  // Practice Quiz Modal States & Handlers
+  const [selectedDocForQuiz, setSelectedDocForQuiz] = useState<DocumentItem | null>(null)
+  const [quizQuestionsForModal, setQuizQuestionsForModal] = useState<QuizQuestionResponse[]>([])
+  const [isLoadingQuizForModal, setIsLoadingQuizForModal] = useState(false)
+  const [isModifyingQuizForModal, setIsModifyingQuizForModal] = useState(false)
+  const [quizPromptForModal, setQuizPromptForModal] = useState('')
+
+  const handleOpenQuizModal = async (doc?: DocumentItem) => {
+    const targetDoc = doc || documents[0]
+    if (!targetDoc) {
+      showToast('Vui lòng tải lên tài liệu trước khi thực hành trắc nghiệm!')
+      return
+    }
+    setSelectedDocForQuiz(targetDoc)
+    setCurrentQuizQuestion(0)
+    setSelectedQuizAnswer(null)
+    setQuizScore(0)
+    setShowQuizResults(false)
+    setIsQuizModalOpen(true)
+    setIsLoadingQuizForModal(true)
+    
+    try {
+      let data = await aiService.getQuiz(targetDoc.id)
+      if (!data || data.length === 0) {
+        data = await aiService.generateQuiz(targetDoc.id)
+      }
+      setQuizQuestionsForModal(data)
+    } catch (e) {
+      console.error(e)
+      setQuizQuestionsForModal([])
+    } finally {
+      setIsLoadingQuizForModal(false)
+    }
+  }
+
+  const handleModifyQuizForModalWithPrompt = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedDocForQuiz || !quizPromptForModal.trim()) return
+    setIsModifyingQuizForModal(true)
+    try {
+      const updatedQuiz = await aiService.modifyQuizWithAi(selectedDocForQuiz.id, quizPromptForModal)
+      setQuizQuestionsForModal(updatedQuiz)
+      setQuizPromptForModal('')
+      setCurrentQuizQuestion(0)
+      setSelectedQuizAnswer(null)
+      setQuizScore(0)
+      setShowQuizResults(false)
+      showToast('Bộ đề trắc nghiệm đã được cập nhật bởi AI!')
+    } catch (err) {
+      console.error(err)
+      showToast('Không thể hiệu chỉnh bộ đề. Vui lòng thử lại!')
+    } finally {
+      setIsModifyingQuizForModal(false)
+    }
+  }
+
   // Upload Modal States
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false)
+  const [uploadedSubjectKey, setUploadedSubjectKey] = useState('')
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadStepMsg, setUploadStepMsg] = useState('')
   const [newDocTitle, setNewDocTitle] = useState('')
-  const [newDocSubject, setNewDocSubject] = useState<'MATHEMATICS' | 'BIOLOGY' | 'PHYSICS' | 'COMPSCI' | 'PHILOSOPHY' | 'ECONOMICS' | 'GENERAL'>('GENERAL')
+  const [uploadMajor, setUploadMajor] = useState<'SE' | 'AI' | 'BA'>('SE')
+  const [uploadSemester, setUploadSemester] = useState<string>('K1')
+  const [newDocSubject, setNewDocSubject] = useState<string>('PRF192')
   const [newDocType, setNewDocType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [hasUploadError, setHasUploadError] = useState(false)
+
+  // Reset newDocSubject when uploadMajor, uploadSemester, or dynamicSubjects changes
+  useEffect(() => {
+    if (dynamicSubjects && dynamicSubjects.length > 0) {
+      const filtered = dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester)
+      if (filtered.length > 0) {
+        if (!filtered.some(s => s.id === newDocSubject)) {
+          setNewDocSubject(filtered[0].id)
+        }
+      } else {
+        if (newDocSubject !== 'GENERAL') {
+          setNewDocSubject('GENERAL')
+        }
+      }
+    }
+  }, [uploadMajor, uploadSemester, dynamicSubjects, newDocSubject])
 
   // Preview Modal States
   const [activePreviewDoc, setActivePreviewDoc] = useState<DocumentItem | null>(null)
@@ -744,11 +902,16 @@ export function DocumentsPage() {
   const [isModifyingQuiz, setIsModifyingQuiz] = useState(false)
   const [quizPrompt, setQuizPrompt] = useState('')
 
+  const [previewFileUrl, setPreviewFileUrl] = useState<string | null>(null)
+  const [previewTextContent, setPreviewTextContent] = useState<string>('')
+  const [loadingPreviewFile, setLoadingPreviewFile] = useState(false)
+
   // Quick Chat drawer States
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false)
   const [selectedDocForChat, setSelectedDocForChat] = useState<DocumentItem | null>(null)
   const [documentChats, setDocumentChats] = useState<Record<string, Array<{ sender: 'user' | 'ai'; text: string; time: string }>>>({})
   const [newChatMessage, setNewChatMessage] = useState('')
+  const [activeChatSessionId, setActiveChatSessionId] = useState<number | null>(null)
 
   // Toast Notification States
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -777,124 +940,241 @@ export function DocumentsPage() {
     }
   }, [isToastVisible])
 
-  // simulated upload
-  const handleUploadSubmit = (e: React.FormEvent) => {
+  // Mapping functions helper for backend DocumentResponse -> DocumentItem
+  const mapMimeOrExtensionToType = (fileType: string, fileName: string): 'pdf' | 'word' | 'image' | 'text' | 'slides' => {
+    const nameLower = fileName.toLowerCase()
+    if (nameLower.endsWith('.pdf')) return 'pdf'
+    if (nameLower.endsWith('.doc') || nameLower.endsWith('.docx')) return 'word'
+    if (nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx')) return 'slides'
+    if (nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg')) return 'image'
+    if (nameLower.endsWith('.txt')) return 'text'
+    
+    const typeLower = (fileType || '').toLowerCase()
+    if (typeLower.includes('pdf')) return 'pdf'
+    if (typeLower.includes('word') || typeLower.includes('msword') || typeLower.includes('officedocument.wordprocessingml')) return 'word'
+    if (typeLower.includes('powerpoint') || typeLower.includes('officedocument.presentationml')) return 'slides'
+    if (typeLower.includes('image') || typeLower.includes('png') || typeLower.includes('jpeg')) return 'image'
+    return 'text'
+  }
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  }
+
+  const mapBackendDocToItem = (doc: any): DocumentItem => {
+    return {
+      id: String(doc.id),
+      title: doc.title,
+      fileName: doc.fileName || doc.originalFileName || 'Untitled',
+      uploadedAt: doc.createdAt ? `Uploaded ${new Date(doc.createdAt).toLocaleDateString('vi-VN')}` : 'Uploaded Just Now',
+      uploadedDateObj: doc.createdAt ? new Date(doc.createdAt) : new Date(),
+      size: doc.fileSize ? formatBytes(doc.fileSize) : '0 Bytes',
+      sizeKb: doc.fileSize ? Math.round(doc.fileSize / 1024) : 0,
+      subject: (doc.subject || 'GENERAL') as any,
+      status: 'ANALYZED',
+      type: mapMimeOrExtensionToType(doc.fileType, doc.fileName || doc.originalFileName || ''),
+      ownerName: doc.ownerName,
+      ownerEmail: doc.ownerEmail
+    }
+  }
+
+  const fetchDocuments = async () => {
+    try {
+      const backendDocs = await documentService.getAllDocuments(userId)
+      if (backendDocs) {
+        setDocuments(backendDocs.map(mapBackendDocToItem))
+      }
+    } catch (e) {
+      console.error('Failed to load documents from backend:', e)
+      showToast('Không thể tải danh sách tài liệu từ máy chủ.')
+    }
+  }
+
+  useEffect(() => {
+    fetchDocuments()
+  }, [userId])
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedFile && !newDocTitle) return
+    if (!selectedFile) {
+      showToast('Vui lòng chọn một tệp tin để tải lên!')
+      return
+    }
 
     setIsUploading(true)
     setUploadProgress(5)
     setUploadStepMsg('Establishing secure connection...')
 
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev < 40) {
-          setUploadStepMsg('Uploading file chunk...')
-          return prev + Math.floor(Math.random() * 15) + 5
-        } else if (prev < 70) {
-          setUploadStepMsg('Processing text extractions...')
-          return prev + Math.floor(Math.random() * 10) + 5
-        } else if (prev < 95) {
-          setUploadStepMsg('Running AI intelligence indexing...')
-          return prev + Math.floor(Math.random() * 5) + 2
+    // Start progress simulator that stops at 90%
+    let progressVal = 5
+    const progressInterval = setInterval(() => {
+      progressVal += Math.floor(Math.random() * 10) + 2
+      if (progressVal >= 90) {
+        progressVal = 90
+        setUploadStepMsg('Waiting for AI analysis to complete...')
+        clearInterval(progressInterval)
+      } else {
+        if (progressVal < 35) {
+          setUploadStepMsg('Uploading file to cloud storage...')
+        } else if (progressVal < 65) {
+          setUploadStepMsg('Extracting text content...')
         } else {
-          clearInterval(interval)
-          setUploadStepMsg('Summarizing & building instant flashcards...')
-          
-          setTimeout(() => {
-            const finalTitle = newDocTitle || selectedFile?.name.split('.')[0] || 'Untitled Study Material'
-            const finalFileName = selectedFile?.name || `${finalTitle.toLowerCase().replace(/\s+/g, '_')}.${newDocType}`
-            const finalSize = selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB` : '1.5 MB'
-            const finalSizeKb = selectedFile ? Math.round(selectedFile.size / 1024) : 1536
-
-            const newDoc: DocumentItem = {
-              id: `doc-${Date.now()}`,
-              title: finalTitle,
-              fileName: finalFileName,
-              uploadedAt: 'Uploaded Just Now',
-              uploadedDateObj: new Date(),
-              size: finalSize,
-              sizeKb: finalSizeKb,
-              subject: newDocSubject,
-              status: 'ANALYZED',
-              type: newDocType,
-            }
-
-            setDocuments((prev) => [newDoc, ...prev])
-            setIsUploading(false)
-            setUploadProgress(0)
-            setIsUploadModalOpen(false)
-
-            // Log document upload
-            logActivity({
-              eventKey: 'documentUploaded',
-              category: 'moderation',
-              status: 'success',
-              eventTextEn: 'Document uploaded',
-              eventTextVi: 'Tải lên tài liệu',
-              detailsTextEn: `Uploaded document '${finalTitle}' (${finalSize}) successfully.`,
-              detailsTextVi: `Tải lên thành công tài liệu '${finalTitle}' (${finalSize}).`
-            })
-
-            // Log AI summary generated
-            logActivity({
-              eventKey: 'aiSummaryGenerated',
-              category: 'ai-audit',
-              status: 'success',
-              eventTextEn: 'AI Summary generated',
-              eventTextVi: 'Tạo tóm tắt AI',
-              detailsTextEn: `Successfully generated AI Summary for document '${finalTitle}'.`,
-              detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
-            })
-
-            showToast(`Tài liệu "${finalTitle || finalFileName}" tải lên và phân tích AI thành công!`)
-            
-            setNewDocTitle('')
-            setNewDocSubject('GENERAL')
-            setNewDocType('pdf')
-            setSelectedFile(null)
-          }, 1200)
-
-          return 100
+          setUploadStepMsg('Running AI semantic analysis...')
         }
-      })
-    }, 250)
+      }
+      setUploadProgress(progressVal)
+    }, 150)
+
+    try {
+      const finalTitle = newDocTitle || selectedFile.name.split('.')[0] || 'Untitled Study Material'
+      const response = await documentService.uploadDocument(
+        selectedFile,
+        finalTitle,
+        '', // description
+        newDocSubject,
+        'PRIVATE',
+        userId,
+        [] // tags
+      )
+
+      clearInterval(progressInterval)
+      setUploadProgress(100)
+      setUploadStepMsg('Finished!')
+
+      setTimeout(async () => {
+        setIsUploading(false)
+        setUploadProgress(0)
+        setIsUploadModalOpen(false)
+
+        // Log document upload
+        logActivity({
+          eventKey: 'documentUploaded',
+          category: 'moderation',
+          status: 'success',
+          eventTextEn: 'Document uploaded',
+          eventTextVi: 'Tải lên tài liệu',
+          detailsTextEn: `Uploaded document '${finalTitle}' successfully.`,
+          detailsTextVi: `Tải lên thành công tài liệu '${finalTitle}'.`
+        })
+
+        // Log AI summary generated
+        logActivity({
+          eventKey: 'aiSummaryGenerated',
+          category: 'ai-audit',
+          status: 'success',
+          eventTextEn: 'AI Summary generated',
+          eventTextVi: 'Tạo tóm tắt AI',
+          detailsTextEn: `Successfully generated AI Summary for document '${finalTitle}'.`,
+          detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
+        })
+
+        showToast(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.')
+        
+        const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
+        setUploadedSubjectKey(finalSubjectKey)
+        setApprovalModalOpen(true)
+
+        setNewDocTitle('')
+        setUploadMajor('SE')
+        setUploadSemester('K1')
+        setNewDocSubject('PRF192')
+        setNewDocType('pdf')
+        setSelectedFile(null)
+
+        // Refresh documents from backend
+        try {
+          await fetchDocuments()
+        } catch (err) {
+          console.error('Failed to refresh documents:', err)
+          const newDocItem = mapBackendDocToItem(response)
+          if (response.moderationStatus === 'APPROVED') {
+            setDocuments((prev) => [newDocItem, ...prev])
+          }
+        }
+      }, 500)
+    } catch (error) {
+      clearInterval(progressInterval)
+      setIsUploading(false)
+      setUploadProgress(0)
+      console.error('Failed to upload document:', error)
+      showToast('Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!')
+    }
   }
 
   // Delete Action
-  const handleDeleteDocument = (id: string) => {
+  const handleDeleteDocument = async (id: string) => {
     const targetDoc = documents.find(d => d.id === id)
     if (targetDoc) {
-      setDocuments((prev) => prev.filter((d) => d.id !== id))
-      
-      // Log document deletion activity
-      logActivity({
-        eventKey: 'documentDeleted',
-        category: 'moderation',
-        status: 'success',
-        eventTextEn: 'Document deleted',
-        eventTextVi: 'Xóa tài liệu',
-        detailsTextEn: `Permanently deleted document '${targetDoc.title || targetDoc.fileName}' from storage.`,
-        detailsTextVi: `Đã xóa vĩnh viễn tài liệu '${targetDoc.title || targetDoc.fileName}' khỏi kho lưu trữ.`
-      })
+      try {
+        await documentService.deleteDocument(id)
+        setDocuments((prev) => prev.filter((d) => d.id !== id))
+        
+        // Log document deletion activity
+        logActivity({
+          eventKey: 'documentDeleted',
+          category: 'moderation',
+          status: 'success',
+          eventTextEn: 'Document deleted',
+          eventTextVi: 'Xóa tài liệu',
+          detailsTextEn: `Permanently deleted document '${targetDoc.title || targetDoc.fileName}' from storage.`,
+          detailsTextVi: `Đã xóa vĩnh viễn tài liệu '${targetDoc.title || targetDoc.fileName}' khỏi kho lưu trữ.`
+        })
 
-      showToast(`Đã xóa tài liệu "${targetDoc.title || targetDoc.fileName}"`)
+        showToast(`Đã xóa tài liệu "${targetDoc.title || targetDoc.fileName}"`)
+      } catch (e) {
+        console.error('Failed to delete document:', e)
+        showToast('Có lỗi xảy ra khi xóa tài liệu. Vui lòng thử lại!')
+      }
     }
   }
 
   // Open Chat Drawer
-  const handleOpenChat = (doc: DocumentItem) => {
+  const handleOpenChat = async (doc: DocumentItem) => {
     setSelectedDocForChat(doc)
     setIsChatDrawerOpen(true)
-
-    if (!documentChats[doc.id]) {
-      setDocumentChats((prev) => ({
+    
+    try {
+      const session = await aiService.createOrGetChatSession([Number(doc.id)], Number(userId))
+      setActiveChatSessionId(session.id)
+      
+      const history = await aiService.getChatHistory(session.id)
+      if (history && history.length > 0) {
+        const mappedMsgs = history.map(msg => ({
+          sender: msg.sender.toLowerCase() === 'user' ? 'user' as const : 'ai' as const,
+          text: msg.messageText,
+          time: new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }))
+        setDocumentChats(prev => ({
+          ...prev,
+          [doc.id]: mappedMsgs
+        }))
+      } else {
+        // seed welcome message
+        setDocumentChats(prev => ({
+          ...prev,
+          [doc.id]: [
+            {
+              sender: 'ai' as const,
+              text: `Xin chào! Tôi là Trợ lý học tập AI. Tôi đã phân tích hoàn chỉnh tài liệu "${doc.title || doc.fileName}" (${doc.subject}).\n\nBạn có muốn tôi tóm tắt 3 ý cốt lõi, tạo bộ câu hỏi trắc nghiệm ôn tập hay giải đáp cụ thể nội dung nào không?`,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to load chat history:', err)
+      // seed welcome message fallback
+      setDocumentChats(prev => ({
         ...prev,
         [doc.id]: [
           {
-            sender: 'ai',
+            sender: 'ai' as const,
             text: `Xin chào! Tôi là Trợ lý học tập AI. Tôi đã phân tích hoàn chỉnh tài liệu "${doc.title || doc.fileName}" (${doc.subject}).\n\nBạn có muốn tôi tóm tắt 3 ý cốt lõi, tạo bộ câu hỏi trắc nghiệm ôn tập hay giải đáp cụ thể nội dung nào không?`,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         ]
       }))
@@ -902,7 +1182,7 @@ export function DocumentsPage() {
   }
 
   // Chat message send
-  const handleSendChatMessage = (e: React.FormEvent, customText?: string) => {
+  const handleSendChatMessage = async (e: React.FormEvent, customText?: string) => {
     if (e) e.preventDefault()
     
     const textToSend = customText || newChatMessage
@@ -932,55 +1212,60 @@ export function DocumentsPage() {
 
     if (!customText) setNewChatMessage('')
 
-    setTimeout(() => {
-      let aiText = `Dựa vào tài liệu "${selectedDocForChat.title || selectedDocForChat.fileName}", `
-      const lowerText = textToSend.toLowerCase()
-
-      if (lowerText.includes('tóm tắt') || lowerText.includes('summarize')) {
-        const db = getDocContent(selectedDocForChat)
-        aiText += `tôi xin tóm tắt các ý chính như sau:\n\n` + db.summaryBullets.map((bullet) => `• ${bullet}`).join('\n')
-      } else if (lowerText.includes('flashcard') || lowerText.includes('thẻ')) {
-        const db = getDocContent(selectedDocForChat)
-        aiText += `tôi đã tạo nhanh các flashcard ôn tập sau:\n\n` + db.flashcards.map((fc, idx) => `Thẻ ${idx+1}:\n- Câu hỏi: ${fc.q}\n- Trả lời: ${fc.a}`).join('\n\n')
-      } else if (lowerText.includes('trắc nghiệm') || lowerText.includes('đố') || lowerText.includes('quiz')) {
-        aiText += `đây là 1 câu hỏi ôn tập nhanh cho bạn:\n\nCâu hỏi: Đâu là khái niệm cốt lõi được định nghĩa ở mục 1.1 của tài liệu này?\n\n*Gợi ý*: Trả lời trực tiếp để tôi kiểm tra xem bạn đã nắm vững kiến thức chưa!`
-      } else {
-        aiText += `tôi ghi nhận câu hỏi về "${textToSend}". Đây là chủ đề cốt lõi thuộc phần nghiên cứu chuyên ngành ${selectedDocForChat.subject.toLowerCase()}.\n\nTheo dữ liệu phân tích, nội dung này liên quan chặt chẽ đến phương pháp luận tổng quát ở chương đầu. Bạn cần tôi trích xuất thêm chi tiết ở mục nào không?`
+    try {
+      let sessionId = activeChatSessionId
+      if (!sessionId) {
+        const session = await aiService.createOrGetChatSession([Number(selectedDocForChat.id)], Number(userId))
+        sessionId = session.id
+        setActiveChatSessionId(session.id)
       }
-
+      
+      const reply = await aiService.sendMessage(sessionId, textToSend)
+      
       const aiMsg = {
         sender: 'ai' as const,
-        text: aiText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: reply.messageText,
+        time: new Date(reply.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }
 
       setDocumentChats((prev) => ({
         ...prev,
         [selectedDocForChat.id]: [...(prev[selectedDocForChat.id] || []), aiMsg]
       }))
-    }, 900)
+    } catch (err) {
+      console.error('Failed to send chat message:', err)
+      const errorMsg = {
+        sender: 'ai' as const,
+        text: 'Xin lỗi, tôi gặp sự cố khi xử lý câu hỏi của bạn. Vui lòng thử lại sau!',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }
+      setDocumentChats((prev) => ({
+        ...prev,
+        [selectedDocForChat.id]: [...(prev[selectedDocForChat.id] || []), errorMsg]
+      }))
+    }
   }
 
   // Download Action
-  const handleDownloadFile = (doc: DocumentItem) => {
+  const handleDownloadFile = async (doc: DocumentItem) => {
     showToast(`Đang chuẩn bị tải xuống: ${doc.fileName}...`)
 
-    setTimeout(() => {
-      const db = getDocContent(doc)
-      const textContent = `=== LUMIEDU - WORKSPACE DOCUMENT ===\nDocument ID: ${doc.id}\nTitle: ${doc.title || doc.fileName}\nSubject: ${doc.subject}\nFile Size: ${doc.size}\nUpload Info: ${doc.uploadedAt}\n\n=== DOCUMENT PREVIEW ===\n${db.previewText}\n\n=== AI GENERATED SUMMARY ===\n${db.summaryBullets.join('\n')}\n`
-      
-      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' })
+    try {
+      const blob = await documentService.downloadDocument(doc.id, userId)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = doc.fileName.replace(/\.[^/.]+$/, "") + "_AI_Summary.txt"
+      a.download = doc.fileName
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
       
       showToast(`Tải xuống thành công tệp: ${doc.fileName}`)
-    }, 1000)
+    } catch (e) {
+      console.error('Failed to download document:', e)
+      showToast('Có lỗi xảy ra khi tải tài liệu. Vui lòng thử lại!')
+    }
   }
 
   // Open Preview Modal
@@ -1074,6 +1359,53 @@ export function DocumentsPage() {
     loadDocDetails()
   }, [activePreviewDoc])
 
+  // Automatically fetch PDF/image blob or text preview when activePreviewDoc is set
+  useEffect(() => {
+    if (!activePreviewDoc) {
+      if (previewFileUrl) {
+        URL.revokeObjectURL(previewFileUrl)
+      }
+      setPreviewFileUrl(null)
+      setPreviewTextContent('')
+      return
+    }
+
+    const loadRealPreview = async () => {
+      setLoadingPreviewFile(true)
+      try {
+        if (activePreviewDoc.type === 'pdf' || activePreviewDoc.type === 'image') {
+          const blob = await documentService.previewDocumentBlob(activePreviewDoc.id, userId)
+          const url = URL.createObjectURL(blob)
+          setPreviewFileUrl(url)
+        } else {
+          const content = await documentService.previewDocument(activePreviewDoc.id)
+          if (content && !content.startsWith('%PDF')) {
+            setPreviewTextContent(content)
+          } else {
+            setPreviewTextContent('')
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load document preview:", err)
+        setPreviewFileUrl(null)
+        setPreviewTextContent('')
+      } finally {
+        setLoadingPreviewFile(false)
+      }
+    }
+
+    loadRealPreview()
+  }, [activePreviewDoc, userId])
+
+  // Cleanup Object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewFileUrl) {
+        URL.revokeObjectURL(previewFileUrl)
+      }
+    }
+  }, [previewFileUrl])
+
   const getDocContent = (doc: DocumentItem | null) => {
     if (!doc) return SUBJECTS_CONTENT_DB.GENERAL
     return SUBJECTS_CONTENT_DB[doc.id] || SUBJECTS_CONTENT_DB[doc.subject] || SUBJECTS_CONTENT_DB.GENERAL
@@ -1139,10 +1471,16 @@ export function DocumentsPage() {
           </span>
         )
       case 'QUEUED':
-      default:
         return (
-          <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+          <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-550">
             QUEUED
+          </span>
+        )
+      default:
+        const displayVal = status ? status.toUpperCase() : 'UNKNOWN';
+        return (
+          <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-550">
+            {displayVal}
           </span>
         )
     }
@@ -1167,17 +1505,25 @@ export function DocumentsPage() {
           // Shared Context
           documents,
           setDocuments,
-          openUploadModal: () => setIsUploadModalOpen(true),
+          dynamicSubjects,
+          refreshSubjects,
+          refreshDocuments: fetchDocuments,
+          openUploadModal: (defaultSubjectCode?: string) => {
+            setIsUploadModalOpen(true)
+            if (defaultSubjectCode) {
+              const upperCode = defaultSubjectCode.toUpperCase()
+              const found = dynamicSubjects.find(s => s.courseCode.toUpperCase() === upperCode || s.id.toUpperCase() === upperCode)
+              if (found) {
+                setUploadMajor(found.majors[0] as any || 'SE')
+                setUploadSemester(found.semester || 'K1')
+                setNewDocSubject(found.id)
+              }
+            }
+          },
           openChatDrawer: handleOpenChat,
           openPreviewModal: handleOpenPreview,
           handleOpenPreview,
-          openQuizModal: () => {
-            setCurrentQuizQuestion(0)
-            setSelectedQuizAnswer(null)
-            setQuizScore(0)
-            setShowQuizResults(false)
-            setIsQuizModalOpen(true)
-          },
+          openQuizModal: handleOpenQuizModal,
 
           // Utilities passed down to child pages
           showToast,
@@ -1192,211 +1538,6 @@ export function DocumentsPage() {
         }}
       />
 
-
-
-      {/* Practice Quiz Modal */}
-      {isQuizModalOpen && (
-        <Modal
-          isOpen={isQuizModalOpen}
-          onClose={() => setIsQuizModalOpen(false)}
-          title="Design Patterns Practice Quiz"
-          description="Test your software architecture skills with AI-curated multiple choice questions."
-          className="max-w-xl animate-fade-in"
-        >
-          <div className="space-y-6 py-2">
-            {!showQuizResults ? (
-              <>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs font-bold text-slate-400">
-                    <span>QUESTION {currentQuizQuestion + 1} OF {QUIZ_QUESTIONS.length}</span>
-                    <span className="text-[#2563eb]">{Math.round(((currentQuizQuestion) / QUIZ_QUESTIONS.length) * 100)}% Complete</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div 
-                      className="bg-[#2563eb] h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${((currentQuizQuestion + 1) / QUIZ_QUESTIONS.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-5 border border-slate-200 dark:border-slate-700">
-                  <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed">
-                    {QUIZ_QUESTIONS[currentQuizQuestion].q}
-                  </h4>
-                </div>
-
-                <div className="space-y-3">
-                  {QUIZ_QUESTIONS[currentQuizQuestion].options.map((option, idx) => {
-                    const isSelected = selectedQuizAnswer === idx;
-                    const isCorrect = QUIZ_QUESTIONS[currentQuizQuestion].answer === idx;
-                    const hasAnswered = selectedQuizAnswer !== null;
-
-                    let optionClass = "flex items-center justify-between w-full p-4 rounded-xl border text-left font-semibold text-sm transition-all duration-200 focus:outline-none ";
-                    
-                    if (!hasAnswered) {
-                      optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2563eb]/50 hover:bg-[#2563eb]/5 text-slate-700 dark:text-slate-350";
-                    } else if (isSelected) {
-                      optionClass += isCorrect 
-                        ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350" 
-                        : "border-rose-500 bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-350";
-                    } else if (isCorrect) {
-                      optionClass += "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350";
-                    } else {
-                      optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-650 opacity-60";
-                    }
-
-                    return (
-                      <button
-                        key={idx}
-                        disabled={hasAnswered}
-                        onClick={() => {
-                          setSelectedQuizAnswer(idx)
-                          if (idx === QUIZ_QUESTIONS[currentQuizQuestion].answer) {
-                            setQuizScore(prev => prev + 1)
-                          }
-                        }}
-                        className={optionClass}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className={cn(
-                            "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold border transition-colors",
-                            !hasAnswered && (isSelected ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-550"),
-                            hasAnswered && isCorrect && "bg-emerald-500 text-white border-emerald-500",
-                            hasAnswered && isSelected && !isCorrect && "bg-rose-500 text-white border-rose-500",
-                            hasAnswered && !isSelected && !isCorrect && "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500"
-                          )}>
-                            {String.fromCharCode(65 + idx)}
-                          </span>
-                          <span className="leading-snug">{option}</span>
-                        </div>
-                        
-                        {hasAnswered && (
-                          <div>
-                            {isCorrect && (
-                              <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            )}
-                            {isSelected && !isCorrect && (
-                              <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                              </svg>
-                            )}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {selectedQuizAnswer !== null && (
-                  <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20 p-4.5 text-xs text-amber-900 dark:text-amber-300 leading-relaxed flex gap-3.5 animate-fade-in shadow-xs">
-                    <div className="bg-amber-100 dark:bg-amber-900/40 rounded-lg p-2 text-amber-700 dark:text-amber-400 h-fit shrink-0">
-                      <svg className="h-4.5 w-4.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
-                        <path d="M9 18h6" />
-                        <path d="M10 22h4" />
-                      </svg>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="font-extrabold">AI Tip & Explanation:</p>
-                      <p className="font-medium text-amber-800 dark:text-amber-350">{QUIZ_QUESTIONS[currentQuizQuestion].explain}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
-                  <Button
-                    variant="secondary"
-                    onClick={() => setIsQuizModalOpen(false)}
-                    className="rounded-xl font-semibold text-sm"
-                  >
-                    Quit
-                  </Button>
-                  <Button
-                    disabled={selectedQuizAnswer === null}
-                    onClick={() => {
-                      if (currentQuizQuestion < QUIZ_QUESTIONS.length - 1) {
-                        setCurrentQuizQuestion(prev => prev + 1)
-                        setSelectedQuizAnswer(null)
-                      } else {
-                        setShowQuizResults(true)
-                        // Log quiz completed
-                        logActivity({
-                          eventKey: 'aiQuizGenerated',
-                          category: 'ai-audit',
-                          status: 'success',
-                          eventTextEn: 'AI Practice Quiz completed',
-                          eventTextVi: 'Hoàn thành trắc nghiệm AI',
-                          detailsTextEn: `Completed custom practice quiz with score ${quizScore + (selectedQuizAnswer === QUIZ_QUESTIONS[currentQuizQuestion].answer ? 1 : 0)}/${QUIZ_QUESTIONS.length}.`,
-                          detailsTextVi: `Đã hoàn thành bộ trắc nghiệm thực hành với điểm số ${quizScore + (selectedQuizAnswer === QUIZ_QUESTIONS[currentQuizQuestion].answer ? 1 : 0)}/${QUIZ_QUESTIONS.length}.`
-                        })
-                      }
-                    }}
-                    className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6 py-2.5 text-sm"
-                  >
-                    {currentQuizQuestion === QUIZ_QUESTIONS.length - 1 ? "Finish Quiz" : "Next Question"}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="py-6 text-center space-y-6 animate-fade-in">
-                <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
-                  <div className="absolute h-full w-full rounded-full border-4 border-slate-100 dark:border-slate-800" />
-                  <div 
-                    className="absolute h-full w-full rounded-full border-4 border-emerald-500 border-t-transparent"
-                    style={{ 
-                      transform: `rotate(${(quizScore / QUIZ_QUESTIONS.length) * 360}deg)`,
-                      transition: 'transform 1.5s ease-out'
-                    }}
-                  />
-                  <span className="text-3xl font-black text-slate-800 dark:text-slate-100">{quizScore}/{QUIZ_QUESTIONS.length}</span>
-                </div>
-
-                <div className="space-y-2 max-w-sm mx-auto">
-                  <h4 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
-                    {quizScore === QUIZ_QUESTIONS.length 
-                      ? "Excellent Mastery!" 
-                      : quizScore >= 2 
-                        ? "Great Achievement!" 
-                        : "Keep Studying!"}
-                  </h4>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                    {quizScore === QUIZ_QUESTIONS.length 
-                      ? "Perfect Score! You have successfully mastered Creational, Structural, and Behavioral patterns." 
-                      : quizScore >= 2 
-                        ? "Solid score! Go over the details of Adapter and Strategy patterns to lock down a perfect mark." 
-                        : "Take another look at the Design Patterns Java Guide and re-run this quiz to test your growth!"}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-center gap-3 border-t border-slate-100 pt-6 mt-8">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setCurrentQuizQuestion(0)
-                      setSelectedQuizAnswer(null)
-                      setQuizScore(0)
-                      setShowQuizResults(false)
-                    }}
-                    className="rounded-xl font-bold"
-                  >
-                    Retake Quiz
-                  </Button>
-                  <Button
-                    onClick={() => setIsQuizModalOpen(false)}
-                    className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6"
-                  >
-                    Close Practice
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </Modal>
-      )}
-
       {/* Upload Document Modal */}
       <Modal
         isOpen={isUploadModalOpen}
@@ -1404,6 +1545,7 @@ export function DocumentsPage() {
           if (!isUploading) {
             setIsUploadModalOpen(false)
             setSelectedFile(null)
+            setHasUploadError(false)
           }
         }}
         title="Upload Study Material"
@@ -1448,37 +1590,81 @@ export function DocumentsPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-left">
+                {/* Major Select */}
                 <div className="space-y-1.5">
-                  <label htmlFor="subject-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">Subject</label>
+                  <label htmlFor="upload-major-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {language === 'en' ? 'Major' : 'Ngành học'}
+                  </label>
                   <select
-                    id="subject-select"
-                    value={newDocSubject}
-                    onChange={(e) => setNewDocSubject(e.target.value as any)}
+                    id="upload-major-select"
+                    value={uploadMajor}
+                    onChange={(e) => setUploadMajor(e.target.value as any)}
                     className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
-                    <option value="GENERAL">General/Other</option>
-                    <option value="MATHEMATICS">Mathematics</option>
-                    <option value="BIOLOGY">Biology</option>
-                    <option value="PHYSICS">Physics</option>
-                    <option value="COMPSCI">CompSci</option>
-                    <option value="PHILOSOPHY">Philosophy</option>
-                    <option value="ECONOMICS">Economics</option>
+                    <option value="SE">{language === 'en' ? 'Software Engineering (SE)' : 'Kỹ thuật phần mềm (SE)'}</option>
+                    <option value="AI">{language === 'en' ? 'Artificial Intelligence (AI)' : 'Trí tuệ nhân tạo (AI)'}</option>
+                    <option value="BA">{language === 'en' ? 'Business Administration (BA)' : 'Quản trị kinh doanh (BA)'}</option>
                   </select>
                 </div>
 
+                {/* Semester Select */}
                 <div className="space-y-1.5">
-                  <label htmlFor="type-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">File Type</label>
+                  <label htmlFor="upload-semester-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {language === 'en' ? 'Semester' : 'Học kỳ'}
+                  </label>
+                  <select
+                    id="upload-semester-select"
+                    value={uploadSemester}
+                    onChange={(e) => setUploadSemester(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
+                  >
+                    <option value="K1">{language === 'en' ? 'Semester 1' : 'Học kỳ 1'}</option>
+                    <option value="K2">{language === 'en' ? 'Semester 2' : 'Học kỳ 2'}</option>
+                    <option value="K3">{language === 'en' ? 'Semester 3' : 'Học kỳ 3'}</option>
+                    <option value="K4">{language === 'en' ? 'Semester 4' : 'Học kỳ 4'}</option>
+                    <option value="K5">{language === 'en' ? 'Semester 5' : 'Học kỳ 5'}</option>
+                    <option value="K6">{language === 'en' ? 'Semester 6' : 'Học kỳ 6'}</option>
+                    <option value="K7">{language === 'en' ? 'Semester 7' : 'Học kỳ 7'}</option>
+                    <option value="K8">{language === 'en' ? 'Semester 8' : 'Học kỳ 8'}</option>
+                    <option value="K9">{language === 'en' ? 'Semester 9' : 'Học kỳ 9'}</option>
+                  </select>
+                </div>
+
+                {/* Subject Select */}
+                <div className="space-y-1.5">
+                  <label htmlFor="subject-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {language === 'en' ? 'Subject' : 'Môn học'}
+                  </label>
+                  <select
+                    id="subject-select"
+                    value={newDocSubject}
+                    onChange={(e) => setNewDocSubject(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
+                  >
+                    {dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).map((subj) => (
+                      <option key={subj.id} value={subj.id}>
+                        {subj.courseCode} - {subj.title}
+                      </option>
+                    ))}
+                    {dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).length === 0 && (
+                      <option value="GENERAL">General/Other</option>
+                    )}
+                  </select>
+                </div>
+
+                {/* File Type Select */}
+                <div className="space-y-1.5">
+                  <label htmlFor="type-select" className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {language === 'en' ? 'File Type' : 'Loại tệp'}
+                  </label>
                   <select
                     id="type-select"
                     value={newDocType}
                     onChange={(e) => setNewDocType(e.target.value as any)}
-                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
+                    disabled
+                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-3 pr-10 text-base text-slate-500 dark:text-slate-400 cursor-not-allowed focus-visible:outline-none"
                   >
-                    <option value="pdf">PDF File (.pdf)</option>
-                    <option value="word">Word Document (.docx)</option>
-                    <option value="text">Text File (.txt)</option>
-                    <option value="image">Image Note (.png, .jpg)</option>
-                    <option value="slides">Presentation Slides (.pptx)</option>
+                    <option value="pdf">{language === 'en' ? 'PDF File (.pdf)' : 'Tệp PDF (.pdf)'}</option>
                   </select>
                 </div>
               </div>
@@ -1489,12 +1675,21 @@ export function DocumentsPage() {
                   onClick={() => {
                     const input = document.createElement('input')
                     input.type = 'file'
+                    input.accept = '.pdf'
                     input.onchange = (e) => {
                       const files = (e.target as HTMLInputElement).files
                       if (files && files[0]) {
-                        setSelectedFile(files[0])
+                        const file = files[0]
+                        const ext = file.name.split('.').pop()?.toLowerCase()
+                        if (ext !== 'pdf') {
+                          setHasUploadError(true)
+                          setSelectedFile(null)
+                          return
+                        }
+                        setHasUploadError(false)
+                        setSelectedFile(file)
                         if (!newDocTitle) {
-                          const cleanName = files[0].name.split('.')[0].replace(/[_-]/g, ' ')
+                          const cleanName = file.name.split('.')[0].replace(/[_-]/g, ' ')
                           setNewDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
                         }
                       }
@@ -1502,15 +1697,21 @@ export function DocumentsPage() {
                     input.click()
                   }}
                   className={cn(
-                    'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-8 text-center cursor-pointer transition-all duration-300',
-                    selectedFile
-                      ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20'
-                      : 'hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 bg-slate-50/30'
+                    'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center cursor-pointer transition-all duration-300',
+                    hasUploadError
+                      ? 'border-red-500 bg-red-50/10 dark:bg-red-950/10'
+                      : selectedFile
+                        ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20'
+                        : 'hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700 bg-slate-50/30'
                   )}
                 >
                   <div className={cn(
                     'flex h-12 w-12 items-center justify-center rounded-full shadow-xs transition-colors',
-                    selectedFile ? 'bg-[#2563eb] text-white' : 'bg-blue-50 dark:bg-slate-800 text-[#2563eb] dark:text-blue-400'
+                    hasUploadError
+                      ? 'bg-red-500 text-white'
+                      : selectedFile
+                        ? 'bg-[#2563eb] text-white'
+                        : 'bg-blue-50 dark:bg-slate-800 text-[#2563eb] dark:text-blue-400'
                   )}>
                     <CloudUpload className="h-6 w-6" />
                   </div>
@@ -1522,10 +1723,17 @@ export function DocumentsPage() {
                   ) : (
                     <div className="mt-4">
                       <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Drag and drop your document here</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">or click to browse your folders (PDF, DOCX, TXT, PNG, PPTX up to 50MB)</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">or click to browse your folders (PDF only, up to 50MB)</p>
                     </div>
                   )}
                 </div>
+                {hasUploadError && (
+                  <p className="text-sm font-bold text-red-500 mt-2 text-left">
+                    {language === 'vi'
+                      ? 'Hệ thống chỉ hỗ trợ tệp tin PDF! Vui lòng chọn lại.'
+                      : 'The system only supports PDF files! Please choose another.'}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-8">
@@ -1542,10 +1750,10 @@ export function DocumentsPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!selectedFile && !newDocTitle}
+                  disabled={!selectedFile || hasUploadError}
                   className="rounded-xl bg-[#2563eb] text-white font-semibold shadow-md shadow-blue-500/10 px-6"
                 >
-                  Process with AI
+                  {t.upload.processAI}
                 </Button>
               </div>
             </>
@@ -1717,9 +1925,30 @@ export function DocumentsPage() {
 
             {activePreviewTab === 'preview' && (
               <div className="space-y-4">
-                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5 max-h-[350px] overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 dark:text-slate-350 whitespace-pre-wrap">
-                  {getDocContent(activePreviewDoc)?.previewText}
-                </div>
+                {loadingPreviewFile ? (
+                  <div className="flex flex-col items-center justify-center h-[355px] bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <Loader2 className="animate-spin size-8 text-[#2563eb] mb-2" />
+                    <span className="text-sm text-slate-500">Loading document...</span>
+                  </div>
+                ) : previewFileUrl ? (
+                  activePreviewDoc.type === 'image' ? (
+                    <img
+                      src={previewFileUrl}
+                      alt={activePreviewDoc.title}
+                      className="max-h-[355px] w-auto mx-auto rounded-xl object-contain border border-slate-200 dark:border-slate-800"
+                    />
+                  ) : (
+                    <iframe
+                      src={previewFileUrl}
+                      className="w-full h-[400px] rounded-xl border border-slate-200 dark:border-slate-800"
+                      title={activePreviewDoc.title}
+                    />
+                  )
+                ) : (
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5 max-h-[350px] overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 dark:text-slate-350 whitespace-pre-wrap">
+                    {previewTextContent || getDocContent(activePreviewDoc)?.previewText}
+                  </div>
+                )}
                 <div className="flex justify-between items-center bg-blue-50/40 dark:bg-blue-955/20 rounded-xl p-4 border border-blue-100/50 dark:border-blue-900/30">
                   <div className="flex items-center gap-3 text-sm text-[#2563eb] dark:text-blue-400 font-medium">
                     <BrainCircuit className="h-5 w-5" />
@@ -2167,6 +2396,320 @@ export function DocumentsPage() {
           </div>
         </Modal>
       )}
+
+      {/* Practice Quiz Modal */}
+      {isQuizModalOpen && (
+        <Modal
+          isOpen={isQuizModalOpen}
+          onClose={() => setIsQuizModalOpen(false)}
+          title={selectedDocForQuiz ? t.quiz.modalTitle(selectedDocForQuiz.title) : t.quiz.modalTitleDefault}
+          description={t.quiz.modalDescription}
+          className="max-w-xl animate-fade-in"
+        >
+          <div className="space-y-6 py-2">
+            {isLoadingQuizForModal ? (
+              <div className="py-12 text-center space-y-4">
+                <div className="relative mx-auto flex h-12 w-12 items-center justify-center">
+                  <div className="absolute h-full w-full rounded-full border-4 border-slate-100 dark:border-slate-800" />
+                  <div className="absolute h-full w-full rounded-full border-4 border-[#2563eb] border-t-transparent animate-spin" />
+                </div>
+                <p className="text-xs text-slate-400">{t.quiz.loading}</p>
+              </div>
+            ) : quizQuestionsForModal.length === 0 ? (
+              <div className="py-12 text-center space-y-4">
+                <p className="text-sm text-slate-500">{t.quiz.empty}</p>
+                <Button variant="secondary" onClick={() => setIsQuizModalOpen(false)}>{t.quiz.close}</Button>
+              </div>
+            ) : !showQuizResults ? (
+              <>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                    <span>{t.quiz.questionProgress(currentQuizQuestion + 1, quizQuestionsForModal.length)}</span>
+                    <span className="text-[#2563eb]">{t.quiz.percentComplete(Math.round(((currentQuizQuestion) / quizQuestionsForModal.length) * 100))}</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-[#2563eb] h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${((currentQuizQuestion + 1) / quizQuestionsForModal.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-5 border border-slate-200 dark:border-slate-700">
+                  <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed">
+                    {quizQuestionsForModal[currentQuizQuestion].q}
+                  </h4>
+                </div>
+
+                <div className="space-y-3">
+                  {(() => {
+                    const rawOpts = quizQuestionsForModal[currentQuizQuestion].options
+                    let opts: string[] = []
+                    if (typeof rawOpts === 'string') {
+                      try {
+                        opts = JSON.parse(rawOpts) as string[]
+                      } catch (e) {
+                        opts = []
+                      }
+                    } else if (Array.isArray(rawOpts)) {
+                      opts = rawOpts
+                    }
+                    return opts.map((option, idx) => {
+                      const isSelected = selectedQuizAnswer === idx;
+                      const isCorrect = quizQuestionsForModal[currentQuizQuestion].answer === idx;
+                      const hasAnswered = selectedQuizAnswer !== null;
+
+                      let optionClass = "flex items-center justify-between w-full p-4 rounded-xl border text-left font-semibold text-sm transition-all duration-200 focus:outline-none ";
+                      
+                      if (!hasAnswered) {
+                        optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2563eb]/50 hover:bg-[#2563eb]/5 text-slate-700 dark:text-slate-350";
+                      } else if (isSelected) {
+                        optionClass += isCorrect 
+                          ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350" 
+                          : "border-rose-500 bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-350";
+                      } else if (isCorrect) {
+                        optionClass += "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-350";
+                      } else {
+                        optionClass += "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-650 opacity-60";
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          disabled={hasAnswered}
+                          onClick={() => {
+                            setSelectedQuizAnswer(idx)
+                            if (idx === quizQuestionsForModal[currentQuizQuestion].answer) {
+                              setQuizScore(prev => prev + 1)
+                            }
+                          }}
+                          className={optionClass}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={cn(
+                              "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold border transition-colors",
+                              !hasAnswered && (isSelected ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-550"),
+                              hasAnswered && isCorrect && "bg-emerald-500 text-white border-emerald-500",
+                              hasAnswered && isSelected && !isCorrect && "bg-rose-500 text-white border-rose-500",
+                              hasAnswered && !isSelected && !isCorrect && "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-550"
+                            )}>
+                              {String.fromCharCode(65 + idx)}
+                            </span>
+                            <span className="leading-snug">{option}</span>
+                          </div>
+                          
+                          {hasAnswered && (
+                            <div>
+                              {isCorrect && (
+                                <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              )}
+                              {isSelected && !isCorrect && (
+                                <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                  <line x1="18" y1="6" x2="6" y2="18" />
+                                  <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                              )}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {selectedQuizAnswer !== null && (
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-955/20 p-4.5 text-xs text-amber-900 dark:text-amber-300 leading-relaxed flex gap-3.5 animate-fade-in shadow-xs">
+                    <div className="bg-amber-100 dark:bg-amber-900/40 rounded-lg p-2 text-amber-700 dark:text-amber-400 h-fit shrink-0">
+                      <svg className="h-4.5 w-4.5 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                        <path d="M9 18h6" />
+                        <path d="M10 22h4" />
+                      </svg>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-extrabold">{t.quiz.explanationTitle}</p>
+                      <p className="font-medium text-amber-800 dark:text-amber-350">{quizQuestionsForModal[currentQuizQuestion].explain}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Assistant Edit Panel inside Practice Quiz Modal */}
+                <div className="p-4 rounded-xl border border-indigo-150/60 dark:border-indigo-950/60 bg-[#f4f7ff] dark:bg-indigo-955/10 backdrop-blur-md">
+                  <div className="flex gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-955/40 flex items-center justify-center shrink-0">
+                      <Sparkles className="size-4.5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[12px] font-extrabold text-slate-800 dark:text-slate-200">
+                        {t.quiz.aiAssistantTitle}
+                      </h4>
+                      <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                        {t.quiz.aiAssistantSubtitle}
+                      </p>
+                    </div>
+                  </div>
+                  <form onSubmit={handleModifyQuizForModalWithPrompt} className="flex gap-2 mt-3">
+                    <input
+                      type="text"
+                      value={quizPromptForModal}
+                      onChange={(e) => setQuizPromptForModal(e.target.value)}
+                      placeholder={t.quiz.promptPlaceholder}
+                      className="flex-1 rounded-lg border border-slate-250 bg-white px-3 py-1.5 text-xs focus:outline-none dark:border-slate-850 dark:bg-slate-900 dark:text-white"
+                    />
+                    <Button type="submit" disabled={isModifyingQuizForModal || !quizPromptForModal.trim()} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs px-3">
+                      {isModifyingQuizForModal ? t.quiz.sendingPrompt : t.quiz.sendPrompt}
+                    </Button>
+                  </form>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIsQuizModalOpen(false)}
+                    className="rounded-xl font-semibold text-sm"
+                  >
+                    {t.quiz.quit}
+                  </Button>
+                  <Button
+                    disabled={selectedQuizAnswer === null}
+                    onClick={() => {
+                      if (currentQuizQuestion < quizQuestionsForModal.length - 1) {
+                        setCurrentQuizQuestion(prev => prev + 1)
+                        setSelectedQuizAnswer(null)
+                      } else {
+                        setShowQuizResults(true)
+                        // Log quiz completed
+                        logActivity({
+                          eventKey: 'aiQuizGenerated',
+                          category: 'ai-audit',
+                          status: 'success',
+                          eventTextEn: 'AI Practice Quiz completed',
+                          eventTextVi: 'Hoàn thành trắc nghiệm AI',
+                          detailsTextEn: `Completed custom practice quiz with score ${quizScore + (selectedQuizAnswer === quizQuestionsForModal[currentQuizQuestion].answer ? 1 : 0)}/${quizQuestionsForModal.length}.`,
+                          detailsTextVi: `Đã hoàn thành bộ trắc nghiệm thực hành với điểm số ${quizScore + (selectedQuizAnswer === quizQuestionsForModal[currentQuizQuestion].answer ? 1 : 0)}/${quizQuestionsForModal.length}.`
+                        })
+                      }
+                    }}
+                    className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6 py-2.5 text-sm"
+                  >
+                    {currentQuizQuestion === quizQuestionsForModal.length - 1 ? t.quiz.finishQuiz : t.quiz.nextQuestion}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="py-6 text-center space-y-6 animate-fade-in">
+                <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+                  <div className="absolute h-full w-full rounded-full border-4 border-slate-100 dark:border-slate-800" />
+                  <div 
+                    className="absolute h-full w-full rounded-full border-4 border-emerald-500 border-t-transparent"
+                    style={{ 
+                      transform: `rotate(${(quizScore / quizQuestionsForModal.length) * 360}deg)`,
+                      transition: 'transform 1.5s ease-out'
+                    }}
+                  />
+                  <span className="text-3xl font-black text-slate-800 dark:text-slate-100">{quizScore}/{quizQuestionsForModal.length}</span>
+                </div>
+
+                <div className="space-y-2 max-w-sm mx-auto">
+                  <h4 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+                    {quizScore === quizQuestionsForModal.length 
+                      ? t.quiz.scoreExcellent 
+                      : quizScore >= (quizQuestionsForModal.length / 2)
+                        ? t.quiz.scoreGood 
+                        : t.quiz.scorePoor}
+                  </h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                    {quizScore === quizQuestionsForModal.length 
+                      ? t.quiz.descExcellent 
+                      : quizScore >= (quizQuestionsForModal.length / 2)
+                        ? t.quiz.descGood 
+                        : t.quiz.descPoor}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-center gap-3 border-t border-slate-100 pt-6 mt-8">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setCurrentQuizQuestion(0)
+                      setSelectedQuizAnswer(null)
+                      setQuizScore(0)
+                      setShowQuizResults(false)
+                    }}
+                    className="rounded-xl font-bold"
+                  >
+                    {t.quiz.retake}
+                  </Button>
+                  <Button
+                    onClick={() => setIsQuizModalOpen(false)}
+                    className="rounded-xl bg-[#2563eb] text-white font-bold shadow-md shadow-blue-500/10 px-6"
+                  >
+                    {t.quiz.closePractice}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+      {/* Approval Pending Modal */}
+      <Modal
+        isOpen={approvalModalOpen}
+        onClose={() => {
+          setApprovalModalOpen(false)
+          if (uploadedSubjectKey) {
+            navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+          }
+        }}
+        title={language === 'en' ? 'Moderation Pending' : 'Chờ kiểm duyệt'}
+        description={
+          language === 'en'
+            ? 'Your document has been successfully uploaded to Google Drive.'
+            : 'Tài liệu của bạn đã được tải lên Google Drive thành công.'
+        }
+        className="max-w-[480px]"
+      >
+        <div className="space-y-6 text-center py-2 select-none">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400">
+            <FileText className="h-8 w-8" />
+          </div>
+
+          <div className="space-y-2 max-w-sm mx-auto">
+            <p className="text-sm text-slate-605 dark:text-slate-400 font-medium leading-relaxed">
+              {language === 'en'
+                ? 'Your document is now waiting for administrative approval. It will become visible to others once approved.'
+                : 'Tài liệu đang chờ Admin phê duyệt. Tài liệu sẽ được hiển thị công khai sau khi được duyệt.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setApprovalModalOpen(false)
+                navigate('/dashboard/documents/upload-history')
+              }}
+              className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+            >
+              {language === 'en' ? 'View Upload History' : 'Xem lịch sử tải lên'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setApprovalModalOpen(false)
+                if (uploadedSubjectKey) {
+                  navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+                }
+              }}
+              className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
+            >
+              {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   )

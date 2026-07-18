@@ -12,7 +12,10 @@ import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.document.repository.DocumentTagRepository;
 import com.lumiedu.document.service.impl.DocumentServiceImpl;
+import com.lumiedu.document.service.GoogleDriveService;
+import com.lumiedu.ai.service.DocumentChunkingService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,6 +23,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,6 +53,27 @@ public class DocumentServiceTest {
     @Mock
     private AudioRecordRepository audioRecordRepository;
 
+    @Mock
+    private GoogleDriveService googleDriveService;
+
+    @Mock
+    private DocumentChunkingService documentChunkingService;
+
+    @Mock
+    private com.lumiedu.workspace.repository.WorkspaceDocumentRepository workspaceDocumentRepository;
+
+    @Mock
+    private com.lumiedu.workspace.repository.WorkspaceMemberRepository workspaceMemberRepository;
+
+    @Mock
+    private com.lumiedu.workspace.repository.SharedWorkspaceRepository sharedWorkspaceRepository;
+
+    @Mock
+    private com.lumiedu.user.repository.UserRepository userRepository;
+
+    @Mock
+    private com.lumiedu.document.repository.SubjectRepository subjectRepository;
+
     @InjectMocks
     private DocumentServiceImpl documentService;
 
@@ -53,8 +82,20 @@ public class DocumentServiceTest {
         ReflectionTestUtils.setField(documentService, "uploadDir", "test-uploads");
     }
 
+    @AfterEach
+    void tearDown() throws IOException {
+        Path tempDir = Paths.get("test-uploads");
+        if (Files.exists(tempDir)) {
+            try (var stream = Files.walk(tempDir)) {
+                stream.sorted(Comparator.reverseOrder())
+                      .map(Path::toFile)
+                      .forEach(java.io.File::delete);
+            }
+        }
+    }
+
     @Test
-    void testUploadDocument_Success() {
+    void testUploadDocument_Success() throws IOException {
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "lecture1.pdf",
@@ -83,9 +124,13 @@ public class DocumentServiceTest {
                 .subject("PRJ301")
                 .visibility("PUBLIC")
                 .userId(1L)
+                .googleDriveFileId("mock-drive-id")
+                .storageProvider("GOOGLE_DRIVE")
                 .deleted(false)
                 .build();
 
+        when(googleDriveService.isUserDriveConnected(org.mockito.ArgumentMatchers.anyLong())).thenReturn(true);
+        when(googleDriveService.uploadFile(any(), any(List.class), org.mockito.ArgumentMatchers.anyLong())).thenReturn("mock-drive-id");
         when(documentRepository.save(any(Document.class))).thenReturn(mockSavedDoc);
         when(documentTagRepository.findAllByDocumentId(100L)).thenReturn(
                 List.of(
@@ -133,13 +178,15 @@ public class DocumentServiceTest {
         Document document = Document.builder()
                 .id(1L)
                 .title("Test Doc")
+                .userId(1L)
                 .deleted(false)
                 .build();
 
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
         when(documentRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(document));
         when(documentTagRepository.findAllByDocumentId(1L)).thenReturn(Collections.emptyList());
 
-        DocumentResponse response = documentService.getDocumentById(1L);
+        DocumentResponse response = documentService.getDocumentById(1L, 1L);
 
         assertNotNull(response);
         assertEquals(1L, response.getId());
@@ -151,7 +198,7 @@ public class DocumentServiceTest {
         when(documentRepository.findByIdAndDeletedFalse(999L)).thenReturn(Optional.empty());
 
         assertThrows(DocumentNotFoundException.class, () -> {
-            documentService.getDocumentById(999L);
+            documentService.getDocumentById(999L, 1L);
         });
     }
 
@@ -160,6 +207,7 @@ public class DocumentServiceTest {
         Document existingDoc = Document.builder()
                 .id(1L)
                 .title("Old Title")
+                .userId(1L)
                 .deleted(false)
                 .build();
 
@@ -168,10 +216,11 @@ public class DocumentServiceTest {
                 .tags(List.of("updated-tag"))
                 .build();
 
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
         when(documentRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(existingDoc));
         when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        DocumentResponse response = documentService.updateDocument(1L, updateRequest);
+        DocumentResponse response = documentService.updateDocument(1L, updateRequest, 1L);
 
         assertNotNull(response);
         assertEquals("New Title", response.getTitle());
@@ -184,12 +233,14 @@ public class DocumentServiceTest {
         Document existingDoc = Document.builder()
                 .id(1L)
                 .title("Target Doc")
+                .userId(1L)
                 .deleted(false)
                 .build();
 
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
         when(documentRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(existingDoc));
 
-        documentService.deleteDocument(1L);
+        documentService.deleteDocument(1L, 1L);
 
         assertTrue(existingDoc.getDeleted());
         verify(documentRepository, times(1)).save(existingDoc);

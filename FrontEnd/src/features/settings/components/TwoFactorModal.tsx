@@ -6,6 +6,8 @@ import { OTPInput } from './OTPInput'
 import { QRCodeCard } from './QRCodeCard'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
+import { useAuthStore } from '@/stores/authStore'
+import { apiClient } from '@/lib/axios'
 
 interface TwoFactorModalProps {
   isOpen: boolean
@@ -14,11 +16,15 @@ interface TwoFactorModalProps {
 
 export function TwoFactorModal({ isOpen, onClose }: TwoFactorModalProps) {
   const { toggleTwoFactor } = useSettingsStore()
+  const { user, tokens, setSession } = useAuthStore()
   const toast = useToast()
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
+  const [secretKey, setSecretKey] = useState('')
+  const [isLoadingSetup, setIsLoadingSetup] = useState(false)
 
   // Reset states when modal is opened/closed
   useEffect(() => {
@@ -27,8 +33,28 @@ export function TwoFactorModal({ isOpen, onClose }: TwoFactorModalProps) {
       setError('')
       setIsVerifying(false)
       setIsSuccess(false)
+      setQrCodeUrl('')
+      setSecretKey('')
     }
   }, [isOpen])
+
+  // Fetch real 2FA setup details from backend when open
+  useEffect(() => {
+    if (isOpen && user?.id) {
+      setIsLoadingSetup(true)
+      apiClient.post(`/users/${user.id}/2fa/setup`)
+        .then((res) => {
+          setQrCodeUrl(res.data.qrCodeUrl)
+          setSecretKey(res.data.secret)
+        })
+        .catch((err) => {
+          setError(err.message || 'Failed to initialize 2FA setup')
+        })
+        .finally(() => {
+          setIsLoadingSetup(false)
+        })
+    }
+  }, [isOpen, user?.id])
 
   // Handle ESC key press to close modal
   useEffect(() => {
@@ -56,8 +82,12 @@ export function TwoFactorModal({ isOpen, onClose }: TwoFactorModalProps) {
     setIsVerifying(true)
 
     try {
-      // Simulate verification API delay
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await apiClient.post(`/users/${user?.id}/2fa/enable`, { code: otp })
+      
+      // Update session locally to reflect enabled 2FA
+      if (user && tokens) {
+        setSession({ ...user, twoFactorEnabled: true }, tokens)
+      }
       
       toggleTwoFactor()
       toast.success('Two-factor authentication enabled')
@@ -67,8 +97,8 @@ export function TwoFactorModal({ isOpen, onClose }: TwoFactorModalProps) {
       setTimeout(() => {
         onClose()
       }, 1500)
-    } catch (err) {
-      setError('Invalid authenticator code. Please try again.')
+    } catch (err: any) {
+      setError(err.message || 'Invalid authenticator code. Please try again.')
     } finally {
       setIsVerifying(false)
     }
@@ -170,7 +200,7 @@ export function TwoFactorModal({ isOpen, onClose }: TwoFactorModalProps) {
                         </p>
                         
                         {/* QR Code graphic */}
-                        <QRCodeCard />
+                        <QRCodeCard qrCodeUrl={qrCodeUrl} secretKey={secretKey} isLoading={isLoadingSetup} />
                       </div>
                     </div>
 

@@ -1,12 +1,14 @@
-import { useState } from 'react'
-import { CheckCircle, Eye, HelpCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { CheckCircle, Eye, HelpCircle, Loader2, ExternalLink } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
+import { useSearchParams } from 'react-router-dom'
 import { useToast } from '@/components/ui/Toast'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
+import { adminService } from '../services/adminService'
 
 interface ReportTicket {
   id: string
@@ -22,97 +24,66 @@ interface ReportTicket {
 export function AdminReportsTab() {
   const { language } = useTranslation()
   const toast = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [selectedTicket, setSelectedTicket] = useState<ReportTicket | null>(null)
+  const [tickets, setTickets] = useState<ReportTicket[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const [tickets, setTickets] = useState<ReportTicket[]>(() => {
-    const defaultTickets: ReportTicket[] = [
-      {
-        id: 'rep-1',
-        reportedFile: 'Violating_Exam_Leaks_2026.pdf',
-        reportedFileId: 'doc-4',
-        reporter: 'Sarah Jenkins',
-        reporterEmail: 'sarah.j@school.edu',
-        timestamp: '2026-05-25 10:15',
-        reason: 'Tài liệu này chứa nội dung rò rỉ đề thi cuối kỳ, vi phạm quy chế học tập nghiêm trọng.',
-        status: 'pending'
-      },
-      {
-        id: 'rep-2',
-        reportedFile: 'Unfinished_Physics_Draft.docx',
-        reportedFileId: 'doc-6',
-        reporter: 'Emma Watson',
-        reporterEmail: 'emma@example.com',
-        timestamp: '2026-05-23 09:44',
-        reason: 'Tài liệu này sao chép toàn bộ nội dung từ sách giáo trình Physics Mechanics của trường mà chưa được sự cho phép.',
-        status: 'pending'
-      },
-      {
-        id: 'rep-3',
-        reportedFile: 'Spam_Marketing_101.pdf',
-        reportedFileId: 'doc-9',
-        reporter: 'David Kim',
-        reporterEmail: 'david.kim@university.edu',
-        timestamp: '2026-05-22 14:02',
-        reason: 'Quảng cáo khóa học đa cấp không liên quan đến học thuật, làm rác không gian chung.',
-        status: 'resolved'
-      },
-      {
-        id: 'rep-4',
-        reportedFile: 'Math_Calculus_Notes.pdf',
-        reportedFileId: 'doc-10',
-        reporter: 'Huynh Duy Binh',
-        reporterEmail: 'binh@example.com',
-        timestamp: '2026-05-20 16:30',
-        reason: 'Nhầm lẫn về bản quyền, đây thực tế là tài liệu cá nhân tự biên soạn của tôi bị người khác chia sẻ lại.',
-        status: 'ignored'
+  useEffect(() => {
+    async function loadReports() {
+      setIsLoading(true)
+      try {
+        const data = await adminService.getReports()
+        if (Array.isArray(data)) {
+          const mapped: ReportTicket[] = data.map((r: any) => ({
+            id: String(r.id),
+            reportedFile: r.reportedFile || 'Reported Shared Document',
+            reportedFileId: String(r.documentId),
+            reporter: r.reporterName || 'Student User',
+            reporterEmail: r.reporterEmail,
+            timestamp: r.createdAt ? r.createdAt.replace('T', ' ').substring(0, 16) : new Date().toISOString().replace('T', ' ').substring(0, 16),
+            reason: r.reason,
+            status: (r.status as 'pending' | 'resolved' | 'ignored') || 'pending'
+          }))
+          setTickets(mapped)
+        }
+      } catch (err) {
+        console.error("Failed to load reports", err)
+      } finally {
+        setIsLoading(false)
       }
-    ]
-
-    const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
-    const mappedLocal: ReportTicket[] = localReports.map((r: any) => ({
-      id: r.id,
-      reportedFile: r.reportedFile || 'Reported Shared Document',
-      reportedFileId: r.documentId,
-      reporter: r.reporterName || 'Student User',
-      reporterEmail: r.reporterEmail,
-      timestamp: r.reportedAt ? r.reportedAt.replace('T', ' ').substring(0, 16) : new Date().toISOString().replace('T', ' ').substring(0, 16),
-      reason: r.reason,
-      status: (r.status as 'pending' | 'resolved' | 'ignored') || 'pending'
-    }))
-
-    return [...mappedLocal, ...defaultTickets]
-  })
+    }
+    loadReports()
+  }, [])
 
   // Resolve Action
-  const handleResolve = (id: string) => {
-    setTickets((prev) => {
-      const updated = prev.map((t) => (t.id === id ? { ...t, status: 'resolved' as 'pending' | 'resolved' | 'ignored' } : t))
-      
-      const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
-      const updatedLocal = localReports.map((r: any) => r.id === id ? { ...r, status: 'resolved' } : r)
-      localStorage.setItem('aiStudyHubDocumentReports', JSON.stringify(updatedLocal))
-      
-      return updated
-    })
-    const msg = language === 'vi' ? 'Đã giải quyết báo cáo thành công' : 'Report ticket marked as resolved'
-    toast.success(msg)
-    setSelectedTicket(null)
+  const handleResolve = async (id: string) => {
+    try {
+      await adminService.updateReportStatus(id, 'resolved')
+      setTickets((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, status: 'resolved' as const } : t))
+      )
+      const msg = language === 'vi' ? 'Đã giải quyết báo cáo thành công' : 'Report ticket marked as resolved'
+      toast.success(msg)
+      setSelectedTicket(null)
+    } catch (err) {
+      toast.error(language === 'vi' ? 'Không thể cập nhật báo cáo' : 'Failed to update report status')
+    }
   }
 
   // Ignore Action
-  const handleIgnore = (id: string) => {
-    setTickets((prev) => {
-      const updated = prev.map((t) => (t.id === id ? { ...t, status: 'ignored' as 'pending' | 'resolved' | 'ignored' } : t))
-      
-      const localReports = JSON.parse(localStorage.getItem('aiStudyHubDocumentReports') || '[]')
-      const updatedLocal = localReports.map((r: any) => r.id === id ? { ...r, status: 'ignored' } : r)
-      localStorage.setItem('aiStudyHubDocumentReports', JSON.stringify(updatedLocal))
-      
-      return updated
-    })
-    const msg = language === 'vi' ? 'Đã bỏ qua báo cáo' : 'Report ticket ignored'
-    toast.success(msg)
-    setSelectedTicket(null)
+  const handleIgnore = async (id: string) => {
+    try {
+      await adminService.updateReportStatus(id, 'ignored')
+      setTickets((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, status: 'ignored' as const } : t))
+      )
+      const msg = language === 'vi' ? 'Đã bỏ qua báo cáo' : 'Report ticket ignored'
+      toast.success(msg)
+      setSelectedTicket(null)
+    } catch (err) {
+      toast.error(language === 'vi' ? 'Không thể cập nhật báo cáo' : 'Failed to update report status')
+    }
   }
 
   return (
@@ -133,12 +104,28 @@ export function AdminReportsTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-              {tickets.map((t) => (
-                <tr
-                  key={t.id}
-                  className="hover:bg-slate-100/70 dark:hover:bg-slate-800/40 even:bg-slate-50/40 dark:even:bg-slate-900/20 transition-all duration-200 group"
-                >
-                  <td className="p-4 pl-6 font-extrabold text-slate-800 dark:text-slate-200">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center">
+                    <div className="flex items-center justify-center gap-2 text-slate-500">
+                      <Loader2 className="size-5 animate-spin" />
+                      <span>{language === 'vi' ? 'Đang tải báo cáo...' : 'Loading reports...'}</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : tickets.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-slate-500">
+                    {language === 'vi' ? 'Không có báo cáo vi phạm nào.' : 'No violation reports found.'}
+                  </td>
+                </tr>
+              ) : (
+                tickets.map((t) => (
+                  <tr
+                    key={t.id}
+                    className="hover:bg-slate-100/70 dark:hover:bg-slate-800/40 even:bg-slate-50/40 dark:even:bg-slate-900/20 transition-all duration-200 group"
+                  >
+                    <td className="p-4 pl-6 font-extrabold text-slate-800 dark:text-slate-200">
                     {t.id}
                   </td>
                   <td className="p-4 text-xs font-extrabold text-slate-700 dark:text-slate-300">
@@ -187,6 +174,17 @@ export function AdminReportsTab() {
                         <Eye className="size-4" />
                       </button>
 
+                      {/* Go to reported document */}
+                      {t.reportedFileId && t.reportedFileId !== "0" && t.reportedFileId !== "null" && (
+                        <button
+                          onClick={() => setSearchParams({ tab: 'ai-moderation', keyword: t.reportedFile })}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-955/20 transition-all cursor-pointer"
+                          title={language === 'vi' ? 'Đi tới tài liệu để xử lý' : 'Go to document to resolve'}
+                        >
+                          <ExternalLink className="size-4" />
+                        </button>
+                      )}
+
                       {t.status === 'pending' && (
                         <>
                           {/* Resolve ticket */}
@@ -211,7 +209,8 @@ export function AdminReportsTab() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -271,6 +270,18 @@ export function AdminReportsTab() {
               >
                 {language === 'vi' ? 'Đóng' : 'Close'}
               </Button>
+              {selectedTicket.reportedFileId && selectedTicket.reportedFileId !== "0" && selectedTicket.reportedFileId !== "null" && (
+                <Button
+                  onClick={() => {
+                    setSearchParams({ tab: 'ai-moderation', keyword: selectedTicket.reportedFile })
+                    setSelectedTicket(null)
+                  }}
+                  className="bg-blue-50 text-blue-650 hover:bg-blue-100 dark:bg-blue-955/35 dark:text-blue-400 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <ExternalLink className="size-3.5" />
+                  {language === 'vi' ? 'Xem tài liệu' : 'View Document'}
+                </Button>
+              )}
               {selectedTicket.status === 'pending' && (
                 <>
                   <Button

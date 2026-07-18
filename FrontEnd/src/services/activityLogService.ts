@@ -107,12 +107,27 @@ export const getLogs = (): SystemLog[] => {
   if (typeof window === 'undefined') return SEED_LOGS
   try {
     const stored = localStorage.getItem(LOGS_STORAGE_KEY)
+    let logs: SystemLog[] = []
     if (stored) {
-      return JSON.parse(stored) as SystemLog[]
+      logs = JSON.parse(stored) as SystemLog[]
     } else {
       localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(SEED_LOGS))
-      return SEED_LOGS
+      logs = SEED_LOGS
     }
+    
+    // Lọc bỏ tất cả logs của admin (cả log có sẵn và log lưu trong localStorage)
+    return logs.filter(log => {
+      const email = log.performerEmail?.toLowerCase()
+      const name = log.performer?.toLowerCase()
+      const isSystem = email === 'system@lumiedu.vn'
+      
+      if (isSystem) return true
+      
+      const isAdminEmail = email?.includes('admin') || email === 'huynhduybinh242k5@gmail.com'
+      const isAdminName = name?.includes('admin')
+      
+      return !(isAdminEmail || isAdminName)
+    })
   } catch (e) {
     console.error('Failed to parse activity logs', e)
     return SEED_LOGS
@@ -151,6 +166,11 @@ export const logActivity = (params: {
 }) => {
   try {
     const user = getCurrentUserFromStorage()
+    // Không ghi nhận log hoạt động mới của Admin
+    if (user?.role?.toLowerCase() === 'admin') {
+      return
+    }
+
     const performer = user?.name || 'Anonymous User'
     const performerEmail = user?.email || 'anonymous@lumiedu.vn'
     const userId = user?.id || 'anonymous'

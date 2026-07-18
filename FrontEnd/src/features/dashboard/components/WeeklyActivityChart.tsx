@@ -17,16 +17,17 @@ interface WeeklyActivityChartProps {
   trend: string
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload, language }: any) => {
   if (active && payload && payload.length) {
+    const hrsStudiedText = language === 'vi' ? 'giờ học tập' : language === 'ja' ? '学習時間' : language === 'ko' ? '학습 시간' : 'hrs studied';
     return (
-      <div className="bg-slate-950/90 dark:bg-slate-900/90 backdrop-blur-md text-white px-3 py-2 rounded-2xl text-xs font-semibold shadow-xl border border-white/10 flex items-center gap-2 select-none">
+      <div className="bg-slate-955/90 dark:bg-slate-900/90 backdrop-blur-md text-white px-3 py-2 rounded-2xl text-xs font-semibold shadow-xl border border-white/10 flex items-center gap-2 select-none">
         <Clock className="size-3.5 text-[#3155F6] animate-pulse" />
         <div>
           <span className="font-extrabold text-sm text-white">
             {payload[0].value.toFixed(2)}
           </span>
-          <span className="text-[10px] text-slate-400 ml-1">hrs studied</span>
+          <span className="text-[10px] text-slate-400 ml-1">{hrsStudiedText}</span>
         </div>
       </div>
     )
@@ -35,7 +36,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 }
 
 export function WeeklyActivityChart({ data, totalHours, trend }: WeeklyActivityChartProps) {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   // Safely default if data is empty or undefined to prevent crashes
   const chartData = data || []
@@ -44,12 +45,16 @@ export function WeeklyActivityChart({ data, totalHours, trend }: WeeklyActivityC
 
   const isPositive = !displayTrend.startsWith('-')
 
+  const totalDurationText = language === 'vi' ? 'Tổng thời gian' : language === 'ja' ? '合計時間' : language === 'ko' ? '총 기간' : 'Total Duration';
+  const hrsStudiedText = language === 'vi' ? 'giờ đã học' : language === 'ja' ? '時間学習' : language === 'ko' ? '시간 공부함' : 'hrs studied';
+  const trackingLiveText = language === 'vi' ? 'Theo dõi trực tiếp' : language === 'ja' ? 'ライブ追跡中' : language === 'ko' ? '실시간 추적 중' : 'Tracking Live';
+
   return (
     <section className="col-span-4 space-y-4">
       {/* Premium Header with Icon and Live Indicator */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-[#3155F6] dark:text-blue-400">
+          <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-955/50 text-[#3155F6] dark:text-blue-400">
             <BarChart3 className="size-4 stroke-[2.5]" />
           </div>
           <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 tracking-tight uppercase">
@@ -63,7 +68,7 @@ export function WeeklyActivityChart({ data, totalHours, trend }: WeeklyActivityC
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
           </span>
-          <span>Tracking Live</span>
+          <span>{trackingLiveText}</span>
         </div>
       </div>
 
@@ -76,12 +81,12 @@ export function WeeklyActivityChart({ data, totalHours, trend }: WeeklyActivityC
         <div className="mb-4 flex items-center justify-between relative z-10">
           <div className="space-y-0.5">
             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-              Total Duration
+              {totalDurationText}
             </p>
             <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
               {displayHours.toFixed(1)}
               <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 ml-1.5">
-                hrs studied
+                {hrsStudiedText}
               </span>
             </p>
           </div>
@@ -128,7 +133,7 @@ export function WeeklyActivityChart({ data, totalHours, trend }: WeeklyActivityC
               />
               <YAxis hide />
               <Tooltip
-                content={<CustomTooltip />}
+                content={<CustomTooltip language={language} />}
                 cursor={{ fill: 'rgba(49, 85, 246, 0.04)', radius: 10 }}
                 animationDuration={200}
               />

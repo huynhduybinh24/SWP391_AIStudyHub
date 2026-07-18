@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
-import { Zap, X, PanelLeftClose, PanelLeftOpen, Users, CreditCard, Bell, LayoutDashboard, TrendingUp, ClipboardList, AlertTriangle, FileText, Handshake } from 'lucide-react'
+import { Zap, X, PanelLeftClose, PanelLeftOpen, Users, CreditCard, Bell, LayoutDashboard, TrendingUp, ClipboardList, AlertTriangle, FileText } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -156,7 +156,6 @@ export function Sidebar() {
     { label: 'Document Management', path: '/dashboard/admin?tab=ai-moderation', icon: FileText },
     { label: 'Package Management', path: '/dashboard/admin?tab=packages', icon: CreditCard },
     { label: 'Notification Management', path: '/dashboard/admin?tab=notifications', icon: Bell },
-    { label: 'Partnership Requests', path: '/dashboard/admin?tab=partnership-requests', icon: Handshake },
     { label: 'Analytics', path: '/dashboard/admin?tab=analytics', icon: TrendingUp },
     { label: 'Activity Logs', path: '/dashboard/admin?tab=activity-logs', icon: ClipboardList },
     { label: 'Reports', path: '/dashboard/admin?tab=reports', icon: AlertTriangle },
@@ -164,8 +163,6 @@ export function Sidebar() {
 
   const getSidebarLabel = (label: string) => {
     switch (label.toLowerCase()) {
-      case 'partnership requests':
-        return language === 'vi' ? 'Yêu cầu Hợp tác' : 'Partnership Requests'
       case 'dashboard':
         return t.sidebar.dashboard
       case 'my documents':

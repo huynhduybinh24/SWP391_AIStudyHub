@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '@/components/ui/Toast'
 import { useTranslation } from '@/context/LanguageContext'
 
-// ─── Search Constants ────────────────────────────────────────────────────────
+// â”€â”€â”€ Search Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface SearchSuggestion {
   id: string
   title: string
@@ -37,12 +37,12 @@ const SEARCH_SUGGESTION_TOPICS: SearchSuggestion[] = [
 
 const ADMIN_SUGGESTION_TOPICS: SearchSuggestion[] = [
   // Mock Users
-  { id: 'usr-1', title: 'Huynh Duy Binh', category: 'User (Student)' },
-  { id: 'usr-2', title: 'Alex Rivera', category: 'User (Student)' },
-  { id: 'usr-3', title: 'Sarah Jenkins', category: 'User (Teacher)' },
-  { id: 'usr-4', title: 'Ngoc Tan', category: 'User (Student)' },
-  { id: 'usr-5', title: 'Marcus Knight', category: 'User (Student)' },
-  { id: 'usr-6', title: 'Emily R.', category: 'User (Teacher)' },
+  { id: 'usr-1', title: 'Huynh Duy Binh', category: 'User' },
+  { id: 'usr-2', title: 'Alex Rivera', category: 'User' },
+  { id: 'usr-3', title: 'Sarah Jenkins', category: 'User' },
+  { id: 'usr-4', title: 'Ngoc Tan', category: 'User' },
+  { id: 'usr-5', title: 'Marcus Knight', category: 'User' },
+  { id: 'usr-6', title: 'Emily R.', category: 'User' },
 
   // Mock Documents
   { id: 'doc-1', title: 'Advanced Neuroscience Syllabus 2024', category: 'Syllabus' },
@@ -92,7 +92,7 @@ export interface MockNotification {
   targetUserEmail?: string
 }
 
-// ─── Header ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function Header() {
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role?.toLowerCase() === 'admin'
@@ -249,7 +249,7 @@ export function Header() {
 
       if (userRole === 'admin') {
         const typeStr = n.type || '';
-        if (typeStr === 'document_deleted' || typeStr === 'document_rejected' || typeStr === 'document_removed') {
+        if ((typeStr as string) === 'document_deleted' || (typeStr as string) === 'document_rejected' || (typeStr as string) === 'document_removed') {
           if (!n.targetUserEmail || n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
             return false;
           }
@@ -266,10 +266,63 @@ export function Header() {
     return allNotifs
   }
 
-  const [notifications, setNotifications] = useState<MockNotification[]>(loadNotifications)
+  const [notifications, setNotifications] = useState<MockNotification[]>([])
+
+  const refreshNotifications = async () => {
+    const currentUser = getCurrentUser()
+    const userEmail = currentUser.email
+
+    try {
+      const { userNotificationService } = await import('@/features/notifications/services/userNotificationService')
+      const data = await userNotificationService.getNotifications(currentUser)
+
+      const mapped = data.map((item: any): MockNotification => {
+        let headerType: MockNotification['type'] = 'chat'
+        const type = item.type
+        if (type === 'document' || type === 'document_approved' || type === 'flashcard' || type === 'doc') {
+          headerType = 'doc'
+        } else if (type === 'calendar' || type === 'plan') {
+          headerType = 'plan'
+        } else if (type === 'folder' || type === 'shared_file' || type === 'share') {
+          headerType = 'share'
+        } else if (type === 'document_deleted' || type === 'document_removed') {
+          headerType = 'document_deleted'
+        } else if (type === 'document_rejected') {
+          headerType = 'document_rejected'
+        }
+
+        return {
+          id: String(item.id),
+          title: item.title,
+          description: item.description || item.message || '',
+          time: item.time || 'Just now',
+          type: headerType,
+          isRead: !!item.isRead,
+          reason: item.reason,
+          documentName: item.documentName,
+          documentId: item.documentId,
+          actionType: item.actionType,
+          adminNote: item.adminNote,
+          targetUserEmail: item.targetUserEmail
+        }
+      })
+
+      const filtered = mapped.filter((n: any) => {
+        if (n.targetUserEmail && n.targetUserEmail.toLowerCase() !== userEmail.toLowerCase()) {
+          return false
+        }
+        return true
+      })
+
+      setNotifications(filtered)
+    } catch (e) {
+      console.error('Failed to fetch header notifications', e)
+    }
+  }
 
   useEffect(() => {
-    const handleUpdate = () => setNotifications(loadNotifications())
+    refreshNotifications()
+    const handleUpdate = () => refreshNotifications()
     window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
     window.addEventListener('aiStudyHubUserChanged', handleUpdate)
     window.addEventListener('storage', handleUpdate)
@@ -285,28 +338,11 @@ export function Header() {
 
   const markAsRead = (id: string) => {
     const userEmail = getCurrentUser().email
-    if (id.startsWith('usr-ntf-')) {
-      import('@/features/notifications/services/userNotificationService').then((m) => {
-        m.userNotificationService.markUserNotificationAsRead(id, userEmail)
-      })
-    }
-    
-    setNotifications((prev) => {
-      const updated = prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      
-      try {
-        const readMap: Record<string, boolean> = {}
-        updated.forEach((n) => {
-          if (!n.id.startsWith('usr-ntf-')) {
-            readMap[n.id] = n.isRead
-          }
-        })
-        localStorage.setItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`, JSON.stringify(readMap))
-      } catch (err) {
-        console.error('Failed to save notifications read state:', err)
-      }
-      return updated
+    import('@/features/notifications/services/userNotificationService').then((m) => {
+      m.userNotificationService.markUserNotificationAsRead(id, userEmail)
     })
+
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
   }
 
   const markAllAsRead = () => {
@@ -314,23 +350,8 @@ export function Header() {
     import('@/features/notifications/services/userNotificationService').then((m) => {
       m.userNotificationService.markAllUserNotificationsAsRead(userEmail)
     })
-    
-    setNotifications((prev) => {
-      const updated = prev.map((n) => ({ ...n, isRead: true }))
-      
-      try {
-        const readMap: Record<string, boolean> = {}
-        updated.forEach((n) => {
-          if (!n.id.startsWith('usr-ntf-')) {
-            readMap[n.id] = n.isRead
-          }
-        })
-        localStorage.setItem(`aiStudyHubHeaderNotificationsReadState:${userEmail}`, JSON.stringify(readMap))
-      } catch (err) {
-        console.error('Failed to save notifications read state:', err)
-      }
-      return updated
-    })
+
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
     toast.success(t.header.toastAllMarkedRead)
   }
 
@@ -376,6 +397,11 @@ export function Header() {
   const { pathname } = useLocation()
   const { userMenuOpen, setUserMenuOpen, toggleUserMenu, setSidebarOpen } = useUiStore()
   const { profile } = useProfileStore()
+  const currentEmail = user?.email
+  const rawHeaderAvatar = currentEmail 
+    ? (localStorage.getItem(`aiStudyHubUserAvatar:${currentEmail}`) || profile.avatarUrl) 
+    : profile.avatarUrl
+  const headerAvatarUrl = (rawHeaderAvatar && rawHeaderAvatar !== '/logo.png') ? rawHeaderAvatar : undefined
   
   const menuRef = useRef<HTMLDivElement>(null)
   const notificationRef = useRef<HTMLDivElement>(null)
@@ -417,15 +443,18 @@ export function Header() {
             role: savedUser.role,
             plan: savedUser.plan.toLowerCase() as 'free' | 'pro' | 'institutional',
             avatarUrl: savedUser.avatar || '/logo.png',
+            university: savedUser.university || 'FPT University',
+            major: savedUser.major || 'Software engineering',
+            degree: savedUser.degree || 'Bachelor',
           },
           isAuthenticated: true,
         })
         useProfileStore.setState({
           profile: {
             name: savedUser.name,
-            university: 'FPT University',
-            major: 'Software engineering',
-            degree: 'Bachelor',
+            university: savedUser.university || 'FPT University',
+            major: savedUser.major || 'Software engineering',
+            degree: savedUser.degree || 'Bachelor',
             avatarUrl: savedUser.avatar || '/logo.png',
           }
         })
@@ -526,7 +555,7 @@ export function Header() {
     setSearchVal(term)
     saveSearchToHistory(term)
     toast.success(t.header.toastSearchingResults(term))
-    
+
     if (isAdmin) {
       const lowerTerm = term.toLowerCase()
       if (category === 'Admin Panel' || lowerTerm.includes('user') || lowerTerm.includes('moderation') || lowerTerm.includes('log') || lowerTerm.includes('status') || lowerTerm.includes('report') || lowerTerm.includes('package')) {
@@ -537,7 +566,7 @@ export function Header() {
         else if (lowerTerm.includes('report')) targetTab = 'reports'
         else if (lowerTerm.includes('package') || lowerTerm.includes('pricing')) targetTab = 'packages'
         else if (lowerTerm.includes('status') || lowerTerm.includes('maintenance')) targetTab = 'overview'
-        
+
         navigate(`/dashboard/admin?tab=${targetTab}`)
       } else if (category && category.includes('User')) {
         navigate(`/dashboard/admin?tab=users&keyword=${encodeURIComponent(term)}`)
@@ -559,7 +588,7 @@ export function Header() {
   )
 
   return (
-    <header className="relative z-20 flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 px-8 shadow-sm">
+    <header className="relative z-50 flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800 px-8 shadow-sm">
       <button
         type="button"
         onClick={() => setSidebarOpen(true)}
@@ -568,10 +597,10 @@ export function Header() {
       >
         <Menu className="size-5" />
       </button>
-      
-      <form 
+
+      <form
         ref={searchContainerRef}
-        onSubmit={handleSearchSubmit} 
+        onSubmit={handleSearchSubmit}
         className="relative flex flex-1 items-center max-w-[400px]"
       >
         <Input
@@ -871,7 +900,7 @@ export function Header() {
             <CircleHelp className="size-5 text-body dark:text-slate-400" />
           </Button>
         )}
-        
+
         {/* Notification Bell with Dropdown */}
         {user && (
           <div className="relative" ref={notificationRef}>
@@ -915,7 +944,7 @@ export function Header() {
             aria-haspopup="menu"
             aria-label="User menu"
           >
-            <Avatar src={profile.avatarUrl} name={profile.name} className="cursor-pointer border border-slate-200/50 dark:border-slate-800" />
+            <Avatar src={headerAvatarUrl} name={profile.name} className="cursor-pointer border border-slate-200/50 dark:border-slate-800" />
           </button>
 
           <AnimatePresence>
@@ -941,7 +970,7 @@ export function Header() {
   )
 }
 
-// ─── Test Verification Plan ──────────────────────────────────────────────────
+// â”€â”€â”€ Test Verification Plan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Verified interactions:
 // 1. Dropdown toggle: Bell click correctly shows/hides the notification dropdown.
 // 2. Individual read: Clicking a single notification successfully calls markAsRead(id), removing its red dot immediately and decrementing unreadCount.

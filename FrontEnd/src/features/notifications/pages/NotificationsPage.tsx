@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils'
 import { notificationApi, Notification, NotificationType } from '../api/notification.api'
 import { getCurrentUser } from '../services/userNotificationService'
 import { useTranslation } from '@/context/LanguageContext'
-import { realtimeNotificationManager } from '../services/notificationRealtime'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 
@@ -132,25 +131,25 @@ function NotificationCard({
   const localized = (() => {
     if (id === 'ai-summary') {
       return {
-        title: language === 'vi' ? 'Bản tóm tắt AI đã sẵn sàng' : language === 'ja' ? 'AI要約の準備完了' : language === 'ko' ? 'AI 요약 완료' : 'AI Summary Ready',
+        title: language === 'vi' ? 'Bản tóm tắt AI đã sẵn sàng' : language === 'ja' ? 'AIè¦ç´„ã®æº–å‚™å®Œäº†' : language === 'ko' ? 'AI ìš”ì•½ ì™„ë£Œ' : 'AI Summary Ready',
         description: (
           <>
-            {language === 'vi' ? 'Bản tóm tắt toàn diện cho tài liệu ' : language === 'ja' ? 'ドキュメント ' : language === 'ko' ? '다음 문서에 대한 포괄적인 요약 ' : 'The comprehensive summary for your document '}
+            {language === 'vi' ? 'Bản tóm tắt toàn diện cho tài liệu ' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆ ' : language === 'ko' ? 'ë‹¤ìŒ ë¬¸ì„œì— ëŒ€í•œ í¬ê´„ì ì¸ ìš”ì•½ ' : 'The comprehensive summary for your document '}
             <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
               "Advanced Neuroscience Syllabus 2024.pdf"
             </strong>{' '}
-            {language === 'vi' ? 'của bạn đã hoàn thành và sẵn sàng để xem lại.' : language === 'ja' ? 'の包括的な要約が完了し、確認の準備が整いました。' : language === 'ko' ? '이(가) 완료되어 검토할 준비가 되었습니다.' : 'is now complete and ready for review.'}
+            {language === 'vi' ? 'của bạn đã hoàn thành và sẵn sàng để xem lại.' : language === 'ja' ? 'ã®åŒ…æ‹¬çš„ãªè¦ç´„ãŒå®Œäº†ã—ã€ç¢ºèªã®æº–å‚™ãŒæ•´ã„ã¾ã—ãŸã€‚' : language === 'ko' ? 'ì´(ê°€) ì™„ë£Œë˜ì–´ ê²€í† í•  ì¤€ë¹„ê°€ ë˜ì—ˆìŠµë‹ˆë‹¤.' : 'is now complete and ready for review.'}
           </>
         ),
-        actionText: language === 'vi' ? 'Xem bản tóm tắt' : language === 'ja' ? '要約を表示' : language === 'ko' ? '요약 보기' : 'View Summary',
+        actionText: language === 'vi' ? 'Xem bản tóm tắt' : language === 'ja' ? 'è¦ç´„ã‚’è¡¨ç¤º' : language === 'ko' ? 'ìš”ì•½ ë³´ê¸°' : 'View Summary',
       }
     }
     if (id === 'shared-folder') {
       return {
-        title: language === 'vi' ? 'Sarah Jenkins đã chia sẻ một thư mục với bạn' : language === 'ja' ? 'Sarah Jenkins がフォルダーを共有しました' : language === 'ko' ? 'Sarah Jenkins가 폴더를 공유했습니다' : 'Sarah Jenkins shared a folder with you',
+        title: language === 'vi' ? 'Sarah Jenkins đã chia sẻ một thư mục với bạn' : language === 'ja' ? 'Sarah Jenkins ãŒãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ã‚’å…±æœ‰ã—ã¾ã—ãŸ' : language === 'ko' ? 'Sarah Jenkinsê°€ í´ë”ë¥¼ ê³µìœ í–ˆìŠµë‹ˆë‹¤' : 'Sarah Jenkins shared a folder with you',
         description: (
           <>
-            {language === 'vi' ? 'Thư mục: ' : language === 'ja' ? 'フォルダー: ' : language === 'ko' ? '폴더: ' : 'Folder: ' }
+            {language === 'vi' ? 'Thư mục: ' : language === 'ja' ? 'ãƒ•ã‚©ãƒ«ãƒ€ãƒ¼: ' : language === 'ko' ? 'í´ë”: ' : 'Folder: ' }
             <span className="font-semibold text-[#0b1c30] dark:text-slate-100">Group Project Research Materials</span>
           </>
         ),
@@ -158,60 +157,60 @@ function NotificationCard({
     }
     if (id === 'emily') {
       return {
-        title: language === 'vi' ? 'Emily R. đã nhắc đến bạn' : language === 'ja' ? 'Emily R. があなたをメンションしました' : language === 'ko' ? 'Emily R.님이 당신을 언급했습니다' : 'Emily R. mentioned you',
+        title: language === 'vi' ? 'Emily R. đã nhắc đến bạn' : language === 'ja' ? 'Emily R. ãŒã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸ' : language === 'ko' ? 'Emily R.ë‹˜ì´ ë‹¹ì‹ ì„ ì–¸ê¸‰í–ˆìŠµë‹ˆë‹¤' : 'Emily R. mentioned you',
         description: (
           <>
             <span className="text-[#3155F6] dark:text-blue-400 font-semibold">@User</span>
-            {language === 'vi' 
-              ? ', bạn nghĩ thế nào về phần phương pháp luận ở trang 4 của bài báo "Cognitive Science"?' 
-              : language === 'ja' 
-              ? '、"Cognitive Science"の論文의 4ページ目にある方法論セクションについてどう思いますか？' 
-              : language === 'ko' 
-              ? '님, "Cognitive Science" 논문의 4페이지 방법론 섹션에 대해 어떻게 생각하시나요?' 
+            {language === 'vi'
+              ? ', bạn nghĩ thế nào về phần phương pháp luận ở trang 4 của bài báo "Cognitive Science"?'
+              : language === 'ja'
+              ? 'ã€"Cognitive Science"ã®è«–æ–‡ì˜ 4ãƒšãƒ¼ã‚¸ç›®ã«ã‚ã‚‹æ–¹æ³•è«–ã‚»ã‚¯ã‚·ãƒ§ãƒ³ã«ã¤ã„ã¦ã©ã†æ€ã„ã¾ã™ã‹ï¼Ÿ'
+              : language === 'ko'
+              ? 'ë‹˜, "Cognitive Science" ë…¼ë¬¸ì˜ 4íŽ˜ì´ì§€ ë°©ë²•ë¡  ì„¹ì…˜ì— ëŒ€í•´ ì–´ë–»ê²Œ ìƒê°í•˜ì‹œë‚˜ìš”?'
               : ", what do you think about the methodology section on page 4 of the 'Cognitive Science' paper?"}
           </>
         ),
-        actionText: language === 'vi' ? 'Phản hồi' : language === 'ja' ? '返信' : language === 'ko' ? '답장' : 'Reply',
+        actionText: language === 'vi' ? 'Phản hồi' : language === 'ja' ? 'è¿”ä¿¡' : language === 'ko' ? 'ë‹µìž¥' : 'Reply',
       }
     }
     if (id === 'all-3') {
       return {
-        title: language === 'vi' ? 'Đã nhắc đến bạn' : language === 'ja' ? 'あなたをメンションしました' : language === 'ko' ? '언급됨' : 'Mentioned You',
+        title: language === 'vi' ? 'Đã nhắc đến bạn' : language === 'ja' ? 'ã ‚ã ªã Ÿã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã —ã ¾ã —ã Ÿ' : language === 'ko' ? 'ì–¸ê¸‰ë ¨' : 'Mentioned You',
         description: (
           <>
-            {language === 'vi' 
-              ? 'Emily R. đã nhắc đến bạn trong một bình luận ở ' 
-              : language === 'ja' 
-              ? 'Emily R. がコメントであなたをメンションしました：' 
-              : language === 'ko' 
-              ? 'Emily R.님이 다음 문서의 댓글에서 당신을 언급했습니다: ' 
+            {language === 'vi'
+              ? 'Emily R. đã nhắc đến bạn trong má»™t bÃ¬nh luáº­n á»Ÿ '
+              : language === 'ja'
+              ? 'Emily R. ãŒã‚³ãƒ¡ãƒ³ãƒˆã§ã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸï¼š'
+              : language === 'ko'
+              ? 'Emily R.ë‹˜ì´ ë‹¤ìŒ ë¬¸ì„œì˜ ëŒ“ê¸€ì—ì„œ ë‹¹ì‹ ì„ ì–¸ê¸‰í–ˆìŠµë‹ˆë‹¤: '
               : 'Emily R. mentioned you in a comment on '}
             <span className="text-[#3155F6] dark:text-blue-400 hover:underline cursor-pointer font-semibold">
-              {language === 'vi' ? 'Ghi chú bài giảng Tuần 4.' : language === 'ja' ? '講義ノート第4週。' : language === 'ko' ? '강의 노트 4주차.' : 'Lecture Notes Week 4.'}
+              {language === 'vi' ? 'Ghi chú bài giảng Tuần 4.' : language === 'ja' ? 'è¬›ç¾©ãƒŽãƒ¼ãƒˆç¬¬4é€±ã€‚' : language === 'ko' ? 'ê°•ì˜ ë…¸íŠ¸ 4ì£¼ì°¨.' : 'Lecture Notes Week 4.'}
             </span>
           </>
         ),
-        quote: language === 'vi' 
-          ? '@You bạn có thể xác minh các công thức được sử dụng trong phần 3 không? Chúng có vẻ hơi khác so với sách giáo khoa.' 
-          : language === 'ja' 
-          ? '@You セクション3で使用されている数式を確認していただけますか？教科書と少し異なるようです。' 
-          : language === 'ko' 
-          ? '@You 섹션 3에 사용된 공식을 확인해 주시겠습니까? 교과서와 약간 다른 것 같습니다.' 
+        quote: language === 'vi'
+          ? '@You bạn có thể xác minh các công thức được sử dụng trong phần 3 không? Chúng có vẻ hơi khác so với sách giáo khoa.'
+          : language === 'ja'
+          ? '@You ã‚»ã‚¯ã‚·ãƒ§ãƒ³3ã§ä½¿ç”¨ã•ã‚Œã¦ã„ã‚‹æ•°å¼ã‚’ç¢ºèªã—ã¦ã„ãŸã ã‘ã¾ã™ã‹ï¼Ÿæ•™ç§‘æ›¸ã¨å°‘ã—ç•°ãªã‚‹ã‚ˆã†ã§ã™ã€‚'
+          : language === 'ko'
+          ? '@You ì„¹ì…˜ 3ì— ì‚¬ìš©ëœ ê³µì‹ì„ í™•ì¸í•´ ì£¼ì‹œê² ìŠµë‹ˆê¹Œ? êµê³¼ì„œì™€ ì•½ê°„ ë‹¤ë¥¸ ê²ƒ ê°™ìŠµë‹ˆë‹¤.'
           : '@You could you verify the formulas used in section 3? They seem slightly different from the textbook.',
-        actionText: language === 'vi' ? 'Phản hồi' : language === 'ja' ? '返信' : language === 'ko' ? '답장' : 'Reply',
+        actionText: language === 'vi' ? 'Phản hồi' : language === 'ja' ? 'è¿”ä¿¡' : language === 'ko' ? 'ë‹µìž¥' : 'Reply',
       }
     }
     if (id === 'security-alert') {
       return {
-        title: language === 'vi' ? 'Cảnh báo bảo mật: Đăng nhập mới' : language === 'ja' ? 'セキュリティ警告: 新規ログイン' : language === 'ko' ? '보안 경고: 새로운 로그인' : 'Security Alert: New Login',
+        title: language === 'vi' ? 'Cảnh báo bảo mật: Đăng nhập mới' : language === 'ja' ? 'ã‚»ã‚­ãƒ¥ãƒªãƒ†ã‚£è­¦å‘Š: æ–°è¦ ãƒ­ã‚°ã‚¤ãƒ³' : language === 'ko' ? 'ë³´ì•ˆ ê²½ê³ : ìƒˆë¡œìš´ ë¡œê·¸ì ¸' : 'Security Alert: New Login',
         description: (
           <>
-            {language === 'vi' 
-              ? 'Một đăng nhập mới đã được phát hiện trên tài khoản của bạn từ trình duyệt Chrome trên thiết bị MacOS. Nếu đây không phải là bạn, vui lòng bảo mật tài khoản ngay lập tức.' 
-              : language === 'ja' 
-              ? 'MacOSデバイスのChromeブラウザからアカウントへの新しいログインが検出されました。これがご自身でない場合は、すぐにアカウントを保護してください。' 
-              : language === 'ko' 
-              ? 'MacOS 기기의 Chrome 브라우저에서 계정에 대한 새로운 로그인이 감지되었습니다. 본인이 아닌 경우 즉시 계정을 보호하십시오.' 
+            {language === 'vi'
+              ? 'Một đăng nhập mới đã được phát hiện trên tài khoản của bạn từ trình duyệt Chrome trên thiết bị MacOS. Nếu đây không phải là bạn, vui lòng bảo mật tài khoản ngay lập tức.'
+              : language === 'ja'
+              ? 'MacOSãƒ‡ãƒã‚¤ã‚¹ã®Chromeãƒ–ãƒ©ã‚¦ã‚¶ã‹ã‚‰ã‚¢ã‚«ã‚¦ãƒ³ãƒˆã¸ã®æ–°ã—ã„ãƒ­ã‚°ã‚¤ãƒ³ãŒæ¤œå‡ºã•ã‚Œã¾ã—ãŸã€‚ã“ã‚ŒãŒã”è‡ªèº«ã§ãªã„å ´åˆã¯ã€ã™ãã«ã‚¢ã‚«ã‚¦ãƒ³ãƒˆã‚’ä¿è­·ã—ã¦ãã ã•ã„ã€‚'
+              : language === 'ko'
+              ? 'MacOS ê¸°ê¸°ì˜ Chrome ë¸Œë¼ìš°ì €ì—ì„œ ê³„ì •ì— ëŒ€í•œ ìƒˆë¡œìš´ ë¡œê·¸ì¸ì´ ê°ì§€ë˜ì—ˆìŠµë‹ˆë‹¤. ë³¸ì¸ì´ ì•„ë‹Œ ê²½ìš° ì¦‰ì‹œ ê³„ì •ì„ ë³´í˜¸í•˜ì‹­ì‹œì˜¤.'
               : 'A new login was detected on your account from a Chrome browser on a MacOS device. If this wasn\'t you, please secure your account immediately.'}
           </>
         ),
@@ -219,25 +218,25 @@ function NotificationCard({
     }
     if (id === 'study-plan') {
       return {
-        title: language === 'vi' ? 'Đã tạo kế hoạch học tập' : language === 'ja' ? '学習計画が作成されました' : language === 'ko' ? '학습 계획 생성됨' : 'Study Plan Generated',
+        title: language === 'vi' ? 'Đã tạo kế hoạch học tập' : language === 'ja' ? 'å­¦ç¿’è¨ˆç”»ã Œä½œæˆ ã •ã‚Œã ¾ã —ã Ÿ' : language === 'ko' ? 'í•™ìŠµ ê³„íš  ìƒ ì„±ë ¨' : 'Study Plan Generated',
         description: (
           <>
-            {language === 'vi' 
-              ? 'AI đã tạo một kế hoạch học tập 4 tuần được cá nhân hóa cho ' 
-              : language === 'ja' 
-              ? 'AIがパーソナライズされた4週間の学習計画を作成しました：' 
-              : language === 'ko' 
-              ? 'AI가 다음 과목에 대한 맞춤형 4주 학습 계획을 생성했습니다: ' 
+            {language === 'vi'
+              ? 'AI đã tạo một kế hoạch học tập 4 tuần được cá nhân hóa cho '
+              : language === 'ja'
+              ? 'AIãŒãƒ‘ãƒ¼ã‚½ãƒŠãƒ©ã‚¤ã‚ºã•ã‚ŒãŸ4é€±é–“ã®å­¦ç¿’è¨ˆç”»ã‚’ä½œæˆã—ã¾ã—ãŸï¼š'
+              : language === 'ko'
+              ? 'AIê°€ ë‹¤ìŒ ê³¼ëª©ì— ëŒ€í•œ ë§žì¶¤í˜• 4ì£¼ í•™ìŠµ ê³„íšì„ ìƒì„±í–ˆìŠµë‹ˆë‹¤: '
               : 'AI has created a personalized 4-week study plan for '}
             <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
-              {language === 'vi' ? '"Hóa hữu cơ"' : language === 'ja' ? '「有機化学」' : language === 'ko' ? '"유기 화학"' : '"Organic Chemistry"'}
+              {language === 'vi' ? '"Hóa hữu cơ"' : language === 'ja' ? 'ã€Œæœ‰æ©ŸåŒ–å­¦ã€' : language === 'ko' ? '"ìœ ê¸° í™”í•™"' : '"Organic Chemistry"'}
             </strong>{' '}
-            {language === 'vi' 
-              ? 'dựa trên các tệp bạn đã tải lên gần đây.' 
-              : language === 'ja' 
-              ? '（最近のアップロードに基づく）。' 
-              : language === 'ko' 
-              ? ' (최근 업로드 기준).' 
+            {language === 'vi'
+              ? 'dựa trên các tệp bạn đã tải lên gần đây.'
+              : language === 'ja'
+              ? 'ï¼ˆæœ€è¿‘ã®ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ã«åŸºã¥ãï¼‰ã€‚'
+              : language === 'ko'
+              ? ' (ìµœê·¼ ì—…ë¡œë“œ ê¸°ì¤€).'
               : 'based on your recent uploads.'}
           </>
         ),
@@ -245,15 +244,15 @@ function NotificationCard({
     }
     if (id === 'mention-2') {
       return {
-        title: language === 'vi' ? 'Sarah Mitchell đã nhắc đến bạn' : language === 'ja' ? 'Sarah Mitchell があなたをメンションしました' : language === 'ko' ? 'Sarah Mitchell님이 당신을 언급했습니다' : 'Sarah Mitchell mentioned you',
+        title: language === 'vi' ? 'Sarah Mitchell đã nhắc đến bạn' : language === 'ja' ? 'Sarah Mitchell ãŒã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸ' : language === 'ko' ? 'Sarah Mitchellë‹˜ì´ ë‹¹ì‹ ì„ ì–¸ê¸‰í–ˆìŠµë‹ˆë‹¤' : 'Sarah Mitchell mentioned you',
         description: (
           <>
-            {language === 'vi' 
-              ? 'Sarah Mitchell đã nhắc đến bạn trong một bình luận ở ' 
-              : language === 'ja' 
-              ? 'Sarah Mitchell がコメントであなたをメンションしました：' 
-              : language === 'ko' 
-              ? 'Sarah Mitchell님이 다음 문서의 댓글에서 당신을 언급했습니다: ' 
+            {language === 'vi'
+              ? 'Sarah Mitchell đã nhắc đến bạn trong má»™t bÃ¬nh luáº­n á»Ÿ '
+              : language === 'ja'
+              ? 'Sarah Mitchell ãŒã‚³ãƒ¡ãƒ³ãƒˆã§ã‚ãªãŸã‚’ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³ã—ã¾ã—ãŸï¼š'
+              : language === 'ko'
+              ? 'Sarah Mitchellë‹˜ì´ ë‹¤ìŒ ë¬¸ì„œì˜ ëŒ“ê¸€ì—ì„œ ë‹¹ì‹ ì„ ì–¸ê¸‰í–ˆìŠµë‹ˆë‹¤: '
               : "Sarah Mitchell mentioned you in a comment on "}
             <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
               'Neuroscience_Ch4_Syn...'
@@ -261,21 +260,21 @@ function NotificationCard({
             {language === 'vi'
               ? ': "@Sarah Mitchell, hãy kiểm tra sơ đồ tính dẻo của khớp thần kinh ở trang 12."'
               : language === 'ja'
-              ? ': 「@Sarah Mitchell、12ページのシナプス可塑性図を確認してください。」'
+              ? ': ã€Œ@Sarah Mitchellã€12ãƒšãƒ¼ã‚¸ã®ã‚·ãƒŠãƒ—ã‚¹å¯å¡‘æ€§å›³ã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚ã€'
               : language === 'ko'
-              ? ': "@Sarah Mitchell, 12페이지의 시냅스 가소성 다이어그램을 확인하세요."'
+              ? ': "@Sarah Mitchell, 12íŽ˜ì´ì§€ì˜ ì‹œëƒ…ìŠ¤ ê°€ì†Œì„± ë‹¤ì´ì–´ê·¸ëž¨ì„ í™•ì¸í•˜ì„¸ìš”."'
               : ': "@Sarah Mitchell, check the synaptic plasticity diagram on page 12."'}
           </>
         ),
-        actionText: language === 'vi' ? 'Xem bình luận' : language === 'ja' ? 'コメントを表示' : language === 'ko' ? '댓글 보기' : 'View Comment',
+        actionText: language === 'vi' ? 'Xem bình luận' : language === 'ja' ? 'ã‚³ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ëŒ“ê¸€ ë³´ê¸°' : 'View Comment',
       }
     }
     if (id === 'shared-doc-1') {
       return {
-        title: language === 'vi' ? 'Alex Chen đã chia sẻ một tài liệu' : language === 'ja' ? 'Alex Chen がドキュメントを共有しました' : language === 'ko' ? 'Alex Chen님이 문서를 공유했습니다' : 'Alex Chen shared a document',
+        title: language === 'vi' ? 'Alex Chen đã chia sẻ một tài liệu' : language === 'ja' ? 'Alex Chen ãŒãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’å…±æœ‰ã—ã¾ã—ãŸ' : language === 'ko' ? 'Alex Chenë‹˜ì´ ë¬¸ì„œë¥¼ ê³µìœ í–ˆìŠµë‹ˆë‹¤' : 'Alex Chen shared a document',
         description: (
           <>
-            {language === 'vi' ? 'Tài liệu: ' : language === 'ja' ? 'ドキュメント: ' : language === 'ko' ? '문서: ' : 'Document: '}
+            {language === 'vi' ? 'Tài liệu: ' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆ: ' : language === 'ko' ? 'ë¬¸ì„œ: ' : 'Document: '}
             <span className="font-semibold text-[#0b1c30] dark:text-slate-100">Advanced Neuroscience Syllabus 2024.pdf</span>
           </>
         ),
@@ -283,18 +282,18 @@ function NotificationCard({
     }
     if (id === 'flashcards') {
       return {
-        title: language === 'vi' ? 'Có thẻ ghi nhớ mới' : language === 'ja' ? '新しいフラッシュカードがあります' : language === 'ko' ? '새로운 플래시카드 사용 가능' : 'New Flashcards Available',
+        title: language === 'vi' ? 'Có thẻ ghi nhớ mới' : language === 'ja' ? 'æ–°ã—ã„ãƒ•ãƒ©ãƒƒã‚·ãƒ¥ã‚«ãƒ¼ãƒ‰ãŒã‚ã‚Šã¾ã™' : language === 'ko' ? 'ìƒˆë¡œìš´ í”Œëž˜ì‹œì¹´ë“œ ì‚¬ìš© ê°€ëŠ¥' : 'New Flashcards Available',
         description: (
           <>
-            {language === 'vi' 
-              ? '25 thẻ ghi nhớ mới đã được tạo tự động cho ' 
-              : language === 'ja' 
-              ? 'に対して25枚の新しいフラッシュカードが自動的に生成されました：' 
-              : language === 'ko' 
-              ? '에 대해 25개의 새로운 플래시카드가 자동으로 생성되었습니다: '
+            {language === 'vi'
+              ? '25 thẻ ghi nhớ mới đã được tạo tự động cho '
+              : language === 'ja'
+              ? 'ã«å¯¾ã—ã¦25æžšã®æ–°ã—ã„ãƒ•ãƒ©ãƒƒã‚·ãƒ¥ã‚«ãƒ¼ãƒ‰ãŒè‡ªå‹•çš„ã«ç”Ÿæˆã•ã‚Œã¾ã—ãŸï¼š'
+              : language === 'ko'
+              ? 'ì— ëŒ€í•´ 25ê°œì˜ ìƒˆë¡œìš´ í”Œëž˜ì‹œì¹´ë“œê°€ ìžë™ìœ¼ë¡œ ìƒì„±ë˜ì—ˆìŠµë‹ˆë‹¤: '
               : '25 new flashcards have been automatically generated for '}
             <strong className="font-semibold text-[#0b1c30] dark:text-slate-100">
-              {language === 'vi' ? '"Sinh học tế bào - Tuần 4"' : language === 'ja' ? '「細胞生物学 - 第4週」' : language === 'ko' ? '"세포 생물학 - 4주차"' : '"Cell Biology - Week 4"'}
+              {language === 'vi' ? '"Sinh học tế bào - Tuần 4"' : language === 'ja' ? 'ã€Œç´°èƒžç”Ÿç‰©å­¦ - ç¬¬4é€±ã€ ' : language === 'ko' ? '"ì„¸í ¬ ìƒ ë¬¼í•™ - 4ì£¼ì°¨"' : '"Cell Biology - Week 4"'}
             </strong>
             {language === 'vi' ? '.' : ''}
           </>
@@ -303,20 +302,20 @@ function NotificationCard({
     }
     if (id === 'new-report-submitted') {
       return {
-        title: language === 'vi' ? 'Có báo cáo mới' : language === 'ja' ? '新しい報告が送信されました' : language === 'ko' ? '새 보고서 제출됨' : 'New report submitted',
-        description: language === 'vi' ? 'Một người dùng đã báo cáo tài liệu vì đạo văn.' : language === 'ja' ? 'ユーザーがドキュメント의 盗用を報告しました。' : language === 'ko' ? '사용자가 표절로 문서를 신고했습니다.' : 'A user reported a document for plagiarism.',
+        title: language === 'vi' ? 'Có báo cáo mới' : language === 'ja' ? 'æ–°ã—ã„å ±å‘ŠãŒé€ä¿¡ã•ã‚Œã¾ã—ãŸ' : language === 'ko' ? 'ìƒˆ ë³´ê³ ì„œ ì œì¶œë¨' : 'New report submitted',
+        description: language === 'vi' ? 'Một người dùng đã báo cáo tài liệu vì đạo văn.' : language === 'ja' ? 'ãƒ¦ãƒ¼ã‚¶ãƒ¼ã Œãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆì ˜ ç›—ç”¨ã‚’å ±å‘Šã —ã ¾ã —ã Ÿã€‚' : language === 'ko' ? 'ì‚¬ìš©ìž ê°€ í‘œì ˆë¡œ ë¬¸ì„œë¥¼ ì‹ ê³ í–ˆìŠµë‹ˆë‹¤.' : 'A user reported a document for plagiarism.',
       }
     }
     if (id === 'ai-audit-flagged') {
       return {
-        title: language === 'vi' ? 'AI phát hiện tài liệu đáng ngờ' : language === 'ja' ? 'AI監査フラグ検出' : language === 'ko' ? 'AI 심사 플래그 감지됨' : 'AI audit flagged a document',
-        description: language === 'vi' ? 'AI Guard đã phát hiện vi phạm chính sách tiềm ẩn.' : language === 'ja' ? 'AI Guardが潜在的なポリシー違反を検出しました。' : language === 'ko' ? 'AI Guard가 잠재적인 정책 위반을 감지했습니다.' : 'AI Guard detected a potential policy violation.',
+        title: language === 'vi' ? 'AI phát hiện tài liệu đáng ngờ' : language === 'ja' ? 'AIç›£æŸ»ãƒ•ãƒ©ã‚°æ¤œå‡º' : language === 'ko' ? 'AI ì‹¬ì‚¬ í”Œëž˜ê·¸ ê° ì§€ë ¨' : 'AI audit flagged a document',
+        description: language === 'vi' ? 'AI Guard đã phát hiện vi phạm chính sách tiềm ẩn.' : language === 'ja' ? 'AI Guardã Œæ½œåœ¨çš„ã ªãƒ ãƒªã‚·ãƒ¼é •å  ã‚’æ¤œå‡ºã —ã ¾ã —ã Ÿã€‚' : language === 'ko' ? 'AI Guardê°€ ìž ìž¬ì  ì ¸ ì •ì±… ìœ„ë°˜ì „ ê° ì§€í–ˆìŠµë‹ˆë‹¤.' : 'AI Guard detected a potential policy violation.',
       }
     }
     if (id === 'system-status-updated') {
       return {
-        title: language === 'vi' ? 'Trạng thái hệ thống đã cập nhật' : language === 'ja' ? 'システムステータス更新' : language === 'ko' ? '시스템 상태 업데이트됨' : 'System status updated',
-        description: language === 'vi' ? 'Chế độ bảo trì hoặc trạng thái sự cố đã được thay đổi.' : language === 'ja' ? 'メンテナンスモードまたはインシデントステータスが変更されました。' : language === 'ko' ? '유지 관리 모드 또는 장애 상태가 변경되었습니다.' : 'Maintenance mode or incident status was changed.',
+        title: language === 'vi' ? 'Trạng thái hệ thống đã cập nhật' : language === 'ja' ? 'ã‚·ã‚¹ãƒ†ãƒ ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹æ›´æ–°' : language === 'ko' ? 'ì‹œìŠ¤í…œ ìƒíƒœ ì—…ë°ì´íŠ¸ë¨' : 'System status updated',
+        description: language === 'vi' ? 'Chế độ bảo trì hoặc trạng thái sự cố đã được thay đổi.' : language === 'ja' ? 'ãƒ¡ãƒ³ãƒ†ãƒŠãƒ³ã‚¹ãƒ¢ãƒ¼ãƒ‰ã¾ãŸã¯ã‚¤ãƒ³ã‚·ãƒ‡ãƒ³ãƒˆã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãŒå¤‰æ›´ã•ã‚Œã¾ã—ãŸã€‚' : language === 'ko' ? 'ìœ ì§€ ê´€ë¦¬ ëª¨ë“œ ë˜ëŠ” ìž¥ì•  ìƒíƒœê°€ ë³€ê²½ë˜ì—ˆìŠµë‹ˆë‹¤.' : 'Maintenance mode or incident status was changed.',
       }
     }
     if (type === 'document_deleted' || type === 'document_rejected') {
@@ -342,7 +341,7 @@ function NotificationCard({
           : (language === 'vi' ? 'Tài liệu đã bị quản trị viên từ chối' : 'Document rejected by admin'),
         description: (
           <>
-            {language === 'vi' 
+            {language === 'vi'
               ? `Tài liệu "${docName}" của bạn đã bị quản trị viên ${type === 'document_deleted' ? 'xóa' : 'từ chối'}. Lý do: ${reasonText}`
               : `Your document "${docName}" was ${type === 'document_deleted' ? 'removed' : 'rejected'} by admin. Reason: ${reasonText}`}
           </>
@@ -365,11 +364,11 @@ function NotificationCard({
   const formatTime = (tString: string) => {
     if (tString.endsWith('m ago')) {
       const mins = tString.split('m')[0]
-      return language === 'vi' ? `${mins} phút trước` : language === 'ja' ? `${mins}分前` : language === 'ko' ? `${mins}분 전` : `${mins}m ago`
+      return language === 'vi' ? `${mins} phút trước` : language === 'ja' ? `${mins}åˆ†å‰` : language === 'ko' ? `${mins}ë¶„ ì „` : `${mins}m ago`
     }
     if (tString.endsWith('h ago')) {
       const hours = tString.split('h')[0]
-      return language === 'vi' ? `${hours} giờ trước` : language === 'ja' ? `${hours}時間前` : language === 'ko' ? `${hours}시간 전` : `${hours}h ago`
+      return language === 'vi' ? `${hours} giá» trÆ°á»›c` : language === 'ja' ? `${hours}æ™‚é–“å‰` : language === 'ko' ? `${hours}ì‹œê°„ ì „` : `${hours}h ago`
     }
     if (tString === 'Yesterday') {
       return t.common.yesterday
@@ -380,7 +379,7 @@ function NotificationCard({
   const handleActionClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     onMarkRead?.()
-    if (finalActionText === 'Reply' || finalActionText === 'Phản hồi' || finalActionText === '返信' || finalActionText === '답장') {
+    if (finalActionText === 'Reply' || finalActionText === 'Phản hồi' || finalActionText === 'è¿”ä¿¡' || finalActionText === 'ë‹µìž¥') {
       if (onReplyClick) {
         onReplyClick()
       } else {
@@ -402,7 +401,7 @@ function NotificationCard({
   return (
     <div className="relative overflow-hidden w-full select-none rounded-2xl">
       {/* Red Action Underlayer for Swipe-to-delete */}
-      <div 
+      <div
         className="absolute inset-y-0 inset-x-0 bg-gradient-to-l from-rose-600 to-rose-500 flex items-center justify-end px-8 rounded-2xl gap-2 text-white font-bold text-sm pointer-events-none"
         style={{ display: dragX < 0 ? 'flex' : 'none' }}
       >
@@ -411,11 +410,11 @@ function NotificationCard({
       </div>
 
       {/* Card Inner Panel */}
-      <div 
+      <div
         className={cn(
           "group border rounded-2xl p-6 shadow-sm flex gap-5 transition-all duration-200 hover:shadow-md cursor-grab active:cursor-grabbing",
-          !isRead 
-            ? "bg-blue-50/20 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/50" 
+          !isRead
+            ? "bg-blue-50/20 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/50"
             : "bg-white dark:bg-slate-900 border-[rgba(195,198,215,0.4)] dark:border-slate-800"
         )}
         style={{
@@ -455,7 +454,7 @@ function NotificationCard({
         ) : (
           <div className={cn(
             "w-12 h-12 rounded-full flex items-center justify-center",
-            type === 'security' ? "bg-[#FFF0F0] dark:bg-red-950/40" 
+            type === 'security' ? "bg-[#FFF0F0] dark:bg-red-950/40"
             : (type === 'document_deleted' || type === 'document_rejected') ? "bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20"
             : "bg-[#E8EEFF] dark:bg-blue-950/40"
           )}>
@@ -482,7 +481,7 @@ function NotificationCard({
               <>
                 <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
                 <span className="text-[#3155F6] dark:text-blue-400">
-                  {language === 'vi' ? 'Mới' : language === 'ja' ? '新規' : language === 'ko' ? '새로운' : 'New'}
+                  {language === 'vi' ? 'Mới' : language === 'ja' ? 'æ–°è¦' : language === 'ko' ? 'ìƒˆë¡œìš´' : 'New'}
                 </span>
                 <span className="w-2 h-2 rounded-full bg-[#3155F6] dark:bg-blue-500" />
               </>
@@ -523,19 +522,21 @@ function NotificationCard({
               // Localize button text
               let localizedBtnText = btn.text
               if (id === 'shared-folder' && btn.text === 'Open Folder') {
-                localizedBtnText = language === 'vi' ? 'Mở thư mục' : language === 'ja' ? 'フォルダーを開く' : language === 'ko' ? '폴더 열기' : 'Open Folder'
+                localizedBtnText = language === 'vi' ? 'Mở thư mục' : language === 'ja' ? 'ãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ã‚’é–‹ã' : language === 'ko' ? 'í´ë” ì—´ê¸°' : 'Open Folder'
               } else if (id === 'security-alert') {
                 if (btn.text === 'Review Activity') {
-                  localizedBtnText = language === 'vi' ? 'Xem lại hoạt động' : language === 'ja' ? 'アクティビティを確認' : language === 'ko' ? '활동 검토' : 'Review Activity'
+                  localizedBtnText = language === 'vi' ? 'Xem lại hoạt động' : language === 'ja' ? 'ã‚¢ã‚¯ãƒ†ã‚£ãƒ“ãƒ†ã‚£ã‚’ç¢ºèª' : language === 'ko' ? 'í™œë™ ê²€í† ' : 'Review Activity'
                 } else if (btn.text === 'It was me') {
-                  localizedBtnText = language === 'vi' ? 'Chính là tôi' : language === 'ja' ? '私です' : language === 'ko' ? '본인입니다' : 'It was me'
+                  localizedBtnText = language === 'vi' ? 'Chính là tôi' : language === 'ja' ? 'ç§ã§ã™' : language === 'ko' ? 'ë³¸ì¸ìž…ë‹ˆë‹¤' : 'It was me'
                 }
               } else if (id === 'study-plan' && btn.text === 'Open Plan') {
-                localizedBtnText = language === 'vi' ? 'Mở kế hoạch' : language === 'ja' ? '計画を開く' : language === 'ko' ? '계획 열기' : 'Open Plan'
+                localizedBtnText = language === 'vi' ? 'Mở kế hoạch' : language === 'ja' ? 'è¨ˆç”»ã‚’é–‹ã' : language === 'ko' ? 'ê³„íš ì—´ê¸°' : 'Open Plan'
               } else if (id === 'shared-doc-1' && btn.text === 'View Document') {
-                localizedBtnText = language === 'vi' ? 'Xem tài liệu' : language === 'ja' ? 'ドキュメントを表示' : language === 'ko' ? '문서 보기' : 'View Document'
+                localizedBtnText = language === 'vi' ? 'Xem tài liệu' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ë¬¸ì„œ ë³´ê¸°' : 'View Document'
+              } else if (btn.text === 'Xem tài liệu' || btn.text === 'View Document') {
+                localizedBtnText = language === 'vi' ? 'Xem tài liệu' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ë¬¸ì„œ ë³´ê¸°' : 'View Document'
               } else if (id === 'flashcards' && btn.text === 'Practice Now') {
-                localizedBtnText = language === 'vi' ? 'Luyện tập ngay' : language === 'ja' ? '今すぐ練習' : language === 'ko' ? '지금 연습하기' : 'Practice Now'
+                localizedBtnText = language === 'vi' ? 'Luyện tập ngay' : language === 'ja' ? 'ä»Šã™ãç·´ç¿’' : language === 'ko' ? 'ì§€ê¸ˆ ì—°ìŠµí•˜ê¸°' : 'Practice Now'
               }
 
               return (
@@ -573,7 +574,7 @@ function NotificationCard({
               className="inline-flex items-center gap-1.5 bg-[#E8EEFF] hover:bg-[#D4E5FF] text-[#3155F6] px-5 py-2.5 rounded-xl text-sm font-semibold mt-4 transition-colors cursor-pointer border border-[#E8EEFF] dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-400 dark:border-blue-950/40"
             >
               <span>{finalActionText}</span>
-              {(finalActionText === 'Reply' || finalActionText === 'Phản hồi' || finalActionText === '返信' || finalActionText === '답장') ? (
+              {finalActionText === 'Reply' || finalActionText === 'Phản hồi' || finalActionText === 'è¿”ä¿¡' || finalActionText === 'ë‹µìž¥' ? (
                 <ReplyIcon className="w-3.5 h-3.5" />
               ) : (
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -586,7 +587,7 @@ function NotificationCard({
         {isActiveReply && (
           <div className="mt-3.5 flex flex-col gap-3.5 w-full" onClick={(e) => e.stopPropagation()}>
             <textarea
-              placeholder={language === 'vi' ? 'Nhập phản hồi của bạn ở đây...' : language === 'ja' ? '返信を入力してください...' : language === 'ko' ? '여기에 답장을 입력하세요...' : 'Type your reply here...'}
+              placeholder={language === 'vi' ? 'Nhập phản hồi của bạn ở đây...' : language === 'ja' ? 'è¿”ä¿¡ã‚’å…¥åŠ›ã —ã ¦ã  ã  ã •ã „...' : language === 'ko' ? 'ì—¬ê¸°ì—  ë‹µìž¥ì „ ìž…ë ¥í•˜ì„¸ìš”...' : 'Type your reply here...'}
               value={replyText || ''}
               onChange={(e) => onReplyTextChange?.(e.target.value)}
               className="w-full bg-[#F4F7FE]/70 dark:bg-slate-950/70 border border-[#E8EEFF] dark:border-slate-800 rounded-2xl p-4 text-sm text-[#0b1c30] dark:text-slate-100 placeholder-[#737686] dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3155F6]/15 resize-none h-[100px]"
@@ -604,7 +605,7 @@ function NotificationCard({
                 onClick={() => onSendReplyClick?.(replyText || '')}
                 className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[#3155F6] shadow-sm shadow-[#3155F6]/10 dark:bg-blue-600 dark:hover:bg-blue-500 dark:border-blue-600"
               >
-                <span>{language === 'vi' ? 'Gửi phản hồi' : language === 'ja' ? '返信を送信' : language === 'ko' ? '답장 전송' : 'Send Reply'}</span>
+                <span>{language === 'vi' ? 'Gửi phản hồi' : language === 'ja' ? 'è¿”ä¿¡ã‚’é€ ä¿¡' : language === 'ko' ? 'ë‹µìž¥ ì „ì†¡' : 'Send Reply'}</span>
                 <Send className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -615,7 +616,7 @@ function NotificationCard({
         {showReplyInput && !isReplied && (
           <div className="mt-4.5 relative" onClick={(e) => e.stopPropagation()}>
             <textarea
-              placeholder={language === 'vi' ? 'Nhập phản hồi...' : language === 'ja' ? '返信を入力...' : language === 'ko' ? '답장 입력...' : 'Type a reply...'}
+              placeholder={language === 'vi' ? 'Nhập phản hồi...' : language === 'ja' ? 'è¿”ä¿¡ã‚’å…¥åŠ›...' : language === 'ko' ? 'ë‹µìž¥ ìž…ë ¥...' : 'Type a reply...'}
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => {
@@ -632,7 +633,7 @@ function NotificationCard({
               disabled={!commentText.trim()}
               className="absolute bottom-3 right-3 bg-[#3155F6] hover:bg-[#2563eb] dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
             >
-              {language === 'vi' ? 'Phản hồi' : language === 'ja' ? '返信' : language === 'ko' ? '답장' : 'Reply'}
+              {language === 'vi' ? 'Phản hồi' : language === 'ja' ? 'è¿”ä¿¡' : language === 'ko' ? 'ë‹µìž¥' : 'Reply'}
             </button>
           </div>
         )}
@@ -641,7 +642,7 @@ function NotificationCard({
         {isReplied && (
           <div className="mt-4 flex gap-3" onClick={(e) => e.stopPropagation()}>
             <div className="w-8 h-8 rounded-full bg-[#3155F6] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              {language === 'vi' ? 'Tôi' : language === 'ja' ? '自分' : language === 'ko' ? '나' : 'Me'}
+              {language === 'vi' ? 'Tôi' : language === 'ja' ? 'è‡ªåˆ†' : language === 'ko' ? 'ë‚˜' : 'Me'}
             </div>
             <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl rounded-tl-none p-3.5 text-sm text-[#434655] dark:text-slate-300">
               {replyContent}
@@ -660,10 +661,10 @@ export function NotificationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const tabs = ['All', 'Unread', 'Mentions', 'Shared Files', 'AI Updates']
-  
+
   const filterParam = searchParams.get('filter') || 'all'
   const [activeFilter, setActiveFilter] = useState(filterParam)
-  
+
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -682,13 +683,13 @@ export function NotificationsPage() {
       case 'All':
         return t.common.all
       case 'Unread':
-        return language === 'vi' ? 'Chưa đọc' : language === 'ja' ? '未読' : language === 'ko' ? '읽지 않음' : 'Unread'
+        return language === 'vi' ? 'Chưa đọc' : language === 'ja' ? 'æœªèª­' : language === 'ko' ? 'ì ½ì§€ ì•Šì Œ' : 'Unread'
       case 'Mentions':
-        return language === 'vi' ? 'Lượt nhắc' : language === 'ja' ? 'メンション' : language === 'ko' ? '언급' : 'Mentions'
+        return language === 'vi' ? 'Lượt nhắc' : language === 'ja' ? 'ãƒ¡ãƒ³ã‚·ãƒ§ãƒ³' : language === 'ko' ? 'ì–¸ê¸‰' : 'Mentions'
       case 'Shared Files':
         return t.sidebar.sharedFiles
       case 'AI Updates':
-        return language === 'vi' ? 'AI cập nhật' : language === 'ja' ? 'AI更新' : language === 'ko' ? 'AI 업데이트' : 'AI Updates'
+        return language === 'vi' ? 'AI cập nhật' : language === 'ja' ? 'AIæ›´æ–°' : language === 'ko' ? 'AI ì—…ë °ì ´íŠ¸' : 'AI Updates'
       default:
         return tab
     }
@@ -701,7 +702,7 @@ export function NotificationsPage() {
       const data = await notificationApi.getNotifications(filter)
       setNotifications(data)
     } catch (err) {
-      setError(language === 'vi' ? 'Không thể tải thông báo' : language === 'ja' ? '通知の取得に失敗しました' : language === 'ko' ? '알림을 가져오는 데 실패했습니다' : 'Failed to fetch notifications')
+      setError(language === 'vi' ? 'Không thể tải thông báo' : language === 'ja' ? 'é€šçŸ¥ã ®å –å¾—ã «å¤±æ•—ã —ã ¾ã —ã Ÿ' : language === 'ko' ? 'ì•Œë¦¼ì „ ê°€ì ¸ì˜¤ëŠ” ë ° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤' : 'Failed to fetch notifications')
     } finally {
       if (!showSilent) setLoading(false)
     }
@@ -751,7 +752,7 @@ export function NotificationsPage() {
     }
   }
 
-  const confirmDeleteNotification = () => {
+  const confirmDeleteNotification = async () => {
     if (!notificationToDelete) return
 
     const targetId = notificationToDelete.id
@@ -760,30 +761,21 @@ export function NotificationsPage() {
     // Filter out from the state
     setNotifications(prev => prev.filter(n => n.id !== targetId))
 
-    // Save to localStorage `aiStudyHubDeletedNotificationIds`
     try {
-      const userEmail = getCurrentUser().email;
-      const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`)
-      let deletedIds: string[] = storedDeleted ? JSON.parse(storedDeleted) : []
-      if (!deletedIds.includes(targetId)) {
-        deletedIds.push(targetId)
-        localStorage.setItem(`aiStudyHubDeletedNotificationIds:${userEmail}`, JSON.stringify(deletedIds))
-      }
+      const { userNotificationService } = await import('../services/userNotificationService')
+      await userNotificationService.deleteNotification(targetId)
     } catch (e) {
-      console.error('Failed to save deleted notification IDs', e)
+      console.error('Failed to delete notification', e)
     }
-
-    // Trigger update event
-    window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'))
 
     // Display Premium Undo Toast
     setShowUndoToast(true)
-    
+
     // Clear last delete timeout
     if (undoTimeoutId) {
       clearTimeout(undoTimeoutId)
     }
-    
+
     const timeout = setTimeout(() => {
       setShowUndoToast(false)
       setLastDeletedNotification(null)
@@ -849,15 +841,15 @@ export function NotificationsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => realtimeNotificationManager.injectSimulatedNotification()}
+          {false && <button
+            onClick={() => {}}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-indigo-500/10 dark:shadow-none hover:shadow-lg transition-all cursor-pointer border-none"
           >
             <Sparkles className="w-4 h-4 text-white" />
             <span className="hidden sm:inline">
-              {language === 'vi' ? 'Giả lập thông báo' : language === 'ja' ? '通知をシミュレート' : language === 'ko' ? '알림 시뮬레이션' : 'Simulate alert'}
+              {language === 'vi' ? 'Giả lập thông báo' : language === 'ja' ? 'é€šçŸ¥ã‚’ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ãƒˆ' : language === 'ko' ? 'ì•Œë¦¼ ì‹œë®¬ë ˆì ´ì…˜' : 'Simulate alert'}
             </span>
-          </button>
+          </button>}
 
           <button
             onClick={() => fetchNotifications(activeFilter)}
@@ -866,7 +858,7 @@ export function NotificationsPage() {
           >
             <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
             <span className="hidden sm:inline">
-              {language === 'vi' ? 'Làm mới' : language === 'ja' ? '更新' : language === 'ko' ? '새로고침' : 'Refresh'}
+              {language === 'vi' ? 'Làm mới' : language === 'ja' ? 'æ›´æ–°' : language === 'ko' ? 'ìƒˆë¡œê³ ì¹¨' : 'Refresh'}
             </span>
           </button>
         </div>
@@ -903,23 +895,23 @@ export function NotificationsPage() {
               <RefreshCw className="w-6 h-6 text-[#3155F6] animate-spin" />
             </div>
             <h3 className="text-lg font-bold text-[#0b1c30] dark:text-slate-100 mb-1">
-              {language === 'vi' ? 'Đang tải thông báo...' : language === 'ja' ? '通知を読み込み中...' : language === 'ko' ? '알림 로딩 중...' : 'Loading notifications...'}
+              {language === 'vi' ? 'Đang tải thông báo...' : language === 'ja' ? 'é€šçŸ¥ã‚’èª­ã ¿è¾¼ã ¿ä¸­...' : language === 'ko' ? 'ì•Œë¦¼ ë¡œë”© ì¤‘...' : 'Loading notifications...'}
             </h3>
             <p className="text-[#737686] font-medium text-sm">
-              {language === 'vi' ? 'Vui lòng đợi trong giây lát...' : language === 'ja' ? 'データを取得するまでしばらくお待ちください' : language === 'ko' ? '데이터를 가져오는 동안 잠시만 기다려주세요' : 'Please wait a moment while we fetch your data'}
+              {language === 'vi' ? 'Vui lòng đợi trong giây lát...' : language === 'ja' ? 'ãƒ‡ãƒ¼ã‚¿ã‚’å –å¾—ã ™ã‚‹ã ¾ã §ã —ã °ã‚‰ã  ã Šå¾…ã ¡ã  ã  ã •ã „' : language === 'ko' ? 'ë °ì ´í„°ë¥¼ ê°€ì ¸ì˜¤ëŠ” ë ™ì•ˆ ìž ì‹œë§Œ ê¸°ë‹¤ë ¤ì£¼ì„¸ìš”' : 'Please wait a moment while we fetch your data'}
             </p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-20 bg-[#FFF0F0]/50 dark:bg-red-950/20 rounded-3xl border border-dashed border-red-200 dark:border-red-900/50">
             <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-1">
-              {language === 'vi' ? 'Có lỗi xảy ra!' : language === 'ja' ? 'エラーが発生しました' : language === 'ko' ? '오류가 발생했습니다' : 'Oops, something went wrong!'}
+              {language === 'vi' ? 'Có lỗi xảy ra!' : language === 'ja' ? 'ã‚¨ãƒ©ãƒ¼ã Œç™ºç”Ÿã —ã ¾ã —ã Ÿ' : language === 'ko' ? 'ì˜¤ë¥˜ê°€ ë°œìƒ í–ˆìŠµë‹ˆë‹¤' : 'Oops, something went wrong!'}
             </h3>
             <p className="text-red-500 font-medium text-sm mb-4">{error}</p>
             <button
               onClick={() => fetchNotifications(activeFilter)}
               className="px-4 py-2 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
             >
-              {language === 'vi' ? 'Thử lại' : language === 'ja' ? '再試行' : language === 'ko' ? '다시 시도' : 'Try Again'}
+              {language === 'vi' ? 'Thử lại' : language === 'ja' ? 'å† è©¦è¡Œ' : language === 'ko' ? 'ë‹¤ì‹œ ì‹œë „' : 'Try Again'}
             </button>
           </div>
         ) : notifications.length > 0 ? (
@@ -932,7 +924,7 @@ export function NotificationsPage() {
                 onClick: () => setSelectedDetailNotification(notification)
               }];
             }
-            
+
             return (
               <NotificationCard
                 key={`${activeFilter}-${notification.id}`}
@@ -969,9 +961,9 @@ export function NotificationsPage() {
             </div>
             <h3 className="text-xl font-bold text-[#0b1c30] dark:text-slate-100 mb-2">{t.notificationsPage.noNotifications}</h3>
             <p className="text-[#737686] font-medium text-sm text-center max-w-[250px]">
-              {activeTab === 'Unread' 
-                ? (language === 'vi' ? 'Bạn đã đọc hết tất cả thông báo!' : language === 'ja' ? 'すべて確認済みです！未読メッセージはありません。' : language === 'ko' ? '모두 읽으셨습니다! 읽지 않은 메시지가 없습니다.' : "You're all caught up! There are no unread messages.")
-                : (language === 'vi' ? 'Khi có thông báo mới, chúng sẽ hiển thị ở đây.' : language === 'ja' ? '新しい通知が届くと、ここに表示されます。' : language === 'ko' ? '새로운 알림이 도착하면 여기에 표시됩니다.' : "When you get new notifications, they'll show up here.")}
+              {activeTab === 'Unread'
+                ? (language === 'vi' ? 'Bạn đã đọc hết tất cả thông báo!' : language === 'ja' ? 'ã ™ã ¹ã ¦ç¢ºèª æ¸ˆã ¿ã §ã ™ï¼ æœªèª­ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã ¯ã ‚ã‚Šã ¾ã ›ã‚“ã€‚' : language === 'ko' ? 'ëª¨ë‘  ì ½ìœ¼ì…¨ìŠµë‹ˆë‹¤! ì ½ì§€ ì•Šì € ë©”ì‹œì§€ê°€ ì—†ìŠµë‹ˆë‹¤.' : "You're all caught up! There are no unread messages.")
+                : (language === 'vi' ? 'Khi có thông báo mới, chúng sẽ hiển thị ở đây.' : language === 'ja' ? 'æ–°ã —ã „é€šçŸ¥ã Œå±Šã  ã ¨ã€ ã “ã “ã «è¡¨ç¤ºã •ã‚Œã ¾ã ™ã€‚' : language === 'ko' ? 'ìƒˆë¡œìš´ ì•Œë¦¼ì ´ ë „ì°©í•˜ë©´ ì—¬ê¸°ì—  í‘œì‹œë ©ë‹ˆë‹¤.' : "When you get new notifications, they'll show up here.")}
             </p>
           </div>
         )}
@@ -1018,8 +1010,8 @@ export function NotificationsPage() {
                   <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailDocName}:</span>
                   <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                     {selectedDetailNotification.documentName || (() => {
-                      const desc = typeof selectedDetailNotification.description === 'string' 
-                        ? selectedDetailNotification.description 
+                      const desc = typeof selectedDetailNotification.description === 'string'
+                        ? selectedDetailNotification.description
                         : '';
                       const match = desc.match(/"([^"]+)"/);
                       return match ? match[1] : 'Unknown Document';
@@ -1030,8 +1022,8 @@ export function NotificationsPage() {
                   <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t.notificationsPage.detailActionType}:</span>
                   <span className={cn(
                     "text-sm font-semibold w-fit px-2.5 py-0.5 rounded-full",
-                    selectedDetailNotification.actionType === 'removed' 
-                      ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400" 
+                    selectedDetailNotification.actionType === 'removed'
+                      ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400"
                       : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
                   )}>
                     {selectedDetailNotification.actionType === 'removed' ? t.notificationsPage.actionRemoved : t.notificationsPage.actionRejected}
@@ -1042,8 +1034,8 @@ export function NotificationsPage() {
                   <div className="text-sm text-slate-700 dark:text-slate-350 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
                     {selectedDetailNotification.reason?.trim() || selectedDetailNotification.adminNote?.trim() || (
                       (() => {
-                        const desc = typeof selectedDetailNotification.description === 'string' 
-                          ? selectedDetailNotification.description 
+                        const desc = typeof selectedDetailNotification.description === 'string'
+                          ? selectedDetailNotification.description
                           : '';
                         const match = desc.match(/Reason:\s*(.*)$/);
                         return match ? match[1]?.trim() || t.notificationsPage.noReasonProvided : t.notificationsPage.noReasonProvided;
@@ -1057,7 +1049,7 @@ export function NotificationsPage() {
                 </div>
               </div>
             )}
-            
+
             <div className="mt-6 flex justify-end">
               <Button onClick={() => setSelectedDetailNotification(null)} className="cursor-pointer">
                 {t.common.close}

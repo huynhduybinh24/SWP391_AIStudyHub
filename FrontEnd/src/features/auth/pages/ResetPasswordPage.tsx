@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, ArrowRight, Mail, RotateCcw, Lock, CheckCircle2 } from 'lucide-react'
@@ -7,28 +7,38 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { resetPasswordSchema, type ResetPasswordValues } from '@/features/auth/schemas/resetPasswordSchema'
 import { AppFooter } from '@/components/shared/AppFooter'
+import { authService } from '@/features/auth/services/authService'
 
 export function ResetPasswordPage() {
+  const navigate = useNavigate()
   const [isSuccess, setIsSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { email: '' },
   })
 
-  const onSubmit = (data: ResetPasswordValues) => {
+  const onSubmit = async (data: ResetPasswordValues) => {
     setIsSubmitting(true)
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Reset link sent to:', data.email)
+    setErrorMsg('')
+    try {
+      await authService.forgotPassword(data.email)
       setIsSubmitting(false)
       setIsSuccess(true)
-    }, 1500)
+      setTimeout(() => {
+        navigate(`/set-new-password?email=${encodeURIComponent(data.email)}`)
+      }, 4000)
+    } catch (err: any) {
+      setIsSubmitting(false)
+      setErrorMsg(err?.message || 'Có lỗi xảy ra, vui lòng thử lại.')
+    }
   }
 
   return (
@@ -48,17 +58,17 @@ export function ResetPasswordPage() {
                 Check Your Email
               </h2>
               <p className="text-body text-center text-[15px] mb-8 leading-relaxed max-w-[320px]">
-                We've sent a password recovery link to your email address. Please check your inbox.
+                We've sent a 6-digit OTP code to your email address. Please check your inbox.
               </p>
               <div className="w-full space-y-3 text-center">
                 <Button onClick={() => setIsSuccess(false)} variant="secondary" className="w-full h-12 rounded-xl font-semibold">
                   Send again
                 </Button>
                 <Link 
-                  to="/set-new-password" 
+                  to={`/set-new-password?email=${encodeURIComponent(watch('email'))}`} 
                   className="inline-flex w-full items-center justify-center h-12 rounded-xl font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                 >
-                  Set new password
+                  Enter OTP code
                 </Link>
               </div>
             </div>
@@ -74,7 +84,7 @@ export function ResetPasswordPage() {
                 Reset Password
               </h2>
               <p className="text-body text-center text-[15px] mb-8 leading-relaxed max-w-[320px]">
-                Enter your student email to receive a password recovery link.
+                Enter your student email to receive a password recovery OTP code.
               </p>
 
               <form className="w-full space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -93,13 +103,19 @@ export function ResetPasswordPage() {
                   />
                 </div>
 
+                {errorMsg && (
+                  <p className="text-sm text-red-500 text-center font-medium">
+                    {errorMsg}
+                  </p>
+                )}
+
                 <Button 
                   type="submit" 
                   disabled={isSubmitting}
                   className="w-full h-12 text-[15px] font-semibold gap-2 flex items-center justify-center bg-primary hover:bg-primary-dark transition-colors rounded-xl"
                 >
                   {isSubmitting ? 'Sending...' : (
-                    <>Send Reset Link <ArrowRight className="w-4 h-4" /></>
+                    <>Send OTP Code <ArrowRight className="w-4 h-4" /></>
                   )}
                 </Button>
               </form>
