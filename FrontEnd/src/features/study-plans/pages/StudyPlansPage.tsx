@@ -74,7 +74,8 @@ type StudyPlan = {
 
 // Helper to localize mock plan strings
 function localizePlan(plan: StudyPlan, language: Language): StudyPlan {
-  const localMap: Record<string, { title: string; description: string; segments?: string[]; milestoneTitle?: string }> = {
+  const localMap: Record<string, { title: string; description: string; segments?: string[]; milestoneTitle?: string }> = {}
+  const UNUSED_localMap: Record<string, { title: string; description: string; segments?: string[]; milestoneTitle?: string }> = {
     '1': {
       title: language === 'vi' ? 'Làm chủ Cơ học lượng tử' : language === 'ja' ? '量子力学マスター' : language === 'ko' ? '양자 역학 마스터' : 'Quantum Mechanics Mastery',
       description: language === 'vi' ? 'Một hành trình toàn diện từ hàm sóng đến vướng víu lượng tử.' : language === 'ja' ? '波動関数から量子もつれまでの包括的な旅。' : language === 'ko' ? '파동 함수에서 양자 얽힘까지의 포괄적인 여정.' : 'A comprehensive journey from wave functions to quantum entanglement.',
@@ -295,7 +296,8 @@ const STUDY_PLANS: StudyPlan[] = []; const UNUSED_STUDY_PLANS: StudyPlan[] = [
 // Mock: Learning Progress data (keyed by plan id)
 // ─────────────────────────────────────────────
 
-const LEARNING_DATA: Record<string, LearningProgressPlan> = {
+const LEARNING_DATA: Record<string, LearningProgressPlan> = {}
+const UNUSED_LEARNING_DATA: Record<string, LearningProgressPlan> = {
   '1': {
     id: '1', title: 'Quantum Mechanics Mastery',
     description: 'A comprehensive journey from wave functions to quantum entanglement.',
@@ -426,7 +428,8 @@ const LEARNING_DATA: Record<string, LearningProgressPlan> = {
 // Mock: Curriculum data (keyed by plan id)
 // ─────────────────────────────────────────────
 
-const CURRICULUM_DATA: Record<string, CurriculumPlan> = {
+const CURRICULUM_DATA: Record<string, CurriculumPlan> = {}
+const UNUSED_CURRICULUM_DATA: Record<string, CurriculumPlan> = {
   '1': {
     id: '1', title: 'Quantum Mechanics Mastery', documents: 12, hoursEst: 48, difficulty: 'Hard',
     modules: [
@@ -1209,6 +1212,9 @@ function getPlanLearningProgress(plan: StudyPlan, language: Language): LearningP
 
 function mapResponseToStudyPlan(response: any): StudyPlan {
   let segments: ProgressSegment[] = []
+  let hoursEst = 28
+  let difficulty: 'Easy' | 'Medium' | 'Hard' = 'Medium'
+
   if (response.curriculumJson) {
     try {
       const parsed = JSON.parse(response.curriculumJson)
@@ -1217,6 +1223,19 @@ function mapResponseToStudyPlan(response: any): StudyPlan {
           label: mod.title || 'Bài học',
           value: 0
         }))
+      } else if (parsed && typeof parsed === 'object') {
+        if (parsed.difficulty) {
+          difficulty = parsed.difficulty as any
+        }
+        if (parsed.hoursEst) {
+          hoursEst = Number(parsed.hoursEst)
+        }
+        if (parsed.modules && Array.isArray(parsed.modules)) {
+          segments = parsed.modules.map((mod: any) => ({
+            label: mod.title || 'Bài học',
+            value: 0
+          }))
+        }
       }
     } catch (e) {
       console.error('Failed to parse curriculumJson for segments:', e)
@@ -1240,8 +1259,8 @@ function mapResponseToStudyPlan(response: any): StudyPlan {
     isAiGenerated: true,
     status: 'Active',
     documents: docNames.length,
-    hoursEst: 28,
-    difficulty: 'Medium',
+    hoursEst,
+    difficulty,
     overallProgress: 0,
     segments,
     linkedDocs: docNames,
