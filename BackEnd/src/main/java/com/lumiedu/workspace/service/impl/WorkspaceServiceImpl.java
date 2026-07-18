@@ -343,7 +343,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         int docIndex = 1;
         for (WorkspaceDocument wd : workspaceDocs) {
             Document doc = documentRepository.findById(wd.getDocumentId()).orElse(null);
-            if (doc != null && !doc.getDeleted()) {
+            if (doc != null && !Boolean.TRUE.equals(doc.getDeleted())
+                    && (doc.getModerationStatus() == null || doc.getModerationStatus() == com.lumiedu.document.enums.DocumentStatus.APPROVED)) {
                 contentBuilder.append("Document #").append(docIndex++).append(": ").append(doc.getTitle()).append("\n");
                 if (doc.getSubject() != null) contentBuilder.append("Subject: ").append(doc.getSubject()).append("\n");
                 if (doc.getDescription() != null) contentBuilder.append("Description: ").append(doc.getDescription()).append("\n");
@@ -457,7 +458,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             User adder = userRepository.findById(wd.getAddedBy()).orElse(null);
             String adderName = adder != null ? adder.getFullName() : "Unknown";
 
-            if (doc != null) {
+            if (doc != null && (doc.getModerationStatus() == null
+                    || doc.getModerationStatus() == com.lumiedu.document.enums.DocumentStatus.APPROVED)) {
                 return WorkspaceDocumentResponse.builder()
                         .id(wd.getId())
                         .workspaceId(workspace.getId())

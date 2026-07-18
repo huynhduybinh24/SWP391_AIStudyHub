@@ -33,6 +33,24 @@ import { documentService, type DocumentResponse } from '@/services/documentServi
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
 
+const getLocalizedReason = (reasonStr: string | undefined, lang: string): string => {
+  if (!reasonStr) return '';
+  try {
+    const trimmed = reasonStr.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      const parsed = JSON.parse(trimmed);
+      if (lang === 'vi') {
+        return parsed.vi || parsed.en || reasonStr;
+      } else {
+        return parsed.en || parsed.vi || reasonStr;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return reasonStr;
+};
+
 const INITIAL_FOLDERS = [
   { id: '1', name: 'Physics 101', itemsCount: 12, size: '1.2 GB', color: '#2563eb', bgColor: '#dbeafe', category: 'Study' },
   { id: '2', name: 'Advanced Calculus', itemsCount: 45, size: '3.4 GB', color: '#0d9488', bgColor: '#ccfbf1', category: 'Study' },
@@ -118,7 +136,9 @@ const mapDocumentToExplorerFile = (doc: DocumentResponse) => {
     modified: `Modified ${formatTimeAgo(doc.createdAt)}`,
     icon,
     type: ext,
-    aiSummarized: doc.fileType === 'DOCUMENT'
+    aiSummarized: doc.fileType === 'DOCUMENT' && doc.moderationStatus === 'APPROVED',
+    moderationStatus: doc.moderationStatus,
+    moderationReason: doc.rejectionReason || doc.moderationReason
   };
 };
 
@@ -539,6 +559,12 @@ export function StorageExplorerPage() {
                   >
                     <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex items-center justify-center relative mb-3 overflow-hidden">
                       <file.icon className="size-12 text-[#93c5fd] dark:text-blue-500" strokeWidth={1.5} />
+                      {file.moderationStatus === 'APPROVED' && (
+                        <div className="absolute bottom-2 left-2 bg-emerald-55 dark:bg-emerald-955/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5 border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+                          <Check className="size-3 text-emerald-500" />
+                          {language === 'vi' ? 'Đã duyệt' : 'Approved'}
+                        </div>
+                      )}
                       {file.moderationStatus === 'PENDING' && (
                         <div className="absolute bottom-2 left-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/15 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5 animate-pulse shadow-sm">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -546,13 +572,13 @@ export function StorageExplorerPage() {
                         </div>
                       )}
                       {file.moderationStatus === 'PENDING_REVIEW' && (
-                        <div className="absolute bottom-2 left-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5 shadow-sm" title={file.moderationReason}>
+                        <div className="absolute bottom-2 left-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5 shadow-sm" title={getLocalizedReason(file.moderationReason, language)}>
                           <AlertTriangle className="size-3 text-amber-500 shrink-0" />
                           {language === 'vi' ? '⚠️ Đang chờ duyệt' : '⚠️ Pending review'}
                         </div>
                       )}
                       {file.moderationStatus === 'REJECTED' && (
-                        <div className="absolute bottom-2 left-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5 shadow-sm" title={file.moderationReason}>
+                        <div className="absolute bottom-2 left-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5 shadow-sm" title={getLocalizedReason(file.moderationReason, language)}>
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                           {language === 'vi' ? '❌ Bị từ chối' : '❌ Rejected'}
                         </div>
@@ -596,6 +622,12 @@ export function StorageExplorerPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 sm:gap-6">
+                      {file.moderationStatus === 'APPROVED' && (
+                        <div className="hidden sm:flex bg-emerald-50 text-emerald-600 dark:bg-emerald-955/20 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-md items-center gap-1.5 border border-emerald-100 dark:border-emerald-900/30">
+                          <Check className="size-3 text-emerald-500" />
+                          {language === 'vi' ? 'Đã duyệt' : 'Approved'}
+                        </div>
+                      )}
                       {file.moderationStatus === 'PENDING' && (
                         <div className="hidden sm:flex bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/15 text-[10px] font-bold px-2 py-1 rounded-md items-center gap-1.5 animate-pulse">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -603,13 +635,13 @@ export function StorageExplorerPage() {
                         </div>
                       )}
                       {file.moderationStatus === 'PENDING_REVIEW' && (
-                        <div className="hidden sm:flex bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15 text-[10px] font-bold px-2 py-1 rounded-md items-center gap-1.5" title={file.moderationReason}>
+                        <div className="hidden sm:flex bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15 text-[10px] font-bold px-2 py-1 rounded-md items-center gap-1.5" title={getLocalizedReason(file.moderationReason, language)}>
                           <AlertTriangle className="size-3 text-amber-500 shrink-0" />
                           {language === 'vi' ? '⚠️ Đang chờ duyệt' : '⚠️ Pending review'}
                         </div>
                       )}
                       {file.moderationStatus === 'REJECTED' && (
-                        <div className="hidden sm:flex bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15 text-[10px] font-bold px-2 py-1 rounded-md items-center gap-1.5" title={file.moderationReason}>
+                        <div className="hidden sm:flex bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15 text-[10px] font-bold px-2 py-1 rounded-md items-center gap-1.5" title={getLocalizedReason(file.moderationReason, language)}>
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                           {language === 'vi' ? '❌ Bị từ chối' : '❌ Rejected'}
                         </div>
