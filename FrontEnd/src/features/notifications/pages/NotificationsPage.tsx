@@ -792,7 +792,7 @@ export function NotificationsPage() {
     setIsDeleteConfirmOpen(false)
   }
 
-  const handleUndoDelete = () => {
+  const handleUndoDelete = async () => {
     if (!lastDeletedNotification) return
 
     if (undoTimeoutId) {
@@ -808,6 +808,9 @@ export function NotificationsPage() {
     })
 
     try {
+      const { userNotificationService } = await import('../services/userNotificationService')
+      await userNotificationService.restoreNotification(restoredId)
+
       const userEmail = getCurrentUser().email;
       const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`)
       if (storedDeleted) {
