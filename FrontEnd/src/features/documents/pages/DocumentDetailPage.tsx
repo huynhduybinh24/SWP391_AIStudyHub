@@ -99,6 +99,10 @@ export default function DocumentDetailPage() {
     openQuizModal
   } = useOutletContext<DocumentsContextType>()
 
+  const activeDoc = documents.find(d => d.id === documentId)
+  const subjectKey = (activeDoc?.subject || 'NEUROSCIENCE').toUpperCase()
+  const mockDetails = SUBJECT_DETAILS_MOCK[subjectKey] || SUBJECT_DETAILS_MOCK.GENERAL
+
   useEffect(() => {
     if (!documentId) return
     setIsLoadingPreview(true)
@@ -172,11 +176,6 @@ export default function DocumentDetailPage() {
       window.dispatchEvent(new Event('aiStudyHubLastOpenedDocumentUpdated'))
     }
   }, [documentId, documents, mockDetails])
-
-  const activeDoc = documents.find(d => d.id === documentId)
-  
-  const subjectKey = (activeDoc?.subject || 'NEUROSCIENCE').toUpperCase()
-  const mockDetails = SUBJECT_DETAILS_MOCK[subjectKey] || SUBJECT_DETAILS_MOCK.GENERAL
 
   const handleDownload = () => {
     if (activeDoc) {
