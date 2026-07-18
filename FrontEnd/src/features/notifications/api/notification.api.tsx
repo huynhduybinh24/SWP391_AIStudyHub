@@ -62,23 +62,9 @@ const mapBackendNotification = (item: any): Notification => {
   let displayType = type;
   let buttons: NotificationButton[] | undefined = undefined;
 
-<<<<<<< HEAD
-  if (item.actionType === 'workspace_invite' || type === 'shared_file') {
-    const match = actionUrl.match(/\/dashboard\/workspaces\/(\d+)/);
-    const workspaceId = match ? match[1] : null;
-=======
-  let actionUrl = item.actionUrl || '';
-  if (actionUrl.startsWith('/dashboard/documents/') && !actionUrl.startsWith('/dashboard/documents/document/')) {
-    const remaining = actionUrl.slice('/dashboard/documents/'.length);
-    if (/^\d+$/.test(remaining)) {
-      actionUrl = `/dashboard/documents/document/${remaining}`;
-    }
-  }
-
   if (item.actionType === 'workspace_invite') {
     const workspaceIdMatch = actionUrl.match(/\/dashboard\/workspaces\/(\d+)/);
     const workspaceId = workspaceIdMatch ? workspaceIdMatch[1] : null;
->>>>>>> main
     const currentUser = getCurrentUser();
 
     buttons = [
@@ -115,15 +101,12 @@ const mapBackendNotification = (item: any): Notification => {
       }
     ];
     displayType = 'folder';
-<<<<<<< HEAD
-=======
   } else if (type === 'shared_file') {
     buttons = [{
       text: item.actionText || 'Xem tài liệu',
       variant: 'primary',
       url: actionUrl || '/dashboard/shared'
     }];
->>>>>>> main
   } else if (type === 'folder') {
     buttons = [{
       text: 'Open Folder',
