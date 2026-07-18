@@ -106,6 +106,16 @@ public class NotificationService {
         });
     }
 
+    public void restoreNotification(Long id) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Notification not found with id: " + id));
+        notification.setDeleted(false);
+        notificationRepository.save(notification);
+        userRepository.findById(notification.getUserId()).ifPresent(user -> {
+            sendSyncSignal(user.getEmail());
+        });
+    }
+
     public NotificationResponse createNotification(NotificationRequest request) {
         User user = userRepository.findByEmail(request.getTargetUserEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + request.getTargetUserEmail()));
