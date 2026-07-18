@@ -297,7 +297,7 @@ export function Header() {
           description: item.description || item.message || '',
           time: item.time || 'Just now',
           type: headerType,
-          isRead: !!item.isRead,
+          isRead: item.isRead !== undefined ? !!item.isRead : !!item.read,
           reason: item.reason,
           documentName: item.documentName,
           documentId: item.documentId,
