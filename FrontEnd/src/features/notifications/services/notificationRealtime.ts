@@ -269,7 +269,7 @@ class NotificationRealtimeManager {
         title: notif.title,
         message: notif.description,
         time: notif.time,
-        isRead: notif.isRead,
+        isRead: notif.isRead !== undefined ? notif.isRead : notif.read,
         createdAt: notif.createdAt,
       };
 
