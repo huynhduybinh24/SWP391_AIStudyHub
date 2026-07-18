@@ -55,10 +55,17 @@ const mapBackendNotification = (item: any): Notification => {
   let displayType = type;
   let buttons: NotificationButton[] | undefined = undefined;
 
+  let actionUrl = item.actionUrl || '';
+  if (actionUrl.startsWith('/dashboard/documents/') && !actionUrl.startsWith('/dashboard/documents/document/')) {
+    const remaining = actionUrl.slice('/dashboard/documents/'.length);
+    if (/^\d+$/.test(remaining)) {
+      actionUrl = `/dashboard/documents/document/${remaining}`;
+    }
+  }
+
   if (item.actionType === 'workspace_invite') {
-    const actionUrl = item.actionUrl || '';
-    const match = actionUrl.match(/\/dashboard\/workspaces\/(\d+)/);
-    const workspaceId = match ? match[1] : null;
+    const workspaceIdMatch = actionUrl.match(/\/dashboard\/workspaces\/(\d+)/);
+    const workspaceId = workspaceIdMatch ? workspaceIdMatch[1] : null;
     const currentUser = getCurrentUser();
 
     buttons = [
@@ -99,39 +106,39 @@ const mapBackendNotification = (item: any): Notification => {
     buttons = [{
       text: item.actionText || 'Xem tài liệu',
       variant: 'primary',
-      url: item.actionUrl || '/dashboard/shared'
+      url: actionUrl || '/dashboard/shared'
     }];
   } else if (type === 'folder') {
     buttons = [{
       text: 'Open Folder',
       variant: 'shared-btn',
       icon: <Folder className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-      url: item.actionUrl || '/dashboard/shared-files/research-materials'
+      url: actionUrl || '/dashboard/shared-files/research-materials'
     }];
   } else if (type === 'document') {
     buttons = [{
       text: 'View Document',
       variant: 'shared-btn',
       icon: <Eye className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-      url: item.actionUrl || '/dashboard/notifications/summary'
+      url: actionUrl || '/dashboard/notifications/summary'
     }];
   } else if (type === 'calendar') {
     buttons = [{
       text: 'Open Plan',
       variant: 'secondary',
       icon: <Calendar className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-      url: item.actionUrl || '/dashboard/study-plans'
+      url: actionUrl || '/dashboard/study-plans'
     }];
   } else if (type === 'flashcard') {
     buttons = [{
       text: 'Practice Now',
       variant: 'secondary',
       icon: <ExternalLink className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-      url: item.actionUrl || '/dashboard/quizzes'
+      url: actionUrl || '/dashboard/quizzes'
     }];
   } else if (type === 'security') {
     buttons = [
-      { text: 'Review Activity', variant: 'primary', url: item.actionUrl || '#' },
+      { text: 'Review Activity', variant: 'primary', url: actionUrl || '#' },
       { text: 'It was me', variant: 'light', url: '#' }
     ];
   }
@@ -145,7 +152,7 @@ const mapBackendNotification = (item: any): Notification => {
     description: item.description || item.message,
     quote: item.quote,
     actionText: item.actionText,
-    actionUrl: item.actionUrl,
+    actionUrl: actionUrl,
     avatar: item.avatar,
     buttons: buttons,
     reason: item.reason,
