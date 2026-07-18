@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import TagInput from '@/features/shared-files/components/TagInput';
 import { useSubjects } from '@/hooks/useSubjects';
+import { useAuthStore } from '@/stores/authStore';
+import { apiClient } from '@/lib/axios';
 
 interface MediaMetadataFormProps {
   title: string;
@@ -45,7 +47,6 @@ export function MediaMetadataForm({
 }: MediaMetadataFormProps) {
   const { subjects: dynamicSubjects } = useSubjects();
   const [selectedMajor, setSelectedMajor] = useState<'SE' | 'AI' | 'BA'>('SE');
-  const [majorSubjects, setMajorSubjects] = useState<Record<'SE' | 'AI' | 'BA', { value: string; label: string }[]>>(MAJOR_SUBJECTS);
 
   const { user } = useAuthStore();
   const userId = user?.id ? Number(user.id) : null;
@@ -76,11 +77,7 @@ export function MediaMetadataForm({
             if (majorsArr.includes('BA')) baList.push(item);
           });
           
-          setMajorSubjects({
-            SE: seList,
-            AI: aiList,
-            BA: baList
-          });
+          // no-op
         }
       })
       .catch(err => {

@@ -323,6 +323,7 @@ export const vi: typeof en = {
     or: "hoặc",
     browse: "Chọn tệp",
     supportFormat: "Hỗ trợ các định dạng PDF, DOCX, và PPTX (Tối đa 50MB)",
+    supportFormatOnlyPdf: "Chỉ hỗ trợ tệp PDF (Tối đa 50MB)",
     supportFormatSubject: "Định dạng hỗ trợ: PDF, DOCX, PPTX, TXT (Tối đa 50MB mỗi tệp)",
     readyUpload: "Sẵn sàng tải lên",
     total: "tổng cộng",

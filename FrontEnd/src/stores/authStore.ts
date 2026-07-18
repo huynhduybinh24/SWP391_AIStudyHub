@@ -5,7 +5,7 @@ import {
   DEV_DEFAULT_USER,
   DEV_SKIP_AUTH,
 } from '@/config/dev'
-import type { AuthTokens, AuthUser } from '@/types/auth'
+import type { AuthTokens, AuthUser, UserRole } from '@/types/auth'
 import { logActivity, recordLogoutTime, cancelLogoutTime } from '@/services/activityLogService'
 
 interface AuthState {
@@ -119,7 +119,7 @@ export const useAuthStore = create<AuthState>()(
         }
         const normalizedUser = {
           ...user,
-          role: (user.role || 'user').toLowerCase(),
+          role: (user.role || 'user').toLowerCase() as UserRole,
           plan: (() => {
             const p = (user.plan || 'free').toLowerCase()
             if (p === 'enterprise' || p === 'premium' || p === 'institutional') return 'institutional'
@@ -207,7 +207,7 @@ export const useAuthStore = create<AuthState>()(
               id: savedUser.id,
               name: savedUser.name,
               email: savedUser.email,
-              role: (savedUser.role || 'user').toLowerCase(),
+              role: (savedUser.role || 'user').toLowerCase() as UserRole,
               plan: (() => {
                 const p = (savedUser.plan || 'free').toLowerCase()
                 if (p === 'enterprise' || p === 'premium' || p === 'institutional') return 'institutional'

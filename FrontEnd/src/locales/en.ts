@@ -321,6 +321,7 @@ export const en = {
     or: "or",
     browse: "Browse Files",
     supportFormat: "Support for PDF, DOCX, and PPTX files (Max 50MB)",
+    supportFormatOnlyPdf: "Support for PDF files only (Max 50MB)",
     supportFormatSubject: "Supported formats: PDF, DOCX, PPTX, TXT (Max 50MB per file)",
     readyUpload: "Ready to Upload",
     total: "total",
