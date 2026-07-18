@@ -7,6 +7,8 @@ import com.lumiedu.document.entity.AudioRecord;
 import com.lumiedu.document.entity.Document;
 import com.lumiedu.document.entity.DocumentDownload;
 import com.lumiedu.document.entity.DocumentTag;
+import com.lumiedu.document.enums.DocumentStatus;
+import com.lumiedu.ai.service.DocumentChunkingService;
 import com.lumiedu.document.exception.DocumentNotFoundException;
 import com.lumiedu.document.exception.FileStorageException;
 import com.lumiedu.document.exception.InvalidFileTypeException;
@@ -63,6 +65,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentTagRepository documentTagRepository;
     private final DocumentDownloadRepository documentDownloadRepository;
     private final AudioRecordRepository audioRecordRepository;
+    private final DocumentChunkingService documentChunkingService;
 
     // -------------------------------------------------------------------------
     // Upload
@@ -118,6 +121,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .mimeType(file.getContentType())
                 .fileSize(file.getSize())
                 .deleted(false)
+                .moderationStatus(DocumentStatus.PENDING)
                 .build();
 
         document = documentRepository.save(document);
@@ -125,6 +129,9 @@ public class DocumentServiceImpl implements DocumentService {
         if (request.getTags() != null && !request.getTags().isEmpty()) {
             saveTagsForDocument(document, request.getTags());
         }
+
+        // Trigger async AI moderation
+        documentChunkingService.chunkAndIndexDocument(document);
 
         return mapToResponse(document);
     }
@@ -182,6 +189,7 @@ public class DocumentServiceImpl implements DocumentService {
                 : documentRepository.findAllByDeletedFalse();
 
         return documents.stream()
+                .filter(this::isApprovedForUser)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -191,6 +199,9 @@ public class DocumentServiceImpl implements DocumentService {
     public DocumentResponse getDocumentById(Long id) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
+        if (!isApprovedForUser(document)) {
+            throw new IllegalArgumentException("Document is not available or pending moderation.");
+        }
         return mapToResponse(document);
     }
 
@@ -241,6 +252,10 @@ public class DocumentServiceImpl implements DocumentService {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
 
+        if (!isApprovedForUser(document)) {
+            throw new IllegalArgumentException("Document is not available for download.");
+        }
+
         Resource resource = loadFileAsResource(document.getFileType(), document.getFileName());
 
         // Record download history
@@ -258,6 +273,9 @@ public class DocumentServiceImpl implements DocumentService {
     public Resource previewDocument(Long id) {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
+        if (!isApprovedForUser(document)) {
+            throw new IllegalArgumentException("Document is not available for preview.");
+        }
         return loadFileAsResource(document.getFileType(), document.getFileName());
     }
 
@@ -301,6 +319,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         return documents.stream()
+                .filter(this::isApprovedForUser)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -410,6 +429,39 @@ public class DocumentServiceImpl implements DocumentService {
                 .tags(tags)
                 .createdAt(document.getCreatedAt())
                 .updatedAt(document.getUpdatedAt())
+                .moderationStatus(document.getModerationStatus())
+                .moderationReason(document.getModerationReason())
                 .build();
+    }
+
+    private boolean isApprovedForUser(Document document) {
+        if (document.getModerationStatus() == null || document.getModerationStatus() == DocumentStatus.APPROVED) {
+            return true;
+        }
+        Long currentUserId = getCurrentUserId();
+        return currentUserId != null && currentUserId.equals(document.getUserId());
+    }
+
+    private Long getCurrentUserId() {
+        // Standard developer/dev environment fallback: parse X-User-Id header or query parameters
+        try {
+            org.springframework.web.context.request.RequestAttributes attributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attributes instanceof org.springframework.web.context.request.ServletRequestAttributes servletAttributes) {
+                jakarta.servlet.http.HttpServletRequest request = servletAttributes.getRequest();
+                // 1. Check custom X-User-Id header
+                String userIdHeader = request.getHeader("X-User-Id");
+                if (userIdHeader != null) {
+                    return Long.parseLong(userIdHeader);
+                }
+                // 2. Check query parameter
+                String userIdParam = request.getParameter("userId");
+                if (userIdParam != null) {
+                    return Long.parseLong(userIdParam);
+                }
+            }
+        } catch (Exception ignored) {
+            // RequestContextHolder might not be active (e.g. in standalone tests)
+        }
+        return null;
     }
 }
