@@ -38,6 +38,7 @@ export type AdminDocument = {
   unsafeContentScore: number;
   spamScore: number;
   uploadSource: "web_upload" | "api_sync" | "partner_portal";
+  moderationReason?: string;
 };
 
 export type DeletedDocumentRecord = {
@@ -308,6 +309,7 @@ let mockDocuments: AdminDocument[] = [
     unsafeContentScore: 92,
     spamScore: 80,
     uploadSource: "web_upload",
+    moderationReason: "AI Content Warning: Phát hiện từ khóa nghi vấn (leak, exam, midterm) trong tài liệu.",
   },
   {
     id: "d5",
