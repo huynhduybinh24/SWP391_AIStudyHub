@@ -296,7 +296,7 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
                         .documentId(doc.getId())
                         .documentName(doc.getTitle())
                         .actionType("view_document")
-                        .actionUrl("/dashboard/documents/" + doc.getId())
+                        .actionUrl("/dashboard/documents/document/" + doc.getId())
                         .build();
                 notificationService.createNotification(notifReq);
             } catch (Exception e) {
