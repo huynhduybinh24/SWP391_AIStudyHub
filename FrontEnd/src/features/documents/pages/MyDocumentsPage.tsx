@@ -46,8 +46,6 @@ interface DocumentItem {
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
 
-<<<<<<< HEAD
-=======
 interface DocumentsContextType {
   documents: DocumentItem[]
   setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>
@@ -63,7 +61,6 @@ interface DocumentsContextType {
   refreshSubjects?: () => void
 }
 
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
 interface FptSubjectInfo {
   id: string
   title: string
@@ -72,8 +69,6 @@ interface FptSubjectInfo {
   majors: ('SE' | 'AI' | 'BA')[]
 }
 
-<<<<<<< HEAD
-=======
 const formatSemesterName = (name: string, lang: string) => {
   const match = name.trim().match(/^K([0-9]+)$/i)
   if (match) {
@@ -87,7 +82,6 @@ const formatSemesterName = (name: string, lang: string) => {
   return name
 }
 
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
 export default function MyDocumentsPage() {
   const navigate = useNavigate()
   const { language, t } = useTranslation()
@@ -100,13 +94,9 @@ export default function MyDocumentsPage() {
     handleDownloadFile,
     handleDeleteDocument,
     renderFileIcon,
-<<<<<<< HEAD
-    renderStatusBadge
-=======
     renderStatusBadge,
     refreshSubjects
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
-  } = useOutletContext<any>()
+  } = useOutletContext<DocumentsContextType>()
 
   const { user } = useAuthStore()
   const currentUserId = user?.id ? Number(user.id) : null
@@ -175,20 +165,12 @@ export default function MyDocumentsPage() {
     try {
       const urlSem = currentUserId ? `/semesters?userId=${currentUserId}` : '/semesters'
       const urlSubj = currentUserId ? `/subjects?userId=${currentUserId}` : '/subjects'
-<<<<<<< HEAD
-
-=======
       
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
       const [semRes, subjRes] = await Promise.all([
         apiClient.get<any[]>(urlSem),
         apiClient.get<any[]>(urlSubj)
       ])
-<<<<<<< HEAD
-
-=======
       
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
       setSemesters(semRes.data)
       setSubjects(subjRes.data)
 
@@ -358,10 +340,7 @@ export default function MyDocumentsPage() {
       setAddingSubjectToSemester(null)
       toast.success(language === 'vi' ? 'Thêm môn học mới thành công!' : 'New subject added!')
       fetchSemestersAndSubjects()
-<<<<<<< HEAD
-=======
       if (refreshSubjects) refreshSubjects()
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
     } catch (err) {
       console.error(err)
       toast.error('Failed to create subject')
@@ -382,10 +361,7 @@ export default function MyDocumentsPage() {
       setEditingSubjectMajors('')
       toast.success(language === 'vi' ? 'Cập nhật môn học thành công!' : 'Subject updated!')
       fetchSemestersAndSubjects()
-<<<<<<< HEAD
-=======
       if (refreshSubjects) refreshSubjects()
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
     } catch (err) {
       console.error(err)
       toast.error('Failed to update subject')
@@ -397,10 +373,7 @@ export default function MyDocumentsPage() {
       await apiClient.delete(`/subjects/${id}`)
       toast.success(language === 'vi' ? 'Đã xóa môn học!' : 'Subject deleted!')
       fetchSemestersAndSubjects()
-<<<<<<< HEAD
-=======
       if (refreshSubjects) refreshSubjects()
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
     } catch (err) {
       console.error(err)
       toast.error('Failed to delete subject')
@@ -449,11 +422,7 @@ export default function MyDocumentsPage() {
               className="flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
             >
               <Settings className="h-4.5 w-4.5" />
-<<<<<<< HEAD
-              {language === 'en' ? 'Manage' : (language === 'vi' ? 'Quản lý' : 'Manage')}
-=======
               <span className="hidden sm:inline">{language === 'en' ? 'Manage' : (language === 'vi' ? 'Quản lý' : 'Manage')}</span>
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
             </Button>
 
             <Button
@@ -462,13 +431,8 @@ export default function MyDocumentsPage() {
               onClick={() => setShowFilters(prev => !prev)}
               className={cn(
                 "flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
-<<<<<<< HEAD
-                showFilters
-                  ? "border-[#2563eb]/40 bg-blue-50 text-[#2563eb] dark:bg-blue-955/30 dark:border-blue-500/50 dark:text-blue-450"
-=======
                 showFilters 
                   ? "border-[#2563eb]/40 bg-blue-50 text-[#2563eb] dark:bg-blue-955/30 dark:border-blue-500/50 dark:text-blue-450" 
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               )}
             >
@@ -480,14 +444,14 @@ export default function MyDocumentsPage() {
               variant="secondary"
               size="sm"
               onClick={() => navigate('/dashboard/documents/upload-history')}
-              className="flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+              className="flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer whitespace-nowrap"
             >
               <History className="h-4.5 w-4.5" />
-              <span className="hidden sm:inline">{language === 'en' ? 'View upload history' : 'Lịch sử tải lên'}</span>
+              <span className="hidden sm:inline">{language === 'en' ? 'Upload History' : 'Lịch sử tải lên'}</span>
             </Button>
 
             <Button
-              onClick={openUploadModal}
+              onClick={() => openUploadModal()}
               className="group flex items-center justify-center gap-2 rounded-xl bg-[#2563eb] w-[42px] sm:w-auto px-0 sm:px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
             >
               <Plus className="h-4.5 w-4.5" />
@@ -537,13 +501,8 @@ export default function MyDocumentsPage() {
             { key: 'ALL', labelEn: 'All Semesters', labelVi: 'Tất cả học kỳ' },
             ...semesters.map((s) => ({
               key: s.name,
-<<<<<<< HEAD
-              labelEn: s.name,
-              labelVi: s.name
-=======
               labelEn: formatSemesterName(s.name, 'en'),
               labelVi: formatSemesterName(s.name, 'vi')
->>>>>>> eb3f069b14a4861f3990659489c69c13960b0ff9
             }))
           ].map((sem) => (
             <button
