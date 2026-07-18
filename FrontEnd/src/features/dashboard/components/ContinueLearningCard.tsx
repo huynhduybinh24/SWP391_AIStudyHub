@@ -41,7 +41,7 @@ export function ContinueLearningCard({ item }: ContinueLearningCardProps) {
 
   // Active state
   return (
-    <Link to={`/dashboard/documents/${item.id}`} className="col-span-12 block group">
+    <Link to={`/dashboard/documents/document/${item.id}`} className="col-span-12 block group">
       <Card className="flex flex-col md:flex-row md:items-center justify-between p-6 gap-6 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 dark:hover:border-slate-700/80 cursor-pointer">
         <div className="flex items-start gap-4 min-w-0 flex-1 w-full">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
