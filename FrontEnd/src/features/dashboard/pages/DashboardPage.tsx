@@ -13,6 +13,8 @@ import { useDashboard } from '@/features/dashboard/hooks/useDashboard'
 import { CreateStudyPlanModal } from '@/features/study-plans/pages/CreateStudyPlanModal'
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
+import { ContinueLearningCard } from '@/features/dashboard/components/ContinueLearningCard'
+import { mockContinueLearningItem } from '@/features/dashboard/mock/continueLearning'
 
 export function DashboardPage() {
   const { t } = useTranslation()
@@ -59,6 +61,10 @@ export function DashboardPage() {
       <div className="grid grid-cols-12 gap-6">
         <QuickActions />
         <StorageWidget usedMb={data.storageUsedMb} totalMb={data.storageTotalMb} />
+      </div>
+
+      <div className="grid grid-cols-12 gap-6">
+        <ContinueLearningCard item={mockContinueLearningItem} />
       </div>
 
       <div className="grid grid-cols-12 gap-6">
