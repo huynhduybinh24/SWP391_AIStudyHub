@@ -81,6 +81,9 @@ public class NotificationService {
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found with id: " + id));
         notification.setIsRead(true);
         notificationRepository.save(notification);
+        userRepository.findById(notification.getUserId()).ifPresent(user -> {
+            sendSyncSignal(user.getEmail());
+        });
     }
 
     public void markAllAsRead(Long userId, String email) {
@@ -90,6 +93,7 @@ public class NotificationService {
             n.setIsRead(true);
         }
         notificationRepository.saveAll(unread);
+        sendSyncSignal(user.getEmail());
     }
 
     public void deleteNotification(Long id) {
@@ -97,6 +101,9 @@ public class NotificationService {
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found with id: " + id));
         notification.setDeleted(true);
         notificationRepository.save(notification);
+        userRepository.findById(notification.getUserId()).ifPresent(user -> {
+            sendSyncSignal(user.getEmail());
+        });
     }
 
     public NotificationResponse createNotification(NotificationRequest request) {
@@ -252,5 +259,14 @@ public class NotificationService {
         java.time.LocalDateTime oneWeekAgo = java.time.LocalDateTime.now().minusDays(7);
         notificationRepository.deleteByCreatedAtBefore(oneWeekAgo);
         System.out.println("Cleaned up notifications created before: " + oneWeekAgo);
+    }
+
+    private void sendSyncSignal(String email) {
+        try {
+            String syncPayload = "{\"syncAction\":\"REFRESH\"}";
+            notificationWebSocketHandler.sendNotification(email, syncPayload);
+        } catch (Exception e) {
+            System.err.println("Không thể gửi tín hiệu đồng bộ: " + e.getMessage());
+        }
     }
 }
