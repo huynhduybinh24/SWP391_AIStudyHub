@@ -22,13 +22,32 @@ export function DashboardPage() {
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false)
   const { data, isLoading, isError, error, refetch } = useDashboard()
 
+  const [continueLearningItem, setContinueLearningItem] = useState(() => {
+    try {
+      const stored = localStorage.getItem('aiStudyHubLastOpenedDocument')
+      return stored ? JSON.parse(stored) : mockContinueLearningItem
+    } catch (e) {
+      return mockContinueLearningItem
+    }
+  })
+
   useEffect(() => {
-    const handleUpdate = () => refetch()
+    const handleUpdate = () => {
+      refetch()
+      try {
+        const stored = localStorage.getItem('aiStudyHubLastOpenedDocument')
+        if (stored) {
+          setContinueLearningItem(JSON.parse(stored))
+        }
+      } catch (e) {}
+    }
     window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
     window.addEventListener('aiStudyHubUserChanged', handleUpdate)
+    window.addEventListener('aiStudyHubLastOpenedDocumentUpdated', handleUpdate)
     return () => {
       window.removeEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
       window.removeEventListener('aiStudyHubUserChanged', handleUpdate)
+      window.removeEventListener('aiStudyHubLastOpenedDocumentUpdated', handleUpdate)
     }
   }, [refetch])
 
@@ -64,7 +83,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-12 gap-6">
-        <ContinueLearningCard item={mockContinueLearningItem} />
+        <ContinueLearningCard item={continueLearningItem} />
       </div>
 
       <div className="grid grid-cols-12 gap-6">

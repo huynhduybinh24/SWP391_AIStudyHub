@@ -139,6 +139,40 @@ export default function DocumentDetailPage() {
     }
   }, [documentId])
 
+  useEffect(() => {
+    if (documentId) {
+      const doc = documents.find(d => d.id === documentId)
+      const docTitle = doc?.title || doc?.fileName || mockDetails.courseTitle
+      const courseCode = doc?.course || mockDetails.courseCode?.split(' ')[0] || 'GENERAL'
+      
+      let progress = 25
+      let resumeLabel = 'Resume from page 3'
+      
+      try {
+        const stored = localStorage.getItem('aiStudyHubLastOpenedDocument')
+        if (stored) {
+          const item = JSON.parse(stored)
+          if (item.id === documentId) {
+            progress = item.progress
+            resumeLabel = item.resumeLabel
+          }
+        }
+      } catch (e) {}
+
+      const itemToSave = {
+        id: documentId,
+        title: docTitle,
+        course: courseCode,
+        progress,
+        lastOpened: 'Just now',
+        resumeLabel
+      }
+      
+      localStorage.setItem('aiStudyHubLastOpenedDocument', JSON.stringify(itemToSave))
+      window.dispatchEvent(new Event('aiStudyHubLastOpenedDocumentUpdated'))
+    }
+  }, [documentId, documents, mockDetails])
+
   const activeDoc = documents.find(d => d.id === documentId)
   
   const subjectKey = (activeDoc?.subject || 'NEUROSCIENCE').toUpperCase()

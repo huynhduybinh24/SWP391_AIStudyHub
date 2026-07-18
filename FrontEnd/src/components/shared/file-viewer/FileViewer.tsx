@@ -172,6 +172,24 @@ export function FileViewer({
     }
   }, [initialPage])
 
+  useEffect(() => {
+    if (documentId) {
+      try {
+        const stored = localStorage.getItem('aiStudyHubLastOpenedDocument')
+        if (stored) {
+          const item = JSON.parse(stored)
+          if (item.id === documentId) {
+            item.resumeLabel = `Resume from page ${currentPage}`
+            const total = totalPages || 12
+            item.progress = Math.round((currentPage / total) * 100)
+            localStorage.setItem('aiStudyHubLastOpenedDocument', JSON.stringify(item))
+            window.dispatchEvent(new Event('aiStudyHubLastOpenedDocumentUpdated'))
+          }
+        }
+      } catch (e) {}
+    }
+  }, [currentPage, documentId, totalPages])
+
   // 2. AI Chat assistant state
   const user = useAuthStore((s) => s.user)
   const [sessionId, setSessionId] = useState<number | null>(null)
