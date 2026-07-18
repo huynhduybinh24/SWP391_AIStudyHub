@@ -141,7 +141,7 @@ const mapBackendNotification = (item: any): Notification => {
     type: displayType,
     title: item.title,
     time: item.time || 'Just now',
-    isRead: !!item.isRead,
+    isRead: item.isRead !== undefined ? !!item.isRead : !!item.read,
     description: item.description || item.message,
     quote: item.quote,
     actionText: item.actionText,
