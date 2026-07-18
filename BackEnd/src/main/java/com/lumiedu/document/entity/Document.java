@@ -1,5 +1,6 @@
 package com.lumiedu.document.entity;
 
+import com.lumiedu.document.enums.DocumentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -53,6 +54,13 @@ public class Document {
 
     @Column(name = "checksum", length = 64)
     private String checksum;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status")
+    private DocumentStatus moderationStatus;
+
+    @Column(name = "moderation_reason", columnDefinition = "TEXT")
+    private String moderationReason;
 
     @Builder.Default
     @Column(name = "deleted", nullable = false)
