@@ -55,6 +55,12 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.ok("Notification deleted successfully.", null));
     }
 
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<ApiResponse<Void>> restoreNotification(@PathVariable Long id) {
+        notificationService.restoreNotification(id);
+        return ResponseEntity.ok(ApiResponse.ok("Notification restored successfully.", null));
+    }
+
     @PostMapping("/broadcast")
     public ResponseEntity<ApiResponse<BroadcastNotificationResponse>> sendBroadcast(
             @RequestBody BroadcastNotificationRequest request) {
