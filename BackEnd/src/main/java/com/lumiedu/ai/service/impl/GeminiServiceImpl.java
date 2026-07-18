@@ -3,7 +3,6 @@ package com.lumiedu.ai.service.impl;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.lumiedu.ai.service.GeminiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -14,14 +13,13 @@ import org.springframework.http.MediaType;
 
 @Slf4j
 @Service
-public class GeminiServiceImpl implements GeminiService {
+public class GeminiServiceImpl {
 
     @Value("${gemini.api-key:}")
     private String apiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Override
     public String chat(String systemPrompt, String userMessage) {
         if (apiKey != null && !apiKey.trim().isEmpty()) {
             try {
