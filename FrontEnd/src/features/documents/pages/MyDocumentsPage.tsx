@@ -693,7 +693,10 @@ export default function MyDocumentsPage() {
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-[#2563eb]/20 cursor-pointer dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/30"
+                className={cn(
+                  "group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-[#2563eb]/20 cursor-pointer dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/30",
+                  activeMenuId === doc.id ? "z-25" : "z-0"
+                )}
                 onClick={() => handleOpenDocument(doc.id)}
               >
                 {/* File Top Icon & Menu */}
