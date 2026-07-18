@@ -659,6 +659,7 @@ export function NotificationsPage() {
 
   const { t, language } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const tabs = ['All', 'Unread', 'Mentions', 'Shared Files', 'AI Updates']
 
@@ -937,7 +938,11 @@ export function NotificationsPage() {
                 replyText={replyText}
                 onMarkRead={() => handleMarkAsRead(notification.id)}
                 onClick={() => {
-                  setSelectedDetailNotification(notification)
+                  if (notification.actionUrl && (notification.type === 'document' || notification.type === 'shared_file' || notification.type === 'folder' || notification.type === 'calendar' || notification.type === 'flashcard')) {
+                    navigate(notification.actionUrl);
+                  } else {
+                    setSelectedDetailNotification(notification);
+                  }
                 }}
                 onReplyClick={() => {
                   if (notification.id === 'emily' || notification.id === 'all-3') {

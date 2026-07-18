@@ -90,13 +90,14 @@ export interface MockNotification {
   actionType?: "removed" | "rejected" | "approved" | "system"
   adminNote?: string
   targetUserEmail?: string
+  actionUrl?: string
 }
 
 // â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function Header() {
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role?.toLowerCase() === 'admin'
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
   const [searchParams] = useSearchParams()
@@ -108,6 +109,7 @@ export function Header() {
   const [searchResults, setSearchResults] = useState<typeof CHATBOT_SEARCH_DATA>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
+  /*
   const loadNotifications = () => {
     const currentUser = getCurrentUser();
     const userRole = currentUser.role;
@@ -208,7 +210,8 @@ export function Header() {
           documentId: n.documentId,
           actionType: n.actionType,
           adminNote: n.adminNote,
-          targetUserEmail: n.targetUserEmail
+          targetUserEmail: n.targetUserEmail,
+          actionUrl: n.actionUrl
         }))
       }
     } catch (err) {
@@ -265,6 +268,7 @@ export function Header() {
 
     return allNotifs
   }
+  */
 
   const [notifications, setNotifications] = useState<MockNotification[]>([])
 
@@ -303,7 +307,8 @@ export function Header() {
           documentId: item.documentId,
           actionType: item.actionType,
           adminNote: item.adminNote,
-          targetUserEmail: item.targetUserEmail
+          targetUserEmail: item.targetUserEmail,
+          actionUrl: item.actionUrl
         }
       })
 

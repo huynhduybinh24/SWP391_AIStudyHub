@@ -13,14 +13,11 @@ import com.lumiedu.document.entity.AudioRecord;
 import com.lumiedu.document.entity.Document;
 import com.lumiedu.document.entity.DocumentDownload;
 import com.lumiedu.document.entity.DocumentTag;
-import com.lumiedu.document.enums.DocumentStatus;
-import com.lumiedu.ai.service.DocumentChunkingService;
 import com.lumiedu.document.exception.DocumentNotFoundException;
 import com.lumiedu.document.exception.FileStorageException;
 import com.lumiedu.document.exception.InvalidFileTypeException;
 import com.lumiedu.document.entity.DocumentShare;
 import com.lumiedu.document.repository.DocumentShareRepository;
-import com.lumiedu.user.entity.User;
 import com.lumiedu.document.repository.AudioRecordRepository;
 import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
@@ -42,10 +39,6 @@ import com.lumiedu.document.entity.Subject;
 import com.lumiedu.document.repository.SubjectRepository;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.File;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,7 +55,8 @@ import java.util.stream.Collectors;
 public class DocumentServiceImpl implements DocumentService {
 
     private static final Set<String> ALLOWED_DOCUMENT_EXTENSIONS = Set.of(
-            "pdf");
+            "pdf"
+    );
 
     private static final Set<String> ALLOWED_MEDIA_EXTENSIONS = Set.of(
             "jpg", "jpeg", "png", "mp4", "mp3", "wav");
