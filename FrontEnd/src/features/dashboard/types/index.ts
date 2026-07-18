@@ -30,3 +30,12 @@ export interface DashboardData {
   alerts: AlertItem[]
   weeklyActivity: WeeklyActivityDay[]
 }
+
+export interface ContinueLearningItem {
+  id: string
+  title: string
+  course?: string
+  progress: number
+  lastOpened: string
+  resumeLabel?: string
+}
