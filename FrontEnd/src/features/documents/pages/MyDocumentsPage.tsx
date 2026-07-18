@@ -21,7 +21,8 @@ import {
   ChevronDown,
   ChevronRight,
   Check,
-  X
+  X,
+  History
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -45,20 +46,6 @@ interface DocumentItem {
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
 
-interface DocumentsContextType {
-  documents: DocumentItem[]
-  setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>
-  openUploadModal: () => void
-  openChatDrawer: (doc: DocumentItem) => void
-  openPreviewModal: (doc: DocumentItem) => void
-  openQuizModal: (doc?: DocumentItem) => void
-  showToast: (message: string) => void
-  handleDownloadFile: (doc: DocumentItem) => void
-  handleDeleteDocument: (id: string) => void
-  renderFileIcon: (type: string) => React.ReactNode
-  renderStatusBadge: (status: string) => React.ReactNode
-}
-
 interface FptSubjectInfo {
   id: string
   title: string
@@ -80,7 +67,7 @@ export default function MyDocumentsPage() {
     handleDeleteDocument,
     renderFileIcon,
     renderStatusBadge
-  } = useOutletContext<DocumentsContextType>()
+  } = useOutletContext<any>()
 
   const { user } = useAuthStore()
   const currentUserId = user?.id ? Number(user.id) : null
@@ -149,12 +136,12 @@ export default function MyDocumentsPage() {
     try {
       const urlSem = currentUserId ? `/semesters?userId=${currentUserId}` : '/semesters'
       const urlSubj = currentUserId ? `/subjects?userId=${currentUserId}` : '/subjects'
-      
+
       const [semRes, subjRes] = await Promise.all([
         apiClient.get<any[]>(urlSem),
         apiClient.get<any[]>(urlSubj)
       ])
-      
+
       setSemesters(semRes.data)
       setSubjects(subjRes.data)
 
@@ -203,7 +190,7 @@ export default function MyDocumentsPage() {
   }, [activeMenuId])
 
   // Filter logic
-  const filteredDocuments = documents.filter((doc) => {
+  const filteredDocuments = documents.filter((doc: DocumentItem) => {
     const titleMatch = doc.title.toLowerCase().includes(searchQuery.toLowerCase())
     const filenameMatch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase())
     const queryMatch = searchQuery ? (titleMatch || filenameMatch) : true
@@ -224,7 +211,7 @@ export default function MyDocumentsPage() {
   })
 
   const getDocCountForSubject = (subjId: string) => {
-    return documents.filter(d => String(d.subject).toUpperCase() === subjId.toUpperCase()).length
+    return documents.filter((d: DocumentItem) => String(d.subject).toUpperCase() === subjId.toUpperCase()).length
   }
 
   const getDocumentsCountLabel = (count: number) => {
@@ -388,7 +375,7 @@ export default function MyDocumentsPage() {
               variant="secondary"
               size="sm"
               onClick={() => setSettingsModalOpen(true)}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+              className="flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
             >
               <Settings className="h-4.5 w-4.5" />
               {language === 'en' ? 'Manage' : (language === 'vi' ? 'Quản lý' : 'Manage')}
@@ -399,19 +386,29 @@ export default function MyDocumentsPage() {
               size="sm"
               onClick={() => setShowFilters(prev => !prev)}
               className={cn(
-                "flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
-                showFilters 
-                  ? "border-[#2563eb]/40 bg-blue-50 text-[#2563eb] dark:bg-blue-955/30 dark:border-blue-500/50 dark:text-blue-450" 
+                "flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px]",
+                showFilters
+                  ? "border-[#2563eb]/40 bg-blue-50 text-[#2563eb] dark:bg-blue-955/30 dark:border-blue-500/50 dark:text-blue-450"
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               )}
             >
               <SlidersHorizontal className="h-4.5 w-4.5" />
-              {language === 'en' ? 'Filter' : (language === 'vi' ? 'Bộ lọc' : (language === 'ja' ? 'フィルター' : '필터'))}
+              <span className="hidden sm:inline">{language === 'en' ? 'Filter' : (language === 'vi' ? 'Bộ lọc' : (language === 'ja' ? 'フィルター' : '필터'))}</span>
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/dashboard/documents/upload-history')}
+              className="flex items-center justify-center gap-2 rounded-xl w-[42px] sm:w-auto px-0 sm:px-4 py-2.5 font-semibold text-sm border shadow-sm transition-all h-[42px] bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              <History className="h-4.5 w-4.5" />
+              <span className="hidden sm:inline">{language === 'en' ? 'View upload history' : 'Lịch sử tải lên'}</span>
             </Button>
 
             <Button
               onClick={openUploadModal}
-              className="group flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
+              className="group flex items-center justify-center gap-2 rounded-xl bg-[#2563eb] w-[42px] sm:w-auto px-0 sm:px-5 py-2.5 font-bold text-sm text-white shadow-md shadow-blue-500/10 hover:bg-blue-700 transition-all h-[42px]"
             >
               <Plus className="h-4.5 w-4.5" />
               {language === 'en' ? 'Upload New' : (language === 'vi' ? 'Tải lên mới' : (language === 'ja' ? '新規アップロード' : '새로 업로드'))}
@@ -485,13 +482,13 @@ export default function MyDocumentsPage() {
         <h3 className="text-[11px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
           {language === 'en' ? 'SUBJECT FOLDERS' : 'THƯ MỤC MÔN HỌC'}
         </h3>
-        
+
         {displayedSubjects.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
             {displayedSubjects.map((subject) => {
               const docCount = getDocCountForSubject(subject.id)
               return (
-                <div 
+                <div
                   key={subject.id}
                   onClick={() => navigate(`/dashboard/documents/subject/${subject.id.toLowerCase()}`)}
                   className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-blue-500/45 hover:shadow-md cursor-pointer transition-all duration-300 hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/40"
@@ -532,100 +529,100 @@ export default function MyDocumentsPage() {
         {/* Filter bar controls */}
         {showFilters && (
           <div ref={filterContainerRef} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs md:flex-row md:items-center md:justify-between animate-fade-in dark:border-slate-800 dark:bg-slate-900">
-          {/* Search field */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-            <input
-              type="text"
-              placeholder={language === 'en' ? 'Filter by name...' : (language === 'vi' ? 'Lọc theo tên...' : (language === 'ja' ? '名前でフィルター...' : '이름으로 필터링...'))}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:border-[#2563eb]/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb]/10 transition-all dark:border-slate-800 dark:bg-slate-850 dark:text-white dark:placeholder:text-slate-500 dark:focus:bg-slate-950"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350"
-              >
-                {language === 'en' ? 'Clear' : (language === 'vi' ? 'Xóa' : (language === 'ja' ? 'クリア' : '지우기'))}
-              </button>
-            )}
+            {/* Search field */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+              <input
+                type="text"
+                placeholder={language === 'en' ? 'Filter by name...' : (language === 'vi' ? 'Lọc theo tên...' : (language === 'ja' ? '名前でフィルター...' : '이름으로 필터링...'))}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:border-[#2563eb]/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb]/10 transition-all dark:border-slate-800 dark:bg-slate-850 dark:text-white dark:placeholder:text-slate-500 dark:focus:bg-slate-950"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350"
+                >
+                  {language === 'en' ? 'Clear' : (language === 'vi' ? 'Xóa' : (language === 'ja' ? 'クリア' : '지우기'))}
+                </button>
+              )}
+            </div>
+
+            {/* Filter Dropdowns & View toggles */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Subject Filter */}
+              <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
+                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">{language === 'en' ? 'Subject:' : (language === 'vi' ? 'Môn học:' : (language === 'ja' ? '科目:' : '과목:'))}</span>
+                <select
+                  value={subjectFilter}
+                  onChange={(e) => setSubjectFilter(e.target.value)}
+                  className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
+                >
+                  <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('All')}</option>
+                  <option value="Mathematics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Mathematics')}</option>
+                  <option value="Biology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Biology')}</option>
+                  <option value="Physics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Physics')}</option>
+                  <option value="Compsci" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Compsci')}</option>
+                  <option value="Philosophy" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Philosophy')}</option>
+                  <option value="Economics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Economics')}</option>
+                  <option value="Neuroscience" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Neuroscience')}</option>
+                  <option value="Psychology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Psychology')}</option>
+                  <option value="General" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('General')}</option>
+                </select>
+              </div>
+
+              {/* Type Filter */}
+              <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
+                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">{language === 'en' ? 'Type:' : (language === 'vi' ? 'Loại tệp:' : (language === 'ja' ? 'タイプ:' : '유형:'))}</span>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
+                >
+                  <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('All')}</option>
+                  <option value="Pdf" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Pdf')}</option>
+                  <option value="Word" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Word')}</option>
+                  <option value="Text" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Text')}</option>
+                  <option value="Image" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Image')}</option>
+                  <option value="Slides" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Slides')}</option>
+                </select>
+              </div>
+
+              <div className="h-6 w-px bg-slate-200 hidden sm:block mx-1 dark:bg-slate-800" />
+
+              {/* View Mode Switcher */}
+              <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 p-1 dark:border-slate-800 dark:bg-slate-850">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    'rounded-lg p-1.5 transition-all duration-200 cursor-pointer',
+                    viewMode === 'grid'
+                      ? 'bg-white text-[#2563eb] shadow-xs dark:bg-slate-900 dark:text-blue-400'
+                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350'
+                  )}
+                  title={language === 'en' ? 'Grid View' : (language === 'vi' ? 'Chế độ lưới' : (language === 'ja' ? 'グリッド表示' : '그リッド 뷰'))}
+                  aria-label={language === 'en' ? 'Grid View' : (language === 'vi' ? 'Chế độ lưới' : (language === 'ja' ? 'グリッド表示' : '그リッド 뷰'))}
+                >
+                  <Grid className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    'rounded-lg p-1.5 transition-all duration-200 cursor-pointer',
+                    viewMode === 'list'
+                      ? 'bg-white text-[#2563eb] shadow-xs dark:bg-slate-900 dark:text-blue-400'
+                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350'
+                  )}
+                  title={language === 'en' ? 'List View' : (language === 'vi' ? 'Chế độ danh sách' : (language === 'ja' ? 'リスト表示' : '리스트 뷰'))}
+                  aria-label={language === 'en' ? 'List View' : (language === 'vi' ? 'Chế độ danh sách' : (language === 'ja' ? 'リスト表示' : '리스트 뷰'))}
+                >
+                  <List className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </div>
-
-          {/* Filter Dropdowns & View toggles */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Subject Filter */}
-            <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
-              <span className="text-xs font-medium text-slate-400 dark:text-slate-500">{language === 'en' ? 'Subject:' : (language === 'vi' ? 'Môn học:' : (language === 'ja' ? '科目:' : '과목:'))}</span>
-              <select
-                value={subjectFilter}
-                onChange={(e) => setSubjectFilter(e.target.value)}
-                className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
-              >
-                <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('All')}</option>
-                <option value="Mathematics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Mathematics')}</option>
-                <option value="Biology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Biology')}</option>
-                <option value="Physics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Physics')}</option>
-                <option value="Compsci" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Compsci')}</option>
-                <option value="Philosophy" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Philosophy')}</option>
-                <option value="Economics" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Economics')}</option>
-                <option value="Neuroscience" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Neuroscience')}</option>
-                <option value="Psychology" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('Psychology')}</option>
-                <option value="General" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('General')}</option>
-              </select>
-            </div>
-
-            {/* Type Filter */}
-            <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
-              <span className="text-xs font-medium text-slate-400 dark:text-slate-500">{language === 'en' ? 'Type:' : (language === 'vi' ? 'Loại tệp:' : (language === 'ja' ? 'タイプ:' : '유형:'))}</span>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
-              >
-                <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('All')}</option>
-                <option value="Pdf" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Pdf')}</option>
-                <option value="Word" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Word')}</option>
-                <option value="Text" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Text')}</option>
-                <option value="Image" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Image')}</option>
-                <option value="Slides" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Slides')}</option>
-              </select>
-            </div>
-
-            <div className="h-6 w-px bg-slate-200 hidden sm:block mx-1 dark:bg-slate-800" />
-
-            {/* View Mode Switcher */}
-            <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/50 p-1 dark:border-slate-800 dark:bg-slate-850">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={cn(
-                  'rounded-lg p-1.5 transition-all duration-200 cursor-pointer',
-                  viewMode === 'grid'
-                    ? 'bg-white text-[#2563eb] shadow-xs dark:bg-slate-900 dark:text-blue-400'
-                    : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350'
-                )}
-                title={language === 'en' ? 'Grid View' : (language === 'vi' ? 'Chế độ lưới' : (language === 'ja' ? 'グリッド表示' : '그リッド 뷰'))}
-                aria-label={language === 'en' ? 'Grid View' : (language === 'vi' ? 'Chế độ lưới' : (language === 'ja' ? 'グリッド表示' : '그リッド 뷰'))}
-              >
-                <Grid className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={cn(
-                  'rounded-lg p-1.5 transition-all duration-200 cursor-pointer',
-                  viewMode === 'list'
-                    ? 'bg-white text-[#2563eb] shadow-xs dark:bg-slate-900 dark:text-blue-400'
-                    : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350'
-                )}
-                title={language === 'en' ? 'List View' : (language === 'vi' ? 'Chế độ danh sách' : (language === 'ja' ? 'リスト表示' : '리스트 뷰'))}
-                aria-label={language === 'en' ? 'List View' : (language === 'vi' ? 'Chế độ danh sách' : (language === 'ja' ? 'リスト表示' : '리스트 뷰'))}
-              >
-                <List className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
 
 
         {/* Empty state or list render */}
@@ -653,7 +650,7 @@ export default function MyDocumentsPage() {
         ) : viewMode === 'grid' ? (
           /* GRID VIEW */
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {filteredDocuments.map((doc) => (
+            {filteredDocuments.map((doc: DocumentItem) => (
               <div
                 key={doc.id}
                 className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md hover:border-[#2563eb]/20 cursor-pointer dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-500/30"
@@ -662,7 +659,7 @@ export default function MyDocumentsPage() {
                 {/* File Top Icon & Menu */}
                 <div className="flex items-start justify-between" onClick={(e) => e.stopPropagation()}>
                   {renderFileIcon(doc.type)}
-                  
+
                   <div className="relative">
                     <button
                       onClick={() => setActiveMenuId(activeMenuId === doc.id ? null : doc.id)}
@@ -751,7 +748,7 @@ export default function MyDocumentsPage() {
                     <span className="text-[10px] text-slate-200 dark:text-slate-800">&bull;</span>
                     <span>{doc.size}</span>
                   </p>
-                                </div>
+                </div>
 
                 {/* Footer Subject & Status */}
                 <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
@@ -765,7 +762,7 @@ export default function MyDocumentsPage() {
 
             {/* Dotted Card for upload trigger */}
             <button
-              onClick={openUploadModal}
+              onClick={() => openUploadModal()}
               className="group relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white/40 p-6 text-center transition-all duration-300 hover:border-[#2563eb]/50 hover:bg-blue-50/20 hover:shadow-xs focus:outline-none min-h-[178px] dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-blue-950/20 cursor-pointer"
             >
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-[#2563eb] shadow-xs group-hover:scale-110 group-hover:bg-[#2563eb] group-hover:text-white transition-all duration-300 dark:bg-blue-955 dark:text-blue-400">
@@ -795,7 +792,7 @@ export default function MyDocumentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredDocuments.map((doc) => (
+                  {filteredDocuments.map((doc: DocumentItem) => (
                     <tr
                       key={doc.id}
                       className="group hover:bg-slate-50/30 transition-colors cursor-pointer dark:hover:bg-slate-850/30"
