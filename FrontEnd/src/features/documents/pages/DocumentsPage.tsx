@@ -5,6 +5,7 @@ import { aiService } from '@/services/aiService'
 import type { AiSummaryResponse, FlashcardResponse, QuizQuestionResponse } from '@/services/aiService'
 import { useAuthStore } from '@/stores/authStore'
 import { documentService } from '@/services/documentService'
+import { useSubjects } from '@/hooks/useSubjects'
 import {
   X,
   Send,
@@ -26,6 +27,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { apiClient } from '@/lib/axios'
 
 // Types
 interface DocumentItem {
@@ -792,6 +794,7 @@ export function DocumentsPage() {
   const user = useAuthStore(state => state.user)
   const userId = Number(user?.id || 1)
   const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const { subjects: dynamicSubjects, refreshSubjects } = useSubjects(userId)
 
   // Quiz Modal States
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false)
@@ -857,6 +860,8 @@ export function DocumentsPage() {
   }
 
   // Upload Modal States
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false)
+  const [uploadedSubjectKey, setUploadedSubjectKey] = useState('')
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -867,16 +872,23 @@ export function DocumentsPage() {
   const [newDocSubject, setNewDocSubject] = useState<string>('PRF192')
   const [newDocType, setNewDocType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [hasUploadError, setHasUploadError] = useState(false)
 
-  // Reset newDocSubject when uploadMajor or uploadSemester changes
+  // Reset newDocSubject when uploadMajor, uploadSemester, or dynamicSubjects changes
   useEffect(() => {
-    const filtered = FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester)
-    if (filtered.length > 0) {
-      setNewDocSubject(filtered[0].id)
-    } else {
-      setNewDocSubject('GENERAL')
+    if (dynamicSubjects && dynamicSubjects.length > 0) {
+      const filtered = dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester)
+      if (filtered.length > 0) {
+        if (!filtered.some(s => s.id === newDocSubject)) {
+          setNewDocSubject(filtered[0].id)
+        }
+      } else {
+        if (newDocSubject !== 'GENERAL') {
+          setNewDocSubject('GENERAL')
+        }
+      }
     }
-  }, [uploadMajor, uploadSemester])
+  }, [uploadMajor, uploadSemester, dynamicSubjects, newDocSubject])
 
   // Preview Modal States
   const [activePreviewDoc, setActivePreviewDoc] = useState<DocumentItem | null>(null)
@@ -970,18 +982,19 @@ export function DocumentsPage() {
     }
   }
 
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        const backendDocs = await documentService.getAllDocuments(userId)
-        if (backendDocs) {
-          setDocuments(backendDocs.map(mapBackendDocToItem))
-        }
-      } catch (e) {
-        console.error('Failed to load documents from backend:', e)
-        showToast('Không thể tải danh sách tài liệu từ máy chủ.')
+  const fetchDocuments = async () => {
+    try {
+      const backendDocs = await documentService.getAllDocuments(userId)
+      if (backendDocs) {
+        setDocuments(backendDocs.map(mapBackendDocToItem))
       }
+    } catch (e) {
+      console.error('Failed to load documents from backend:', e)
+      showToast('Không thể tải danh sách tài liệu từ máy chủ.')
     }
+  }
+
+  useEffect(() => {
     fetchDocuments()
   }, [userId])
 
@@ -1032,9 +1045,7 @@ export function DocumentsPage() {
       setUploadProgress(100)
       setUploadStepMsg('Finished!')
 
-      setTimeout(() => {
-        const newDocItem = mapBackendDocToItem(response)
-        setDocuments((prev) => [newDocItem, ...prev])
+      setTimeout(async () => {
         setIsUploading(false)
         setUploadProgress(0)
         setIsUploadModalOpen(false)
@@ -1061,10 +1072,11 @@ export function DocumentsPage() {
           detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
         })
 
-        showToast(`Tài liệu "${finalTitle}" tải lên và phân tích AI thành công!`)
+        showToast(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.')
         
         const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
-        navigate(`/dashboard/documents/subject/${finalSubjectKey}`)
+        setUploadedSubjectKey(finalSubjectKey)
+        setApprovalModalOpen(true)
 
         setNewDocTitle('')
         setUploadMajor('SE')
@@ -1072,6 +1084,17 @@ export function DocumentsPage() {
         setNewDocSubject('PRF192')
         setNewDocType('pdf')
         setSelectedFile(null)
+
+        // Refresh documents from backend
+        try {
+          await fetchDocuments()
+        } catch (err) {
+          console.error('Failed to refresh documents:', err)
+          const newDocItem = mapBackendDocToItem(response)
+          if (response.moderationStatus === 'APPROVED') {
+            setDocuments((prev) => [newDocItem, ...prev])
+          }
+        }
       }, 500)
     } catch (error) {
       clearInterval(progressInterval)
@@ -1448,10 +1471,16 @@ export function DocumentsPage() {
           </span>
         )
       case 'QUEUED':
-      default:
         return (
           <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-550">
             QUEUED
+          </span>
+        )
+      default:
+        const displayVal = status ? status.toUpperCase() : 'UNKNOWN';
+        return (
+          <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-550">
+            {displayVal}
           </span>
         )
     }
@@ -1476,7 +1505,21 @@ export function DocumentsPage() {
           // Shared Context
           documents,
           setDocuments,
-          openUploadModal: () => setIsUploadModalOpen(true),
+          dynamicSubjects,
+          refreshSubjects,
+          refreshDocuments: fetchDocuments,
+          openUploadModal: (defaultSubjectCode?: string) => {
+            setIsUploadModalOpen(true)
+            if (defaultSubjectCode) {
+              const upperCode = defaultSubjectCode.toUpperCase()
+              const found = dynamicSubjects.find(s => s.courseCode.toUpperCase() === upperCode || s.id.toUpperCase() === upperCode)
+              if (found) {
+                setUploadMajor(found.majors[0] as any || 'SE')
+                setUploadSemester(found.semester || 'K1')
+                setNewDocSubject(found.id)
+              }
+            }
+          },
           openChatDrawer: handleOpenChat,
           openPreviewModal: handleOpenPreview,
           handleOpenPreview,
@@ -1502,6 +1545,7 @@ export function DocumentsPage() {
           if (!isUploading) {
             setIsUploadModalOpen(false)
             setSelectedFile(null)
+            setHasUploadError(false)
           }
         }}
         title="Upload Study Material"
@@ -1597,12 +1641,12 @@ export function DocumentsPage() {
                     onChange={(e) => setNewDocSubject(e.target.value)}
                     className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
-                    {FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).map((subj) => (
+                    {dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).map((subj) => (
                       <option key={subj.id} value={subj.id}>
                         {subj.courseCode} - {subj.title}
                       </option>
                     ))}
-                    {FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).length === 0 && (
+                    {dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).length === 0 && (
                       <option value="GENERAL">General/Other</option>
                     )}
                   </select>
@@ -1617,13 +1661,10 @@ export function DocumentsPage() {
                     id="type-select"
                     value={newDocType}
                     onChange={(e) => setNewDocType(e.target.value as any)}
-                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
+                    disabled
+                    className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-3 pr-10 text-base text-slate-500 dark:text-slate-400 cursor-not-allowed focus-visible:outline-none"
                   >
                     <option value="pdf">{language === 'en' ? 'PDF File (.pdf)' : 'Tệp PDF (.pdf)'}</option>
-                    <option value="word">{language === 'en' ? 'Word Document (.docx)' : 'Tài liệu Word (.docx)'}</option>
-                    <option value="text">{language === 'en' ? 'Text File (.txt)' : 'Tệp văn bản (.txt)'}</option>
-                    <option value="image">{language === 'en' ? 'Image Note (.png, .jpg)' : 'Hình ảnh (.png, .jpg)'}</option>
-                    <option value="slides">{language === 'en' ? 'Presentation Slides (.pptx)' : 'Slide trình chiếu (.pptx)'}</option>
                   </select>
                 </div>
               </div>
@@ -1634,12 +1675,21 @@ export function DocumentsPage() {
                   onClick={() => {
                     const input = document.createElement('input')
                     input.type = 'file'
+                    input.accept = '.pdf'
                     input.onchange = (e) => {
                       const files = (e.target as HTMLInputElement).files
                       if (files && files[0]) {
-                        setSelectedFile(files[0])
+                        const file = files[0]
+                        const ext = file.name.split('.').pop()?.toLowerCase()
+                        if (ext !== 'pdf') {
+                          setHasUploadError(true)
+                          setSelectedFile(null)
+                          return
+                        }
+                        setHasUploadError(false)
+                        setSelectedFile(file)
                         if (!newDocTitle) {
-                          const cleanName = files[0].name.split('.')[0].replace(/[_-]/g, ' ')
+                          const cleanName = file.name.split('.')[0].replace(/[_-]/g, ' ')
                           setNewDocTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1))
                         }
                       }
@@ -1647,15 +1697,21 @@ export function DocumentsPage() {
                     input.click()
                   }}
                   className={cn(
-                    'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-8 text-center cursor-pointer transition-all duration-300',
-                    selectedFile
-                      ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20'
-                      : 'hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 bg-slate-50/30'
+                    'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center cursor-pointer transition-all duration-300',
+                    hasUploadError
+                      ? 'border-red-500 bg-red-50/10 dark:bg-red-950/10'
+                      : selectedFile
+                        ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20'
+                        : 'hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700 bg-slate-50/30'
                   )}
                 >
                   <div className={cn(
                     'flex h-12 w-12 items-center justify-center rounded-full shadow-xs transition-colors',
-                    selectedFile ? 'bg-[#2563eb] text-white' : 'bg-blue-50 dark:bg-slate-800 text-[#2563eb] dark:text-blue-400'
+                    hasUploadError
+                      ? 'bg-red-500 text-white'
+                      : selectedFile
+                        ? 'bg-[#2563eb] text-white'
+                        : 'bg-blue-50 dark:bg-slate-800 text-[#2563eb] dark:text-blue-400'
                   )}>
                     <CloudUpload className="h-6 w-6" />
                   </div>
@@ -1667,10 +1723,17 @@ export function DocumentsPage() {
                   ) : (
                     <div className="mt-4">
                       <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Drag and drop your document here</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">or click to browse your folders (PDF, DOCX, TXT, PNG, PPTX up to 50MB)</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">or click to browse your folders (PDF only, up to 50MB)</p>
                     </div>
                   )}
                 </div>
+                {hasUploadError && (
+                  <p className="text-sm font-bold text-red-500 mt-2 text-left">
+                    {language === 'vi'
+                      ? 'Hệ thống chỉ hỗ trợ tệp tin PDF! Vui lòng chọn lại.'
+                      : 'The system only supports PDF files! Please choose another.'}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-8">
@@ -1687,7 +1750,7 @@ export function DocumentsPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!selectedFile && !newDocTitle}
+                  disabled={!selectedFile || hasUploadError}
                   className="rounded-xl bg-[#2563eb] text-white font-semibold shadow-md shadow-blue-500/10 px-6"
                 >
                   {t.upload.processAI}
@@ -2591,6 +2654,62 @@ export function DocumentsPage() {
           </div>
         </Modal>
       )}
+      {/* Approval Pending Modal */}
+      <Modal
+        isOpen={approvalModalOpen}
+        onClose={() => {
+          setApprovalModalOpen(false)
+          if (uploadedSubjectKey) {
+            navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+          }
+        }}
+        title={language === 'en' ? 'Moderation Pending' : 'Chờ kiểm duyệt'}
+        description={
+          language === 'en'
+            ? 'Your document has been successfully uploaded to Google Drive.'
+            : 'Tài liệu của bạn đã được tải lên Google Drive thành công.'
+        }
+        className="max-w-[480px]"
+      >
+        <div className="space-y-6 text-center py-2 select-none">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400">
+            <FileText className="h-8 w-8" />
+          </div>
+
+          <div className="space-y-2 max-w-sm mx-auto">
+            <p className="text-sm text-slate-605 dark:text-slate-400 font-medium leading-relaxed">
+              {language === 'en'
+                ? 'Your document is now waiting for administrative approval. It will become visible to others once approved.'
+                : 'Tài liệu đang chờ Admin phê duyệt. Tài liệu sẽ được hiển thị công khai sau khi được duyệt.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setApprovalModalOpen(false)
+                navigate('/dashboard/documents/upload-history')
+              }}
+              className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+            >
+              {language === 'en' ? 'View Upload History' : 'Xem lịch sử tải lên'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setApprovalModalOpen(false)
+                if (uploadedSubjectKey) {
+                  navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+                }
+              }}
+              className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
+            >
+              {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   )

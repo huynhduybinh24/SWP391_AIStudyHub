@@ -533,6 +533,8 @@ function NotificationCard({
                 localizedBtnText = language === 'vi' ? 'Mở kế hoạch' : language === 'ja' ? 'è¨ˆç”»ã‚’é–‹ã' : language === 'ko' ? 'ê³„íš ì—´ê¸°' : 'Open Plan'
               } else if (id === 'shared-doc-1' && btn.text === 'View Document') {
                 localizedBtnText = language === 'vi' ? 'Xem tài liệu' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ë¬¸ì„œ ë³´ê¸°' : 'View Document'
+              } else if (btn.text === 'Xem tài liệu' || btn.text === 'View Document') {
+                localizedBtnText = language === 'vi' ? 'Xem tài liệu' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ë¬¸ì„œ ë³´ê¸°' : 'View Document'
               } else if (id === 'flashcards' && btn.text === 'Practice Now') {
                 localizedBtnText = language === 'vi' ? 'Luyện tập ngay' : language === 'ja' ? 'ä»Šã™ãç·´ç¿’' : language === 'ko' ? 'ì§€ê¸ˆ ì—°ìŠµí•˜ê¸°' : 'Practice Now'
               }
@@ -791,7 +793,7 @@ export function NotificationsPage() {
     setIsDeleteConfirmOpen(false)
   }
 
-  const handleUndoDelete = () => {
+  const handleUndoDelete = async () => {
     if (!lastDeletedNotification) return
 
     if (undoTimeoutId) {
@@ -807,6 +809,9 @@ export function NotificationsPage() {
     })
 
     try {
+      const { userNotificationService } = await import('../services/userNotificationService')
+      await userNotificationService.restoreNotification(restoredId)
+
       const userEmail = getCurrentUser().email;
       const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`)
       if (storedDeleted) {

@@ -14,4 +14,7 @@ public interface AdminDocumentService {
     int bulkReject(BulkDocumentRequest request);
     int bulkDelete(BulkDocumentRequest request);
     String exportModerationReport(List<Long> ids);
+    List<AdminDocumentResponse> getPendingDocuments();
+    AdminDocumentResponse approveDocument(Long id, Long adminId);
+    AdminDocumentResponse rejectDocument(Long id, String reason, Long adminId);
 }

@@ -14,6 +14,10 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  const user = useAuthStore.getState().user
+  if (user && user.id) {
+    config.headers['X-User-Id'] = String(user.id)
+  }
   return config
 })
 

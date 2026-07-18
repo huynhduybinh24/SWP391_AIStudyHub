@@ -2,8 +2,10 @@ package com.lumiedu.workspace.controller;
 
 import com.lumiedu.document.entity.Document;
 import com.lumiedu.document.entity.DocumentTag;
+import com.lumiedu.document.entity.DocumentShare;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.document.repository.DocumentTagRepository;
+import com.lumiedu.document.repository.DocumentShareRepository;
 import com.lumiedu.user.entity.User;
 import com.lumiedu.user.repository.UserRepository;
 import com.lumiedu.workspace.dto.SharedDocumentResponse;
@@ -41,6 +43,7 @@ public class SharedDocumentController {
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final DocumentTagRepository documentTagRepository;
+    private final DocumentShareRepository documentShareRepository;
 
     @GetMapping
     public ResponseEntity<List<SharedDocumentResponse>> getSharedFiles(Authentication authentication) {
@@ -51,19 +54,22 @@ public class SharedDocumentController {
         Long currentUserId = (Long) authentication.getDetails();
         log.info("[SharedFiles] Fetching shared files for userId: {}", currentUserId);
 
+        Optional<User> currentUserOpt = userRepository.findById(currentUserId);
+        if (currentUserOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        User currentUser = currentUserOpt.get();
+        String currentUserEmail = currentUser.getEmail();
+        String currentUserFullName = currentUser.getFullName();
+
+        // Map to keep unique documents and their highest permission level
+        Map<Long, SharedDocumentResponse> sharedFilesMap = new HashMap<>();
+
         // 1. Find all accepted memberships of the user
         List<WorkspaceMember> memberships = workspaceMemberRepository.findByUserIdAndStatus(currentUserId, WorkspaceMemberStatus.ACCEPTED);
         log.info("[SharedFiles] memberships size: {}", memberships.size());
-        for (WorkspaceMember m : memberships) {
-            log.info("[SharedFiles] member: id={}, role={}, status={}, workspaceId={}", m.getId(), m.getRole(), m.getStatus(), m.getWorkspaceId());
-        }
-
-        // Map to keep unique documents and their highest permission level
-        // (If the same document is in multiple workspaces, B gets the highest permission)
-        Map<Long, SharedDocumentResponse> sharedFilesMap = new HashMap<>();
 
         for (WorkspaceMember member : memberships) {
-            // Check if workspace exists
             Optional<SharedWorkspace> workspaceOpt = sharedWorkspaceRepository.findById(member.getWorkspaceId());
             if (workspaceOpt.isEmpty()) {
                 continue;
@@ -71,15 +77,16 @@ public class SharedDocumentController {
 
             SharedWorkspace workspace = workspaceOpt.get();
 
-            // Determine permission string
             String permission = "Viewer";
+            String role = "viewer";
             if (member.getRole() == WorkspaceMemberRole.OWNER) {
                 permission = "Owner";
+                role = "owner";
             } else if (member.getRole() == WorkspaceMemberRole.COLLABORATOR) {
                 permission = "Editor";
+                role = "editor";
             }
 
-            // Find all documents in this workspace
             List<WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByWorkspaceId(workspace.getId());
 
             for (WorkspaceDocument wd : workspaceDocs) {
@@ -90,25 +97,24 @@ public class SharedDocumentController {
 
                 Document doc = docOpt.get();
 
-                // Skip deleted documents or not approved documents (e.g. pending/rejected)
                 if (Boolean.TRUE.equals(doc.getDeleted()) || doc.getModerationStatus() != com.lumiedu.document.enums.DocumentStatus.APPROVED) {
                     continue;
                 }
 
-                // Get owner of the document
                 String ownerName = "Unknown";
+                String ownerEmail = "";
                 if (doc.getUserId() != null) {
-                    if (doc.getUserId().equals(currentUserId)) {
-                        ownerName = "me";
-                    } else {
-                        Optional<User> ownerOpt = userRepository.findById(doc.getUserId());
-                        if (ownerOpt.isPresent()) {
+                    Optional<User> ownerOpt = userRepository.findById(doc.getUserId());
+                    if (ownerOpt.isPresent()) {
+                        ownerEmail = ownerOpt.get().getEmail();
+                        if (doc.getUserId().equals(currentUserId)) {
+                            ownerName = "me";
+                        } else {
                             ownerName = ownerOpt.get().getFullName();
                         }
                     }
                 }
 
-                // Convert file type to FE expected standard
                 String fileType = "pdf";
                 String filename = doc.getOriginalFileName() != null ? doc.getOriginalFileName() : doc.getFileName();
                 if (filename != null && filename.contains(".")) {
@@ -124,10 +130,8 @@ public class SharedDocumentController {
                     }
                 }
 
-                // Format file size
                 String sizeStr = formatSize(doc.getFileSize());
 
-                // Format date shared (using creation of workspace document linkage or document creation date)
                 String dateShared = "Just now";
                 if (wd.getCreatedAt() != null) {
                     dateShared = wd.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -135,12 +139,12 @@ public class SharedDocumentController {
                     dateShared = doc.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
                 }
 
-                // Retrieve tags
                 List<String> tags = documentTagRepository.findAllByDocumentId(doc.getId()).stream()
                         .map(DocumentTag::getName)
                         .collect(Collectors.toList());
 
-                // Build response object
+                Boolean sharedWithMe = !currentUserId.equals(doc.getUserId());
+
                 SharedDocumentResponse response = SharedDocumentResponse.builder()
                         .id(doc.getId().toString())
                         .name(doc.getTitle())
@@ -149,24 +153,198 @@ public class SharedDocumentController {
                         .dateShared(dateShared)
                         .type(fileType)
                         .size(sizeStr)
-                        .totalPages(15) // mock total pages
+                        .totalPages(15)
                         .description(doc.getDescription() != null ? doc.getDescription() : "No description available.")
                         .tags(tags)
                         .previewContent(doc.getDescription())
                         .url("/api/documents/" + doc.getId() + "/preview")
+                        .ownerName("me".equals(ownerName) ? currentUserFullName : ownerName)
+                        .ownerEmail(ownerEmail)
+                        .role(role)
+                        .sharedAt(dateShared)
+                        .sharedWithMe(sharedWithMe)
                         .build();
 
-                // Store or merge with existing if already added from another workspace (take higher permission)
                 if (sharedFilesMap.containsKey(doc.getId())) {
                     SharedDocumentResponse existing = sharedFilesMap.get(doc.getId());
                     if ("Owner".equals(permission)) {
                         existing.setPermission("Owner");
+                        existing.setRole("owner");
+                        existing.setSharedWithMe(false);
                     } else if ("Editor".equals(permission) && !"Owner".equals(existing.getPermission())) {
                         existing.setPermission("Editor");
+                        existing.setRole("editor");
                     }
                 } else {
                     sharedFilesMap.put(doc.getId(), response);
                 }
+            }
+        }
+
+        // 2. Fetch internally shared documents (shared with current user via DocumentShare)
+        List<DocumentShare> directShares = documentShareRepository.findByShareeEmail(currentUserEmail.trim().toLowerCase());
+        for (DocumentShare share : directShares) {
+            Optional<Document> docOpt = documentRepository.findById(share.getDocumentId());
+            if (docOpt.isEmpty()) {
+                continue;
+            }
+            Document doc = docOpt.get();
+
+            if (Boolean.TRUE.equals(doc.getDeleted()) || doc.getModerationStatus() != com.lumiedu.document.enums.DocumentStatus.APPROVED) {
+                continue;
+            }
+
+            String ownerName = "Unknown";
+            String ownerEmail = "";
+            if (doc.getUserId() != null) {
+                Optional<User> ownerOpt = userRepository.findById(doc.getUserId());
+                if (ownerOpt.isPresent()) {
+                    ownerEmail = ownerOpt.get().getEmail();
+                    if (doc.getUserId().equals(currentUserId)) {
+                        ownerName = "me";
+                    } else {
+                        ownerName = ownerOpt.get().getFullName();
+                    }
+                }
+            }
+
+            String fileType = "pdf";
+            String filename = doc.getOriginalFileName() != null ? doc.getOriginalFileName() : doc.getFileName();
+            if (filename != null && filename.contains(".")) {
+                fileType = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+            } else if (doc.getMimeType() != null && doc.getMimeType().contains("/")) {
+                String subType = doc.getMimeType().split("/")[1].toLowerCase();
+                if (subType.contains("pdf")) {
+                    fileType = "pdf";
+                } else if (subType.contains("word") || subType.contains("officedocument")) {
+                    fileType = "docx";
+                } else {
+                    fileType = subType;
+                }
+            }
+
+            String sizeStr = formatSize(doc.getFileSize());
+
+            String dateShared = "Just now";
+            if (share.getCreatedAt() != null) {
+                dateShared = share.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            } else if (doc.getCreatedAt() != null) {
+                dateShared = doc.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            }
+
+            List<String> tags = documentTagRepository.findAllByDocumentId(doc.getId()).stream()
+                    .map(DocumentTag::getName)
+                    .collect(Collectors.toList());
+
+            String role = share.getRole() != null ? share.getRole().toLowerCase() : "viewer";
+            String permission = "Viewer";
+            if ("editor".equals(role)) {
+                permission = "Editor";
+            }
+
+            SharedDocumentResponse response = SharedDocumentResponse.builder()
+                    .id(doc.getId().toString())
+                    .name(doc.getTitle())
+                    .owner(ownerName)
+                    .permission(permission)
+                    .dateShared(dateShared)
+                    .type(fileType)
+                    .size(sizeStr)
+                    .totalPages(15)
+                    .description(doc.getDescription() != null ? doc.getDescription() : "No description available.")
+                    .tags(tags)
+                    .previewContent(doc.getDescription())
+                    .url("/api/documents/" + doc.getId() + "/preview")
+                    .ownerName("me".equals(ownerName) ? currentUserFullName : ownerName)
+                    .ownerEmail(ownerEmail)
+                    .role(role)
+                    .sharedAt(dateShared)
+                    .sharedWithMe(true)
+                    .build();
+
+            if (sharedFilesMap.containsKey(doc.getId())) {
+                SharedDocumentResponse existing = sharedFilesMap.get(doc.getId());
+                if ("Owner".equals(permission)) {
+                    existing.setPermission("Owner");
+                    existing.setRole("owner");
+                    existing.setSharedWithMe(false);
+                } else if ("Editor".equals(permission) && !"Owner".equals(existing.getPermission())) {
+                    existing.setPermission("Editor");
+                    existing.setRole("editor");
+                }
+            } else {
+                sharedFilesMap.put(doc.getId(), response);
+            }
+        }
+
+        // 3. Fetch documents owned by the current user that are shared internally with others
+        List<Document> myDocs = documentRepository.findAllByUserIdAndDeletedFalse(currentUserId);
+        for (Document doc : myDocs) {
+            if (doc.getModerationStatus() != com.lumiedu.document.enums.DocumentStatus.APPROVED) {
+                continue;
+            }
+
+            List<DocumentShare> shares = documentShareRepository.findByDocumentId(doc.getId());
+            if (shares.isEmpty()) {
+                continue;
+            }
+
+            String fileType = "pdf";
+            String filename = doc.getOriginalFileName() != null ? doc.getOriginalFileName() : doc.getFileName();
+            if (filename != null && filename.contains(".")) {
+                fileType = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+            } else if (doc.getMimeType() != null && doc.getMimeType().contains("/")) {
+                String subType = doc.getMimeType().split("/")[1].toLowerCase();
+                if (subType.contains("pdf")) {
+                    fileType = "pdf";
+                } else if (subType.contains("word") || subType.contains("officedocument")) {
+                    fileType = "docx";
+                } else {
+                    fileType = subType;
+                }
+            }
+
+            String sizeStr = formatSize(doc.getFileSize());
+
+            String dateShared = "Just now";
+            if (!shares.isEmpty() && shares.get(0).getCreatedAt() != null) {
+                dateShared = shares.get(0).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            } else if (doc.getCreatedAt() != null) {
+                dateShared = doc.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            }
+
+            List<String> tags = documentTagRepository.findAllByDocumentId(doc.getId()).stream()
+                    .map(DocumentTag::getName)
+                    .collect(Collectors.toList());
+
+            SharedDocumentResponse response = SharedDocumentResponse.builder()
+                    .id(doc.getId().toString())
+                    .name(doc.getTitle())
+                    .owner("me")
+                    .permission("Owner")
+                    .dateShared(dateShared)
+                    .type(fileType)
+                    .size(sizeStr)
+                    .totalPages(15)
+                    .description(doc.getDescription() != null ? doc.getDescription() : "No description available.")
+                    .tags(tags)
+                    .previewContent(doc.getDescription())
+                    .url("/api/documents/" + doc.getId() + "/preview")
+                    .ownerName(currentUserFullName)
+                    .ownerEmail(currentUserEmail)
+                    .role("owner")
+                    .sharedAt(dateShared)
+                    .sharedWithMe(false)
+                    .build();
+
+            if (sharedFilesMap.containsKey(doc.getId())) {
+                SharedDocumentResponse existing = sharedFilesMap.get(doc.getId());
+                existing.setPermission("Owner");
+                existing.setRole("owner");
+                existing.setOwner("me");
+                existing.setSharedWithMe(false);
+            } else {
+                sharedFilesMap.put(doc.getId(), response);
             }
         }
 

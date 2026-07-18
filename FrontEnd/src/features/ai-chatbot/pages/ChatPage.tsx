@@ -568,7 +568,7 @@ export function ChatPage() {
                           <input
                             type="checkbox"
                             checked={isSelected}
-                            onChange={() => {}} // handled by parent onClick
+                            onChange={() => { }} // handled by parent onClick
                             className="size-4.5 accent-[#2563eb] rounded mt-0.5 pointer-events-none"
                           />
                           <div className="flex-1 min-w-0 text-left">
@@ -1176,7 +1176,7 @@ export function ChatPage() {
                   <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={() => {}}
+                    onChange={() => { }}
                     className="size-4.5 accent-[#2563eb] rounded mt-0.5"
                   />
                   <div className="flex-1 min-w-0 text-left">

@@ -20,7 +20,8 @@ import {
   Upload,
   Cpu,
   ArrowUpDown,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Loader2
 } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useToast } from '@/components/ui/Toast'
@@ -88,6 +89,72 @@ export function AdminDocumentsTab({
   const [rejectDocConfirm, setRejectDocConfirm] = useState<AdminDocument | null>(null)
   const [rejectReason, setRejectReason] = useState('')
 
+  // New Moderation States
+  const [activeSubTab, setActiveSubTab] = useState<'moderated' | 'pending_review'>('moderated')
+  const [pendingDocs, setPendingDocs] = useState<any[]>([])
+  const [loadingPending, setLoadingPending] = useState(false)
+  const [approveDocConfirm, setApproveDocConfirm] = useState<any | null>(null)
+  const [rejectPendingDocConfirm, setRejectPendingDocConfirm] = useState<any | null>(null)
+  const [rejectPendingReason, setRejectPendingReason] = useState('')
+
+  const fetchPendingDocs = async () => {
+    setLoadingPending(true)
+    try {
+      const data = await adminService.getPendingDocuments()
+      if (Array.isArray(data)) {
+        setPendingDocs(data)
+      }
+    } catch (err) {
+      console.error('Failed to load pending docs:', err)
+    } finally {
+      setLoadingPending(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPendingDocs()
+  }, [])
+
+  const handleApprovePendingClick = (doc: any) => {
+    setApproveDocConfirm(doc)
+  }
+
+  const handleConfirmApprovePending = async () => {
+    if (!approveDocConfirm) return
+    try {
+      await adminService.approvePendingDocument(approveDocConfirm.id)
+      toast.success(language === 'en' ? 'Document approved successfully.' : 'Phê duyệt tài liệu thành công.')
+      fetchPendingDocs()
+      setApproveDocConfirm(null)
+    } catch (err: any) {
+      console.error(err)
+      toast.error(language === 'en' ? 'Failed to approve document.' : 'Phê duyệt tài liệu thất bại.')
+    }
+  }
+
+  const handleRejectPendingClick = (doc: any) => {
+    setRejectPendingDocConfirm(doc)
+    setRejectPendingReason('')
+  }
+
+  const handleConfirmRejectPending = async () => {
+    if (!rejectPendingDocConfirm) return
+    if (!rejectPendingReason.trim()) {
+      toast.error(language === 'en' ? 'Rejection reason is required.' : 'Vui lòng nhập lý do từ chối.')
+      return
+    }
+    try {
+      await adminService.rejectPendingDocument(rejectPendingDocConfirm.id, rejectPendingReason.trim())
+      toast.success(language === 'en' ? 'Document rejected successfully.' : 'Từ chối duyệt tài liệu thành công.')
+      fetchPendingDocs()
+      setRejectPendingDocConfirm(null)
+      setRejectPendingReason('')
+    } catch (err: any) {
+      console.error(err)
+      toast.error(language === 'en' ? 'Failed to reject document.' : 'Từ chối duyệt tài liệu thất bại.')
+    }
+  }
+
   useEffect(() => {
     if (!deleteDoc) {
       setDeleteReason('')
@@ -118,7 +185,7 @@ export function AdminDocumentsTab({
       // 1. Text Search
       const term = searchTerm.toLowerCase();
       const titleMatch = doc.title.toLowerCase().includes(term);
-      const uploaderMatch = 
+      const uploaderMatch =
         doc.ownerName.toLowerCase().includes(term) ||
         doc.ownerEmail.toLowerCase().includes(term);
       const bannedMatch = doc.bannedKeywords
@@ -165,7 +232,7 @@ export function AdminDocumentsTab({
         const baseDate = new Date(latestDocTime > 0 ? latestDocTime : Date.now());
         const diffTime = Math.abs(baseDate.getTime() - docDate.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         if (dateFilter === 'today') {
           matchesDate = diffDays <= 1;
         } else if (dateFilter === 'week') {
@@ -204,7 +271,7 @@ export function AdminDocumentsTab({
     }
   };
   const handleSelectRow = (id: string) => {
-    setSelectedDocIds(prev => 
+    setSelectedDocIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
   };
@@ -307,7 +374,7 @@ export function AdminDocumentsTab({
     }
     toast.success(t.admin.toastApproveSuccess || 'Document approved')
   }
-  
+
   const handleReject = (id: string) => {
     const docToReject = documents.find(d => d.id === id)
     if (docToReject) {
@@ -341,12 +408,12 @@ export function AdminDocumentsTab({
     if (previewDoc && previewDoc.id === deleteDoc.id) {
       setPreviewDoc(null)
     }
-    
+
     const msg = language === 'vi'
       ? `Đã xóa tài liệu "${deleteDoc.title}" và gửi phản hồi đến ${deleteDoc.ownerEmail}: "${deleteReason}"`
       : `Deleted document "${deleteDoc.title}" and sent feedback to ${deleteDoc.ownerEmail}: "${deleteReason}"`
     toast.success(msg)
-    
+
     setDeleteDoc(null)
     setDeleteReason('')
   }
@@ -363,6 +430,42 @@ export function AdminDocumentsTab({
             {language === 'vi' ? 'Kiểm duyệt tài liệu & Tìm kiếm' : 'Document Moderation Search'}
           </h2>
         </div>
+      </div>
+
+      {/* Sub tabs */}
+      <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 pb-px">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('moderated')}
+          className={cn(
+            "pb-2.5 px-1 text-sm font-bold border-b-2 transition-all cursor-pointer",
+            activeSubTab === 'moderated'
+              ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+          )}
+        >
+          {language === 'vi' ? 'Tất cả tài liệu kiểm duyệt' : 'All moderated documents'}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveSubTab('pending_review');
+            fetchPendingDocs();
+          }}
+          className={cn(
+            "pb-2.5 px-1 text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5",
+            activeSubTab === 'pending_review'
+              ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+          )}
+        >
+          {language === 'vi' ? 'Đang chờ phê duyệt' : 'Pending Approval Reviews'}
+          {pendingDocs.length > 0 && (
+            <span className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+              {pendingDocs.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Analytics Overview Cards */}
@@ -449,555 +552,624 @@ export function AdminDocumentsTab({
         </div>
       </div>
 
-      {/* Search and Filters Section */}
-      <div className="space-y-4 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl backdrop-blur-sm">
-        {/* First Row: Search input and Date Filter */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-505" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={language === 'vi' ? "Tìm kiếm theo tên tài liệu, người đăng, email, từ khóa cấm..." : "Search by title, uploader name/email, banned keywords..."}
-              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 font-semibold"
-            />
-          </div>
+      {activeSubTab === 'moderated' ? (
+        <>
+          {/* Search and Filters Section */}
+          <div className="space-y-4 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl backdrop-blur-sm">
+            {/* First Row: Search input and Date Filter */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-505" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder={language === 'vi' ? "Tìm kiếm theo tên tài liệu, người đăng, email, từ khóa cấm..." : "Search by title, uploader name/email, banned keywords..."}
+                  className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 font-semibold"
+                />
+              </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Status Selector */}
-            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-955/40 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-350">
-              <span className="text-[10px] text-slate-400 dark:text-slate-550 uppercase tracking-wider">{language === 'vi' ? 'Trạng thái:' : 'Status:'}</span>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="bg-transparent border-none focus:outline-none font-bold text-slate-850 dark:text-slate-150 cursor-pointer"
-              >
-                <option value="all">{language === 'vi' ? 'Tất cả' : 'All'}</option>
-                <option value="pending">{language === 'vi' ? 'Chờ duyệt' : 'Pending'}</option>
-                <option value="approved">{language === 'vi' ? 'Đã duyệt' : 'Approved'}</option>
-                <option value="rejected">{language === 'vi' ? 'Bị từ chối' : 'Rejected'}</option>
-              </select>
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Status Selector */}
+                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-955/40 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-350">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-550 uppercase tracking-wider">{language === 'vi' ? 'Trạng thái:' : 'Status:'}</span>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as any)}
+                    className="bg-transparent border-none focus:outline-none font-bold text-slate-850 dark:text-slate-150 cursor-pointer"
+                  >
+                    <option value="all">{language === 'vi' ? 'Tất cả' : 'All'}</option>
+                    <option value="pending">{language === 'vi' ? 'Chờ duyệt' : 'Pending'}</option>
+                    <option value="approved">{language === 'vi' ? 'Đã duyệt' : 'Approved'}</option>
+                    <option value="rejected">{language === 'vi' ? 'Bị từ chối' : 'Rejected'}</option>
+                  </select>
+                </div>
+
+                {/* Date Selector */}
+                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-955/40 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-655 dark:text-slate-350">
+                  <Calendar className="size-3.5 text-blue-500" />
+                  <select
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value as any)}
+                    className="bg-transparent border-none focus:outline-none font-bold text-slate-850 dark:text-slate-150 cursor-pointer"
+                  >
+                    <option value="all">{language === 'vi' ? 'Mọi thời gian' : 'All time'}</option>
+                    <option value="today">{language === 'vi' ? 'Hôm nay' : 'Today'}</option>
+                    <option value="week">{language === 'vi' ? 'Tuần này' : 'This week'}</option>
+                    <option value="month">{language === 'vi' ? 'Tháng này' : 'Tháng này'}</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
-            {/* Date Selector */}
-            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-955/40 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-655 dark:text-slate-350">
-              <Calendar className="size-3.5 text-blue-500" />
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value as any)}
-                className="bg-transparent border-none focus:outline-none font-bold text-slate-850 dark:text-slate-150 cursor-pointer"
-              >
-                <option value="all">{language === 'vi' ? 'Mọi thời gian' : 'All time'}</option>
-                <option value="today">{language === 'vi' ? 'Hôm nay' : 'Today'}</option>
-                <option value="week">{language === 'vi' ? 'Tuần này' : 'This week'}</option>
-                <option value="month">{language === 'vi' ? 'Tháng này' : 'Tháng này'}</option>
-              </select>
+            {/* Second Row: Detailed Filters Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+              {/* AI Risk Level */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{language === 'vi' ? 'Mức rủi ro AI' : 'AI Risk Level'}</span>
+                <select
+                  value={aiRiskFilter}
+                  onChange={(e) => setAiRiskFilter(e.target.value as any)}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-955 text-slate-700 dark:text-slate-300 font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value="all">{language === 'vi' ? 'Tất cả rủi ro' : 'All Risk Levels'}</option>
+                  <option value="low">{language === 'vi' ? 'Thấp' : 'Low'}</option>
+                  <option value="medium">{language === 'vi' ? 'Trung bình' : 'Medium'}</option>
+                  <option value="high">{language === 'vi' ? 'Cao' : 'High'}</option>
+                </select>
+              </div>
+
+              {/* Plagiarism Score */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{language === 'vi' ? 'Đạo văn' : 'Plagiarism'}</span>
+                <select
+                  value={plagiarismFilter}
+                  onChange={(e) => setPlagiarismFilter(e.target.value as any)}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value="all">{language === 'vi' ? 'Mọi tỷ lệ' : 'All Scores'}</option>
+                  <option value="plagiarized">{language === 'vi' ? 'Đạo văn (>= 30%)' : 'Plagiarized (>= 30%)'}</option>
+                  <option value="clean">{language === 'vi' ? 'Sạch (< 30%)' : 'Clean (< 30%)'}</option>
+                </select>
+              </div>
+
+              {/* Report Count */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{language === 'vi' ? 'Báo cáo vi phạm' : 'Reports Count'}</span>
+                <select
+                  value={reportFilter}
+                  onChange={(e) => setReportFilter(e.target.value as any)}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value="all">{language === 'vi' ? 'Mọi báo cáo' : 'All Reports'}</option>
+                  <option value="reported">{language === 'vi' ? 'Có báo cáo (>= 1)' : 'Reported (>= 1)'}</option>
+                  <option value="high">{language === 'vi' ? 'Báo cáo nhiều (>= 5)' : 'High Reports (>= 5)'}</option>
+                </select>
+              </div>
+
+              {/* Upload Source */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-505 uppercase tracking-widest">{language === 'vi' ? 'Nguồn tải lên' : 'Upload Source'}</span>
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value as any)}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-305 font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value="all">{language === 'vi' ? 'Mọi nguồn' : 'All Sources'}</option>
+                  <option value="web_upload">{language === 'vi' ? 'Web App Upload' : 'Web Upload'}</option>
+                  <option value="api_sync">{language === 'vi' ? 'API Sync' : 'API Sync'}</option>
+                  <option value="partner_portal">{language === 'vi' ? 'Partner Portal' : 'Partner Portal'}</option>
+                </select>
+              </div>
+
+              {/* File Type */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{language === 'vi' ? 'Định dạng' : 'File Type'}</span>
+                <select
+                  value={fileTypeFilter}
+                  onChange={(e) => setFileTypeFilter(e.target.value as any)}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-955 text-slate-700 dark:text-slate-300 font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value="all">{language === 'vi' ? 'Tất cả loại' : 'All Types'}</option>
+                  <option value="pdf">PDF</option>
+                  <option value="docx">Word (DOCX)</option>
+                  <option value="xlsx">Excel (XLSX)</option>
+                  <option value="image">{language === 'vi' ? 'Hình ảnh' : 'Image'}</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Second Row: Detailed Filters Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
-          {/* AI Risk Level */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{language === 'vi' ? 'Mức rủi ro AI' : 'AI Risk Level'}</span>
-            <select
-              value={aiRiskFilter}
-              onChange={(e) => setAiRiskFilter(e.target.value as any)}
-              className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-955 text-slate-700 dark:text-slate-300 font-bold focus:outline-none cursor-pointer"
-            >
-              <option value="all">{language === 'vi' ? 'Tất cả rủi ro' : 'All Risk Levels'}</option>
-              <option value="low">{language === 'vi' ? 'Thấp' : 'Low'}</option>
-              <option value="medium">{language === 'vi' ? 'Trung bình' : 'Medium'}</option>
-              <option value="high">{language === 'vi' ? 'Cao' : 'High'}</option>
-            </select>
-          </div>
+          {/* Documents Moderation Table */}
+          <Card className="rounded-[28px] overflow-hidden shadow-md">
+            <div className="overflow-x-auto overflow-y-auto max-h-[580px] scrollbar-thin relative z-0">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 select-none bg-slate-50/50 dark:bg-slate-900/50">
+                    {/* Bulk Select Checkbox Column */}
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pl-6 w-12 shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={isAllSelected}
+                          onChange={handleSelectAll}
+                          className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/30 cursor-pointer"
+                        />
+                      </div>
+                    </th>
 
-          {/* Plagiarism Score */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{language === 'vi' ? 'Đạo văn' : 'Plagiarism'}</span>
-            <select
-              value={plagiarismFilter}
-              onChange={(e) => setPlagiarismFilter(e.target.value as any)}
-              className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold focus:outline-none cursor-pointer"
-            >
-              <option value="all">{language === 'vi' ? 'Mọi tỷ lệ' : 'All Scores'}</option>
-              <option value="plagiarized">{language === 'vi' ? 'Đạo văn (>= 30%)' : 'Plagiarized (>= 30%)'}</option>
-              <option value="clean">{language === 'vi' ? 'Sạch (< 30%)' : 'Clean (< 30%)'}</option>
-            </select>
-          </div>
+                    {/* Sortable Document Name Header */}
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => toggleSort('uploadedAt')}>
+                        <span>{t.admin?.docColName || 'Name'}</span>
+                        <ArrowUpDown className={cn("size-3", sortField === 'uploadedAt' ? "text-blue-500" : "text-slate-400")} />
+                      </div>
+                    </th>
 
-          {/* Report Count */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{language === 'vi' ? 'Báo cáo vi phạm' : 'Reports Count'}</span>
-            <select
-              value={reportFilter}
-              onChange={(e) => setReportFilter(e.target.value as any)}
-              className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold focus:outline-none cursor-pointer"
-            >
-              <option value="all">{language === 'vi' ? 'Mọi báo cáo' : 'All Reports'}</option>
-              <option value="reported">{language === 'vi' ? 'Có báo cáo (>= 1)' : 'Reported (>= 1)'}</option>
-              <option value="high">{language === 'vi' ? 'Báo cáo nhiều (>= 5)' : 'High Reports (>= 5)'}</option>
-            </select>
-          </div>
+                    {/* Uploader & Source */}
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      {language === 'vi' ? 'Người đăng & Nguồn' : 'Uploader & Source'}
+                    </th>
 
-          {/* Upload Source */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-505 uppercase tracking-widest">{language === 'vi' ? 'Nguồn tải lên' : 'Upload Source'}</span>
-            <select
-              value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value as any)}
-              className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-305 font-bold focus:outline-none cursor-pointer"
-            >
-              <option value="all">{language === 'vi' ? 'Mọi nguồn' : 'All Sources'}</option>
-              <option value="web_upload">{language === 'vi' ? 'Web App Upload' : 'Web Upload'}</option>
-              <option value="api_sync">{language === 'vi' ? 'API Sync' : 'API Sync'}</option>
-              <option value="partner_portal">{language === 'vi' ? 'Partner Portal' : 'Partner Portal'}</option>
-            </select>
-          </div>
-
-          {/* File Type */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{language === 'vi' ? 'Định dạng' : 'File Type'}</span>
-            <select
-              value={fileTypeFilter}
-              onChange={(e) => setFileTypeFilter(e.target.value as any)}
-              className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-955 text-slate-700 dark:text-slate-300 font-bold focus:outline-none cursor-pointer"
-            >
-              <option value="all">{language === 'vi' ? 'Tất cả loại' : 'All Types'}</option>
-              <option value="pdf">PDF</option>
-              <option value="docx">Word (DOCX)</option>
-              <option value="xlsx">Excel (XLSX)</option>
-              <option value="image">{language === 'vi' ? 'Hình ảnh' : 'Image'}</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Documents Moderation Table */}
-      <Card className="rounded-[28px] overflow-hidden shadow-md">
-        <div className="overflow-x-auto overflow-y-auto max-h-[580px] scrollbar-thin relative z-0">
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 select-none bg-slate-50/50 dark:bg-slate-900/50">
-                {/* Bulk Select Checkbox Column */}
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pl-6 w-12 shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      onChange={handleSelectAll}
-                      className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/30 cursor-pointer"
-                    />
-                  </div>
-                </th>
-
-                {/* Sortable Document Name Header */}
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
-                  <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => toggleSort('uploadedAt')}>
-                    <span>{t.admin?.docColName || 'Name'}</span>
-                    <ArrowUpDown className={cn("size-3", sortField === 'uploadedAt' ? "text-blue-500" : "text-slate-400")} />
-                  </div>
-                </th>
-
-                {/* Uploader & Source */}
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
-                  {language === 'vi' ? 'Người đăng & Nguồn' : 'Uploader & Source'}
-                </th>
-
-                {/* AI Risk Score & Plagiarism Metrics */}
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => toggleSort('aiConfidenceScore')}>
-                      <span>AI Score</span>
-                      <ArrowUpDown className={cn("size-3", sortField === 'aiConfidenceScore' ? "text-blue-500" : "text-slate-400")} />
-                    </div>
-                    <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => toggleSort('plagiarismScore')}>
-                      <span>Plag</span>
-                      <ArrowUpDown className={cn("size-3", sortField === 'plagiarismScore' ? "text-blue-500" : "text-slate-400")} />
-                    </div>
-                  </div>
-                </th>
-
-                {/* Reports Header */}
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
-                  <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => toggleSort('reportCount')}>
-                    <span>{language === 'vi' ? 'Báo cáo' : 'Reports'}</span>
-                    <ArrowUpDown className={cn("size-3", sortField === 'reportCount' ? "text-blue-500" : "text-slate-400")} />
-                  </div>
-                </th>
-
-                {/* Status Column */}
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
-                  {t.admin?.docColStatus || 'Status'}
-                </th>
-
-                {/* Action Buttons Column */}
-                <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pr-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
-                  {t.admin?.docColActions || 'Actions'}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-105 dark:divide-slate-800/60">
-              {filteredDocuments.length > 0 ? (
-                filteredDocuments.map((doc) => {
-                  const isSelected = selectedDocIds.includes(doc.id);
-                  const getStatusBadge = () => {
-                    switch (doc.status) {
-                      case 'approved':
-                        return (
-                          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/15 flex items-center gap-1.5 w-fit rounded-full px-2.5 py-0.5 font-extrabold text-[11px] select-none">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            {t.admin?.statusApproved || 'Approved'}
-                          </Badge>
-                        )
-                      case 'pending':
-                        return (
-                          <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15 flex items-center gap-1.5 w-fit rounded-full px-2.5 py-0.5 font-extrabold text-[11px] select-none">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            {t.admin?.statusPending || 'Pending'}
-                          </Badge>
-                        )
-                      case 'rejected':
-                        return (
-                          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15 flex items-center gap-1.5 w-fit rounded-full px-2.5 py-0.5 font-extrabold text-[11px] select-none">
-                            <AlertTriangle className="size-3 text-rose-500" />
-                            Rejected
-                          </Badge>
-                        )
-                    }
-                  };
- 
-                  return (
-                    <tr
-                      key={doc.id}
-                      className={cn(
-                        "hover:bg-slate-50 dark:hover:bg-slate-800/35 even:bg-slate-50/20 dark:even:bg-slate-900/10 transition-all duration-205 group",
-                        isSelected && "bg-blue-50/30 dark:bg-blue-955/15"
-                      )}
-                    >
-                      {/* Checkbox Column */}
-                      <td className="p-4 pl-6">
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleSelectRow(doc.id)}
-                            className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/30 cursor-pointer"
-                          />
+                    {/* AI Risk Score & Plagiarism Metrics */}
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => toggleSort('aiConfidenceScore')}>
+                          <span>AI Score</span>
+                          <ArrowUpDown className={cn("size-3", sortField === 'aiConfidenceScore' ? "text-blue-500" : "text-slate-400")} />
                         </div>
-                      </td>
+                        <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => toggleSort('plagiarismScore')}>
+                          <span>Plag</span>
+                          <ArrowUpDown className={cn("size-3", sortField === 'plagiarismScore' ? "text-blue-500" : "text-slate-400")} />
+                        </div>
+                      </div>
+                    </th>
 
-                      {/* Name & Type */}
-                      <td className="p-4 font-bold text-slate-800 dark:text-slate-200">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[14px] leading-tight font-extrabold text-slate-800 dark:text-slate-200 truncate max-w-[240px]" title={doc.title}>
-                              {doc.title}
-                            </span>
-                            <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-505 dark:text-slate-400 text-[9px] px-1.5 py-0 rounded font-extrabold uppercase select-none shrink-0">
-                              {doc.fileType}
-                            </Badge>
-                            {doc.isFlagged && (
-                              <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-450 border border-rose-500/20 text-[9px] px-1.5 py-0 rounded-md font-extrabold uppercase tracking-wide shrink-0 select-none">
-                                Flagged
-                              </Badge>
-                            )}
-                            {doc.isAiGenerated && (
-                              <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-455 border border-purple-500/20 text-[9px] px-1.5 py-0 rounded-md font-extrabold uppercase tracking-wide shrink-0 select-none">
-                                AI
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                            <span>{doc.sizeMB} MB</span>
-                            <span>•</span>
-                            <span>{doc.uploadedAt}</span>
-                          </div>
+                    {/* Reports Header */}
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => toggleSort('reportCount')}>
+                        <span>{language === 'vi' ? 'Báo cáo' : 'Reports'}</span>
+                        <ArrowUpDown className={cn("size-3", sortField === 'reportCount' ? "text-blue-500" : "text-slate-400")} />
+                      </div>
+                    </th>
 
-                          {/* Banned keywords info */}
-                          {(doc.bannedKeywords && doc.bannedKeywords.length > 0) && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {doc.bannedKeywords.map((kw, i) => (
-                                <Badge key={i} className="bg-rose-500/10 text-rose-655 dark:text-rose-400 border border-rose-500/10 text-[9px] px-1 py-0 rounded font-semibold tracking-wide lowercase shrink-0">
-                                  {kw}
+                    {/* Status Column */}
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      {t.admin?.docColStatus || 'Status'}
+                    </th>
+
+                    {/* Action Buttons Column */}
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pr-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      {t.admin?.docColActions || 'Actions'}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-105 dark:divide-slate-800/60">
+                  {filteredDocuments.length > 0 ? (
+                    filteredDocuments.map((doc) => {
+                      const isSelected = selectedDocIds.includes(doc.id);
+                      const getStatusBadge = () => {
+                        switch (doc.status) {
+                          case 'approved':
+                            return (
+                              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/15 flex items-center gap-1.5 w-fit rounded-full px-2.5 py-0.5 font-extrabold text-[11px] select-none">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                {t.admin?.statusApproved || 'Approved'}
+                              </Badge>
+                            )
+                          case 'pending':
+                            return (
+                              <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15 flex items-center gap-1.5 w-fit rounded-full px-2.5 py-0.5 font-extrabold text-[11px] select-none">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                {t.admin?.statusPending || 'Pending'}
+                              </Badge>
+                            )
+                          case 'rejected':
+                            return (
+                              <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15 flex items-center gap-1.5 w-fit rounded-full px-2.5 py-0.5 font-extrabold text-[11px] select-none">
+                                <AlertTriangle className="size-3 text-rose-500" />
+                                Rejected
+                              </Badge>
+                            )
+                        }
+                      };
+
+                      return (
+                        <tr
+                          key={doc.id}
+                          className={cn(
+                            "hover:bg-slate-50 dark:hover:bg-slate-800/35 even:bg-slate-50/20 dark:even:bg-slate-900/10 transition-all duration-205 group",
+                            isSelected && "bg-blue-50/30 dark:bg-blue-955/15"
+                          )}
+                        >
+                          {/* Checkbox Column */}
+                          <td className="p-4 pl-6">
+                            <div className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleSelectRow(doc.id)}
+                                className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/30 cursor-pointer"
+                              />
+                            </div>
+                          </td>
+
+                          {/* Name & Type */}
+                          <td className="p-4 font-bold text-slate-800 dark:text-slate-200">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-[14px] leading-tight font-extrabold text-slate-800 dark:text-slate-200 truncate max-w-[240px]" title={doc.title}>
+                                  {doc.title}
+                                </span>
+                                <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-505 dark:text-slate-400 text-[9px] px-1.5 py-0 rounded font-extrabold uppercase select-none shrink-0">
+                                  {doc.fileType}
                                 </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </td>
+                                {doc.isFlagged && (
+                                  <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-450 border border-rose-500/20 text-[9px] px-1.5 py-0 rounded-md font-extrabold uppercase tracking-wide shrink-0 select-none">
+                                    Flagged
+                                  </Badge>
+                                )}
+                                {doc.isAiGenerated && (
+                                  <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-455 border border-purple-500/20 text-[9px] px-1.5 py-0 rounded-md font-extrabold uppercase tracking-wide shrink-0 select-none">
+                                    AI
+                                  </Badge>
+                                )}
+                              </div>
 
-                      {/* Uploader & Source */}
-                      <td className="p-4">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-bold text-slate-800 dark:text-slate-200">{doc.ownerName}</span>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{doc.ownerEmail}</span>
-                          <div className="mt-1 flex items-center gap-1.5">
-                            {doc.uploadSource === 'web_upload' && (
-                              <Badge className="bg-blue-500/10 text-blue-605 dark:text-blue-450 border border-blue-500/15 text-[9px] px-1.5 py-0 rounded flex items-center gap-1 font-extrabold select-none">
-                                <Upload className="size-2.5" />
-                                Web Upload
+                              <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                                <span>{doc.sizeMB} MB</span>
+                                <span>•</span>
+                                <span>{doc.uploadedAt}</span>
+                              </div>
+
+                              {/* Banned keywords info */}
+                              {(doc.bannedKeywords && doc.bannedKeywords.length > 0) && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {doc.bannedKeywords.map((kw, i) => (
+                                    <Badge key={i} className="bg-rose-500/10 text-rose-655 dark:text-rose-400 border border-rose-500/10 text-[9px] px-1 py-0 rounded font-semibold tracking-wide lowercase shrink-0">
+                                      {kw}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Uploader & Source */}
+                          <td className="p-4">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-bold text-slate-800 dark:text-slate-200">{doc.ownerName}</span>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{doc.ownerEmail}</span>
+                              <div className="mt-1 flex items-center gap-1.5">
+                                {doc.uploadSource === 'web_upload' && (
+                                  <Badge className="bg-blue-500/10 text-blue-605 dark:text-blue-450 border border-blue-500/15 text-[9px] px-1.5 py-0 rounded flex items-center gap-1 font-extrabold select-none">
+                                    <Upload className="size-2.5" />
+                                    Web Upload
+                                  </Badge>
+                                )}
+                                {doc.uploadSource === 'api_sync' && (
+                                  <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-450 border border-purple-500/15 text-[9px] px-1.5 py-0 rounded flex items-center gap-1 font-extrabold select-none">
+                                    <Cpu className="size-2.5" />
+                                    API Sync
+                                  </Badge>
+                                )}
+                                {doc.uploadSource === 'partner_portal' && (
+                                  <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/15 text-[9px] px-1.5 py-0 rounded flex items-center gap-1 font-extrabold select-none">
+                                    <Globe className="size-2.5" />
+                                    Partner Portal
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* AI Risk Score & Plagiarism Metrics */}
+                          <td className="p-4">
+                            <div className="flex flex-col gap-1.5 max-w-[200px]">
+                              {/* Risk Level Badge */}
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-slate-450 dark:text-slate-500 font-bold uppercase select-none">{language === 'vi' ? 'Rủi ro AI:' : 'AI Risk:'}</span>
+                                <Badge className={cn(
+                                  "font-extrabold text-[9px] px-1.5 py-0 rounded-md uppercase tracking-wider select-none",
+                                  doc.aiRiskLevel === 'high' && "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20",
+                                  doc.aiRiskLevel === 'medium' && "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+                                  doc.aiRiskLevel === 'low' && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                )}>
+                                  {doc.aiRiskLevel}
+                                </Badge>
+                              </div>
+
+                              {/* Progress bar metrics grid */}
+                              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] font-bold">
+                                {/* AI Probability */}
+                                <div className="flex items-center justify-between gap-1 text-purple-650 dark:text-purple-405">
+                                  <span>AI:</span>
+                                  <span className="font-extrabold">{doc.aiConfidenceScore}%</span>
+                                </div>
+
+                                {/* Plagiarism */}
+                                <div className={cn(
+                                  "flex items-center justify-between gap-1",
+                                  doc.plagiarismScore >= 30 ? "text-rose-600 dark:text-rose-455" : "text-slate-550 dark:text-slate-400"
+                                )}>
+                                  <span>Plag:</span>
+                                  <span className="font-extrabold">{doc.plagiarismScore}%</span>
+                                </div>
+
+                                {/* Unsafe Content */}
+                                <div className={cn(
+                                  "flex items-center justify-between gap-1",
+                                  doc.unsafeContentScore >= 20 ? "text-rose-600 dark:text-rose-455" : "text-slate-550 dark:text-slate-400"
+                                )}>
+                                  <span>Unsafe:</span>
+                                  <span className="font-extrabold">{doc.unsafeContentScore}%</span>
+                                </div>
+
+                                {/* Spam */}
+                                <div className={cn(
+                                  "flex items-center justify-between gap-1",
+                                  doc.spamScore >= 40 ? "text-amber-600 dark:text-amber-500" : "text-slate-550 dark:text-slate-400"
+                                )}>
+                                  <span>Spam:</span>
+                                  <span className="font-extrabold">{doc.spamScore}%</span>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Reports */}
+                          <td className="p-4 text-xs font-semibold">
+                            {doc.reportCount > 0 ? (
+                              <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15 flex items-center gap-1 w-fit rounded-full px-2 py-0.5 font-black">
+                                <ShieldAlert className="size-3 shrink-0 text-rose-500" />
+                                <span>{doc.reportCount} {language === 'vi' ? 'báo cáo' : 'reports'}</span>
                               </Badge>
+                            ) : (
+                              <span className="text-slate-400 dark:text-slate-600 font-medium">0</span>
                             )}
-                            {doc.uploadSource === 'api_sync' && (
-                              <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-450 border border-purple-500/15 text-[9px] px-1.5 py-0 rounded flex items-center gap-1 font-extrabold select-none">
-                                <Cpu className="size-2.5" />
-                                API Sync
-                              </Badge>
-                            )}
-                            {doc.uploadSource === 'partner_portal' && (
-                              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/15 text-[9px] px-1.5 py-0 rounded flex items-center gap-1 font-extrabold select-none">
-                                <Globe className="size-2.5" />
-                                Partner Portal
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </td>
+                          </td>
 
-                      {/* AI Risk Score & Plagiarism Metrics */}
-                      <td className="p-4">
-                        <div className="flex flex-col gap-1.5 max-w-[200px]">
-                          {/* Risk Level Badge */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-slate-450 dark:text-slate-500 font-bold uppercase select-none">{language === 'vi' ? 'Rủi ro AI:' : 'AI Risk:'}</span>
-                            <Badge className={cn(
-                              "font-extrabold text-[9px] px-1.5 py-0 rounded-md uppercase tracking-wider select-none",
-                              doc.aiRiskLevel === 'high' && "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20",
-                              doc.aiRiskLevel === 'medium' && "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20",
-                              doc.aiRiskLevel === 'low' && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                            )}>
-                              {doc.aiRiskLevel}
-                            </Badge>
-                          </div>
+                          {/* Status */}
+                          <td className="p-4">
+                            {getStatusBadge()}
+                          </td>
 
-                          {/* Progress bar metrics grid */}
-                          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] font-bold">
-                            {/* AI Probability */}
-                            <div className="flex items-center justify-between gap-1 text-purple-650 dark:text-purple-405">
-                              <span>AI:</span>
-                              <span className="font-extrabold">{doc.aiConfidenceScore}%</span>
+                          {/* Actions */}
+                          <td className="p-4 pr-6 text-right">
+                            <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                              {/* Details/Review Button */}
+                              <button
+                                onClick={() => setPreviewDoc(doc)}
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-955/20 transition-all cursor-pointer"
+                                title={language === 'vi' ? 'Xem chi tiết & Quét AI' : 'Review Details'}
+                              >
+                                <Eye className="size-4.5" />
+                              </button>
+
+                              {/* Flag toggle button */}
+                              <button
+                                onClick={() => handleToggleFlag(doc.id, doc.isFlagged)}
+                                className={cn(
+                                  "p-1.5 rounded-lg transition-all cursor-pointer",
+                                  doc.isFlagged
+                                    ? "text-rose-600 bg-rose-50 dark:bg-rose-955/20 hover:bg-rose-100"
+                                    : "text-slate-455 hover:text-rose-500 hover:bg-rose-50 dark:text-slate-500 dark:hover:text-rose-455"
+                                )}
+                                title={doc.isFlagged ? (t.admin?.actionRemoveFlag || 'Remove Flag') : (t.admin?.actionFlag || 'Flag Document')}
+                              >
+                                <AlertTriangle className="size-4.5" />
+                              </button>
+
+                              {/* Approve action */}
+                              {doc.status !== 'approved' ? (
+                                <button
+                                  onClick={() => handleApprove(doc.id)}
+                                  className="p-1.5 rounded-lg text-slate-505 hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:text-emerald-450 dark:hover:bg-emerald-950/40 transition-all cursor-pointer"
+                                  title={t.admin?.actionApprove || 'Approve'}
+                                >
+                                  <CheckCircle className="size-4.5" />
+                                </button>
+                              ) : (
+                                <div className="w-7 h-7 flex items-center justify-center text-emerald-500" title={t.admin?.statusApproved || 'Approved'}>
+                                  <ShieldCheck className="size-4.5" />
+                                </div>
+                              )}
+
+                              {/* Reject action */}
+                              {doc.status !== 'rejected' && (
+                                <button
+                                  onClick={() => handleReject(doc.id)}
+                                  className="p-1.5 rounded-lg text-slate-505 hover:text-amber-600 hover:bg-amber-50 dark:text-slate-400 dark:hover:text-amber-450 dark:hover:bg-amber-950/40 transition-all cursor-pointer"
+                                  title={t.admin?.actionReject || 'Reject'}
+                                >
+                                  <XCircle className="size-4.5" />
+                                </button>
+                              )}
+
+                              {/* Download mock action */}
+                              <button
+                                onClick={() => toast.success((t.admin?.toastDownloadSimulate || 'Simulating download of "{filename}"').replace('{filename}', `${doc.title}.${doc.fileType}`))}
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-405 dark:hover:text-blue-450 dark:hover:bg-blue-955/20 transition-all cursor-pointer"
+                                title={t.admin?.actionDownload || 'Download File'}
+                              >
+                                <Download className="size-4.5" />
+                              </button>
+
+                              {/* Delete action */}
+                              <button
+                                onClick={() => setDeleteDoc(doc)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-550 dark:hover:text-rose-450 dark:hover:bg-rose-955/20 transition-all cursor-pointer"
+                                title={t.admin?.actionDelete || 'Delete'}
+                              >
+                                <Trash2 className="size-4.5" />
+                              </button>
                             </div>
-
-                            {/* Plagiarism */}
-                            <div className={cn(
-                              "flex items-center justify-between gap-1",
-                              doc.plagiarismScore >= 30 ? "text-rose-600 dark:text-rose-455" : "text-slate-550 dark:text-slate-400"
-                            )}>
-                              <span>Plag:</span>
-                              <span className="font-extrabold">{doc.plagiarismScore}%</span>
-                            </div>
-
-                            {/* Unsafe Content */}
-                            <div className={cn(
-                              "flex items-center justify-between gap-1",
-                              doc.unsafeContentScore >= 20 ? "text-rose-600 dark:text-rose-455" : "text-slate-550 dark:text-slate-400"
-                            )}>
-                              <span>Unsafe:</span>
-                              <span className="font-extrabold">{doc.unsafeContentScore}%</span>
-                            </div>
-
-                            {/* Spam */}
-                            <div className={cn(
-                              "flex items-center justify-between gap-1",
-                              doc.spamScore >= 40 ? "text-amber-600 dark:text-amber-500" : "text-slate-550 dark:text-slate-400"
-                            )}>
-                              <span>Spam:</span>
-                              <span className="font-extrabold">{doc.spamScore}%</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Reports */}
-                      <td className="p-4 text-xs font-semibold">
-                        {doc.reportCount > 0 ? (
-                          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15 flex items-center gap-1 w-fit rounded-full px-2 py-0.5 font-black">
-                            <ShieldAlert className="size-3 shrink-0 text-rose-500" />
-                            <span>{doc.reportCount} {language === 'vi' ? 'báo cáo' : 'reports'}</span>
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-400 dark:text-slate-600 font-medium">0</span>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td className="p-4">
-                        {getStatusBadge()}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="p-4 pr-6 text-right">
-                        <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                          {/* Details/Review Button */}
-                          <button
-                            onClick={() => setPreviewDoc(doc)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-955/20 transition-all cursor-pointer"
-                            title={language === 'vi' ? 'Xem chi tiết & Quét AI' : 'Review Details'}
-                          >
-                            <Eye className="size-4.5" />
-                          </button>
-
-                          {/* Flag toggle button */}
-                          <button
-                            onClick={() => handleToggleFlag(doc.id, doc.isFlagged)}
-                            className={cn(
-                              "p-1.5 rounded-lg transition-all cursor-pointer",
-                              doc.isFlagged
-                                ? "text-rose-600 bg-rose-50 dark:bg-rose-955/20 hover:bg-rose-100"
-                                : "text-slate-455 hover:text-rose-500 hover:bg-rose-50 dark:text-slate-500 dark:hover:text-rose-455"
-                            )}
-                            title={doc.isFlagged ? (t.admin?.actionRemoveFlag || 'Remove Flag') : (t.admin?.actionFlag || 'Flag Document')}
-                          >
-                            <AlertTriangle className="size-4.5" />
-                          </button>
-
-                          {/* Approve action */}
-                          {doc.status !== 'approved' ? (
-                            <button
-                              onClick={() => handleApprove(doc.id)}
-                              className="p-1.5 rounded-lg text-slate-505 hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:text-emerald-450 dark:hover:bg-emerald-950/40 transition-all cursor-pointer"
-                              title={t.admin?.actionApprove || 'Approve'}
-                            >
-                              <CheckCircle className="size-4.5" />
-                            </button>
-                          ) : (
-                            <div className="w-7 h-7 flex items-center justify-center text-emerald-500" title={t.admin?.statusApproved || 'Approved'}>
-                              <ShieldCheck className="size-4.5" />
-                            </div>
-                          )}
-
-                          {/* Reject action */}
-                          {doc.status !== 'rejected' && (
-                            <button
-                              onClick={() => handleReject(doc.id)}
-                              className="p-1.5 rounded-lg text-slate-505 hover:text-amber-600 hover:bg-amber-50 dark:text-slate-400 dark:hover:text-amber-450 dark:hover:bg-amber-950/40 transition-all cursor-pointer"
-                              title={t.admin?.actionReject || 'Reject'}
-                            >
-                              <XCircle className="size-4.5" />
-                            </button>
-                          )}
-
-                          {/* Download mock action */}
-                          <button
-                            onClick={() => toast.success((t.admin?.toastDownloadSimulate || 'Simulating download of "{filename}"').replace('{filename}', `${doc.title}.${doc.fileType}`))}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-405 dark:hover:text-blue-450 dark:hover:bg-blue-955/20 transition-all cursor-pointer"
-                            title={t.admin?.actionDownload || 'Download File'}
-                          >
-                            <Download className="size-4.5" />
-                          </button>
-
-                          {/* Delete action */}
-                          <button
-                            onClick={() => setDeleteDoc(doc)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-550 dark:hover:text-rose-450 dark:hover:bg-rose-955/20 transition-all cursor-pointer"
-                            title={t.admin?.actionDelete || 'Delete'}
-                          >
-                            <Trash2 className="size-4.5" />
-                          </button>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="py-16 text-center">
+                        <div className="flex flex-col items-center justify-center text-slate-450 dark:text-slate-655">
+                          <FolderOpen className="size-10 stroke-[1.25] mb-2" />
+                          <p className="font-extrabold text-sm text-slate-700 dark:text-slate-350">{t.admin?.noDocs || "No documents found"}</p>
+                          <p className="text-xs font-medium text-slate-400 dark:text-slate-505 mt-1">{t.admin?.noDocsModeration || "No documents match"}</p>
                         </div>
                       </td>
                     </tr>
-                  )
-                })
-              ) : (
-                <tr>
-                  <td colSpan={7} className="py-16 text-center">
-                    <div className="flex flex-col items-center justify-center text-slate-450 dark:text-slate-655">
-                      <FolderOpen className="size-10 stroke-[1.25] mb-2" />
-                      <p className="font-extrabold text-sm text-slate-700 dark:text-slate-350">{t.admin?.noDocs || "No documents found"}</p>
-                      <p className="text-xs font-medium text-slate-400 dark:text-slate-505 mt-1">{t.admin?.noDocsModeration || "No documents match"}</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* Bulk Actions Floating Toolbar */}
-      {selectedDocIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col sm:flex-row items-center gap-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-4 rounded-3xl shadow-2xl border border-slate-800 dark:border-slate-205 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <span className="text-xs font-black font-mono">
-            {selectedDocIds.length} {language === 'vi' ? 'tài liệu được chọn' : 'documents selected'}
-          </span>
-          <div className="h-4 w-[1px] bg-slate-800 dark:bg-slate-200 hidden sm:block" />
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={handleBulkApprove}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-sm shadow-emerald-500/10 border-none"
-            >
-              <CheckCircle className="size-3.5" />
-              {language === 'vi' ? 'Duyệt' : 'Approve'}
-            </Button>
-            <Button
-              onClick={handleBulkReject}
-              className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-sm shadow-amber-500/10 border-none"
-            >
-              <AlertTriangle className="size-3.5" />
-              {language === 'vi' ? 'Từ chối' : 'Reject'}
-            </Button>
-            <Button
-              onClick={handleBulkDelete}
-              className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-sm shadow-rose-500/10 border-none"
-            >
-              <Trash2 className="size-3.5" />
-              {language === 'vi' ? 'Xóa' : 'Delete'}
-            </Button>
-            <Button
-              onClick={handleExportReport}
-              className="bg-blue-650 hover:bg-blue-600 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-sm shadow-blue-500/10 border-none"
-            >
-              <FileSpreadsheet className="size-3.5" />
-              {language === 'vi' ? 'Báo cáo' : 'Export'}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setSelectedDocIds([])}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-305 dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-700 font-bold px-3 py-2 rounded-xl text-xs cursor-pointer border-none"
-            >
-              {language === 'vi' ? 'Hủy' : 'Clear'}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Empty State View */}
-      {filteredDocuments.length === 0 && (
-        <div className="py-20 text-center bg-white/40 dark:bg-slate-900/20 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
-          <div className="flex flex-col items-center justify-center max-w-md mx-auto">
-            <div className="p-4 rounded-full bg-slate-105 dark:bg-slate-800 text-slate-400 dark:text-slate-505 mb-4">
-              <FolderOpen className="size-10 stroke-[1.25]" />
+                  )}
+                </tbody>
+              </table>
             </div>
-            <h3 className="font-extrabold text-base text-slate-850 dark:text-slate-200 leading-tight">
-              {language === 'vi' ? 'Không tìm thấy tài liệu phù hợp' : 'No documents matched the moderation criteria.'}
-            </h3>
-            <p className="text-xs font-semibold text-slate-450 dark:text-slate-500 mt-2 leading-relaxed">
-              {language === 'vi' ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm của bạn để tìm thêm kết quả.' : 'Try adjusting your search query or reset the filters to find matching files.'}
-            </p>
-            {(searchTerm || statusFilter !== 'all' || aiRiskFilter !== 'all' || plagiarismFilter !== 'all' || reportFilter !== 'all' || sourceFilter !== 'all' || fileTypeFilter !== 'all' || dateFilter !== 'all') && (
-              <Button
-                onClick={() => {
-                  setSearchTerm('');
-                  setStatusFilter('all');
-                  setAiRiskFilter('all');
-                  setPlagiarismFilter('all');
-                  setReportFilter('all');
-                  setSourceFilter('all');
-                  setFileTypeFilter('all');
-                  setDateFilter('all');
-                }}
-                className="mt-5 bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs cursor-pointer shadow-md shadow-blue-500/10 border-none"
-              >
-                {language === 'vi' ? 'Đặt lại bộ lọc' : 'Reset all filters'}
-              </Button>
-            )}
-          </div>
-        </div>
+          </Card>
+
+          {/* Bulk Actions Floating Toolbar */}
+          {selectedDocIds.length > 0 && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col sm:flex-row items-center gap-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-4 rounded-3xl shadow-2xl border border-slate-800 dark:border-slate-205 animate-in fade-in slide-in-from-bottom-5 duration-300">
+              <span className="text-xs font-black font-mono">
+                {selectedDocIds.length} {language === 'vi' ? 'tài liệu được chọn' : 'documents selected'}
+              </span>
+              <div className="h-4 w-[1px] bg-slate-800 dark:bg-slate-200 hidden sm:block" />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  onClick={handleBulkApprove}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-sm shadow-emerald-500/10 border-none"
+                >
+                  <CheckCircle className="size-3.5" />
+                  {language === 'vi' ? 'Duyệt' : 'Approve'}
+                </Button>
+                <Button
+                  onClick={handleBulkReject}
+                  className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-sm shadow-amber-500/10 border-none"
+                >
+                  <AlertTriangle className="size-3.5" />
+                  {language === 'vi' ? 'Từ chối' : 'Reject'}
+                </Button>
+                <Button
+                  onClick={handleBulkDelete}
+                  className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-sm shadow-rose-500/10 border-none"
+                >
+                  <Trash2 className="size-3.5" />
+                  {language === 'vi' ? 'Xóa' : 'Delete'}
+                </Button>
+                <Button
+                  onClick={handleExportReport}
+                  className="bg-blue-650 hover:bg-blue-600 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-sm shadow-blue-500/10 border-none"
+                >
+                  <FileSpreadsheet className="size-3.5" />
+                  {language === 'vi' ? 'Báo cáo' : 'Export'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setSelectedDocIds([])}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-305 dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-700 font-bold px-3 py-2 rounded-xl text-xs cursor-pointer border-none"
+                >
+                  {language === 'vi' ? 'Hủy' : 'Clear'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+        </>
+      ) : (
+        <Card className="rounded-[28px] overflow-hidden shadow-md">
+          {loadingPending ? (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-3" />
+              <p className="text-sm font-semibold">{language === 'en' ? 'Loading pending reviews...' : 'Đang tải danh sách chờ duyệt...'}</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto overflow-y-auto max-h-[580px] scrollbar-thin relative z-0">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 select-none">
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pl-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      Document Details
+                    </th>
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      Uploader
+                    </th>
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      Uploaded Date
+                    </th>
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pr-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {pendingDocs.length > 0 ? (
+                    pendingDocs.map((doc) => (
+                      <tr key={doc.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/35 transition-all">
+                        <td className="p-4 pl-6 font-bold text-slate-800 dark:text-slate-200">
+                          <div className="flex items-center gap-2">
+                            <FileText className="size-4.5 text-blue-500" />
+                            <div className="flex flex-col">
+                              <span className="text-[14px] font-extrabold truncate max-w-[240px]" title={doc.title || doc.fileName}>
+                                {doc.title || doc.fileName}
+                              </span>
+                              <span className="text-[11px] text-slate-450 font-medium uppercase mt-0.5">
+                                {doc.subject || 'GENERAL'} &bull; {doc.visibility}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 dark:text-slate-205">
+                              {doc.ownerName || 'User'}
+                            </span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
+                              {doc.ownerEmail || ''}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          {doc.createdAt ? new Date(doc.createdAt).toLocaleString('vi-VN') : 'Unknown'}
+                        </td>
+                        <td className="p-4 pr-6 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleApprovePendingClick(doc)}
+                              className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm cursor-pointer border-none"
+                            >
+                              <CheckCircle className="size-3.5" />
+                              {language === 'en' ? 'Approve' : 'Duyệt'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRejectPendingClick(doc)}
+                              className="flex items-center gap-1 bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm cursor-pointer border-none"
+                            >
+                              <XCircle className="size-3.5" />
+                              {language === 'en' ? 'Reject' : 'Từ chối'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="py-16 text-center">
+                        <div className="flex flex-col items-center justify-center text-slate-400">
+                          <CheckCircle className="size-10 stroke-[1.25] text-emerald-500 mb-2" />
+                          <p className="font-extrabold text-sm text-slate-700 dark:text-slate-300">
+                            {language === 'en' ? 'All caught up!' : 'Hoàn thành kiểm duyệt!'}
+                          </p>
+                          <p className="text-xs font-medium text-slate-400 mt-1">
+                            {language === 'en' ? 'No documents are currently pending approval review.' : 'Không có tài liệu nào đang chờ duyệt.'}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       )}
 
       {/* 1. unified DETAILED REVIEW & PREVIEW MODAL */}
@@ -1361,7 +1533,7 @@ export function AdminDocumentsTab({
             </div>
           </div>
         )
-      }</Modal>
+        }</Modal>
 
       {/* 3. CONFIRM FLAG DOCUMENT MODAL */}
       <Modal
@@ -1383,7 +1555,7 @@ export function AdminDocumentsTab({
                   : 'Flagging will mark this document as unsafe. It will be temporarily hidden and a warning email will be sent to the owner.'}
               </p>
             </div>
-            
+
             <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300">
               {language === 'vi' ? 'Tài liệu' : 'Document'}: {flagDocConfirm.title}
             </div>
@@ -1449,7 +1621,7 @@ export function AdminDocumentsTab({
                   : 'This action will reject approval of the document. It will not be visible to the community and feedback will be emailed to the owner.'}
               </p>
             </div>
-            
+
             <div className="p-3 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300">
               {language === 'vi' ? 'Tài liệu' : 'Document'}: {rejectDocConfirm.title}
             </div>
@@ -1487,6 +1659,102 @@ export function AdminDocumentsTab({
                 onClick={handleConfirmReject}
                 disabled={rejectReason.trim().length === 0}
                 className="bg-rose-600 hover:bg-rose-550 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {language === 'vi' ? 'Từ chối duyệt' : 'Reject Document'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+      {/* 5. CONFIRM APPROVE PENDING DOCUMENT MODAL */}
+      <Modal
+        isOpen={!!approveDocConfirm}
+        onClose={() => setApproveDocConfirm(null)}
+        title={language === 'vi' ? 'Xác nhận phê duyệt' : 'Confirm Approval'}
+        className="max-w-md"
+      >
+        {approveDocConfirm && (
+          <div className="space-y-4 text-left">
+            <p className="text-sm font-semibold text-slate-650 dark:text-slate-400">
+              {language === 'vi'
+                ? 'Bạn có chắc chắn muốn phê duyệt tài liệu này? Tài liệu sẽ trở nên công khai/khả dụng trên hệ thống.'
+                : 'Are you sure you want to approve this document? It will become visible and active on the system.'}
+            </p>
+            <div className="p-3 bg-slate-55 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300">
+              {language === 'vi' ? 'Tài liệu' : 'Document'}: {approveDocConfirm.title || approveDocConfirm.fileName}
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                variant="secondary"
+                onClick={() => setApproveDocConfirm(null)}
+                className="bg-slate-100 text-slate-655 dark:bg-slate-800 dark:text-slate-355 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer border-none"
+              >
+                {language === 'vi' ? 'Hủy' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={handleConfirmApprovePending}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer border-none"
+              >
+                {language === 'vi' ? 'Phê duyệt' : 'Approve'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* 6. CONFIRM REJECT PENDING DOCUMENT MODAL */}
+      <Modal
+        isOpen={!!rejectPendingDocConfirm}
+        onClose={() => {
+          setRejectPendingDocConfirm(null)
+          setRejectPendingReason('')
+        }}
+        title={language === 'vi' ? 'Từ từ chối duyệt tài liệu' : 'Reject Pending Document'}
+        className="max-w-md"
+      >
+        {rejectPendingDocConfirm && (
+          <div className="space-y-4 text-left">
+            <p className="text-sm font-semibold text-slate-655 dark:text-slate-400">
+              {language === 'vi'
+                ? 'Vui lòng cung cấp lý do từ chối duyệt tài liệu này. Lý do sẽ được gửi qua email cho chủ sở hữu.'
+                : 'Please provide a reason for rejecting this document. The reason will be sent via email to the owner.'}
+            </p>
+            <div className="p-3 bg-slate-55 dark:bg-slate-950/50 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300">
+              {language === 'vi' ? 'Tài liệu' : 'Document'}: {rejectPendingDocConfirm.title || rejectPendingDocConfirm.fileName}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold text-slate-500 dark:text-slate-400">
+                {language === 'vi' ? 'Lý do từ chối duyệt (bắt buộc):' : 'Reason for rejection (required):'}
+              </label>
+              <textarea
+                value={rejectPendingReason}
+                onChange={(e) => setRejectPendingReason(e.target.value)}
+                placeholder={language === 'vi' ? 'Nhập lý do từ chối tài liệu...' : 'Enter reason for rejection...'}
+                rows={3}
+                className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/25 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-505 font-semibold"
+              />
+              {rejectPendingReason.trim().length === 0 && (
+                <p className="text-[10px] text-rose-500 font-bold">
+                  {language === 'vi' ? '* Vui lòng nhập lý do từ chối.' : '* Please enter a rejection reason.'}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                onClick={() => {
+                  setRejectPendingDocConfirm(null)
+                  setRejectPendingReason('')
+                }}
+                className="bg-slate-100 text-slate-655 dark:bg-slate-800 dark:text-slate-355 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer border-none"
+              >
+                {language === 'vi' ? 'Hủy' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={handleConfirmRejectPending}
+                disabled={rejectPendingReason.trim().length === 0}
+                className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none"
               >
                 {language === 'vi' ? 'Từ chối duyệt' : 'Reject Document'}
               </Button>

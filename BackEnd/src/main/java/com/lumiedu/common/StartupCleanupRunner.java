@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import com.lumiedu.ai.repository.AiChatSessionRepository;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,12 +29,20 @@ public class StartupCleanupRunner implements CommandLineRunner {
     private final AudioRecordRepository audioRecordRepository;
     private final WorkspaceDocumentRepository workspaceDocumentRepository;
     private final GoogleDriveService googleDriveService;
+    private final AiChatSessionRepository aiChatSessionRepository;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
 
+    @Value("${app.cleanup.enabled:true}")
+    private boolean cleanupEnabled;
+
     @Override
     public void run(String... args) throws Exception {
+        if (!cleanupEnabled) {
+            log.info("StartupCleanupRunner is disabled.");
+            return;
+        }
         log.info("Starting StartupCleanupRunner: Purging non-PDF files...");
         List<Document> documents = documentRepository.findAll();
         int deletedCount = 0;
@@ -91,6 +100,9 @@ public class StartupCleanupRunner implements CommandLineRunner {
                     var audios = audioRecordRepository.findAllByDocumentId(doc.getId());
                     audioRecordRepository.deleteAll(audios);
 
+                    // Chat sessions
+                    aiChatSessionRepository.deleteSessionDocumentsByDocumentId(doc.getId());
+                    aiChatSessionRepository.nullifyDocumentId(doc.getId());
                     // The document itself
                     documentRepository.delete(doc);
                     deletedCount++;

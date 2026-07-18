@@ -4,6 +4,8 @@ export interface SharedFile {
   id: string;
   name: string;
   owner: string;
+  ownerName?: string;
+  ownerEmail?: string;
   permission: 'Viewer' | 'Editor' | 'Owner';
   dateShared: string;
   type: 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'image' | 'txt' | 'folder';

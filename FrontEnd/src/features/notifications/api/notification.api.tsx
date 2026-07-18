@@ -55,15 +55,8 @@ const mapBackendNotification = (item: any): Notification => {
   let displayType = type;
   let buttons: NotificationButton[] | undefined = undefined;
 
-  let actionUrl = item.actionUrl || '';
-  if (actionUrl.startsWith('/dashboard/documents/') && !actionUrl.startsWith('/dashboard/documents/document/')) {
-    const remaining = actionUrl.slice('/dashboard/documents/'.length);
-    if (/^\d+$/.test(remaining)) {
-      actionUrl = `/dashboard/documents/document/${remaining}`;
-    }
-  }
-
-  if (item.actionType === 'workspace_invite') {
+  if (item.actionType === 'workspace_invite' || type === 'shared_file') {
+    const actionUrl = item.actionUrl || '';
     const match = actionUrl.match(/\/dashboard\/workspaces\/(\d+)/);
     const workspaceId = match ? match[1] : null;
     const currentUser = getCurrentUser();
@@ -102,12 +95,6 @@ const mapBackendNotification = (item: any): Notification => {
       }
     ];
     displayType = 'folder';
-  } else if (type === 'shared_file') {
-    buttons = [{
-      text: item.actionText || 'Xem tài liệu',
-      variant: 'primary',
-      url: actionUrl || '/dashboard/shared'
-    }];
   } else if (type === 'folder') {
     buttons = [{
       text: 'Open Folder',
@@ -148,7 +135,7 @@ const mapBackendNotification = (item: any): Notification => {
     type: displayType,
     title: item.title,
     time: item.time || 'Just now',
-    isRead: !!item.isRead,
+    isRead: item.isRead !== undefined ? !!item.isRead : !!item.read,
     description: item.description || item.message,
     quote: item.quote,
     actionText: item.actionText,

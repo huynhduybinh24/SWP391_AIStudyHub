@@ -1,5 +1,6 @@
 package com.lumiedu.document.dto.response;
 
+import com.lumiedu.document.enums.DocumentStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -33,4 +34,7 @@ public class DocumentResponse {
     private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String rejectionReason;
+    private java.time.LocalDateTime reviewedAt;
+    private String moderationStatus;
 }

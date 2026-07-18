@@ -18,6 +18,7 @@ interface WorkspaceFilterBarProps {
   onLastModifiedFilterChange: (val: string) => void
   sourceFilter: string
   onSourceFilterChange: (val: string) => void
+  peopleList?: string[]
 }
 
 export function WorkspaceFilterBar({
@@ -34,7 +35,8 @@ export function WorkspaceFilterBar({
   lastModifiedFilter,
   onLastModifiedFilterChange,
   sourceFilter,
-  onSourceFilterChange
+  onSourceFilterChange,
+  peopleList
 }: WorkspaceFilterBarProps) {
   const { t, language } = useTranslation()
   const [isTypeOpen, setIsTypeOpen] = useState(false)
@@ -93,7 +95,7 @@ export function WorkspaceFilterBar({
   }
 
   const types = ['All', 'pdf', 'doc', 'spreadsheet', 'image', 'video', 'folder']
-  const people = ['All', 'khoigm2005@gmail.com', 'ashleyho@iv.com', 'trancaocamti@tdtu.edu.vn', 'khanh122233@gmail.com']
+  const people = ['All', ...(peopleList || []).filter(p => p && p !== 'All')]
   const modifiedTimes = [
     { label: language === 'vi' ? 'Bất kỳ lúc nào' : 'Any time', value: 'All' },
     { label: language === 'vi' ? 'Hôm nay' : 'Today', value: 'today' },

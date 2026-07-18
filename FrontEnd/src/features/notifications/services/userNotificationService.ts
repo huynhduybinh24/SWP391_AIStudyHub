@@ -53,6 +53,10 @@ export const userNotificationService = {
     await apiClient.delete(`/notifications/${id}`);
   },
 
+  async restoreNotification(id: string): Promise<void> {
+    await apiClient.put(`/notifications/${id}/restore`);
+  },
+
   async markAsRead(id: string): Promise<void> {
     await apiClient.put(`/notifications/${id}/read`);
   },

@@ -13,7 +13,7 @@ export function useMediaUpload(initialTab: MediaType = 'document') {
 
   // Metadata Form States
   const [docTitle, setDocTitle] = useState('');
-  const [selectedSubjectKey, setSelectedSubjectKey] = useState<any>('BIOLOGY');
+  const [selectedSubjectKey, setSelectedSubjectKey] = useState<any>('PRF192');
   const [description, setDescription] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [fileType, setFileType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf');

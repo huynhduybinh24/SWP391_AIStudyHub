@@ -14,7 +14,8 @@ import {
   Trash2,
   Check,
   CheckCircle2,
-  Zap
+  Zap,
+  AlertTriangle
 } from 'lucide-react'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -130,6 +131,7 @@ export function StorageExplorerPage() {
   
   const toast = useToast()
   const [usage, setUsage] = useState<StorageUsage | null>(null)
+  const [dbFiles, setDbFiles] = useState<DocumentResponse[]>([])
 
   const loadUserFiles = async () => {
     if (!user?.id) return;
@@ -254,8 +256,31 @@ export function StorageExplorerPage() {
     return result
   }, [folders, searchQuery, folderFilter])
 
+  const backendFiles = useMemo(() => {
+    return dbFiles.map(doc => {
+      let fileIcon = FileText
+      if (doc.fileType === 'image') fileIcon = FileImage
+      return {
+        id: String(doc.id),
+        name: doc.originalFileName || doc.fileName || doc.title,
+        modified: language === 'vi' 
+          ? `Tải lên ngày ${new Date(doc.createdAt).toLocaleDateString()}` 
+          : `Uploaded on ${new Date(doc.createdAt).toLocaleDateString()}`,
+        icon: fileIcon,
+        type: doc.fileType ? doc.fileType.toUpperCase() : 'PDF',
+        aiSummarized: doc.moderationStatus === 'APPROVED',
+        moderationStatus: doc.moderationStatus,
+        moderationReason: doc.moderationReason
+      }
+    })
+  }, [dbFiles, language])
+
+  const allFilesList = useMemo(() => {
+    return [...backendFiles, ...files]
+  }, [backendFiles, files])
+
   const filteredFiles = useMemo(() => {
-    let result = files
+    let result = allFilesList
     if (typeFilter !== 'All Types') {
       result = result.filter(f => f.type === typeFilter)
     }
@@ -263,7 +288,7 @@ export function StorageExplorerPage() {
       result = result.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
     }
     return result
-  }, [files, searchQuery, typeFilter])
+  }, [allFilesList, searchQuery, typeFilter])
 
   const chartData = useMemo(() => {
     const pctDoc = Math.round(usedPercentage * 0.6)
@@ -514,7 +539,25 @@ export function StorageExplorerPage() {
                   >
                     <div className="aspect-[4/3] rounded-lg bg-[#f8fafc] dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex items-center justify-center relative mb-3 overflow-hidden">
                       <file.icon className="size-12 text-[#93c5fd] dark:text-blue-500" strokeWidth={1.5} />
-                      {file.aiSummarized && (
+                      {file.moderationStatus === 'PENDING' && (
+                        <div className="absolute bottom-2 left-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/15 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5 animate-pulse shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                          {language === 'vi' ? '🔍 Đang quét AI...' : '🔍 Scanning AI...'}
+                        </div>
+                      )}
+                      {file.moderationStatus === 'PENDING_REVIEW' && (
+                        <div className="absolute bottom-2 left-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5 shadow-sm" title={file.moderationReason}>
+                          <AlertTriangle className="size-3 text-amber-500 shrink-0" />
+                          {language === 'vi' ? '⚠️ Đang chờ duyệt' : '⚠️ Pending review'}
+                        </div>
+                      )}
+                      {file.moderationStatus === 'REJECTED' && (
+                        <div className="absolute bottom-2 left-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5 shadow-sm" title={file.moderationReason}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                          {language === 'vi' ? '❌ Bị từ chối' : '❌ Rejected'}
+                        </div>
+                      )}
+                      {file.aiSummarized && !file.moderationStatus && (
                         <div className="absolute bottom-2 left-2 bg-teal-50 dark:bg-emerald-950/20 text-teal-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 border border-teal-100 dark:border-emerald-900/30 shadow-sm">
                           <Sparkles className="size-3" />
                           {t.storageExplorer.aiSummarized}
@@ -553,7 +596,25 @@ export function StorageExplorerPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 sm:gap-6">
-                      {file.aiSummarized && (
+                      {file.moderationStatus === 'PENDING' && (
+                        <div className="hidden sm:flex bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/15 text-[10px] font-bold px-2 py-1 rounded-md items-center gap-1.5 animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                          {language === 'vi' ? '🔍 Đang quét AI...' : '🔍 Scanning AI...'}
+                        </div>
+                      )}
+                      {file.moderationStatus === 'PENDING_REVIEW' && (
+                        <div className="hidden sm:flex bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/15 text-[10px] font-bold px-2 py-1 rounded-md items-center gap-1.5" title={file.moderationReason}>
+                          <AlertTriangle className="size-3 text-amber-500 shrink-0" />
+                          {language === 'vi' ? '⚠️ Đang chờ duyệt' : '⚠️ Pending review'}
+                        </div>
+                      )}
+                      {file.moderationStatus === 'REJECTED' && (
+                        <div className="hidden sm:flex bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/15 text-[10px] font-bold px-2 py-1 rounded-md items-center gap-1.5" title={file.moderationReason}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                          {language === 'vi' ? '❌ Bị từ chối' : '❌ Rejected'}
+                        </div>
+                      )}
+                      {file.aiSummarized && !file.moderationStatus && (
                         <div className="hidden sm:flex bg-teal-50 dark:bg-emerald-950/20 text-teal-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded items-center gap-1 border border-teal-100 dark:border-emerald-900/30">
                           <Sparkles className="size-3" />
                           {t.storageExplorer.aiSummarized}

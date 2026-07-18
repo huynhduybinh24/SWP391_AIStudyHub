@@ -24,4 +24,9 @@ public class SharedDocumentResponse {
     private List<String> tags;
     private String previewContent;
     private String url;
+    private String ownerName;
+    private String ownerEmail;
+    private String role;
+    private String sharedAt;
+    private Boolean sharedWithMe;
 }

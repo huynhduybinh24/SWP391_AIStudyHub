@@ -7,6 +7,7 @@ import { DocumentsPage } from '@/features/documents/pages/DocumentsPage'
 import MyDocumentsPage from '@/features/documents/pages/MyDocumentsPage'
 import SubjectCategoryPage from '@/features/documents/pages/SubjectCategoryPage'
 import { UploadSubjectDocumentPage } from '@/features/documents/pages/UploadSubjectDocumentPage'
+import { UploadHistoryPage } from '@/features/documents/pages/UploadHistoryPage'
 import { SearchResultsPage } from '@/features/documents/pages/SearchResultsPage'
 import DocumentDetailPage from '@/features/documents/pages/DocumentDetailPage'
 import EditDocumentPage from '@/features/documents/pages/EditDocumentPage'
@@ -106,6 +107,7 @@ export const router = createBrowserRouter([
                 element: <DocumentsPage />,
                 children: [
                   { index: true, element: <MyDocumentsPage /> },
+                  { path: 'upload-history', element: <UploadHistoryPage /> },
                   { path: 'subject/:subjectId', element: <SubjectCategoryPage /> },
                   { path: 'subject/:subjectId/upload', element: <UploadSubjectDocumentPage /> },
                   { path: 'search', element: <SearchResultsPage /> },

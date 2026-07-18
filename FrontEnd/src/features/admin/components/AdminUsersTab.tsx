@@ -51,8 +51,6 @@ export function AdminUsersTab({
   const [lockUserConfirm, setLockUserConfirm] = useState<AdminUser | null>(null)
   const [lockReason, setLockReason] = useState('')
   const [pwResetUserConfirm, setPwResetUserConfirm] = useState<AdminUser | null>(null)
-  const [editingRoleUser, setEditingRoleUser] = useState<AdminUser | null>(null)
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'teacher' | 'student'>('student')
   const [downgradeUserConfirm, setDowngradeUserConfirm] = useState<AdminUser | null>(null)
 
   // Pagination states
@@ -147,16 +145,6 @@ export function AdminUsersTab({
     setPwResetUserConfirm(null)
   }
 
-  // Save Role Changes
-  const handleSaveRole = () => {
-    if (!editingRoleUser) return
-    onUpdateUser(editingRoleUser.id, { role: selectedRole as any })
-    const msg = language === 'vi' 
-      ? `Đã cập nhật vai trò của ${editingRoleUser.name} thành ${selectedRole}` 
-      : `Updated ${editingRoleUser.name}'s role to ${selectedRole}`
-    toast.success(msg)
-    setEditingRoleUser(null)
-  }
 
   return (
     <div className="space-y-6 select-none text-left">
@@ -176,15 +164,13 @@ export function AdminUsersTab({
 
         {/* Dropdown filters */}
         <div className="flex items-center gap-3">
-          {/* Role Filter */}
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
             className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-bold focus:outline-none"
           >
             <option value="all">{language === 'vi' ? 'Mọi vai trò' : 'All Roles'}</option>
-            <option value="teacher">Teacher</option>
-            <option value="student">Student</option>
+            <option value="user">User</option>
           </select>
 
           {/* Status Filter */}
@@ -257,8 +243,7 @@ export function AdminUsersTab({
                         <Badge className={cn(
                           "font-extrabold text-[10px] uppercase tracking-wider rounded-full px-2.5 py-0.5",
                           u.role === 'admin' && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
-                          u.role === 'teacher' && "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
-                          (u.role as string) === 'student' && "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          u.role === 'user' && "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
                         )}>
                           {u.role}
                         </Badge>
@@ -361,23 +346,6 @@ export function AdminUsersTab({
                             <Eye className="size-4" />
                           </button>
 
-                          {/* Change Role */}
-                          <button
-                            onClick={() => {
-                              setEditingRoleUser(u)
-                              setSelectedRole(
-                                u.role === 'admin'
-                                  ? 'admin'
-                                  : (u.role === 'teacher' || (u.role as string) === 'instructor')
-                                    ? 'teacher'
-                                    : 'student'
-                              )
-                            }}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-55/10 dark:text-slate-400 dark:hover:text-purple-400 dark:hover:bg-purple-955/20 transition-all cursor-pointer"
-                            title={language === 'vi' ? 'Đổi vai trò' : 'Change user role'}
-                          >
-                            <UserCheck className="size-4" />
-                          </button>
 
                           {/* Downgrade Plan (If Pro) */}
                           {u.plan === 'pro' && u.role !== 'admin' && (
@@ -750,62 +718,6 @@ export function AdminUsersTab({
         )}
       </Modal>
 
-      {/* 4. EDIT USER ROLE MODAL */}
-      <Modal
-        isOpen={!!editingRoleUser}
-        onClose={() => setEditingRoleUser(null)}
-        title={language === 'vi' ? 'Thay đổi vai trò thành viên' : 'Edit User Role'}
-        className="max-w-xs"
-      >
-        {editingRoleUser && (
-          <div className="space-y-4">
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-450 uppercase tracking-wide">
-              {language === 'vi' ? 'Chọn vai trò mới cho:' : 'Select role for:'} <span className="font-extrabold text-slate-800 dark:text-white block mt-0.5">{editingRoleUser.name}</span>
-            </p>
-            <div className="space-y-2">
-              {(['student', 'teacher'] as const).map((r) => (
-                <label
-                  key={r}
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    selectedRole === r
-                      ? 'border-[#3155F6] bg-blue-50/20 dark:border-blue-500/80 dark:bg-blue-955/10'
-                      : 'border-slate-200 dark:border-slate-850 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="edit-role"
-                    value={r}
-                    checked={selectedRole === r}
-                    onChange={() => setSelectedRole(r)}
-                    className="sr-only"
-                  />
-                  <div className={`size-4 rounded-full border flex items-center justify-center shrink-0 ${
-                    selectedRole === r ? 'border-blue-600' : 'border-slate-300'
-                  }`}>
-                    {selectedRole === r && <div className="size-2 rounded-full bg-blue-600" />}
-                  </div>
-                  <span className="text-xs font-bold capitalize">{r}</span>
-                </label>
-              ))}
-            </div>
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 mt-4">
-              <Button
-                onClick={() => setEditingRoleUser(null)}
-                className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-350 font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer"
-              >
-                {language === 'vi' ? 'Hủy' : 'Cancel'}
-              </Button>
-              <Button
-                onClick={handleSaveRole}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer shadow-md shadow-blue-500/10"
-              >
-                {language === 'vi' ? 'Lưu thay đổi' : 'Save'}
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
 
       {/* Downgrade Subscription Modal */}
       <Modal

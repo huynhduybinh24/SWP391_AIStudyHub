@@ -4,7 +4,7 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'teacher' | 'user';
+  role: 'admin' | 'user';
   status: 'active' | 'inactive' | 'suspended';
   joinedAt: string;
   documentsCount: number;
@@ -177,7 +177,7 @@ export const getUsers = async (
         id: String(u.id),
         name: u.fullName || u.name || 'Anonymous',
         email: u.email,
-        role: u.role?.toLowerCase() === 'admin' ? 'admin' : u.role?.toLowerCase() === 'teacher' ? 'teacher' : 'user',
+        role: u.role?.toLowerCase() === 'admin' ? 'admin' : 'user',
         status: u.accountStatus?.toLowerCase() || 'active',
         joinedAt: u.createdAt ? u.createdAt.split('T')[0] : '2023-01-15',
         documentsCount: u.documentsCount || 0,
@@ -224,7 +224,7 @@ export const updateUser = async (
         id: String(u.id),
         name: u.fullName || u.name || 'Anonymous',
         email: u.email,
-        role: u.role?.toLowerCase() === 'admin' ? 'admin' : u.role?.toLowerCase() === 'teacher' ? 'teacher' : 'user',
+        role: u.role?.toLowerCase() === 'admin' ? 'admin' : 'user',
         status: u.accountStatus?.toLowerCase() || 'active',
         joinedAt: u.createdAt ? u.createdAt.split('T')[0] : '2023-01-15',
         documentsCount: u.documentsCount || 0,
@@ -310,6 +310,21 @@ export const approveDocument = async (documentId: string): Promise<AdminDocument
 export const rejectDocument = async (documentId: string, reason?: string): Promise<AdminDocument> => {
   const response = await apiClient.patch(`/admin/documents/${documentId}/moderate`, { status: 'REJECTED', reason });
   return mapBackendDocumentToAdminDocument(response.data?.data || response.data);
+};
+
+export const getPendingDocuments = async (): Promise<any[]> => {
+  const response = await apiClient.get('/admin/documents/pending');
+  return response.data;
+};
+
+export const approvePendingDocument = async (documentId: string): Promise<any> => {
+  const response = await apiClient.post(`/admin/documents/${documentId}/approve`);
+  return response.data;
+};
+
+export const rejectPendingDocument = async (documentId: string, reason: string): Promise<any> => {
+  const response = await apiClient.post(`/admin/documents/${documentId}/reject`, { reason });
+  return response.data;
 };
 
 export const bulkApproveDocuments = async (documentIds: string[]): Promise<AdminDocument[]> => {
@@ -407,6 +422,9 @@ export const adminService = {
   deleteDocument,
   approveDocument,
   rejectDocument,
+  getPendingDocuments,
+  approvePendingDocument,
+  rejectPendingDocument,
   bulkApproveDocuments,
   bulkRejectDocuments,
   bulkDeleteDocuments,

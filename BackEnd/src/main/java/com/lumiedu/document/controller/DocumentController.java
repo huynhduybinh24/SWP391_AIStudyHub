@@ -7,6 +7,7 @@ import com.lumiedu.document.dto.request.DocumentShareRequest;
 import com.lumiedu.document.dto.response.ApiResponse;
 import com.lumiedu.document.dto.response.DocumentResponse;
 import com.lumiedu.document.dto.response.SubjectStatsResponse;
+import com.lumiedu.document.dto.response.DocumentShareResponse;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,7 @@ public class DocumentController {
                 .build();
 
         DocumentResponse response = documentService.uploadDocument(file, request);
-        return ResponseEntity.ok(ApiResponse.ok("Document uploaded successfully.", response));
+        return ResponseEntity.ok(ApiResponse.ok("Your document has been uploaded and is waiting for admin approval.", response));
     }
 
     // ------------------------------------------------------------------
@@ -77,6 +78,21 @@ public class DocumentController {
 
         DocumentResponse response = documentService.uploadMedia(file, request);
         return ResponseEntity.ok(ApiResponse.ok("Media uploaded successfully.", response));
+    }
+
+    // ------------------------------------------------------------------
+    // GET /api/documents/my-uploads
+    // ------------------------------------------------------------------
+    @GetMapping("/my-uploads")
+    public ResponseEntity<ApiResponse<List<DocumentResponse>>> getMyUploads(
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        if (currentUserId == null) {
+            throw new SecurityException("Authentication is required to view upload history.");
+        }
+        List<DocumentResponse> uploads = documentService.getMyUploads(currentUserId);
+        return ResponseEntity.ok(ApiResponse.ok("Upload history retrieved successfully.", uploads));
     }
 
     // ------------------------------------------------------------------
@@ -252,6 +268,49 @@ public class DocumentController {
     }
 
     // ------------------------------------------------------------------
+    // GET /api/documents/{id}/shares
+    // ------------------------------------------------------------------
+    @GetMapping("/{id}/shares")
+    public ResponseEntity<ApiResponse<List<DocumentShareResponse>>> getDocumentShares(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        List<DocumentShareResponse> response = documentService.getDocumentShares(id, currentUserId);
+        return ResponseEntity.ok(ApiResponse.ok("Document shares retrieved successfully.", response));
+    }
+
+    // ------------------------------------------------------------------
+    // POST /api/documents/{id}/shares
+    // ------------------------------------------------------------------
+    @PostMapping("/{id}/shares")
+    public ResponseEntity<ApiResponse<DocumentShareResponse>> addOrUpdateDocumentShare(
+            @PathVariable Long id,
+            @RequestBody DocumentShareRequest request,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        DocumentShareResponse response = documentService.addOrUpdateDocumentShare(
+                id, request.getEmail(), request.getRole(), currentUserId
+        );
+        return ResponseEntity.ok(ApiResponse.ok("Document share saved successfully.", response));
+    }
+
+    // ------------------------------------------------------------------
+    // DELETE /api/documents/{id}/shares
+    // ------------------------------------------------------------------
+    @DeleteMapping("/{id}/shares")
+    public ResponseEntity<ApiResponse<Void>> deleteDocumentShare(
+            @PathVariable Long id,
+            @RequestParam("email") String email,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        Long currentUserId = getCurrentUserId(authentication);
+        documentService.deleteDocumentShare(id, email, currentUserId);
+        return ResponseEntity.ok(ApiResponse.ok("Document share deleted successfully.", null));
+    }
+
+    // ------------------------------------------------------------------
     // Helper
     // ------------------------------------------------------------------
     private String resolveFilename(Long documentId) {
@@ -262,7 +321,24 @@ public class DocumentController {
 
     private String resolveMimeType(Long documentId) {
         return documentRepository.findByIdAndDeletedFalse(documentId)
-                .map(d -> d.getMimeType() != null ? d.getMimeType() : MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                .map(d -> {
+                    String mime = d.getMimeType();
+                    // Nếu mimeType trống hoặc là kiểu chung chung octet-stream, thử đoán qua đuôi file
+                    if (mime == null || mime.trim().isEmpty() || MediaType.APPLICATION_OCTET_STREAM_VALUE.equalsIgnoreCase(mime)) {
+                        String filename = d.getOriginalFileName() != null ? d.getOriginalFileName() : d.getFileName();
+                        if (filename != null) {
+                            String lowerName = filename.toLowerCase();
+                            if (lowerName.endsWith(".pdf")) {
+                                return MediaType.APPLICATION_PDF_VALUE;
+                            } else if (lowerName.endsWith(".png")) {
+                                return MediaType.IMAGE_PNG_VALUE;
+                            } else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
+                                return MediaType.IMAGE_JPEG_VALUE;
+                            }
+                        }
+                    }
+                    return mime != null ? mime : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                })
                 .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
     }
 

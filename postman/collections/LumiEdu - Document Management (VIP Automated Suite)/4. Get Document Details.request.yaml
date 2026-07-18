@@ -1,0 +1,28 @@
+$kind: http-request
+url: http://localhost:8080/api/documents/{{documentId}}
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      // 1. Status Code & Performance Tests
+      pm.test("TC-04-A | HTTP Status is 200 OK", function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test("TC-04-B | Performance - Details load time <600ms", function () {
+          pm.expect(pm.response.responseTime).to.be.below(600);
+      });
+
+      // 2. Data Validation
+      pm.test("TC-04-C | Verify details match uploaded document", function () {
+          var jsonData = pm.response.json();
+          var doc = jsonData.data;
+          var expectedId = pm.globals.get("documentId");
+          
+          pm.expect(doc.id).to.eql(expectedId);
+          pm.expect(doc.title).to.eql("Document de test VIP");
+          pm.expect(doc.ownerEmail).to.eql("student@lumiedu.com");
+          pm.expect(doc.ownerName).to.eql("Huỳnh Duy Bình");
+          pm.expect(doc.visibility).to.eql("PUBLIC");
+      });
+    language: text/javascript
+order: 4000

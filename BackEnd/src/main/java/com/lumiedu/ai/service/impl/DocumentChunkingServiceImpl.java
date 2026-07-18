@@ -26,6 +26,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -41,69 +43,84 @@ public class DocumentChunkingServiceImpl implements DocumentChunkingService {
     private final GeminiService geminiService;
     private final Gson gson = new Gson();
 
+    private final Set<Long> processingDocs = ConcurrentHashMap.newKeySet();
+
+    @Override
+    public boolean isProcessing(Long documentId) {
+        return processingDocs.contains(documentId);
+    }
+
     @Override
     @Async
     public void chunkAndIndexDocument(Long documentId) {
-        Document doc = documentRepository.findById(documentId).orElse(null);
-        if (doc == null || doc.getDeleted()) {
+        if (!processingDocs.add(documentId)) {
+            System.out.println("Document " + documentId + " is already being processed. Skipping duplicate task.");
             return;
         }
-
-        // Delete existing chunks first
-        documentChunkRepository.deleteByDocumentId(documentId);
-
-        String fullText = "";
         try {
-            if ("GOOGLE_DRIVE".equals(doc.getStorageProvider()) && doc.getGoogleDriveFileId() != null) {
-                // Tải file từ Google Drive để trích xuất text
-                fullText = extractTextFromGoogleDrive(doc);
-            } else if (doc.getFileName() != null && !doc.getFileName().isEmpty()) {
-                Path filePath = Paths.get(uploadDir, "documents", doc.getFileName()).toAbsolutePath().normalize();
-                File file = filePath.toFile();
-                String ext = getExtension(doc.getFileName()).toLowerCase();
-                if (file.exists()) {
-                    if ("pdf".equals(ext)) {
-                        fullText = extractTextFromPdf(file);
-                    } else if ("txt".equals(ext)) {
-                        fullText = Files.readString(filePath);
+            Document doc = documentRepository.findById(documentId).orElse(null);
+            if (doc == null || doc.getDeleted()) {
+                return;
+            }
+
+            // Delete existing chunks first
+            documentChunkRepository.deleteByDocumentId(documentId);
+
+            String fullText = "";
+            try {
+                if ("GOOGLE_DRIVE".equals(doc.getStorageProvider()) && doc.getGoogleDriveFileId() != null) {
+                    // Tải file từ Google Drive để trích xuất text
+                    fullText = extractTextFromGoogleDrive(doc);
+                } else if (doc.getFileName() != null && !doc.getFileName().isEmpty()) {
+                    Path filePath = Paths.get(uploadDir, "documents", doc.getFileName()).toAbsolutePath().normalize();
+                    File file = filePath.toFile();
+                    String ext = getExtension(doc.getFileName()).toLowerCase();
+                    if (file.exists()) {
+                        if ("pdf".equals(ext)) {
+                            fullText = extractTextFromPdf(file);
+                        } else if ("txt".equals(ext)) {
+                            fullText = Files.readString(filePath);
+                        }
+                    } else {
+                        System.err.println("File not found locally for chunking: " + filePath);
                     }
-                } else {
-                    System.err.println("File not found locally for chunking: " + filePath);
                 }
+            } catch (Exception e) {
+                System.err.println("Failed to extract text from file: " + e.getMessage());
             }
-        } catch (Exception e) {
-            System.err.println("Failed to extract text from file: " + e.getMessage());
-        }
 
-        // Fallback: use document metadata when file is unavailable
-        if (fullText == null || fullText.trim().isEmpty()) {
-            StringBuilder fallback = new StringBuilder();
-            if (doc.getTitle() != null) fallback.append("Tên tài liệu: ").append(doc.getTitle()).append("\n");
-            if (doc.getSubject() != null) fallback.append("Môn học: ").append(doc.getSubject()).append("\n");
-            if (doc.getDescription() != null && !doc.getDescription().isEmpty()) {
-                fallback.append("Mô tả: ").append(doc.getDescription()).append("\n");
+            // Fallback: use document metadata when file is unavailable
+            if (fullText == null || fullText.trim().isEmpty()) {
+                StringBuilder fallback = new StringBuilder();
+                if (doc.getTitle() != null) fallback.append("Tên tài liệu: ").append(doc.getTitle()).append("\n");
+                if (doc.getSubject() != null) fallback.append("Môn học: ").append(doc.getSubject()).append("\n");
+                if (doc.getDescription() != null && !doc.getDescription().isEmpty()) {
+                    fallback.append("Mô tả: ").append(doc.getDescription()).append("\n");
+                }
+                fullText = fallback.toString().trim();
+                System.out.println("Using metadata fallback for document: " + doc.getTitle());
             }
-            fullText = fallback.toString().trim();
-            System.out.println("Using metadata fallback for document: " + doc.getTitle());
+
+            List<String> chunks = splitIntoChunks(fullText, 1000, 200);
+            List<DocumentChunk> documentChunks = new ArrayList<>();
+            for (int i = 0; i < chunks.size(); i++) {
+                String chunkContent = chunks.get(i);
+                float[] embeddingVector = geminiService.getEmbedding(chunkContent);
+                String embeddingJson = gson.toJson(embeddingVector);
+
+                documentChunks.add(DocumentChunk.builder()
+                        .documentId(documentId)
+                        .chunkIndex(i)
+                        .content(chunkContent)
+                        .embedding(embeddingJson)
+                        .build());
+            }
+
+            documentChunkRepository.saveAll(documentChunks);
+            System.out.println("Successfully chunked, embedded, and saved " + documentChunks.size() + " chunks for document: " + doc.getTitle());
+        } finally {
+            processingDocs.remove(documentId);
         }
-
-        List<String> chunks = splitIntoChunks(fullText, 1000, 200);
-        List<DocumentChunk> documentChunks = new ArrayList<>();
-        for (int i = 0; i < chunks.size(); i++) {
-            String chunkContent = chunks.get(i);
-            float[] embeddingVector = geminiService.getEmbedding(chunkContent);
-            String embeddingJson = gson.toJson(embeddingVector);
-
-            documentChunks.add(DocumentChunk.builder()
-                    .documentId(documentId)
-                    .chunkIndex(i)
-                    .content(chunkContent)
-                    .embedding(embeddingJson)
-                    .build());
-        }
-
-        documentChunkRepository.saveAll(documentChunks);
-        System.out.println("Successfully chunked, embedded, and saved " + documentChunks.size() + " chunks for document: " + doc.getTitle());
     }
 
     private String extractTextFromGoogleDrive(Document doc) throws IOException {

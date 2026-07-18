@@ -82,7 +82,7 @@ export function LinkedAccounts() {
   // Handle opening connection login modal or redirecting to Google OAuth
   const handleConnectClick = (account: LinkedAccount) => {
     if (account.id === 'google') {
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '885322210817-bh9ua0cnrt5d7ogt6950o3ipekq6kdv3.apps.googleusercontent.com'
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '299923810846-kfk4pv295irthtmvfdpuj91gijqkilmh.apps.googleusercontent.com'
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
       
       if (clientId.includes('dummy')) {

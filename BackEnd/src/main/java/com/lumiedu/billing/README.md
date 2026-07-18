@@ -10,8 +10,7 @@ This module manages subscription plans, user subscriptions, payments, and instit
 - Submit institutional plan request
 
 ## Current Scope
-This module currently uses mock checkout logic.
-Real VNPay/MoMo integration will be implemented later.
+This module uses Stripe Checkout for real payment processing, along with mock checkout logic for bypass testing.
 
 ## Package Structure
 - entity
