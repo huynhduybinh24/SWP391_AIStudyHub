@@ -41,6 +41,24 @@ interface AdminDocumentsTabProps {
   onRejectDocument: (documentId: string, reason?: string) => void
 }
 
+const getLocalizedReason = (reasonStr: string | undefined, lang: string): string => {
+  if (!reasonStr) return '';
+  try {
+    const trimmed = reasonStr.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      const parsed = JSON.parse(trimmed);
+      if (lang === 'vi') {
+        return parsed.vi || parsed.en || reasonStr;
+      } else {
+        return parsed.en || parsed.vi || reasonStr;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return reasonStr;
+};
+
 export function AdminDocumentsTab({
   documents,
   onUpdateDocument,
@@ -1093,6 +1111,9 @@ export function AdminDocumentsTab({
                     <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
                       Uploaded Date
                     </th>
+                    <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
+                      {language === 'vi' ? 'Lý do cảnh báo của AI' : 'AI Moderation Note'}
+                    </th>
                     <th className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 p-4 pr-6 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)] dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.05)]">
                       Actions
                     </th>
@@ -1128,6 +1149,18 @@ export function AdminDocumentsTab({
                         <td className="p-4 text-xs font-medium text-slate-500 dark:text-slate-400">
                           {doc.createdAt ? new Date(doc.createdAt).toLocaleString('vi-VN') : 'Unknown'}
                         </td>
+                        <td className="p-4">
+                          {doc.moderationReason ? (
+                            <div className="bg-rose-50 dark:bg-rose-955/25 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 text-xs px-2.5 py-1.5 rounded-xl font-bold max-w-[280px] break-words flex items-start gap-1">
+                              <AlertTriangle className="size-3.5 text-rose-500 shrink-0 mt-0.5" />
+                              <span>{getLocalizedReason(doc.moderationReason, language)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-600 text-xs italic font-semibold">
+                              {language === 'vi' ? 'Không phát hiện bất thường' : 'No issues flagged'}
+                            </span>
+                          )}
+                        </td>
                         <td className="p-4 pr-6 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
@@ -1152,7 +1185,7 @@ export function AdminDocumentsTab({
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="py-16 text-center">
+                      <td colSpan={5} className="py-16 text-center">
                         <div className="flex flex-col items-center justify-center text-slate-400">
                           <CheckCircle className="size-10 stroke-[1.25] text-emerald-500 mb-2" />
                           <p className="font-extrabold text-sm text-slate-700 dark:text-slate-300">
