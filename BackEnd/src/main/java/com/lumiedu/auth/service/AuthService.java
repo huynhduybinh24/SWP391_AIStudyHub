@@ -30,6 +30,26 @@ public class AuthService {
     private final EmailService emailService;
     private final com.lumiedu.billing.repository.UserSubscriptionRepository userSubscriptionRepository;
 
+    private final java.util.Map<String, Integer> failedAttempts = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public boolean isLocked(String email) {
+        if (email == null) return false;
+        return failedAttempts.getOrDefault(email.trim().toLowerCase(), 0) >= 5;
+    }
+
+    public int incrementFailedAttempts(String email) {
+        if (email == null) return 0;
+        String cleanEmail = email.trim().toLowerCase();
+        int attempts = failedAttempts.getOrDefault(cleanEmail, 0) + 1;
+        failedAttempts.put(cleanEmail, attempts);
+        return attempts;
+    }
+
+    public void clearFailedAttempts(String email) {
+        if (email == null) return;
+        failedAttempts.remove(email.trim().toLowerCase());
+    }
+
     @Value("${app.frontend.url:http://localhost:8386}")
     private String frontendUrl;
 
@@ -63,9 +83,16 @@ public class AuthService {
             throw new RuntimeException("Account is not active");
         }
 
+        if (isLocked(user.getEmail())) {
+            throw new RuntimeException("Account is locked");
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            incrementFailedAttempts(user.getEmail());
             throw new RuntimeException("Invalid email or password");
         }
+
+        clearFailedAttempts(user.getEmail());
 
         return toAuthResponse(user, "Login successfully");
     }
@@ -129,6 +156,8 @@ public class AuthService {
 
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
+
+        clearFailedAttempts(user.getEmail());
 
         return "Password reset successfully";
     }
