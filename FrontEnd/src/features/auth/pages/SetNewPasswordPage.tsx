@@ -75,6 +75,17 @@ export function SetNewPasswordPage() {
       await authService.resetPassword(data.email, data.otp, data.password)
       setIsSubmitting(false)
       setSuccessMsg('Password reset successfully! Redirecting to login page...')
+      
+      try {
+        const cleanEmail = data.email.trim().toLowerCase()
+        const stored = localStorage.getItem('loginFailedAttemptsPerEmail')
+        if (stored) {
+          const map = JSON.parse(stored)
+          delete map[cleanEmail]
+          localStorage.setItem('loginFailedAttemptsPerEmail', JSON.stringify(map))
+        }
+      } catch (e) {}
+
       setTimeout(() => {
         navigate('/login')
       }, 3000)
