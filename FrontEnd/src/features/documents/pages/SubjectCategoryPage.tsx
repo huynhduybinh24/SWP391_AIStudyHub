@@ -29,7 +29,7 @@ interface DocumentItem {
   size: string
   sizeKb: number
   subject: string
-  status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
+  status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED' | 'REJECTED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
 
@@ -45,6 +45,7 @@ interface DocumentsContextType {
   handleDeleteDocument: (id: string) => void
   renderFileIcon: (type: string) => React.ReactNode
   renderStatusBadge: (status: string) => React.ReactNode
+  refreshDocuments?: () => void
 }
 
 const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
@@ -129,7 +130,7 @@ const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
 }
 
 export default function SubjectCategoryPage() {
-  const { t } = useTranslation()
+  const { language, t } = useTranslation()
   const { subjectId } = useParams<{ subjectId: string }>()
   const navigate = useNavigate()
   const activeSubjectId = (subjectId || 'GENERAL').toUpperCase()
@@ -144,7 +145,8 @@ export default function SubjectCategoryPage() {
     handleDeleteDocument,
     renderFileIcon,
     renderStatusBadge,
-    showToast
+    showToast,
+    refreshDocuments
   } = useOutletContext<DocumentsContextType>()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -182,9 +184,23 @@ export default function SubjectCategoryPage() {
       }
     }
     fetchStats()
-  }, [activeSubjectId, user])
+    if (refreshDocuments) {
+      refreshDocuments()
+    }
+  }, [activeSubjectId, user, refreshDocuments])
 
   const handleOpenDocument = (docId: string) => {
+    const doc = documents.find((d) => d.id === docId)
+    if (doc) {
+      if (doc.status === 'SCANNING' || doc.status === 'PENDING' || doc.status === 'QUEUED') {
+        showToast(language === 'en' ? 'AI is processing this document. Please wait.' : 'AI đang xử lý tài liệu này. Vui lòng đợi!')
+        return
+      }
+      if (doc.status === 'REJECTED') {
+        showToast(language === 'en' ? 'This document was rejected by admin.' : 'Tài liệu này đã bị quản trị viên từ chối.')
+        return
+      }
+    }
     setActiveMenuId(null)
     if (typeof window !== 'undefined') {
       window.history.scrollRestoration = 'manual'

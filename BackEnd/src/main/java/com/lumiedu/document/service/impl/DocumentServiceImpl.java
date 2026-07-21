@@ -308,7 +308,7 @@ public class DocumentServiceImpl implements DocumentService {
         List<DocumentResponse> responseList = new ArrayList<>();
 
         for (Document d : ownedDocs) {
-            if (isApprovedForUser(d) && seenIds.add(d.getId())) {
+            if (seenIds.add(d.getId())) {
                 DocumentResponse res = mapToResponse(d);
                 res.setRole("owner");
                 responseList.add(res);

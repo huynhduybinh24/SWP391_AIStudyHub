@@ -31,6 +31,7 @@ interface DocumentItem {
 interface DocumentsLayoutContext {
   setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>
   showToast: (msg: string) => void
+  refreshDocuments?: () => void
 }
 
 
@@ -78,7 +79,7 @@ const mapBackendDocToItem = (doc: any): DocumentItem => {
 export function UploadSubjectDocumentPage() {
   const { subjectId } = useParams<{ subjectId: string }>()
   const navigate = useNavigate()
-  const { setDocuments, showToast } = useOutletContext<DocumentsLayoutContext>()
+  const { setDocuments, showToast, refreshDocuments } = useOutletContext<DocumentsLayoutContext>()
   const { language, t: tRaw } = useTranslation()
   const t = tRaw as any
 
@@ -279,10 +280,16 @@ export function UploadSubjectDocumentPage() {
             pollingIntervalRef.current = null
             setModerationState('approved')
             setDocuments((prev) => [mapBackendDocToItem(doc), ...prev])
+            if (refreshDocuments) {
+              refreshDocuments()
+            }
           } else if (doc.moderationStatus === 'PENDING_REVIEW' || doc.moderationStatus === 'REJECTED') {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
             setModerationState('pending_review')
+            if (refreshDocuments) {
+              refreshDocuments()
+            }
           }
         } catch (err) {
           console.error('Failed to poll document status:', err)

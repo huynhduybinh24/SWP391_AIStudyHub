@@ -186,7 +186,7 @@ public class AuthService {
         return """
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #f8fafc; border-radius: 12px;">
                   <div style="background: #ffffff; border-radius: 10px; padding: 24px; text-align: center; margin-bottom: 24px; border: 1px solid #e2e8f0;">
-                    <img src="https://raw.githubusercontent.com/huynhduybinh24/SWP391_AIStudyHub/main/FrontEnd/public/logo.png" alt="LumiEdu Logo" style="max-width: 130px; height: auto; display: block; margin: 0 auto;" />
+                    <img src="https://cdn.jsdelivr.net/gh/huynhduybinh24/SWP391_AIStudyHub@main/FrontEnd/public/logo.png" alt="LumiEdu Logo" style="max-width: 130px; height: auto; display: block; margin: 0 auto;" />
                     <p style="color: #64748b; margin: 10px 0 0 0; font-size: 14px; font-weight: 500;">AI Study Hub</p>
                   </div>
 

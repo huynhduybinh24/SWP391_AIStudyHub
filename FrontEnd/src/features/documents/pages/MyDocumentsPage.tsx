@@ -42,7 +42,7 @@ interface DocumentItem {
   size: string
   sizeKb: number
   subject: string
-  status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
+  status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED' | 'REJECTED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
 
@@ -59,6 +59,7 @@ interface DocumentsContextType {
   renderFileIcon: (type: string) => React.ReactNode
   renderStatusBadge: (status: string) => React.ReactNode
   refreshSubjects?: () => void
+  refreshDocuments?: () => void
 }
 
 interface FptSubjectInfo {
@@ -95,7 +96,8 @@ export default function MyDocumentsPage() {
     handleDeleteDocument,
     renderFileIcon,
     renderStatusBadge,
-    refreshSubjects
+    refreshSubjects,
+    refreshDocuments
   } = useOutletContext<DocumentsContextType>()
 
   const { user } = useAuthStore()
@@ -138,6 +140,17 @@ export default function MyDocumentsPage() {
   const [selectedSemester, setSelectedSemester] = useState<string>('ALL')
 
   const handleOpenDocument = (docId: string) => {
+    const doc = documents.find((d) => d.id === docId)
+    if (doc) {
+      if (doc.status === 'SCANNING' || doc.status === 'PENDING' || doc.status === 'QUEUED') {
+        toast.error(language === 'en' ? 'AI is processing this document. Please wait.' : 'AI đang xử lý tài liệu này. Vui lòng đợi!')
+        return
+      }
+      if (doc.status === 'REJECTED') {
+        toast.error(language === 'en' ? 'This document was rejected by admin.' : 'Tài liệu này đã bị quản trị viên từ chối.')
+        return
+      }
+    }
     setActiveMenuId(null)
     if (typeof window !== 'undefined') {
       window.history.scrollRestoration = 'manual'
@@ -190,7 +203,10 @@ export default function MyDocumentsPage() {
   // Load from backend on mount/userId change
   useEffect(() => {
     fetchSemestersAndSubjects()
-  }, [currentUserId])
+    if (refreshDocuments) {
+      refreshDocuments()
+    }
+  }, [currentUserId, refreshDocuments])
 
   // Auto-reset filters on collapse, and smooth scroll to filter panel on open
   useEffect(() => {
