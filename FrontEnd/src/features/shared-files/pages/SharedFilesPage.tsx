@@ -1359,8 +1359,8 @@ export function SharedFilesPage() {
         collaborators={selectedFile?.id ? (fileCollaborators[selectedFile.id] || [
           {
             id: 'owner',
-            name: selectedFile.owner === 'me' ? 'Tôi' : (selectedFile.owner || 'Alex Rivera'),
-            email: `${(selectedFile.owner || 'alex').toLowerCase().replace(' ', '')}@example.com`,
+            name: selectedFile.ownerName || (selectedFile.owner === 'me' ? (user?.name || 'Tôi') : (selectedFile.owner || 'Alex Rivera')),
+            email: selectedFile.ownerEmail || (selectedFile.owner === 'me' ? (user?.email || 'me@example.com') : `${(selectedFile.owner || 'alex').toLowerCase().replace(' ', '')}@example.com`),
             role: 'owner',
             avatarBg: 'bg-[#0fbf7c]'
           }
