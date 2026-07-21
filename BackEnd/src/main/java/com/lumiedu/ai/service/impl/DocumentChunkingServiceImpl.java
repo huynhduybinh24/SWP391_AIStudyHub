@@ -63,6 +63,10 @@ public class DocumentChunkingServiceImpl implements DocumentChunkingService {
     @Override
     @Async
     public void chunkAndIndexDocument(Long documentId) {
+        if (!documentChunkRepository.findByDocumentId(documentId).isEmpty()) {
+            System.out.println("Document " + documentId + " is already chunked and indexed. Skipping task.");
+            return;
+        }
         if (!processingDocs.add(documentId)) {
             System.out.println("Document " + documentId + " is already being processed. Skipping duplicate task.");
             return;
@@ -203,6 +207,10 @@ public class DocumentChunkingServiceImpl implements DocumentChunkingService {
     }
 
     private void performAutoModeration(Document doc, String fullText) {
+        if (doc.getModerationStatus() != null && doc.getModerationStatus() != com.lumiedu.document.enums.DocumentStatus.PENDING) {
+            System.out.println("Document " + doc.getTitle() + " is already moderated (" + doc.getModerationStatus() + "). Skipping auto-moderation.");
+            return;
+        }
         try {
             System.out.println("Starting auto-moderation for document: " + doc.getTitle());
             String textToScan = fullText;

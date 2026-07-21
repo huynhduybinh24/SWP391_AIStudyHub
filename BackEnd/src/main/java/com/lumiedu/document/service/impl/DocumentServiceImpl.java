@@ -610,11 +610,22 @@ public class DocumentServiceImpl implements DocumentService {
     // Helpers
     // -------------------------------------------------------------------------
 
-    private boolean isApprovedForUser(Document document) {
-        if (document == null) return false;
-        return document.getModerationStatus() == null
-                || document.getModerationStatus() == DocumentStatus.APPROVED;
+    private Long getCurrentUserId() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            Object details = auth.getDetails();
+            if (details instanceof Long) {
+                return (Long) details;
+            }
+        }
+        return null;
     }
+
+    private boolean isApprovedDocument(Document document) {
+    return document != null
+            && document.getModerationStatus() == DocumentStatus.APPROVED;
+}
 
 
     private void validateFile(MultipartFile file) {
@@ -643,7 +654,7 @@ public class DocumentServiceImpl implements DocumentService {
             return UUID.randomUUID().toString().replace("-", "");
         }
     }
-
+  
     private String getExtension(String filename) {
         int dotIndex = filename.lastIndexOf('.');
         if (dotIndex < 0 || dotIndex == filename.length() - 1) {

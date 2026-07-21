@@ -1540,15 +1540,28 @@ export function SharedFilesPage() {
         fileName={selectedFile?.name || ''}
         workspaceCollaborators={allWorkspaceCollaborators.length > 0 ? allWorkspaceCollaborators : activeCollaborators}
         onUpdateCollaboratorRole={handleUpdateCollaboratorRole}
-        collaborators={selectedFile?.id ? (fileCollaborators[selectedFile.id] || [
+        collaborators={
+  selectedFile?.id
+    ? (
+        fileCollaborators[selectedFile.id] || [
           {
             id: 'owner',
-            name: user?.name || (selectedFile.owner === 'me' ? 'Tôi' : (selectedFile.owner || 'Huỳnh Duy Bình')),
-            email: user?.email || 'student@lumiedu.com',
+            name:
+              selectedFile.owner === 'me'
+                ? (user?.name || 'Tôi')
+                : (selectedFile.owner || 'Không xác định'),
+            email:
+              selectedFile.ownerEmail ||
+              (selectedFile.owner === 'me'
+                ? (user?.email || '')
+                : ''),
             role: 'owner',
             avatarBg: 'bg-[#0fbf7c]'
           }
-        ]) : []}
+        ]
+      )
+    : []
+}
         onCollaboratorsChange={(newCollabs) => {
           if (selectedFile?.id) {
             const oldCollabs = fileCollaborators[selectedFile.id] || []
