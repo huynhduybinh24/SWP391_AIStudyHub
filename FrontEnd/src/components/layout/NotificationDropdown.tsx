@@ -59,7 +59,9 @@ export function NotificationDropdown({ onClose, notifications, markAsRead, markA
     markAsRead(item.id)
     toast.success(`${t.common.loading}`)
     onClose()
-    if (item.type === 'doc') {
+    if (item.actionUrl) {
+      navigate(item.actionUrl)
+    } else if (item.type === 'doc') {
       navigate('/dashboard/documents')
     } else if (item.type === 'plan') {
       navigate('/dashboard/study-plans')

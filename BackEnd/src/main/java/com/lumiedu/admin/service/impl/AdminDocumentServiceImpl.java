@@ -135,8 +135,10 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
 
         if (status != null) {
             doc.setModerationStatus(status);
-            // Rejected documents are hidden from public listing
-            doc.setDeleted(status == DocumentStatus.REJECTED);
+            // Keeping deleted = false for rejected documents so they remain in history
+            if (status == DocumentStatus.REJECTED) {
+                doc.setDeleted(false);
+            }
         }
 
         if (request.getReason() != null) {
@@ -174,7 +176,7 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
         List<Document> docs = documentRepository.findAllById(request.getIds());
         docs.forEach(d -> {
             d.setModerationStatus(DocumentStatus.REJECTED);
-            d.setDeleted(true);
+            d.setDeleted(false);
             if (request.getReason() != null) d.setModerationNote(request.getReason());
         });
         documentRepository.saveAll(docs);
@@ -296,7 +298,7 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
                         .documentId(doc.getId())
                         .documentName(doc.getTitle())
                         .actionType("view_document")
-                        .actionUrl("/dashboard/documents/" + doc.getId())
+                        .actionUrl("/dashboard/documents/document/" + doc.getId())
                         .build();
                 notificationService.createNotification(notifReq);
             } catch (Exception e) {
@@ -403,3 +405,4 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
         }
     }
 }
+// Force JDT LS revalidation

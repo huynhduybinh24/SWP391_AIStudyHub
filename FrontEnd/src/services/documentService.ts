@@ -17,7 +17,6 @@ export interface DocumentResponse {
   ownerEmail?: string
   role?: string
   status?: string
-  moderationStatus?: string
   rejectionReason?: string
   reviewedAt?: string
   createdAt: string

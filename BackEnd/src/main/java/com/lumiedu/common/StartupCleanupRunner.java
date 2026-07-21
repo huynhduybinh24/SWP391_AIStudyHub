@@ -103,7 +103,6 @@ public class StartupCleanupRunner implements CommandLineRunner {
                     // Chat sessions
                     aiChatSessionRepository.deleteSessionDocumentsByDocumentId(doc.getId());
                     aiChatSessionRepository.nullifyDocumentId(doc.getId());
-
                     // The document itself
                     documentRepository.delete(doc);
                     deletedCount++;

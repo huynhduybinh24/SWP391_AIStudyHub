@@ -13,14 +13,11 @@ import com.lumiedu.document.entity.AudioRecord;
 import com.lumiedu.document.entity.Document;
 import com.lumiedu.document.entity.DocumentDownload;
 import com.lumiedu.document.entity.DocumentTag;
-import com.lumiedu.document.enums.DocumentStatus;
-import com.lumiedu.ai.service.DocumentChunkingService;
 import com.lumiedu.document.exception.DocumentNotFoundException;
 import com.lumiedu.document.exception.FileStorageException;
 import com.lumiedu.document.exception.InvalidFileTypeException;
 import com.lumiedu.document.entity.DocumentShare;
 import com.lumiedu.document.repository.DocumentShareRepository;
-import com.lumiedu.user.entity.User;
 import com.lumiedu.document.repository.AudioRecordRepository;
 import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
@@ -42,10 +39,6 @@ import com.lumiedu.document.entity.Subject;
 import com.lumiedu.document.repository.SubjectRepository;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.File;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,7 +55,8 @@ import java.util.stream.Collectors;
 public class DocumentServiceImpl implements DocumentService {
 
     private static final Set<String> ALLOWED_DOCUMENT_EXTENSIONS = Set.of(
-            "pdf");
+            "pdf"
+    );
 
     private static final Set<String> ALLOWED_MEDIA_EXTENSIONS = Set.of(
             "jpg", "jpeg", "png", "mp4", "mp3", "wav");
@@ -216,7 +210,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .storageProvider(googleDriveFileId != null ? ("STAGING".equals(driveSyncStatus) ? "GOOGLE_DRIVE_STAGING" : "GOOGLE_DRIVE") : "LOCAL")
                 .checksum(calculateChecksum(file))
                 .deleted(false)
-                .moderationStatus(FILE_TYPE_DOCUMENT.equals(fileType) ? DocumentStatus.PENDING_REVIEW : DocumentStatus.APPROVED)
+                .moderationStatus(FILE_TYPE_DOCUMENT.equals(fileType) ? DocumentStatus.PENDING : DocumentStatus.APPROVED)
                 .driveSyncStatus(driveSyncStatus)
                 .driveSyncError(driveSyncError)
                 .build();
@@ -608,6 +602,7 @@ public class DocumentServiceImpl implements DocumentService {
         return false;
     }
 
+
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File must not be null or empty.");
@@ -861,16 +856,27 @@ public class DocumentServiceImpl implements DocumentService {
                 String curriculumJson = plan.getCurriculumJson();
                 String completedJson = plan.getCompletedLessonsJson();
                 if (curriculumJson != null && !curriculumJson.isBlank()) {
-                    List<?> totalLessons = objectMapper.readValue(curriculumJson, List.class);
-                    int totalCount = totalLessons.size();
-                    if (totalCount > 0) {
-                        int completedCount = 0;
-                        if (completedJson != null && !completedJson.isBlank()) {
-                            List<?> completedLessons = objectMapper.readValue(completedJson, List.class);
-                            completedCount = completedLessons.size();
+                    List<?> totalModules = null;
+                    if (curriculumJson.trim().startsWith("[")) {
+                        totalModules = objectMapper.readValue(curriculumJson, List.class);
+                    } else if (curriculumJson.trim().startsWith("{")) {
+                        java.util.Map<?, ?> map = objectMapper.readValue(curriculumJson, java.util.Map.class);
+                        Object modulesObj = map.get("modules");
+                        if (modulesObj instanceof List) {
+                            totalModules = (List<?>) modulesObj;
                         }
-                        studyProgress = Math.min(100, (completedCount * 100) / totalCount);
-                        progressCalculated = true;
+                    }
+                    if (totalModules != null) {
+                        int totalCount = totalModules.size();
+                        if (totalCount > 0) {
+                            int completedCount = 0;
+                            if (completedJson != null && !completedJson.isBlank()) {
+                                List<?> completedLessons = objectMapper.readValue(completedJson, List.class);
+                                completedCount = completedLessons.size();
+                            }
+                            studyProgress = Math.min(100, (completedCount * 100) / totalCount);
+                            progressCalculated = true;
+                        }
                     }
                 }
             } catch (Exception e) {

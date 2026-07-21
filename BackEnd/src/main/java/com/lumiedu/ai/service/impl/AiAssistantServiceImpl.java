@@ -342,15 +342,16 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         List<DocumentChunk> chunks = getOrWaitForChunks(documentId);
-        if (chunks.isEmpty()) {
-            throw new IllegalStateException("Tài liệu đang được phân tích hoặc không chứa nội dung văn bản. Vui lòng thử lại sau.");
+        String context = "";
+        if (!chunks.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < Math.min(chunks.size(), 3); i++) {
+                sb.append(chunks.get(i).getContent()).append("\n");
+            }
+            context = sb.toString();
+        } else {
+            context = "Document Title: " + doc.getTitle() + "\nSubject: " + doc.getSubject() + "\nDescription: " + doc.getDescription();
         }
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < Math.min(chunks.size(), 3); i++) {
-            sb.append(chunks.get(i).getContent()).append("\n");
-        }
-        String context = sb.toString();
 
         List<ChatMessageDto> messages = new ArrayList<>();
         messages.add(ChatMessageDto.builder()
@@ -365,27 +366,38 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .content("Create flashcards based on this text:\n\n" + context)
                 .build());
 
-        OpenAiResponse response = openAiService.chat(messages, true);
-        saveUsageLog(doc.getUserId() != null ? doc.getUserId() : 1L, "FLASHCARD", response);
+        OpenAiResponse response = null;
+        try {
+            response = openAiService.chat(messages, true);
+            saveUsageLog(doc.getUserId() != null ? doc.getUserId() : 1L, "FLASHCARD", response);
+        } catch (Exception e) {
+            System.err.println("Failed to get OpenAI response for flashcards: " + e.getMessage());
+        }
 
         List<Flashcard> list = new ArrayList<>();
-        try {
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
-            JsonArray arr = jsonObj.getAsJsonArray("flashcards");
-            for (int i = 0; i < arr.size(); i++) {
-                JsonObject item = arr.get(i).getAsJsonObject();
-                list.add(Flashcard.builder()
-                        .documentId(documentId)
-                        .question(item.get("front").getAsString())
-                        .answer(item.get("back").getAsString())
-                        .build());
+        if (response != null && response.getContent() != null) {
+            try {
+                JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+                JsonArray arr = jsonObj.getAsJsonArray("flashcards");
+                for (int i = 0; i < arr.size(); i++) {
+                    JsonObject item = arr.get(i).getAsJsonObject();
+                    list.add(Flashcard.builder()
+                            .documentId(documentId)
+                            .question(item.get("front").getAsString())
+                            .answer(item.get("back").getAsString())
+                            .build());
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to parse flashcards JSON response: " + e.getMessage());
             }
-        } catch (Exception e) {
-            System.err.println("Failed to parse flashcards JSON response: " + e.getMessage());
-            list.add(new Flashcard(null, documentId, "Mẫu thiết kế Singleton dùng để làm gì?",
-                    "Đảm bảo một lớp chỉ có duy nhất một thực thể."));
-            list.add(new Flashcard(null, documentId, "Mẫu thiết kế Observer hoạt động theo cơ chế nào?",
-                    "Mối quan hệ phụ thuộc một-nhiều giữa các đối tượng."));
+        }
+
+        if (list.isEmpty()) {
+            String titleStr = doc.getTitle() != null ? doc.getTitle() : "tài liệu";
+            list.add(new Flashcard(null, documentId, "Mục tiêu bài học của '" + titleStr + "' là gì?",
+                    "Nắm vững các khái niệm trọng tâm và ứng dụng thực tiễn của bài học."));
+            list.add(new Flashcard(null, documentId, "Làm thế nào để ứng dụng kiến thức trong '" + titleStr + "'?",
+                    "Thực hành qua các ví dụ thực tế và tự tổng hợp lại nội dung cốt lõi."));
         }
 
         return flashcardRepository.saveAll(list);
@@ -405,15 +417,16 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         List<DocumentChunk> chunks = getOrWaitForChunks(documentId);
-        if (chunks.isEmpty()) {
-            throw new IllegalStateException("Tài liệu đang được phân tích hoặc không chứa nội dung văn bản. Vui lòng thử lại sau.");
+        String context = "";
+        if (!chunks.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < Math.min(chunks.size(), 4); i++) {
+                sb.append(chunks.get(i).getContent()).append("\n");
+            }
+            context = sb.toString();
+        } else {
+            context = "Document Title: " + doc.getTitle() + "\nSubject: " + doc.getSubject() + "\nDescription: " + doc.getDescription();
         }
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < Math.min(chunks.size(), 4); i++) {
-            sb.append(chunks.get(i).getContent()).append("\n");
-        }
-        String context = sb.toString();
 
         List<ChatMessageDto> messages = new ArrayList<>();
         messages.add(ChatMessageDto.builder()
@@ -434,8 +447,13 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .content("Create quiz for this document text:\n\n" + context)
                 .build());
 
-        OpenAiResponse response = openAiService.chat(messages, true);
-        saveUsageLog(userId, "QUIZ", response);
+        OpenAiResponse response = null;
+        try {
+            response = openAiService.chat(messages, true);
+            saveUsageLog(userId, "QUIZ", response);
+        } catch (Exception e) {
+            System.err.println("Failed to get OpenAI response for quiz: " + e.getMessage());
+        }
 
         Quiz quiz = Quiz.builder()
                 .documentId(documentId)
@@ -445,34 +463,67 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         quiz = quizRepository.save(quiz);
 
         List<QuizQuestion> questions = new ArrayList<>();
-        try {
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
-            JsonArray arr = jsonObj.getAsJsonArray("questions");
-            for (int i = 0; i < arr.size(); i++) {
-                JsonObject item = arr.get(i).getAsJsonObject();
-                JsonArray optsArr = item.getAsJsonArray("options");
-                List<String> options = new ArrayList<>();
-                for (int j = 0; j < optsArr.size(); j++) {
-                    options.add(optsArr.get(j).getAsString());
-                }
+        if (response != null && response.getContent() != null) {
+            try {
+                JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+                JsonArray arr = jsonObj.getAsJsonArray("questions");
+                for (int i = 0; i < arr.size(); i++) {
+                    JsonObject item = arr.get(i).getAsJsonObject();
+                    JsonArray optsArr = item.getAsJsonArray("options");
+                    List<String> options = new ArrayList<>();
+                    for (int j = 0; j < optsArr.size(); j++) {
+                        options.add(optsArr.get(j).getAsString());
+                    }
 
-                questions.add(QuizQuestion.builder()
-                        .quiz(quiz)
-                        .questionText(item.get("q").getAsString())
-                        .options(gson.toJson(options))
-                        .answerIndex(item.get("answer").getAsInt())
-                        .explanation(item.get("explain").getAsString())
-                        .build());
+                    questions.add(QuizQuestion.builder()
+                            .quiz(quiz)
+                            .questionText(item.get("q").getAsString())
+                            .options(gson.toJson(options))
+                            .answerIndex(item.get("answer").getAsInt())
+                            .explanation(item.get("explain").getAsString())
+                            .build());
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to parse quiz JSON response: " + e.getMessage());
             }
-        } catch (Exception e) {
-            System.err.println("Failed to parse quiz JSON response: " + e.getMessage());
-            // Fallback
+        }
+
+        if (questions.isEmpty()) {
+            String docTitle = doc.getTitle() != null ? doc.getTitle() : "Tài liệu";
+            String docSubj = doc.getSubject() != null ? doc.getSubject() : "Tổng quan";
+
             questions.add(QuizQuestion.builder()
                     .quiz(quiz)
-                    .questionText("Câu hỏi trắc nghiệm ôn tập về " + doc.getSubject())
-                    .options(gson.toJson(Arrays.asList("Đáp án A", "Đáp án B (Đúng)", "Đáp án C", "Đáp án D")))
+                    .questionText("Nội dung cốt lõi của tài liệu '" + docTitle + "' thuộc lĩnh vực môn học nào?")
+                    .options(gson.toJson(Arrays.asList(docSubj, "Lý thuyết chung", "Khoa học ứng dụng", "Kiến thức bổ trợ")))
+                    .answerIndex(0)
+                    .explanation("Tài liệu '" + docTitle + "' được phân loại thuộc môn học " + docSubj + ".")
+                    .build());
+
+            questions.add(QuizQuestion.builder()
+                    .quiz(quiz)
+                    .questionText("Mục tiêu chính khi nghiên cứu chủ đề '" + docTitle + "' là gì?")
+                    .options(gson.toJson(Arrays.asList(
+                            "Nắm vững các khái niệm và nguyên lý cơ bản",
+                            "Chỉ học thuộc lòng thuật ngữ",
+                            "Bỏ qua các ứng dụng thực tế",
+                            "Không cần thiết cho kỳ thi"
+                    )))
+                    .answerIndex(0)
+                    .explanation("Nghiên cứu tài liệu giúp sinh viên nắm vững nguyên lý và phương pháp cốt lõi.")
+                    .build());
+
+            questions.add(QuizQuestion.builder()
+                    .quiz(quiz)
+                    .questionText("Phương pháp ôn tập hiệu quả nhất cho bài học '" + docTitle + "' là gì?")
+                    .options(gson.toJson(Arrays.asList(
+                            "Chỉ đọc lướt qua một lần",
+                            "Kết hợp Active Recall và làm bài tập trắc nghiệm",
+                            "Học sát giờ thi",
+                            "Bỏ qua phần giải thích đáp án"
+                    )))
                     .answerIndex(1)
-                    .explanation("Đây là giải thích đáp án mẫu vì lỗi phân tích dữ liệu AI.")
+                    .explanation("Phương pháp Active Recall kết hợp làm bài trắc nghiệm giúp tăng khả năng ghi nhớ lâu dài.")
                     .build());
         }
 
@@ -630,6 +681,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                                 + "You must respond with a JSON object containing: "
                                 + "'title' (a concise name for the plan), "
                                 + "'subject' (the academic subject), "
+                                + "'difficulty' (either 'Easy', 'Medium', or 'Hard' based on subject complexity), "
+                                + "'hoursEst' (estimated study hours required, e.g., 20, as a number), "
                                 + "'planText' (the markdown roadmap text, including weekly goals and active recall milestones), "
                                 + "'curriculum' (a JSON array representing modules of study). "
                                 + "Each module object in the 'curriculum' array must contain:\n"
@@ -658,9 +711,21 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
             title = jsonObj.get("title").getAsString();
             planText = jsonObj.get("planText").getAsString();
+            JsonObject wrapper = new JsonObject();
             if (jsonObj.has("curriculum")) {
-                curriculumJson = gson.toJson(jsonObj.get("curriculum"));
+                wrapper.add("modules", jsonObj.get("curriculum"));
             }
+            if (jsonObj.has("difficulty")) {
+                wrapper.addProperty("difficulty", jsonObj.get("difficulty").getAsString());
+            } else {
+                wrapper.addProperty("difficulty", "Medium");
+            }
+            if (jsonObj.has("hoursEst")) {
+                wrapper.addProperty("hoursEst", jsonObj.get("hoursEst").getAsNumber());
+            } else {
+                wrapper.addProperty("hoursEst", 28);
+            }
+            curriculumJson = gson.toJson(wrapper);
         } catch (Exception e) {
             System.err.println("Failed to parse study plan JSON: " + e.getMessage());
         }
