@@ -576,9 +576,36 @@ public class DocumentServiceImpl implements DocumentService {
     // Helpers
     // -------------------------------------------------------------------------
 
+    private Long getCurrentUserId() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            Object details = auth.getDetails();
+            if (details instanceof Long) {
+                return (Long) details;
+            }
+        }
+        return null;
+    }
+
     private boolean isApprovedForUser(Document document) {
-        return document.getModerationStatus() == null
-                || document.getModerationStatus() == DocumentStatus.APPROVED;
+        if (document.getModerationStatus() == null
+                || document.getModerationStatus() == DocumentStatus.APPROVED) {
+            return true;
+        }
+        Long currentUserId = getCurrentUserId();
+        if (currentUserId != null) {
+            if (currentUserId.equals(document.getUserId())) {
+                return true;
+            }
+            boolean isAdmin = userRepository.findById(currentUserId)
+                    .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
+                    .orElse(false);
+            if (isAdmin) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void validateFile(MultipartFile file) {
