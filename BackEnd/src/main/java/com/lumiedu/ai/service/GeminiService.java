@@ -14,6 +14,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -22,7 +24,7 @@ public class GeminiService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    private static final String MODEL_NAME = "gemini-2.5-flash";
+    private static final String MODEL_NAME = "gemini-3.1-flash-lite";
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 3000;
 
@@ -31,8 +33,40 @@ public class GeminiService {
             .build();
     private final Gson gson = new Gson();
 
+    private List<String> apiKeys = new ArrayList<>();
+    private int currentKeyIndex = 0;
+
+    private synchronized void initKeys() {
+        if (apiKeys.isEmpty() && apiKey != null && !apiKey.trim().isEmpty()) {
+            String[] parts = apiKey.split(",");
+            for (String part : parts) {
+                String trimmed = part.trim();
+                if (!trimmed.isEmpty() && !"mock-key".equalsIgnoreCase(trimmed) && !"mock-gemini-key".equalsIgnoreCase(trimmed)) {
+                    apiKeys.add(trimmed);
+                }
+            }
+        }
+    }
+
+    private synchronized String getActiveKey() {
+        initKeys();
+        if (apiKeys.isEmpty()) {
+            return null;
+        }
+        return apiKeys.get(currentKeyIndex % apiKeys.size());
+    }
+
+    private synchronized void rotateKey() {
+        initKeys();
+        if (apiKeys.size() > 1) {
+            currentKeyIndex = (currentKeyIndex + 1) % apiKeys.size();
+            System.out.println("Rotating to next Gemini API Key. New index: " + currentKeyIndex);
+        }
+    }
+
     public OpenAiResponse chat(List<ChatMessageDto> messages, boolean isJson) {
-        if (apiKey == null || apiKey.trim().isEmpty() || "mock-key".equalsIgnoreCase(apiKey) || "mock-gemini-key".equalsIgnoreCase(apiKey)) {
+        String initialKey = getActiveKey();
+        if (initialKey == null) {
             throw new RuntimeException("Gemini API key is not configured.");
         }
 
@@ -80,24 +114,36 @@ public class GeminiService {
             requestBody.add("generationConfig", generationConfig);
 
             String requestBodyJson = gson.toJson(requestBody);
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL_NAME + ":generateContent?key=" + apiKey;
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
-                    .timeout(Duration.ofSeconds(60))
-                    .build();
 
             HttpResponse<String> response = null;
             Exception lastException = null;
             for (int attempt = 1; attempt <= 3; attempt++) {
+                String activeKey = getActiveKey();
+                if (activeKey == null) {
+                    throw new RuntimeException("Gemini API key is not configured.");
+                }
+
+                String url = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL_NAME + ":generateContent?key=" + activeKey;
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
+                        .timeout(Duration.ofSeconds(60))
+                        .build();
+
                 try {
                     response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                     int status = response.statusCode();
-                    if (status == 429 || (status >= 500 && status < 600)) {
-                        String msg = status == 429 ? "rate limited (429)" : "server error (" + status + ")";
-                        System.err.println("Gemini API call failed with " + msg + ", attempt " + attempt + "/3. Retrying...");
+                    if (status == 429 || status == 403 || status == 401) {
+                        String msg = status == 429 ? "rate limited (429)" : (status == 403 ? "forbidden (403)" : "unauthorized (401)");
+                        System.err.println("Gemini API call failed with " + msg + ", attempt " + attempt + "/3. Rotating API key...");
+                        rotateKey();
+                        if (attempt < 3) {
+                            Thread.sleep(1000L * attempt);
+                            continue;
+                        }
+                    } else if (status >= 500 && status < 600) {
+                        System.err.println("Gemini API call failed with server error (" + status + "), attempt " + attempt + "/3. Retrying...");
                         if (attempt < 3) {
                             Thread.sleep(3000L * attempt);
                             continue;
@@ -181,7 +227,8 @@ public class GeminiService {
     }
 
     public float[] getEmbedding(String text) {
-        if (apiKey == null || apiKey.trim().isEmpty() || "mock-key".equalsIgnoreCase(apiKey) || "mock-gemini-key".equalsIgnoreCase(apiKey)) {
+        String initialKey = getActiveKey();
+        if (initialKey == null) {
             throw new RuntimeException("Gemini API key is not configured.");
         }
 
@@ -196,24 +243,36 @@ public class GeminiService {
             requestBody.add("content", contentObj);
 
             String requestBodyJson = gson.toJson(requestBody);
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=" + apiKey;
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
-                    .timeout(Duration.ofSeconds(30))
-                    .build();
 
             HttpResponse<String> response = null;
             Exception lastException = null;
             for (int attempt = 1; attempt <= 3; attempt++) {
+                String activeKey = getActiveKey();
+                if (activeKey == null) {
+                    throw new RuntimeException("Gemini API key is not configured.");
+                }
+
+                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=" + activeKey;
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
+                        .timeout(Duration.ofSeconds(30))
+                        .build();
+
                 try {
                     response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                     int status = response.statusCode();
-                    if (status == 429 || (status >= 500 && status < 600)) {
-                        String msg = status == 429 ? "rate limited (429)" : "server error (" + status + ")";
-                        System.err.println("Gemini Embedding API call failed with " + msg + ", attempt " + attempt + "/3. Retrying...");
+                    if (status == 429 || status == 403 || status == 401) {
+                        String msg = status == 429 ? "rate limited (429)" : (status == 403 ? "forbidden (403)" : "unauthorized (401)");
+                        System.err.println("Gemini Embedding API call failed with " + msg + ", attempt " + attempt + "/3. Rotating API key...");
+                        rotateKey();
+                        if (attempt < 3) {
+                            Thread.sleep(1000L * attempt);
+                            continue;
+                        }
+                    } else if (status >= 500 && status < 600) {
+                        System.err.println("Gemini Embedding API call failed with server error (" + status + "), attempt " + attempt + "/3. Retrying...");
                         if (attempt < 3) {
                             Thread.sleep(3000L * attempt);
                             continue;

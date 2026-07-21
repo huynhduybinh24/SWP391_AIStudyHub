@@ -67,10 +67,14 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         // 2. Ensure chunks exist
-        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        List<DocumentChunk> chunks = getOrWaitForChunks(documentId);
         if (chunks.isEmpty()) {
-            documentChunkingService.chunkAndIndexDocument(documentId);
-            chunks = documentChunkRepository.findByDocumentId(documentId);
+            return AiSummary.builder()
+                    .documentId(documentId)
+                    .language(lang)
+                    .summaryText("Tài liệu đang được hệ thống phân tích và chia nhỏ dữ liệu. Vui lòng đợi trong giây lát và tải lại trang.")
+                    .summaryBullets("[]")
+                    .build();
         }
 
         // 3. Build summary context from first few chunks
@@ -337,10 +341,9 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             throw new IllegalArgumentException("Document not found.");
         }
 
-        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        List<DocumentChunk> chunks = getOrWaitForChunks(documentId);
         if (chunks.isEmpty()) {
-            documentChunkingService.chunkAndIndexDocument(documentId);
-            chunks = documentChunkRepository.findByDocumentId(documentId);
+            throw new IllegalStateException("Tài liệu đang được phân tích hoặc không chứa nội dung văn bản. Vui lòng thử lại sau.");
         }
 
         StringBuilder sb = new StringBuilder();
@@ -401,10 +404,9 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             throw new RuntimeException("Bạn đã vượt quá hạn mức sử dụng AI Quiz hàng ngày của gói dịch vụ hiện tại.");
         }
 
-        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        List<DocumentChunk> chunks = getOrWaitForChunks(documentId);
         if (chunks.isEmpty()) {
-            documentChunkingService.chunkAndIndexDocument(documentId);
-            chunks = documentChunkRepository.findByDocumentId(documentId);
+            throw new IllegalStateException("Tài liệu đang được phân tích hoặc không chứa nội dung văn bản. Vui lòng thử lại sau.");
         }
 
         StringBuilder sb = new StringBuilder();
@@ -493,6 +495,18 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     @Override
     public QuizResponse getQuizResponse(Long documentId) {
+        return getQuizResponse(documentId, null);
+    }
+
+    @Override
+    public QuizResponse getQuizResponse(Long documentId, Long userId) {
+        if (userId != null) {
+            boolean hasAttempted = quizAttemptRepository.existsByUserIdAndDocumentId(userId, documentId);
+            if (hasAttempted) {
+                generateQuiz(documentId, "medium", 5, "Generate fresh new questions for user re-attempt");
+            }
+        }
+
         List<Quiz> quizzes = quizRepository.findByDocumentId(documentId);
         if (quizzes.isEmpty()) {
             generateQuiz(documentId, "medium", 5, "");
@@ -606,10 +620,10 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 Document doc = documentRepository.findById(documentId).orElse(null);
                 if (doc != null) {
                     sourceDocs.add(doc);
-                    List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+                    List<DocumentChunk> chunks = getOrWaitForChunks(documentId);
                     if (chunks.isEmpty()) {
-                        documentChunkingService.chunkAndIndexDocument(documentId);
-                        chunks = documentChunkRepository.findByDocumentId(documentId);
+                        docContextBuilder.append("[").append(doc.getTitle()).append("]: (Tài liệu đang được phân tích)\n");
+                        continue;
                     }
                     for (int i = 0; i < Math.min(chunks.size(), 2); i++) {
                         docContextBuilder.append("[").append(doc.getTitle()).append("]: ")
@@ -628,6 +642,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                                 + "You must respond with a JSON object containing: "
                                 + "'title' (a concise name for the plan), "
                                 + "'subject' (the academic subject), "
+                                + "'difficulty' (either 'Easy', 'Medium', or 'Hard' based on subject complexity), "
+                                + "'hoursEst' (estimated study hours required, e.g., 20, as a number), "
                                 + "'planText' (the markdown roadmap text, including weekly goals and active recall milestones), "
                                 + "'curriculum' (a JSON array representing modules of study). "
                                 + "Each module object in the 'curriculum' array must contain:\n"
@@ -656,9 +672,21 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
             title = jsonObj.get("title").getAsString();
             planText = jsonObj.get("planText").getAsString();
+            JsonObject wrapper = new JsonObject();
             if (jsonObj.has("curriculum")) {
-                curriculumJson = gson.toJson(jsonObj.get("curriculum"));
+                wrapper.add("modules", jsonObj.get("curriculum"));
             }
+            if (jsonObj.has("difficulty")) {
+                wrapper.addProperty("difficulty", jsonObj.get("difficulty").getAsString());
+            } else {
+                wrapper.addProperty("difficulty", "Medium");
+            }
+            if (jsonObj.has("hoursEst")) {
+                wrapper.addProperty("hoursEst", jsonObj.get("hoursEst").getAsNumber());
+            } else {
+                wrapper.addProperty("hoursEst", 28);
+            }
+            curriculumJson = gson.toJson(wrapper);
         } catch (Exception e) {
             System.err.println("Failed to parse study plan JSON: " + e.getMessage());
         }
@@ -885,6 +913,28 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         return result.toString();
+    }
+
+    private List<DocumentChunk> getOrWaitForChunks(Long documentId) {
+        List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(documentId);
+        if (chunks.isEmpty()) {
+            if (!documentChunkingService.isProcessing(documentId)) {
+                documentChunkingService.chunkAndIndexDocument(documentId);
+            }
+            // Polling wait for async task to complete
+            for (int i = 0; i < 15; i++) {
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                chunks = documentChunkRepository.findByDocumentId(documentId);
+                if (!chunks.isEmpty()) {
+                    break;
+                }
+            }
+        }
+        return chunks;
     }
 }
 // Force JDT LS revalidation 2

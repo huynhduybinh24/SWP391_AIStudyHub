@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.lumiedu.document.enums.DocumentStatus;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -181,28 +182,41 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     @Override
     public void updateMemberRole(Long workspaceId, Long memberId, UpdateMemberRoleRequest request) {
-        // Requester must be OWNER
-        checkRole(workspaceId, request.getEditorId(), WorkspaceMemberRole.OWNER);
+        SharedWorkspace workspace = sharedWorkspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Workspace not found with ID: " + workspaceId));
 
-        WorkspaceMember member = workspaceMemberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Workspace member record not found with ID: " + memberId));
-
-        if (!member.getWorkspaceId().equals(workspaceId)) {
-            throw new IllegalArgumentException("Member record does not belong to this workspace.");
+        Long editorId = request.getEditorId();
+        boolean isOwner = editorId != null && workspace.getOwnerId().equals(editorId);
+        if (!isOwner && editorId != null) {
+            WorkspaceMember editorMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, editorId).orElse(null);
+            if (editorMember == null || editorMember.getRole() != WorkspaceMemberRole.OWNER) {
+                throw new SecurityException("Only the workspace owner can update member roles.");
+            }
         }
 
-        if (member.getRole() == WorkspaceMemberRole.OWNER) {
+        // Try lookup by workspaceId + userId first, then by workspace_member PK id
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, memberId)
+                .filter(m -> m.getWorkspaceId().equals(workspaceId))
+                .orElseGet(() -> workspaceMemberRepository.findById(memberId)
+                        .filter(m -> m.getWorkspaceId().equals(workspaceId))
+                        .orElseThrow(() -> new IllegalArgumentException("Workspace member record not found for ID/userId: " + memberId)));
+
+        // Protect workspace owner's role from being modified
+        if (workspace.getOwnerId().equals(member.getUserId()) && request.getRole() != WorkspaceMemberRole.OWNER) {
             throw new IllegalArgumentException("Cannot modify the role of the workspace owner.");
         }
 
-        member.setRole(request.getRole());
-        workspaceMemberRepository.save(member);
+        if (request.getRole() != null) {
+            member.setRole(request.getRole());
+            workspaceMemberRepository.saveAndFlush(member);
+        }
     }
 
     @Override
     public void removeMember(Long workspaceId, Long memberId, Long requesterId) {
-        WorkspaceMember member = workspaceMemberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Workspace member record not found with ID: " + memberId));
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, memberId)
+                .orElseGet(() -> workspaceMemberRepository.findById(memberId)
+                        .orElseThrow(() -> new IllegalArgumentException("Workspace member record not found with ID/userId: " + memberId)));
 
         if (!member.getWorkspaceId().equals(workspaceId)) {
             throw new IllegalArgumentException("Member record does not belong to this workspace.");
@@ -343,7 +357,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         int docIndex = 1;
         for (WorkspaceDocument wd : workspaceDocs) {
             Document doc = documentRepository.findById(wd.getDocumentId()).orElse(null);
-            if (doc != null && !doc.getDeleted()) {
+            if (doc != null && !Boolean.TRUE.equals(doc.getDeleted())
+                    && (doc.getModerationStatus() == null || doc.getModerationStatus() == com.lumiedu.document.enums.DocumentStatus.APPROVED)) {
                 contentBuilder.append("Document #").append(docIndex++).append(": ").append(doc.getTitle()).append("\n");
                 if (doc.getSubject() != null) contentBuilder.append("Subject: ").append(doc.getSubject()).append("\n");
                 if (doc.getDescription() != null) contentBuilder.append("Description: ").append(doc.getDescription()).append("\n");
@@ -450,15 +465,31 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             return WorkspaceMemberResponse.fromEntity(m, name);
         }).collect(Collectors.toList());
 
-        // Documents
-        List<WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByWorkspaceId(workspace.getId());
-        List<WorkspaceDocumentResponse> docResponses = workspaceDocs.stream().map(wd -> {
-            Document doc = documentRepository.findById(wd.getDocumentId()).orElse(null);
-            User adder = userRepository.findById(wd.getAddedBy()).orElse(null);
-            String adderName = adder != null ? adder.getFullName() : "Unknown";
+       // Documents
+List<WorkspaceDocument> workspaceDocs =
+        workspaceDocumentRepository.findByWorkspaceId(workspace.getId());
 
-            if (doc != null) {
-                String adderEmail = adder != null ? adder.getEmail() : "";
+List<WorkspaceDocumentResponse> docResponses = workspaceDocs.stream()
+        .map(wd -> {
+            Document doc = documentRepository.findById(wd.getDocumentId())
+                    .orElse(null);
+
+            User adder = userRepository.findById(wd.getAddedBy())
+                    .orElse(null);
+
+            String adderName = adder != null
+                    ? adder.getFullName()
+                    : "Unknown";
+
+            String adderEmail = adder != null
+                    ? adder.getEmail()
+                    : "";
+
+            if (doc != null
+                    && !Boolean.TRUE.equals(doc.getDeleted())
+                    && (doc.getModerationStatus() == null
+                    || doc.getModerationStatus() == DocumentStatus.APPROVED)) {
+
                 return WorkspaceDocumentResponse.builder()
                         .id(wd.getId())
                         .workspaceId(workspace.getId())
@@ -476,8 +507,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                         .createdAt(wd.getCreatedAt())
                         .build();
             }
+
             return null;
-        }).filter(Objects::nonNull).collect(Collectors.toList());
+        })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
 
         return WorkspaceResponse.fromEntity(workspace, ownerName, memberResponses, docResponses);
     }

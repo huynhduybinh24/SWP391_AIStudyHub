@@ -36,6 +36,72 @@ interface ChatConversation {
   documentIds: number[]
 }
 
+interface MarkdownRendererProps {
+  content: string
+}
+
+export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+  const lines = content.split('\n')
+  return (
+    <div className="space-y-1.5 w-full">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim()
+        
+        // 1. Bullet point
+        if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+          const itemText = trimmed.substring(2)
+          return (
+            <ul key={idx} className="list-disc pl-5 space-y-1 my-1">
+              <li className="text-slate-700 dark:text-slate-300 font-medium">
+                {renderTextWithBold(itemText)}
+              </li>
+            </ul>
+          )
+        }
+        
+        // 2. Headings
+        if (trimmed.startsWith('### ')) {
+          return (
+            <h4 key={idx} className="text-sm font-extrabold text-slate-900 dark:text-white mt-3.5 mb-1.5 tracking-tight">
+              {renderTextWithBold(trimmed.substring(4))}
+            </h4>
+          )
+        }
+        if (trimmed.startsWith('## ')) {
+          return (
+            <h3 key={idx} className="text-base font-black text-slate-900 dark:text-white mt-4.5 mb-2 tracking-tight">
+              {renderTextWithBold(trimmed.substring(3))}
+            </h3>
+          )
+        }
+        
+        // 3. Normal paragraph
+        if (!trimmed) return <div key={idx} className="h-1.5" />
+        
+        return (
+          <p key={idx} className="text-slate-750 dark:text-slate-250 leading-relaxed font-medium">
+            {renderTextWithBold(trimmed)}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+function renderTextWithBold(text: string) {
+  const parts = text.split(/(\*\*.*?\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-extrabold text-slate-900 dark:text-white bg-slate-100/60 dark:bg-slate-800/80 px-1 py-0.5 rounded border border-slate-200/40 dark:border-slate-700/30">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    return part
+  })
+}
+
 export function ChatPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -726,68 +792,7 @@ export function ChatPage() {
             exit={{ opacity: 0 }}
             className="flex-1 flex overflow-hidden h-full gap-0 bg-[#f8fafc] dark:bg-slate-950"
           >
-            {/* Left Column: Nguồn (Sources) */}
-            <div className="w-[280px] shrink-0 border-r border-slate-200/85 dark:border-slate-800/80 bg-white dark:bg-slate-900 flex flex-col h-full overflow-hidden select-none">
-              {/* Header */}
-              <div className="p-4 border-b border-slate-150 dark:border-slate-850 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="size-4.5 text-slate-500 dark:text-slate-400" />
-                  <span className="text-sm font-bold text-slate-850 dark:text-slate-100">Nguồn</span>
-                </div>
-              </div>
 
-              {/* Add Source Button */}
-              <div className="p-3 shrink-0">
-                <button
-                  onClick={() => setIsDocModalOpen(true)}
-                  className="w-full h-10 border border-dashed border-slate-300 dark:border-slate-700 hover:border-[#2563eb] rounded-xl flex items-center justify-center gap-2 bg-slate-50/50 hover:bg-blue-50/20 dark:bg-slate-900/30 text-slate-600 hover:text-[#2563eb] dark:text-slate-450 dark:hover:text-blue-400 font-bold text-xs transition-all cursor-pointer shadow-2xs"
-                >
-                  <Plus className="size-4" />
-                  <span>Thêm nguồn</span>
-                </button>
-              </div>
-
-              {/* Sources List */}
-              <div className="flex-1 overflow-y-auto px-3 pb-4 flex flex-col gap-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
-                {selectedDocuments.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-4 py-8">
-                    <FolderOpen className="size-9 text-slate-300 dark:text-slate-600" />
-                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-3 leading-relaxed">
-                      Các nguồn đã đính kèm sẽ xuất hiện ở đây.
-                    </span>
-                  </div>
-                ) : (
-                  selectedDocuments.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="group flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/40 hover:bg-slate-50 dark:bg-slate-950/20 dark:hover:bg-slate-900/40 relative animate-in fade-in slide-in-from-bottom-2 duration-200"
-                    >
-                      {/* File Icon */}
-                      <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-[#2563eb] dark:text-blue-400 border border-blue-100/10">
-                        <FileText className="size-3.5" />
-                      </div>
-
-                      <div className="flex-1 min-w-0 text-left">
-                        <span className="text-[11px] font-bold text-slate-850 dark:text-slate-200 block truncate" title={doc.title}>
-                          {doc.title}
-                        </span>
-                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 block">
-                          {doc.subject || doc.fileType || 'Tài liệu'}
-                        </span>
-                      </div>
-
-                      {/* Remove source button */}
-                      <button
-                        onClick={() => handleToggleDocSelect(doc)}
-                        className="absolute right-2 top-2.5 p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-450 hover:text-slate-700 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                      >
-                        <X className="size-3" />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
 
             {/* Middle Column: Chat Workspace */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden pr-0 bg-slate-50/30 dark:bg-slate-950/10">
@@ -922,7 +927,7 @@ export function ChatPage() {
                           <div className="flex-1 flex flex-col gap-1.5 items-stretch min-w-0">
                             <div
                               className={cn(
-                                "rounded-[20px] p-4 text-[14px] font-semibold leading-relaxed shadow-sm border whitespace-pre-line text-left flex flex-col gap-3",
+                                "rounded-[20px] p-4 text-[14px] leading-relaxed shadow-sm border text-left flex flex-col gap-3 font-normal",
                                 isUser
                                   ? "bg-gradient-to-tr from-blue-600 to-blue-500 text-white border-transparent rounded-tr-sm"
                                   : "bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-250 border-slate-200/55 dark:border-slate-800/80 rounded-tl-sm"
@@ -937,7 +942,7 @@ export function ChatPage() {
                                   <div className="italic font-mono whitespace-pre-wrap">{msg.thought}</div>
                                 </div>
                               )}
-                              {msg.content && <div>{msg.content}</div>}
+                              {msg.content && <MarkdownRenderer content={msg.content} />}
                             </div>
 
                             <div className={cn(

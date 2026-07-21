@@ -10,3 +10,10 @@ FrontEnd/.env.local
 FrontEnd/.env.*.local
 .env
 .env.local
+
+# Playwright local testing (not pushed to git)
+FrontEnd/playwright-tests/
+FrontEnd/playwright.config.ts
+FrontEnd/playwright-report/
+FrontEnd/test-results/
+

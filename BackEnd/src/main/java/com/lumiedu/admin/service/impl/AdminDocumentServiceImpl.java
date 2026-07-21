@@ -10,6 +10,7 @@ import com.lumiedu.document.enums.DocumentStatus;
 import com.lumiedu.document.repository.DocumentRepository;
 import com.lumiedu.user.entity.User;
 import com.lumiedu.user.repository.UserRepository;
+import com.lumiedu.ai.service.DocumentChunkingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
     private final com.lumiedu.notification.service.NotificationService notificationService;
     private final com.lumiedu.email.service.EmailService emailService;
     private final com.lumiedu.document.service.GoogleDriveService googleDriveService;
+    private final DocumentChunkingService documentChunkingService;
 
     @Override
     @Transactional(readOnly = true)
@@ -133,8 +135,10 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
 
         if (status != null) {
             doc.setModerationStatus(status);
-            // Rejected documents are hidden from public listing
-            doc.setDeleted(status == DocumentStatus.REJECTED);
+            // Keeping deleted = false for rejected documents so they remain in history
+            if (status == DocumentStatus.REJECTED) {
+                doc.setDeleted(false);
+            }
         }
 
         if (request.getReason() != null) {
@@ -142,6 +146,10 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
         }
 
         documentRepository.save(doc);
+
+        if (status == DocumentStatus.APPROVED && "DOCUMENT".equalsIgnoreCase(doc.getFileType())) {
+            triggerChunkingAfterCommit(doc.getId());
+        }
 
         User owner = doc.getUserId() != null ? userRepository.findById(doc.getUserId()).orElse(null) : null;
         return AdminDocumentMapper.toResponse(doc, owner);
@@ -154,6 +162,9 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
         docs.forEach(d -> {
             d.setModerationStatus(DocumentStatus.APPROVED);
             d.setDeleted(false);
+            if ("DOCUMENT".equalsIgnoreCase(d.getFileType())) {
+                triggerChunkingAfterCommit(d.getId());
+            }
         });
         documentRepository.saveAll(docs);
         return docs.size();
@@ -165,7 +176,7 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
         List<Document> docs = documentRepository.findAllById(request.getIds());
         docs.forEach(d -> {
             d.setModerationStatus(DocumentStatus.REJECTED);
-            d.setDeleted(true);
+            d.setDeleted(false);
             if (request.getReason() != null) d.setModerationNote(request.getReason());
         });
         documentRepository.saveAll(docs);
@@ -271,6 +282,10 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
         doc.setReviewedAt(java.time.LocalDateTime.now());
         documentRepository.save(doc);
 
+        if ("DOCUMENT".equalsIgnoreCase(doc.getFileType())) {
+            triggerChunkingAfterCommit(doc.getId());
+        }
+
         User owner = doc.getUserId() != null ? userRepository.findById(doc.getUserId()).orElse(null) : null;
 
         if (owner != null && notificationService != null) {
@@ -283,7 +298,7 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
                         .documentId(doc.getId())
                         .documentName(doc.getTitle())
                         .actionType("view_document")
-                        .actionUrl("/dashboard/documents/" + doc.getId())
+                        .actionUrl("/dashboard/documents/document/" + doc.getId())
                         .build();
                 notificationService.createNotification(notifReq);
             } catch (Exception e) {
@@ -374,4 +389,20 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
 
         return AdminDocumentMapper.toResponse(doc, owner);
     }
+
+    private void triggerChunkingAfterCommit(Long docId) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        documentChunkingService.chunkAndIndexDocument(docId);
+                    }
+                }
+            );
+        } else {
+            documentChunkingService.chunkAndIndexDocument(docId);
+        }
+    }
 }
+// Force JDT LS revalidation

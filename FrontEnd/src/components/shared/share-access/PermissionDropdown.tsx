@@ -34,7 +34,6 @@ export function PermissionDropdown({
 
   const roles: { value: ShareRole; label: string }[] = [
     { value: 'viewer', label: t.shareModal.roleViewer },
-    { value: 'commenter', label: t.shareModal.roleCommenter },
     { value: 'editor', label: t.shareModal.roleEditor }
   ]
 

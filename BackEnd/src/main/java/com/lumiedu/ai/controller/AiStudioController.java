@@ -55,6 +55,11 @@ public class AiStudioController {
         return ResponseEntity.ok(ApiResponse.ok("FAQ generated successfully.", response));
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException e) {
+        return ResponseEntity.status(500).body(ApiResponse.error(e.getMessage()));
+    }
+
     @Data
     public static class StudioRequest {
         private List<Long> documentIds;

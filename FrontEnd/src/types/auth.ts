@@ -1,4 +1,4 @@
-export type UserRole = 'user' | 'admin' | 'teacher' | 'instructor' | 'student'
+export type UserRole = 'user' | 'admin'
 
 
 export interface AuthUser {
@@ -34,4 +34,5 @@ export interface RegisterCredentials {
   email: string
   password: string
   role?: UserRole
+  otp?: string
 }

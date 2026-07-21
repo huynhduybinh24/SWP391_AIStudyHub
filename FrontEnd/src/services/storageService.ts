@@ -22,14 +22,22 @@ export function getCurrentUserStorageSummary(): StorageSummary {
       }
       const storedUsed = localStorage.getItem('aiStudyHubStorageUsedMb')
       if (storedUsed) {
-        usedMb = parseFloat(storedUsed)
+        const parsedUsed = parseFloat(storedUsed)
+        // Guard against corrupted/overflow legacy values in localStorage
+        if (!isNaN(parsedUsed) && parsedUsed >= 0 && parsedUsed <= 50000) {
+          usedMb = parsedUsed
+        } else {
+          localStorage.removeItem('aiStudyHubStorageUsedMb')
+          usedMb = 0
+        }
       }
     } catch (_) {}
   }
 
   const totalMb = getStorageLimitByPlan(plan)
   const remainingMb = Math.max(totalMb - usedMb, 0)
-  const percentage = Math.min(Math.round((usedMb / totalMb) * 100), 100)
+  const rawPercentage = (usedMb / totalMb) * 100
+  const percentage = usedMb > 0 ? Math.min(Math.max(1, Math.round(rawPercentage)), 100) : 0
 
   return { plan, totalMb, usedMb, remainingMb, percentage }
 }

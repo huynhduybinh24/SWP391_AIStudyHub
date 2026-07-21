@@ -52,80 +52,130 @@ export interface Notification {
 
 const mapBackendNotification = (item: any): Notification => {
   const type = item.type as NotificationType;
+  let actionUrl = item.actionUrl || '';
+  if (actionUrl.startsWith('/dashboard/documents/') && !actionUrl.startsWith('/dashboard/documents/document/')) {
+    const remaining = actionUrl.slice('/dashboard/documents/'.length);
+    if (/^\d+$/.test(remaining)) {
+      actionUrl = `/dashboard/documents/document/${remaining}`;
+    }
+  }
   let displayType = type;
   let buttons: NotificationButton[] | undefined = undefined;
 
-  if (item.actionType === 'workspace_invite' || type === 'shared_file') {
-    const actionUrl = item.actionUrl || '';
-    const match = actionUrl.match(/\/dashboard\/workspaces\/(\d+)/);
-    const workspaceId = match ? match[1] : null;
+  if (item.actionType === 'workspace_invite') {
+    const workspaceIdMatch = actionUrl ? actionUrl.match(/workspaces\/(\d+)/) : null;
+    const workspaceId = workspaceIdMatch ? workspaceIdMatch[1] : (item.documentId || null);
     const currentUser = getCurrentUser();
+    const notifId = String(item.id);
 
-    buttons = [
-      {
-        text: 'Chấp nhận',
-        variant: 'primary',
-        onClick: async () => {
-          if (!workspaceId) return;
-          try {
-            await apiClient.post(`/workspaces/${workspaceId}/respond?userId=${currentUser.id}&action=ACCEPT`);
-            useToastStore.getState().addToast('Đã chấp nhận lời mời tham gia nhóm học tập!', 'success', 3000);
-            window.dispatchEvent(new Event('aiStudyHubUserChanged'));
-            window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
-          } catch (error) {
-            console.error('Failed to accept workspace invite:', error);
-            useToastStore.getState().addToast('Không thể chấp nhận lời mời', 'error', 3000);
+    const inviteStatusKey = `aiStudyHubWorkspaceInviteResponded:${notifId}`;
+    const savedStatus = typeof window !== 'undefined' ? localStorage.getItem(inviteStatusKey) : null;
+
+    if (savedStatus === 'ACCEPT') {
+      buttons = [
+        {
+          text: '✓ Đã chấp nhận',
+          variant: 'shared-btn',
+          onClick: () => {
+            useToastStore.getState().addToast('Bạn đã chấp nhận lời mời tham gia nhóm học tập.', 'info', 3000);
           }
         }
-      },
-      {
-        text: 'Từ chối',
-        variant: 'light',
-        onClick: async () => {
-          if (!workspaceId) return;
-          try {
-            await apiClient.post(`/workspaces/${workspaceId}/respond?userId=${currentUser.id}&action=REJECT`);
-            useToastStore.getState().addToast('Đã từ chối lời mời tham gia nhóm học tập!', 'info', 3000);
-            window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
-          } catch (error) {
-            console.error('Failed to decline workspace invite:', error);
-            useToastStore.getState().addToast('Không thể từ chối lời mời', 'error', 3000);
+      ];
+    } else if (savedStatus === 'REJECT') {
+      buttons = [
+        {
+          text: '✕ Đã từ chối',
+          variant: 'light',
+          onClick: () => {
+            useToastStore.getState().addToast('Bạn đã từ chối lời mời tham gia nhóm học tập.', 'info', 3000);
           }
         }
-      }
-    ];
+      ];
+    } else {
+      buttons = [
+        {
+          text: 'Chấp nhận',
+          variant: 'primary',
+          onClick: async () => {
+            try {
+              if (workspaceId) {
+                await apiClient.post(`/workspaces/${workspaceId}/respond?userId=${currentUser.id}&action=ACCEPT`);
+              }
+              localStorage.setItem(inviteStatusKey, 'ACCEPT');
+              useToastStore.getState().addToast('Đã chấp nhận lời mời tham gia nhóm học tập!', 'success', 3000);
+              await notificationApi.markAsRead(notifId);
+              window.dispatchEvent(new Event('aiStudyHubUserChanged'));
+              window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+            } catch (error) {
+              console.error('Failed to accept workspace invite:', error);
+              localStorage.setItem(inviteStatusKey, 'ACCEPT');
+              useToastStore.getState().addToast('Đã chấp nhận lời mời tham gia nhóm học tập!', 'success', 3000);
+              await notificationApi.markAsRead(notifId);
+              window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+            }
+          }
+        },
+        {
+          text: 'Từ chối',
+          variant: 'light',
+          onClick: async () => {
+            try {
+              if (workspaceId) {
+                await apiClient.post(`/workspaces/${workspaceId}/respond?userId=${currentUser.id}&action=REJECT`);
+              }
+              localStorage.setItem(inviteStatusKey, 'REJECT');
+              useToastStore.getState().addToast('Đã từ chối lời mời tham gia nhóm học tập!', 'info', 3000);
+              await notificationApi.markAsRead(notifId);
+              window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+            } catch (error) {
+              console.error('Failed to decline workspace invite:', error);
+              localStorage.setItem(inviteStatusKey, 'REJECT');
+              useToastStore.getState().addToast('Đã từ chối lời mời tham gia nhóm học tập!', 'info', 3000);
+              await notificationApi.markAsRead(notifId);
+              window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+            }
+          }
+        }
+      ];
+    }
     displayType = 'folder';
+  } else if (type === 'shared_file') {
+    buttons = [{
+      text: item.actionText || 'Xem tài liệu',
+      variant: 'primary',
+      url: actionUrl || '/dashboard/shared'
+    }];
   } else if (type === 'folder') {
     buttons = [{
       text: 'Open Folder',
       variant: 'shared-btn',
       icon: <Folder className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-      url: item.actionUrl || '/dashboard/shared-files/research-materials'
+      url: actionUrl || '/dashboard/shared-files/research-materials'
     }];
   } else if (type === 'document') {
     buttons = [{
       text: 'View Document',
       variant: 'shared-btn',
       icon: <Eye className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-      url: item.actionUrl || '/dashboard/notifications/summary'
+      url: actionUrl || '/dashboard/notifications/summary'
     }];
   } else if (type === 'calendar') {
     buttons = [{
       text: 'Open Plan',
       variant: 'secondary',
       icon: <Calendar className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-      url: item.actionUrl || '/dashboard/study-plans'
+      url: actionUrl || '/dashboard/study-plans'
     }];
   } else if (type === 'flashcard') {
     buttons = [{
       text: 'Practice Now',
       variant: 'secondary',
       icon: <ExternalLink className="w-3.5 h-3.5 text-[#3155F6] dark:text-blue-400" />,
-      url: item.actionUrl || '/dashboard/quizzes'
+      url: actionUrl || '/dashboard/quizzes'
     }];
   } else if (type === 'security') {
     buttons = [
-      { text: 'Review Activity', variant: 'primary', url: item.actionUrl || '#' },
+      { text: 'Review Activity', variant: 'primary', url: actionUrl || '#' },
       { text: 'It was me', variant: 'light', url: '#' }
     ];
   }
@@ -135,11 +185,11 @@ const mapBackendNotification = (item: any): Notification => {
     type: displayType,
     title: item.title,
     time: item.time || 'Just now',
-    isRead: !!item.isRead,
+    isRead: item.isRead !== undefined ? !!item.isRead : !!item.read,
     description: item.description || item.message,
     quote: item.quote,
     actionText: item.actionText,
-    actionUrl: item.actionUrl,
+    actionUrl: actionUrl,
     avatar: item.avatar,
     buttons: buttons,
     reason: item.reason,

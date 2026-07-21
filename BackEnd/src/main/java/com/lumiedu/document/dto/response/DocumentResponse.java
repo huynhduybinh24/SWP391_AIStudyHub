@@ -1,5 +1,6 @@
 package com.lumiedu.document.dto.response;
 
+import com.lumiedu.document.enums.DocumentStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;

@@ -51,12 +51,7 @@ public class EmailService {
             }
 
             if (isHtml && content != null) {
-                String updatedContent = content.replace("https://raw.githubusercontent.com/huynhduybinh24/SWP391_AIStudyHub/main/FrontEnd/public/logo.png", "cid:logo");
-                helper.setText(updatedContent, true);
-                org.springframework.core.io.ClassPathResource logoResource = new org.springframework.core.io.ClassPathResource("logo.png");
-                if (logoResource.exists()) {
-                    helper.addInline("logo", logoResource);
-                }
+                helper.setText(content, true);
             } else {
                 helper.setText(content, isHtml);
             }
@@ -93,7 +88,7 @@ public class EmailService {
                 "  <div class=\"wrapper\">" +
                 "    <div class=\"container\">" +
                 "      <div class=\"header\">" +
-                "        <img class=\"logo-img\" src=\"https://raw.githubusercontent.com/huynhduybinh24/SWP391_AIStudyHub/main/FrontEnd/public/logo.png\" alt=\"LumiEdu Logo\" />" +
+                "        <img class=\"logo-img\" src=\"https://cdn.jsdelivr.net/gh/huynhduybinh24/SWP391_AIStudyHub@main/FrontEnd/public/logo.png\" alt=\"LumiEdu Logo\" />" +
                 "      </div>" +
                 "      <div class=\"content\">" +
                 "        <h2 style=\"font-size: 20px; font-weight: 700; color: #1d1d1f; margin-top: 0; margin-bottom: 16px;\">" + heading + "</h2>" +

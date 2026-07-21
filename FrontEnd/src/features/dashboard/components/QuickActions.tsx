@@ -9,7 +9,6 @@ export function QuickActions() {
 
   const actions = [
     { label: t.dashboard.actionUpload, icon: Upload, to: '/dashboard/upload' },
-    { label: t.dashboard.actionSearch, icon: Search, to: '/dashboard/documents/search' },
     { label: t.dashboard.actionAIChat, icon: Bot, to: '/dashboard/chat' },
     { label: t.dashboard.actionShared, icon: Share2, to: '/dashboard/shared' },
     { label: t.dashboard.actionStudyPlans, icon: CalendarDays, to: '/dashboard/study-plans' },
@@ -18,7 +17,7 @@ export function QuickActions() {
   return (
     <section className="col-span-8 space-y-4">
       <CardTitle>{t.dashboard.quickActions}</CardTitle>
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         {actions.map(({ label, icon: Icon, to }) => (
           <Link
             key={label}

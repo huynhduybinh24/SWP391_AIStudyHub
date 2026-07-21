@@ -533,6 +533,8 @@ function NotificationCard({
                 localizedBtnText = language === 'vi' ? 'Mở kế hoạch' : language === 'ja' ? 'è¨ˆç”»ã‚’é–‹ã' : language === 'ko' ? 'ê³„íš ì—´ê¸°' : 'Open Plan'
               } else if (id === 'shared-doc-1' && btn.text === 'View Document') {
                 localizedBtnText = language === 'vi' ? 'Xem tài liệu' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ë¬¸ì„œ ë³´ê¸°' : 'View Document'
+              } else if (btn.text === 'Xem tài liệu' || btn.text === 'View Document') {
+                localizedBtnText = language === 'vi' ? 'Xem tài liệu' : language === 'ja' ? 'ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚’è¡¨ç¤º' : language === 'ko' ? 'ë¬¸ì„œ ë³´ê¸°' : 'View Document'
               } else if (id === 'flashcards' && btn.text === 'Practice Now') {
                 localizedBtnText = language === 'vi' ? 'Luyện tập ngay' : language === 'ja' ? 'ä»Šã™ãç·´ç¿’' : language === 'ko' ? 'ì§€ê¸ˆ ì—°ìŠµí•˜ê¸°' : 'Practice Now'
               }
@@ -657,6 +659,7 @@ export function NotificationsPage() {
 
   const { t, language } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const tabs = ['All', 'Unread', 'Mentions', 'Shared Files', 'AI Updates']
 
@@ -790,7 +793,7 @@ export function NotificationsPage() {
     setIsDeleteConfirmOpen(false)
   }
 
-  const handleUndoDelete = () => {
+  const handleUndoDelete = async () => {
     if (!lastDeletedNotification) return
 
     if (undoTimeoutId) {
@@ -806,6 +809,9 @@ export function NotificationsPage() {
     })
 
     try {
+      const { userNotificationService } = await import('../services/userNotificationService')
+      await userNotificationService.restoreNotification(restoredId)
+
       const userEmail = getCurrentUser().email;
       const storedDeleted = localStorage.getItem(`aiStudyHubDeletedNotificationIds:${userEmail}`)
       if (storedDeleted) {
@@ -932,7 +938,17 @@ export function NotificationsPage() {
                 replyText={replyText}
                 onMarkRead={() => handleMarkAsRead(notification.id)}
                 onClick={() => {
-                  setSelectedDetailNotification(notification)
+                  if (notification.actionUrl && (notification.type === 'document' || notification.type === 'shared_file' || notification.type === 'folder' || notification.type === 'calendar' || notification.type === 'flashcard')) {
+                    let targetUrl = notification.actionUrl
+                    if (targetUrl.includes('/dashboard/workspaces')) {
+                      targetUrl = '/dashboard/shared'
+                    } else if (targetUrl.includes('/dashboard/admin')) {
+                      targetUrl = '/dashboard'
+                    }
+                    navigate(targetUrl);
+                  } else {
+                    setSelectedDetailNotification(notification);
+                  }
                 }}
                 onReplyClick={() => {
                   if (notification.id === 'emily' || notification.id === 'all-3') {

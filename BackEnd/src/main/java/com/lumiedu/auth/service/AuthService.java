@@ -29,6 +29,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
     private final com.lumiedu.billing.repository.UserSubscriptionRepository userSubscriptionRepository;
+    private final com.lumiedu.auth.repository.PasswordHistoryRepository passwordHistoryRepository;
 
     @Value("${app.frontend.url:http://localhost:8386}")
     private String frontendUrl;
@@ -124,6 +125,22 @@ public class AuthService {
         }
 
         User user = resetToken.getUser();
+
+        // Kiểm tra xem mật khẩu mới có trùng với mật khẩu hiện tại hoặc 3 mật khẩu cũ trong lịch sử hay không
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Mật khẩu mới không được trùng với 3 mật khẩu đã sử dụng gần nhất của bạn!");
+        }
+
+        java.util.List<com.lumiedu.auth.entity.PasswordHistory> histories = passwordHistoryRepository.findTop3ByUserIdOrderByCreatedAtDesc(user.getId());
+        for (com.lumiedu.auth.entity.PasswordHistory history : histories) {
+            if (passwordEncoder.matches(request.getNewPassword(), history.getPasswordHash())) {
+                throw new RuntimeException("Mật khẩu mới không được trùng với 3 mật khẩu đã sử dụng gần nhất của bạn!");
+            }
+        }
+
+        // Lưu mật khẩu hiện tại vào lịch sử trước khi cập nhật mật khẩu mới
+        passwordHistoryRepository.save(new com.lumiedu.auth.entity.PasswordHistory(user, user.getPasswordHash()));
+
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
@@ -140,6 +157,20 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
             throw new RuntimeException("Old password is incorrect");
         }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Mật khẩu mới không được trùng với 3 mật khẩu đã sử dụng gần nhất của bạn!");
+        }
+
+        java.util.List<com.lumiedu.auth.entity.PasswordHistory> histories = passwordHistoryRepository.findTop3ByUserIdOrderByCreatedAtDesc(user.getId());
+        for (com.lumiedu.auth.entity.PasswordHistory history : histories) {
+            if (passwordEncoder.matches(request.getNewPassword(), history.getPasswordHash())) {
+                throw new RuntimeException("Mật khẩu mới không được trùng với 3 mật khẩu đã sử dụng gần nhất của bạn!");
+            }
+        }
+
+        // Lưu mật khẩu hiện tại vào lịch sử
+        passwordHistoryRepository.save(new com.lumiedu.auth.entity.PasswordHistory(user, user.getPasswordHash()));
 
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
@@ -186,7 +217,7 @@ public class AuthService {
         return """
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #f8fafc; border-radius: 12px;">
                   <div style="background: #ffffff; border-radius: 10px; padding: 24px; text-align: center; margin-bottom: 24px; border: 1px solid #e2e8f0;">
-                    <img src="https://raw.githubusercontent.com/huynhduybinh24/SWP391_AIStudyHub/main/FrontEnd/public/logo.png" alt="LumiEdu Logo" style="max-width: 130px; height: auto; display: block; margin: 0 auto;" />
+                    <img src="https://cdn.jsdelivr.net/gh/huynhduybinh24/SWP391_AIStudyHub@main/FrontEnd/public/logo.png" alt="LumiEdu Logo" style="max-width: 130px; height: auto; display: block; margin: 0 auto;" />
                     <p style="color: #64748b; margin: 10px 0 0 0; font-size: 14px; font-weight: 500;">AI Study Hub</p>
                   </div>
 

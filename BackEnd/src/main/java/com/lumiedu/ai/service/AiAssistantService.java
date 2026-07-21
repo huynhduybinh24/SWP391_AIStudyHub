@@ -31,6 +31,7 @@ public interface AiAssistantService {
 
     // New quiz methods supporting pooling and randomized question bank
     QuizResponse getQuizResponse(Long documentId);
+    QuizResponse getQuizResponse(Long documentId, Long userId);
 
     QuizResponse regenerateQuizResponse(Long documentId, String prompt);
 

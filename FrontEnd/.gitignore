@@ -30,3 +30,10 @@ dist-ssr
 .env.test.local
 .env.production.local
 
+# Playwright (local testing, not pushed to git)
+playwright-tests/
+playwright.config.ts
+playwright-report/
+test-results/
+
+

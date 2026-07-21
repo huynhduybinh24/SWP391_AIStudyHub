@@ -14,6 +14,10 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  const user = useAuthStore.getState().user
+  if (user && user.id) {
+    config.headers['X-User-Id'] = String(user.id)
+  }
   return config
 })
 
@@ -24,7 +28,7 @@ apiClient.interceptors.response.use(
     const body = error.response?.data
     const message = body?.message ?? error.message ?? 'Request failed'
 
-    if (status === 401 || status === 403) {
+    if (status === 401) {
       useAuthStore.getState().logout()
     }
 

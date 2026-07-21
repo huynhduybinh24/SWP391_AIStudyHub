@@ -52,7 +52,7 @@ const StoragePieTooltip = ({ active, payload }: any) => {
           <span className="font-bold text-white text-[13px] leading-tight">{data.name}</span>
         </div>
         <div className="text-[12px] text-slate-300 pl-4.5 font-medium flex items-center mt-0.5">
-          <span>{data.value} GB</span>
+          <span>{data.value} PDF Files</span>
           <span className="mx-2 text-slate-500">•</span>
           <span className="text-emerald-400 font-bold">{data.percentage}%</span>
         </div>
@@ -99,28 +99,63 @@ export function AdminOverviewTab({
     })
   }, [stats, language])
 
-  // Pie Chart Data: Storage distribution breakdown (real data from backend)
+  // Pie Chart Data: AI PDF Processing Status Distribution (real data & fallback)
   const storageData = useMemo(() => {
-    const pdf = stats?.pdfStorageMb || 0
-    const office = stats?.officeStorageMb || 0
-    const spreadsheet = stats?.spreadsheetStorageMb || 0
-    const other = stats?.otherStorageMb || 0
-    const total = pdf + office + spreadsheet + other
-    const pct = (v: number) => total > 0 ? Math.round((v / total) * 100) : 0
-    const fmt = (v: number) => Number(v.toFixed(1))
-    return [
-      { name: language === 'vi' ? 'Tài liệu PDF' : 'PDF Documents', value: fmt(pdf), percentage: pct(pdf), color: '#3b82f6' },
-      { name: language === 'vi' ? 'Tài liệu Office' : 'Word & Office Docs', value: fmt(office), percentage: pct(office), color: '#10b981' },
-      { name: language === 'vi' ? 'Bảng tính' : 'Spreadsheets', value: fmt(spreadsheet), percentage: pct(spreadsheet), color: '#8b5cf6' },
-      { name: language === 'vi' ? 'Tài sản khác' : 'Other Assets', value: fmt(other), percentage: pct(other), color: '#f59e0b' }
-    ]
-  }, [stats, language])
+    let analyzedCount = 0
+    let pendingCount = 0
+    let flaggedCount = 0
+    let standardCount = 0
 
-  const usedPercent = useMemo(() => {
-    if (!stats || !stats.storageLimitGB) return 0
-    const rawPct = (stats.storageUsedGB / stats.storageLimitGB) * 100
-    return parseFloat(rawPct.toFixed(1))
-  }, [stats])
+    if (_documents.length > 0) {
+      analyzedCount = _documents.filter(d => d.aiStatus === 'analyzed' && !d.isFlagged && d.status === 'approved').length
+      pendingCount = _documents.filter(d => d.status === 'pending').length
+      flaggedCount = _documents.filter(d => d.isFlagged || d.status === 'rejected').length
+      standardCount = Math.max(0, _documents.length - (analyzedCount + pendingCount + flaggedCount))
+    } else if (stats) {
+      pendingCount = stats.pendingDocuments || 0
+      flaggedCount = stats.flaggedDocuments || 0
+      analyzedCount = stats.aiProcessedDocuments || Math.max(0, stats.totalDocuments - pendingCount - flaggedCount)
+      standardCount = Math.max(0, stats.totalDocuments - analyzedCount - pendingCount - flaggedCount)
+    }
+
+    const total = (analyzedCount + pendingCount + flaggedCount + standardCount) || 1
+    const pct = (v: number) => Math.round((v / total) * 100)
+
+    return [
+      { name: language === 'vi' ? '✨ Đã phân tích AI' : '✨ AI Analyzed', value: analyzedCount, percentage: pct(analyzedCount), color: '#3b82f6' },
+      { name: language === 'vi' ? '⏳ Đang chờ kiểm duyệt' : '⏳ Pending Review', value: pendingCount, percentage: pct(pendingCount), color: '#f59e0b' },
+      { name: language === 'vi' ? '🚫 Bị từ chối / Gắn cờ' : '🚫 Flagged & Rejected', value: flaggedCount, percentage: pct(flaggedCount), color: '#ef4444' },
+      { name: language === 'vi' ? '📚 PDF Lưu trữ cơ bản' : '📚 Standard PDF', value: standardCount, percentage: pct(standardCount), color: '#10b981' }
+    ]
+  }, [stats, _documents, language])
+
+  const storageUsedMb = useMemo(() => {
+    if (_documents && _documents.length > 0) {
+      const docSum = _documents.reduce((acc, d) => acc + (d.sizeMB || 0), 0)
+      if (docSum > 0) return docSum
+    }
+    if (stats && stats.storageUsedGB) {
+      return stats.storageUsedGB * 1024
+    }
+    return 0
+  }, [stats, _documents])
+
+  const usedPercentText = useMemo(() => {
+    if (storageUsedMb <= 0 || !stats || !stats.storageLimitGB) return '0%'
+    const limitMb = stats.storageLimitGB * 1024
+    const rawPct = (storageUsedMb / limitMb) * 100
+    if (rawPct > 0 && rawPct < 0.1) {
+      return `${rawPct.toFixed(2)}%`
+    }
+    return `${rawPct.toFixed(1)}%`
+  }, [storageUsedMb, stats])
+
+  const progressBarWidth = useMemo(() => {
+    if (storageUsedMb <= 0 || !stats || !stats.storageLimitGB) return 0
+    const limitMb = stats.storageLimitGB * 1024
+    const rawPct = (storageUsedMb / limitMb) * 100
+    return Math.min(100, Math.max(rawPct, 2.5))
+  }, [storageUsedMb, stats])
 
   const capacityText = useMemo(() => {
     if (!stats || !stats.storageLimitGB) return '0 GB'
@@ -131,8 +166,20 @@ export function AdminOverviewTab({
     return `${limitGB.toFixed(1)} GB`
   }, [stats])
 
-  const totalUsedStorage = useMemo(() => {
-    return storageData.reduce((acc, curr) => acc + curr.value, 0).toFixed(1)
+  const formattedUsedCapacity = useMemo(() => {
+    if (storageUsedMb < 1024) {
+      return `${storageUsedMb.toFixed(1)} MB`
+    }
+    return `${(storageUsedMb / 1024).toFixed(2)} GB`
+  }, [storageUsedMb])
+
+  const proPercentage = useMemo(() => {
+    if (!stats || !stats.totalUsers) return '0%'
+    return `${((stats.premiumUsers / stats.totalUsers) * 100).toFixed(1)}%`
+  }, [stats])
+
+  const totalPdfCount = useMemo(() => {
+    return storageData.reduce((acc, curr) => acc + curr.value, 0)
   }, [storageData])
 
   return (
@@ -188,7 +235,7 @@ export function AdminOverviewTab({
             <div className="mt-4 flex items-center gap-1.5 text-xs">
               <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full font-extrabold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/10">
                 <Sparkles className="size-3.5" />
-                25.2%
+                {proPercentage}
               </span>
               <span className="text-slate-400 dark:text-slate-500 font-medium">
                 {t.admin.proAccounts}
@@ -206,7 +253,7 @@ export function AdminOverviewTab({
                   {t.admin.usedCapacity}
                 </p>
                 <h4 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                  {stats?.storageUsedGB || 0} GB
+                  {formattedUsedCapacity}
                 </h4>
               </div>
               <div className="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 shrink-0">
@@ -218,11 +265,11 @@ export function AdminOverviewTab({
               <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-violet-600 dark:bg-violet-500 rounded-full transition-all duration-1000" 
-                  style={{ width: `${Math.min(usedPercent, 100)}%` }}
+                  style={{ width: `${progressBarWidth}%` }}
                 />
               </div>
               <div className="flex items-center justify-between text-[10px] font-extrabold text-slate-400 dark:text-slate-500">
-                <span>{usedPercent}% {t.admin.capacityUsedRatio}</span>
+                <span>{usedPercentText} {t.admin.capacityUsedRatio}</span>
                 <span>{capacityText} {t.admin.capacityTotal}</span>
               </div>
             </div>
@@ -340,15 +387,15 @@ export function AdminOverviewTab({
           </Card>
         </div>
 
-        {/* Pie Chart: Storage distribution */}
+        {/* Pie Chart: AI PDF Status distribution */}
         <div className="space-y-4">
           <div className="flex items-center px-1">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400">
-                <Database className="size-4 stroke-[2.5]" />
+              <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-955/50 text-blue-600 dark:text-blue-400">
+                <Sparkles className="size-4 stroke-[2.5]" />
               </div>
               <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 tracking-tight uppercase">
-                {t.admin.storageDistribution}
+                {language === 'vi' ? 'Phân bổ Trạng thái AI PDF' : 'AI PDF Processing Status'}
               </h2>
             </div>
           </div>
@@ -393,10 +440,10 @@ export function AdminOverviewTab({
               
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
                 <span className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
-                  {activePieIndex !== undefined ? storageData[activePieIndex].value : totalUsedStorage}
+                  {activePieIndex !== undefined ? storageData[activePieIndex].value : totalPdfCount}
                 </span>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider mt-0.5">
-                  {activePieIndex !== undefined ? 'MB' : 'MB Total'}
+                  {activePieIndex !== undefined ? 'PDFs' : (language === 'vi' ? 'TỔNG TỆP PDF' : 'TOTAL PDFs')}
                 </span>
               </div>
             </div>

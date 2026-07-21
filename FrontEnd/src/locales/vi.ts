@@ -257,6 +257,11 @@ export const vi: typeof en = {
     actionAIChat: "Trò chuyện AI",
     actionShared: "Được chia sẻ",
     actionStudyPlans: "Kế hoạch học",
+    continueLearning: "Tiếp tục học",
+    continueReading: "Tiếp tục đọc",
+    noRecentDocs: "Không có tài liệu học tập gần đây",
+    noRecentDocsDesc: "Bắt đầu khám phá các tài nguyên học tập của bạn.",
+    browseDocs: "Duyệt tài liệu",
     quickAsk: "Hỏi nhanh",
     aiAssistant: "Trợ lý AI",
     summarizeLatest: "Tóm tắt tài liệu mới nhất",
@@ -323,6 +328,7 @@ export const vi: typeof en = {
     or: "hoặc",
     browse: "Chọn tệp",
     supportFormat: "Hỗ trợ các định dạng PDF, DOCX, và PPTX (Tối đa 50MB)",
+    supportFormatOnlyPdf: "Chỉ hỗ trợ tệp PDF (Tối đa 50MB)",
     supportFormatSubject: "Định dạng hỗ trợ: PDF, DOCX, PPTX, TXT (Tối đa 50MB mỗi tệp)",
     readyUpload: "Sẵn sàng tải lên",
     total: "tổng cộng",
@@ -1348,7 +1354,7 @@ export const vi: typeof en = {
       userAccountLocked: "Tài khoản david.k@university.edu bị khóa do báo cáo vi phạm nội quy lặp lại.",
       accountPackageUpgraded: "Thanh toán thành công qua cổng Stripe nâng cấp lên gói Pro (50GB).",
       documentApproved: "Duyệt tài liệu Neuroscience Fall Syllabus 2024 sạch sau khi kiểm duyệt.",
-      systemNotificationBroadcast: "Gửi thông báo bảo trì nâng cấp máy chủ AI tháng 6 tới 15,248 học sinh.",
+      systemNotificationBroadcast: "Gửi thông báo bảo trì nâng cấp máy chủ AI tháng 6 tới 15,248 người dùng.",
       paymentTransactionFailed: "Thẻ tín dụng hết hạn hoặc số dư không đủ khi tự động gia hạn gói cước Pro."
     },
     status: {
@@ -1398,9 +1404,9 @@ export const vi: typeof en = {
     switched: "Đã chuyển sang {name}",
     current: "Đang dùng",
     adminDescription: "Có toàn quyền truy cập trang quản trị và cài đặt hệ thống.",
-    studentDescription: "Tài khoản học viên tiêu chuẩn với tài liệu và tính năng học tập.",
-    instructorDescription: "Có thể quản lý tài liệu khóa học và cộng tác với học viên.",
-    proStudentDescription: "Tài khoản học viên có dung lượng nâng cấp và tính năng cao cấp."
+    studentDescription: "Tài khoản người dùng tiêu chuẩn với tài liệu và tính năng học tập.",
+    instructorDescription: "Tài khoản người dùng có thể quản lý tài liệu học tập và cộng tác.",
+    proStudentDescription: "Tài khoản người dùng có dung lượng nâng cấp và tính năng cao cấp."
   }
 };
 

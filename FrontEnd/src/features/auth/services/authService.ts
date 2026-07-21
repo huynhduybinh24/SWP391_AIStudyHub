@@ -51,7 +51,7 @@ function mapToLoginResponse(data: BackendAuthResponse): LoginResponse {
         id: String(user.id),
         name: user.name || user.fullName || '',
         email: user.email || '',
-        role: (user.role?.toLowerCase() ?? 'student') as LoginResponse['user']['role'],
+        role: (user.role?.toLowerCase() ?? 'user') as LoginResponse['user']['role'],
         plan: plan as 'free' | 'pro' | 'institutional',
         avatarUrl: user.avatarUrl || '/logo.png',
         twoFactorEnabled: user.twoFactorEnabled,
@@ -74,7 +74,7 @@ function mapToLoginResponse(data: BackendAuthResponse): LoginResponse {
       id: String(data.userId || ''),
       name: data.fullName || '',
       email: data.email || '',
-      role: (data.role?.toLowerCase() ?? 'student') as LoginResponse['user']['role'],
+      role: (data.role?.toLowerCase() ?? 'user') as LoginResponse['user']['role'],
       plan: plan as 'free' | 'pro' | 'institutional',
       avatarUrl: '/logo.png',
       twoFactorEnabled: false,
@@ -100,8 +100,17 @@ export const authService = {
     return mapToLoginResponse(data)
   },
 
+  async checkEmail(email: string): Promise<boolean> {
+    const { data } = await apiClient.get<{ exists: boolean }>('/auth/check-email', { params: { email } })
+    return data.exists
+  },
+
+  async sendRegisterOtp(email: string, fullName: string): Promise<void> {
+    await apiClient.post('/auth/register/send-otp', { email, fullName })
+  },
+
   async register(credentials: RegisterCredentials): Promise<LoginResponse> {
-    const { data } = await apiClient.post<BackendAuthResponse>('/auth/register', credentials)
+    const { data } = await apiClient.post<BackendAuthResponse>('/auth/register/verify-otp', credentials)
     return mapToLoginResponse(data)
   },
 

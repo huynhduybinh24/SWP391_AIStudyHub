@@ -17,7 +17,7 @@ interface MindMapViewerProps {
 
 export function MindMapViewer({ code }: MindMapViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{ message: string; originalCode: string; sanitizedCode: string } | null>(null)
 
   useEffect(() => {
     if (!containerRef.current || !code) return
@@ -29,11 +29,13 @@ export function MindMapViewer({ code }: MindMapViewerProps) {
     
     // Clean up code: remove markdown code block fences if any
     let cleanedCode = code.trim()
-    if (cleanedCode.startsWith('```')) {
-      cleanedCode = cleanedCode.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '')
-    }
+    cleanedCode = cleanedCode.replace(/^```[a-zA-Z]*\s*/, '').replace(/\s*```$/, '')
+
+    // Replace ampersands (&) with 'and' to prevent Mermaid's double-encoding SVG render bug
+    cleanedCode = cleanedCode.replace(/&amp;/gi, 'and').replace(/&/g, 'and')
+
     // Double check it has mindmap keyword
-    if (!cleanedCode.startsWith('mindmap')) {
+    if (!cleanedCode.trim().toLowerCase().startsWith('mindmap')) {
       cleanedCode = 'mindmap\n' + cleanedCode
     }
 
@@ -47,18 +49,55 @@ export function MindMapViewer({ code }: MindMapViewerProps) {
       
       if (!content || content === 'mindmap') return line
       
-      // If content has spaces, is not already quoted, and doesn't contain shape brackets
-      if (content.includes(' ') && 
-          !content.startsWith('"') && 
-          !content.endsWith('"') && 
-          !content.includes('((') && 
-          !content.includes('))') && 
-          !content.includes('[') && 
-          !content.includes(']') && 
-          !content.includes('(') && 
-          !content.includes(')') && 
-          !content.includes('{') && 
-          !content.includes('}')) {
+      let matched = false
+      
+      // 1. Shapes with ID prefix (e.g. root((Text)))
+      for (const pattern of [
+        { regex: /^([a-zA-Z0-9_-]+)\s*\(\((.*)\)\)$/, format: (id: string, text: string) => `${id}((${text}))` },
+        { regex: /^([a-zA-Z0-9_-]+)\s*\{\{(.*)\\}\}$/, format: (id: string, text: string) => `${id}{{${text}}}` },
+        { regex: /^([a-zA-Z0-9_-]+)\s*\[(.*)\]$/, format: (id: string, text: string) => `${id}[${text}]` },
+        { regex: /^([a-zA-Z0-9_-]+)\s*\((.*)\)$/, format: (id: string, text: string) => `${id}(${text})` },
+        { regex: /^([a-zA-Z0-9_-]+)\s*\{(.*)\}$/, format: (id: string, text: string) => `${id}{${text}}` },
+        { regex: /^([a-zA-Z0-9_-]+)\s*\)(.*)\($/, format: (id: string, text: string) => `${id})${text}(` }
+      ]) {
+        const m = content.match(pattern.regex)
+        if (m) {
+          const id = m[1]
+          let innerText = m[2].trim()
+          if (innerText.includes(' ') && !innerText.startsWith('"') && !innerText.endsWith('"')) {
+            innerText = `"${innerText}"`
+          }
+          content = pattern.format(id, innerText)
+          matched = true
+          break
+        }
+      }
+
+      // 2. Shapes without ID prefix (e.g. ((Text)))
+      if (!matched) {
+        for (const pattern of [
+          { regex: /^\(\((.*)\)\)$/, format: (text: string) => `((${text}))` },
+          { regex: /^\{\{(.*)\\}\}$/, format: (text: string) => `{{${text}}}` },
+          { regex: /^\[(.*)\]$/, format: (text: string) => `[${text}]` },
+          { regex: /^\((.*)\)$/, format: (text: string) => `(${text})` },
+          { regex: /^\{(.*)\}$/, format: (text: string) => `{${text}}` },
+          { regex: /^\)(.*)\($/, format: (text: string) => `)${text}(` }
+        ]) {
+          const m = content.match(pattern.regex)
+          if (m) {
+            let innerText = m[1].trim()
+            if (innerText.includes(' ') && !innerText.startsWith('"') && !innerText.endsWith('"')) {
+              innerText = `"${innerText}"`
+            }
+            content = pattern.format(innerText)
+            matched = true
+            break
+          }
+        }
+      }
+      
+      // 3. Fallback for nodes without shapes
+      if (!matched && !content.startsWith('"') && !content.endsWith('"')) {
         content = `"${content}"`
       }
       return `${indent}${content}`
@@ -73,7 +112,11 @@ export function MindMapViewer({ code }: MindMapViewerProps) {
         }
       } catch (err: any) {
         console.error('Mermaid render error:', err)
-        setError('Không thể vẽ sơ đồ tư duy. Vui lòng thử lại.')
+        setError({
+          message: err?.message || String(err),
+          originalCode: code,
+          sanitizedCode: cleanedCode
+        })
         const badEl = document.getElementById(id)
         if (badEl) badEl.remove()
       }
@@ -85,10 +128,16 @@ export function MindMapViewer({ code }: MindMapViewerProps) {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-6 text-center bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-800 rounded-2xl">
-        <p className="text-sm font-semibold text-rose-500">{error}</p>
-        <pre className="text-left text-xs mt-3 p-3 bg-slate-100 dark:bg-slate-900 rounded-xl overflow-x-auto max-w-full max-h-[150px] font-mono text-slate-500">
-          {code}
-        </pre>
+        <p className="text-sm font-semibold text-rose-500">Không thể vẽ sơ đồ tư duy. Vui lòng thử lại.</p>
+        <p className="text-[11px] text-rose-450 mt-1 font-mono text-left w-full break-words max-h-[80px] overflow-y-auto bg-rose-50/30 p-2 rounded-lg border border-rose-100/20">
+          Lỗi: {error.message}
+        </p>
+        <div className="text-left text-xs mt-3 w-full">
+          <span className="text-[10px] font-bold text-slate-400 uppercase">Mã nguồn đã xử lý:</span>
+          <pre className="mt-1 p-3 bg-slate-100 dark:bg-slate-900 rounded-xl overflow-x-auto max-w-full max-h-[150px] font-mono text-slate-500">
+            {error.sanitizedCode}
+          </pre>
+        </div>
       </div>
     )
   }

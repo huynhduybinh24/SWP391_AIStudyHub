@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ExternalLink, Edit2, Shield, Trash2, Download, Share2, Flag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { useAuthStore } from '@/stores/authStore'
 
 import { SharedFile } from './SharedFilesTable'
 
@@ -35,13 +36,16 @@ export function FileActionsDropdown({
   buttonRef
 }: FileActionsDropdownProps) {
   const { t, language } = useTranslation()
+  const { user } = useAuthStore()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [_openUpward, setOpenUpward] = useState(false)
   const [coords, setCoords] = useState({ top: 0, left: 0 })
   const [_focusedIndex, setFocusedIndex] = useState(-1)
 
-  const isOwner = file.owner === 'me' || file.permission === 'Owner'
-  const isEditor = file.permission === 'Editor'
+  const isExplicitViewer = file.permission === 'Viewer' || file.permission === 'View Only'
+  const isUserOwner = !isExplicitViewer && (file.owner === 'me' || file.permission === 'Owner' || (Boolean(user?.email) && Boolean(file.ownerEmail) && file.ownerEmail!.toLowerCase() === user!.email!.toLowerCase()))
+  const isOwner = isUserOwner
+  const isEditor = !isExplicitViewer && !isOwner && file.permission === 'Editor'
 
 
   const updatePosition = () => {

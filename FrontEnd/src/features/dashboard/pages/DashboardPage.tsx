@@ -13,6 +13,8 @@ import { useDashboard } from '@/features/dashboard/hooks/useDashboard'
 import { CreateStudyPlanModal } from '@/features/study-plans/pages/CreateStudyPlanModal'
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
+import { ContinueLearningCard } from '@/features/dashboard/components/ContinueLearningCard'
+import { mockContinueLearningItem } from '@/features/dashboard/mock/continueLearning'
 
 export function DashboardPage() {
   const { t } = useTranslation()
@@ -20,13 +22,32 @@ export function DashboardPage() {
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false)
   const { data, isLoading, isError, error, refetch } = useDashboard()
 
+  const [continueLearningItem, setContinueLearningItem] = useState(() => {
+    try {
+      const stored = localStorage.getItem('aiStudyHubLastOpenedDocument')
+      return stored ? JSON.parse(stored) : mockContinueLearningItem
+    } catch (e) {
+      return mockContinueLearningItem
+    }
+  })
+
   useEffect(() => {
-    const handleUpdate = () => refetch()
+    const handleUpdate = () => {
+      refetch()
+      try {
+        const stored = localStorage.getItem('aiStudyHubLastOpenedDocument')
+        if (stored) {
+          setContinueLearningItem(JSON.parse(stored))
+        }
+      } catch (e) {}
+    }
     window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
     window.addEventListener('aiStudyHubUserChanged', handleUpdate)
+    window.addEventListener('aiStudyHubLastOpenedDocumentUpdated', handleUpdate)
     return () => {
       window.removeEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
       window.removeEventListener('aiStudyHubUserChanged', handleUpdate)
+      window.removeEventListener('aiStudyHubLastOpenedDocumentUpdated', handleUpdate)
     }
   }, [refetch])
 
@@ -59,6 +80,10 @@ export function DashboardPage() {
       <div className="grid grid-cols-12 gap-6">
         <QuickActions />
         <StorageWidget usedMb={data.storageUsedMb} totalMb={data.storageTotalMb} />
+      </div>
+
+      <div className="grid grid-cols-12 gap-6">
+        <ContinueLearningCard item={continueLearningItem} />
       </div>
 
       <div className="grid grid-cols-12 gap-6">

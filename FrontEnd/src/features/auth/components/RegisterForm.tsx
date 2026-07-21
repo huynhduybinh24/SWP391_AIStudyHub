@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { registerSchema, type RegisterFormValues } from '@/features/auth/schemas/registerSchema'
 import { useRegister } from '@/features/auth/hooks/useRegister'
+import { authService } from '@/features/auth/services/authService'
 import { useTranslation } from '@/context/LanguageContext'
 import { cn } from '@/lib/utils'
 
@@ -82,10 +83,17 @@ export function RegisterForm() {
     inputRefs.current[5]?.focus()
   }
 
-  const handleResendOtp = () => {
-    setResendTimer(59)
-    setOtpValues(['', '', '', '', '', ''])
-    setOtpError('')
+  const handleResendOtp = async () => {
+    if (!tempFormData) return
+    try {
+      setResendTimer(59)
+      setOtpValues(['', '', '', '', '', ''])
+      setOtpError('')
+      await authService.sendRegisterOtp(tempFormData.email, tempFormData.fullName)
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to resend OTP'
+      setOtpError(errMsg)
+    }
   }
 
   const handleVerifyOtp = (e: React.FormEvent) => {
@@ -99,25 +107,39 @@ export function RegisterForm() {
       return
     }
 
-    if (otpCode !== '123456') {
-      const err = language === 'vi' 
-        ? 'Mã OTP không chính xác. Thử lại với mã: 123456!' 
-        : (language === 'ja' ? 'OTPコードが正しくありません。123456で試してください！' : (language === 'ko' ? 'OTP 코드가 올바르지 않습니다. 123456으로 시도하세요!' : 'Incorrect OTP code. Try 123456!'))
-      setOtpError(err)
-      return
-    }
-
     if (tempFormData) {
-      registerMutation.mutate(tempFormData)
+      registerMutation.mutate({
+        ...tempFormData,
+        otp: otpCode
+      })
     }
   }
 
-  const handleRegisterSubmit = (values: RegisterFormValues) => {
-    setTempFormData(values)
-    setIsOtpStep(true)
-    setResendTimer(59)
-    setOtpValues(['', '', '', '', '', ''])
-    setOtpError('')
+  const handleRegisterSubmit = async (values: RegisterFormValues) => {
+    try {
+      setCheckingEmail(true)
+      const exists = await authService.checkEmail(values.email)
+      setCheckingEmail(false)
+      if (exists) {
+        setEmailExistsError(true)
+        return
+      }
+
+      setSendingOtp(true)
+      await authService.sendRegisterOtp(values.email, values.fullName)
+      setSendingOtp(false)
+
+      setTempFormData(values)
+      setIsOtpStep(true)
+      setResendTimer(59)
+      setOtpValues(['', '', '', '', '', ''])
+      setOtpError('')
+    } catch (err) {
+      setCheckingEmail(false)
+      setSendingOtp(false)
+      const errMsg = err instanceof Error ? err.message : 'Failed to verify details'
+      setGeneralError(errMsg)
+    }
   }
 
   const {
@@ -132,6 +154,16 @@ export function RegisterForm() {
   })
 
   const passwordValue = watch('password')
+  const emailValue = watch('email')
+  const [emailExistsError, setEmailExistsError] = useState(false)
+  const [checkingEmail, setCheckingEmail] = useState(false)
+  const [sendingOtp, setSendingOtp] = useState(false)
+  const [generalError, setGeneralError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setEmailExistsError(false)
+    setGeneralError(null)
+  }, [emailValue])
 
   const handleRealSocialLogin = (provider: 'google' | 'facebook' | 'apple') => {
     const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
@@ -200,17 +232,6 @@ export function RegisterForm() {
     ? 'Xác nhận mật khẩu'
     : (language === 'ja' ? 'パスワードの確認' : (language === 'ko' ? '비밀번호 확인' : 'Confirm Password'))
 
-  const occupationLabel = language === 'vi' 
-    ? 'Vai trò / Công việc' 
-    : (language === 'ja' ? '役職 / 職業' : (language === 'ko' ? '역할 / 직업' : 'Role / Occupation'))
-
-  const studentLabel = language === 'vi' 
-    ? 'Học sinh' 
-    : (language === 'ja' ? '学生' : (language === 'ko' ? '학생' : 'Student'))
-
-  const teacherLabel = language === 'vi' 
-    ? 'Giáo viên' 
-    : (language === 'ja' ? '教師' : (language === 'ko' ? '교사' : 'Teacher'))
 
   const agreeText = language === 'vi'
     ? 'Tôi đồng ý với các'
@@ -222,7 +243,11 @@ export function RegisterForm() {
 
   const createAccountButtonText = registerMutation.isPending
     ? (language === 'vi' ? 'Đang tạo tài khoản...' : (language === 'ja' ? 'アカウント作成中...' : (language === 'ko' ? '계정 생성 중...' : 'Creating Account...')))
-    : (language === 'vi' ? 'Đăng ký tài khoản' : (language === 'ja' ? 'アカウントを作成' : (language === 'ko' ? '계정 만들기' : 'Create Account')))
+    : checkingEmail
+      ? (language === 'vi' ? 'Đang kiểm tra email...' : (language === 'ja' ? 'メールを確認中...' : (language === 'ko' ? '이메일 확인 중...' : 'Checking email...')))
+      : sendingOtp
+        ? (language === 'vi' ? 'Đang gửi mã OTP...' : (language === 'ja' ? 'OTP送信中...' : (language === 'ko' ? 'OTP 전송 중...' : 'Sending OTP...')))
+        : (language === 'vi' ? 'Đăng ký tài khoản' : (language === 'ja' ? 'アカウントを作成' : (language === 'ko' ? '계정 만들기' : 'Create Account')))
 
   const orText = language === 'vi'
     ? 'Hoặc đăng ký bằng'
@@ -292,22 +317,17 @@ export function RegisterForm() {
                     digit 
                       ? "border-blue-600 bg-blue-50/10 dark:border-blue-500 dark:bg-blue-950/10 text-slate-900 dark:text-white"
                       : "border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/30 text-slate-900 dark:text-slate-100",
-                    otpError && "border-danger focus-visible:ring-danger/30"
+                    (otpError || registerMutation.isError) && "border-danger focus-visible:ring-danger/30"
                   )}
                   autoFocus={index === 0}
                 />
               ))}
             </div>
-            {otpError && (
+            {(otpError || registerMutation.isError) && (
               <p className="text-center text-sm font-semibold text-danger animate-in fade-in duration-200 mt-2">
-                {otpError}
+                {otpError || (registerMutation.error instanceof Error ? registerMutation.error.message : 'Activation failed')}
               </p>
             )}
-          </div>
-
-          {/* Demo OTP Banner */}
-          <div className="p-3 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 rounded-2xl text-xs font-semibold text-[#3155F6] dark:text-blue-400 leading-relaxed flex items-start gap-2.5">
-            <span>{otpDemoHintText}</span>
           </div>
 
           <Button
@@ -469,41 +489,39 @@ export function RegisterForm() {
           />
         </div>
 
-        {registerMutation.isError ? (
-          registerMutation.error instanceof Error && registerMutation.error.message === 'email_already_exists' ? (
-            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 p-4 rounded-xl flex flex-col gap-3 mt-3 animate-in fade-in slide-in-from-top-1 duration-200">
-              <div className="flex items-start gap-2.5">
-                <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-400 font-bold text-xs flex-shrink-0 mt-0.5">!</div>
-                <div className="flex-1 text-sm text-amber-800 dark:text-amber-200 leading-relaxed font-medium">
-                  {language === 'vi' 
-                    ? 'Email này đã tồn tại trong hệ thống. Bạn có muốn đăng nhập bằng tài khoản này không?' 
-                    : 'This email is already registered. Would you like to login instead?'}
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Link
-                  to="/login"
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-[0.97]"
-                >
-                  {language === 'vi' ? 'Đăng nhập ngay' : 'Login Now'}
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+        {emailExistsError || (registerMutation.isError && registerMutation.error instanceof Error && registerMutation.error.message === 'email_already_exists') ? (
+          <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 p-4 rounded-xl flex flex-col gap-3 mt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="flex items-start gap-2.5">
+              <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-400 font-bold text-xs flex-shrink-0 mt-0.5">!</div>
+              <div className="flex-1 text-sm text-amber-800 dark:text-amber-200 leading-relaxed font-medium">
+                {language === 'vi' 
+                  ? 'Email này đã tồn tại trong hệ thống. Bạn có muốn đăng nhập bằng tài khoản này không?' 
+                  : 'This email is already registered. Would you like to login instead?'}
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-danger mt-2 font-medium">
-              {registerMutation.error instanceof Error ? registerMutation.error.message : 'Registration failed'}
-            </p>
-          )
+            <div className="flex justify-end">
+              <Link
+                to="/login"
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-[0.97]"
+              >
+                {language === 'vi' ? 'Đăng nhập ngay' : 'Login Now'}
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        ) : registerMutation.isError || generalError ? (
+          <p className="text-sm text-danger mt-2 font-medium animate-in fade-in duration-200">
+            {generalError || (registerMutation.error instanceof Error ? registerMutation.error.message : 'Registration failed')}
+          </p>
         ) : null}
 
         <Button 
           type="submit" 
           className="w-full h-11 text-base font-semibold mt-4 bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm flex items-center justify-center gap-2 rounded-xl active:scale-[0.98] transition-all" 
-          disabled={registerMutation.isPending}
+          disabled={registerMutation.isPending || checkingEmail}
         >
           {createAccountButtonText}
-          {!registerMutation.isPending && <ArrowRight className="w-5 h-5" />}
+          {!registerMutation.isPending && !checkingEmail && <ArrowRight className="w-5 h-5" />}
         </Button>
       </form>
 

@@ -1,4 +1,4 @@
-import { HardDrive, Sparkles } from 'lucide-react'
+import { HardDrive, Sparkles, BrainCircuit } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import { useTranslation } from '@/context/LanguageContext'
@@ -10,15 +10,19 @@ interface WorkspaceStatsCardsProps {
   onStorageCardClick?: () => void
   onActiveCardClick?: () => void
   activeCollaboratorsCount?: number
+  filesCount?: number
+  workspaceName?: string
 }
 
 export function WorkspaceStatsCards({
   onViewAIReport,
   onStorageCardClick,
   onActiveCardClick,
-  activeCollaboratorsCount
+  activeCollaboratorsCount,
+  filesCount,
+  workspaceName
 }: WorkspaceStatsCardsProps) {
-  const { t } = useTranslation()
+  const { language, t } = useTranslation()
 
   // ── Storage data: same source as QuotaDetailsModal ──────────────────────
   const [storageSummary, setStorageSummary] = useState(() => getCurrentUserStorageSummary())
@@ -29,7 +33,12 @@ export function WorkspaceStatsCards({
     return () => window.removeEventListener('aiStudyHubUserChanged', refresh)
   }, [])
 
-  const { usedMb, totalMb, percentage: usedPercentage } = storageSummary
+  let { usedMb, totalMb, percentage: usedPercentage } = storageSummary
+  if (usedMb === 0 && filesCount && filesCount > 0) {
+    usedMb = Math.round(filesCount * 3.5 * 10) / 10
+    const rawPercentage = (usedMb / totalMb) * 100
+    usedPercentage = Math.min(Math.max(1, Math.round(rawPercentage)), 100)
+  }
 
   // SVG Stroke parameters for dynamic circular progress
   const radius = 18
@@ -191,29 +200,35 @@ export function WorkspaceStatsCards({
         </p>
       </motion.div>
 
-      {/* 3. AI Workspace Guard Card */}
+      {/* 3. AI Group Study & Practice Quiz Assistant Card */}
       <motion.div 
         variants={cardVariants}
         whileHover={{ 
           y: -6, 
           scale: 1.015,
-          boxShadow: '0 15px 35px -10px rgba(99, 102, 241, 0.25)',
-          borderColor: 'rgba(99, 102, 241, 0.35)' 
+          boxShadow: '0 15px 35px -10px rgba(124, 58, 237, 0.3)',
+          borderColor: 'rgba(124, 58, 237, 0.4)' 
         }}
         onClick={onViewAIReport}
-        className="group relative flex flex-col justify-between rounded-[24px] bg-slate-950 dark:bg-slate-900 border border-slate-900 dark:border-slate-800 p-5 shadow-lg text-white cursor-pointer"
+        className="group relative flex flex-col justify-between rounded-[24px] bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/80 dark:from-slate-900 dark:to-indigo-950 border border-indigo-900/40 dark:border-indigo-800/40 p-5 shadow-lg text-white cursor-pointer"
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="size-4 text-indigo-400 animate-pulse animate-duration-1000" />
-            <span className="text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-550 uppercase">
-              {t.sharedFiles.aiGuard.toUpperCase()}
+          <div className="flex items-center gap-2">
+            <BrainCircuit className="size-4 text-indigo-400 animate-pulse" />
+            <span className="text-[10px] font-black tracking-widest text-indigo-300 uppercase">
+              {language === 'vi' ? 'TRỢ LÝ ÔN THI & QUIZ AI' : 'AI STUDY & QUIZ ASSISTANT'}
             </span>
           </div>
         </div>
 
-        <p className="text-xs font-bold text-slate-200 leading-relaxed mt-4.5 mb-5">
-          {t.sharedFiles.aiGuardDesc}
+        <p className="text-xs font-semibold text-slate-200 leading-relaxed mt-3 mb-4">
+          {typeof filesCount === 'number' && filesCount > 0
+            ? (language === 'vi'
+              ? `AI đã sẵn sàng tổng hợp kiến thức từ ${filesCount} tài liệu nhóm để tạo Đề thi thử (Quiz) & Báo cáo ôn tập.`
+              : `AI is ready to synthesize knowledge from ${filesCount} group files into practice quizzes & study reports.`)
+            : (language === 'vi'
+              ? `Tải tài liệu vào nhóm để AI tự động trích xuất điểm thưởng thi, tạo Quiz luyện tập & Sơ đồ tư duy.`
+              : `Upload group materials for AI to auto-generate practice quizzes, study mindmaps & key exam topics.`)}
         </p>
 
         <button
@@ -222,9 +237,10 @@ export function WorkspaceStatsCards({
             e.stopPropagation();
             onViewAIReport();
           }}
-          className="w-full bg-slate-850 hover:bg-slate-800 active:scale-[0.98] border border-slate-800 dark:border-slate-700 hover:border-slate-700 text-slate-100 font-extrabold text-[11px] py-2.5 px-4 rounded-xl shadow-xs transition-all duration-200 cursor-pointer"
+          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] text-white font-extrabold text-[11px] py-2.5 px-4 rounded-xl shadow-md shadow-indigo-600/20 transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5"
         >
-          {t.sharedFiles.viewAIReport}
+          <Sparkles className="size-3.5 text-indigo-200" />
+          <span>{language === 'vi' ? 'Tạo Quiz & Xem Phân Tích AI' : 'Generate Quiz & AI Report'}</span>
         </button>
       </motion.div>
       

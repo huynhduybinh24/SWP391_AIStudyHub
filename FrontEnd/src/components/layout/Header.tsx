@@ -37,12 +37,12 @@ const SEARCH_SUGGESTION_TOPICS: SearchSuggestion[] = [
 
 const ADMIN_SUGGESTION_TOPICS: SearchSuggestion[] = [
   // Mock Users
-  { id: 'usr-1', title: 'Huynh Duy Binh', category: 'User (Student)' },
-  { id: 'usr-2', title: 'Alex Rivera', category: 'User (Student)' },
-  { id: 'usr-3', title: 'Sarah Jenkins', category: 'User (Teacher)' },
-  { id: 'usr-4', title: 'Ngoc Tan', category: 'User (Student)' },
-  { id: 'usr-5', title: 'Marcus Knight', category: 'User (Student)' },
-  { id: 'usr-6', title: 'Emily R.', category: 'User (Teacher)' },
+  { id: 'usr-1', title: 'Huynh Duy Binh', category: 'User' },
+  { id: 'usr-2', title: 'Alex Rivera', category: 'User' },
+  { id: 'usr-3', title: 'Sarah Jenkins', category: 'User' },
+  { id: 'usr-4', title: 'Ngoc Tan', category: 'User' },
+  { id: 'usr-5', title: 'Marcus Knight', category: 'User' },
+  { id: 'usr-6', title: 'Emily R.', category: 'User' },
 
   // Mock Documents
   { id: 'doc-1', title: 'Advanced Neuroscience Syllabus 2024', category: 'Syllabus' },
@@ -90,13 +90,14 @@ export interface MockNotification {
   actionType?: "removed" | "rejected" | "approved" | "system"
   adminNote?: string
   targetUserEmail?: string
+  actionUrl?: string
 }
 
 // â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function Header() {
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.role?.toLowerCase() === 'admin'
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
   const [searchParams] = useSearchParams()
@@ -108,6 +109,7 @@ export function Header() {
   const [searchResults, setSearchResults] = useState<typeof CHATBOT_SEARCH_DATA>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
+  /*
   const loadNotifications = () => {
     const currentUser = getCurrentUser();
     const userRole = currentUser.role;
@@ -208,7 +210,8 @@ export function Header() {
           documentId: n.documentId,
           actionType: n.actionType,
           adminNote: n.adminNote,
-          targetUserEmail: n.targetUserEmail
+          targetUserEmail: n.targetUserEmail,
+          actionUrl: n.actionUrl
         }))
       }
     } catch (err) {
@@ -265,6 +268,7 @@ export function Header() {
 
     return allNotifs
   }
+  */
 
   const [notifications, setNotifications] = useState<MockNotification[]>([])
 
@@ -297,13 +301,14 @@ export function Header() {
           description: item.description || item.message || '',
           time: item.time || 'Just now',
           type: headerType,
-          isRead: !!item.isRead,
+          isRead: item.isRead !== undefined ? !!item.isRead : !!item.read,
           reason: item.reason,
           documentName: item.documentName,
           documentId: item.documentId,
           actionType: item.actionType,
           adminNote: item.adminNote,
-          targetUserEmail: item.targetUserEmail
+          targetUserEmail: item.targetUserEmail,
+          actionUrl: item.actionUrl
         }
       })
 
@@ -916,7 +921,9 @@ export function Header() {
             >
               <Bell className={cn('size-5', notificationMenuOpen ? 'text-[#3155F6]' : 'text-body dark:text-slate-400')} />
               {unreadCount > 0 && (
-                <span className="absolute top-2.5 right-2.5 block h-2 w-2 rounded-full bg-[#EF4444] border border-white dark:border-slate-900" />
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#EF4444] px-1 text-[9px] font-bold text-white border-2 border-white dark:border-slate-900">
+                  {unreadCount}
+                </span>
               )}
             </Button>
 
