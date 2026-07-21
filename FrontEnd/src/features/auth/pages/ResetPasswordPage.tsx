@@ -9,8 +9,13 @@ import { resetPasswordSchema, type ResetPasswordValues } from '@/features/auth/s
 import { AppFooter } from '@/components/shared/AppFooter'
 import { authService } from '@/features/auth/services/authService'
 
+import { useSearchParams } from 'react-router-dom'
+
 export function ResetPasswordPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const initialEmail = searchParams.get('email') || ''
+
   const [isSuccess, setIsSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
@@ -22,7 +27,7 @@ export function ResetPasswordPage() {
     formState: { errors },
   } = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { email: '' },
+    defaultValues: { email: initialEmail },
   })
 
   const onSubmit = async (data: ResetPasswordValues) => {
@@ -33,11 +38,11 @@ export function ResetPasswordPage() {
       setIsSubmitting(false)
       setIsSuccess(true)
       setTimeout(() => {
-        navigate(`/set-new-password?email=${encodeURIComponent(data.email)}`)
-      }, 4000)
+        navigate(`/set-new-password?email=${encodeURIComponent(data.email)}&sent=true`)
+      }, 1500)
     } catch (err: any) {
       setIsSubmitting(false)
-      setErrorMsg(err?.message || 'Có lỗi xảy ra, vui lòng thử lại.')
+      setErrorMsg(err?.response?.data?.message || err?.message || 'Có lỗi xảy ra, vui lòng thử lại.')
     }
   }
 
