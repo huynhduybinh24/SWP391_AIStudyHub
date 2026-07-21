@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { logActivity } from '@/services/activityLogService'
 import { aiService } from '@/services/aiService'
 import type { AiSummaryResponse, FlashcardResponse, QuizQuestionResponse } from '@/services/aiService'
 import { useAuthStore } from '@/stores/authStore'
 import { documentService } from '@/services/documentService'
+import { useSubjects } from '@/hooks/useSubjects'
 import {
   X,
   Send,
@@ -19,14 +20,14 @@ import {
   FolderDown,
   HardDrive,
   TrendingUp,
-  Loader2,
-  History
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
+import { apiClient } from '@/lib/axios'
 
 // Types
 interface DocumentItem {
@@ -793,6 +794,7 @@ export function DocumentsPage() {
   const user = useAuthStore(state => state.user)
   const userId = Number(user?.id || 1)
   const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const { subjects: dynamicSubjects, refreshSubjects } = useSubjects(userId)
 
   // Quiz Modal States
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false)
@@ -860,6 +862,18 @@ export function DocumentsPage() {
   // Upload Modal States
   const [approvalModalOpen, setApprovalModalOpen] = useState(false)
   const [uploadedSubjectKey, setUploadedSubjectKey] = useState('')
+  const [moderationState, setModerationState] = useState<'scanning' | 'approved' | 'pending_review' | 'timeout'>('scanning')
+  const [uploadedDocId, setUploadedDocId] = useState<string | number>('')
+  const pollingIntervalRef = useRef<any>(null)
+
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+      }
+    }
+  }, [])
+
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -872,15 +886,21 @@ export function DocumentsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [hasUploadError, setHasUploadError] = useState(false)
 
-  // Reset newDocSubject when uploadMajor or uploadSemester changes
+  // Reset newDocSubject when uploadMajor, uploadSemester, or dynamicSubjects changes
   useEffect(() => {
-    const filtered = FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester)
-    if (filtered.length > 0) {
-      setNewDocSubject(filtered[0].id)
-    } else {
-      setNewDocSubject('GENERAL')
+    if (dynamicSubjects && dynamicSubjects.length > 0) {
+      const filtered = dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester)
+      if (filtered.length > 0) {
+        if (!filtered.some(s => s.id === newDocSubject)) {
+          setNewDocSubject(filtered[0].id)
+        }
+      } else {
+        if (newDocSubject !== 'GENERAL') {
+          setNewDocSubject('GENERAL')
+        }
+      }
     }
-  }, [uploadMajor, uploadSemester])
+  }, [uploadMajor, uploadSemester, dynamicSubjects, newDocSubject])
 
   // Preview Modal States
   const [activePreviewDoc, setActivePreviewDoc] = useState<DocumentItem | null>(null)
@@ -974,18 +994,19 @@ export function DocumentsPage() {
     }
   }
 
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        const backendDocs = await documentService.getAllDocuments(userId)
-        if (backendDocs) {
-          setDocuments(backendDocs.map(mapBackendDocToItem))
-        }
-      } catch (e) {
-        console.error('Failed to load documents from backend:', e)
-        showToast('Không thể tải danh sách tài liệu từ máy chủ.')
+  const fetchDocuments = async () => {
+    try {
+      const backendDocs = await documentService.getAllDocuments(userId)
+      if (backendDocs) {
+        setDocuments(backendDocs.map(mapBackendDocToItem))
       }
+    } catch (e) {
+      console.error('Failed to load documents from backend:', e)
+      showToast('Không thể tải danh sách tài liệu từ máy chủ.')
     }
+  }
+
+  useEffect(() => {
     fetchDocuments()
   }, [userId])
 
@@ -1036,11 +1057,7 @@ export function DocumentsPage() {
       setUploadProgress(100)
       setUploadStepMsg('Finished!')
 
-      setTimeout(() => {
-        const newDocItem = mapBackendDocToItem(response)
-        if (response.moderationStatus === 'APPROVED') {
-          setDocuments((prev) => [newDocItem, ...prev])
-        }
+      setTimeout(async () => {
         setIsUploading(false)
         setUploadProgress(0)
         setIsUploadModalOpen(false)
@@ -1067,10 +1084,12 @@ export function DocumentsPage() {
           detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
         })
 
-        showToast(language === 'en' ? 'Your document has been uploaded and is waiting for admin approval.' : 'Tài liệu của bạn đã được tải lên và đang chờ quản trị viên phê duyệt.')
+        showToast(language === 'en' ? 'Document uploaded successfully.' : 'Tải lên tài liệu thành công.')
         
         const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
         setUploadedSubjectKey(finalSubjectKey)
+        setUploadedDocId(response.id)
+        setModerationState('scanning')
         setApprovalModalOpen(true)
 
         setNewDocTitle('')
@@ -1079,6 +1098,43 @@ export function DocumentsPage() {
         setNewDocSubject('PRF192')
         setNewDocType('pdf')
         setSelectedFile(null)
+
+        // Clear any existing polling interval
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current)
+        }
+
+        // Start polling for AI moderation resolution
+        let attempts = 0
+        const maxAttempts = 6
+        pollingIntervalRef.current = setInterval(async () => {
+          try {
+            const doc = await documentService.getDocumentById(response.id)
+            if (doc.moderationStatus === 'APPROVED') {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
+              setModerationState('approved')
+              fetchDocuments()
+            } else if (doc.moderationStatus === 'PENDING_REVIEW' || doc.moderationStatus === 'REJECTED') {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
+              setModerationState('pending_review')
+              fetchDocuments()
+            }
+          } catch (err) {
+            console.error('Failed to poll document status:', err)
+          }
+
+          attempts++
+          if (attempts >= maxAttempts) {
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
+              setModerationState('timeout')
+              fetchDocuments()
+            }
+          }
+        }, 1000)
       }, 500)
     } catch (error) {
       clearInterval(progressInterval)
@@ -1489,7 +1545,21 @@ export function DocumentsPage() {
           // Shared Context
           documents,
           setDocuments,
-          openUploadModal: () => setIsUploadModalOpen(true),
+          dynamicSubjects,
+          refreshSubjects,
+          refreshDocuments: fetchDocuments,
+          openUploadModal: (defaultSubjectCode?: string) => {
+            setIsUploadModalOpen(true)
+            if (defaultSubjectCode) {
+              const upperCode = defaultSubjectCode.toUpperCase()
+              const found = dynamicSubjects.find(s => s.courseCode.toUpperCase() === upperCode || s.id.toUpperCase() === upperCode)
+              if (found) {
+                setUploadMajor(found.majors[0] as any || 'SE')
+                setUploadSemester(found.semester || 'K1')
+                setNewDocSubject(found.id)
+              }
+            }
+          },
           openChatDrawer: handleOpenChat,
           openPreviewModal: handleOpenPreview,
           handleOpenPreview,
@@ -1611,12 +1681,12 @@ export function DocumentsPage() {
                     onChange={(e) => setNewDocSubject(e.target.value)}
                     className="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 pr-10 text-base text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/30"
                   >
-                    {FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).map((subj) => (
+                    {dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).map((subj) => (
                       <option key={subj.id} value={subj.id}>
                         {subj.courseCode} - {subj.title}
                       </option>
                     ))}
-                    {FPT_SUBJECTS.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).length === 0 && (
+                    {dynamicSubjects.filter(s => s.majors.includes(uploadMajor) && s.semester === uploadSemester).length === 0 && (
                       <option value="GENERAL">General/Other</option>
                     )}
                   </select>
@@ -2624,7 +2694,6 @@ export function DocumentsPage() {
           </div>
         </Modal>
       )}
-      {/* Approval Pending Modal */}
       <Modal
         isOpen={approvalModalOpen}
         onClose={() => {
@@ -2633,51 +2702,140 @@ export function DocumentsPage() {
             navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
           }
         }}
-        title={language === 'en' ? 'Moderation Pending' : 'Chờ kiểm duyệt'}
+        title={
+          moderationState === 'scanning'
+            ? (language === 'en' ? 'AI Security Scanning...' : 'AI đang quét kiểm duyệt...')
+            : moderationState === 'approved'
+            ? (language === 'en' ? 'Upload Successful' : 'Tải lên thành công')
+            : moderationState === 'pending_review'
+            ? (language === 'en' ? 'Moderation Pending' : 'Chờ kiểm duyệt')
+            : (language === 'en' ? 'Document Processing' : 'Đang xử lý tài liệu')
+        }
         description={
-          language === 'en'
-            ? 'Your document has been successfully uploaded to Google Drive.'
-            : 'Tài liệu của bạn đã được tải lên Google Drive thành công.'
+          moderationState === 'scanning'
+            ? (language === 'en' ? 'AI is running safety and policy checks on your document.' : 'Hệ thống AI đang thực hiện kiểm tra an toàn và nội dung tài liệu.')
+            : moderationState === 'approved'
+            ? (language === 'en' ? 'Your document is verified and ready to use!' : 'Tài liệu của bạn đã được kiểm duyệt và sẵn sàng để sử dụng!')
+            : moderationState === 'pending_review'
+            ? (language === 'en' ? 'Potential content violations detected.' : 'Phát hiện nội dung cần được xem xét thêm.')
+            : (language === 'en' ? 'AI analysis is running in the background.' : 'AI đang tiếp tục xử lý phân tích tài liệu chạy ẩn.')
         }
         className="max-w-[480px]"
       >
         <div className="space-y-6 text-center py-2 select-none">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400">
-            <FileText className="h-8 w-8" />
-          </div>
+          {moderationState === 'scanning' && (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          )}
+          {moderationState === 'approved' && (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-955/30 text-emerald-500">
+              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            </div>
+          )}
+          {moderationState === 'pending_review' && (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-955/30 text-amber-500">
+              <FileText className="h-8 w-8 text-amber-500" />
+            </div>
+          )}
+          {moderationState === 'timeout' && (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-sky-50 dark:bg-sky-955/30 text-sky-500">
+              <FileText className="h-8 w-8 text-sky-500" />
+            </div>
+          )}
 
           <div className="space-y-2 max-w-sm mx-auto">
             <p className="text-sm text-slate-605 dark:text-slate-400 font-medium leading-relaxed">
-              {language === 'en'
-                ? 'Your document is now waiting for administrative approval. It will become visible to others once approved.'
-                : 'Tài liệu đang chờ Admin phê duyệt. Tài liệu sẽ được hiển thị công khai sau khi được duyệt.'}
+              {moderationState === 'scanning' &&
+                (language === 'en'
+                  ? 'AI is verifying your document. Please wait a few seconds...'
+                  : 'AI đang tiến hành xác thực tài liệu của bạn. Vui lòng đợi trong giây lát...')}
+              {moderationState === 'approved' &&
+                (language === 'en'
+                  ? 'Congratulations! Your document has been automatically moderated and approved.'
+                  : 'Chúc mừng! Tài liệu của bạn đã được kiểm duyệt tự động và phê chuẩn thành công.')}
+              {moderationState === 'pending_review' &&
+                (language === 'en'
+                  ? 'AI flagged potential violations. It has been sent to admin for manual review, and is only listed in Upload History.'
+                  : 'AI phát hiện tài liệu chứa nội dung cần xem xét. Tài liệu đã được chuyển tới Admin duyệt thủ công và hiện chỉ hiển thị trong Lịch sử tải lên.')}
+              {moderationState === 'timeout' &&
+                (language === 'en'
+                  ? 'Your document is being processed in the background. You can check its status later in your Upload History.'
+                  : 'Tài liệu của bạn vẫn đang tiếp tục được xử lý chạy ẩn. Bạn có thể kiểm tra lại trạng thái sau tại Lịch sử tải lên.')}
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => {
-                setApprovalModalOpen(false)
-                navigate('/dashboard/documents/upload-history')
-              }}
-              className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              <History className="h-4 w-4" />
-              {language === 'en' ? 'View Upload History' : 'Xem lịch sử tải lên'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setApprovalModalOpen(false)
-                if (uploadedSubjectKey) {
-                  navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
-                }
-              }}
-              className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
-            >
-              {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
-            </button>
+            {moderationState === 'scanning' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setApprovalModalOpen(false)
+                  if (uploadedSubjectKey) {
+                    navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+                  }
+                }}
+                className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+              >
+                {language === 'en' ? 'Run in Background' : 'Chạy ẩn'}
+              </button>
+            )}
+
+            {moderationState === 'approved' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApprovalModalOpen(false)
+                    if (uploadedDocId) {
+                      navigate(`/dashboard/documents/document/${uploadedDocId}`)
+                    }
+                  }}
+                  className="w-full sm:w-auto rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+                >
+                  {language === 'en' ? 'View Document' : 'Xem tài liệu'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApprovalModalOpen(false)
+                    if (uploadedSubjectKey) {
+                      navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+                    }
+                  }}
+                  className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
+                >
+                  {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
+                </button>
+              </>
+            )}
+
+            {(moderationState === 'pending_review' || moderationState === 'timeout') && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApprovalModalOpen(false)
+                    navigate('/dashboard/documents/upload-history')
+                  }}
+                  className="w-full sm:w-auto rounded-xl font-bold bg-[#2563eb] hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 px-5 py-2.5 text-xs transition-all cursor-pointer"
+                >
+                  {language === 'en' ? 'View Upload History' : 'Xem lịch sử tải lên'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApprovalModalOpen(false)
+                    if (uploadedSubjectKey) {
+                      navigate(`/dashboard/documents/subject/${uploadedSubjectKey}`)
+                    }
+                  }}
+                  className="w-full sm:w-auto rounded-xl font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-755 text-slate-700 dark:text-slate-300 px-5 py-2.5 text-xs transition-all cursor-pointer"
+                >
+                  {language === 'en' ? 'Back to Subject' : 'Quay lại môn học'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </Modal>
