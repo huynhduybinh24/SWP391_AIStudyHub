@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.lumiedu.document.enums.DocumentStatus;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -464,15 +465,31 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             return WorkspaceMemberResponse.fromEntity(m, name);
         }).collect(Collectors.toList());
 
-        // Documents
-        List<WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByWorkspaceId(workspace.getId());
-        List<WorkspaceDocumentResponse> docResponses = workspaceDocs.stream().map(wd -> {
-            Document doc = documentRepository.findById(wd.getDocumentId()).orElse(null);
-            User adder = userRepository.findById(wd.getAddedBy()).orElse(null);
-            String adderName = adder != null ? adder.getFullName() : "Unknown";
+       // Documents
+List<WorkspaceDocument> workspaceDocs =
+        workspaceDocumentRepository.findByWorkspaceId(workspace.getId());
 
-            if (doc != null && (doc.getModerationStatus() == null
-                    || doc.getModerationStatus() == com.lumiedu.document.enums.DocumentStatus.APPROVED)) {
+List<WorkspaceDocumentResponse> docResponses = workspaceDocs.stream()
+        .map(wd -> {
+            Document doc = documentRepository.findById(wd.getDocumentId())
+                    .orElse(null);
+
+            User adder = userRepository.findById(wd.getAddedBy())
+                    .orElse(null);
+
+            String adderName = adder != null
+                    ? adder.getFullName()
+                    : "Unknown";
+
+            String adderEmail = adder != null
+                    ? adder.getEmail()
+                    : "";
+
+            if (doc != null
+                    && !Boolean.TRUE.equals(doc.getDeleted())
+                    && (doc.getModerationStatus() == null
+                    || doc.getModerationStatus() == DocumentStatus.APPROVED)) {
+
                 return WorkspaceDocumentResponse.builder()
                         .id(wd.getId())
                         .workspaceId(workspace.getId())
@@ -486,11 +503,15 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                         .fileSize(doc.getFileSize())
                         .addedBy(wd.getAddedBy())
                         .addedByName(adderName)
+                        .addedByEmail(adderEmail)
                         .createdAt(wd.getCreatedAt())
                         .build();
             }
+
             return null;
-        }).filter(Objects::nonNull).collect(Collectors.toList());
+        })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
 
         return WorkspaceResponse.fromEntity(workspace, ownerName, memberResponses, docResponses);
     }

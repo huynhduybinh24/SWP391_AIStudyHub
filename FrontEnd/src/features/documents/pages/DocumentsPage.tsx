@@ -1104,7 +1104,7 @@ export function DocumentsPage() {
         setUploadedSubjectKey(finalSubjectKey)
         setUploadedDocId(response.id)
         
-        const isApproved = response.moderationStatus === 'APPROVED' || !response.moderationStatus
+        const isApproved = response.moderationStatus === 'APPROVED'
         setModerationState(isApproved ? 'approved' : 'scanning')
         setApprovalModalOpen(true)
 
