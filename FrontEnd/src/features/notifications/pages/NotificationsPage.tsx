@@ -939,7 +939,13 @@ export function NotificationsPage() {
                 onMarkRead={() => handleMarkAsRead(notification.id)}
                 onClick={() => {
                   if (notification.actionUrl && (notification.type === 'document' || notification.type === 'shared_file' || notification.type === 'folder' || notification.type === 'calendar' || notification.type === 'flashcard')) {
-                    navigate(notification.actionUrl);
+                    let targetUrl = notification.actionUrl
+                    if (targetUrl.includes('/dashboard/workspaces')) {
+                      targetUrl = '/dashboard/shared'
+                    } else if (targetUrl.includes('/dashboard/admin')) {
+                      targetUrl = '/dashboard'
+                    }
+                    navigate(targetUrl);
                   } else {
                     setSelectedDetailNotification(notification);
                   }

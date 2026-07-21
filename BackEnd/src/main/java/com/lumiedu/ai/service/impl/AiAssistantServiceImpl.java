@@ -495,6 +495,18 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     @Override
     public QuizResponse getQuizResponse(Long documentId) {
+        return getQuizResponse(documentId, null);
+    }
+
+    @Override
+    public QuizResponse getQuizResponse(Long documentId, Long userId) {
+        if (userId != null) {
+            boolean hasAttempted = quizAttemptRepository.existsByUserIdAndDocumentId(userId, documentId);
+            if (hasAttempted) {
+                generateQuiz(documentId, "medium", 5, "Generate fresh new questions for user re-attempt");
+            }
+        }
+
         List<Quiz> quizzes = quizRepository.findByDocumentId(documentId);
         if (quizzes.isEmpty()) {
             generateQuiz(documentId, "medium", 5, "");

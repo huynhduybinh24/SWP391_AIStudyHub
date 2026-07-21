@@ -24,6 +24,7 @@ export interface ShareAccessModalProps {
   fileId?: string
   fileName?: string
   collaborators?: Collaborator[]
+  workspaceCollaborators?: any[]
   onCollaboratorsChange?: (collaborators: Collaborator[]) => void
   generalAccess?: 'restricted' | 'public'
   onGeneralAccessChange?: (type: 'restricted' | 'public') => void
@@ -45,6 +46,7 @@ export function ShareAccessModal({
   fileId,
   fileName,
   collaborators,
+  workspaceCollaborators = [],
   onCollaboratorsChange,
   generalAccess,
   onGeneralAccessChange,
@@ -74,7 +76,7 @@ export function ShareAccessModal({
   const [editorsCanShare, setEditorsCanShare] = useState(true)
   const [viewersCanDownload, setViewersCanDownload] = useState(true)
 
-  // Local fallback states for uncontrolled usage (e.g. My Documents FileViewer)
+  // Local fallback states for uncontrolled usage
   const [localCollaborators, setLocalCollaborators] = useState<Collaborator[]>([])
   const [localGeneralAccess, setLocalGeneralAccess] = useState<'restricted' | 'public'>('restricted')
   const [publicRole, setPublicRole] = useState<ShareRole>('viewer')
@@ -95,40 +97,112 @@ export function ShareAccessModal({
     }
   }
 
-  // Synchronize incoming props to internal state on open
+  // Color palette for collaborator avatars
+  const avatarColors = [
+    'bg-[#5f6ffc]',
+    'bg-[#fc9d1c]',
+    'bg-[#ec4899]',
+    'bg-[#8b5cf6]',
+    'bg-[#0fbf7c]',
+    'bg-rose-500'
+  ]
+
+  // Centralized helper to build clean, real collaborator list (deduplicated by email)
+  const buildMergedCollaborators = (
+    docOwnerName?: string,
+    docOwnerEmail?: string,
+    directShares: Collaborator[] = []
+  ): Collaborator[] => {
+    const list: Collaborator[] = []
+    const seenEmails = new Set<string>()
+
+    // Determine Owner Email (never use dummy me@example.com)
+    let realOwnerEmail = user?.email || 'student@lumiedu.com'
+    if (docOwnerEmail && !docOwnerEmail.includes('example.com') && !docOwnerEmail.includes('me@')) {
+      realOwnerEmail = docOwnerEmail
+    }
+
+    // Determine Owner Name
+    let realOwnerName = user?.name || 'Huỳnh Duy Bình'
+    if (docOwnerName && docOwnerName !== 'me' && docOwnerName !== 'Tôi' && docOwnerName !== 'Alex Rivera') {
+      realOwnerName = docOwnerName
+    }
+
+    // 1. Add Owner
+    if (realOwnerEmail) {
+      seenEmails.add(realOwnerEmail.trim().toLowerCase())
+    }
+    list.push({
+      id: 'owner',
+      name: realOwnerName,
+      email: realOwnerEmail,
+      role: 'owner',
+      avatarBg: 'bg-[#0fbf7c]'
+    })
+
+    // 2. Add Active Workspace Collaborators
+    if (workspaceCollaborators && workspaceCollaborators.length > 0) {
+      workspaceCollaborators.forEach((wm: any, idx: number) => {
+        const emailLower = (wm.email || '').trim().toLowerCase()
+        if (emailLower && !seenEmails.has(emailLower)) {
+          seenEmails.add(emailLower)
+          const rawRole = String(wm.role || 'Viewer').toLowerCase()
+          let mappedRole: 'owner' | 'editor' | 'viewer' = 'viewer'
+          if (rawRole.includes('owner')) mappedRole = 'owner'
+          else if (rawRole.includes('editor') || rawRole.includes('collaborator')) mappedRole = 'editor'
+
+          list.push({
+            id: String(wm.id || `wm-${idx}`),
+            name: wm.name || emailLower.split('@')[0],
+            email: wm.email,
+            role: mappedRole,
+            avatarBg: avatarColors[(idx + 1) % avatarColors.length]
+          })
+        }
+      })
+    }
+
+    // 3. Add Direct Document Shares & Local Props Collaborators
+    directShares.forEach((sc, idx) => {
+      const emailLower = (sc.email || '').trim().toLowerCase()
+      if (emailLower && !seenEmails.has(emailLower)) {
+        seenEmails.add(emailLower)
+        list.push({
+          ...sc,
+          avatarBg: sc.avatarBg || avatarColors[(idx + 2) % avatarColors.length]
+        })
+      }
+    })
+
+    return list
+  }
+
+  // Synchronize incoming props and workspace members on open
   useEffect(() => {
     if (isOpen) {
       setIsSettingsViewOpen(false)
       setNewEmail('')
       setNewRole('viewer')
-
-      const isNumeric = fileId && /^\d+$/.test(fileId)
-      if (isNumeric) {
-        setLocalCollaborators([])
-      } else if (collaborators) {
-        setLocalCollaborators(collaborators)
-      } else if (initialCollaborators) {
-        setLocalCollaborators(initialCollaborators)
-      } else {
-        const ownerCollab: Collaborator = {
-          id: 'owner',
-          name: user?.name || 'Current User',
-          email: user?.email || '',
-          role: 'owner',
-          avatarBg: 'bg-[#0fbf7c]'
-        }
-        setLocalCollaborators([ownerCollab])
-      }
+      setIsLoading(false)
+      setHasError(false)
 
       if (generalAccess) {
         setLocalGeneralAccess(generalAccess)
       } else {
         setLocalGeneralAccess('restricted')
       }
-    }
-  }, [isOpen, collaborators, generalAccess, initialCollaborators, fileId, user])
 
-  // Load owner and collaborators from API when fileId is numeric
+      // Initial instant merge of workspace members and collaborators
+      const mergedInitial = buildMergedCollaborators(
+        _owner,
+        user?.email,
+        collaborators || initialCollaborators || []
+      )
+      setLocalCollaborators(mergedInitial)
+    }
+  }, [isOpen, generalAccess, _owner, user, collaborators, initialCollaborators, workspaceCollaborators])
+
+  // Load API document shares silently in background when fileId is numeric
   useEffect(() => {
     if (!isOpen) return
     const isNumeric = fileId && /^\d+$/.test(fileId)
@@ -136,57 +210,43 @@ export function ShareAccessModal({
 
     let isMounted = true
     const loadData = async () => {
-      setIsLoading(true)
-      setHasError(false)
       try {
-        const [doc, shares] = await Promise.all([
+        const [docRes, sharesRes] = await Promise.allSettled([
           documentService.getDocumentById(fileId),
           documentService.getDocumentShares(fileId)
         ])
 
         if (!isMounted) return
 
-        const colors = [
-          'bg-[#5f6ffc]',
-          'bg-[#fc9d1c]',
-          'bg-[#ec4899]',
-          'bg-[#8b5cf6]',
-          'bg-[#0fbf7c]',
-          'bg-rose-500'
-        ]
+        let ownerName = user?.name || 'Huỳnh Duy Bình'
+        let ownerEmail = user?.email || 'student@lumiedu.com'
 
-        const ownerName = doc.ownerName || user?.name || 'Current User'
-        const ownerEmail = doc.ownerEmail || user?.email || ''
-        const ownerCollab: Collaborator = {
-          id: 'owner',
-          name: ownerName,
-          email: ownerEmail,
-          role: 'owner',
-          avatarBg: 'bg-[#0fbf7c]'
+        if (docRes.status === 'fulfilled' && docRes.value) {
+          ownerName = docRes.value.ownerName || ownerName
+          ownerEmail = docRes.value.ownerEmail || ownerEmail
         }
 
-        const shareCollabs: Collaborator[] = shares.map((share, idx) => {
-          const email = share.shareeEmail
-          const namePart = email.split('@')[0]
-          const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1)
-          const randomColor = colors[idx % colors.length]
+        let shareCollabs: Collaborator[] = []
+        if (sharesRes.status === 'fulfilled' && Array.isArray(sharesRes.value)) {
+          shareCollabs = sharesRes.value.map((share, idx) => {
+            const email = share.shareeEmail
+            const namePart = email.split('@')[0]
+            const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1)
+            return {
+              id: String(share.id),
+              name: capitalizedName,
+              email: email,
+              role: share.role as any,
+              avatarBg: avatarColors[idx % avatarColors.length]
+            }
+          })
+        }
 
-          return {
-            id: String(share.id),
-            name: capitalizedName,
-            email: email,
-            role: share.role as any,
-            avatarBg: randomColor
-          }
-        })
-
-        setLocalCollaborators([ownerCollab, ...shareCollabs])
+        const combinedShares = [...shareCollabs, ...(collaborators || []), ...(initialCollaborators || [])]
+        const finalMerged = buildMergedCollaborators(ownerName, ownerEmail, combinedShares)
+        setLocalCollaborators(finalMerged)
       } catch (err) {
-        console.error('Failed to load sharing info from API:', err)
-        if (isMounted) {
-          setHasError(true)
-          setLocalCollaborators([])
-        }
+        console.error('Failed to load extra sharing info from API:', err)
       } finally {
         if (isMounted) {
           setIsLoading(false)
@@ -198,501 +258,444 @@ export function ShareAccessModal({
     return () => {
       isMounted = false
     }
-  }, [isOpen, fileId, user])
+  }, [isOpen, fileId, collaborators, initialCollaborators])
 
-  // Map controlled vs local values
-  const activeCollaborators = collaborators !== undefined ? collaborators : localCollaborators
-  const activeGeneralAccess = generalAccess !== undefined ? generalAccess : localGeneralAccess
-
-  const updateCollaborators = (newCollabs: Collaborator[]) => {
-    if (onCollaboratorsChange) {
-      onCollaboratorsChange(newCollabs)
-    } else {
-      setLocalCollaborators(newCollabs)
+  const handleCopyLink = async () => {
+    try {
+      const linkToCopy = window.location.origin + `/share/${activeFileId}`
+      await navigator.clipboard.writeText(linkToCopy)
+      const msg = language === 'vi' ? 'Đã sao chép liên kết vào bộ nhớ tạm!' : (t.shareAccess?.linkCopiedToast || 'Link copied to clipboard')
+      triggerToast(msg)
+    } catch {
+      triggerToast(language === 'vi' ? 'Không thể sao chép liên kết' : (t.shareAccess?.copyLinkError || 'Failed to copy link'), 'error')
     }
   }
 
-  const updateGeneralAccess = (type: 'restricted' | 'public') => {
-    if (onGeneralAccessChange) {
-      onGeneralAccessChange(type)
-    } else {
-      setLocalGeneralAccess(type)
+  const handleAddCollaborator = async () => {
+    if (!newEmail || !newEmail.includes('@')) {
+      const msg = language === 'vi' ? 'Vui lòng nhập địa chỉ email hợp lệ!' : (t.shareAccess?.invalidEmailError || 'Please enter a valid email address')
+      triggerToast(msg, 'error')
+      return
     }
-  }
 
-  // Keyboard trap and escape handler
-  useEffect(() => {
-    if (!isOpen) return
+    const emailTrimmed = newEmail.trim().toLowerCase()
+    const isAlreadyAdded = localCollaborators.some(
+      c => c.email.toLowerCase() === emailTrimmed
+    )
+    if (isAlreadyAdded) {
+      const msg = language === 'vi' ? 'Email này đã có trong danh sách truy cập!' : (t.shareAccess?.userAlreadyAddedError || 'User is already added')
+      triggerToast(msg, 'warning')
+      return
+    }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
+    const namePart = emailTrimmed.split('@')[0]
+    const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1)
+
+    const colors = [
+      'bg-[#5f6ffc]',
+      'bg-[#fc9d1c]',
+      'bg-[#ec4899]',
+      'bg-[#8b5cf6]',
+      'bg-[#0fbf7c]',
+      'bg-rose-500'
+    ]
+    const randomColor = colors[Math.floor(Math.random() * colors.length)]
+
+    const newCollab: Collaborator = {
+      id: String(Date.now()),
+      name: capitalizedName,
+      email: emailTrimmed,
+      role: newRole,
+      avatarBg: randomColor
+    }
+
+    const isNumeric = fileId && /^\d+$/.test(fileId)
+    if (isNumeric) {
+      try {
+        await documentService.addOrUpdateDocumentShare(fileId, emailTrimmed, newRole)
+      } catch (err: any) {
+        console.error('Failed to add share via API:', err)
+        const apiErrMsg = err.response?.data?.message || err.message || 'Failed to share document'
+        triggerToast(apiErrMsg, 'error')
         return
       }
-
-      // Simple focus trap
-      const focusable = modalRef.current?.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex="0"]'
-      )
-      if (focusable && focusable.length > 0) {
-        const first = focusable[0] as HTMLElement
-        const last = focusable[focusable.length - 1] as HTMLElement
-
-        if (e.key === 'Tab') {
-          if (e.shiftKey) {
-            if (document.activeElement === first) {
-              last.focus()
-              e.preventDefault()
-            }
-          } else {
-            if (document.activeElement === last) {
-              first.focus()
-              e.preventDefault()
-            }
-          }
-        }
-      }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    
-    // Focus email input on open
-    setTimeout(() => {
-      const emailInput = modalRef.current?.querySelector('input[type="text"]') as HTMLInputElement
-      emailInput?.focus()
-    }, 100)
+    const updated = [...localCollaborators, newCollab]
+    setLocalCollaborators(updated)
 
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
-  const handleAddCollaborator = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    if (!newEmail.trim()) return
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(newEmail.trim())) {
-      triggerToast(t.shareModal.invalidEmail, 'error')
-      return
+    if (onCollaboratorsChange) {
+      onCollaboratorsChange(updated)
     }
 
-    if (activeCollaborators.some(c => c.email.toLowerCase() === newEmail.trim().toLowerCase())) {
-      triggerToast(t.shareModal.alreadyHasAccess, 'warning')
-      return
+    if (onShareSubmit) {
+      const permString = newRole === 'editor' ? 'Editor' : 'Viewer'
+      onShareSubmit(emailTrimmed, permString)
     }
 
-    const targetEmail = newEmail.trim().toLowerCase()
-    const resolvedRole = newRole === 'editor' ? 'editor' : 'viewer'
-    const isNumeric = fileId && /^\d+$/.test(fileId)
-
-    if (isNumeric) {
-      try {
-        const share = await documentService.addOrUpdateDocumentShare(fileId, targetEmail, resolvedRole)
-
-        const namePart = targetEmail.split('@')[0]
-        const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1)
-
-        const colors = [
-          'bg-[#5f6ffc]',
-          'bg-[#fc9d1c]',
-          'bg-[#ec4899]',
-          'bg-[#8b5cf6]',
-          'bg-[#0fbf7c]',
-          'bg-rose-500'
-        ]
-        const randomColor = colors[Math.floor(Math.random() * colors.length)]
-
-        const newCollab: Collaborator = {
-          id: String(share.id),
-          name: capitalizedName,
-          email: targetEmail,
-          role: share.role as any,
-          avatarBg: randomColor
-        }
-
-        const updated = [...activeCollaborators, newCollab]
-        updateCollaborators(updated)
-        setNewEmail('')
-        triggerToast(t.shareModal.accessSharedSuccess)
-      } catch (err) {
-        console.error(err)
-        triggerToast(language === 'vi' ? 'Không thể thêm người cộng tác!' : 'Failed to add collaborator!', 'error')
-      }
-    } else {
-      const newCollabName = targetEmail.split('@')[0]
-      const formattedName = newCollabName.charAt(0).toUpperCase() + newCollabName.slice(1)
-
-      const colors = [
-        'bg-[#5f6ffc]',
-        'bg-[#fc9d1c]',
-        'bg-[#ec4899]',
-        'bg-[#8b5cf6]',
-        'bg-[#0fbf7c]',
-        'bg-rose-500'
-      ]
-      const randomColor = colors[Math.floor(Math.random() * colors.length)]
-
-      const newCollab: Collaborator = {
-        id: `collab-${Date.now()}`,
-        name: formattedName,
-        email: targetEmail,
-        role: newRole,
-        avatarBg: randomColor
-      }
-
-      const updated = [...activeCollaborators, newCollab]
-      updateCollaborators(updated)
-      setNewEmail('')
-
-      if (onShareSubmit) {
-        onShareSubmit(newCollab.email, newRole === 'editor' ? 'Editor' : 'Viewer')
-      } else {
-        triggerToast(t.shareModal.accessSharedSuccess)
-      }
-    }
+    setNewEmail('')
+    setNewRole('viewer')
+    const successMsg = language === 'vi' 
+      ? `Đã chia sẻ tài liệu thành công tới ${emailTrimmed}`
+      : (t.shareAccess?.collaboratorAddedToast || 'Collaborator added successfully')
+    triggerToast(successMsg)
   }
 
-  const handleRemoveCollaborator = async (id: string, _name: string) => {
-    const collab = activeCollaborators.find(c => c.id === id)
-    if (!collab) return
+  const handleRoleChange = async (collabId: string, role: ShareRole) => {
+    if (role === 'remove') {
+      await handleRemoveCollaborator(collabId)
+      return
+    }
+
+    const targetCollab = localCollaborators.find(c => c.id === collabId)
+    const isNumeric = fileId && /^\d+$/.test(fileId)
+
+    if (isNumeric && targetCollab && targetCollab.role !== 'owner') {
+      try {
+        await documentService.addOrUpdateDocumentShare(fileId, targetCollab.email, role)
+      } catch (err: any) {
+        console.error('Failed to update share role via API:', err)
+        const apiErrMsg = err.response?.data?.message || err.message || 'Failed to update role'
+        triggerToast(apiErrMsg, 'error')
+        return
+      }
+    }
+
+    const updated = localCollaborators.map(c => {
+      if (c.id === collabId) {
+        return { ...c, role }
+      }
+      return c
+    })
+
+    setLocalCollaborators(updated)
+
+    if (onCollaboratorsChange) {
+      onCollaboratorsChange(updated)
+    }
+
+    if (onUpdateCollaboratorRole && targetCollab) {
+      const permString = role === 'editor' ? 'Editor' : 'Viewer'
+      onUpdateCollaboratorRole(collabId, permString)
+    }
+
+    const msg = language === 'vi' ? 'Đã cập nhật quyền thành công' : (t.shareAccess?.roleUpdatedToast || 'Role updated successfully')
+    triggerToast(msg)
+  }
+
+  const handleRemoveCollaborator = async (collabId: string) => {
+    const targetCollab = localCollaborators.find(c => c.id === collabId)
+    const isNumeric = fileId && /^\d+$/.test(fileId)
+
+    if (isNumeric && targetCollab && targetCollab.role !== 'owner') {
+      try {
+        await documentService.deleteDocumentShare(fileId, targetCollab.email)
+      } catch (err: any) {
+        console.error('Failed to remove share via API:', err)
+        const apiErrMsg = err.response?.data?.message || err.message || 'Failed to remove share'
+        triggerToast(apiErrMsg, 'error')
+        return
+      }
+    }
+
+    const updated = localCollaborators.filter(c => c.id !== collabId)
+    setLocalCollaborators(updated)
+
+    if (onCollaboratorsChange) {
+      onCollaboratorsChange(updated)
+    }
 
     if (onRemoveCollaborator) {
-      onRemoveCollaborator(id)
-      return
+      onRemoveCollaborator(collabId)
     }
 
-    const isNumeric = fileId && /^\d+$/.test(fileId)
-
-    if (isNumeric) {
-      try {
-        await documentService.deleteDocumentShare(fileId, collab.email)
-        const updated = activeCollaborators.filter(c => c.id !== id)
-        updateCollaborators(updated)
-        triggerToast(t.shareModal.accessRemoved)
-      } catch (err) {
-        console.error(err)
-        triggerToast(language === 'vi' ? 'Không thể xóa người cộng tác!' : 'Failed to remove collaborator!', 'error')
-      }
-    } else {
-      const updated = activeCollaborators.filter(c => c.id !== id)
-      updateCollaborators(updated)
-      triggerToast(t.shareModal.accessRemoved)
-    }
+    const msg = language === 'vi' ? 'Đã xóa quyền truy cập' : (t.shareAccess?.collaboratorRemovedToast || 'Collaborator removed')
+    triggerToast(msg)
   }
 
-  const handleChangeRole = async (id: string, _name: string, role: ShareRole) => {
-    const collab = activeCollaborators.find(c => c.id === id)
-    if (!collab) return
-
-    if (onUpdateCollaboratorRole) {
-      onUpdateCollaboratorRole(id, role === 'editor' ? 'Editor' : 'Viewer')
-      return
+  const handleGeneralAccessTypeChange = (type: 'restricted' | 'public') => {
+    setLocalGeneralAccess(type)
+    if (onGeneralAccessChange) {
+      onGeneralAccessChange(type)
     }
-
-    const isNumeric = fileId && /^\d+$/.test(fileId)
-    const resolvedRole = role === 'editor' ? 'editor' : 'viewer'
-
-    if (isNumeric) {
-      try {
-        const share = await documentService.addOrUpdateDocumentShare(fileId, collab.email, resolvedRole)
-        const updated = activeCollaborators.map(c => c.id === id ? { ...c, role: share.role as any } : c)
-        updateCollaborators(updated)
-        triggerToast(t.shareModal.permissionUpdated)
-      } catch (err) {
-        console.error(err)
-        triggerToast(language === 'vi' ? 'Không thể cập nhật vai trò!' : 'Failed to update role!', 'error')
-      }
-    } else {
-      const updated = activeCollaborators.map(c => c.id === id ? { ...c, role } : c)
-      updateCollaborators(updated)
-      triggerToast(t.shareModal.permissionUpdated)
-    }
+    const msg = type === 'public' 
+      ? (language === 'vi' ? 'Bất kỳ ai có liên kết đều có thể truy cập' : (t.shareAccess?.anyoneWithLinkToast || 'Anyone with link can access'))
+      : (language === 'vi' ? 'Đã chuyển sang chế độ Hạn chế' : (t.shareAccess?.restrictedAccessToast || 'Access restricted'))
+    triggerToast(msg)
   }
 
-  const handleCopyLink = () => {
-    const link = `https://aistudyhub.app/shared/${activeFileId}`
-    navigator.clipboard.writeText(link)
-    triggerToast(t.shareModal.copiedLink)
+  const getInitials = (name: string) => {
+    if (!name) return 'U'
+    const parts = name.trim().split(' ')
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    }
+    return name.slice(0, 2).toUpperCase()
   }
+
+  if (!isOpen) return null
 
   return (
     <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden p-4 select-none">
-          {/* Backdrop Overlay */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-pointer"
-          />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-x-hidden overflow-y-auto">
+        {/* Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 bg-[#060c18]/50 dark:bg-black/80 backdrop-blur-md cursor-pointer"
+        />
 
-          {/* Modal Container */}
-          <motion.div
-            ref={modalRef}
-            initial={{ scale: 0.95, opacity: 0, y: 15 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 15 }}
-            transition={{ type: 'spring', duration: 0.35, bounce: 0.15 }}
-            className={cn(
-              "w-[calc(100vw-24px)] rounded-[24px] sm:rounded-[28px] sm:w-[560px] sm:max-w-[90vw] md:max-w-[calc(100vw-32px)]",
-              "shadow-[0_20px_60px_rgba(0,0,0,0.18)] border overflow-hidden z-10 font-sans flex flex-col relative max-h-[90vh] p-6 text-left",
-              "bg-white text-slate-900 border-slate-200",
-              "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-800"
-            )}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="share-modal-title"
-          >
-            {isSettingsViewOpen ? (
-              /* sharing settings view */
-              <div className="flex flex-col h-full animate-fade-in text-left">
-                {/* Settings Header */}
-                <div className="flex items-center gap-3 pb-4 border-b border-slate-150 dark:border-slate-800 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setIsSettingsViewOpen(false)}
-                    className="text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-full transition-colors flex items-center justify-center cursor-pointer focus:outline-none"
-                    title={t.common.back}
-                    aria-label={t.common.back}
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                  </button>
-                  <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                    {t.shareModal.settingsTitle}
-                  </h2>
+        {/* Modal Window Container */}
+        <motion.div
+          ref={modalRef}
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+          className="relative z-10 w-full max-w-[500px] overflow-hidden rounded-[28px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 shadow-2xl text-left backdrop-blur-xl"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2 max-w-[80%]">
+              {isSettingsViewOpen && (
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsViewOpen(false)}
+                  className="p-1 -ml-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="size-5" />
+                </button>
+              )}
+              <h3 className="text-base font-bold text-slate-900 dark:text-white truncate">
+                {isSettingsViewOpen 
+                  ? (language === 'vi' ? 'Cài đặt chia sẻ' : (t.shareAccess?.settingsTitle || 'Share settings'))
+                  : (language === 'vi' ? `Chia sẻ truy cập "${activeFileName}"` : `${t.shareAccess?.modalTitle || 'Share Access'} "${activeFileName}"`)}
+              </h3>
+            </div>
+
+            <div className="flex items-center gap-1">
+              {!isSettingsViewOpen && (
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsViewOpen(true)}
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  title={language === 'vi' ? 'Cài đặt nâng cao' : (t.shareAccess?.settingsTooltip || 'Share settings')}
+                >
+                  <Settings className="size-4.5" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="size-4.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Sub-view: Advanced Settings */}
+          {isSettingsViewOpen ? (
+            <div className="space-y-4 py-2 text-left">
+              <label className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={editorsCanShare}
+                  onChange={e => setEditorsCanShare(e.target.checked)}
+                  className="mt-1 size-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <div>
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white">
+                    {language === 'vi' ? 'Người chỉnh sửa có thể thay đổi quyền và chia sẻ' : (t.shareAccess?.editorsCanShare || 'Editors can change permissions and share')}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {language === 'vi' ? 'Cho phép người có quyền chỉnh sửa thêm thành viên mới' : (t.shareAccess?.editorsCanShareSub || 'Allow users with edit access to add new collaborators')}
+                  </p>
                 </div>
+              </label>
 
-                {/* Settings Options */}
-                <div className="py-6 flex-1 space-y-6">
-                  <label className="flex items-start gap-4 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={editorsCanShare}
-                      onChange={(e) => {
-                        setEditorsCanShare(e.target.checked)
-                        triggerToast(e.target.checked ? t.shareModal.editorsCanShareToastTrue : t.shareModal.editorsCanShareToastFalse)
-                      }}
-                      className="w-5 h-5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-normal">
-                        {t.shareModal.editorsCanShareLabel}
-                      </span>
-                      <span className="text-xs text-slate-550 dark:text-slate-400 font-semibold leading-relaxed mt-0.5">
-                        {t.shareModal.editorsCanShareSub}
-                      </span>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-4 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={viewersCanDownload}
-                      onChange={(e) => {
-                        setViewersCanDownload(e.target.checked)
-                        triggerToast(e.target.checked ? t.shareModal.viewersCanDownloadToastTrue : t.shareModal.viewersCanDownloadToastFalse)
-                      }}
-                      className="w-5 h-5 rounded border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-500 focus:ring-blue-500/50 mt-1 cursor-pointer focus:outline-none"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-normal">
-                        {t.shareModal.viewersCanDownloadLabel}
-                      </span>
-                      <span className="text-xs text-slate-550 dark:text-slate-400 font-semibold leading-relaxed mt-0.5">
-                        {t.shareModal.viewersCanDownloadSub}
-                      </span>
-                    </div>
-                  </label>
+              <label className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={viewersCanDownload}
+                  onChange={e => setViewersCanDownload(e.target.checked)}
+                  className="mt-1 size-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <div>
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white">
+                    {language === 'vi' ? 'Người xem có thể tải xuống, in và sao chép' : (t.shareAccess?.viewersCanDownload || 'Viewers can download, print, and copy')}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {language === 'vi' ? 'Hiển thị tùy chọn tải xuống và sao chép cho người xem' : (t.shareAccess?.viewersCanDownloadSub || 'Show download and copy options for viewers and commenters')}
+                  </p>
                 </div>
-
-                {/* Settings Footer */}
-                <div className="pt-4 border-t border-slate-150 dark:border-slate-800 flex justify-end shrink-0">
-                  <Button
-                    onClick={() => setIsSettingsViewOpen(false)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-full shadow-sm cursor-pointer border-none"
-                  >
-                    {t.common.back}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              /* main view */
-              <>
-                {/* Modal Header */}
-                <div className="flex justify-between items-center pb-2 shrink-0 text-left">
-                  <h2 id="share-modal-title" className="text-xl font-bold tracking-tight truncate pr-4 text-slate-900 dark:text-slate-100">
-                    {t.shareModal.title} "{activeFileName}"
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsSettingsViewOpen(true)}
-                      className="p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer focus:outline-none"
-                      title={t.shareModal.settingsTitle}
-                      aria-label={t.shareModal.settingsTitle}
-                    >
-                      <Settings className="h-5 w-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer focus:outline-none"
-                      title={t.common.close}
-                      aria-label={t.common.close}
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
+              </label>
+            </div>
+          ) : (
+            /* Main Share Access Content */
+            <div className="space-y-5 text-left">
+              {/* Add Collaborator Input Row */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="size-4" />
                   </div>
-                </div>
-                {/* Invite Row */}
-                <div className="py-2 shrink-0">
-                  <form onSubmit={handleAddCollaborator} className="flex gap-3 items-center">
-                    <div className="relative flex-1">
-                      <Mail className="absolute left-4.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500" />
-                      <input
-                        type="text"
-                        placeholder={t.shareModal.placeholderEmail}
-                        value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value)}
-                        className="w-full pl-12 pr-4 h-[52px] bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-full text-sm font-medium placeholder-slate-400 text-slate-900 transition-all focus:outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div className="relative shrink-0">
-                      <PermissionDropdown
-                        value={newRole}
-                        onChange={setNewRole}
-                        align="right"
-                        className="h-[52px] w-[140px] text-sm rounded-full bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-900 dark:text-white"
-                        ariaLabel={t.shareModal.inviteRoleLabel}
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={!newEmail.trim()}
-                      className="w-[52px] h-[52px] bg-slate-50 hover:bg-slate-100 disabled:opacity-40 text-slate-600 rounded-full flex items-center justify-center shadow-xs transition-all cursor-pointer border border-slate-200 focus:outline-none dark:bg-slate-850 dark:hover:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                      title={t.shareModal.inviteCollab}
-                      aria-label={t.shareModal.inviteUserBtn}
-                    >
-                      <UserPlus className="h-5 w-5" />
-                    </button>
-                  </form>
-                </div>
-
-                {/* Collaborators List */}
-                <div className="py-4 flex-1 overflow-y-auto space-y-4 text-left scrollbar-thin max-h-[220px] pr-2">
-                  <h3 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 select-none">
-                    {t.shareModal.peopleAccessLabel}
-                  </h3>
-
-                  <div className="space-y-3">
-                    {isLoading ? (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium select-none">
-                        {language === 'vi' ? 'Đang tải quyền truy cập...' : 'Loading access details...'}
-                      </p>
-                    ) : hasError ? (
-                      <p className="text-xs text-red-500 dark:text-red-400 font-medium select-none">
-                        {language === 'vi' ? 'Không thể tải quyền truy cập.' : 'Failed to load access details.'}
-                      </p>
-                    ) : (
-                      activeCollaborators.map((c) => {
-                        const initials = c.name ? c.name.charAt(0).toUpperCase() : 'A'
-                        const isOwner = c.role === 'owner'
-                        return (
-                          <div key={c.id} className="flex items-center justify-between gap-3 py-1">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className={cn(
-                                "w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shadow-inner shrink-0 select-none text-white",
-                                c.avatarBg || "bg-blue-600"
-                              )}>
-                                {initials}
-                              </div>
-
-                              <div className="min-w-0">
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 leading-normal truncate">
-                                  {c.name}
-                                  {isOwner && (
-                                    <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider select-none">
-                                      {t.shareModal.ownerLabel}
-                                    </span>
-                                  )}
-                                </h4>
-                                {c.email ? (
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
-                                    {c.email}
-                                  </p>
-                                ) : (
-                                  <p className="text-xs text-slate-400 dark:text-slate-500 italic font-medium truncate mt-0.5 select-none">
-                                    {language === 'vi' ? 'Không có email' : 'No email available'}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            {isOwner ? (
-                              <span className="text-xs font-semibold text-slate-550 dark:text-slate-500 select-none mr-2">
-                                {t.shareModal.roleOwner}
-                              </span>
-                            ) : (
-                              <div className="shrink-0">
-                                <PermissionDropdown
-                                  value={c.role as ShareRole}
-                                  onChange={(role) => handleChangeRole(c.id, c.name, role)}
-                                  showRemove={true}
-                                  onRemove={() => handleRemoveCollaborator(c.id, c.name)}
-                                  align="right"
-                                  className="h-[36px] px-3 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold"
-                                  ariaLabel={t.shareModal.changePermissionFor(c.name)}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })
-                    )}
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-150 dark:border-slate-800/80 my-2 shrink-0" />
-
-                {/* General Access Selector */}
-                <div className="py-2 shrink-0">
-                  <GeneralAccessSelector
-                    value={activeGeneralAccess}
-                    onChange={updateGeneralAccess}
-                    publicRole={publicRole}
-                    onPublicRoleChange={setPublicRole}
-                    showToast={(msg) => triggerToast(msg)}
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={e => setNewEmail(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleAddCollaborator()
+                      }
+                    }}
+                    placeholder={language === 'vi' ? 'Thêm người bằng email...' : (t.shareAccess?.emailInputPlaceholder || 'Add people by email...')}
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
                   />
                 </div>
 
-                {/* Footer Section */}
-                <div className="mt-4 pt-4 border-t border-slate-150 dark:border-slate-800/80 flex items-center justify-between gap-3 shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleCopyLink}
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-bold text-sm px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-white dark:bg-slate-800 focus:outline-none"
-                    aria-label={t.shareModal.copyLink}
-                  >
-                    <Link className="h-4 w-4" />
-                    <span>{t.shareModal.copyLink}</span>
-                  </button>
-
-                  <Button
-                    onClick={onClose}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-full shadow-sm cursor-pointer border-none"
-                  >
-                    {t.shareModal.done || t.common.done}
-                  </Button>
+                <div className="w-28">
+                  <PermissionDropdown
+                    value={newRole}
+                    onChange={role => setNewRole(role as ShareRole)}
+                    type="invite"
+                  />
                 </div>
-              </>
-            )}
-          </motion.div>
-        </div>
-      )}
+
+                <button
+                  type="button"
+                  onClick={handleAddCollaborator}
+                  disabled={!newEmail}
+                  className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-center shrink-0"
+                  title={language === 'vi' ? 'Thêm người dùng' : (t.shareAccess?.addPeopleTooltip || 'Add person')}
+                >
+                  <UserPlus className="size-4" />
+                </button>
+              </div>
+
+              {/* People with Access Section */}
+              <div>
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
+                  {language === 'vi' ? 'DANH SÁCH CÓ QUYỀN TRUY CẬP' : (t.shareAccess?.peopleWithAccessHeader || 'PEOPLE WITH ACCESS')}
+                </h4>
+
+                {isLoading ? (
+                  <div className="space-y-3 py-2">
+                    {[1, 2].map(n => (
+                      <div key={n} className="flex items-center gap-3 animate-pulse">
+                        <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-800" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3 w-28 bg-slate-200 dark:bg-slate-800 rounded" />
+                          <div className="h-2.5 w-40 bg-slate-200 dark:bg-slate-800 rounded" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : hasError ? (
+                  <p className="text-xs text-rose-500 py-2">
+                    {language === 'vi' ? 'Không thể tải thông tin người dùng từ máy chủ' : (t.shareAccess?.loadError || 'Failed to load user access information')}
+                  </p>
+                ) : (
+                  <div className="space-y-3 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                    {localCollaborators.map(person => (
+                      <div
+                        key={person.id}
+                        className="flex items-center justify-between gap-3 p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={cn(
+                              'size-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0',
+                              person.avatarBg || 'bg-indigo-600'
+                            )}
+                          >
+                            {getInitials(person.name)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                                {person.name}
+                              </p>
+                              {person.role === 'owner' && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 uppercase">
+                                  {language === 'vi' ? 'CHỦ SỞ HỮU' : (t.shareAccess?.ownerBadge || 'OWNER')}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                              {person.email}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="w-28 shrink-0 flex justify-end">
+                          {person.role === 'owner' ? (
+                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 px-2 py-1">
+                              {language === 'vi' ? 'Chủ sở hữu' : (t.shareAccess?.ownerRoleText || 'Owner')}
+                            </span>
+                          ) : (
+                            <PermissionDropdown
+                              value={person.role}
+                              onChange={role => handleRoleChange(person.id, role as ShareRole)}
+                              type="user"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <hr className="border-slate-100 dark:border-slate-800" />
+
+              {/* General Access Section */}
+              <div>
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
+                  {language === 'vi' ? 'QUYỀN TRUY CẬP CHUNG' : (t.shareAccess?.generalAccessHeader || 'GENERAL ACCESS')}
+                </h4>
+
+                <GeneralAccessSelector
+                  type={localGeneralAccess}
+                  onChange={handleGeneralAccessTypeChange}
+                  role={publicRole}
+                  onRoleChange={setPublicRole}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Footer Actions */}
+          <div className="flex items-center justify-between pt-5 border-t border-slate-100 dark:border-slate-800 mt-5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCopyLink}
+              className="gap-2 text-xs font-semibold rounded-xl text-indigo-600 border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 cursor-pointer"
+            >
+              <Link className="size-3.5" />
+              <span>{language === 'vi' ? 'Sao chép liên kết' : (t.shareAccess?.copyLinkButton || 'Copy Link')}</span>
+            </Button>
+
+            <Button
+              type="button"
+              size="sm"
+              onClick={onClose}
+              className="px-5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-md shadow-indigo-500/20"
+            >
+              {language === 'vi' ? 'Xong' : (t.shareAccess?.doneButton || 'Done')}
+            </Button>
+          </div>
+        </motion.div>
+      </div>
     </AnimatePresence>
   )
 }
+
 export default ShareAccessModal

@@ -22,7 +22,8 @@ import {
   ChevronRight,
   Check,
   X,
-  History
+  History,
+  Calendar
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -173,6 +174,24 @@ export default function MyDocumentsPage() {
 
   const menuRef = useRef<HTMLDivElement>(null)
   const filterContainerRef = useRef<HTMLDivElement>(null)
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false)
+  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false)
+  const subjectDropdownRef = useRef<HTMLDivElement>(null)
+  const typeDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Click outside listener for custom dropdowns
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (subjectDropdownRef.current && !subjectDropdownRef.current.contains(event.target as Node)) {
+        setIsSubjectDropdownOpen(false)
+      }
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
+        setIsTypeDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const fetchSemestersAndSubjects = async () => {
     try {
@@ -248,14 +267,30 @@ export default function MyDocumentsPage() {
     const queryMatch = searchQuery ? (titleMatch || filenameMatch) : true
 
     const subjectMatch = subjectFilter === 'All' ? true : doc.subject === subjectFilter.toUpperCase()
-    const typeMatch = typeFilter === 'All' ? true : doc.type === typeFilter.toLowerCase()
+    
+    let dateMatch = true
+    if (typeFilter === 'Today') {
+      const todayStr = new Date().toDateString()
+      const docDateStr = doc.uploadedDateObj ? new Date(doc.uploadedDateObj).toDateString() : new Date(doc.uploadedAt).toDateString()
+      dateMatch = docDateStr === todayStr
+    } else if (typeFilter === 'ThisWeek') {
+      const now = new Date().getTime()
+      const docTime = doc.uploadedDateObj ? new Date(doc.uploadedDateObj).getTime() : new Date(doc.uploadedAt).getTime()
+      const diffDays = (now - docTime) / (1000 * 3600 * 24)
+      dateMatch = diffDays <= 7
+    } else if (typeFilter === 'ThisMonth') {
+      const now = new Date().getTime()
+      const docTime = doc.uploadedDateObj ? new Date(doc.uploadedDateObj).getTime() : new Date(doc.uploadedAt).getTime()
+      const diffDays = (now - docTime) / (1000 * 3600 * 24)
+      dateMatch = diffDays <= 30
+    }
 
     // Filter by selected semester and major if they are not 'ALL'
     const foundSubj = dynamicSubjects.find(s => s.id.toUpperCase() === doc.subject.toUpperCase())
     const semesterMatch = selectedSemester === 'ALL' || (foundSubj && foundSubj.semester === selectedSemester)
     const majorMatch = selectedMajor === 'ALL' || (foundSubj && foundSubj.majors.includes(selectedMajor as any))
 
-    return queryMatch && subjectMatch && typeMatch && semesterMatch && majorMatch
+    return queryMatch && subjectMatch && dateMatch && semesterMatch && majorMatch
   })
 
   // Filter FPT subjects based on selected major and semester
@@ -611,38 +646,117 @@ export default function MyDocumentsPage() {
 
             {/* Filter Dropdowns & View toggles */}
             <div className="flex flex-wrap items-center gap-3">
-              {/* Subject Filter */}
-              <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
-                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">{language === 'en' ? 'Subject:' : (language === 'vi' ? 'Môn học:' : (language === 'ja' ? '科目:' : '과목:'))}</span>
-                <select
-                  value={subjectFilter}
-                  onChange={(e) => setSubjectFilter(e.target.value)}
-                  className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
+              {/* Custom Subject Filter Dropdown */}
+              <div className="relative" ref={subjectDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsSubjectDropdownOpen(prev => !prev)}
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 transition-all cursor-pointer shadow-3xs"
                 >
-                  <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getSubjectName('All')}</option>
-                  {displayedSubjects.map((sub) => (
-                    <option key={sub.id} value={sub.id} className="dark:bg-slate-900 dark:text-slate-100">
-                      {sub.courseCode === sub.title ? sub.courseCode : `${sub.courseCode} - ${sub.title}`}
-                    </option>
-                  ))}
-                </select>
+                  <span className="text-slate-400 dark:text-slate-500 font-medium">
+                    {language === 'en' ? 'Subject:' : (language === 'vi' ? 'Môn học:' : 'Subject:')}
+                  </span>
+                  <span className="text-blue-600 dark:text-blue-400 font-extrabold line-clamp-1 max-w-[120px]">
+                    {getSubjectName(subjectFilter)}
+                  </span>
+                  <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 transition-transform duration-200", isSubjectDropdownOpen && "rotate-180")} />
+                </button>
+
+                {isSubjectDropdownOpen && (
+                  <div className="absolute right-0 top-10 z-40 w-56 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150 max-h-60 overflow-y-auto">
+                    <button
+                      onClick={() => {
+                        setSubjectFilter('All')
+                        setIsSubjectDropdownOpen(false)
+                      }}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors cursor-pointer",
+                        subjectFilter === 'All'
+                          ? "bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400 font-extrabold"
+                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      )}
+                    >
+                      <span>{getSubjectName('All')}</span>
+                      {subjectFilter === 'All' && <Check className="h-3.5 w-3.5 text-[#2563eb] dark:text-blue-400" />}
+                    </button>
+                    {displayedSubjects.map((sub) => {
+                      const subLabel = sub.courseCode === sub.title ? sub.courseCode : `${sub.courseCode} - ${sub.title}`
+                      const isSelected = subjectFilter === sub.id
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => {
+                            setSubjectFilter(sub.id)
+                            setIsSubjectDropdownOpen(false)
+                          }}
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors cursor-pointer text-left",
+                            isSelected
+                              ? "bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400 font-extrabold"
+                              : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          )}
+                        >
+                          <span className="line-clamp-1 pr-2">{subLabel}</span>
+                          {isSelected && <Check className="h-3.5 w-3.5 text-[#2563eb] dark:text-blue-400 shrink-0" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
-              {/* Type Filter */}
-              <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-1.5 dark:border-slate-800 dark:bg-slate-850">
-                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">{language === 'en' ? 'Type:' : (language === 'vi' ? 'Loại tệp:' : (language === 'ja' ? 'タイプ:' : '유형:'))}</span>
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1 dark:text-slate-200 dark:bg-slate-850"
+              {/* Custom Date Uploaded Filter Dropdown */}
+              <div className="relative" ref={typeDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsTypeDropdownOpen(prev => !prev)}
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 transition-all cursor-pointer shadow-3xs"
                 >
-                  <option value="All" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('All')}</option>
-                  <option value="Pdf" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Pdf')}</option>
-                  <option value="Word" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Word')}</option>
-                  <option value="Text" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Text')}</option>
-                  <option value="Image" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Image')}</option>
-                  <option value="Slides" className="dark:bg-slate-900 dark:text-slate-100">{getTypeName('Slides')}</option>
-                </select>
+                  <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                  <span className="text-slate-400 dark:text-slate-500 font-medium">
+                    {language === 'vi' ? 'Thời gian:' : 'Uploaded:'}
+                  </span>
+                  <span className="text-blue-600 dark:text-blue-400 font-extrabold flex items-center gap-1">
+                    {typeFilter === 'All' && (language === 'vi' ? 'Tất cả thời gian' : 'All Time')}
+                    {typeFilter === 'Today' && (language === 'vi' ? 'Hôm nay' : 'Today')}
+                    {typeFilter === 'ThisWeek' && (language === 'vi' ? 'Tuần này' : 'This Week')}
+                    {typeFilter === 'ThisMonth' && (language === 'vi' ? 'Tháng này' : 'This Month')}
+                  </span>
+                  <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 transition-transform duration-200", isTypeDropdownOpen && "rotate-180")} />
+                </button>
+
+                {isTypeDropdownOpen && (
+                  <div className="absolute right-0 top-10 z-40 w-48 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                    {[
+                      { label: language === 'vi' ? 'Tất cả thời gian' : 'All Time', value: 'All', icon: '🗓️' },
+                      { label: language === 'vi' ? 'Hôm nay' : 'Today', value: 'Today', icon: '📅' },
+                      { label: language === 'vi' ? 'Tuần này' : 'This Week', value: 'ThisWeek', icon: '📆' },
+                      { label: language === 'vi' ? 'Tháng này' : 'This Month', value: 'ThisMonth', icon: '🗓️' },
+                    ].map((item) => (
+                      <button
+                        key={item.value}
+                        onClick={() => {
+                          setTypeFilter(item.value)
+                          setIsTypeDropdownOpen(false)
+                        }}
+                        className={cn(
+                          "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors cursor-pointer text-left",
+                          typeFilter === item.value
+                            ? "bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400 font-extrabold"
+                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        )}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{item.icon}</span>
+                          <span>{item.label}</span>
+                        </span>
+                        {typeFilter === item.value && (
+                          <Check className="h-3.5 w-3.5 text-[#2563eb] dark:text-blue-400 shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="h-6 w-px bg-slate-200 hidden sm:block mx-1 dark:bg-slate-800" />

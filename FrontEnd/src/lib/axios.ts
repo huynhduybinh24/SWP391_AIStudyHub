@@ -28,7 +28,7 @@ apiClient.interceptors.response.use(
     const body = error.response?.data
     const message = body?.message ?? error.message ?? 'Request failed'
 
-    if (status === 401 || status === 403) {
+    if (status === 401) {
       useAuthStore.getState().logout()
     }
 

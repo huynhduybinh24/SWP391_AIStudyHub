@@ -12,6 +12,7 @@ import java.util.List;
 public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> {
     List<QuizAttempt> findByUserId(Long userId);
     List<QuizAttempt> findByDocumentId(Long documentId);
+    boolean existsByUserIdAndDocumentId(Long userId, Long documentId);
 
     @Query("""
             SELECT qa FROM QuizAttempt qa

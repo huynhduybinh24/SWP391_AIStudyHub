@@ -176,79 +176,62 @@ export const useAuthStore = create<AuthState>()(
       merge: (persisted, current) => {
         const persistedState = persisted as Partial<AuthState>
         
-        // Restore mock user from localStorage if it exists to persist on reload
+        // Restore active user from localStorage if it exists to persist on reload
         const savedMockUserStr = typeof window !== 'undefined' ? localStorage.getItem('aiStudyHubCurrentUser') : null
         if (savedMockUserStr) {
           try {
             const savedUser = JSON.parse(savedMockUserStr)
-
-            // Check if this reload is triggered by a User Switch action
-            const isSwitchingUser = typeof window !== 'undefined' && sessionStorage.getItem('aiStudyHubSwitchingUser') === 'true'
-            
-            // If it is admin, kick back to login on reload (F5) UNLESS it was just a user switch reload
-            if (savedUser?.role?.toLowerCase() === 'admin') {
-              if (isSwitchingUser) {
-                // Clear the switch flag so subsequent manual reloads (F5) will trigger logout
-                sessionStorage.removeItem('aiStudyHubSwitchingUser')
-              } else {
-                if (typeof window !== 'undefined') {
-                  localStorage.removeItem('aiStudyHubCurrentUser')
-                }
-                return {
-                  ...current,
-                  user: null,
-                  tokens: null,
-                  isAuthenticated: false,
-                }
+            if (savedUser && savedUser.email) {
+              const userObj = {
+                id: String(savedUser.id || '1'),
+                name: savedUser.name || 'LumiEdu User',
+                email: savedUser.email,
+                role: (savedUser.role || 'user').toLowerCase() as UserRole,
+                plan: (() => {
+                  const p = (savedUser.plan || 'free').toLowerCase()
+                  if (p === 'enterprise' || p === 'premium' || p === 'institutional') return 'institutional'
+                  return p
+                })() as 'free' | 'pro' | 'institutional',
+                avatarUrl: savedUser.avatar || '/logo.png',
+                university: savedUser.university || 'FPT University',
+                major: savedUser.major || 'Software engineering',
+                degree: savedUser.degree || 'Bachelor'
               }
-            }
 
-            const userObj = {
-              id: savedUser.id,
-              name: savedUser.name,
-              email: savedUser.email,
-              role: (savedUser.role || 'user').toLowerCase() as UserRole,
-              plan: (() => {
-                const p = (savedUser.plan || 'free').toLowerCase()
-                if (p === 'enterprise' || p === 'premium' || p === 'institutional') return 'institutional'
-                return p
-              })() as 'free' | 'pro' | 'institutional',
-              avatarUrl: savedUser.avatar || '/logo.png',
-              university: savedUser.university || 'FPT University',
-              major: savedUser.major || 'Software engineering',
-              degree: savedUser.degree || 'Bachelor'
-            }
-            return {
-              ...current,
-              user: userObj,
-              tokens: persistedState?.tokens || DEV_DEFAULT_TOKENS,
-              isAuthenticated: true
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('aiStudyHubSwitchingUser')
+              }
+
+              return {
+                ...current,
+                user: userObj,
+                tokens: persistedState?.tokens || DEV_DEFAULT_TOKENS,
+                isAuthenticated: true
+              }
             }
           } catch (e) {
             console.error('Error hydrating mock user:', e)
           }
         }
 
-        // Prevent admin session from persisting across reloads (F5) (fallback safeguard)
-        const isSwitchingUser = typeof window !== 'undefined' && sessionStorage.getItem('aiStudyHubSwitchingUser') === 'true'
-        if (persistedState?.user?.role?.toLowerCase() === 'admin' && !isSwitchingUser) {
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('aiStudyHubCurrentUser')
-          }
+        if (persistedState && persistedState.user && persistedState.isAuthenticated) {
           return {
             ...current,
-            user: null,
-            tokens: null,
-            isAuthenticated: false,
+            ...persistedState
           }
         }
 
         if (!DEV_SKIP_AUTH) {
-          return { ...current, ...persistedState }
+          return {
+            ...current,
+            user: null,
+            tokens: null,
+            isAuthenticated: false
+          }
         }
+
         return {
           ...current,
-          ...persistedState,
           user: DEV_DEFAULT_USER,
           tokens: DEV_DEFAULT_TOKENS,
           isAuthenticated: true,

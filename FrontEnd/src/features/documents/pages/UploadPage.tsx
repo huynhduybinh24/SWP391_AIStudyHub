@@ -271,9 +271,10 @@ export function UploadPage() {
           }
         }
       }, 1000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to upload document:', err);
-      toast.error(language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!');
+      const errorMsg = err.response?.data?.message || err.message || (language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!');
+      toast.error(errorMsg);
       setIsProcessing(false);
     }
   };

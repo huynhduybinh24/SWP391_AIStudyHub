@@ -987,13 +987,7 @@ export function DocumentsPage() {
       size: doc.fileSize ? formatBytes(doc.fileSize) : '0 Bytes',
       sizeKb: doc.fileSize ? Math.round(doc.fileSize / 1024) : 0,
       subject: (doc.subject || 'GENERAL') as any,
-      status: doc.moderationStatus === 'PENDING'
-        ? 'SCANNING'
-        : doc.moderationStatus === 'PENDING_REVIEW'
-        ? 'PENDING'
-        : doc.moderationStatus === 'REJECTED'
-        ? 'REJECTED'
-        : 'ANALYZED',
+      status: 'ANALYZED',
       type: mapMimeOrExtensionToType(doc.fileType, doc.fileName || doc.originalFileName || ''),
       ownerName: doc.ownerName,
       ownerEmail: doc.ownerEmail
@@ -1004,7 +998,11 @@ export function DocumentsPage() {
     try {
       const backendDocs = await documentService.getAllDocuments(userId)
       if (backendDocs) {
-        setDocuments(backendDocs.map(mapBackendDocToItem))
+        // Exclude AI rejected / pending review documents from My Documents view
+        const approvedDocs = backendDocs.filter((d: any) => 
+          d.moderationStatus === 'APPROVED' || d.moderationStatus === null || d.moderationStatus === undefined
+        )
+        setDocuments(approvedDocs.map(mapBackendDocToItem))
       }
     } catch (e) {
       console.error('Failed to load documents from backend:', e)
@@ -1014,7 +1012,17 @@ export function DocumentsPage() {
 
   useEffect(() => {
     fetchDocuments()
-  }, [userId])
+
+    const handleNotificationsUpdate = () => {
+      fetchDocuments()
+    }
+    window.addEventListener('aiStudyHubNotificationsUpdated', handleNotificationsUpdate)
+    window.addEventListener('aiStudyHubUserChanged', handleNotificationsUpdate)
+    return () => {
+      window.removeEventListener('aiStudyHubNotificationsUpdated', handleNotificationsUpdate)
+      window.removeEventListener('aiStudyHubUserChanged', handleNotificationsUpdate)
+    }
+  }, [userId, fetchDocuments])
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1095,7 +1103,9 @@ export function DocumentsPage() {
         const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
         setUploadedSubjectKey(finalSubjectKey)
         setUploadedDocId(response.id)
-        setModerationState('scanning')
+        
+        const isApproved = response.moderationStatus === 'APPROVED' || !response.moderationStatus
+        setModerationState(isApproved ? 'approved' : 'scanning')
         setApprovalModalOpen(true)
 
         setNewDocTitle('')
@@ -1104,6 +1114,8 @@ export function DocumentsPage() {
         setNewDocSubject('PRF192')
         setNewDocType('pdf')
         setSelectedFile(null)
+
+        fetchDocuments()
 
         // Clear any existing polling interval
         if (pollingIntervalRef.current) {

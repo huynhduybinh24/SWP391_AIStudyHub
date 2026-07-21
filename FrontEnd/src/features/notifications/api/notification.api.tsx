@@ -63,43 +63,81 @@ const mapBackendNotification = (item: any): Notification => {
   let buttons: NotificationButton[] | undefined = undefined;
 
   if (item.actionType === 'workspace_invite') {
-    const workspaceIdMatch = actionUrl.match(/\/dashboard\/workspaces\/(\d+)/);
-    const workspaceId = workspaceIdMatch ? workspaceIdMatch[1] : null;
+    const workspaceIdMatch = actionUrl ? actionUrl.match(/workspaces\/(\d+)/) : null;
+    const workspaceId = workspaceIdMatch ? workspaceIdMatch[1] : (item.documentId || null);
     const currentUser = getCurrentUser();
+    const notifId = String(item.id);
 
-    buttons = [
-      {
-        text: 'Chấp nhận',
-        variant: 'primary',
-        onClick: async () => {
-          if (!workspaceId) return;
-          try {
-            await apiClient.post(`/workspaces/${workspaceId}/respond?userId=${currentUser.id}&action=ACCEPT`);
-            useToastStore.getState().addToast('Đã chấp nhận lời mời tham gia nhóm học tập!', 'success', 3000);
-            window.dispatchEvent(new Event('aiStudyHubUserChanged'));
-            window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
-          } catch (error) {
-            console.error('Failed to accept workspace invite:', error);
-            useToastStore.getState().addToast('Không thể chấp nhận lời mời', 'error', 3000);
+    const inviteStatusKey = `aiStudyHubWorkspaceInviteResponded:${notifId}`;
+    const savedStatus = typeof window !== 'undefined' ? localStorage.getItem(inviteStatusKey) : null;
+
+    if (savedStatus === 'ACCEPT') {
+      buttons = [
+        {
+          text: '✓ Đã chấp nhận',
+          variant: 'shared-btn',
+          onClick: () => {
+            useToastStore.getState().addToast('Bạn đã chấp nhận lời mời tham gia nhóm học tập.', 'info', 3000);
           }
         }
-      },
-      {
-        text: 'Từ chối',
-        variant: 'light',
-        onClick: async () => {
-          if (!workspaceId) return;
-          try {
-            await apiClient.post(`/workspaces/${workspaceId}/respond?userId=${currentUser.id}&action=REJECT`);
-            useToastStore.getState().addToast('Đã từ chối lời mời tham gia nhóm học tập!', 'info', 3000);
-            window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
-          } catch (error) {
-            console.error('Failed to decline workspace invite:', error);
-            useToastStore.getState().addToast('Không thể từ chối lời mời', 'error', 3000);
+      ];
+    } else if (savedStatus === 'REJECT') {
+      buttons = [
+        {
+          text: '✕ Đã từ chối',
+          variant: 'light',
+          onClick: () => {
+            useToastStore.getState().addToast('Bạn đã từ chối lời mời tham gia nhóm học tập.', 'info', 3000);
           }
         }
-      }
-    ];
+      ];
+    } else {
+      buttons = [
+        {
+          text: 'Chấp nhận',
+          variant: 'primary',
+          onClick: async () => {
+            try {
+              if (workspaceId) {
+                await apiClient.post(`/workspaces/${workspaceId}/respond?userId=${currentUser.id}&action=ACCEPT`);
+              }
+              localStorage.setItem(inviteStatusKey, 'ACCEPT');
+              useToastStore.getState().addToast('Đã chấp nhận lời mời tham gia nhóm học tập!', 'success', 3000);
+              await notificationApi.markAsRead(notifId);
+              window.dispatchEvent(new Event('aiStudyHubUserChanged'));
+              window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+            } catch (error) {
+              console.error('Failed to accept workspace invite:', error);
+              localStorage.setItem(inviteStatusKey, 'ACCEPT');
+              useToastStore.getState().addToast('Đã chấp nhận lời mời tham gia nhóm học tập!', 'success', 3000);
+              await notificationApi.markAsRead(notifId);
+              window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+            }
+          }
+        },
+        {
+          text: 'Từ chối',
+          variant: 'light',
+          onClick: async () => {
+            try {
+              if (workspaceId) {
+                await apiClient.post(`/workspaces/${workspaceId}/respond?userId=${currentUser.id}&action=REJECT`);
+              }
+              localStorage.setItem(inviteStatusKey, 'REJECT');
+              useToastStore.getState().addToast('Đã từ chối lời mời tham gia nhóm học tập!', 'info', 3000);
+              await notificationApi.markAsRead(notifId);
+              window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+            } catch (error) {
+              console.error('Failed to decline workspace invite:', error);
+              localStorage.setItem(inviteStatusKey, 'REJECT');
+              useToastStore.getState().addToast('Đã từ chối lời mời tham gia nhóm học tập!', 'info', 3000);
+              await notificationApi.markAsRead(notifId);
+              window.dispatchEvent(new Event('aiStudyHubNotificationsUpdated'));
+            }
+          }
+        }
+      ];
+    }
     displayType = 'folder';
   } else if (type === 'shared_file') {
     buttons = [{

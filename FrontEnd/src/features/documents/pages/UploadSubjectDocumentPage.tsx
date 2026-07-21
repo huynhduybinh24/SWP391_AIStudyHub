@@ -304,9 +304,10 @@ export function UploadSubjectDocumentPage() {
           }
         }
       }, 1000)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to upload document:', error)
-      showToast(language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!')
+      const errorMsg = error.response?.data?.message || error.message || (language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!')
+      showToast(errorMsg)
       setIsProcessing(false)
     }
   }
