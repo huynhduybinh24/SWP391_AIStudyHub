@@ -20,8 +20,10 @@ public class QuizController {
     private final AiAssistantService aiAssistantService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<QuizResponse>> getQuiz(@RequestParam("documentId") Long documentId) {
-        QuizResponse quiz = aiAssistantService.getQuizResponse(documentId);
+    public ResponseEntity<ApiResponse<QuizResponse>> getQuiz(
+            @RequestParam("documentId") Long documentId,
+            @RequestParam(value = "userId", required = false) Long userId) {
+        QuizResponse quiz = aiAssistantService.getQuizResponse(documentId, userId);
         return ResponseEntity.ok(ApiResponse.ok("Quiz questions loaded successfully.", quiz));
     }
 

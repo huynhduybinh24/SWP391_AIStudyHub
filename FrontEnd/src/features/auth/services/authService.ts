@@ -100,8 +100,17 @@ export const authService = {
     return mapToLoginResponse(data)
   },
 
+  async checkEmail(email: string): Promise<boolean> {
+    const { data } = await apiClient.get<{ exists: boolean }>('/auth/check-email', { params: { email } })
+    return data.exists
+  },
+
+  async sendRegisterOtp(email: string, fullName: string): Promise<void> {
+    await apiClient.post('/auth/register/send-otp', { email, fullName })
+  },
+
   async register(credentials: RegisterCredentials): Promise<LoginResponse> {
-    const { data } = await apiClient.post<BackendAuthResponse>('/auth/register', credentials)
+    const { data } = await apiClient.post<BackendAuthResponse>('/auth/register/verify-otp', credentials)
     return mapToLoginResponse(data)
   },
 

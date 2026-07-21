@@ -132,6 +132,45 @@ public class DocumentServiceImpl implements DocumentService {
             throw new InvalidFileTypeException(extension, fileType);
         }
 
+        // Check for duplicate document within the same subject or globally
+        String subjectToUse = request.getSubject() != null && !request.getSubject().trim().isEmpty()
+                ? request.getSubject().trim()
+                : "GENERAL";
+        Long userId = request.getUserId();
+        String fileChecksum = calculateChecksum(file);
+        String titleToUse = request.getTitle() != null && !request.getTitle().trim().isEmpty()
+                ? request.getTitle().trim()
+                : originalFileName;
+
+        // STEP 1: Check duplicate FILE CONTENT (Checksum SHA-256) FIRST
+        if (fileChecksum != null) {
+            boolean checksumExistsInSubject = documentRepository.existsBySubjectIgnoreCaseAndChecksumAndDeletedFalse(subjectToUse, fileChecksum);
+            boolean checksumExistsForUser = userId != null && documentRepository.existsByUserIdAndSubjectIgnoreCaseAndChecksumAndDeletedFalse(userId, subjectToUse, fileChecksum);
+
+            if (checksumExistsInSubject || checksumExistsForUser) {
+                throw new IllegalArgumentException("Nội dung tệp bị trùng: Tệp này đã được tải lên trước đó trong môn học [" + subjectToUse + "]! Vui lòng chọn tệp khác.");
+            }
+        }
+
+        // STEP 2: Check duplicate TITLE SECOND
+        if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
+            String trimmedTitle = request.getTitle().trim();
+            boolean titleInSub = documentRepository.existsBySubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(subjectToUse, trimmedTitle);
+            boolean titleForUsr = userId != null && documentRepository.existsByUserIdAndSubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(userId, subjectToUse, trimmedTitle);
+
+            if (titleInSub || titleForUsr) {
+                throw new IllegalArgumentException("Tiêu đề tài liệu bị trùng: Tiêu đề '" + trimmedTitle + "' đã tồn tại trong môn học [" + subjectToUse + "]. Vui lòng sửa tiêu đề khác!");
+            }
+        }
+
+        // STEP 3: Check duplicate ORIGINAL FILE NAME THIRD
+        boolean nameInSub = documentRepository.existsBySubjectIgnoreCaseAndOriginalFileNameIgnoreCaseAndDeletedFalse(subjectToUse, originalFileName);
+        boolean nameForUsr = userId != null && documentRepository.existsByUserIdAndSubjectIgnoreCaseAndOriginalFileNameIgnoreCaseAndDeletedFalse(userId, subjectToUse, originalFileName);
+
+        if (nameInSub || nameForUsr) {
+            throw new IllegalArgumentException("Tên tệp gốc bị trùng: Tệp '" + originalFileName + "' đã tồn tại trong môn học [" + subjectToUse + "]. Vui lòng nhập Tiêu đề riêng để phân biệt!");
+        }
+
         // Upload lên Google Drive
         // Upload lên Google Drive
         String googleDriveFileId = null;
@@ -210,7 +249,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .storageProvider(googleDriveFileId != null ? ("STAGING".equals(driveSyncStatus) ? "GOOGLE_DRIVE_STAGING" : "GOOGLE_DRIVE") : "LOCAL")
                 .checksum(calculateChecksum(file))
                 .deleted(false)
-                .moderationStatus(FILE_TYPE_DOCUMENT.equals(fileType) ? DocumentStatus.PENDING : DocumentStatus.APPROVED)
+                .moderationStatus(DocumentStatus.APPROVED)
                 .driveSyncStatus(driveSyncStatus)
                 .driveSyncError(driveSyncError)
                 .build();
@@ -339,6 +378,7 @@ public class DocumentServiceImpl implements DocumentService {
             throw new IllegalArgumentException("User ID is required.");
         }
         return documentRepository.findAllByUserIdAndDeletedFalse(userId).stream()
+                .filter(this::isApprovedForUser)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -582,25 +622,10 @@ public class DocumentServiceImpl implements DocumentService {
         return null;
     }
 
-    private boolean isApprovedForUser(Document document) {
-        if (document.getModerationStatus() == null
-                || document.getModerationStatus() == DocumentStatus.APPROVED) {
-            return true;
-        }
-        Long currentUserId = getCurrentUserId();
-        if (currentUserId != null) {
-            if (currentUserId.equals(document.getUserId())) {
-                return true;
-            }
-            boolean isAdmin = userRepository.findById(currentUserId)
-                    .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
-                    .orElse(false);
-            if (isAdmin) {
-                return true;
-            }
-        }
-        return false;
-    }
+    private boolean isApprovedDocument(Document document) {
+    return document != null
+            && document.getModerationStatus() == DocumentStatus.APPROVED;
+}
 
 
     private void validateFile(MultipartFile file) {
@@ -629,7 +654,7 @@ public class DocumentServiceImpl implements DocumentService {
             return UUID.randomUUID().toString().replace("-", "");
         }
     }
-
+  
     private String getExtension(String filename) {
         int dotIndex = filename.lastIndexOf('.');
         if (dotIndex < 0 || dotIndex == filename.length() - 1) {
@@ -911,10 +936,13 @@ public class DocumentServiceImpl implements DocumentService {
                     + "/10. Hãy thử sức tạo các Quiz nâng cao hoặc giúp đỡ các bạn cùng lớp học tập.";
         }
 
+        int totalQuizzes = userAttempts.size();
+
         return SubjectStatsResponse.builder()
                 .studyProgress(studyProgress)
                 .averageScore(averageScore)
                 .rank(rankStr)
+                .totalQuizzes(totalQuizzes)
                 .aiRecommendation(aiRec)
                 .build();
     }

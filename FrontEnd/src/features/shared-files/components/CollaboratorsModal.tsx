@@ -159,30 +159,38 @@ export function CollaboratorsModal({
                     </div>
                   </div>
 
-                  <div className="flex gap-1 shrink-0 bg-slate-150/40 dark:bg-slate-800/60 p-0.5 rounded-xl border border-slate-200/40 dark:border-slate-800/30 w-fit">
-                    {(['Owner', 'Editor', 'View Only'] as const).map((r) => {
-                      const isActive = c.role === r
-                      return (
-                        <button
-                          key={r}
-                          type="button"
-                          disabled={!canManage}
-                          onClick={() => onUpdateRole(c.id, r)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all duration-200 ${
-                            isActive
-                              ? r === 'Owner'
-                                ? 'bg-blue-600 text-white shadow-sm'
-                                : r === 'Editor'
-                                ? 'bg-emerald-600 text-white shadow-sm'
-                                : 'bg-slate-600 text-white shadow-sm'
-                              : 'text-slate-550 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250 hover:bg-slate-200/40 dark:hover:bg-slate-700/40'
-                          } ${!canManage ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-                        >
-                          {r}
-                        </button>
-                      )
-                    })}
-                  </div>
+                  {c.role === 'Owner' ? (
+                    <div className="shrink-0">
+                      <span className="px-3 py-1 rounded-xl text-[11px] font-bold bg-blue-600 text-white shadow-xs inline-block">
+                        {language === 'vi' ? 'Chủ sở hữu' : 'Owner'}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1 shrink-0 bg-slate-150/40 dark:bg-slate-800/60 p-0.5 rounded-xl border border-slate-200/40 dark:border-slate-800/30 w-fit">
+                      {(['Editor', 'View Only'] as const).map((r) => {
+                        const isActive = c.role === r
+                        return (
+                          <button
+                            key={r}
+                            type="button"
+                            disabled={!canManage}
+                            onClick={() => onUpdateRole(c.id, r)}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all duration-200 ${
+                              isActive
+                                ? r === 'Editor'
+                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                  : 'bg-slate-600 text-white shadow-sm'
+                                : 'text-slate-550 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250 hover:bg-slate-200/40 dark:hover:bg-slate-700/40'
+                            } ${!canManage ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                          >
+                            {r === 'Editor' 
+                              ? (language === 'vi' ? 'Chỉnh sửa' : 'Editor')
+                              : (language === 'vi' ? 'Chỉ xem' : 'View Only')}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

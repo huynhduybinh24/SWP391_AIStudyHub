@@ -48,11 +48,18 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         long totalDocuments = documentRepository.count();
         long totalNotifications = notificationRepository.count();
 
-        // --- Total storage across all users ---
-        double totalStorageUsed = userRepository.findAll().stream()
+        // --- Total storage across all users / documents ---
+        double totalUserStorage = userRepository.findAll().stream()
                 .filter(u -> u.getStorageUsedMb() != null)
                 .mapToDouble(User::getStorageUsedMb)
                 .sum();
+
+        double totalDocStorage = documentRepository.findAllByDeletedFalse().stream()
+                .filter(d -> d.getFileSize() != null)
+                .mapToDouble(d -> d.getFileSize() / (1024.0 * 1024.0))
+                .sum();
+
+        double totalStorageUsed = Math.max(totalUserStorage, totalDocStorage);
 
         double totalStorageLimit = userRepository.findAll().stream()
                 .filter(u -> u.getStorageLimitMb() != null)

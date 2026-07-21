@@ -36,6 +36,72 @@ interface ChatConversation {
   documentIds: number[]
 }
 
+interface MarkdownRendererProps {
+  content: string
+}
+
+export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+  const lines = content.split('\n')
+  return (
+    <div className="space-y-1.5 w-full">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim()
+        
+        // 1. Bullet point
+        if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+          const itemText = trimmed.substring(2)
+          return (
+            <ul key={idx} className="list-disc pl-5 space-y-1 my-1">
+              <li className="text-slate-700 dark:text-slate-300 font-medium">
+                {renderTextWithBold(itemText)}
+              </li>
+            </ul>
+          )
+        }
+        
+        // 2. Headings
+        if (trimmed.startsWith('### ')) {
+          return (
+            <h4 key={idx} className="text-sm font-extrabold text-slate-900 dark:text-white mt-3.5 mb-1.5 tracking-tight">
+              {renderTextWithBold(trimmed.substring(4))}
+            </h4>
+          )
+        }
+        if (trimmed.startsWith('## ')) {
+          return (
+            <h3 key={idx} className="text-base font-black text-slate-900 dark:text-white mt-4.5 mb-2 tracking-tight">
+              {renderTextWithBold(trimmed.substring(3))}
+            </h3>
+          )
+        }
+        
+        // 3. Normal paragraph
+        if (!trimmed) return <div key={idx} className="h-1.5" />
+        
+        return (
+          <p key={idx} className="text-slate-750 dark:text-slate-250 leading-relaxed font-medium">
+            {renderTextWithBold(trimmed)}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+function renderTextWithBold(text: string) {
+  const parts = text.split(/(\*\*.*?\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-extrabold text-slate-900 dark:text-white bg-slate-100/60 dark:bg-slate-800/80 px-1 py-0.5 rounded border border-slate-200/40 dark:border-slate-700/30">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    return part
+  })
+}
+
 export function ChatPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -861,7 +927,7 @@ export function ChatPage() {
                           <div className="flex-1 flex flex-col gap-1.5 items-stretch min-w-0">
                             <div
                               className={cn(
-                                "rounded-[20px] p-4 text-[14px] font-semibold leading-relaxed shadow-sm border whitespace-pre-line text-left flex flex-col gap-3",
+                                "rounded-[20px] p-4 text-[14px] leading-relaxed shadow-sm border text-left flex flex-col gap-3 font-normal",
                                 isUser
                                   ? "bg-gradient-to-tr from-blue-600 to-blue-500 text-white border-transparent rounded-tr-sm"
                                   : "bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-250 border-slate-200/55 dark:border-slate-800/80 rounded-tl-sm"
@@ -876,7 +942,7 @@ export function ChatPage() {
                                   <div className="italic font-mono whitespace-pre-wrap">{msg.thought}</div>
                                 </div>
                               )}
-                              {msg.content && <div>{msg.content}</div>}
+                              {msg.content && <MarkdownRenderer content={msg.content} />}
                             </div>
 
                             <div className={cn(

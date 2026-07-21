@@ -85,6 +85,7 @@ public class WorkspaceResponses {
         private Long fileSize;
         private Long addedBy;
         private String addedByName;
+        private String addedByEmail;
         private LocalDateTime createdAt;
     }
 

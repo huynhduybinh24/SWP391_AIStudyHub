@@ -34,4 +34,5 @@ export interface RegisterCredentials {
   email: string
   password: string
   role?: UserRole
+  otp?: string
 }

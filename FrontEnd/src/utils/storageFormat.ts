@@ -19,7 +19,7 @@ export function calculateStorageUsage(usedMB: number, totalMB: number): StorageU
   const safeUsedMB = Math.max(0, usedMB || 0)
   const safeTotalMB = Math.max(1, totalMB || 1)
   const rawPercentage = (safeUsedMB / safeTotalMB) * 100
-  const percentage = Math.round(Math.min(rawPercentage, 100))
+  const percentage = safeUsedMB > 0 ? Math.min(Math.max(1, Math.round(rawPercentage)), 100) : 0
   const isOverLimit = rawPercentage > 100
   const remainingMB = Math.max(safeTotalMB - safeUsedMB, 0)
 

@@ -16,6 +16,7 @@ import {
 } from '@/services/aiService'
 import { MindMapViewer } from './MindMapViewer'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ui/Toast'
 
 interface StudioPanelProps {
   documentIds: number[]
@@ -25,6 +26,7 @@ interface StudioPanelProps {
 type TabType = 'summary' | 'mindmap' | 'infographic' | 'flashcards' | 'quiz' | 'faq'
 
 export function StudioPanel({ documentIds, language = 'vi' }: StudioPanelProps) {
+  const toast = useToast()
   const [activeDetail, setActiveDetail] = useState<TabType | null>(null)
 
   // Loading States
@@ -98,8 +100,10 @@ export function StudioPanel({ documentIds, language = 'vi' }: StudioPanelProps) 
           setOpenFaqIndex(null)
           break
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Error generating ${tab}:`, err)
+      const errMsg = err?.response?.data?.message || err?.message || String(err)
+      toast.error(`Lỗi phân tích AI: ${errMsg}`)
     } finally {
       setLoading(prev => ({ ...prev, [tab]: false }))
     }

@@ -840,14 +840,25 @@ export function AdminDocumentsTab({
                                 <span>{doc.uploadedAt}</span>
                               </div>
 
-                              {/* Banned keywords info */}
-                              {(doc.bannedKeywords && doc.bannedKeywords.length > 0) && (
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {doc.bannedKeywords.map((kw, i) => (
-                                    <Badge key={i} className="bg-rose-500/10 text-rose-655 dark:text-rose-400 border border-rose-500/10 text-[9px] px-1 py-0 rounded font-semibold tracking-wide lowercase shrink-0">
-                                      {kw}
-                                    </Badge>
-                                  ))}
+                              {/* Moderation / Violation Reason Banner (Only shown for Rejected or Flagged documents) */}
+                              {(doc.isFlagged || doc.status === 'rejected') && (doc.bannedKeywords && doc.bannedKeywords.length > 0) && (
+                                <div className="mt-2 space-y-1 max-w-[280px]">
+                                  {doc.bannedKeywords.map((kw, i) => {
+                                    const cleanText = getLocalizedReason(kw, language)
+                                    if (!cleanText) return null
+                                    return (
+                                      <div
+                                        key={i}
+                                        className="flex items-start gap-1.5 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/80 dark:bg-rose-955/30 px-2.5 py-1.5 text-xs text-rose-700 dark:text-rose-300 shadow-3xs"
+                                        title={cleanText}
+                                      >
+                                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-500 mt-0.5" />
+                                        <span className="text-[11px] font-medium leading-snug line-clamp-2">
+                                          {cleanText}
+                                        </span>
+                                      </div>
+                                    )
+                                  })}
                                 </div>
                               )}
                             </div>

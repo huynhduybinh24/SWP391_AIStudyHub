@@ -24,7 +24,7 @@ public class GeminiServiceImpl {
         if (apiKey != null && !apiKey.trim().isEmpty() && !"mock-gemini-key".equalsIgnoreCase(apiKey) && !"mock-key".equalsIgnoreCase(apiKey)) {
             try {
                 log.info("Querying Google Gemini API for content moderation...");
-                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" + apiKey;
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);

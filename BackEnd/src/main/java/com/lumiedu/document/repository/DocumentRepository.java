@@ -45,4 +45,22 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> findAllByFileTypeInAndDeletedFalse(@Param("types") List<String> types);
 
     List<Document> findByDriveSyncStatusAndDeletedFalse(String driveSyncStatus);
+
+    boolean existsByUserIdAndSubjectIgnoreCaseAndOriginalFileNameIgnoreCaseAndDeletedFalse(Long userId, String subject, String originalFileName);
+
+    boolean existsByUserIdAndSubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(Long userId, String subject, String title);
+
+    boolean existsByUserIdAndSubjectIgnoreCaseAndChecksumAndDeletedFalse(Long userId, String subject, String checksum);
+
+    boolean existsByOriginalFileNameIgnoreCaseAndDeletedFalse(String originalFileName);
+
+    boolean existsByTitleIgnoreCaseAndDeletedFalse(String title);
+
+    boolean existsByChecksumAndDeletedFalse(String checksum);
+
+    boolean existsBySubjectIgnoreCaseAndOriginalFileNameIgnoreCaseAndDeletedFalse(String subject, String originalFileName);
+
+    boolean existsBySubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(String subject, String title);
+
+    boolean existsBySubjectIgnoreCaseAndChecksumAndDeletedFalse(String subject, String checksum);
 }

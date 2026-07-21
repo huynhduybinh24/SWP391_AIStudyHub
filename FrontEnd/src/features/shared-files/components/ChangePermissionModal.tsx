@@ -176,45 +176,6 @@ export function ChangePermissionModal({
                   </div>
                 </label>
 
-                {/* Commenter Option */}
-                <label className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-200 text-left ${
-                  permission === 'Commenter'
-                    ? 'border-[#3155F6] bg-blue-50/20 dark:border-blue-500/80 dark:bg-blue-955/10'
-                    : 'border-slate-200 dark:border-slate-805 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
-                }`}>
-                  <input
-                    type="radio"
-                    name="permission"
-                    value="Commenter"
-                    checked={permission === 'Commenter'}
-                    onChange={() => setPermission('Commenter')}
-                    className="sr-only"
-                  />
-                  <div className={`flex size-10 items-center justify-center rounded-xl shrink-0 ${
-                    permission === 'Commenter'
-                      ? 'bg-blue-100 dark:bg-blue-955/40 text-[#3155F6] dark:text-blue-400'
-                      : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
-                  }`}>
-                    <MessageSquare className="size-4.5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                      {t.sharedFiles.commenterLabel}
-                    </p>
-                    <p className="text-xs text-slate-455 dark:text-slate-500 mt-0.5 leading-snug">
-                      {t.sharedFiles.commenterDesc}
-                    </p>
-                  </div>
-                  <div className={`size-5 rounded-full border flex items-center justify-center shrink-0 ${
-                    permission === 'Commenter'
-                      ? 'border-[#3155F6] dark:border-blue-500'
-                      : 'border-slate-300 dark:border-slate-700'
-                  }`}>
-                    {permission === 'Commenter' && (
-                      <div className="size-2.5 rounded-full bg-[#3155F6] dark:bg-blue-500" />
-                    )}
-                  </div>
-                </label>
 
                 {/* Viewer Option */}
                 <label className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-200 text-left ${
