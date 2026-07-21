@@ -20,6 +20,72 @@ interface Message {
   thought?: string
 }
 
+interface MarkdownRendererProps {
+  content: string
+}
+
+export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+  const lines = content.split('\n')
+  return (
+    <div className="space-y-1 w-full">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim()
+        
+        // 1. Bullet point
+        if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+          const itemText = trimmed.substring(2)
+          return (
+            <ul key={idx} className="list-disc pl-4.5 space-y-0.5 my-0.5">
+              <li className="text-slate-700 dark:text-slate-300 font-medium text-xs sm:text-[13px]">
+                {renderTextWithBold(itemText)}
+              </li>
+            </ul>
+          )
+        }
+        
+        // 2. Headings
+        if (trimmed.startsWith('### ')) {
+          return (
+            <h4 key={idx} className="text-xs sm:text-[13px] font-extrabold text-slate-900 dark:text-white mt-2.5 mb-1 tracking-tight">
+              {renderTextWithBold(trimmed.substring(4))}
+            </h4>
+          )
+        }
+        if (trimmed.startsWith('## ')) {
+          return (
+            <h3 key={idx} className="text-sm font-black text-slate-900 dark:text-white mt-3 mb-1.5 tracking-tight">
+              {renderTextWithBold(trimmed.substring(3))}
+            </h3>
+          )
+        }
+        
+        // 3. Normal paragraph
+        if (!trimmed) return <div key={idx} className="h-1" />
+        
+        return (
+          <p key={idx} className="text-slate-750 dark:text-slate-250 leading-relaxed font-medium text-xs sm:text-[13px]">
+            {renderTextWithBold(trimmed)}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+function renderTextWithBold(text: string) {
+  const parts = text.split(/(\*\*.*?\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-extrabold text-slate-900 dark:text-white bg-slate-100/60 dark:bg-slate-850 px-1 py-0.5 rounded border border-slate-200/40 dark:border-slate-700/30">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    return part
+  })
+}
+
 interface ChatPopupProps {
   onClose: () => void
 }
@@ -420,7 +486,7 @@ export function ChatPopup({ onClose }: ChatPopupProps) {
                       </div>
                     )}
 
-                    <div className="whitespace-pre-line">{msg.text}</div>
+                    <MarkdownRenderer content={msg.text} />
                   </div>
                 </motion.div>
               </div>

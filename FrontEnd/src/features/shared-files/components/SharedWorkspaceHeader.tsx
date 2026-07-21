@@ -152,16 +152,6 @@ export function SharedWorkspaceHeader({
             <span>{t.sharedFiles.invite}</span>
           </button>
 
-          {/* 3. AI Analyze Button */}
-          <button
-            type="button"
-            onClick={onAIAnalyzeClick}
-            disabled={isAnalyzing}
-            className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#3155F6] to-[#7C3AED] hover:from-[#2563eb] hover:to-[#6d28d9] text-white font-black px-6 h-11 text-xs shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer hover:scale-[1.02] disabled:opacity-50 shrink-0"
-          >
-            <Sparkles className="size-4 animate-pulse text-indigo-200" />
-            <span>{isAnalyzing ? t.sharedFiles.analyzing : t.sharedFiles.aiAnalyze}</span>
-          </button>
         </div>
       </div>
     </div>

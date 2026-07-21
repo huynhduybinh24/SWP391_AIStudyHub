@@ -12,7 +12,10 @@ import {
   Trash2,
   SlidersHorizontal,
   Sparkles,
-  BrainCircuit
+  BrainCircuit,
+  ChevronDown,
+  Check,
+  Calendar
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -29,7 +32,7 @@ interface DocumentItem {
   size: string
   sizeKb: number
   subject: string
-  status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
+  status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED' | 'REJECTED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
 }
 
@@ -45,6 +48,7 @@ interface DocumentsContextType {
   handleDeleteDocument: (id: string) => void
   renderFileIcon: (type: string) => React.ReactNode
   renderStatusBadge: (status: string) => React.ReactNode
+  refreshDocuments?: () => void
 }
 
 const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
@@ -129,7 +133,7 @@ const SUBJECT_MAP: Record<string, { title: string; courseCode: string }> = {
 }
 
 export default function SubjectCategoryPage() {
-  const { t } = useTranslation()
+  const { language, t } = useTranslation()
   const { subjectId } = useParams<{ subjectId: string }>()
   const navigate = useNavigate()
   const activeSubjectId = (subjectId || 'GENERAL').toUpperCase()
@@ -144,7 +148,8 @@ export default function SubjectCategoryPage() {
     handleDeleteDocument,
     renderFileIcon,
     renderStatusBadge,
-    showToast
+    showToast,
+    refreshDocuments
   } = useOutletContext<DocumentsContextType>()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -158,6 +163,7 @@ export default function SubjectCategoryPage() {
     studyProgress: number
     averageScore: number | null
     rank: string
+    totalQuizzes?: number
     aiRecommendation: string
   } | null>(null)
   const [loadingStats, setLoadingStats] = useState(false)
@@ -175,6 +181,7 @@ export default function SubjectCategoryPage() {
           studyProgress: activeSubjectId === 'COMPSCI' ? 82 : 0,
           averageScore: activeSubjectId === 'COMPSCI' ? 9.0 : null,
           rank: activeSubjectId === 'COMPSCI' ? 'Top 5% of class' : 'Rank #--',
+          totalQuizzes: activeSubjectId === 'COMPSCI' ? 8 : 0,
           aiRecommendation: activeSubjectId === 'COMPSCI' ? 'Review UML Diagrams' : getAIRecommendation()
         })
       } finally {
@@ -182,9 +189,23 @@ export default function SubjectCategoryPage() {
       }
     }
     fetchStats()
-  }, [activeSubjectId, user])
+    if (refreshDocuments) {
+      refreshDocuments()
+    }
+  }, [activeSubjectId, user, refreshDocuments])
 
   const handleOpenDocument = (docId: string) => {
+    const doc = documents.find((d) => d.id === docId)
+    if (doc) {
+      if (doc.status === 'SCANNING' || doc.status === 'PENDING' || doc.status === 'QUEUED') {
+        showToast(language === 'en' ? 'AI is processing this document. Please wait.' : 'AI đang xử lý tài liệu này. Vui lòng đợi!')
+        return
+      }
+      if (doc.status === 'REJECTED') {
+        showToast(language === 'en' ? 'This document was rejected by admin.' : 'Tài liệu này đã bị quản trị viên từ chối.')
+        return
+      }
+    }
     setActiveMenuId(null)
     if (typeof window !== 'undefined') {
       window.history.scrollRestoration = 'manual'
@@ -207,12 +228,26 @@ export default function SubjectCategoryPage() {
 
   const menuRef = useRef<HTMLDivElement>(null)
   const filterContainerRef = useRef<HTMLDivElement>(null)
+  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false)
+  const typeDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Click outside to close custom type dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
+        setIsTypeDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Auto-reset filters on collapse, and smooth scroll to filter panel on open
   useEffect(() => {
     if (!showFilters) {
       setSearchQuery('')
       setTypeFilter('All')
+      setIsTypeDropdownOpen(false)
     } else {
       setTimeout(() => {
         filterContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -285,9 +320,24 @@ export default function SubjectCategoryPage() {
     const filenameMatch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase())
     const queryMatch = searchQuery ? (titleMatch || filenameMatch) : true
 
-    const typeMatch = typeFilter === 'All' ? true : doc.type === typeFilter.toLowerCase()
+    let dateMatch = true
+    if (typeFilter === 'Today') {
+      const todayStr = new Date().toDateString()
+      const docDateStr = doc.uploadedDateObj ? new Date(doc.uploadedDateObj).toDateString() : new Date(doc.uploadedAt).toDateString()
+      dateMatch = docDateStr === todayStr
+    } else if (typeFilter === 'ThisWeek') {
+      const now = new Date().getTime()
+      const docTime = doc.uploadedDateObj ? new Date(doc.uploadedDateObj).getTime() : new Date(doc.uploadedAt).getTime()
+      const diffDays = (now - docTime) / (1000 * 3600 * 24)
+      dateMatch = diffDays <= 7
+    } else if (typeFilter === 'ThisMonth') {
+      const now = new Date().getTime()
+      const docTime = doc.uploadedDateObj ? new Date(doc.uploadedDateObj).getTime() : new Date(doc.uploadedAt).getTime()
+      const diffDays = (now - docTime) / (1000 * 3600 * 24)
+      dateMatch = diffDays <= 30
+    }
 
-    return queryMatch && typeMatch
+    return queryMatch && dateMatch
   })
 
   // Exactly 2 material cards for recent materials as per Figma design mockup
@@ -390,8 +440,11 @@ export default function SubjectCategoryPage() {
             )}
           </div>
 
-          {/* Card 2: Average Score */}
-          <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs flex flex-col justify-between min-h-[148px]">
+          {/* Card 2: AI Quiz Performance (VIP Replacement for Average Score) */}
+          <div 
+            onClick={() => openQuizModal()}
+            className="rounded-3xl border border-blue-100 dark:border-blue-900/40 bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-955/20 p-6 shadow-xs flex flex-col justify-between min-h-[148px] relative overflow-hidden cursor-pointer select-none transition-all duration-300 hover:scale-[1.02] hover:shadow-md active:scale-[0.98]"
+          >
             {loadingStats ? (
               <div className="animate-pulse space-y-3">
                 <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full w-24"></div>
@@ -400,16 +453,35 @@ export default function SubjectCategoryPage() {
               </div>
             ) : (
               <>
-                <div>
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">AVERAGE SCORE</span>
-                  <span className="text-3xl font-black text-slate-900 dark:text-white block mt-2.5 leading-none">
-                    {stats?.averageScore !== null && stats?.averageScore !== undefined ? stats.averageScore.toFixed(1) : 'N/A'}
+                <div className="flex items-center justify-between z-10">
+                  <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-blue-500" />
+                    AI QUIZ ACCURACY
                   </span>
                 </div>
-                <div className="mt-4">
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-extrabold">
-                    {stats?.rank || 'Rank #--'}
+
+                <div className="z-10 mt-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-slate-900 dark:text-white leading-none">
+                      {stats?.averageScore !== null && stats?.averageScore !== undefined 
+                        ? `${stats.averageScore.toFixed(1)}/10` 
+                        : 'N/A'}
+                    </span>
+                    {stats?.averageScore !== null && stats?.averageScore !== undefined && (
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center">
+                        ▲ {stats.averageScore >= 8.0 ? 'Excellence' : 'Active'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 z-10 flex items-center justify-between border-t border-blue-100/60 dark:border-blue-900/30 pt-2.5">
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-extrabold flex items-center gap-1">
+                    <span>⚡ {stats?.totalQuizzes !== undefined ? stats.totalQuizzes : 0} Practice Quizzes Done</span>
                   </p>
+                  <span className="text-[10px] font-bold text-[#2563eb] dark:text-blue-400 hover:underline">
+                    Take Quiz &rarr;
+                  </span>
                 </div>
               </>
             )}
@@ -487,27 +559,156 @@ export default function SubjectCategoryPage() {
             </button>
           </div>
           
-          {/* Exactly 2 Material Cards dynamic */}
+          {/* Material Cards with rich interactive features */}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             {displayedDocuments.map((doc) => (
               <div
                 key={doc.id}
-                onClick={() => openPreviewModal(doc)}
-                className="group relative flex flex-col justify-between rounded-2xl border border-border/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs hover:border-primary/20 dark:hover:border-blue-500/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer transition-all duration-300 min-h-[128px]"
+                className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs hover:border-blue-500/30 dark:hover:border-blue-500/40 hover:shadow-md transition-all duration-300 min-h-[145px]"
               >
                 <div className="flex items-start justify-between">
-                  <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg group-hover:bg-primary/5 transition-colors">
-                    {renderFileIcon(doc.type)}
+                  <div className="flex items-center gap-3">
+                    <div 
+                      onClick={() => handleOpenDocument(doc.id)}
+                      className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl group-hover:bg-blue-50 dark:group-hover:bg-blue-955/30 transition-colors cursor-pointer"
+                    >
+                      {renderFileIcon(doc.type)}
+                    </div>
+                    <div>
+                      {renderStatusBadge(doc.status)}
+                    </div>
                   </div>
-                  {renderStatusBadge(doc.status)}
+
+                  {/* Actions Menu */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setActiveMenuId(activeMenuId === doc.id ? null : doc.id)
+                      }}
+                      className="menu-trigger-btn p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="More actions"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+
+                    {activeMenuId === doc.id && (
+                      <div
+                        ref={menuRef}
+                        className="absolute right-0 top-8 z-30 w-48 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150"
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleOpenDocument(doc.id)
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-955/40 hover:text-blue-600 cursor-pointer"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 text-blue-500" />
+                          {t.myDocuments?.openView || 'Open & View'}
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setActiveMenuId(null)
+                            openChatDrawer(doc)
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-955/40 hover:text-indigo-600 cursor-pointer"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5 text-indigo-500" />
+                          {language === 'vi' ? 'Hỏi AI Assistant' : 'Ask AI Assistant'}
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setActiveMenuId(null)
+                            openQuizModal(doc)
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-955/40 hover:text-purple-600 cursor-pointer"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+                          {language === 'vi' ? 'Tạo AI Quiz' : 'Generate AI Quiz'}
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setActiveMenuId(null)
+                            handleDownloadFile(doc)
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <Download className="h-3.5 w-3.5 text-slate-500" />
+                          {t.myDocuments?.download || 'Download'}
+                        </button>
+
+                        <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setActiveMenuId(null)
+                            handleDeleteDocument(doc.id)
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/40 cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                          {t.myDocuments?.delete || 'Delete'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="mt-4">
-                  <h4 className="line-clamp-1 text-sm font-bold text-foreground dark:text-slate-100 group-hover:text-primary dark:group-hover:text-blue-400 transition-colors" title={doc.title || doc.fileName}>
+
+                <div 
+                  onClick={() => handleOpenDocument(doc.id)}
+                  className="mt-3 cursor-pointer group-hover:text-blue-600 transition-colors"
+                >
+                  <h4 className="line-clamp-1 text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" title={doc.title || doc.fileName}>
                     {doc.title || doc.fileName}
                   </h4>
-                  <p className="mt-1 text-xs text-muted dark:text-slate-450 font-medium">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
                     {doc.uploadedAt} • {doc.size}
                   </p>
+                </div>
+
+                {/* Quick Action Buttons */}
+                <div className="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openChatDrawer(doc)
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50/70 hover:bg-indigo-100 dark:bg-indigo-955/30 dark:hover:bg-indigo-955/60 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold transition-all cursor-pointer"
+                  >
+                    <MessageSquare className="h-3 w-3" />
+                    <span>Chat AI</span>
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openQuizModal(doc)
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50/70 hover:bg-purple-100 dark:bg-purple-955/30 dark:hover:bg-purple-955/60 text-purple-600 dark:text-purple-400 text-[11px] font-bold transition-all cursor-pointer"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    <span>AI Quiz</span>
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDownloadFile(doc)
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-semibold transition-all cursor-pointer"
+                    title="Download"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -579,21 +780,58 @@ export default function SubjectCategoryPage() {
 
           {/* Dropdown & View Mode selectors */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Type Filter */}
-            <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-955 px-3 py-1.5">
-              <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Type:</span>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="bg-transparent text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer pr-1"
+            {/* Custom Date Uploaded Filter Dropdown */}
+            <div className="relative" ref={typeDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsTypeDropdownOpen(prev => !prev)}
+                className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 transition-all cursor-pointer shadow-3xs"
               >
-                <option value="All" className="dark:bg-slate-900 dark:text-slate-100">All Types</option>
-                <option value="Pdf" className="dark:bg-slate-900 dark:text-slate-100">PDF</option>
-                <option value="Word" className="dark:bg-slate-900 dark:text-slate-100">Word</option>
-                <option value="Text" className="dark:bg-slate-900 dark:text-slate-100">Text</option>
-                <option value="Image" className="dark:bg-slate-900 dark:text-slate-100">Image</option>
-                <option value="Slides" className="dark:bg-slate-900 dark:text-slate-100">Slides</option>
-              </select>
+                <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                <span className="text-slate-400 dark:text-slate-500 font-medium">
+                  {language === 'vi' ? 'Thời gian:' : 'Uploaded:'}
+                </span>
+                <span className="text-blue-600 dark:text-blue-400 font-extrabold flex items-center gap-1">
+                  {typeFilter === 'All' && (language === 'vi' ? 'Tất cả thời gian' : 'All Time')}
+                  {typeFilter === 'Today' && (language === 'vi' ? 'Hôm nay' : 'Today')}
+                  {typeFilter === 'ThisWeek' && (language === 'vi' ? 'Tuần này' : 'This Week')}
+                  {typeFilter === 'ThisMonth' && (language === 'vi' ? 'Tháng này' : 'This Month')}
+                </span>
+                <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 transition-transform duration-200", isTypeDropdownOpen && "rotate-180")} />
+              </button>
+
+              {isTypeDropdownOpen && (
+                <div className="absolute right-0 top-10 z-40 w-48 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                  {[
+                    { label: language === 'vi' ? 'Tất cả thời gian' : 'All Time', value: 'All', icon: '🗓️' },
+                    { label: language === 'vi' ? 'Hôm nay' : 'Today', value: 'Today', icon: '📅' },
+                    { label: language === 'vi' ? 'Tuần này' : 'This Week', value: 'ThisWeek', icon: '📆' },
+                    { label: language === 'vi' ? 'Tháng này' : 'This Month', value: 'ThisMonth', icon: '🗓️' },
+                  ].map((item) => (
+                    <button
+                      key={item.value}
+                      onClick={() => {
+                        setTypeFilter(item.value)
+                        setIsTypeDropdownOpen(false)
+                      }}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors cursor-pointer text-left",
+                        typeFilter === item.value
+                          ? "bg-blue-50 dark:bg-blue-955/50 text-[#2563eb] dark:text-blue-400 font-extrabold"
+                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      )}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span>{item.icon}</span>
+                        <span>{item.label}</span>
+                      </span>
+                      {typeFilter === item.value && (
+                        <Check className="h-3.5 w-3.5 text-[#2563eb] dark:text-blue-400 shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />

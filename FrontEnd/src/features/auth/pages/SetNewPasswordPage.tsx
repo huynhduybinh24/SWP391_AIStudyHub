@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Lock, Eye, EyeOff, RotateCcw, CheckCircle2, Circle, Mail, KeyRound } from 'lucide-react'
+import { ArrowLeft, Lock, Eye, EyeOff, RotateCcw, Mail, KeyRound } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { setNewPasswordSchema, type SetNewPasswordValues } from '@/features/auth/schemas/setNewPasswordSchema'
@@ -39,6 +39,24 @@ export function SetNewPasswordPage() {
   const confirmPasswordValue = watch('confirmPassword') || ''
 
   useEffect(() => {
+    if (!emailParam) {
+      navigate('/reset-password')
+      return
+    }
+
+    const isAlreadySent = searchParams.get('sent') === 'true'
+    if (!isAlreadySent) {
+      authService.forgotPassword(emailParam).then(() => {
+        setSuccessMsg(`✨ Mã OTP 6 chữ số đã được gửi đến email ${emailParam}. Vui lòng kiểm tra hộp thư/spam.`)
+      }).catch((err: any) => {
+        setErrorMsg(err?.response?.data?.message || 'Không thể gửi email OTP. Vui lòng kiểm tra lại địa chỉ email.')
+      })
+    } else {
+      setSuccessMsg(`✨ Mã OTP 6 chữ số đã được gửi đến email ${emailParam}. Vui lòng kiểm tra hộp thư/spam.`)
+    }
+  }, [emailParam, navigate, searchParams])
+
+  useEffect(() => {
     if (resendCooldown > 0) {
       const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
       return () => clearTimeout(timer)
@@ -52,18 +70,19 @@ export function SetNewPasswordPage() {
   }, [passwordValue, confirmPasswordValue, trigger])
 
   const handleResendOtp = async () => {
-    if (!emailValue) {
-      setError('email', { type: 'manual', message: 'Please enter your email to resend OTP.' })
+    const targetEmail = emailParam || emailValue
+    if (!targetEmail) {
+      setError('email', { type: 'manual', message: 'Vui lòng cung cấp email để gửi lại mã OTP.' })
       return
     }
     setErrorMsg('')
     setSuccessMsg('')
     try {
-      await authService.forgotPassword(emailValue)
-      setSuccessMsg('A new OTP code has been sent successfully to your email!')
+      await authService.forgotPassword(targetEmail)
+      setSuccessMsg(`✨ Mã OTP mới đã được gửi lại thành công đến email ${targetEmail}!`)
       setResendCooldown(60)
     } catch (err: any) {
-      setErrorMsg(err?.response?.data?.message || err?.message || 'Failed to resend OTP. Please try again later.')
+      setErrorMsg(err?.response?.data?.message || err?.message || 'Gửi lại OTP thất bại. Vui lòng thử lại sau.')
     }
   }
 
@@ -110,18 +129,18 @@ export function SetNewPasswordPage() {
       } else if (backendMessage.includes("Token expired or already used")) {
         setError('otp', { 
           type: 'manual', 
-          message: 'OTP code has expired or has already been used.' 
+          message: 'Mã OTP đã hết hạn hoặc đã được sử dụng.' 
+        })
+      } else if (backendMessage.includes("3 mật khẩu") || backendMessage.includes("trùng")) {
+        setError('password', {
+          type: 'manual',
+          message: 'Mật khẩu mới không được trùng với 3 mật khẩu đã sử dụng gần nhất của bạn!'
         })
       } else {
-        setErrorMsg(backendMessage || 'Invalid or expired OTP code.')
+        setErrorMsg(backendMessage || 'Mã OTP không hợp lệ hoặc đã hết hạn.')
       }
     }
   }
-
-  // Password requirement checks
-  const hasMinLength = passwordValue.length >= 8
-  const hasUpperCase = /[A-Z]/.test(passwordValue)
-  const hasNumberOrSpecial = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(passwordValue)
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F6F9FC] font-sans relative overflow-hidden">
@@ -150,15 +169,23 @@ export function SetNewPasswordPage() {
                 <label className="mb-2 block text-sm font-bold text-foreground" htmlFor="email">
                   Email Address
                 </label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="student@university.edu"
-                  startIcon={<Mail className="w-5 h-5 text-muted" />}
-                  className="bg-white border-border/60 focus:bg-white"
-                  error={errors.email?.message}
-                  {...register('email')}
-                />
+                <div className="relative">
+                  <Input
+                    id="email"
+                    type="email"
+                    readOnly
+                    placeholder="student@university.edu"
+                    startIcon={<Mail className="w-5 h-5 text-slate-400" />}
+                    endIcon={<Lock className="w-4 h-4 text-slate-400" />}
+                    className="bg-slate-100/80 border-slate-200 text-slate-600 font-semibold cursor-not-allowed select-none focus:bg-slate-100/80"
+                    error={errors.email?.message}
+                    {...register('email')}
+                  />
+                </div>
+                <p className="mt-1.5 text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-slate-400 inline" />
+                  Email cố định theo tài khoản yêu cầu khôi phục mật khẩu (Không thể chỉnh sửa)
+                </p>
               </div>
 
               <div>
@@ -236,25 +263,15 @@ export function SetNewPasswordPage() {
               </div>
             </div>
 
-            {/* Password Requirements */}
-            <div className="bg-[#F3F5F8] p-4 rounded-xl border border-border/40">
-              <p className="text-xs font-bold text-muted uppercase tracking-wider mb-3">
-                PASSWORD REQUIREMENTS:
-              </p>
-              <ul className="space-y-2">
-                <li className={`flex items-center gap-2 text-sm ${hasMinLength ? 'text-[#3B41E3] font-semibold' : 'text-body'}`}>
-                  {hasMinLength ? <CheckCircle2 className="w-4 h-4 text-[#3B41E3]" /> : <Circle className="w-4 h-4 text-muted" />}
-                  At least 8 characters long
-                </li>
-                <li className={`flex items-center gap-2 text-sm ${hasUpperCase ? 'text-[#3B41E3] font-semibold' : 'text-body'}`}>
-                  {hasUpperCase ? <CheckCircle2 className="w-4 h-4 text-[#3B41E3]" /> : <Circle className="w-4 h-4 text-muted" />}
-                  Contains at least one uppercase letter
-                </li>
-                <li className={`flex items-center gap-2 text-sm ${hasNumberOrSpecial ? 'text-[#3B41E3] font-semibold' : 'text-body'}`}>
-                  {hasNumberOrSpecial ? <CheckCircle2 className="w-4 h-4 text-[#3B41E3]" /> : <Circle className="w-4 h-4 text-muted" />}
-                  Contains at least one number or special character
-                </li>
-              </ul>
+            {/* Password Policy Banner */}
+            <div className="bg-amber-50 dark:bg-amber-950/40 p-4 rounded-xl border border-amber-200/60 dark:border-amber-900/50 flex items-start gap-3">
+              <RotateCcw className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                <p className="font-bold text-amber-900 dark:text-amber-200 mb-0.5">
+                  Quy định bảo mật mật khẩu:
+                </p>
+                Mật khẩu mới không được trùng với <strong>3 mật khẩu cũ đã sử dụng gần nhất</strong> của bạn.
+              </div>
             </div>
 
             {errorMsg && (

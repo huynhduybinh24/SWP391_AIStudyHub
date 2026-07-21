@@ -219,6 +219,7 @@ public class DataInitializer implements CommandLineRunner {
             jdbcTemplate.update("DELETE FROM documents WHERE user_id IN (" + selectTestUsersSubquery + ")");
             jdbcTemplate.update("DELETE FROM users WHERE email LIKE 'test_%' OR email LIKE 'testuser_%' OR full_name LIKE 'Test User%'");
 
+            jdbcTemplate.execute("TRUNCATE TABLE ai_studio_caches");
             jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1");
         } catch (Exception e) {
             System.err.println("DB Cleanup failed: " + e.getMessage());

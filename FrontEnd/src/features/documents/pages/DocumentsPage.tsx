@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { logActivity } from '@/services/activityLogService'
 import { aiService } from '@/services/aiService'
@@ -39,7 +39,7 @@ interface DocumentItem {
   size: string
   sizeKb: number
   subject: string
-  status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED'
+  status: 'ANALYZED' | 'PENDING' | 'SCANNING' | 'QUEUED' | 'REJECTED'
   type: 'pdf' | 'word' | 'image' | 'text' | 'slides'
   essential?: boolean
   ownerName?: string
@@ -994,21 +994,35 @@ export function DocumentsPage() {
     }
   }
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     try {
       const backendDocs = await documentService.getAllDocuments(userId)
       if (backendDocs) {
-        setDocuments(backendDocs.map(mapBackendDocToItem))
+        // Exclude AI rejected / pending review documents from My Documents view
+        const approvedDocs = backendDocs.filter((d: any) => 
+          d.moderationStatus === 'APPROVED' || d.moderationStatus === null || d.moderationStatus === undefined
+        )
+        setDocuments(approvedDocs.map(mapBackendDocToItem))
       }
     } catch (e) {
       console.error('Failed to load documents from backend:', e)
       showToast('Không thể tải danh sách tài liệu từ máy chủ.')
     }
-  }
+  }, [userId])
 
   useEffect(() => {
     fetchDocuments()
-  }, [userId])
+
+    const handleNotificationsUpdate = () => {
+      fetchDocuments()
+    }
+    window.addEventListener('aiStudyHubNotificationsUpdated', handleNotificationsUpdate)
+    window.addEventListener('aiStudyHubUserChanged', handleNotificationsUpdate)
+    return () => {
+      window.removeEventListener('aiStudyHubNotificationsUpdated', handleNotificationsUpdate)
+      window.removeEventListener('aiStudyHubUserChanged', handleNotificationsUpdate)
+    }
+  }, [userId, fetchDocuments])
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1089,7 +1103,9 @@ export function DocumentsPage() {
         const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
         setUploadedSubjectKey(finalSubjectKey)
         setUploadedDocId(response.id)
-        setModerationState('scanning')
+        
+        const isApproved = response.moderationStatus === 'APPROVED'
+        setModerationState(isApproved ? 'approved' : 'scanning')
         setApprovalModalOpen(true)
 
         setNewDocTitle('')
@@ -1098,6 +1114,8 @@ export function DocumentsPage() {
         setNewDocSubject('PRF192')
         setNewDocType('pdf')
         setSelectedFile(null)
+
+        fetchDocuments()
 
         // Clear any existing polling interval
         if (pollingIntervalRef.current) {
@@ -1514,6 +1532,12 @@ export function DocumentsPage() {
         return (
           <span className="rounded-md border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-400 dark:text-slate-550">
             QUEUED
+          </span>
+        )
+      case 'REJECTED':
+        return (
+          <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-600 dark:bg-rose-955/20 dark:text-rose-450 dark:border-rose-900/50">
+            REJECTED
           </span>
         )
       default:

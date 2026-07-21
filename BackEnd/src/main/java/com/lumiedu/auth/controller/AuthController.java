@@ -50,6 +50,11 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final SystemSettingRepository systemSettingRepository;
     private final AuthService authService;
+    private final com.lumiedu.email.service.EmailService emailService;
+
+    private final java.util.concurrent.ConcurrentHashMap<String, OtpDetails> registerOtpMap = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.ConcurrentHashMap<String, java.time.LocalDateTime> otpCooldownMap = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.ConcurrentHashMap<String, OtpRequestTracker> otpRequestTrackerMap = new java.util.concurrent.ConcurrentHashMap<>();
 
     @Value("${google.client-id:123456789-dummy.apps.googleusercontent.com}")
     private String googleClientId;
@@ -506,5 +511,33 @@ public class AuthController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
+    }
+
+    @Data
+    public static class SendOtpRequest {
+        private String email;
+        private String fullName;
+    }
+
+    @Data
+    public static class VerifyOtpRegisterRequest {
+        private String email;
+        private String fullName;
+        private String password;
+        private String otp;
+    }
+
+    @Data
+    @AllArgsConstructor
+    private static class OtpDetails {
+        private String otp;
+        private java.time.LocalDateTime expiredAt;
+        private int failedAttempts;
+    }
+
+    @Data
+    private static class OtpRequestTracker {
+        private int count;
+        private java.time.LocalDateTime firstRequestTime;
     }
 }

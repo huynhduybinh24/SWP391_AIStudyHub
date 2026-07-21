@@ -250,18 +250,7 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
             return new InputStreamResource(inputStream);
         } catch (Exception e) {
-            log.error("Google Drive download failed for ID {} and user {}. Falling back to default/mock. Error: {}", googleDriveFileId, userId, e.getMessage());
-            if (isUserDriveConnected(userId)) {
-                try {
-                    InputStream inputStream = googleDrive.files()
-                            .get(googleDriveFileId)
-                            .setSupportsAllDrives(true)
-                            .executeMediaAsInputStream();
-                    return new InputStreamResource(inputStream);
-                } catch (Exception ex) {
-                    log.error("Fallback Google Drive download failed. Error: {}", ex.getMessage());
-                }
-            }
+            log.error("Google Drive download failed for ID {} and user {}. Falling back to mock. Error: {}", googleDriveFileId, userId, e.getMessage());
             return downloadFileMock(googleDriveFileId);
         }
     }
@@ -311,18 +300,7 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                     .execute();
             log.info("GOOGLE DRIVE: Deleted file ID: {} using client for user: {}", googleDriveFileId, userId);
         } catch (Exception e) {
-            log.error("Google Drive delete failed for ID {} and user {}. Falling back to default/mock. Error: {}", googleDriveFileId, userId, e.getMessage());
-            if (isUserDriveConnected(userId)) {
-                try {
-                    googleDrive.files().delete(googleDriveFileId)
-                            .setSupportsAllDrives(true)
-                            .execute();
-                    log.info("GOOGLE DRIVE: Deleted file ID: {} using default googleDrive", googleDriveFileId);
-                    return;
-                } catch (Exception ex) {
-                    log.error("Fallback Google Drive delete failed. Error: {}", ex.getMessage());
-                }
-            }
+            log.error("Google Drive delete failed for ID {} and user {}. Falling back to mock. Error: {}", googleDriveFileId, userId, e.getMessage());
             deleteFileMock(googleDriveFileId);
         }
     }
@@ -512,20 +490,13 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                 permission.setRole(role);
                 permission.setEmailAddress(email);
                 driveClient.permissions().create(googleDriveFileId, permission)
+                        .setSendNotificationEmail(true)
                         .setSupportsAllDrives(true)
                         .execute();
                 log.info("GOOGLE DRIVE: Shared file ID: {} with email: {} as role: {} using client for user: {}", googleDriveFileId, email, role, userId);
             }
         } catch (Exception e) {
             log.error("Google Drive sharing failed for file ID: {} and email: {} and user {}. Error: {}", googleDriveFileId, email, userId, e.getMessage());
-            if (isUserDriveConnected(userId)) {
-                try {
-                    shareFile(googleDriveFileId, email, role, null);
-                    return;
-                } catch (Exception ex) {
-                    log.error("Fallback Google Drive sharing failed. Error: {}", ex.getMessage());
-                }
-            }
             throw new IOException("Google Drive permission API failed: " + e.getMessage(), e);
         }
     }
@@ -572,14 +543,6 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             log.info("GOOGLE DRIVE: No matching permission found to revoke for email: {}", email);
         } catch (Exception e) {
             log.error("Google Drive revoking failed for file ID: {} and email: {} and user {}. Error: {}", googleDriveFileId, email, userId, e.getMessage());
-            if (isUserDriveConnected(userId)) {
-                try {
-                    revokeShare(googleDriveFileId, email, null);
-                    return;
-                } catch (Exception ex) {
-                    log.error("Fallback Google Drive revoking failed. Error: {}", ex.getMessage());
-                }
-            }
             log.warn("Revoke share call encountered an error but continuing gracefully to prevent breaking the flow: {}", e.getMessage());
         }
     }

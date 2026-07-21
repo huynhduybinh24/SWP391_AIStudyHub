@@ -3,7 +3,6 @@ package com.lumiedu.ai.service.impl;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.lumiedu.ai.service.GeminiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,7 @@ public class GeminiServiceImpl {
         if (apiKey != null && !apiKey.trim().isEmpty() && !"mock-gemini-key".equalsIgnoreCase(apiKey) && !"mock-key".equalsIgnoreCase(apiKey)) {
             try {
                 log.info("Querying Google Gemini API for content moderation...");
-                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" + apiKey;
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);

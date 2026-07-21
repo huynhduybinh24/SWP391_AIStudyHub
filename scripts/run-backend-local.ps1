@@ -18,18 +18,8 @@ Write-Host "[+] Environment variable APP_ENCRYPTION_SECRET set for current sessi
 Push-Location "$PSScriptRoot\..\BackEnd"
 
 try {
-    # Build package
-    Write-Host "[+] Building Backend package..." -ForegroundColor Cyan
-    mvn clean package -DskipTests
-    
-    if ($LASTEXITCODE -ne 0) {
-         Write-Host "[!] Build failed!" -ForegroundColor Red
-         exit $LASTEXITCODE
-    }
-
-    # Run application
     Write-Host "[+] Starting Spring Boot application..." -ForegroundColor Cyan
-    java -jar target\lumiedu-0.0.1-SNAPSHOT.jar --server.port=8080 --spring.profiles.active=local
+    mvn spring-boot:run "-Dspring-boot.run.profiles=local" "-Dmaven.test.skip=true"
 } finally {
     Pop-Location
 }

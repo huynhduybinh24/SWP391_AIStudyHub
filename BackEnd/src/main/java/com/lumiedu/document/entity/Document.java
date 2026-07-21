@@ -227,7 +227,6 @@ public class Document {
 
     public String getDriveSyncError() { return driveSyncError; }
     public void setDriveSyncError(String driveSyncError) { this.driveSyncError = driveSyncError; }
-
     // --- Builder Pattern ---
     public static DocumentBuilder builder() {
         return new DocumentBuilder();

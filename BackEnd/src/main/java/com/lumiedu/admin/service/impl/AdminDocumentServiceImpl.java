@@ -405,3 +405,4 @@ public class AdminDocumentServiceImpl implements AdminDocumentService {
         }
     }
 }
+// Force JDT LS revalidation

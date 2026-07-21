@@ -13,14 +13,11 @@ import com.lumiedu.document.entity.AudioRecord;
 import com.lumiedu.document.entity.Document;
 import com.lumiedu.document.entity.DocumentDownload;
 import com.lumiedu.document.entity.DocumentTag;
-import com.lumiedu.document.enums.DocumentStatus;
-import com.lumiedu.ai.service.DocumentChunkingService;
 import com.lumiedu.document.exception.DocumentNotFoundException;
 import com.lumiedu.document.exception.FileStorageException;
 import com.lumiedu.document.exception.InvalidFileTypeException;
 import com.lumiedu.document.entity.DocumentShare;
 import com.lumiedu.document.repository.DocumentShareRepository;
-import com.lumiedu.user.entity.User;
 import com.lumiedu.document.repository.AudioRecordRepository;
 import com.lumiedu.document.repository.DocumentDownloadRepository;
 import com.lumiedu.document.repository.DocumentRepository;
@@ -42,10 +39,6 @@ import com.lumiedu.document.entity.Subject;
 import com.lumiedu.document.repository.SubjectRepository;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.File;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,7 +55,8 @@ import java.util.stream.Collectors;
 public class DocumentServiceImpl implements DocumentService {
 
     private static final Set<String> ALLOWED_DOCUMENT_EXTENSIONS = Set.of(
-            "pdf");
+            "pdf"
+    );
 
     private static final Set<String> ALLOWED_MEDIA_EXTENSIONS = Set.of(
             "jpg", "jpeg", "png", "mp4", "mp3", "wav");
@@ -136,6 +130,45 @@ public class DocumentServiceImpl implements DocumentService {
 
         if (!allowedExtensions.contains(extension)) {
             throw new InvalidFileTypeException(extension, fileType);
+        }
+
+        // Check for duplicate document within the same subject or globally
+        String subjectToUse = request.getSubject() != null && !request.getSubject().trim().isEmpty()
+                ? request.getSubject().trim()
+                : "GENERAL";
+        Long userId = request.getUserId();
+        String fileChecksum = calculateChecksum(file);
+        String titleToUse = request.getTitle() != null && !request.getTitle().trim().isEmpty()
+                ? request.getTitle().trim()
+                : originalFileName;
+
+        // STEP 1: Check duplicate FILE CONTENT (Checksum SHA-256) FIRST
+        if (fileChecksum != null) {
+            boolean checksumExistsInSubject = documentRepository.existsBySubjectIgnoreCaseAndChecksumAndDeletedFalse(subjectToUse, fileChecksum);
+            boolean checksumExistsForUser = userId != null && documentRepository.existsByUserIdAndSubjectIgnoreCaseAndChecksumAndDeletedFalse(userId, subjectToUse, fileChecksum);
+
+            if (checksumExistsInSubject || checksumExistsForUser) {
+                throw new IllegalArgumentException("Nội dung tệp bị trùng: Tệp này đã được tải lên trước đó trong môn học [" + subjectToUse + "]! Vui lòng chọn tệp khác.");
+            }
+        }
+
+        // STEP 2: Check duplicate TITLE SECOND
+        if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
+            String trimmedTitle = request.getTitle().trim();
+            boolean titleInSub = documentRepository.existsBySubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(subjectToUse, trimmedTitle);
+            boolean titleForUsr = userId != null && documentRepository.existsByUserIdAndSubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(userId, subjectToUse, trimmedTitle);
+
+            if (titleInSub || titleForUsr) {
+                throw new IllegalArgumentException("Tiêu đề tài liệu bị trùng: Tiêu đề '" + trimmedTitle + "' đã tồn tại trong môn học [" + subjectToUse + "]. Vui lòng sửa tiêu đề khác!");
+            }
+        }
+
+        // STEP 3: Check duplicate ORIGINAL FILE NAME THIRD
+        boolean nameInSub = documentRepository.existsBySubjectIgnoreCaseAndOriginalFileNameIgnoreCaseAndDeletedFalse(subjectToUse, originalFileName);
+        boolean nameForUsr = userId != null && documentRepository.existsByUserIdAndSubjectIgnoreCaseAndOriginalFileNameIgnoreCaseAndDeletedFalse(userId, subjectToUse, originalFileName);
+
+        if (nameInSub || nameForUsr) {
+            throw new IllegalArgumentException("Tên tệp gốc bị trùng: Tệp '" + originalFileName + "' đã tồn tại trong môn học [" + subjectToUse + "]. Vui lòng nhập Tiêu đề riêng để phân biệt!");
         }
 
         // Upload lên Google Drive
@@ -216,7 +249,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .storageProvider(googleDriveFileId != null ? ("STAGING".equals(driveSyncStatus) ? "GOOGLE_DRIVE_STAGING" : "GOOGLE_DRIVE") : "LOCAL")
                 .checksum(calculateChecksum(file))
                 .deleted(false)
-                .moderationStatus(FILE_TYPE_DOCUMENT.equals(fileType) ? DocumentStatus.PENDING : DocumentStatus.APPROVED)
+                .moderationStatus(DocumentStatus.APPROVED)
                 .driveSyncStatus(driveSyncStatus)
                 .driveSyncError(driveSyncError)
                 .build();
@@ -345,6 +378,7 @@ public class DocumentServiceImpl implements DocumentService {
             throw new IllegalArgumentException("User ID is required.");
         }
         return documentRepository.findAllByUserIdAndDeletedFalse(userId).stream()
+                .filter(this::isApprovedForUser)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -576,10 +610,22 @@ public class DocumentServiceImpl implements DocumentService {
     // Helpers
     // -------------------------------------------------------------------------
 
-    private boolean isApprovedForUser(Document document) {
-        return document.getModerationStatus() == null
-                || document.getModerationStatus() == DocumentStatus.APPROVED;
+    private Long getCurrentUserId() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            Object details = auth.getDetails();
+            if (details instanceof Long) {
+                return (Long) details;
+            }
+        }
+        return null;
     }
+
+    private boolean isApprovedDocument(Document document) {
+    return document != null
+            && document.getModerationStatus() == DocumentStatus.APPROVED;
+}
 
 
     private void validateFile(MultipartFile file) {
@@ -608,7 +654,7 @@ public class DocumentServiceImpl implements DocumentService {
             return UUID.randomUUID().toString().replace("-", "");
         }
     }
-
+  
     private String getExtension(String filename) {
         int dotIndex = filename.lastIndexOf('.');
         if (dotIndex < 0 || dotIndex == filename.length() - 1) {
@@ -890,10 +936,13 @@ public class DocumentServiceImpl implements DocumentService {
                     + "/10. Hãy thử sức tạo các Quiz nâng cao hoặc giúp đỡ các bạn cùng lớp học tập.";
         }
 
+        int totalQuizzes = userAttempts.size();
+
         return SubjectStatsResponse.builder()
                 .studyProgress(studyProgress)
                 .averageScore(averageScore)
                 .rank(rankStr)
+                .totalQuizzes(totalQuizzes)
                 .aiRecommendation(aiRec)
                 .build();
     }
