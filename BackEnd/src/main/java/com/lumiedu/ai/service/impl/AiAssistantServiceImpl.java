@@ -277,6 +277,12 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
         if (!docIds.isEmpty()) {
             ragContext = performRagSearch(docIds, messageText);
+            if (!ragContext.isEmpty()) {
+                System.out.println("========== RETRIEVE CONTEXT ==========");
+                System.out.println("Question: " + messageText);
+                System.out.print(ragContext);
+                System.out.println("======================================");
+            }
         }
 
         // 3. Gather chat history (last 10 messages)
@@ -850,11 +856,17 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         
         Collections.sort(scoredChunks);
         StringBuilder result = new StringBuilder();
-        int limit = Math.min(scoredChunks.size(), 5);
-        for (int i = 0; i < limit; i++) {
-            DocumentChunk c = scoredChunks.get(i).chunk;
-            result.append("--- Source Document ID: ").append(c.getDocumentId()).append(" ---\n");
-            result.append(c.getContent()).append("\n\n");
+        Set<String> seenSnippets = new HashSet<>();
+        int count = 0;
+        for (ChunkVectorScore item : scoredChunks) {
+            if (count >= 5) break;
+            DocumentChunk c = item.chunk;
+            String snippet = c.getContent() != null ? c.getContent().trim() : "";
+            if (!snippet.isEmpty() && seenSnippets.add(snippet)) {
+                result.append("--- Source Document ID: ").append(c.getDocumentId()).append(" ---\n");
+                result.append(snippet).append("\n\n");
+                count++;
+            }
         }
         
         return result.toString();
@@ -914,6 +926,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 firstChunks.putIfAbsent(chunk.getDocumentId(), chunk);
             }
             for (DocumentChunk firstChunk : firstChunks.values()) {
+                fallback.append("--- Source Document ID: ").append(firstChunk.getDocumentId()).append(" ---\n");
                 fallback.append(firstChunk.getContent()).append("\n\n");
             }
             return fallback.toString();
@@ -921,11 +934,17 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         
         Collections.sort(scoredChunks);
         StringBuilder result = new StringBuilder();
-        int limit = Math.min(scoredChunks.size(), 5);
-        for (int i = 0; i < limit; i++) {
-            DocumentChunk c = scoredChunks.get(i).chunk;
-            result.append("--- Source Document ID: ").append(c.getDocumentId()).append(" ---\n");
-            result.append(c.getContent()).append("\n\n");
+        Set<String> seenSnippets = new HashSet<>();
+        int count = 0;
+        for (ChunkScore item : scoredChunks) {
+            if (count >= 5) break;
+            DocumentChunk c = item.chunk;
+            String snippet = c.getContent() != null ? c.getContent().trim() : "";
+            if (!snippet.isEmpty() && seenSnippets.add(snippet)) {
+                result.append("--- Source Document ID: ").append(c.getDocumentId()).append(" ---\n");
+                result.append(snippet).append("\n\n");
+                count++;
+            }
         }
 
         return result.toString();
