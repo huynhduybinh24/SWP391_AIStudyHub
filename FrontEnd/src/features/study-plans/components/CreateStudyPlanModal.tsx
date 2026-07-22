@@ -199,9 +199,6 @@ export const CreateStudyPlanModal = ({ isOpen, onClose }: CreateStudyPlanModalPr
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="button" variant="secondary">
-            Save as Draft
-          </Button>
           <Button type="submit" variant="primary">
             Create Study Plan
           </Button>

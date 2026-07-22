@@ -17,6 +17,15 @@ export function useLogin() {
       if (data.requires2fa || !data.user || !data.tokens) {
         return
       }
+      try {
+        const cleanEmailStr = variables.email.trim().toLowerCase()
+        const stored = localStorage.getItem('loginFailedAttemptsPerEmail')
+        if (stored) {
+          const map = JSON.parse(stored)
+          delete map[cleanEmailStr]
+          localStorage.setItem('loginFailedAttemptsPerEmail', JSON.stringify(map))
+        }
+      } catch (e) {}
       // Capture actual login credentials to match on the switcher
       if (typeof window !== 'undefined') {
         try {

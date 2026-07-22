@@ -15,11 +15,47 @@ import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { aiService } from '@/services/aiService'
 import { documentService } from '@/services/documentService'
+import { toast } from '@/components/ui/Toast'
+import type { StudyPlan } from './StudyPlansPage'
 
-// ─── Types ──────────────────────────────────────────────
+// ─── Types & Constants ──────────────────────────────────────────
+
+export interface CreateStudyPlanModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onCreate?: (newPlan: StudyPlan) => void
+  onUpdate?: (updatedPlan: StudyPlan) => void
+  editingPlan?: StudyPlan | null
+  preselectedDocId?: string | null
+  autoGenerate?: boolean
+}
+
+const AI_SUGGESTIONS: Record<string, { title: string; description: string }> = {
+  Mathematics: { title: 'Mathematics Mastery Plan', description: 'A structured approach to mastering calculus, algebra, and statistics from basics to advanced topics.' },
+  Physics: { title: 'Physics Deep Dive', description: 'Comprehensive study covering mechanics, thermodynamics, electromagnetism, and modern physics.' },
+  'Computer Science': { title: 'CS & Algorithms Bootcamp', description: 'From data structures to system design — conquer technical interviews and build solid CS foundations.' },
+  Literature: { title: 'Literature Analysis Journey', description: 'Exploring classic and modern literature through close reading, critical analysis, and essay practice.' },
+  Chemistry: { title: 'Comprehensive Chemistry Guide', description: 'Mastering organic and inorganic chemistry with lab practice, reaction mechanisms, and exam prep.' },
+  Biology: { title: 'Biological Systems Mastery', description: 'Complete coverage of cell biology, genetics, ecology, and human physiology with diagram practice.' }
+}
+
+export type SemesterKey = 'ALL' | 'K1' | 'K2' | 'K3' | 'K4' | 'K5' | 'K6' | 'K7' | 'K8' | 'K9'
+
+export const MAJORS = [
+  { key: 'SE', labelVI: 'Kỹ thuật phần mềm (SE)', labelEN: 'Software Engineering (SE)' },
+  { key: 'AI', labelVI: 'Trí tuệ nhân tạo (AI)', labelEN: 'Artificial Intelligence (AI)' },
+  { key: 'IA', labelVI: 'An toàn thông tin (IA)', labelEN: 'Information Assurance (IA)' },
+  { key: 'GD', labelVI: 'Thiết kế đồ họa (GD)', labelEN: 'Graphic Design (GD)' },
+  { key: 'BA', labelVI: 'Quản trị kinh doanh (BA)', labelEN: 'Business Administration (BA)' },
+  { key: 'IB', labelVI: 'Kinh doanh quốc tế (IB)', labelEN: 'International Business (IB)' },
+  { key: 'DM', labelVI: 'Digital Marketing (DM)', labelEN: 'Digital Marketing (DM)' },
+  { key: 'LANG', labelVI: 'Ngôn ngữ Anh/Nhật/Hàn', labelEN: 'English/Japanese/Korean Languages' },
+]
 
 type StudyPlanFormValues = {
   title:       string
+  major?:      string
+  semester?:   SemesterKey
   subject:     string
   description?: string
   startDate:   string
@@ -31,34 +67,233 @@ type StudyPlanFormValues = {
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
+export const SEMESTERS: { key: SemesterKey; labelVI: string; labelEN: string }[] = [
+  { key: 'ALL', labelVI: 'Tất cả học kỳ', labelEN: 'All Semesters' },
+  { key: 'K1', labelVI: 'Học kỳ 1 (K1)', labelEN: 'Semester 1 (K1)' },
+  { key: 'K2', labelVI: 'Học kỳ 2 (K2)', labelEN: 'Semester 2 (K2)' },
+  { key: 'K3', labelVI: 'Học kỳ 3 (K3)', labelEN: 'Semester 3 (K3)' },
+  { key: 'K4', labelVI: 'Học kỳ 4 (K4)', labelEN: 'Semester 4 (K4)' },
+  { key: 'K5', labelVI: 'Học kỳ 5 (K5)', labelEN: 'Semester 5 (K5)' },
+  { key: 'K6', labelVI: 'Học kỳ 6 (K6)', labelEN: 'Semester 6 (K6)' },
+  { key: 'K7', labelVI: 'Học kỳ 7 (K7)', labelEN: 'Semester 7 (K7)' },
+  { key: 'K8', labelVI: 'Học kỳ 8 (K8)', labelEN: 'Semester 8 (K8)' },
+  { key: 'K9', labelVI: 'Học kỳ 9 (K9)', labelEN: 'Semester 9 (K9)' },
+]
 
-// AI suggestion templates per subject (raw English suggestions, mapped on request)
-const AI_SUGGESTIONS: Record<string, { title: string; description: string; schedule: string[] }> = {
-  Mathematics:      { title: 'Mathematics Mastery Plan',      description: 'Structured approach to master calculus, algebra, and statistics from fundamentals to advanced topics.',      schedule: ['Mon', 'Wed', 'Fri'] },
-  Physics:          { title: 'Physics Deep Dive',             description: 'Comprehensive study of mechanics, thermodynamics, electromagnetism, and modern physics.',                    schedule: ['Tue', 'Thu', 'Sat'] },
-  'Computer Science': { title: 'CS & Algorithms Bootcamp',   description: 'From data structures to system design — crack technical interviews and build solid CS foundations.',          schedule: ['Mon', 'Tue', 'Thu', 'Fri'] },
-  Literature:       { title: 'Literature Analysis Journey',   description: 'Explore classic and modern literature through close reading, critical analysis, and essay writing practice.', schedule: ['Wed', 'Sat', 'Sun'] },
-  Chemistry:        { title: 'Chemistry Complete Guide',      description: 'Master organic and inorganic chemistry with lab practicals, reaction mechanisms, and exam preparation.',       schedule: ['Mon', 'Wed', 'Fri'] },
-  Biology:          { title: 'Biology Systems Mastery',       description: 'Comprehensive coverage of cell biology, genetics, ecology, and human physiology with diagram practice.',       schedule: ['Tue', 'Thu', 'Sat'] },
+export interface SubjectOption {
+  code: string
+  title: string
+  semester: SemesterKey
 }
 
-// ─── Props ───────────────────────────────────────────────
+export const ALL_SUBJECTS: SubjectOption[] = [
+  // Semester 1
+  { code: 'PRF192', title: 'Programming Fundamentals (PRF192)', semester: 'K1' },
+  { code: 'MAE101', title: 'Mathematics for Engineering (MAE101)', semester: 'K1' },
+  { code: 'CEA201', title: 'Computer Organization (CEA201)', semester: 'K1' },
+  { code: 'CSI104', title: 'Introduction to Computer Science (CSI104)', semester: 'K1' },
+  { code: 'MGT103', title: 'Introduction to Management (MGT103)', semester: 'K1' },
+  { code: 'ECO111', title: 'Microeconomics (ECO111)', semester: 'K1' },
+  { code: 'FMA101', title: 'Financial Mathematics (FMA101)', semester: 'K1' },
 
-interface CreateStudyPlanModalProps {
-  isOpen:   boolean
-  onClose:  () => void
-  onCreate?: (newPlan: any) => void
-  preselectedDocId?: string
-  autoGenerate?: boolean
+  // Semester 2
+  { code: 'PRO192', title: 'Object-Oriented Programming (PRO192)', semester: 'K2' },
+  { code: 'MAD101', title: 'Discrete Mathematics (MAD101)', semester: 'K2' },
+  { code: 'OSG202', title: 'Operating Systems (OSG202)', semester: 'K2' },
+  { code: 'SSG104', title: 'Communication Skills (SSG104)', semester: 'K2' },
+  { code: 'MKT101', title: 'Basic Marketing (MKT101)', semester: 'K2' },
+  { code: 'ECO121', title: 'Macroeconomics (ECO121)', semester: 'K2' },
+  { code: 'AMG111', title: 'Art Management (AMG111)', semester: 'K2' },
+
+  // Semester 3
+  { code: 'CSD201', title: 'Data Structures & Algorithms (CSD201)', semester: 'K3' },
+  { code: 'DBI202', title: 'Database Systems (DBI202)', semester: 'K3' },
+  { code: 'LAB211', title: 'OOP Java Lab (LAB211)', semester: 'K3' },
+  { code: 'AIL302M', title: 'Machine Learning (AIL302m)', semester: 'K3' },
+  { code: 'ACC101', title: 'Principles of Accounting (ACC101)', semester: 'K3' },
+  { code: 'FIN201', title: 'Corporate Finance (FIN201)', semester: 'K3' },
+  { code: 'BUL201', title: 'Business Law (BUL201)', semester: 'K3' },
+
+  // Semester 4
+  { code: 'PRN211', title: 'Basic Cross-Platform .NET (PRN211)', semester: 'K4' },
+  { code: 'SWE201', title: 'Software Engineering (SWE201)', semester: 'K4' },
+  { code: 'JPD113', title: 'Japanese Language 1 (JPD113)', semester: 'K4' },
+  { code: 'AIP301', title: 'Artificial Intelligence Project (AIP301)', semester: 'K4' },
+  { code: 'MTH202', title: 'Probability & Statistics (MTH202)', semester: 'K4' },
+  { code: 'HRM201', title: 'Human Resource Management (HRM201)', semester: 'K4' },
+  { code: 'OBH201', title: 'Organizational Behavior (OBH201)', semester: 'K4' },
+  { code: 'MRF301', title: 'Marketing Research (MRF301)', semester: 'K4' },
+
+  // Semester 5
+  { code: 'SWP391', title: 'Software Development Project (SWP391)', semester: 'K5' },
+  { code: 'SWD392', title: 'Software Architecture & Design (SWD392)', semester: 'K5' },
+  { code: 'SWT301', title: 'Software Testing (SWT301)', semester: 'K5' },
+  { code: 'DLN301', title: 'Deep Learning (DLN301)', semester: 'K5' },
+  { code: 'BIS301', title: 'Business Information Systems (BIS301)', semester: 'K5' },
+  { code: 'ENT301', title: 'Entrepreneurship (ENT301)', semester: 'K5' },
+  { code: 'POM201', title: 'Production & Operations Management (POM201)', semester: 'K5' },
+
+  // Semester 6
+  { code: 'OJT202', title: 'On-the-Job Training (OJT202)', semester: 'K6' },
+
+  // Semester 7
+  { code: 'PRM392', title: 'Mobile Programming (PRM392)', semester: 'K7' },
+  { code: 'PRN221', title: 'Advanced .NET Application (PRN221)', semester: 'K7' },
+  { code: 'WDP301', title: 'Web Development Project (WDP301)', semester: 'K7' },
+  { code: 'NLP301', title: 'Natural Language Processing (NLP301)', semester: 'K7' },
+  { code: 'CVP301', title: 'Computer Vision Project (CVP301)', semester: 'K7' },
+  { code: 'IBM301', title: 'International Business Management (IBM301)', semester: 'K7' },
+  { code: 'SCM301', title: 'Supply Chain Management (SCM301)', semester: 'K7' },
+  { code: 'BRM301', title: 'Business Research Methods (BRM301)', semester: 'K7' },
+
+  // Semester 8
+  { code: 'SEP490', title: 'Capstone Project Prep - SE (SEP490)', semester: 'K8' },
+  { code: 'CAP490', title: 'Capstone Project Prep - AI (CAP490)', semester: 'K8' },
+  { code: 'BAP490', title: 'Capstone Project Prep - BA (BAP490)', semester: 'K8' },
+  { code: 'EXE101', title: 'Experiential Entrepreneurship 1 (EXE101)', semester: 'K8' },
+  { code: 'IAS301', title: 'Information Assurance & Security (IAS301)', semester: 'K8' },
+  { code: 'BDA301', title: 'Big Data Analytics (BDA301)', semester: 'K8' },
+  { code: 'SMA301', title: 'Strategic Management (SMA301)', semester: 'K8' },
+
+  // Semester 9
+  { code: 'SEP490_DEF', title: 'Capstone Graduation - SE (SEP490)', semester: 'K9' },
+  { code: 'CAP490_DEF', title: 'Capstone Graduation - AI (CAP490)', semester: 'K9' },
+  { code: 'BAP490_DEF', title: 'Capstone Graduation - BA (BAP490)', semester: 'K9' },
+  { code: 'EXE201', title: 'Experiential Entrepreneurship 2 (EXE201)', semester: 'K9' },
+  { code: 'PMG201', title: 'Project Management (PMG201)', semester: 'K9' },
+  { code: 'EBU301', title: 'E-Business (EBU301)', semester: 'K9' },
+]
+
+function detectSubjectFromDocName(name: string): { code: string; semester: SemesterKey } | null {
+  const lower = name.toLowerCase()
+  for (const subj of ALL_SUBJECTS) {
+    if (lower.includes(subj.code.toLowerCase())) {
+      return { code: subj.code, semester: subj.semester }
+    }
+  }
+  // Software Testing & QA
+  if (lower.includes('test') || lower.includes('smell') || lower.includes('qa') || lower.includes('unit') || lower.includes('automation')) {
+    return { code: 'SWT301', semester: 'K5' }
+  }
+  // Software Architecture & Design / Use cases / Diagrams
+  if (lower.includes('use case') || lower.includes('diagram') || lower.includes('uml') || lower.includes('spec') || lower.includes('design') || lower.includes('architecture')) {
+    return { code: 'SWD392', semester: 'K5' }
+  }
+  // Software Development Project / Java / Web / Code
+  if (lower.includes('swp') || lower.includes('state diagram') || lower.includes('dfd') || lower.includes('java') || lower.includes('software project') || lower.includes('du an')) {
+    return { code: 'SWP391', semester: 'K5' }
+  }
+  // Software Engineering Basics
+  if (lower.includes('swe') || lower.includes('software engineering') || lower.includes('kỹ thuật phần mềm')) {
+    return { code: 'SWE201', semester: 'K4' }
+  }
+  // Math & Statistics
+  if (lower.includes('math') || lower.includes('calculus') || lower.includes('algebra') || lower.includes('toán') || lower.includes('giai tich')) {
+    return { code: 'MAE101', semester: 'K1' }
+  }
+  if (lower.includes('mth') || lower.includes('prob') || lower.includes('stat') || lower.includes('thống kê') || lower.includes('xác suất')) {
+    return { code: 'MTH202', semester: 'K4' }
+  }
+  // Operating Systems / Physics
+  if (lower.includes('physic') || lower.includes('vật lý') || lower.includes('vật ly') || lower.includes('osg') || lower.includes('operating')) {
+    return { code: 'OSG202', semester: 'K2' }
+  }
+  // Programming & OOP
+  if (lower.includes('prf') || lower.includes('c prog') || lower.includes('lap trinh c') || lower.includes('fundamental')) {
+    return { code: 'PRF192', semester: 'K1' }
+  }
+  if (lower.includes('pro') || lower.includes('oop') || lower.includes('object')) {
+    return { code: 'PRO192', semester: 'K2' }
+  }
+  // Data Structures & Algorithms
+  if (lower.includes('csd') || lower.includes('data structure') || lower.includes('cấu trúc dữ liệu') || lower.includes('dsa') || lower.includes('algorithm')) {
+    return { code: 'CSD201', semester: 'K3' }
+  }
+  // Database Systems
+  if (lower.includes('dbi') || lower.includes('database') || lower.includes('sql') || lower.includes('cơ sở dữ liệu')) {
+    return { code: 'DBI202', semester: 'K3' }
+  }
+  // .NET & C#
+  if (lower.includes('prn') || lower.includes('.net') || lower.includes('c#')) {
+    return { code: 'PRN211', semester: 'K4' }
+  }
+  // Japanese & Languages
+  if (lower.includes('read') || lower.includes('hiragana') || lower.includes('jpd') || lower.includes('tiếng nhật') || lower.includes('japanese') || lower.includes('kanji')) {
+    return { code: 'JPD113', semester: 'K4' }
+  }
+  // Mobile Programming
+  if (lower.includes('prm') || lower.includes('mobile') || lower.includes('android') || lower.includes('flutter') || lower.includes('ios')) {
+    return { code: 'PRM392', semester: 'K7' }
+  }
+  // Capstone
+  if (lower.includes('sep') || lower.includes('capstone') || lower.includes('do an') || lower.includes('đồ án')) {
+    return { code: 'SEP490', semester: 'K8' }
+  }
+  return null
 }
 
-// Helper to map response to StudyPlan
-function mapResponseToStudyPlan(response: any): any {
-  let segments: any[] = []
+function formatCleanDescriptionText(raw: string): string {
+  if (!raw) return ''
+  return raw
+    .replace(/^#+\s*/gm, '')         // Remove #, ##, ### headers
+    .replace(/\*\*/g, '')            // Remove bold **
+    .replace(/^\s*[-*]\s*/gm, '• ')  // Convert - or * to clean bullet point •
+    .replace(/\n{3,}/g, '\n\n')      // Limit consecutive blank lines
+    .trim()
+}
+
+function generateSmartPreviewForDocument(docName: string, lang = 'vi'): {
+  title: string
+  subjectCode: string
+  semester: SemesterKey
+  description: string
+  schedule: string[]
+} {
+  const detected = detectSubjectFromDocName(docName)
+  const code = detected?.code || 'SWP391'
+  const semester = detected?.semester || 'K5'
+
+  const lower = docName.toLowerCase()
+  let title = `Lộ trình học tập ${code} (${docName})`
+  let description = `Học tập chi tiết và ôn luyện dựa trên tài liệu ${docName}`
+  let schedule = ['Mon', 'Wed', 'Fri']
+
+  if (lower.includes('test') || lower.includes('smell') || lower.includes('qa')) {
+    title = `Lộ trình 4 tuần Ôn tập & Phân tích Test Smell (${docName})`
+    description = `• Tuần 1: Khái niệm cốt lõi Kiểm thử & Test Smell.\n• Tuần 2: Phân tích mẫu Code Smell & Refactoring bài test.\n• Tuần 3: Automation Testing & Viết Unit Test chuẩn.\n• Tuần 4: Ôn tập tổng hợp & Kiểm thử ứng dụng thực tế.`
+    schedule = ['Tue', 'Thu', 'Sat']
+  } else if (lower.includes('use case') || lower.includes('diagram') || lower.includes('uml') || lower.includes('spec')) {
+    title = `Lộ trình Phân tích & Thiết kế Phần mềm (${docName})`
+    description = `• Tuần 1: Thu thập yêu cầu & Use Case Specification.\n• Tuần 2: Thiết kế sơ đồ Use Case & Diagram tương tác.\n• Tuần 3: Phân tích luồng nghiệp vụ & Architecture.\n• Tuần 4: Ôn tập và hoàn thiện tài liệu thiết kế.`
+    schedule = ['Mon', 'Wed', 'Fri']
+  } else if (lower.includes('read') || lower.includes('hiragana') || lower.includes('jpd') || lower.includes('japanese')) {
+    title = `Lộ trình 4 tuần chinh phục Hiragana (${docName})`
+    description = `• Tuần 1: Bảng chữ cái Hiragana cơ bản.\n• Tuần 2: Từ vựng & Mẫu câu giao tiếp.\n• Tuần 3: Luyện đọc hiểu & Viết chữ.\n• Tuần 4: Thi thử phản xạ & Tổng hợp kiến thức.`
+    schedule = ['Mon', 'Tue', 'Thu', 'Fri']
+  } else if (lower.includes('math') || lower.includes('toán') || lower.includes('mae')) {
+    title = `Kế hoạch Ôn luyện Toán học Chuyên sâu (${docName})`
+    description = `• Tuần 1: Hàm số, Giới hạn & Đạo hàm cơ bản.\n• Tuần 2: Tích phân & Ứng dụng hình học.\n• Tuần 3: Đại số tuyến tính & Ma trận.\n• Tuần 4: Giải đề thi thử và tổng hợp công thức.`
+    schedule = ['Mon', 'Wed', 'Fri']
+  } else if (lower.includes('db') || lower.includes('sql') || lower.includes('database')) {
+    title = `Lộ trình Master Cơ sở dữ liệu & SQL (${docName})`
+    description = `• Tuần 1: Truy vấn SQL cơ bản & ER Diagram.\n• Tuần 2: Join, Subquery & Chuẩn hóa CSDL.\n• Tuần 3: Index, Transaction & Stored Procedure.\n• Tuần 4: Thực hành tối ưu truy vấn SQL.`
+    schedule = ['Tue', 'Thu', 'Sat']
+  }
+
+  return { title, subjectCode: code, semester, description, schedule }
+}
+
+function mapResponseToStudyPlan(response: any) {
+  let segments = [
+    { label: 'Khái niệm cốt lõi', value: 0 },
+    { label: 'Lý thuyết nâng cao', value: 0 },
+    { label: 'Thi thử', value: 0 }
+  ]
+
   if (response.curriculumJson) {
     try {
       const parsed = JSON.parse(response.curriculumJson)
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         segments = parsed.map((mod: any) => ({
           label: mod.title || 'Bài học',
           value: 0
@@ -69,27 +304,20 @@ function mapResponseToStudyPlan(response: any): any {
     }
   }
 
-  if (segments.length === 0) {
-    segments = [
-      { label: 'Khái niệm cốt lõi', value: 0 },
-      { label: 'Lý thuyết nâng cao', value: 0 },
-      { label: 'Thi thử', value: 0 }
-    ]
-  }
-
   const docNames = response.sourceDocuments ? response.sourceDocuments.map((d: any) => d.title || d.fileName) : []
 
   return {
     id: String(response.id),
-    title: response.title,
+    title: response.title || 'Study Plan',
     description: response.planText || '',
     isAiGenerated: true,
-    status: 'Active',
+    status: 'Active' as const,
     documents: docNames.length,
     hoursEst: 28,
-    difficulty: 'Medium',
+    difficulty: 'Medium' as 'Easy' | 'Medium' | 'Hard',
     overallProgress: 0,
     segments,
+    themeColor: 'purple' as 'blue' | 'purple' | 'teal',
     linkedDocs: docNames,
     curriculumJson: response.curriculumJson
   }
@@ -101,6 +329,8 @@ export const CreateStudyPlanModal = ({
   isOpen, 
   onClose, 
   onCreate,
+  onUpdate,
+  editingPlan,
   preselectedDocId,
   autoGenerate
 }: CreateStudyPlanModalProps) => {
@@ -108,11 +338,17 @@ export const CreateStudyPlanModal = ({
   const [isGenerating, setIsGenerating] = useState(false)
   const { user } = useAuthStore()
   
+  const [selectedSemester, setSelectedSemester] = useState<SemesterKey>('ALL')
   const [userDocuments, setUserDocuments] = useState<{ id: string; name: string; size: string }[]>([])
   const [loadingDocs, setLoadingDocs] = useState(false)
   const [generatedCurriculumJson, setGeneratedCurriculumJson] = useState<string | undefined>(undefined)
   const [hasAutoGenerated, setHasAutoGenerated] = useState(false)
   const [generatedPlanId, setGeneratedPlanId] = useState<number | null>(null)
+
+  const filteredSubjects = useMemo(() => {
+    if (selectedSemester === 'ALL') return ALL_SUBJECTS
+    return ALL_SUBJECTS.filter((s) => s.semester === selectedSemester)
+  }, [selectedSemester])
 
   // Memoize Zod Schema based on language translations
   const studyPlanSchema = useMemo(() => {
@@ -145,7 +381,9 @@ export const CreateStudyPlanModal = ({
     resolver: zodResolver(studyPlanSchema),
     defaultValues: {
       title:       '',
-      subject:     'Mathematics',
+      major:       'SE',
+      semester:    'ALL',
+      subject:     'PRF192',
       description: '',
       startDate:   '',
       endDate:     '',
@@ -155,19 +393,34 @@ export const CreateStudyPlanModal = ({
     },
   })
 
-  // Reset form whenever the modal opens fresh
+  // Reset form whenever the modal opens fresh or populates editingPlan
   useEffect(() => {
     if (isOpen) {
-      reset({
-        title: '', subject: 'Mathematics', description: '',
-        startDate: '', endDate: '', priority: 'High', schedule: [],
-        selectedDocIds: [],
-      })
-      setGeneratedCurriculumJson(undefined)
-      setHasAutoGenerated(false)
-      setGeneratedPlanId(null)
+      if (editingPlan) {
+        setValue('title', editingPlan.title, { shouldValidate: true })
+        setValue('description', editingPlan.description, { shouldValidate: true })
+        setValue('priority', editingPlan.difficulty === 'Hard' ? 'High' : editingPlan.difficulty === 'Medium' ? 'Medium' : 'Low', { shouldValidate: true })
+        const today = new Date()
+        const endDay = new Date(today)
+        endDay.setDate(today.getDate() + 30)
+        setValue('startDate', today.toISOString().split('T')[0], { shouldValidate: true })
+        setValue('endDate',   endDay.toISOString().split('T')[0],  { shouldValidate: true })
+        setValue('schedule', ['Mon', 'Wed', 'Fri'], { shouldValidate: true })
+        if (editingPlan.curriculumJson) {
+          setGeneratedCurriculumJson(editingPlan.curriculumJson)
+        }
+      } else {
+        reset({
+          title: '', major: 'SE', semester: 'ALL', subject: 'PRF192', description: '',
+          startDate: '', endDate: '', priority: 'High', schedule: [],
+          selectedDocIds: [],
+        })
+        setGeneratedCurriculumJson(undefined)
+        setHasAutoGenerated(false)
+        setGeneratedPlanId(null)
+      }
     }
-  }, [isOpen, reset])
+  }, [isOpen, editingPlan, reset, setValue])
 
   // Load user documents
   useEffect(() => {
@@ -254,30 +507,69 @@ export const CreateStudyPlanModal = ({
 
   // ── Generate with AI ─────────────────────────────────
   const handleGenerateAI = async () => {
+    const selectedDocs = watch('selectedDocIds') || []
+    if (selectedDocs.length === 0) {
+      const msg = language === 'vi'
+        ? 'Vui lòng chọn ít nhất 1 tài liệu trong danh sách trước khi tạo với AI!'
+        : (language === 'ja'
+          ? 'AIで学習計画を生成するには、少なくとも1つのドキュメントを選択してください。'
+          : (language === 'ko'
+            ? 'AI 학습 계획을 생성하려면 최소 1개의 문서를 선택하세요.'
+            : 'Please select at least 1 document before generating a study plan with AI!'))
+      toast.error(msg)
+      return
+    }
+
     setIsGenerating(true)
     try {
       const userId = user?.id ? Number(user.id) : 1
-      const selectedDocs = watch('selectedDocIds') || []
       const docIds = selectedDocs.map((id: string) => Number(id.replace('doc-', ''))).filter((n: number) => !isNaN(n))
-      const goal = watch('description') || 'Học tập hiệu quả'
+
+      // Auto-detect subject and smart preview from the selected document
+      let targetSubject = currentSubject
+      const selectedDocObj = userDocuments.find(d => selectedDocs.includes(d.id) || selectedDocs.includes(`doc-${d.id}`))
+      const docNameHint = selectedDocObj ? selectedDocObj.name : 'tài liệu'
+      const preview = generateSmartPreviewForDocument(docNameHint, language)
+
+      if (selectedDocObj) {
+        const detected = detectSubjectFromDocName(selectedDocObj.name)
+        if (detected) {
+          targetSubject = detected.code
+          setSelectedSemester(detected.semester)
+          setValue('subject', detected.code, { shouldValidate: true })
+        }
+      }
+
+      const customDesc = watch('description')
+      const goal = customDesc && customDesc.trim().length > 0 
+        ? customDesc 
+        : (language === 'vi' 
+          ? `Lập kế hoạch học tập chi tiết dựa trên nội dung tài liệu ${docNameHint}`
+          : `Create a detailed study plan based on document ${docNameHint}`)
 
       // Call OpenAI study plan generator
       const plan = await aiService.generateStudyPlan(
         userId,
-        currentSubject,
+        targetSubject,
         goal,
         4, // Default 4 weeks
         docIds
       )
 
-      setValue('title', plan.title, { shouldValidate: true })
-      setValue('description', plan.planText, { shouldValidate: true })
+      // Auto-fill ALL form fields with clean formatted text
+      const rawDesc = plan.planText || preview.description
+      const cleanDesc = formatCleanDescriptionText(rawDesc)
+
+      setValue('title', plan.title || preview.title, { shouldValidate: true })
+      setValue('major', 'SE', { shouldValidate: true })
+      setSelectedSemester(preview.semester)
+      setValue('subject', targetSubject, { shouldValidate: true })
+      setValue('description', cleanDesc, { shouldValidate: true })
+      setValue('schedule', preview.schedule, { shouldValidate: true })
+      setValue('priority', 'High', { shouldValidate: true })
+
       setGeneratedCurriculumJson(plan.curriculumJson)
       setGeneratedPlanId(plan.id)
-
-      const suggestion = getLocalizedSuggestion(currentSubject)
-      if (suggestion.schedule) setValue('schedule', suggestion.schedule, { shouldValidate: true })
-      setValue('priority', 'High')
 
       // Set start date to today, end date to +30 days
       const today = new Date()
@@ -285,20 +577,30 @@ export const CreateStudyPlanModal = ({
       endDay.setDate(today.getDate() + 30)
       setValue('startDate', today.toISOString().split('T')[0], { shouldValidate: true })
       setValue('endDate',   endDay.toISOString().split('T')[0],  { shouldValidate: true })
+
+      toast.success(language === 'vi' ? `Đã tự động điền đầy đủ thông tin theo tài liệu ${docNameHint}!` : `Auto-filled all details based on ${docNameHint}!`)
     } catch (err) {
       console.error('Error generating AI plan:', err)
-      // Fallback suggestions
-      const suggestion = getLocalizedSuggestion(currentSubject)
-      if (suggestion.title)       setValue('title', suggestion.title, { shouldValidate: true })
-      if (suggestion.description) setValue('description', suggestion.description, { shouldValidate: true })
-      if (suggestion.schedule)    setValue('schedule', suggestion.schedule, { shouldValidate: true })
-      setValue('priority', 'High')
+      // Fallback: auto-fill using smart preview
+      const selectedDocObj = userDocuments.find(d => selectedDocs.includes(d.id) || selectedDocs.includes(`doc-${d.id}`))
+      const docNameHint = selectedDocObj ? selectedDocObj.name : 'tài liệu'
+      const preview = generateSmartPreviewForDocument(docNameHint, language)
+
+      setValue('title', preview.title, { shouldValidate: true })
+      setValue('major', 'SE', { shouldValidate: true })
+      setSelectedSemester(preview.semester)
+      setValue('subject', preview.subjectCode, { shouldValidate: true })
+      setValue('description', preview.description, { shouldValidate: true })
+      setValue('schedule', preview.schedule, { shouldValidate: true })
+      setValue('priority', 'High', { shouldValidate: true })
 
       const today = new Date()
       const endDay = new Date(today)
       endDay.setDate(today.getDate() + 30)
       setValue('startDate', today.toISOString().split('T')[0], { shouldValidate: true })
       setValue('endDate',   endDay.toISOString().split('T')[0],  { shouldValidate: true })
+
+      toast.success(language === 'vi' ? `Đã tự động điền thông tin đề xuất cho ${docNameHint}!` : `Auto-filled suggested details for ${docNameHint}!`)
     } finally {
       setIsGenerating(false)
     }
@@ -311,49 +613,60 @@ export const CreateStudyPlanModal = ({
       const selectedDocs = data.selectedDocIds || []
       const docIds = selectedDocs.map((id: string) => Number(id.replace('doc-', ''))).filter((n: number) => !isNaN(n))
 
+      const selectedDocObjs = userDocuments.filter(d => selectedDocs.includes(d.id) || selectedDocs.includes(`doc-${d.id}`))
+      const selectedDocNames = selectedDocObjs.map(d => d.name)
+
       let savedPlan: any
 
-      if (generatedPlanId) {
-        savedPlan = await aiService.updateStudyPlan(generatedPlanId, {
-          userId: userIdVal,
-          title: data.title,
-          subject: currentSubject,
-          planText: data.description || '',
-          curriculumJson: generatedCurriculumJson || '',
-          documentId: docIds.length > 0 ? docIds[0] : undefined
-        })
+      if (editingPlan && editingPlan.id) {
+        const planIdNum = Number(editingPlan.id)
+        if (!isNaN(planIdNum) && planIdNum > 0) {
+          savedPlan = await aiService.updateStudyPlan(planIdNum, {
+            userId: userIdVal,
+            title: data.title,
+            subject: data.subject || 'PRF192',
+            planText: data.description && data.description.trim().length > 0 ? data.description : `Lộ trình học tập môn ${data.subject || 'PRF192'}`,
+            curriculumJson: generatedCurriculumJson || '',
+            documentId: docIds.length > 0 ? docIds[0] : undefined
+          })
+        }
+        if (onUpdate && savedPlan) {
+          const mappedPlan = mapResponseToStudyPlan(savedPlan)
+          mappedPlan.difficulty = data.priority === 'High' ? 'Hard' : data.priority === 'Medium' ? 'Medium' : 'Easy'
+          mappedPlan.themeColor = data.priority === 'High' ? 'purple' : data.priority === 'Medium' ? 'blue' : 'teal'
+          mappedPlan.documents = Math.max(selectedDocNames.length, mappedPlan.documents || 0, docIds.length > 0 ? 1 : 0)
+          mappedPlan.linkedDocs = selectedDocNames.length > 0 ? selectedDocNames : (mappedPlan.linkedDocs || [])
+          onUpdate(mappedPlan)
+        }
+        toast.success(language === 'vi' ? 'Đã cập nhật kế hoạch học tập!' : 'Study plan updated successfully!')
       } else {
         savedPlan = await aiService.saveStudyPlan({
           userId: userIdVal,
           title: data.title,
-          subject: currentSubject,
-          planText: data.description || '',
+          subject: data.subject || 'PRF192',
+          planText: data.description && data.description.trim().length > 0 ? data.description : `Lộ trình học tập môn ${data.subject || 'PRF192'}`,
           curriculumJson: generatedCurriculumJson || '',
           documentId: docIds.length > 0 ? docIds[0] : undefined
         })
-      }
 
-      if (onCreate && savedPlan) {
-        const mappedPlan = mapResponseToStudyPlan(savedPlan)
-        mappedPlan.difficulty = data.priority === 'High' ? 'Hard' : data.priority === 'Medium' ? 'Medium' : 'Easy'
-        mappedPlan.themeColor = data.priority === 'High' ? 'purple' : data.priority === 'Medium' ? 'blue' : 'teal'
-        onCreate(mappedPlan)
+        if (onCreate && savedPlan) {
+          const mappedPlan = mapResponseToStudyPlan(savedPlan)
+          mappedPlan.difficulty = data.priority === 'High' ? 'Hard' : data.priority === 'Medium' ? 'Medium' : 'Easy'
+          mappedPlan.themeColor = data.priority === 'High' ? 'purple' : data.priority === 'Medium' ? 'blue' : 'teal'
+          mappedPlan.documents = Math.max(selectedDocNames.length, mappedPlan.documents || 0, docIds.length > 0 ? 1 : 0)
+          mappedPlan.linkedDocs = selectedDocNames.length > 0 ? selectedDocNames : (mappedPlan.linkedDocs || [])
+          onCreate(mappedPlan)
+        }
+        toast.success(language === 'vi' ? 'Đã tạo kế hoạch học tập mới thành công!' : 'Study plan created successfully!')
       }
     } catch (err) {
       console.error('Failed to save study plan:', err)
+      toast.error(language === 'vi' ? 'Lỗi khi lưu kế hoạch học tập' : 'Failed to save study plan')
     } finally {
       reset()
       setGeneratedPlanId(null)
       onClose()
     }
-  }
-
-  // ── Save as Draft ────────────────────────────────────
-  const handleSaveDraft = () => {
-    const values = watch()
-    console.log('Saved as draft:', values)
-    localStorage.setItem('studyPlanDraft', JSON.stringify(values))
-    onClose()
   }
 
   const handleClose = () => {
@@ -384,15 +697,8 @@ export const CreateStudyPlanModal = ({
   }
 
   const getSubjectTranslation = (sub: string) => {
-    switch (sub) {
-      case 'Mathematics': return t.myDocuments.math
-      case 'Physics': return language === 'vi' ? 'Vật lý' : language === 'ja' ? '物理学' : language === 'ko' ? '물리학' : 'Physics'
-      case 'Computer Science': return t.myDocuments.compsci
-      case 'Literature': return t.myDocuments.literature || 'Literature'
-      case 'Chemistry': return language === 'vi' ? 'Hóa học' : language === 'ja' ? '化学' : language === 'ko' ? '화학' : 'Chemistry'
-      case 'Biology': return t.myDocuments.bio || 'Biology'
-      default: return sub
-    }
+    const found = ALL_SUBJECTS.find(s => s.code === sub)
+    return found ? found.title : sub
   }
 
   return (
@@ -417,19 +723,59 @@ export const CreateStudyPlanModal = ({
           />
         </div>
 
-        {/* ── Subject ── */}
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
-            {language === 'vi' ? 'Môn học' : language === 'ja' ? '科目' : language === 'ko' ? '과목' : 'Subject'} <span className="text-red-500">*</span>
-          </label>
-          <Select {...register('subject')} error={errors.subject?.message}>
-            <option value="Mathematics">{t.myDocuments.math}</option>
-            <option value="Physics">{language === 'vi' ? 'Vật lý' : language === 'ja' ? '物理学' : language === 'ko' ? '물리학' : 'Physics'}</option>
-            <option value="Computer Science">{t.myDocuments.compsci}</option>
-            <option value="Literature">{t.myDocuments.literature || 'Literature'}</option>
-            <option value="Chemistry">{language === 'vi' ? 'Hóa học' : language === 'ja' ? '化学' : language === 'ko' ? '화학' : 'Chemistry'}</option>
-            <option value="Biology">{t.myDocuments.bio || 'Biology'}</option>
-          </Select>
+        {/* ── Major, Semester & Subject Selection ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Major Select */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
+              {language === 'vi' ? 'Chuyên ngành' : language === 'ja' ? '専攻' : language === 'ko' ? '전공' : 'Major'}
+            </label>
+            <Select {...register('major')}>
+              {MAJORS.map(m => (
+                <option key={m.key} value={m.key}>
+                  {language === 'vi' ? m.labelVI : m.labelEN}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Semester Select */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
+              {language === 'vi' ? 'Học kỳ' : language === 'ja' ? '学期' : language === 'ko' ? '학기' : 'Semester'}
+            </label>
+            <Select
+              value={selectedSemester}
+              onChange={(e) => {
+                const newSem = e.target.value as SemesterKey
+                setSelectedSemester(newSem)
+                const available = newSem === 'ALL' ? ALL_SUBJECTS : ALL_SUBJECTS.filter(s => s.semester === newSem)
+                if (available.length > 0) {
+                  setValue('subject', available[0].code, { shouldValidate: true })
+                }
+              }}
+            >
+              {SEMESTERS.map(s => (
+                <option key={s.key} value={s.key}>
+                  {language === 'vi' ? s.labelVI : s.labelEN}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Subject Select */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
+              {language === 'vi' ? 'Môn học' : language === 'ja' ? '科目' : language === 'ko' ? '과목' : 'Subject'} <span className="text-red-500">*</span>
+            </label>
+            <Select {...register('subject')} error={errors.subject?.message}>
+              {filteredSubjects.map(s => (
+                <option key={s.code} value={s.code}>
+                  {s.title}
+                </option>
+              ))}
+            </Select>
+          </div>
         </div>
 
         {/* ── Description ── */}
@@ -447,10 +793,10 @@ export const CreateStudyPlanModal = ({
         {/* ── Linked Documents ── */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
-            {language === 'vi' ? 'Liên kết tài liệu học tập' : language === 'ja' ? '関連ドキュメントのリンク' : language === 'ko' ? '관련 문서 링크' : 'Link Reference Documents'}
+            {language === 'vi' ? 'Liên kết tài liệu học tập' : language === 'ja' ? '関連ドキュメントのリンク' : language === 'ko' ? '관련 문서 링크' : 'Link Reference Documents'} <span className="text-red-500">*</span>
           </label>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            {language === 'vi' ? 'Chọn các giáo trình hoặc slides trong thư viện để AI bám sát lộ trình' : 'Select textbooks or lecture slides from your library for AI to build the plan on.'}
+            {language === 'vi' ? 'Chọn ít nhất 1 tài liệu trong thư viện để AI có dữ liệu tạo kế hoạch học tập.' : 'Select at least 1 document from your library for AI to build the plan on.'}
           </p>
           <Controller
             control={control}
@@ -484,11 +830,11 @@ export const CreateStudyPlanModal = ({
                           checked={isChecked}
                           onChange={(e) => {
                             const currentValues = field.value || []
-                            field.onChange(
-                              e.target.checked
-                                ? [...currentValues, doc.id]
-                                : currentValues.filter((id: string) => id !== doc.id)
-                            )
+                            if (e.target.checked) {
+                              field.onChange([...currentValues, doc.id])
+                            } else {
+                              field.onChange(currentValues.filter((id: string) => id !== doc.id))
+                            }
                           }}
                           className="rounded border-slate-350 text-indigo-650 focus:ring-indigo-550 dark:border-slate-700 dark:bg-slate-900"
                         />
@@ -639,9 +985,6 @@ export const CreateStudyPlanModal = ({
         <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <Button type="button" variant="ghost" onClick={handleClose}>
             {t.common.cancel}
-          </Button>
-          <Button type="button" variant="secondary" onClick={handleSaveDraft}>
-            {language === 'vi' ? 'Lưu bản nháp' : language === 'ja' ? '下書き保存' : language === 'ko' ? '임시 저장' : 'Save as Draft'}
           </Button>
           <Button
             type="submit"

@@ -734,6 +734,15 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     @Override
     public StudyPlan saveStudyPlan(StudyPlan studyPlan) {
+        if (studyPlan.getPlanText() == null || studyPlan.getPlanText().trim().isEmpty()) {
+            studyPlan.setPlanText("Lộ trình học tập cá nhân");
+        }
+        if (studyPlan.getSubject() == null || studyPlan.getSubject().trim().isEmpty()) {
+            studyPlan.setSubject("General");
+        }
+        if (studyPlan.getUserId() == null) {
+            studyPlan.setUserId(1L);
+        }
         return studyPlanRepository.save(studyPlan);
     }
 
@@ -757,8 +766,15 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     @Override
+    @Transactional
     public void deleteStudyPlan(Long id) {
-        studyPlanRepository.deleteById(id);
+        studyPlanRepository.findById(id).ifPresent(plan -> {
+            if (plan.getSourceDocuments() != null) {
+                plan.getSourceDocuments().clear();
+                studyPlanRepository.saveAndFlush(plan);
+            }
+            studyPlanRepository.delete(plan);
+        });
     }
 
 

@@ -31,6 +31,27 @@ public class AuthService {
     private final com.lumiedu.billing.repository.UserSubscriptionRepository userSubscriptionRepository;
     private final com.lumiedu.auth.repository.PasswordHistoryRepository passwordHistoryRepository;
 
+    private final java.util.Map<String, Integer> failedAttempts = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, Integer> resetOtpAttemptsMap = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public boolean isLocked(String email) {
+        if (email == null) return false;
+        return failedAttempts.getOrDefault(email.trim().toLowerCase(), 0) >= 5;
+    }
+
+    public int incrementFailedAttempts(String email) {
+        if (email == null) return 0;
+        String cleanEmail = email.trim().toLowerCase();
+        int attempts = failedAttempts.getOrDefault(cleanEmail, 0) + 1;
+        failedAttempts.put(cleanEmail, attempts);
+        return attempts;
+    }
+
+    public void clearFailedAttempts(String email) {
+        if (email == null) return;
+        failedAttempts.remove(email.trim().toLowerCase());
+    }
+
     @Value("${app.frontend.url:http://localhost:8386}")
     private String frontendUrl;
 
@@ -64,9 +85,16 @@ public class AuthService {
             throw new RuntimeException("Account is not active");
         }
 
+        if (isLocked(user.getEmail())) {
+            throw new RuntimeException("Account is locked due to too many failed login attempts");
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            incrementFailedAttempts(user.getEmail());
             throw new RuntimeException("Invalid email or password");
         }
+
+        clearFailedAttempts(user.getEmail());
 
         return toAuthResponse(user, "Login successfully");
     }
@@ -77,6 +105,8 @@ public class AuthService {
             // Return same message to prevent email enumeration
             return "If the email exists, a reset OTP will be sent.";
         }
+
+        resetOtpAttemptsMap.remove(user.getEmail().trim().toLowerCase());
 
         // Xóa tất cả các token đặt lại mật khẩu cũ của người dùng này để tránh lỗi unique constraint
         java.util.List<PasswordResetToken> oldTokens = passwordResetTokenRepository.findByUserId(user.getId());
@@ -113,10 +143,28 @@ public class AuthService {
     }
 
     public String resetPassword(ResetPasswordRequest request) {
-        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.getToken())
-                .orElseThrow(() -> new RuntimeException("Invalid token"));
+        String cleanEmail = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+        int currentOtpAttempts = resetOtpAttemptsMap.getOrDefault(cleanEmail, 0);
 
-        if (request.getEmail() == null || !resetToken.getUser().getEmail().equalsIgnoreCase(request.getEmail().trim())) {
+        if (currentOtpAttempts >= 5) {
+            throw new RuntimeException("Mã OTP đã bị khóa do nhập sai quá 5 lần. Vui lòng nhấn Resend OTP để nhận mã mới / OTP locked due to 5 failed attempts. Please resend OTP.");
+        }
+
+        java.util.Optional<PasswordResetToken> tokenOpt = passwordResetTokenRepository.findByToken(request.getToken());
+        if (tokenOpt.isEmpty()) {
+            int newAttempts = currentOtpAttempts + 1;
+            resetOtpAttemptsMap.put(cleanEmail, newAttempts);
+            int remaining = 5 - newAttempts;
+            if (remaining <= 0) {
+                throw new RuntimeException("Mã OTP đã bị khóa do nhập sai quá 5 lần. Vui lòng nhấn Resend OTP để nhận mã mới / OTP locked due to 5 failed attempts. Please resend OTP.");
+            } else {
+                throw new RuntimeException("Mã xác thực OTP không đúng (Còn lại " + remaining + " lần thử) / Invalid OTP code (" + remaining + " attempts left)");
+            }
+        }
+
+        PasswordResetToken resetToken = tokenOpt.get();
+
+        if (request.getEmail() == null || !resetToken.getUser().getEmail().equalsIgnoreCase(cleanEmail)) {
             throw new RuntimeException("Email does not match this token");
         }
 
@@ -146,6 +194,9 @@ public class AuthService {
 
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
+
+        resetOtpAttemptsMap.remove(cleanEmail);
+        clearFailedAttempts(user.getEmail());
 
         return "Password reset successfully";
     }

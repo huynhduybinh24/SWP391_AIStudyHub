@@ -484,6 +484,11 @@ public class AuthController {
                 .build());
     }
 
+    @GetMapping("/check-lock")
+    public ResponseEntity<?> checkLock(@RequestParam String email) {
+        return ResponseEntity.ok(Map.of("locked", authService.isLocked(email)));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
@@ -492,9 +497,16 @@ public class AuthController {
         }
 
         User user = userOpt.get();
+        if (authService.isLocked(user.getEmail())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Account is locked"));
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            authService.incrementFailedAttempts(user.getEmail());
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid credentials"));
         }
+
+        authService.clearFailedAttempts(user.getEmail());
 
         // Kiểm tra chế độ bảo trì hệ thống (Admin được bỏ qua)
         String systemMode = systemSettingRepository.findById("SYSTEM_MODE")

@@ -11,6 +11,8 @@ import { useLogin } from '@/features/auth/hooks/useLogin'
 import { OTPInput } from '@/features/settings/components/OTPInput'
 import { authService } from '@/features/auth/services/authService'
 import { useAuthStore } from '@/stores/authStore'
+import { useTranslation } from '@/context/LanguageContext'
+import { apiClient } from '@/lib/axios'
 
 // Social Login Icon Components
 function GoogleIcon() {
@@ -33,6 +35,7 @@ interface LoginFormProps {
 export function LoginForm({ onMaintenanceMode }: LoginFormProps) {
   const login = useLogin()
   const navigate = useNavigate()
+  const { language } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
   const [requires2fa, setRequires2fa] = useState(false)
   const [twoFactorEmail, setTwoFactorEmail] = useState('')
@@ -40,6 +43,7 @@ export function LoginForm({ onMaintenanceMode }: LoginFormProps) {
   const [twoFactorError, setTwoFactorError] = useState('')
   const [isVerifying2fa, setIsVerifying2fa] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const [isServerLocked, setIsServerLocked] = useState(false)
 
   useEffect(() => {
     if (login.isError && login.error instanceof Error) {
@@ -49,15 +53,68 @@ export function LoginForm({ onMaintenanceMode }: LoginFormProps) {
       }
     }
   }, [login.isError, login.error, onMaintenanceMode])
+
   const {
     register,
     handleSubmit,
     setError,
+    clearErrors,
+    watch,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   })
+
+  const emailValue = watch('email')
+
+  const getFailedAttempts = (email: string): number => {
+    if (!email) return 0
+    try {
+      const cleanEmail = email.trim().toLowerCase()
+      const stored = localStorage.getItem('loginFailedAttemptsPerEmail')
+      const map = stored ? JSON.parse(stored) : {}
+      return map[cleanEmail] || 0
+    } catch {
+      return 0
+    }
+  }
+
+  const emailAttempts = getFailedAttempts(emailValue)
+  const isPasswordLocked = emailAttempts >= 5 || isServerLocked
+
+  useEffect(() => {
+    const checkEmailLock = async () => {
+      if (!emailValue || !emailValue.includes('@')) {
+        setIsServerLocked(false)
+        return
+      }
+      try {
+        const { data } = await apiClient.get<{ locked: boolean }>(`/auth/check-lock?email=${encodeURIComponent(emailValue)}`)
+        setIsServerLocked(data.locked)
+      } catch (e) {
+        setIsServerLocked(false)
+      }
+    }
+    
+    const timer = setTimeout(checkEmailLock, 300)
+    return () => clearTimeout(timer)
+  }, [emailValue])
+
+  useEffect(() => {
+    if (isPasswordLocked) {
+      setError('password', {
+        type: 'manual',
+        message: language === 'vi'
+          ? 'Tài khoản này đã nhập sai mật khẩu quá 5 lần. Vui lòng khôi phục mật khẩu.'
+          : 'This account has exceeded the limit of 5 failed password attempts. Please reset your password.'
+      })
+    } else {
+      if (errors.password?.message?.includes('5 lần') || errors.password?.message?.includes('5 failed')) {
+        clearErrors('password')
+      }
+    }
+  }, [emailValue, isPasswordLocked, setError, clearErrors, language, errors.password?.message])
 
   // Thực tế: Redirect thẳng tới các trang đăng nhập của Google/Facebook/Github
   const handleRealSocialLogin = (provider: 'google' | 'facebook' | 'github') => {
@@ -193,6 +250,17 @@ export function LoginForm({ onMaintenanceMode }: LoginFormProps) {
                   setRequires2fa(true)
                   setTwoFactorEmail(data.email || values.email)
                 }
+                
+                // Clear attempts for this specific email
+                const cleanEmail = values.email.trim().toLowerCase()
+                try {
+                  const stored = localStorage.getItem('loginFailedAttemptsPerEmail')
+                  if (stored) {
+                    const map = JSON.parse(stored)
+                    delete map[cleanEmail]
+                    localStorage.setItem('loginFailedAttemptsPerEmail', JSON.stringify(map))
+                  }
+                } catch (e) {}
               },
               onError: (err: any) => {
                 const backendMessage = err?.response?.data?.message || err?.message || ''
@@ -202,9 +270,25 @@ export function LoginForm({ onMaintenanceMode }: LoginFormProps) {
                     message: 'This email is not registered.'
                   })
                 } else if (backendMessage.includes('Invalid credentials')) {
+                  const cleanEmail = values.email.trim().toLowerCase()
+                  let map: Record<string, number> = {}
+                  try {
+                    const stored = localStorage.getItem('loginFailedAttemptsPerEmail')
+                    map = stored ? JSON.parse(stored) : {}
+                  } catch (e) {}
+
+                  const currentAttempts = map[cleanEmail] || 0
+                  const newAttempts = currentAttempts + 1
+                  map[cleanEmail] = newAttempts
+                  localStorage.setItem('loginFailedAttemptsPerEmail', JSON.stringify(map))
+                  
+                  const errorMsg = language === 'vi'
+                    ? `Mật khẩu không chính xác. Lần thử ${newAttempts}/5.`
+                    : `Incorrect password. Attempt ${newAttempts} of 5.`
+
                   setError('password', {
                     type: 'manual',
-                    message: 'Incorrect password.'
+                    message: errorMsg
                   })
                 }
               }
@@ -232,12 +316,14 @@ export function LoginForm({ onMaintenanceMode }: LoginFormProps) {
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
+              disabled={isPasswordLocked}
               startIcon={<Lock className="w-5 h-5 text-slate-400 dark:text-slate-500" />}
               endIcon={
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
                   className="focus:outline-none text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                  disabled={isPasswordLocked}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -271,7 +357,7 @@ export function LoginForm({ onMaintenanceMode }: LoginFormProps) {
             )
           })()}
 
-          <Button type="submit" className="w-full h-10 text-base font-semibold mt-2 bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm rounded-xl active:scale-[0.98] transition-all" disabled={login.isPending}>
+          <Button type="submit" className="w-full h-10 text-base font-semibold mt-2 bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm rounded-xl active:scale-[0.98] transition-all" disabled={login.isPending || isPasswordLocked}>
             {login.isPending ? 'Logging in...' : 'Log in'}
           </Button>
         </form>

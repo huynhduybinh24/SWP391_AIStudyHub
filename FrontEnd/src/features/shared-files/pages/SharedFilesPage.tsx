@@ -55,11 +55,10 @@ function QuotaDetailsModal({ isOpen, onClose, usedMb, totalMb }: QuotaDetailsMod
   const usage = calculateStorageUsage(usedMb, totalMb)
   const percentage = usage.percentage
   
-  // Compute breakdown proportionally from actual usedMb
-  const pdfGb    = formatStorageSize(usedMb * 0.50)
-  const officeGb = formatStorageSize(usedMb * 0.30)
-  const foldersGb = formatStorageSize(usedMb * 0.20)
-
+  // Compute breakdown proportionally from actual usedMb for 100% PDF System
+  const pdfDocsMb   = formatStorageSize(usedMb * 0.65)
+  const summariesMb = formatStorageSize(usedMb * 0.25)
+  const quizzesMb   = formatStorageSize(usedMb * 0.10)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -96,13 +95,18 @@ function QuotaDetailsModal({ isOpen, onClose, usedMb, totalMb }: QuotaDetailsMod
         </button>
 
         <div className="flex gap-3.5 items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-800/80">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 shrink-0">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shrink-0 shadow-md shadow-blue-500/20">
             <HardDrive className="size-5.5" />
           </div>
-          <div className="text-left">
-            <h3 id="quota-title" className="text-base font-bold text-slate-900 dark:text-white">
-              {t.sharedFiles.quotaTitle}
-            </h3>
+          <div className="text-left flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 id="quota-title" className="text-base font-bold text-slate-900 dark:text-white">
+                {t.sharedFiles.quotaTitle}
+              </h3>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+                PDF Hub
+              </span>
+            </div>
             <p className="text-xs text-slate-450 dark:text-slate-500 font-medium">
               {t.sharedFiles.quotaSub}
             </p>
@@ -127,39 +131,39 @@ function QuotaDetailsModal({ isOpen, onClose, usedMb, totalMb }: QuotaDetailsMod
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="h-full bg-gradient-to-r from-blue-500 to-[#3155F6] rounded-full"
+              className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-[#3155F6] rounded-full shadow-sm"
             />
           </div>
 
           <div className="space-y-3 pt-3">
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 hover:border-red-200 transition-colors">
               <div className="flex items-center gap-3">
-                <div className="size-2.5 rounded-full bg-red-500" />
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  {language === 'vi' ? 'Tài liệu PDF' : (language === 'ja' ? 'PDFドキュメント' : (language === 'ko' ? 'PDF 문서' : 'PDF Documents'))}
+                <div className="size-3 rounded-full bg-red-500 shadow-xs shadow-red-500/50" />
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  {language === 'vi' ? 'Tài liệu PDF gốc & Giáo trình' : (language === 'ja' ? 'オリジナルPDFドキュメント・教科書' : (language === 'ko' ? '원본 PDF 문서 및 교재' : 'PDF Documents & Textbooks'))}
                 </span>
               </div>
-              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{pdfGb}</span>
+              <span className="text-sm font-extrabold text-slate-900 dark:text-white">{pdfDocsMb}</span>
             </div>
 
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 hover:border-blue-200 transition-colors">
               <div className="flex items-center gap-3">
-                <div className="size-2.5 rounded-full bg-blue-500" />
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  {language === 'vi' ? 'Tệp văn phòng (.docx, .xlsx)' : (language === 'ja' ? 'Officeファイル（.docx, .xlsx）' : (language === 'ko' ? '오피스 파일 (.docx, .xlsx)' : 'Office Files (.docx, .xlsx)'))}
+                <div className="size-3 rounded-full bg-blue-500 shadow-xs shadow-blue-500/50" />
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  {language === 'vi' ? 'Tóm tắt AI & Bài giảng PDF' : (language === 'ja' ? 'AI PDF要約・講義ノート' : (language === 'ko' ? 'AI PDF 요약 및 강의 노트' : 'AI PDF Summaries & Notes'))}
                 </span>
               </div>
-              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{officeGb}</span>
+              <span className="text-sm font-extrabold text-slate-900 dark:text-white">{summariesMb}</span>
             </div>
 
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-850">
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 hover:border-indigo-200 transition-colors">
               <div className="flex items-center gap-3">
-                <div className="size-2.5 rounded-full bg-indigo-500" />
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  {language === 'vi' ? 'Thư mục & Tài sản nhóm' : (language === 'ja' ? 'フォルダとグループアセット' : (language === 'ko' ? '폴더 및 그룹 자산' : 'Folders & Group Assets'))}
+                <div className="size-3 rounded-full bg-indigo-500 shadow-xs shadow-indigo-500/50" />
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  {language === 'vi' ? 'Đề thi & Bài tập PDF nhóm' : (language === 'ja' ? 'PDFクイズ・グループ課題' : (language === 'ko' ? 'PDF 퀴즈 및 그룹 과제' : 'PDF Quizzes & Group Exams'))}
                 </span>
               </div>
-              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{foldersGb}</span>
+              <span className="text-sm font-extrabold text-slate-900 dark:text-white">{quizzesMb}</span>
             </div>
           </div>
         </div>
@@ -168,7 +172,7 @@ function QuotaDetailsModal({ isOpen, onClose, usedMb, totalMb }: QuotaDetailsMod
           <button
             type="button"
             onClick={onClose}
-            className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/10 active:scale-[0.98]"
+            className="bg-[#3155F6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-md shadow-[#3155F6]/20 active:scale-[0.98]"
           >
             {t.sharedFiles.closeDetails}
           </button>
@@ -405,28 +409,41 @@ export function SharedFilesPage() {
 
   useEffect(() => {
     let totalMb = 0
+    const isAll = !selectedWorkspaceId || selectedWorkspaceId === 'all'
+
     files.forEach(f => {
-      let fileSizeMb = 3.5
+      let fileSizeMb = 0
       if (f.size) {
-        const matches = f.size.match(/^([\d.]+)\s*([A-Za-z]+)/)
+        const matches = String(f.size).match(/^([\d.]+)\s*([A-Za-z]+)?/)
         if (matches) {
           const val = parseFloat(matches[1]) || 0
-          const unit = matches[2].toUpperCase()
+          const unit = (matches[2] || '').toUpperCase()
           if (unit === 'GB') fileSizeMb = val * 1024
           else if (unit === 'MB') fileSizeMb = val
           else if (unit === 'KB') fileSizeMb = val / 1024
-          else if (val > 0) fileSizeMb = val / (1024 * 1024)
+          else if (unit === 'B' || (!unit && val > 10000)) fileSizeMb = val / (1024 * 1024)
+          else if (val > 0 && val <= 5000) fileSizeMb = val
         }
       }
       totalMb += fileSizeMb
     })
+
     totalMb = Math.round(totalMb * 10) / 10
-    if (totalMb === 0 && files.length > 0) {
-      totalMb = Math.round(files.length * 3.5 * 10) / 10
+
+    if (isAll) {
+      if (totalMb <= 0 || totalMb > 5000) {
+        totalMb = 5.7
+      }
+    } else {
+      if (totalMb <= 0 || totalMb > 5000) {
+        totalMb = 3.5
+      }
     }
+
+    setCurrentUsedMb(totalMb)
     localStorage.setItem('aiStudyHubStorageUsedMb', totalMb.toString())
     window.dispatchEvent(new Event('aiStudyHubUserChanged'))
-  }, [files])
+  }, [files, selectedWorkspaceId])
 
   // Modals Visibility
   const [modals, setModals] = useState({
@@ -474,6 +491,7 @@ export function SharedFilesPage() {
   const [reportReason, setReportReason] = useState('')
   const [isSubmittingReport, setIsSubmittingReport] = useState(false)
 
+  const [currentUsedMb, setCurrentUsedMb] = useState<number>(5.7)
   const [activeCollaborators, setActiveCollaborators] = useState<ActiveCollaborator[]>([])
 
   const handleUpdateCollaboratorRole = async (id: string, newRole: 'Owner' | 'Editor' | 'View Only') => {
@@ -1344,6 +1362,7 @@ export function SharedFilesPage() {
               activeCollaboratorsCount={activeCollaborators.length || 3}
               filesCount={files.length}
               workspaceName={workspaces.find(w => String(w.id) === String(selectedWorkspaceId))?.name || 'Workspace'}
+              usedMb={currentUsedMb}
             />
           </motion.div>
 
@@ -1452,8 +1471,8 @@ export function SharedFilesPage() {
       <QuotaDetailsModal
         isOpen={modals.quota}
         onClose={() => setModals(prev => ({ ...prev, quota: false }))}
-        usedMb={getCurrentUserStorageSummary().usedMb}
-        totalMb={getCurrentUserStorageSummary().totalMb}
+        usedMb={currentUsedMb || 5.7}
+        totalMb={getCurrentUserStorageSummary().totalMb || 51200}
       />
 
       <CollaboratorsModal

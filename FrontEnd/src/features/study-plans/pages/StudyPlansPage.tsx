@@ -32,6 +32,7 @@ import { Language } from '@/locales'
 import { useAuthStore } from '@/stores/authStore'
 import { documentService } from '@/services/documentService'
 import { aiService } from '@/services/aiService'
+import { toast } from '@/components/ui/Toast'
 
 // ─────────────────────────────────────────────
 // Types
@@ -51,7 +52,7 @@ type Milestone = {
   time: string
 }
 
-type StudyPlan = {
+export type StudyPlan = {
   id: string
   title: string
   description: string
@@ -757,33 +758,46 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
               {/* More menu */}
               <div className="relative shrink-0">
                 <button
-                  onClick={() => setMenuOpen((v) => !v)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setMenuOpen((v) => !v)
+                  }}
                   className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors"
                   aria-label="More options"
                 >
                   <MoreVertical className="size-4" />
                 </button>
                 {menuOpen && (
-                  <div className="absolute right-0 top-8 z-20 min-w-[160px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg dark:shadow-black/50 py-1">
-                    {menuItems.map(({ label, icon: Icon, action, danger }) => (
-                      <button
-                        key={label}
-                        className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 ${
-                          danger ? 'text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/20' : 'text-slate-700 dark:text-slate-300'
-                        }`}
-                        onClick={() => { setMenuOpen(false); action() }}
-                      >
-                        <Icon className="size-3.5" />{label}
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setMenuOpen(false) }} />
+                    <div className="absolute right-0 top-8 z-20 min-w-[170px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xl py-1.5 animate-in fade-in zoom-in-95 duration-100">
+                      {menuItems.map(({ label, icon: Icon, action, danger }) => (
+                        <button
+                          key={label}
+                          className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold transition-colors ${
+                            danger
+                              ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30'
+                              : 'text-slate-700 dark:text-slate-200 hover:bg-indigo-50/60 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setMenuOpen(false)
+                            action()
+                          }}
+                        >
+                          <Icon className="size-4 shrink-0" />
+                          <span>{label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             </div>
 
             {/* Description */}
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 leading-relaxed line-clamp-2">
-              {localizedPlanInfo.description}
+              {formatCleanDescription(localizedPlanInfo.description)}
             </p>
 
             {/* Linked Documents (Teacher feedback integration) */}
@@ -935,6 +949,15 @@ function StudyPlanCard({ plan, isAiTab, onContinue, onCurriculum, onEdit, onDupl
                   : (language === 'vi' ? 'Xem lộ trình' : language === 'ja' ? 'カリキュラム表示' : language === 'ko' ? '커리큘럼 보기' : 'View Curriculum')}
               </Button>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              className="w-full justify-center font-semibold text-[12px] py-2 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/20 cursor-pointer"
+            >
+              <Trash2 className="size-3.5 mr-1.5" />
+              {language === 'vi' ? 'Xóa kế hoạch' : language === 'ja' ? '計画を削除' : language === 'ko' ? '계획 삭제' : 'Delete Plan'}
+            </Button>
           </div>
         </div>
       </div>
@@ -1210,30 +1233,56 @@ function getPlanLearningProgress(plan: StudyPlan, language: Language): LearningP
 // Main Page
 // ─────────────────────────────────────────────
 
+export function formatCleanDescription(raw: string): string {
+  if (!raw) return ''
+  return raw
+    .replace(/^#+\s*/gm, '')         // Remove markdown titles (#, ##, ###)
+    .replace(/\*\*/g, '')            // Remove bold **
+    .replace(/^\s*[-*•]\s*/gm, '')   // Remove list dashes/bullets
+    .replace(/\s+/g, ' ')            // Collapse spaces and newlines into clean single spaces
+    .trim()
+}
+
 function mapResponseToStudyPlan(response: any): StudyPlan {
   let segments: ProgressSegment[] = []
   let hoursEst = 28
   let difficulty: 'Easy' | 'Medium' | 'Hard' = 'Medium'
 
+  let completedLessonIds: string[] = []
+  if (response.completedLessonsJson) {
+    try {
+      const parsed = JSON.parse(response.completedLessonsJson)
+      if (Array.isArray(parsed)) {
+        completedLessonIds = parsed
+      }
+    } catch (e) {
+      console.error('Failed to parse completedLessonsJson:', e)
+    }
+  }
+
+  let totalLessonsCount = 6
   if (response.curriculumJson) {
     try {
       const parsed = JSON.parse(response.curriculumJson)
+      const modules = Array.isArray(parsed) ? parsed : (parsed?.modules || [])
+      let count = 0
+      modules.forEach((mod: any) => {
+        const lessons = mod.lessons || []
+        count += lessons.length
+      })
+      if (count > 0) totalLessonsCount = count
       if (Array.isArray(parsed)) {
         segments = parsed.map((mod: any) => ({
           label: mod.title || 'Bài học',
-          value: 0
+          value: completedLessonIds.length > 0 ? Math.min(100, Math.round((completedLessonIds.length / totalLessonsCount) * 100)) : 0
         }))
       } else if (parsed && typeof parsed === 'object') {
-        if (parsed.difficulty) {
-          difficulty = parsed.difficulty as any
-        }
-        if (parsed.hoursEst) {
-          hoursEst = Number(parsed.hoursEst)
-        }
+        if (parsed.difficulty) difficulty = parsed.difficulty as any
+        if (parsed.hoursEst) hoursEst = Number(parsed.hoursEst)
         if (parsed.modules && Array.isArray(parsed.modules)) {
           segments = parsed.modules.map((mod: any) => ({
             label: mod.title || 'Bài học',
-            value: 0
+            value: completedLessonIds.length > 0 ? Math.min(100, Math.round((completedLessonIds.length / totalLessonsCount) * 100)) : 0
           }))
         }
       }
@@ -1244,28 +1293,37 @@ function mapResponseToStudyPlan(response: any): StudyPlan {
 
   if (segments.length === 0) {
     segments = [
-      { label: 'Khái niệm cốt lõi', value: 0 },
-      { label: 'Lý thuyết nâng cao', value: 0 },
-      { label: 'Thi thử', value: 0 }
+      { label: 'Khái niệm cốt lõi', value: completedLessonIds.length > 0 ? 100 : 0 },
+      { label: 'Lý thuyết nâng cao', value: completedLessonIds.length > 0 ? 100 : 0 },
+      { label: 'Thi thử', value: completedLessonIds.length > 0 ? 100 : 0 }
     ]
   }
 
-  const docNames = response.sourceDocuments ? response.sourceDocuments.map((d: any) => d.title || d.fileName) : []
+  const docNames = response.sourceDocuments && response.sourceDocuments.length > 0 
+    ? response.sourceDocuments.map((d: any) => d.title || d.originalFileName || d.fileName) 
+    : []
+  const docCount = docNames.length > 0 ? docNames.length : (response.documentId ? 1 : 0)
+
+  const overallProgress = completedLessonIds.length > 0 
+    ? Math.min(100, Math.round((completedLessonIds.length / totalLessonsCount) * 100))
+    : 0
+
+  const status: 'Active' | 'Completed' | 'Upcoming' = overallProgress === 100 ? 'Completed' : 'Active'
 
   return {
     id: String(response.id),
     title: response.title,
     description: response.planText || '',
     isAiGenerated: true,
-    status: 'Active',
-    documents: docNames.length,
+    status,
+    documents: docCount,
     hoursEst,
     difficulty,
-    overallProgress: 0,
+    overallProgress,
     segments,
     linkedDocs: docNames,
     curriculumJson: response.curriculumJson,
-    themeColor: 'blue'
+    themeColor: overallProgress === 100 ? 'teal' : 'blue'
   }
 }
 
@@ -1370,24 +1428,33 @@ export function StudyPlansPage() {
     return plan.status === activeTab
   })
 
+  const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null)
+
   const handleDuplicate = async (plan: StudyPlan) => {
     try {
       const docIdMap = localStorage.getItem('document_name_to_id_map')
       const docMap: Record<string, string> = docIdMap ? JSON.parse(docIdMap) : {}
       const docIds = (plan.linkedDocs || []).map(name => Number(docMap[name])).filter(n => !isNaN(n) && n > 0)
 
+      const copyTitle = language === 'vi' ? `${plan.title} (Bản sao)` : `${plan.title} (Copy)`
       const savedResponse = await aiService.saveStudyPlan({
         userId: userId || 1,
-        title: `${plan.title} (Copy)`,
+        title: copyTitle,
         subject: plan.title.split(' ').pop() || 'Tổng hợp',
         planText: plan.description,
         curriculumJson: plan.curriculumJson || '',
         documentId: docIds.length > 0 ? docIds[0] : undefined
       })
       const mapped = mapResponseToStudyPlan(savedResponse)
+      mapped.linkedDocs = plan.linkedDocs
+      mapped.documents = plan.documents || (plan.linkedDocs ? plan.linkedDocs.length : 0)
+      mapped.difficulty = plan.difficulty
+      mapped.themeColor = plan.themeColor
       setPlans((prev) => [mapped, ...prev])
+      toast.success(language === 'vi' ? `Đã tạo bản sao kế hoạch "${plan.title}"` : `Created a copy of "${plan.title}"`)
     } catch (err) {
       console.error('Failed to duplicate study plan:', err)
+      toast.error(language === 'vi' ? 'Không thể tạo bản sao kế hoạch, vui lòng thử lại' : 'Failed to duplicate study plan')
     }
   }
 
@@ -1395,11 +1462,31 @@ export function StudyPlansPage() {
     try {
       const planIdNum = Number(plan.id)
       if (!isNaN(planIdNum) && planIdNum > 0) {
-        await aiService.deleteStudyPlan(planIdNum)
+        let allLessonIds: string[] = []
+        if (plan.curriculumJson) {
+          try {
+            const parsed = JSON.parse(plan.curriculumJson)
+            const modules = Array.isArray(parsed) ? parsed : (parsed?.modules || [])
+            modules.forEach((mod: any, mIdx: number) => {
+              const lessons = mod.lessons || []
+              lessons.forEach((les: any, lIdx: number) => {
+                allLessonIds.push(les.id || `l-${mIdx}-${lIdx}-${plan.id}`)
+              })
+            })
+          } catch (e) {
+            console.error('Error parsing curriculumJson for archive:', e)
+          }
+        }
+        if (allLessonIds.length === 0) {
+          allLessonIds = [`l-1-${plan.id}`, `l-2-${plan.id}`, `l-3-${plan.id}`]
+        }
+        await aiService.updateCompletedLessons(planIdNum, allLessonIds)
       }
-      setPlans((prev) => prev.filter((p) => p.id !== plan.id))
+      setPlans((prev) => prev.map((p) => p.id === plan.id ? { ...p, status: 'Completed' as const, overallProgress: 100, themeColor: 'teal' as const } : p))
+      toast.success(language === 'vi' ? `Đã lưu trữ thành công kế hoạch "${plan.title}"` : `Archived "${plan.title}" successfully`)
     } catch (err) {
       console.error('Failed to archive study plan:', err)
+      toast.error(language === 'vi' ? 'Không thể lưu trữ kế hoạch, vui lòng thử lại' : 'Failed to archive study plan')
     }
   }
 
@@ -1411,8 +1498,10 @@ export function StudyPlansPage() {
         await aiService.deleteStudyPlan(planIdNum)
       }
       setPlans((prev) => prev.filter((p) => p.id !== deleteTarget.id))
+      toast.success(language === 'vi' ? `Đã xóa thành công kế hoạch "${deleteTarget.title}"` : `Deleted "${deleteTarget.title}" successfully`)
     } catch (err) {
       console.error('Failed to delete study plan:', err)
+      toast.error(language === 'vi' ? 'Không thể xóa kế hoạch, vui lòng thử lại' : 'Failed to delete study plan')
     } finally {
       setDeleteTarget(null)
     }
@@ -1430,7 +1519,7 @@ export function StudyPlansPage() {
             </p>
           </div>
           <Button
-            onClick={() => setCreateOpen(true)}
+            onClick={() => { setEditingPlan(null); setCreateOpen(true) }}
             variant="primary"
             className="shrink-0 bg-[#2557E8] hover:bg-[#1d4ed8] dark:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-sm"
           >
@@ -1444,7 +1533,7 @@ export function StudyPlansPage() {
         {/* ── Plan cards ── */}
         <div className="flex flex-col gap-4">
           {filteredPlans.length === 0 ? (
-            <EmptyState onAdd={() => setCreateOpen(true)} />
+            <EmptyState onAdd={() => { setEditingPlan(null); setCreateOpen(true) }} />
           ) : (
             filteredPlans.map((plan) => (
               <StudyPlanCard
@@ -1453,7 +1542,10 @@ export function StudyPlansPage() {
                 isAiTab={activeTab === 'AI Generated'}
                 onContinue={() => setLearningPlan(getPlanLearningProgress(plan, language))}
                 onCurriculum={() => setCurriculumPlan(getPlanCurriculum(plan, language))}
-                onEdit={() => setCreateOpen(true)}
+                onEdit={() => {
+                  setEditingPlan(plan)
+                  setCreateOpen(true)
+                }}
                 onDuplicate={() => handleDuplicate(plan)}
                 onArchive={() => handleArchive(plan)}
                 onDelete={() => setDeleteTarget(plan)}
@@ -1466,13 +1558,16 @@ export function StudyPlansPage() {
       {/* ── Create Plan Modal ── */}
       <CreateStudyPlanModal
         isOpen={createOpen}
+        editingPlan={editingPlan}
         onClose={() => {
           setCreateOpen(false)
+          setEditingPlan(null)
           if (preselectedDocId) {
             navigate('/dashboard/study-plans', { replace: true })
           }
         }}
-        onCreate={(newPlan) => setPlans((prev) => [newPlan, ...prev])}
+        onCreate={(newPlan: StudyPlan) => setPlans((prev) => [newPlan, ...prev])}
+        onUpdate={(updatedPlan: StudyPlan) => setPlans((prev) => prev.map((p) => p.id === updatedPlan.id ? updatedPlan : p))}
         preselectedDocId={preselectedDocId}
         autoGenerate={autoGenerate}
       />

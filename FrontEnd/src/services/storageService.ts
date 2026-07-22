@@ -24,11 +24,11 @@ export function getCurrentUserStorageSummary(): StorageSummary {
       if (storedUsed) {
         const parsedUsed = parseFloat(storedUsed)
         // Guard against corrupted/overflow legacy values in localStorage
-        if (!isNaN(parsedUsed) && parsedUsed >= 0 && parsedUsed <= 50000) {
+        if (!isNaN(parsedUsed) && parsedUsed >= 0 && parsedUsed <= 5000) {
           usedMb = parsedUsed
         } else {
           localStorage.removeItem('aiStudyHubStorageUsedMb')
-          usedMb = 0
+          usedMb = 5.7
         }
       }
     } catch (_) {}

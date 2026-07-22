@@ -15,6 +15,14 @@ export function useToast() {
   }
 }
 
+// Standalone toast helper for direct imperative calls
+export const toast = {
+  success: (msg: string, duration?: number) => useToastStore.getState().addToast(msg, 'success', duration),
+  error: (msg: string, duration?: number) => useToastStore.getState().addToast(msg, 'error', duration),
+  info: (msg: string, duration?: number) => useToastStore.getState().addToast(msg, 'info', duration),
+  warning: (msg: string, duration?: number) => useToastStore.getState().addToast(msg, 'warning', duration),
+}
+
 export function ToastItem({ toast }: { toast: Toast }) {
   const removeToast = useToastStore((s) => s.removeToast)
 
@@ -76,7 +84,7 @@ export function ToastContainer() {
   const toasts = useToastStore((s) => s.toasts)
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none select-none max-w-full">
+    <div className="fixed bottom-6 right-6 z-[100000] flex flex-col gap-3 pointer-events-none select-none max-w-full">
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
           <div key={toast.id} className="pointer-events-auto">

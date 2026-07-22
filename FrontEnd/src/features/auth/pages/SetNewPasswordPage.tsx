@@ -94,6 +94,17 @@ export function SetNewPasswordPage() {
       await authService.resetPassword(data.email, data.otp, data.password)
       setIsSubmitting(false)
       setSuccessMsg('Password reset successfully! Redirecting to login page...')
+
+      try {
+        const cleanEmail = data.email.trim().toLowerCase()
+        const stored = localStorage.getItem('loginFailedAttemptsPerEmail')
+        if (stored) {
+          const map = JSON.parse(stored)
+          delete map[cleanEmail]
+          localStorage.setItem('loginFailedAttemptsPerEmail', JSON.stringify(map))
+        }
+      } catch (e) {}
+
       setTimeout(() => {
         navigate('/login')
       }, 3000)
@@ -101,10 +112,10 @@ export function SetNewPasswordPage() {
       setIsSubmitting(false)
       const backendMessage = err?.response?.data?.message || err?.message || ''
       
-      if (backendMessage.includes("Invalid token")) {
+      if (backendMessage.includes("Invalid token") || backendMessage.includes("OTP") || backendMessage.includes("lần thử") || backendMessage.includes("Mã")) {
         setError('otp', { 
           type: 'manual', 
-          message: 'Invalid OTP code. Please check again.' 
+          message: backendMessage || 'Invalid OTP code. Please check again.' 
         })
       } else if (backendMessage.includes("Email does not match this token")) {
         setError('otp', { 
