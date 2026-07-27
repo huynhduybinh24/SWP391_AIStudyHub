@@ -292,11 +292,10 @@ public class AiExecutionLogServiceImpl implements AiExecutionLogService {
         AiExecutionLog savedLog = aiExecutionLogRepository.save(log);
 
         // Notify student reporter via WebSocket + In-app Notification + Email
-        if (savedLog.getUserId() != null) {
+        User reporter = savedLog.getUser();
+        if (reporter != null && reporter.getEmail() != null && !reporter.getEmail().trim().isEmpty()) {
             try {
-                User reporter = userRepository.findById(savedLog.getUserId()).orElse(null);
-                if (reporter != null && reporter.getEmail() != null && !reporter.getEmail().trim().isEmpty()) {
-                    String reporterName = reporter.getFullName() != null ? reporter.getFullName() : reporter.getEmail();
+                String reporterName = reporter.getFullName() != null ? reporter.getFullName() : reporter.getEmail();
 
                     // 1. In-App & WebSocket Notification to student
                     NotificationRequest notif = NotificationRequest.builder()
@@ -330,7 +329,6 @@ public class AiExecutionLogServiceImpl implements AiExecutionLogService {
                     );
                     String htmlTemplate = emailService.buildHtmlTemplate(emailSubject, emailHeading, emailBodyContent);
                     emailService.sendEmail(reporter.getEmail(), emailSubject, htmlTemplate, true);
-                }
             } catch (Exception e) {
                 System.err.println("Failed to send reporter notification/email: " + e.getMessage());
             }
