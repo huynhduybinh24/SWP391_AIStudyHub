@@ -38,8 +38,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return true;
         }
 
-        // 3. Skip static assets, actuator, error
-        if (path.startsWith("/actuator") || path.startsWith("/error")) {
+        // 3. Skip static assets, actuator, health, error
+        if (path.startsWith("/actuator") || path.startsWith("/error") || path.startsWith("/api/health") || path.equals("/health")) {
             return true;
         }
 

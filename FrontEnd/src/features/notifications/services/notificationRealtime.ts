@@ -107,12 +107,22 @@ class NotificationRealtimeManager {
   }
 
   public connect() {
-    if (this.socket) return;
-
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     const currentUser = getCurrentUser();
-    const userEmail = currentUser?.email || '';
+
+    if (!token || !currentUser || !currentUser.email) {
+      this.disconnect();
+      return;
+    }
+
+    if (this.socket && (this.socket.readyState === WebSocket.CONNECTING || this.socket.readyState === WebSocket.OPEN)) {
+      return;
+    }
+
+    const userEmail = currentUser.email;
     const wsUrl = this.getWsUrl();
-    const url = userEmail ? `${wsUrl}?email=${encodeURIComponent(userEmail)}` : wsUrl;
+    const url = `${wsUrl}?email=${encodeURIComponent(userEmail)}`;
 
     console.log(`[Realtime] Attempting connection to WebSocket: ${url}`);
     try {
@@ -137,14 +147,15 @@ class NotificationRealtimeManager {
       };
 
       this.socket.onclose = () => {
-        console.log('[Realtime] WebSocket disconnected. Retrying in 10s...');
         this.socket = null;
-        this.startReconnectTimer();
-        this.startSimulation(); // Fallback to simulated notifications in Frontend-only mode
+        const activeToken = localStorage.getItem('token') || localStorage.getItem('accessToken');
+        if (activeToken) {
+          console.log('[Realtime] WebSocket disconnected. Retrying in 10s...');
+          this.startReconnectTimer();
+        }
       };
     } catch (err) {
-      console.warn('[Realtime] Failed to create WebSocket instance. Starting simulator fallback.');
-      this.startSimulation();
+      console.warn('[Realtime] Failed to create WebSocket instance.');
     }
   }
 

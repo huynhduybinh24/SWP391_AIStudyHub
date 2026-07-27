@@ -56,7 +56,7 @@ public class SecurityConfig {
                 .requestMatchers("/ws/**", "/api/ws/**").permitAll()
 
                 // Static files & health
-                .requestMatchers("/actuator/**", "/error").permitAll()
+                .requestMatchers("/actuator/**", "/error", "/api/health", "/health").permitAll()
 
                 // Public system status check (to determine maintenance mode)
                 .requestMatchers(HttpMethod.GET, "/api/admin/system/status").permitAll()

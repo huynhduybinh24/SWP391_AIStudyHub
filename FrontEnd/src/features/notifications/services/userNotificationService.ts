@@ -2,22 +2,23 @@ import { apiClient } from '@/lib/axios';
 
 export const getCurrentUser = () => {
   if (typeof window === 'undefined') {
-    return { id: 'admin', email: 'admin@example.com', role: 'admin', name: 'Alex Morgan' };
+    return null;
   }
   const data = localStorage.getItem('aiStudyHubCurrentUser');
   if (!data) {
-    return { id: 'admin', email: 'admin@example.com', role: 'admin', name: 'Alex Morgan' };
+    return null;
   }
   try {
     const user = JSON.parse(data);
+    if (!user || !user.email) return null;
     return {
-      id: user.id || user.email || 'admin',
-      email: user.email || 'admin@example.com',
-      role: (user.role || 'admin').toLowerCase(),
-      name: user.name || 'Alex Morgan',
+      id: user.id || user.email,
+      email: user.email,
+      role: (user.role || 'user').toLowerCase(),
+      name: user.name || user.email.split('@')[0],
     };
   } catch (e) {
-    return { id: 'admin', email: 'admin@example.com', role: 'admin', name: 'Alex Morgan' };
+    return null;
   }
 };
 
