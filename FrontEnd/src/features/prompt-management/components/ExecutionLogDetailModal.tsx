@@ -42,6 +42,41 @@ export function ExecutionLogDetailModal({ isOpen, onClose, log }: ExecutionLogDe
           <PromptVersionStatusBadge status={log.status} />
         </div>
 
+        {/* Reported by User Banner */}
+        {log.flagged && (
+          <div className="p-4 bg-rose-500/10 border-2 border-rose-500/30 rounded-xl space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5 text-sm">
+                <AlertTriangle className="w-5 h-5 text-rose-500 animate-pulse" />
+                <span>REPORTED BY USER (AI ANSWER HAS ISSUE)</span>
+              </span>
+
+              {log.promptId && (
+                <Link
+                  to={`/dashboard/admin/prompts/${log.promptId}/versions/new`}
+                  onClick={onClose}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1"
+                >
+                  <span>Fix Prompt (New Version)</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-rose-200 dark:border-rose-900 text-slate-800 dark:text-slate-200">
+              <div className="font-semibold text-rose-700 dark:text-rose-300 text-[11px] mb-1">
+                Student Report Reason:
+              </div>
+              <p className="font-medium text-xs whitespace-pre-wrap">{log.reportReason || 'No reason provided.'}</p>
+              {log.reportedAt && (
+                <div className="text-[10px] text-slate-400 mt-1">
+                  Reported on: {new Date(log.reportedAt).toLocaleString()}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Error message if failed */}
         {log.status === 'FAILED' && log.errorMessage && (
           <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-800 dark:text-rose-300 space-y-1">
@@ -117,6 +152,18 @@ export function ExecutionLogDetailModal({ isOpen, onClose, log }: ExecutionLogDe
             </div>
           </div>
         </div>
+
+        {/* AI Output Reference (Raw Response text) */}
+        {log.outputReference && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              AI Output Reference (Raw Response)
+            </label>
+            <div className="p-3 bg-slate-950 text-emerald-400 text-xs font-mono rounded-xl max-h-48 overflow-y-auto whitespace-pre-wrap border border-slate-800">
+              {log.outputReference}
+            </div>
+          </div>
+        )}
 
         {/* Metadata section */}
         {log.inputMetadata && (

@@ -14,7 +14,7 @@ export function CreatePromptPage() {
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState<PromptCategory>('GENERATION')
+  const [category, setCategory] = useState<PromptCategory>('CHAT')
   const [initialMarkdownContent, setInitialMarkdownContent] = useState('')
   const [changeSummary, setChangeSummary] = useState('Initial prompt creation')
   const [changeReason, setChangeReason] = useState('Create new system prompt template')
@@ -126,11 +126,11 @@ export function CreatePromptPage() {
                 onChange={(e) => setCategory(e.target.value as PromptCategory)}
                 className="w-full text-xs p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-slate-200 font-medium"
               >
-                <option value="GENERATION">GENERATION</option>
-                <option value="ASSESSMENT">ASSESSMENT</option>
-                <option value="CONVERSATION">CONVERSATION</option>
-                <option value="MODERATION">MODERATION</option>
-                <option value="SYSTEM">SYSTEM</option>
+                <option value="CHAT">CHAT (Hỏi đáp / Chatbot)</option>
+                <option value="GENERATION">GENERATION (Tạo nội dung / Quiz)</option>
+                <option value="ACADEMIC">ACADEMIC (Học thuật)</option>
+                <option value="EVALUATION">EVALUATION (Chấm điểm / Đánh giá)</option>
+                <option value="MODERATION">MODERATION (Kiểm duyệt)</option>
               </select>
             </div>
 

@@ -44,8 +44,11 @@ public interface AiExecutionLogService {
             ExecutionStatus status,
             LocalDateTime fromDate,
             LocalDateTime toDate,
+            Boolean flaggedOnly,
             Pageable pageable
     );
 
     AiExecutionLogResponse getLogById(Long logId);
+
+    AiExecutionLogResponse reportLog(Long logId, String reason, User user);
 }

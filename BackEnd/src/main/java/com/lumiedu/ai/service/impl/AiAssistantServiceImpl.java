@@ -303,7 +303,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
         Map<String, Object> promptVars = new HashMap<>();
         promptVars.put("context", fullContextBuilder.toString().isEmpty() ? "No additional document context available." : fullContextBuilder.toString());
-        promptVars.put("question", userMessage);
+        promptVars.put("question", messageText);
 
         com.lumiedu.user.entity.User currentUser = userRepository.findById(session.getUserId()).orElse(null);
 
@@ -330,6 +330,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .sender("AI")
                 .messageText(response.getContent())
                 .thought(response.getThought())
+                .executionLogId(execResult != null ? execResult.getLogId() : null)
                 .build();
 
         return aiChatMessageRepository.save(aiMessage);

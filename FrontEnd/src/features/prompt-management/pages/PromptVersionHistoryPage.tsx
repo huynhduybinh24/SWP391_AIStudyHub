@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react'
+import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, History, Plus, GitCompare, RotateCcw } from 'lucide-react'
 import { usePrompt, usePromptVersions } from '../hooks/usePrompts'
 import { PromptVersionStatusBadge } from '../components/PromptStatusBadge'

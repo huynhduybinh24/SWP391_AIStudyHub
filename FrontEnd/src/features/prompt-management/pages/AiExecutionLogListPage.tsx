@@ -29,6 +29,7 @@ export function AiExecutionLogListPage() {
   const [promptCode, setPromptCode] = useState(initialPromptCode)
   const [promptVersion, setPromptVersion] = useState('')
   const [status, setStatus] = useState<ExecutionStatus | ''>('')
+  const [flaggedOnly, setFlaggedOnly] = useState(false)
   const [page, setPage] = useState(0)
 
   const [selectedLog, setSelectedLog] = useState<AiExecutionLogSummary | undefined>()
@@ -39,6 +40,7 @@ export function AiExecutionLogListPage() {
     promptCode: promptCode.trim() || undefined,
     promptVersion: promptVersion.trim() || undefined,
     status: status || undefined,
+    flaggedOnly: flaggedOnly || undefined,
     page,
     size: 15,
   }
@@ -54,6 +56,7 @@ export function AiExecutionLogListPage() {
     setPromptCode('')
     setPromptVersion('')
     setStatus('')
+    setFlaggedOnly(false)
     setPage(0)
   }
 
@@ -138,7 +141,20 @@ export function AiExecutionLogListPage() {
           </select>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900 select-none">
+            <input
+              type="checkbox"
+              checked={flaggedOnly}
+              onChange={(e) => {
+                setFlaggedOnly(e.target.checked)
+                setPage(0)
+              }}
+              className="w-4 h-4 accent-rose-600 rounded cursor-pointer"
+            />
+            <span>Reported Only 🚩 (Báo cáo từ User)</span>
+          </label>
+
           <button
             type="button"
             onClick={handleResetFilters}
@@ -176,7 +192,7 @@ export function AiExecutionLogListPage() {
                   <th className="py-3.5 px-4">Feature</th>
                   <th className="py-3.5 px-4">Prompt Code & Version</th>
                   <th className="py-3.5 px-4">LLM Model</th>
-                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4">Status & Flag</th>
                   <th className="py-3.5 px-4">Latency / Tokens</th>
                   <th className="py-3.5 px-4">Started At</th>
                   <th className="py-3.5 px-4 text-right">Action</th>
@@ -184,7 +200,14 @@ export function AiExecutionLogListPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                  <tr
+                    key={log.id}
+                    className={`transition-colors ${
+                      log.flagged
+                        ? 'bg-rose-50/70 dark:bg-rose-950/20 hover:bg-rose-100/70 dark:hover:bg-rose-900/30'
+                        : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40'
+                    }`}
+                  >
                     <td className="py-3.5 px-4 space-y-0.5">
                       <span className="font-mono font-bold text-slate-900 dark:text-white">
                         #{log.id}
@@ -211,8 +234,13 @@ export function AiExecutionLogListPage() {
                       {log.llmModel || log.llmProvider || 'Gemini'}
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 space-y-1">
                       <PromptVersionStatusBadge status={log.status} />
+                      {log.flagged && (
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-600 text-white font-bold text-[10px] rounded-full animate-pulse shadow-xs">
+                          <span>REPORTED</span>
+                        </div>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-slate-400 space-y-0.5">

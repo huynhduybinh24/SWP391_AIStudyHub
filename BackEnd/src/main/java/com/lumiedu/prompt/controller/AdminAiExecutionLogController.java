@@ -34,13 +34,14 @@ public class AdminAiExecutionLogController {
             @RequestParam(required = false) ExecutionStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
+            @RequestParam(required = false) Boolean flaggedOnly,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ResponseEntity.ok(aiExecutionLogService.getLogs(
                 studentCode, featureType, promptCode, promptVersion,
-                knowledgeVersion, llmModel, status, fromDate, toDate, pageable
+                knowledgeVersion, llmModel, status, fromDate, toDate, flaggedOnly, pageable
         ));
     }
 

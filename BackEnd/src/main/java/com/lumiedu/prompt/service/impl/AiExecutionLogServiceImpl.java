@@ -12,13 +12,26 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.lumiedu.ai.entity.AiChatMessage;
+import com.lumiedu.ai.repository.AiChatMessageRepository;
+import com.lumiedu.email.service.EmailService;
+import com.lumiedu.notification.dto.request.NotificationRequest;
+import com.lumiedu.notification.service.NotificationService;
+import com.lumiedu.user.enums.UserRole;
+import com.lumiedu.user.repository.UserRepository;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +39,13 @@ import java.util.List;
 public class AiExecutionLogServiceImpl implements AiExecutionLogService {
 
     private final AiExecutionLogRepository aiExecutionLogRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final EmailService emailService;
+    private final AiChatMessageRepository aiChatMessageRepository;
+
+    @Value("${app.admin.email:lumieduteam@gmail.com}")
+    private String configuredAdminEmail;
 
     @Override
     public AiExecutionLog createProcessingLog(
@@ -107,6 +127,7 @@ public class AiExecutionLogServiceImpl implements AiExecutionLogService {
             ExecutionStatus status,
             LocalDateTime fromDate,
             LocalDateTime toDate,
+            Boolean flaggedOnly,
             Pageable pageable
     ) {
         Specification<AiExecutionLog> spec = (root, query, cb) -> {
@@ -139,6 +160,9 @@ public class AiExecutionLogServiceImpl implements AiExecutionLogService {
             if (toDate != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), toDate));
             }
+            if (Boolean.TRUE.equals(flaggedOnly)) {
+                predicates.add(cb.equal(root.get("flagged"), true));
+            }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -152,6 +176,111 @@ public class AiExecutionLogServiceImpl implements AiExecutionLogService {
         AiExecutionLog log = aiExecutionLogRepository.findById(logId)
                 .orElseThrow(() -> new IllegalArgumentException("AI Execution log not found with id: " + logId));
         return mapToResponse(log);
+    }
+
+    @Override
+    public AiExecutionLogResponse reportLog(Long logId, String reason, User user) {
+        AiExecutionLog log = null;
+        if (logId != null) {
+            log = aiExecutionLogRepository.findById(logId).orElse(null);
+
+            // Fallback 1: If logId is an AiChatMessage ID, check its linked executionLogId
+            if (log == null) {
+                Optional<AiChatMessage> chatMsgOpt = aiChatMessageRepository.findById(logId);
+                if (chatMsgOpt.isPresent() && chatMsgOpt.get().getExecutionLogId() != null) {
+                    log = aiExecutionLogRepository.findById(chatMsgOpt.get().getExecutionLogId()).orElse(null);
+                }
+            }
+        }
+
+        // Fallback 2: Get latest execution log for user if log is still null
+        if (log == null && user != null) {
+            Page<AiExecutionLog> userLogs = aiExecutionLogRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), PageRequest.of(0, 1));
+            if (!userLogs.isEmpty()) {
+                log = userLogs.getContent().get(0);
+            }
+        }
+
+        if (log == null) {
+            throw new IllegalArgumentException("Không tìm thấy nhật ký thực thi AI tương ứng để báo cáo.");
+        }
+
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn hoặc nhập lý do báo cáo!");
+        }
+
+        log.setFlagged(true);
+        log.setReportReason(reason.trim());
+        log.setReportedAt(LocalDateTime.now());
+
+        AiExecutionLog savedLog = aiExecutionLogRepository.save(log);
+
+        // Notify all admins in real-time (WebSocket + In-app + Email)
+        try {
+            List<User> admins = userRepository.findByRole(UserRole.ADMIN);
+            String reporterInfo = user != null ? (user.getFullName() != null ? user.getFullName() : user.getEmail()) : "Sinh viên";
+
+            // 1. WebSocket & System Notifications
+            for (User admin : admins) {
+                NotificationRequest notif = NotificationRequest.builder()
+                        .targetUserEmail(admin.getEmail())
+                        .type("SECURITY")
+                        .title("🚩 Báo cáo phản hồi AI: [" + savedLog.getPromptCode() + "]")
+                        .message(String.format("%s vừa báo cáo câu trả lời AI (%s - %s). Lý do: %s",
+                                reporterInfo,
+                                savedLog.getPromptCode(),
+                                savedLog.getPromptVersion(),
+                                reason.trim()))
+                        .actionType("ai_report")
+                        .actionText("Kiểm tra Log AI Execution")
+                        .actionUrl("/dashboard/admin?tab=ai-logs")
+                        .reason(reason.trim())
+                        .build();
+                notificationService.createNotification(notif);
+            }
+
+            // 2. Instant Email Notification
+            String emailSubject = "🚩 [LumiEdu AI Audit] Cảnh báo Báo cáo AI Response: " + savedLog.getPromptCode();
+            String emailHeading = "Cảnh báo Báo cáo Phản hồi AI từ Sinh viên";
+            String emailBodyContent = String.format(
+                    "<p>Kính gửi Ban Quản trị LumiEdu,</p>" +
+                    "<p>Hệ thống vừa ghi nhận <strong>01 lượt báo cáo mới</strong> từ sinh viên về câu trả lời của AI:</p>" +
+                    "<div style=\"background-color:#fff5f5; border:1px solid #feb2b2; padding:16px; border-radius:12px; margin:16px 0;\">" +
+                    "  <p style=\"margin:0 0 8px 0;\"><strong>Sinh viên báo cáo:</strong> %s</p>" +
+                    "  <p style=\"margin:0 0 8px 0;\"><strong>Prompt Code:</strong> <code>%s</code> (Phiên bản: <strong>%s</strong>)</p>" +
+                    "  <p style=\"margin:0 0 8px 0;\"><strong>Feature Type:</strong> %s</p>" +
+                    "  <p style=\"margin:0 0 8px 0; color:#c53030;\"><strong>Lý do báo cáo:</strong> %s</p>" +
+                    "  <p style=\"margin:0;\"><strong>Thời gian:</strong> %s</p>" +
+                    "</div>" +
+                    "<p>Vui lòng kiểm tra lại bộ chỉ thị Prompt gốc và tạo phiên bản mới nếu cần thiết.</p>" +
+                    "<a href=\"http://localhost:5173/dashboard/admin?tab=ai-logs\" style=\"display:inline-block; background-color:#e53e3e; color:#ffffff !important; padding:12px 24px; font-size:14px; font-weight:700; text-decoration:none; border-radius:8px; margin-top:12px;\">Kiểm tra AI Execution Logs</a>",
+                    reporterInfo,
+                    savedLog.getPromptCode(),
+                    savedLog.getPromptVersion(),
+                    savedLog.getFeatureType(),
+                    reason.trim(),
+                    savedLog.getReportedAt() != null ? savedLog.getReportedAt().toString() : LocalDateTime.now().toString()
+            );
+            String htmlTemplate = emailService.buildHtmlTemplate(emailSubject, emailHeading, emailBodyContent);
+
+            Set<String> recipientEmails = new HashSet<>();
+            for (User admin : admins) {
+                if (admin.getEmail() != null && !admin.getEmail().trim().isEmpty()) {
+                    recipientEmails.add(admin.getEmail().trim());
+                }
+            }
+            if (configuredAdminEmail != null && !configuredAdminEmail.trim().isEmpty()) {
+                recipientEmails.add(configuredAdminEmail.trim());
+            }
+
+            for (String recipientEmail : recipientEmails) {
+                emailService.sendEmail(recipientEmail, emailSubject, htmlTemplate, true);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to send admin notifications/emails for AI report: " + e.getMessage());
+        }
+
+        return mapToResponse(savedLog);
     }
 
     private AiExecutionLogResponse mapToResponse(AiExecutionLog log) {
@@ -184,6 +313,9 @@ public class AiExecutionLogServiceImpl implements AiExecutionLogService {
                 .createdAt(log.getCreatedAt())
                 .publishedByName(pv != null && pv.getPublishedBy() != null ? pv.getPublishedBy().getFullName() : null)
                 .publishedAt(pv != null ? pv.getPublishedAt() : null)
+                .flagged(log.getFlagged())
+                .reportReason(log.getReportReason())
+                .reportedAt(log.getReportedAt())
                 .build();
     }
 }

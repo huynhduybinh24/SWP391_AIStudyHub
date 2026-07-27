@@ -143,6 +143,7 @@ export function PromptVersionDetailPage() {
         })
         toast.success('Version rejected!')
       }
+      setReviewModal((prev) => ({ ...prev, isOpen: false }))
     } catch (err: any) {
       toast.error(err.message || 'Workflow action failed.')
       throw err

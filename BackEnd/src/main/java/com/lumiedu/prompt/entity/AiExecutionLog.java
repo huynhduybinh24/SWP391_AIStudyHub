@@ -96,4 +96,14 @@ public class AiExecutionLog extends BaseEntity {
 
     @Column(name = "output_reference", columnDefinition = "LONGTEXT")
     private String outputReference;
+
+    @Builder.Default
+    @Column(name = "flagged", nullable = false)
+    private Boolean flagged = false;
+
+    @Column(name = "report_reason", columnDefinition = "TEXT")
+    private String reportReason;
+
+    @Column(name = "reported_at")
+    private LocalDateTime reportedAt;
 }

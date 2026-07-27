@@ -125,11 +125,11 @@ export function PromptListPage() {
             className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium dark:text-slate-200"
           >
             <option value="ALL">All Categories</option>
+            <option value="CHAT">CHAT</option>
             <option value="GENERATION">GENERATION</option>
-            <option value="ASSESSMENT">ASSESSMENT</option>
-            <option value="CONVERSATION">CONVERSATION</option>
+            <option value="ACADEMIC">ACADEMIC</option>
+            <option value="EVALUATION">EVALUATION</option>
             <option value="MODERATION">MODERATION</option>
-            <option value="SYSTEM">SYSTEM</option>
           </select>
 
           {/* Active Filter */}
@@ -256,6 +256,14 @@ export function PromptListPage() {
                       >
                         <FileText className="w-3.5 h-3.5" />
                         <span>View</span>
+                      </Link>
+
+                      <Link
+                        to={`/dashboard/admin/prompts/${p.id}/history`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 text-xs font-semibold rounded-lg border border-amber-200 dark:border-amber-800 transition-colors"
+                      >
+                        <History className="w-3.5 h-3.5 text-amber-500" />
+                        <span>History</span>
                       </Link>
 
                       <Link

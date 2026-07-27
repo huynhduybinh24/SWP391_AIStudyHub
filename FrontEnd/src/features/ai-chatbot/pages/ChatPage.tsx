@@ -3,7 +3,7 @@ import {
   FileText, FlaskConical, FileQuestion, Paperclip, Send,
   Loader2, User, X, Plus, Search, Copy, RefreshCw, MoreVertical,
   Trash2, Edit2, Pin, MessageSquare, Check, Sparkles, BookOpen,
-  FolderOpen, ArrowLeft, Zap, BrainCircuit, ChevronDown, Reply, Share2, CornerDownRight, Link
+  FolderOpen, ArrowLeft, Zap, BrainCircuit, ChevronDown, Reply, Share2, CornerDownRight, Link, Flag
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { aiService } from '@/services/aiService'
 import { documentService, DocumentResponse } from '@/services/documentService'
 import { StudioPanel } from '../components/StudioPanel'
+import { ReportAiLogModal } from '../components/ReportAiLogModal'
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
@@ -151,6 +152,8 @@ export function ChatPage() {
   const [replyingToMessage, setReplyingToMessage] = useState<string | null>(null)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [sharingMessage, setSharingMessage] = useState<string | null>(null)
+  const [reportModalOpen, setReportModalOpen] = useState(false)
+  const [reportingLogId, setReportingLogId] = useState<number | undefined>()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Load user documents and previous chat sessions from database on mount
@@ -244,6 +247,7 @@ export function ChatPage() {
         role: msg.sender.toLowerCase() === 'user' ? 'user' : 'assistant',
         content: msg.messageText,
         thought: msg.thought,
+        executionLogId: (msg as any).executionLogId,
         createdAt: new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }))
 
@@ -328,6 +332,7 @@ export function ChatPage() {
         role: 'assistant',
         content: reply.messageText,
         thought: reply.thought,
+        executionLogId: (reply as any).executionLogId,
         createdAt: t.common.justNow || "Just now",
       }
 
@@ -967,6 +972,18 @@ export function ChatPage() {
                                     <RefreshCw className="size-3" />
                                     <span>Tái tạo</span>
                                   </button>
+
+                                  <span className="text-slate-200 dark:text-slate-800 text-[10px] font-bold">•</span>
+                                  <button
+                                    onClick={() => {
+                                      setReportingLogId(msg.executionLogId || Number(msg.id) || undefined)
+                                      setReportModalOpen(true)
+                                    }}
+                                    className="flex items-center gap-1 text-[11px] font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
+                                  >
+                                    <Flag className="size-3" />
+                                    <span>Báo cáo</span>
+                                  </button>
                                 </>
                               )}
 
@@ -1296,6 +1313,12 @@ export function ChatPage() {
           </div>
         </div>
       </Modal>
+
+      <ReportAiLogModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        logId={reportingLogId}
+      />
     </div>
   )
 }

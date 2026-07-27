@@ -39,4 +39,7 @@ public class AiExecutionLogResponse {
     private LocalDateTime createdAt;
     private String publishedByName;
     private LocalDateTime publishedAt;
+    private Boolean flagged;
+    private String reportReason;
+    private LocalDateTime reportedAt;
 }

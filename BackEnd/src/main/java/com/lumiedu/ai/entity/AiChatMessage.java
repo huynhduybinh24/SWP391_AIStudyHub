@@ -28,4 +28,7 @@ public class AiChatMessage extends BaseEntity {
 
     @Column(name = "thought", columnDefinition = "TEXT")
     private String thought;
+
+    @Column(name = "execution_log_id")
+    private Long executionLogId;
 }

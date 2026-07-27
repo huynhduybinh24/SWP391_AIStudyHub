@@ -58,8 +58,7 @@ class PromptSeedServiceTest {
         when(promptRepository.saveAndFlush(any(Prompt.class))).thenReturn(prompt);
         when(promptRepository.findByCodeForUpdate("TEST_PROMPT")).thenReturn(Optional.of(prompt));
 
-        when(promptVersionRepository.existsByPromptIdAndVersion(100L, "v1.0.0")).thenReturn(false);
-        when(promptVersionRepository.existsByPromptIdAndStatus(100L, PromptVersionStatus.PUBLISHED)).thenReturn(false);
+        when(promptVersionRepository.findPublishedVersionByPromptId(100L)).thenReturn(Optional.empty());
 
         PromptVersion savedVersion = PromptVersion.builder()
                 .id(200L)
@@ -92,10 +91,19 @@ class PromptSeedServiceTest {
     }
 
     @Test
-    void testSeedInitialPrompt_SecondRun_VersionAlreadyExists_Skips() {
+    void testSeedInitialPrompt_SecondRun_VersionAlreadyExists_UpdatesOrSkips() {
+        PromptVersion existingV1 = PromptVersion.builder()
+                .id(200L)
+                .prompt(prompt)
+                .version("v1.1.0")
+                .status(PromptVersionStatus.PUBLISHED)
+                .changeSummary("Custom admin edit")
+                .markdownContent("CRITICAL RULES & EXAM POLICY Hello {{name}}")
+                .build();
+
         when(promptRepository.findByCode("TEST_PROMPT")).thenReturn(Optional.of(prompt));
         when(promptRepository.findByCodeForUpdate("TEST_PROMPT")).thenReturn(Optional.of(prompt));
-        when(promptVersionRepository.existsByPromptIdAndVersion(100L, "v1.0.0")).thenReturn(true);
+        when(promptVersionRepository.findPublishedVersionByPromptId(100L)).thenReturn(Optional.of(existingV1));
 
         promptSeedService.seedInitialPrompt(
                 "TEST_PROMPT",
@@ -105,16 +113,23 @@ class PromptSeedServiceTest {
                 "Hello {{name}}"
         );
 
-        verify(promptVersionRepository, never()).saveAndFlush(any(PromptVersion.class));
         verify(promptReviewHistoryRepository, never()).save(any(PromptReviewHistory.class));
     }
 
     @Test
     void testSeedInitialPrompt_PublishedVersionAlreadyExists_Skips() {
+        PromptVersion existingV1 = PromptVersion.builder()
+                .id(200L)
+                .prompt(prompt)
+                .version("v2.0.0")
+                .status(PromptVersionStatus.PUBLISHED)
+                .changeSummary("Custom admin edit")
+                .markdownContent("CRITICAL RULES & EXAM POLICY Hello {{name}}")
+                .build();
+
         when(promptRepository.findByCode("TEST_PROMPT")).thenReturn(Optional.of(prompt));
         when(promptRepository.findByCodeForUpdate("TEST_PROMPT")).thenReturn(Optional.of(prompt));
-        when(promptVersionRepository.existsByPromptIdAndVersion(100L, "v1.0.0")).thenReturn(false);
-        when(promptVersionRepository.existsByPromptIdAndStatus(100L, PromptVersionStatus.PUBLISHED)).thenReturn(true);
+        when(promptVersionRepository.findPublishedVersionByPromptId(100L)).thenReturn(Optional.of(existingV1));
 
         promptSeedService.seedInitialPrompt(
                 "TEST_PROMPT",
@@ -124,7 +139,6 @@ class PromptSeedServiceTest {
                 "Hello {{name}}"
         );
 
-        verify(promptVersionRepository, never()).saveAndFlush(any(PromptVersion.class));
         verify(promptReviewHistoryRepository, never()).save(any(PromptReviewHistory.class));
     }
 

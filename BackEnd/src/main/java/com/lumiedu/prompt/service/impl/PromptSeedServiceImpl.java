@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -49,13 +50,16 @@ public class PromptSeedServiceImpl implements PromptSeedService {
                 .findByCodeForUpdate(normalizedCode)
                 .orElse(prompt);
 
-        if (promptVersionRepository.existsByPromptIdAndVersion(lockedPrompt.getId(), INITIAL_VERSION)) {
-            log.info("Skip prompt seed: code={}, version={} already exists", normalizedCode, INITIAL_VERSION);
-            return;
-        }
-
-        if (promptVersionRepository.existsByPromptIdAndStatus(lockedPrompt.getId(), PromptVersionStatus.PUBLISHED)) {
-            log.info("Skip prompt seed: code={} already has a published version", normalizedCode);
+        Optional<PromptVersion> publishedOpt = promptVersionRepository.findPublishedVersionByPromptId(lockedPrompt.getId());
+        if (publishedOpt.isPresent()) {
+            PromptVersion publishedVer = publishedOpt.get();
+            if (!publishedVer.getMarkdownContent().contains("CRITICAL RULES & EXAM POLICY")) {
+                publishedVer.setMarkdownContent(markdownContent.trim());
+                promptVersionRepository.saveAndFlush(publishedVer);
+                log.info("Updated published prompt version template with CRITICAL RULES: code={}, version={}", normalizedCode, publishedVer.getVersion());
+            } else {
+                log.info("Skip prompt seed: code={} already has updated published version {}", normalizedCode, publishedVer.getVersion());
+            }
             return;
         }
 
