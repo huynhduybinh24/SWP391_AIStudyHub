@@ -60,7 +60,7 @@ public class PromptVersion extends BaseEntity {
     private PromptVersion rollbackSourceVersion;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
+    @JoinColumn(name = "created_by", nullable = true)
     private User createdBy;
 
     @ManyToOne(fetch = FetchType.LAZY)

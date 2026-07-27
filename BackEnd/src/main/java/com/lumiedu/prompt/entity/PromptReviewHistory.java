@@ -32,7 +32,7 @@ public class PromptReviewHistory {
     private String comment;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "performed_by", nullable = false)
+    @JoinColumn(name = "performed_by", nullable = true)
     private User performedBy;
 
     @Column(name = "performed_at", nullable = false)
