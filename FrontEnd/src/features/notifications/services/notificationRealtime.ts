@@ -21,13 +21,15 @@ class NotificationRealtimeManager {
 
   private getWsUrl(): string {
     const apiRealtimeUrl = import.meta.env.VITE_API_REALTIME_URL;
-    if (apiRealtimeUrl) return apiRealtimeUrl;
+    if (apiRealtimeUrl && apiRealtimeUrl.trim()) return apiRealtimeUrl.trim();
 
-    if (typeof window !== 'undefined') {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      return `${protocol}//${window.location.host}/api/ws/notifications`;
-    }
-    return 'ws://localhost:8080/api/ws/notifications';
+    const customViteUrl = import.meta.env.VITE_API_BASE_URL;
+    const baseApi = (customViteUrl && customViteUrl.trim())
+      ? customViteUrl.trim()
+      : 'https://swp391aistudyhub-production.up.railway.app/api';
+
+    const wsUrl = baseApi.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
+    return `${wsUrl}/ws/notifications`;
   }
 
 
