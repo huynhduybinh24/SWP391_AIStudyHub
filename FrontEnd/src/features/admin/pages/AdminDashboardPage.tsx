@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, ChevronDown, Wrench, CheckCircle, FileText, ChevronLeft, ChevronRight, Handshake, MessageSquare } from 'lucide-react'
+import { Shield, Users, BarChart3, Loader2, AlertCircle, RefreshCw, CreditCard, Bell, TrendingUp, ClipboardList, AlertTriangle, ChevronDown, Wrench, CheckCircle, FileText, ChevronLeft, ChevronRight, Handshake, MessageSquare, Sparkles, Activity } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
@@ -12,11 +12,13 @@ import { AdminAnalyticsTab } from '@/features/admin/components/AdminAnalyticsTab
 import { AdminLogsTab } from '@/features/admin/components/AdminLogsTab'
 import { AdminReportsTab } from '@/features/admin/components/AdminReportsTab'
 import { AdminSupportTab } from '@/features/admin/components/AdminSupportTab'
+import { PromptListPage } from '@/features/prompt-management/pages/PromptListPage'
+import { AiExecutionLogListPage } from '@/features/prompt-management/pages/AiExecutionLogListPage'
 import { adminService, AdminStats, AdminUser, AdminDocument } from '../services/adminService'
 import { getSystemStatusSync, updateSystemStatus, SystemStatus, SystemStatusState } from '@/features/admin/services/systemStatusService'
 import { useToast } from '@/components/ui/Toast'
 import { Modal } from '@/components/ui/Modal'
-type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'documents' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation' | 'support'
+type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'documents' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation' | 'support' | 'prompts' | 'ai-logs'
 
 export function AdminDashboardPage() {
   const { t, language } = useTranslation()
@@ -299,6 +301,16 @@ export function AdminDashboardPage() {
       icon: AlertTriangle
     },
     {
+      id: 'prompts' as AdminTab,
+      label: language === 'vi' ? 'Quản lý AI Prompt' : 'AI Prompt Management',
+      icon: Sparkles
+    },
+    {
+      id: 'ai-logs' as AdminTab,
+      label: language === 'vi' ? 'Nhật ký AI Execution' : 'AI Execution Logs',
+      icon: Activity
+    },
+    {
       id: 'support' as AdminTab,
       label: language === 'vi' ? 'Quản lý hỗ trợ' : 'Support Tickets',
       icon: MessageSquare
@@ -531,6 +543,14 @@ export function AdminDashboardPage() {
 
         {activeTab === 'support' && (
           <AdminSupportTab />
+        )}
+
+        {activeTab === 'prompts' && (
+          <PromptListPage />
+        )}
+
+        {activeTab === 'ai-logs' && (
+          <AiExecutionLogListPage />
         )}
       </div>
     </div>

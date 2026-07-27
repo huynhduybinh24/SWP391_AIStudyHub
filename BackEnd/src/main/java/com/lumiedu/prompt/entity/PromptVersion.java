@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
     name = "prompt_versions",
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_prompt_version", columnNames = {"prompt_id", "version"})
+    },
+    indexes = {
+        @Index(name = "idx_prompt_version_status", columnList = "prompt_id, status")
     }
 )
 @Getter

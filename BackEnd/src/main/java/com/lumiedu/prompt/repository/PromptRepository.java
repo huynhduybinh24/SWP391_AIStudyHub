@@ -2,7 +2,9 @@ package com.lumiedu.prompt.repository;
 
 import com.lumiedu.prompt.entity.Prompt;
 import com.lumiedu.prompt.enums.PromptCategory;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,6 +17,10 @@ public interface PromptRepository extends JpaRepository<Prompt, Long> {
 
     @Query("SELECT p FROM Prompt p WHERE p.code = :code")
     Optional<Prompt> findByCode(@Param("code") String code);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Prompt p WHERE p.code = :code")
+    Optional<Prompt> findByCodeForUpdate(@Param("code") String code);
 
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Prompt p WHERE p.code = :code")
     boolean existsByCode(@Param("code") String code);

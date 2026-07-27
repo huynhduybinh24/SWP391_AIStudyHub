@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
-import { Zap, X, PanelLeftClose, PanelLeftOpen, Users, CreditCard, Bell, LayoutDashboard, TrendingUp, ClipboardList, AlertTriangle, FileText } from 'lucide-react'
+import { Zap, X, PanelLeftClose, PanelLeftOpen, Users, CreditCard, Bell, LayoutDashboard, TrendingUp, ClipboardList, AlertTriangle, FileText, Sparkles, Activity } from 'lucide-react'
 import { bottomNavItems, mainNavItems } from '@/config/navigation'
 import { useUiStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -152,6 +152,8 @@ export function Sidebar() {
 
   const adminNavItems = [
     { label: 'Admin Dashboard', path: '/dashboard/admin?tab=overview', icon: LayoutDashboard },
+    { label: 'AI Prompt Management', path: '/dashboard/admin/prompts', icon: Sparkles },
+    { label: 'AI Execution Logs', path: '/dashboard/admin/ai-execution-logs', icon: Activity },
     { label: 'User Management', path: '/dashboard/admin?tab=users', icon: Users },
     { label: 'Document Management', path: '/dashboard/admin?tab=ai-moderation', icon: FileText },
     { label: 'Package Management', path: '/dashboard/admin?tab=packages', icon: CreditCard },

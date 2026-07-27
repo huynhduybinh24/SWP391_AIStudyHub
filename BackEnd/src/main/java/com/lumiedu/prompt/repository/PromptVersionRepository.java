@@ -30,4 +30,7 @@ public interface PromptVersionRepository extends JpaRepository<PromptVersion, Lo
 
     @Query("SELECT CASE WHEN COUNT(pv) > 0 THEN true ELSE false END FROM PromptVersion pv WHERE pv.prompt.id = :promptId AND pv.version = :version")
     boolean existsByPromptIdAndVersion(@Param("promptId") Long promptId, @Param("version") String version);
+
+    @Query("SELECT CASE WHEN COUNT(pv) > 0 THEN true ELSE false END FROM PromptVersion pv WHERE pv.prompt.id = :promptId AND pv.status = :status")
+    boolean existsByPromptIdAndStatus(@Param("promptId") Long promptId, @Param("status") PromptVersionStatus status);
 }

@@ -7,7 +7,12 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "prompts")
+@Table(
+    name = "prompts",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_prompts_code", columnNames = {"code"})
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor

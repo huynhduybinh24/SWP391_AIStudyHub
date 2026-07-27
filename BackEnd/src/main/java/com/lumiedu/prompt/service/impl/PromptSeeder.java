@@ -17,7 +17,12 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import com.lumiedu.prompt.service.PromptSeedService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -25,12 +30,9 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class PromptSeeder implements CommandLineRunner {
 
-    private final PromptRepository promptRepository;
-    private final PromptVersionRepository promptVersionRepository;
-    private final PromptReviewHistoryRepository promptReviewHistoryRepository;
+    private final PromptSeedService promptSeedService;
 
     @Override
-    @Transactional
     public void run(String... args) throws Exception {
         seedPrompt(
                 "DOCUMENT_SUMMARY",
@@ -331,36 +333,6 @@ public class PromptSeeder implements CommandLineRunner {
     }
 
     private void seedPrompt(String code, String name, String description, PromptCategory category, String markdownContent) {
-        if (!promptRepository.existsByCode(code)) {
-            log.info("Seeding initial prompt: {}", code);
-            Prompt prompt = Prompt.builder()
-                    .code(code)
-                    .name(name)
-                    .description(description)
-                    .category(category)
-                    .active(true)
-                    .build();
-            Prompt savedPrompt = promptRepository.save(prompt);
-
-            PromptVersion version = PromptVersion.builder()
-                    .prompt(savedPrompt)
-                    .version("v1.0.0")
-                    .markdownContent(markdownContent.trim())
-                    .status(PromptVersionStatus.PUBLISHED)
-                    .changeType(ChangeType.MAJOR)
-                    .changeSummary("Initial system prompt migration")
-                    .changeReason("Migrate legacy hard-coded prompt into database")
-                    .publishedAt(LocalDateTime.now())
-                    .build();
-            PromptVersion savedVersion = promptVersionRepository.save(version);
-
-            PromptReviewHistory history = PromptReviewHistory.builder()
-                    .promptVersion(savedVersion)
-                    .action(ReviewAction.PUBLISHED)
-                    .comment("Initial system prompt v1.0.0 auto-published on startup")
-                    .performedAt(LocalDateTime.now())
-                    .build();
-            promptReviewHistoryRepository.save(history);
-        }
+        promptSeedService.seedInitialPrompt(code, name, description, category, markdownContent);
     }
 }

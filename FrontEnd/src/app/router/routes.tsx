@@ -40,6 +40,15 @@ import { StudyPlansPage } from '@/features/study-plans/pages/StudyPlansPage'
 import { TermsOfServicePage } from '@/features/legal/pages/TermsOfServicePage'
 import { PrivacyPolicyPage } from '@/features/legal/pages/PrivacyPolicyPage'
 
+import { PromptListPage } from '@/features/prompt-management/pages/PromptListPage'
+import { PromptDetailPage } from '@/features/prompt-management/pages/PromptDetailPage'
+import { CreatePromptPage } from '@/features/prompt-management/pages/CreatePromptPage'
+import { CreatePromptVersionPage } from '@/features/prompt-management/pages/CreatePromptVersionPage'
+import { PromptVersionDetailPage } from '@/features/prompt-management/pages/PromptVersionDetailPage'
+import { PromptVersionHistoryPage } from '@/features/prompt-management/pages/PromptVersionHistoryPage'
+import { PromptDiffPage } from '@/features/prompt-management/pages/PromptDiffPage'
+import { AiExecutionLogListPage } from '@/features/prompt-management/pages/AiExecutionLogListPage'
+
 import { ScrollToTop } from '@/components/shared/ScrollToTop'
 import { Outlet } from 'react-router-dom'
 import { MaintenanceGuard } from '@/components/common/MaintenanceGuard'
@@ -140,7 +149,17 @@ export const router = createBrowserRouter([
               { path: 'quizzes', element: <QuizzesPage /> },
               {
                 element: <RoleRoute allowedRoles={['admin']} />,
-                children: [{ path: 'admin', element: <AdminDashboardPage /> }],
+                children: [
+                  { path: 'admin', element: <AdminDashboardPage /> },
+                  { path: 'admin/prompts', element: <PromptListPage /> },
+                  { path: 'admin/prompts/new', element: <CreatePromptPage /> },
+                  { path: 'admin/prompts/:promptId', element: <PromptDetailPage /> },
+                  { path: 'admin/prompts/:promptId/versions/new', element: <CreatePromptVersionPage /> },
+                  { path: 'admin/prompts/:promptId/versions/:versionId', element: <PromptVersionDetailPage /> },
+                  { path: 'admin/prompts/:promptId/history', element: <PromptVersionHistoryPage /> },
+                  { path: 'admin/prompts/:promptId/diff', element: <PromptDiffPage /> },
+                  { path: 'admin/ai-execution-logs', element: <AiExecutionLogListPage /> },
+                ],
               },
             ],
           },
