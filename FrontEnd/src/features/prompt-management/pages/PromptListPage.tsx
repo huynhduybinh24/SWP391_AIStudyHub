@@ -18,10 +18,14 @@ import { usePrompts, useTogglePromptStatus } from '../hooks/usePrompts'
 import { PromptActiveBadge } from '../components/PromptStatusBadge'
 import type { PromptCategory } from '../types/prompt'
 import { useToast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function PromptListPage() {
   const navigate = useNavigate()
   const toast = useToast()
+  const { language } = useTranslation()
+  const isVi = language === 'vi'
+
   const { data: prompts = [], isLoading, isError, error, refetch } = usePrompts()
   const toggleStatusMutation = useTogglePromptStatus()
 
@@ -61,9 +65,13 @@ export function PromptListPage() {
   const handleToggleActive = async (promptId: number, currentActive: boolean) => {
     try {
       await toggleStatusMutation.mutateAsync(promptId)
-      toast.success(`Prompt status changed to ${!currentActive ? 'ACTIVE' : 'INACTIVE'}`)
+      toast.success(
+        isVi
+          ? `Trạng thái Prompt đã đổi thành ${!currentActive ? 'HOẠT ĐỘNG (ACTIVE)' : 'VÔ HIỆU HÓA (INACTIVE)'}`
+          : `Prompt status changed to ${!currentActive ? 'ACTIVE' : 'INACTIVE'}`
+      )
     } catch (err: any) {
-      toast.error(err.message || 'Failed to toggle status')
+      toast.error(err.message || (isVi ? 'Không thể thay đổi trạng thái' : 'Failed to toggle status'))
     }
   }
 
@@ -77,11 +85,13 @@ export function PromptListPage() {
               <Sparkles className="w-6 h-6" />
             </div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-              AI Prompt Management
+              {isVi ? 'Quản lý AI Prompt System' : 'AI Prompt Management'}
             </h1>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 pl-11">
-            Manage, version, review, and monitor system AI prompt templates for LumiEdu.
+            {isVi
+              ? 'Quản lý, tạo phiên bản, duyệt và giám sát các mẫu chỉ thị AI hệ thống cho LumiEdu.'
+              : 'Manage, version, review, and monitor system AI prompt templates for LumiEdu.'}
           </p>
         </div>
 
@@ -91,14 +101,14 @@ export function PromptListPage() {
             className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors shadow-xs"
           >
             <Activity className="w-4 h-4 text-emerald-500" />
-            <span>AI Execution Logs</span>
+            <span>{isVi ? 'Nhật ký thực thi AI' : 'AI Execution Logs'}</span>
           </Link>
           <Link
             to="/dashboard/admin/prompts/new"
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Create New Prompt</span>
+            <span>{isVi ? 'Tạo Prompt mới' : 'Create New Prompt'}</span>
           </Link>
         </div>
       </div>
@@ -111,7 +121,7 @@ export function PromptListPage() {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search code or name..."
+              placeholder={isVi ? 'Tìm mã hoặc tên Prompt...' : 'Search code or name...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-slate-200"
@@ -124,7 +134,7 @@ export function PromptListPage() {
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium dark:text-slate-200"
           >
-            <option value="ALL">All Categories</option>
+            <option value="ALL">{isVi ? 'Tất cả phân loại' : 'All Categories'}</option>
             <option value="CHAT">CHAT</option>
             <option value="GENERATION">GENERATION</option>
             <option value="ACADEMIC">ACADEMIC</option>
@@ -138,9 +148,9 @@ export function PromptListPage() {
             onChange={(e) => setSelectedActive(e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium dark:text-slate-200"
           >
-            <option value="ALL">All Status</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
+            <option value="ALL">{isVi ? 'Tất cả trạng thái' : 'All Status'}</option>
+            <option value="ACTIVE">{isVi ? 'Đang hoạt động (ACTIVE)' : 'ACTIVE'}</option>
+            <option value="INACTIVE">{isVi ? 'Vô hiệu hóa (INACTIVE)' : 'INACTIVE'}</option>
           </select>
 
           {/* Published Filter */}
@@ -149,9 +159,9 @@ export function PromptListPage() {
             onChange={(e) => setSelectedPublished(e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium dark:text-slate-200"
           >
-            <option value="ALL">All Deployment Status</option>
-            <option value="PUBLISHED">Has Published Version</option>
-            <option value="NO_PUBLISHED">No Published Version</option>
+            <option value="ALL">{isVi ? 'Tất cả trạng thái xuất bản' : 'All Deployment Status'}</option>
+            <option value="PUBLISHED">{isVi ? 'Đã xuất bản (Published)' : 'Has Published Version'}</option>
+            <option value="NO_PUBLISHED">{isVi ? 'Chưa xuất bản' : 'No Published Version'}</option>
           </select>
         </div>
       </div>
@@ -160,24 +170,30 @@ export function PromptListPage() {
       {isLoading ? (
         <div className="bg-white dark:bg-slate-900 p-12 rounded-2xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
           <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs text-slate-500 font-medium">Loading system prompts...</p>
+          <p className="text-xs text-slate-500 font-medium">
+            {isVi ? 'Đang tải danh sách Prompt hệ thống...' : 'Loading system prompts...'}
+          </p>
         </div>
       ) : isError ? (
         <div className="bg-rose-50 dark:bg-rose-950/40 p-6 rounded-2xl border border-rose-200 dark:border-rose-800 text-center space-y-3 text-rose-700 dark:text-rose-300">
-          <p className="text-sm font-semibold">Failed to load prompts</p>
+          <p className="text-sm font-semibold">{isVi ? 'Lỗi tải danh sách Prompt' : 'Failed to load prompts'}</p>
           <p className="text-xs">{(error as Error)?.message}</p>
           <button
             onClick={() => refetch()}
             className="px-4 py-1.5 bg-rose-600 text-white text-xs font-semibold rounded-lg shadow-xs"
           >
-            Retry
+            {isVi ? 'Thử lại' : 'Retry'}
           </button>
         </div>
       ) : filteredPrompts.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 p-12 rounded-2xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
           <Layers className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No Prompts Found</p>
-          <p className="text-xs text-slate-400">Try adjusting your filters or search term.</p>
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+            {isVi ? 'Không tìm thấy Prompt nào' : 'No Prompts Found'}
+          </p>
+          <p className="text-xs text-slate-400">
+            {isVi ? 'Thử điều chỉnh lại bộ lọc hoặc từ khóa tìm kiếm.' : 'Try adjusting your filters or search term.'}
+          </p>
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
@@ -185,12 +201,12 @@ export function PromptListPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 font-semibold border-b border-slate-200 dark:border-slate-800">
-                  <th className="py-3.5 px-4">Prompt Name / Code</th>
-                  <th className="py-3.5 px-4">Category</th>
-                  <th className="py-3.5 px-4">Active</th>
-                  <th className="py-3.5 px-4">Published Version</th>
-                  <th className="py-3.5 px-4">Updated By / At</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Tên / Mã Prompt' : 'Prompt Name / Code'}</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Phân loại' : 'Category'}</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Trạng thái' : 'Active'}</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Phiên bản xuất bản' : 'Published Version'}</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Cập nhật bởi / Lúc' : 'Updated By / At'}</th>
+                  <th className="py-3.5 px-4 text-right">{isVi ? 'Thao tác' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -228,7 +244,7 @@ export function PromptListPage() {
                       ) : (
                         <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-800 font-medium">
                           <XCircle className="w-3.5 h-3.5" />
-                          NO PUBLISHED
+                          {isVi ? 'CHƯA XUẤT BẢN' : 'NO PUBLISHED'}
                         </span>
                       )}
                     </td>
@@ -255,7 +271,7 @@ export function PromptListPage() {
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
                       >
                         <FileText className="w-3.5 h-3.5" />
-                        <span>View</span>
+                        <span>{isVi ? 'Xem' : 'View'}</span>
                       </Link>
 
                       <Link
@@ -263,7 +279,7 @@ export function PromptListPage() {
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 text-xs font-semibold rounded-lg border border-amber-200 dark:border-amber-800 transition-colors"
                       >
                         <History className="w-3.5 h-3.5 text-amber-500" />
-                        <span>History</span>
+                        <span>{isVi ? 'Lịch sử' : 'History'}</span>
                       </Link>
 
                       <Link
@@ -271,7 +287,7 @@ export function PromptListPage() {
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-xs"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>New Version</span>
+                        <span>{isVi ? 'Bản mới' : 'New Version'}</span>
                       </Link>
 
                       <button
@@ -284,7 +300,7 @@ export function PromptListPage() {
                             : 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
                         }`}
                       >
-                        {p.active ? 'Deactivate' : 'Activate'}
+                        {p.active ? (isVi ? 'Tắt' : 'Deactivate') : (isVi ? 'Bật' : 'Activate')}
                       </button>
                     </td>
                   </tr>

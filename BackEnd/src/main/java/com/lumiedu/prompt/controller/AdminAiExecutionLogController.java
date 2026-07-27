@@ -49,4 +49,9 @@ public class AdminAiExecutionLogController {
     public ResponseEntity<AiExecutionLogResponse> getLogById(@PathVariable Long logId) {
         return ResponseEntity.ok(aiExecutionLogService.getLogById(logId));
     }
+
+    @PatchMapping("/{logId}/dismiss-report")
+    public ResponseEntity<AiExecutionLogResponse> dismissReport(@PathVariable Long logId) {
+        return ResponseEntity.ok(aiExecutionLogService.resolveReport(logId));
+    }
 }

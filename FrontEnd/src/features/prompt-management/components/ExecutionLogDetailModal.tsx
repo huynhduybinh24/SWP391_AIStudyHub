@@ -1,17 +1,44 @@
+import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Link } from 'react-router-dom'
 import { PromptVersionStatusBadge } from './PromptStatusBadge'
-import { Activity, Clock, Cpu, User, FileText, AlertTriangle, ExternalLink } from 'lucide-react'
+import { Activity, Clock, Cpu, User, FileText, AlertTriangle, ExternalLink, CheckCircle2 } from 'lucide-react'
 import type { AiExecutionLogSummary } from '../types/prompt'
+import { promptApi } from '../api/promptApi'
+import { toast } from '@/components/ui/Toast'
+import { useTranslation } from '@/context/LanguageContext'
 
 interface ExecutionLogDetailModalProps {
   isOpen: boolean
   onClose: () => void
   log?: AiExecutionLogSummary
+  onLogUpdated?: () => void
 }
 
-export function ExecutionLogDetailModal({ isOpen, onClose, log }: ExecutionLogDetailModalProps) {
+export function ExecutionLogDetailModal({ isOpen, onClose, log, onLogUpdated }: ExecutionLogDetailModalProps) {
+  const { language } = useTranslation()
+  const isVi = language === 'vi'
+  const [isDismissing, setIsDismissing] = useState(false)
+
   if (!log) return null
+
+  const handleDismissReport = async () => {
+    try {
+      setIsDismissing(true)
+      await promptApi.dismissReportAiLog(log.id)
+      toast.success(
+        isVi
+          ? 'Đã bỏ qua báo cáo! Nhãn báo cáo đã được gỡ bỏ thành công.'
+          : 'Report dismissed! Report flag has been successfully removed.'
+      )
+      log.flagged = false
+      if (onLogUpdated) onLogUpdated()
+    } catch (err: any) {
+      toast.error(isVi ? 'Có lỗi khi cập nhật trạng thái báo cáo.' : 'Error updating report status.')
+    } finally {
+      setIsDismissing(false)
+    }
+  }
 
   const formatJson = (jsonStr?: string) => {
     if (!jsonStr) return 'N/A'
@@ -45,22 +72,35 @@ export function ExecutionLogDetailModal({ isOpen, onClose, log }: ExecutionLogDe
         {/* Reported by User Banner */}
         {log.flagged && (
           <div className="p-4 bg-rose-500/10 border-2 border-rose-500/30 rounded-xl space-y-2 text-xs">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <span className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5 text-sm">
                 <AlertTriangle className="w-5 h-5 text-rose-500 animate-pulse" />
                 <span>REPORTED BY USER (AI ANSWER HAS ISSUE)</span>
               </span>
 
-              {log.promptId && (
-                <Link
-                  to={`/dashboard/admin/prompts/${log.promptId}/versions/new`}
-                  onClick={onClose}
-                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1"
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDismissReport}
+                  disabled={isDismissing}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+                  title={isVi ? "Xác nhận Prompt không có lỗi và gỡ bỏ cờ báo cáo" : "Confirm Prompt is correct and remove report flag"}
                 >
-                  <span>Fix Prompt (New Version)</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </Link>
-              )}
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{isDismissing ? (isVi ? 'Đang lưu...' : 'Saving...') : (isVi ? 'Done (Bỏ qua báo cáo)' : 'Done (Dismiss Report)')}</span>
+                </button>
+
+                {log.promptId && (
+                  <Link
+                    to={`/dashboard/admin/prompts/${log.promptId}/versions/new`}
+                    onClick={onClose}
+                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1"
+                  >
+                    <span>Fix Prompt (New Version)</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </div>
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-rose-200 dark:border-rose-900 text-slate-800 dark:text-slate-200">

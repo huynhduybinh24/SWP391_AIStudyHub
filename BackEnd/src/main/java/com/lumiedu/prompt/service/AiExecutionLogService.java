@@ -51,4 +51,6 @@ public interface AiExecutionLogService {
     AiExecutionLogResponse getLogById(Long logId);
 
     AiExecutionLogResponse reportLog(Long logId, String reason, User user);
+
+    AiExecutionLogResponse resolveReport(Long logId);
 }

@@ -16,17 +16,55 @@ interface AuthState {
   logout: () => void
 }
 
-const initialAuth = DEV_SKIP_AUTH
-  ? {
+const getInitialAuth = (): { user: AuthUser | null; tokens: AuthTokens | null; isAuthenticated: boolean } => {
+  if (DEV_SKIP_AUTH) {
+    return {
       user: DEV_DEFAULT_USER,
       tokens: DEV_DEFAULT_TOKENS,
       isAuthenticated: true,
     }
-  : {
-      user: null,
-      tokens: null,
-      isAuthenticated: false,
+  }
+
+  if (typeof window !== 'undefined') {
+    const savedMockUserStr = localStorage.getItem('aiStudyHubCurrentUser')
+    if (savedMockUserStr) {
+      try {
+        const savedUser = JSON.parse(savedMockUserStr)
+        if (savedUser && savedUser.email) {
+          return {
+            user: {
+              id: String(savedUser.id || '1'),
+              name: savedUser.name || 'LumiEdu User',
+              email: savedUser.email,
+              role: (savedUser.role || 'user').toLowerCase() as UserRole,
+              plan: (() => {
+                const p = (savedUser.plan || 'free').toLowerCase()
+                if (p === 'enterprise' || p === 'premium' || p === 'institutional') return 'institutional'
+                return p
+              })() as 'free' | 'pro' | 'institutional',
+              avatarUrl: savedUser.avatar || '/logo.png',
+              university: savedUser.university || 'FPT University',
+              major: savedUser.major || 'Software engineering',
+              degree: savedUser.degree || 'Bachelor'
+            },
+            tokens: DEV_DEFAULT_TOKENS,
+            isAuthenticated: true,
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing initial auth user:', e)
+      }
     }
+  }
+
+  return {
+    user: null,
+    tokens: null,
+    isAuthenticated: false,
+  }
+}
+
+const initialAuth = getInitialAuth()
 
 export const useAuthStore = create<AuthState>()(
   persist(

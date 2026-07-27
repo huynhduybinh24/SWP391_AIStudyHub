@@ -190,4 +190,11 @@ export const promptApi = {
     )
     return response.data
   },
+
+  dismissReportAiLog: async (logId: number | string): Promise<AiExecutionLogSummary> => {
+    const response = await apiClient.patch<AiExecutionLogSummary>(
+      `/admin/ai-execution-logs/${logId}/dismiss-report`,
+    )
+    return response.data
+  },
 }

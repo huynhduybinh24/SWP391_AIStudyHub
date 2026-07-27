@@ -283,6 +283,62 @@ public class AiExecutionLogServiceImpl implements AiExecutionLogService {
         return mapToResponse(savedLog);
     }
 
+    @Override
+    public AiExecutionLogResponse resolveReport(Long logId) {
+        AiExecutionLog log = aiExecutionLogRepository.findById(logId)
+                .orElseThrow(() -> new IllegalArgumentException("AI Execution log not found with id: " + logId));
+
+        log.setFlagged(false);
+        AiExecutionLog savedLog = aiExecutionLogRepository.save(log);
+
+        // Notify student reporter via WebSocket + In-app Notification + Email
+        if (savedLog.getUserId() != null) {
+            try {
+                User reporter = userRepository.findById(savedLog.getUserId()).orElse(null);
+                if (reporter != null && reporter.getEmail() != null && !reporter.getEmail().trim().isEmpty()) {
+                    String reporterName = reporter.getFullName() != null ? reporter.getFullName() : reporter.getEmail();
+
+                    // 1. In-App & WebSocket Notification to student
+                    NotificationRequest notif = NotificationRequest.builder()
+                            .targetUserEmail(reporter.getEmail())
+                            .type("SYSTEM")
+                            .title("Phản hồi Báo cáo AI Response 🚩")
+                            .message(String.format("Báo cáo của bạn về lượt phản hồi AI (Prompt: %s) đã được Admin xem xét và xử lý hoàn tất. Cảm ơn sự đóng góp của bạn!", savedLog.getPromptCode()))
+                            .actionType("ai_report_resolved")
+                            .actionText("Trải nghiệm trợ lý AI")
+                            .actionUrl("/chat")
+                            .build();
+                    notificationService.createNotification(notif);
+
+                    // 2. HTML Email Notification to student
+                    String emailSubject = "[LumiEdu] Cập nhật kết quả Báo cáo câu trả lời AI từ Ban Quản trị";
+                    String emailHeading = "Báo cáo phản hồi AI đã được xem xét & xử lý";
+                    String emailBodyContent = String.format(
+                            "<p>Chào <strong>%s</strong>,</p>" +
+                            "<p>Cảm ơn bạn đã gửi báo cáo phản hồi về câu trả lời của AI trên nền tảng LumiEdu. Ban Quản trị đã tiến hành kiểm tra, đánh giá và cập nhật quy định chỉ thị (Prompt) tương ứng.</p>" +
+                            "<div style=\"background-color:#f0fdf4; border:1px solid #bbf7d0; padding:16px; border-radius:12px; margin:16px 0;\">" +
+                            "  <p style=\"margin:0 0 8px 0;\"><strong>Mã Prompt:</strong> <code>%s</code> (Phiên bản: <strong>%s</strong>)</p>" +
+                            "  <p style=\"margin:0 0 8px 0;\"><strong>Nội dung báo cáo ban đầu:</strong> %s</p>" +
+                            "  <p style=\"margin:0; color:#15803d;\"><strong>Trạng thái xử lý:</strong> Đã kiểm tra & hoàn tất ✔️</p>" +
+                            "</div>" +
+                            "<p>Ý kiến đóng góp của bạn giúp LumiEdu ngày càng hoàn thiện chất lượng hỗ trợ học tập!</p>" +
+                            "<a href=\"http://localhost:5173/chat\" style=\"display:inline-block; background-color:#16a34a; color:#ffffff !important; padding:12px 24px; font-size:14px; font-weight:700; text-decoration:none; border-radius:8px; margin-top:12px;\">Tiếp tục trò chuyện với AI</a>",
+                            reporterName,
+                            savedLog.getPromptCode(),
+                            savedLog.getPromptVersion(),
+                            savedLog.getReportReason() != null ? savedLog.getReportReason() : "Báo cáo chất lượng câu trả lời"
+                    );
+                    String htmlTemplate = emailService.buildHtmlTemplate(emailSubject, emailHeading, emailBodyContent);
+                    emailService.sendEmail(reporter.getEmail(), emailSubject, htmlTemplate, true);
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to send reporter notification/email: " + e.getMessage());
+            }
+        }
+
+        return mapToResponse(savedLog);
+    }
+
     private AiExecutionLogResponse mapToResponse(AiExecutionLog log) {
         PromptVersion pv = log.getPromptVersionEntity();
 

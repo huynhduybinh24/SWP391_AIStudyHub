@@ -12,13 +12,17 @@ import {
   Eye,
   FileCode,
   ArrowLeft,
+  RotateCcw,
 } from 'lucide-react'
 import { useAiExecutionLogs } from '../hooks/usePrompts'
 import { PromptVersionStatusBadge } from '../components/PromptStatusBadge'
 import { ExecutionLogDetailModal } from '../components/ExecutionLogDetailModal'
 import type { ExecutionStatus, AiExecutionLogSummary } from '../types/prompt'
+import { useTranslation } from '@/context/LanguageContext'
 
 export function AiExecutionLogListPage() {
+  const { language } = useTranslation()
+  const isVi = language === 'vi'
   const [searchParams] = useSearchParams()
 
   const initialPromptCode = searchParams.get('promptCode') || ''
@@ -68,7 +72,7 @@ export function AiExecutionLogListPage() {
           <div className="flex items-center gap-2">
             <Link
               to="/dashboard/admin/prompts"
-              className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-colors"
+              className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
@@ -76,91 +80,126 @@ export function AiExecutionLogListPage() {
               <Activity className="w-6 h-6" />
             </div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-              AI Execution Audit Logs
+              {isVi ? 'Nhật ký Thực thi AI System' : 'AI Execution Audit Logs'}
             </h1>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 pl-14">
-            Monitor production LLM requests, latency, token usage, and exact prompt version resolution.
+            {isVi
+              ? 'Giám sát lượt gọi LLM, độ trễ latency, token tiêu thụ và độ phân giải phiên bản Prompt thực tế.'
+              : 'Monitor production LLM requests, latency, token usage, and exact prompt version resolution.'}
           </p>
         </div>
 
         <button
           type="button"
           onClick={() => refetch()}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors shadow-xs"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors shadow-xs cursor-pointer"
         >
           <RefreshCw className="w-4 h-4 text-blue-500" />
-          <span>Refresh Logs</span>
+          <span>{isVi ? 'Làm mới Nhật ký' : 'Refresh Logs'}</span>
         </button>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-          <input
-            type="text"
-            placeholder="Student code..."
-            value={studentCode}
-            onChange={(e) => setStudentCode(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium dark:text-slate-200"
-          />
+      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+        {/* Row 1: Primary Search & Dropdown Filters */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Prompt Code Search */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder={isVi ? 'Mã Prompt (VD: CHAT_QA)...' : 'Prompt code (e.g. CHAT_QA)...'}
+              value={promptCode}
+              onChange={(e) => setPromptCode(e.target.value.toUpperCase())}
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-slate-200 cursor-text"
+            />
+          </div>
 
-          <input
-            type="text"
-            placeholder="Feature type (e.g. SUMMARY)..."
+          {/* Student Code Search */}
+          <div className="relative">
+            <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder={isVi ? 'Mã sinh viên / Email...' : 'Student code / Email...'}
+              value={studentCode}
+              onChange={(e) => setStudentCode(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-slate-200 cursor-text"
+            />
+          </div>
+
+          {/* Feature Type Dropdown */}
+          <select
             value={featureType}
             onChange={(e) => setFeatureType(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium dark:text-slate-200"
-          />
+            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium dark:text-slate-200 cursor-pointer"
+          >
+            <option value="">{isVi ? 'Tất cả tính năng (Features)' : 'All Features'}</option>
+            <option value="CHAT_QA">CHAT_QA (Trợ lý Chat)</option>
+            <option value="DOCUMENT_SUMMARY">DOCUMENT_SUMMARY (Tóm tắt)</option>
+            <option value="QUIZ_GENERATION">QUIZ_GENERATION (Tạo Quiz)</option>
+            <option value="FLASHCARD_GENERATION">FLASHCARD_GENERATION (Flashcard)</option>
+            <option value="MINDMAP_GENERATION">MINDMAP_GENERATION (Sơ đồ tư duy)</option>
+            <option value="SLIDE_GENERATION">SLIDE_GENERATION (Tạo Slide)</option>
+            <option value="STUDY_PLAN">STUDY_PLAN (Lộ trình học)</option>
+            <option value="ASSIGNMENT_EVALUATION">ASSIGNMENT_EVALUATION (Bài tập)</option>
+            <option value="CODING_EVALUATION">CODING_EVALUATION (Chấm Code)</option>
+          </select>
 
-          <input
-            type="text"
-            placeholder="Prompt code (e.g. DOCUMENT_SUMMARY)..."
-            value={promptCode}
-            onChange={(e) => setPromptCode(e.target.value.toUpperCase())}
-            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-semibold dark:text-slate-200"
-          />
-
-          <input
-            type="text"
-            placeholder="Prompt version (e.g. v1.0.0)..."
-            value={promptVersion}
-            onChange={(e) => setPromptVersion(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-medium dark:text-slate-200"
-          />
-
+          {/* Execution Status Dropdown */}
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as ExecutionStatus | '')}
-            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium dark:text-slate-200"
+            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium dark:text-slate-200 cursor-pointer"
           >
-            <option value="">All Statuses</option>
-            <option value="PROCESSING">PROCESSING</option>
-            <option value="SUCCESS">SUCCESS</option>
-            <option value="FAILED">FAILED</option>
+            <option value="">{isVi ? 'Tất cả trạng thái' : 'All Statuses'}</option>
+            <option value="SUCCESS">{isVi ? 'THÀNH CÔNG (SUCCESS)' : 'SUCCESS'}</option>
+            <option value="FAILED">{isVi ? 'THẤT BẠI (FAILED)' : 'FAILED'}</option>
+            <option value="PROCESSING">{isVi ? 'ĐANG XỬ LÝ (PROCESSING)' : 'PROCESSING'}</option>
           </select>
         </div>
 
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900 select-none">
+        {/* Row 2: Version, Report Badge & Reset Action */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Version Filter */}
             <input
-              type="checkbox"
-              checked={flaggedOnly}
-              onChange={(e) => {
-                setFlaggedOnly(e.target.checked)
-                setPage(0)
-              }}
-              className="w-4 h-4 accent-rose-600 rounded cursor-pointer"
+              type="text"
+              placeholder={isVi ? 'Phiên bản (VD: v1.0.0)...' : 'Version (e.g. v1.0.0)...'}
+              value={promptVersion}
+              onChange={(e) => setPromptVersion(e.target.value)}
+              className="w-44 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-medium dark:text-slate-200 cursor-text"
             />
-            <span>Reported Only 🚩 (Báo cáo từ User)</span>
-          </label>
 
+            {/* Reported Only Toggle Pill */}
+            <label
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
+                flaggedOnly
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900 hover:bg-rose-100 dark:hover:bg-rose-900/60'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={flaggedOnly}
+                onChange={(e) => {
+                  setFlaggedOnly(e.target.checked)
+                  setPage(0)
+                }}
+                className="w-4 h-4 accent-rose-600 rounded cursor-pointer"
+              />
+              <span>{isVi ? 'Báo cáo từ Sinh viên 🚩 (Reported)' : 'Reported Only 🚩'}</span>
+            </label>
+          </div>
+
+          {/* Reset Filters */}
           <button
             type="button"
             onClick={handleResetFilters}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
           >
-            Reset Filters
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>{isVi ? 'Đặt lại bộ lọc' : 'Reset Filters'}</span>
           </button>
         </div>
       </div>
@@ -169,18 +208,24 @@ export function AiExecutionLogListPage() {
       {isLoading ? (
         <div className="bg-white dark:bg-slate-900 p-12 rounded-2xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
           <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs text-slate-500 font-medium">Loading execution logs...</p>
+          <p className="text-xs text-slate-500 font-medium">
+            {isVi ? 'Đang tải nhật ký thực thi...' : 'Loading execution logs...'}
+          </p>
         </div>
       ) : isError ? (
         <div className="bg-rose-50 dark:bg-rose-950/40 p-6 rounded-2xl border border-rose-200 dark:border-rose-800 text-center space-y-3 text-rose-700 dark:text-rose-300">
-          <p className="text-sm font-semibold">Failed to load execution logs</p>
+          <p className="text-sm font-semibold">{isVi ? 'Lỗi tải nhật ký thực thi' : 'Failed to load execution logs'}</p>
           <p className="text-xs">{(error as Error)?.message}</p>
         </div>
       ) : logs.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 p-12 rounded-2xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
           <Activity className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No Execution Logs Found</p>
-          <p className="text-xs text-slate-400">Try adjusting your search parameters.</p>
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+            {isVi ? 'Không tìm thấy nhật ký thực thi nào' : 'No Execution Logs Found'}
+          </p>
+          <p className="text-xs text-slate-400">
+            {isVi ? 'Thử điều chỉnh lại các tham số lọc.' : 'Try adjusting your search parameters.'}
+          </p>
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs space-y-3">
@@ -188,14 +233,14 @@ export function AiExecutionLogListPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 font-semibold border-b border-slate-200 dark:border-slate-800">
-                  <th className="py-3.5 px-4">Log ID / Student</th>
-                  <th className="py-3.5 px-4">Feature</th>
-                  <th className="py-3.5 px-4">Prompt Code & Version</th>
-                  <th className="py-3.5 px-4">LLM Model</th>
-                  <th className="py-3.5 px-4">Status & Flag</th>
-                  <th className="py-3.5 px-4">Latency / Tokens</th>
-                  <th className="py-3.5 px-4">Started At</th>
-                  <th className="py-3.5 px-4 text-right">Action</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Mã Log / Sinh viên' : 'Log ID / Student'}</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Tính năng' : 'Feature'}</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Mã & Bản Prompt' : 'Prompt Code & Version'}</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Mô hình LLM' : 'LLM Model'}</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Trạng thái & Cờ' : 'Status & Flag'}</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Độ trễ / Tokens' : 'Latency / Tokens'}</th>
+                  <th className="py-3.5 px-4">{isVi ? 'Thời gian gọi' : 'Started At'}</th>
+                  <th className="py-3.5 px-4 text-right">{isVi ? 'Thao tác' : 'Action'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -261,7 +306,7 @@ export function AiExecutionLogListPage() {
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>Inspect</span>
+                        <span>{isVi ? 'Xem chi tiết' : 'Inspect'}</span>
                       </button>
                     </td>
                   </tr>
@@ -304,6 +349,7 @@ export function AiExecutionLogListPage() {
         isOpen={!!selectedLog}
         onClose={() => setSelectedLog(undefined)}
         log={selectedLog}
+        onLogUpdated={refetch}
       />
     </div>
   )
