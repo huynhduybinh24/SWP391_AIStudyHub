@@ -3,13 +3,25 @@ import { env } from '@/config/env'
 import { ApiError } from '@/types/api'
 import { useAuthStore } from '@/stores/authStore'
 
+const getProductionApiUrl = (): string => {
+  const customViteUrl = import.meta.env.VITE_API_BASE_URL
+  if (customViteUrl && customViteUrl.trim()) {
+    return customViteUrl.trim()
+  }
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return 'https://swp391aistudyhub-production.up.railway.app/api'
+  }
+  return env.apiBaseUrl || 'https://swp391aistudyhub-production.up.railway.app/api'
+}
+
 export const apiClient = axios.create({
-  baseURL: env.apiBaseUrl,
+  baseURL: getProductionApiUrl(),
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
 })
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  config.baseURL = getProductionApiUrl()
   const token = useAuthStore.getState().tokens?.accessToken
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
