@@ -4,7 +4,9 @@
     "builder": "DOCKERFILE",
     "dockerfilePath": "BackEnd/Dockerfile",
     "watchPatterns": [
-      "BackEnd/**"
+      "BackEnd/src/**",
+      "BackEnd/pom.xml",
+      "BackEnd/Dockerfile"
     ]
   },
   "deploy": {
