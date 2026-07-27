@@ -284,7 +284,7 @@ class NotificationRealtimeManager {
         title: notif.title,
         message: notif.description,
         time: notif.time,
-        isRead: notif.isRead !== undefined ? notif.isRead : notif.read,
+        isRead: notif.isRead !== undefined ? notif.isRead : Boolean((notif as any).read),
         createdAt: notif.createdAt,
       };
 
