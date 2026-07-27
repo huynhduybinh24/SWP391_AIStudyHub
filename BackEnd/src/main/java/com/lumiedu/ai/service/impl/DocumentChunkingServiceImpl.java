@@ -24,7 +24,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.Set;
 import java.util.Optional;
@@ -51,6 +53,7 @@ public class DocumentChunkingServiceImpl implements DocumentChunkingService {
     private final GeminiServiceImpl geminiServiceImpl;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final com.lumiedu.prompt.service.PromptEngineService promptEngineService;
     private final Gson gson = new Gson();
 
     private final Set<Long> processingDocs = ConcurrentHashMap.newKeySet();
@@ -210,20 +213,24 @@ public class DocumentChunkingServiceImpl implements DocumentChunkingService {
                 textToScan = textToScan.substring(0, 15000);
             }
 
-            String systemPrompt = "You are an expert AI content moderator for an academic platform called LumiEdu. "
-                    + "Review the content of the uploaded document for safety, academic integrity, and appropriateness. "
-                    + "Check if the content violates policies: specifically check for "
-                    + "1. Academic dishonesty or cheating services (e.g., 'thi hộ', 'làm hộ bài thi', 'dịch vụ giải bài kiểm tra'). "
-                    + "2. Gambling, betting, casinos, or related promotions ('cờ bạc', 'cá độ', 'casino', 'lô đề'). "
-                    + "3. Extremism, violence, illicit materials, weapons, severe harassment, or pornography. "
-                    + "4. Leaked exam papers distributed illegally ('lộ đề thi'). "
-                    + "You must respond ONLY with a JSON object containing: "
-                    + "\"riskLevel\" (either \"SAFE\" or \"SUSPICIOUS\"), "
-                    + "\"reasonEn\" (detailed explanation in English if SUSPICIOUS, or empty/brief safe note in English if SAFE), "
-                    + "\"reasonVi\" (detailed explanation in Vietnamese if SUSPICIOUS, or empty/brief safe note in Vietnamese if SAFE), "
-                    + "and \"confidenceScore\" (decimal between 0.0 and 1.0).";
+            Map<String, Object> promptVars = new java.util.HashMap<>();
+            promptVars.put("title", doc.getTitle() != null ? doc.getTitle() : "Untitled Document");
+            promptVars.put("content", textToScan);
 
-            String rawJson = geminiServiceImpl.chat(systemPrompt, textToScan);
+            User owner = doc.getUserId() != null ? userRepository.findById(doc.getUserId()).orElse(null) : null;
+
+            com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                    "DOCUMENT_MODERATION",
+                    promptVars,
+                    owner,
+                    owner != null ? owner.getEmail() : null,
+                    "DOCUMENT_MODERATION",
+                    String.valueOf(doc.getId()),
+                    "doc-v" + doc.getId(),
+                    true
+            );
+
+            String rawJson = execResult.getContent();
             
             String riskLevel = "SAFE";
             String reasonEn = "";

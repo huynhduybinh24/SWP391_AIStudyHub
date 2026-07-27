@@ -1,6 +1,11 @@
 package com.lumiedu.prompt.service;
 
 import com.lumiedu.prompt.entity.PromptVersion;
+import com.lumiedu.user.entity.User;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
@@ -23,21 +28,44 @@ public interface PromptEngineService {
      */
     RenderedPromptResult renderPrompt(String promptCode, Map<String, Object> variables);
 
+    /**
+     * Full execution flow: Resolve Published Prompt Version -> Render -> Create Processing Log -> Call Gemini -> Update Log (SUCCESS/FAILED) -> Return Result + Metadata.
+     */
+    PromptEngineExecutionResult executePrompt(
+            String promptCode,
+            Map<String, Object> variables,
+            User user,
+            String studentCode,
+            String featureType,
+            String knowledgeBaseId,
+            String knowledgeVersion,
+            boolean isJson
+    );
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     class RenderedPromptResult {
-        private final PromptVersion promptVersion;
-        private final String renderedContent;
+        private PromptVersion promptVersion;
+        private String renderedContent;
+    }
 
-        public RenderedPromptResult(PromptVersion promptVersion, String renderedContent) {
-            this.promptVersion = promptVersion;
-            this.renderedContent = renderedContent;
-        }
-
-        public PromptVersion getPromptVersion() {
-            return promptVersion;
-        }
-
-        public String getRenderedContent() {
-            return renderedContent;
-        }
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    class PromptEngineExecutionResult {
+        private String content;
+        private PromptVersion promptVersion;
+        private Long logId;
+        private String requestId;
+        private String promptCode;
+        private String promptVersionNumber;
+        private String knowledgeVersion;
+        private String llmProvider;
+        private String llmModel;
+        private int promptTokens;
+        private int completionTokens;
     }
 }

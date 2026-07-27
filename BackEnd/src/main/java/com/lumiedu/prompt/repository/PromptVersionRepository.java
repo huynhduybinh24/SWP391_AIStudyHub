@@ -13,11 +13,14 @@ import java.util.Optional;
 @Repository
 public interface PromptVersionRepository extends JpaRepository<PromptVersion, Long> {
 
-    List<PromptVersion> findByPromptIdOrderByCreatedAtDesc(Long promptId);
+    @Query("SELECT pv FROM PromptVersion pv WHERE pv.prompt.id = :promptId ORDER BY pv.createdAt DESC")
+    List<PromptVersion> findByPromptIdOrderByCreatedAtDesc(@Param("promptId") Long promptId);
 
-    Optional<PromptVersion> findByPromptIdAndVersion(Long promptId, String version);
+    @Query("SELECT pv FROM PromptVersion pv WHERE pv.prompt.id = :promptId AND pv.version = :version")
+    Optional<PromptVersion> findByPromptIdAndVersion(@Param("promptId") Long promptId, @Param("version") String version);
 
-    Optional<PromptVersion> findByPromptIdAndStatus(Long promptId, PromptVersionStatus status);
+    @Query("SELECT pv FROM PromptVersion pv WHERE pv.prompt.id = :promptId AND pv.status = :status")
+    Optional<PromptVersion> findByPromptIdAndStatus(@Param("promptId") Long promptId, @Param("status") PromptVersionStatus status);
 
     @Query("SELECT pv FROM PromptVersion pv WHERE pv.prompt.code = :promptCode AND pv.status = 'PUBLISHED' AND pv.prompt.active = true")
     Optional<PromptVersion> findPublishedVersionByPromptCode(@Param("promptCode") String promptCode);
@@ -25,5 +28,6 @@ public interface PromptVersionRepository extends JpaRepository<PromptVersion, Lo
     @Query("SELECT pv FROM PromptVersion pv WHERE pv.prompt.id = :promptId AND pv.status = 'PUBLISHED'")
     Optional<PromptVersion> findPublishedVersionByPromptId(@Param("promptId") Long promptId);
 
-    boolean existsByPromptIdAndVersion(Long promptId, String version);
+    @Query("SELECT CASE WHEN COUNT(pv) > 0 THEN true ELSE false END FROM PromptVersion pv WHERE pv.prompt.id = :promptId AND pv.version = :version")
+    boolean existsByPromptIdAndVersion(@Param("promptId") Long promptId, @Param("version") String version);
 }

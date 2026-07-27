@@ -48,6 +48,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     private final DocumentChunkRepository documentChunkRepository;
     private final GeminiService geminiService;
     private final NotificationService notificationService;
+    private final com.lumiedu.prompt.service.PromptEngineService promptEngineService;
 
     @Override
     public WorkspaceResponse createWorkspace(CreateWorkspaceRequest request) {
@@ -374,35 +375,45 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             }
         }
 
-        // Build Gemini messages
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content("You are an advanced academic assistant named LumiEdu AI. "
-                        + "Your task is to analyze multiple study documents shared in a collaborative workspace and generate a structured workspace learning report in markdown. "
-                        + "You must respond with a JSON object containing exactly two fields: "
-                        + "'reportText' (a comprehensive markdown review summarizing core themes, connecting concepts across files, outlining key takeaways, and suggesting next steps/questions) "
-                        + "and 'summaryText' (a short, 3-sentence summary of the workspace content).")
-                .build());
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("language", "vi");
+        promptVars.put("subject", workspace.getName());
+        promptVars.put("title", "Workspace " + workspace.getName() + " Report");
+        promptVars.put("content", contentBuilder.toString());
 
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Workspace Name: " + workspace.getName() + "\n\nShared Documents Content:\n" + contentBuilder.toString())
-                .build());
+        User user = userRepository.findById(userId).orElse(null);
 
-        // Call Gemini
-        OpenAiResponse response = geminiService.chat(messages, true);
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "DOCUMENT_SUMMARY",
+                promptVars,
+                user,
+                user != null ? user.getEmail() : null,
+                "WORKSPACE_REPORT",
+                String.valueOf(workspaceId),
+                "workspace-v" + workspaceId,
+                true
+        );
 
         String reportText = "";
         String summaryText = "";
 
         try {
-            com.google.gson.JsonObject jsonObj = new com.google.gson.Gson().fromJson(response.getContent(), com.google.gson.JsonObject.class);
-            reportText = jsonObj.get("reportText").getAsString();
-            summaryText = jsonObj.get("summaryText").getAsString();
+            com.google.gson.JsonObject jsonObj = new com.google.gson.Gson().fromJson(execResult.getContent(), com.google.gson.JsonObject.class);
+            if (jsonObj.has("summaryText")) {
+                summaryText = jsonObj.get("summaryText").getAsString();
+                reportText = summaryText;
+            }
+            if (jsonObj.has("summaryBullets")) {
+                com.google.gson.JsonArray arr = jsonObj.getAsJsonArray("summaryBullets");
+                StringBuilder bulletsSb = new StringBuilder("\n\n### Key Takeaways:\n");
+                for (int i = 0; i < arr.size(); i++) {
+                    bulletsSb.append("- ").append(arr.get(i).getAsString()).append("\n");
+                }
+                reportText += bulletsSb.toString();
+            }
         } catch (Exception e) {
             log.error("Failed to parse workspace AI report JSON response: {}", e.getMessage());
-            reportText = response.getContent();
+            reportText = execResult.getContent();
             summaryText = "Bản tóm tắt tổng hợp kiến thức từ các tài liệu chia sẻ trong nhóm học tập " + workspace.getName() + ".";
         }
 

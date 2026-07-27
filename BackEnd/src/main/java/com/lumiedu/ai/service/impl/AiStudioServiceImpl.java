@@ -22,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,8 @@ public class AiStudioServiceImpl implements AiStudioService {
     private final DocumentChunkRepository documentChunkRepository;
     private final AiStudioCacheRepository aiStudioCacheRepository;
     private final GeminiService geminiService;
+    private final com.lumiedu.prompt.service.PromptEngineService promptEngineService;
+    private final com.lumiedu.user.repository.UserRepository userRepository;
     private final Gson gson = new Gson();
 
     private String getContextFromDocuments(List<Long> documentIds) {
@@ -102,28 +106,39 @@ public class AiStudioServiceImpl implements AiStudioService {
         }
 
         String context = getContextFromDocuments(documentIds);
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content("You are an educational AI assistant. Summarize the provided document in detail and extract the key takeaways. "
-                        + "You must respond with a JSON object containing exactly two fields: "
-                        + "'summaryText' (string, a paragraph summarizing the content in " + lang + ") and "
-                        + "'keyBullets' (JSON array of strings, 3-5 core points in " + lang + ").")
-                .build());
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Context:\n" + context)
-                .build());
+
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("language", lang);
+        promptVars.put("subject", "Studio Selected Documents");
+        promptVars.put("title", "Studio Combined Documents");
+        promptVars.put("content", context);
+
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "DOCUMENT_SUMMARY",
+                promptVars,
+                null,
+                "STUDIO_USER",
+                "STUDIO_SUMMARY",
+                cacheKey,
+                "docs-v1",
+                true
+        );
 
         StudioSummaryResponse finalResponse;
         try {
-            OpenAiResponse response = geminiService.chat(messages, true);
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
-            String summaryText = jsonObj.get("summaryText").getAsString();
-            JsonArray arr = jsonObj.getAsJsonArray("keyBullets");
+            JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
+            String summaryText = jsonObj.has("summaryText") ? jsonObj.get("summaryText").getAsString() : "No summary text generated.";
             List<String> bullets = new ArrayList<>();
-            for (int i = 0; i < arr.size(); i++) {
-                bullets.add(arr.get(i).getAsString());
+            if (jsonObj.has("summaryBullets")) {
+                JsonArray arr = jsonObj.getAsJsonArray("summaryBullets");
+                for (int i = 0; i < arr.size(); i++) {
+                    bullets.add(arr.get(i).getAsString());
+                }
+            } else if (jsonObj.has("keyBullets")) {
+                JsonArray arr = jsonObj.getAsJsonArray("keyBullets");
+                for (int i = 0; i < arr.size(); i++) {
+                    bullets.add(arr.get(i).getAsString());
+                }
             }
             finalResponse = new StudioSummaryResponse(summaryText, bullets);
             saveToCache(cacheKey, "summary", lang, finalResponse);
@@ -153,33 +168,25 @@ public class AiStudioServiceImpl implements AiStudioService {
         }
 
         String context = getContextFromDocuments(documentIds);
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content("You are an expert mind mapping AI. Generate a structural mind map in Mermaid.js syntax based on the documents. "
-                        + "You must respond with a JSON object containing exactly one field: 'mermaidCode' (string). "
-                        + "The mermaidCode MUST start with 'mindmap' and follow Mermaid mindmap syntax: \n"
-                        + "mindmap\n"
-                        + "  root((Chu de chinh))\n"
-                        + "    \"Nhanh 1\"\n"
-                        + "      \"Y phu 1a\"\n"
-                        + "      \"Y phu 1b\"\n"
-                        + "    \"Nhanh 2\"\n"
-                        + "      \"Y phu 2a\"\n"
-                        + "      \"Y phu 2b\"\n"
-                        + "Any node label/text that contains spaces or special characters MUST be wrapped in double quotes (e.g., \"Nhanh 1\" instead of Nhanh 1) to avoid Mermaid parsing syntax errors. "
-                        + "Do not use bracket characters like ( ) or [ ] inside labels unless it defines the node shape. "
-                        + "Ensure proper indentation using spaces. Avoid using ```mermaid in the JSON value. Write labels in " + lang + ".")
-                .build());
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Context:\n" + context)
-                .build());
+
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("language", lang);
+        promptVars.put("content", context);
+
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "MINDMAP_GENERATION",
+                promptVars,
+                null,
+                "STUDIO_USER",
+                "STUDIO_MINDMAP",
+                cacheKey,
+                "docs-v1",
+                true
+        );
 
         StudioMindmapResponse finalResponse;
         try {
-            OpenAiResponse response = geminiService.chat(messages, true);
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
             String code = jsonObj.get("mermaidCode").getAsString();
             finalResponse = new StudioMindmapResponse(code);
             saveToCache(cacheKey, "mindmap", lang, finalResponse);
@@ -214,28 +221,25 @@ public class AiStudioServiceImpl implements AiStudioService {
         }
 
         String context = getContextFromDocuments(documentIds);
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content("You are a graphic designer AI. Extract 3 to 5 core stats, steps, or numerical/key takeaways from the documents. "
-                        + "You must respond with a JSON object containing:\n"
-                        + "'title' (string, main infographic title in " + lang + "),\n"
-                        + "'subtitle' (string, subtitle in " + lang + "),\n"
-                        + "'items' (JSON array of objects, each object containing:\n"
-                        + "  - 'label' (string, name of concept/step)\n"
-                        + "  - 'value' (string, short stat or key value, e.g. '95%', 'Bước 1', '03 Lưu ý', 'Cốt lõi')\n"
-                        + "  - 'description' (string, brief explanation of this value)\n"
-                        + "  - 'iconType' (string, must be one of: 'brain', 'lightbulb', 'chart', 'star'))")
-                .build());
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Context:\n" + context)
-                .build());
+
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("language", lang);
+        promptVars.put("content", context);
+
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "SLIDE_GENERATION",
+                promptVars,
+                null,
+                "STUDIO_USER",
+                "STUDIO_INFOGRAPHIC",
+                cacheKey,
+                "docs-v1",
+                true
+        );
 
         StudioInfographicResponse finalResponse;
         try {
-            OpenAiResponse response = geminiService.chat(messages, true);
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
             String title = jsonObj.get("title").getAsString();
             String subtitle = jsonObj.get("subtitle").getAsString();
             List<InfographicItem> items = new ArrayList<>();
@@ -280,22 +284,26 @@ public class AiStudioServiceImpl implements AiStudioService {
         }
 
         String context = getContextFromDocuments(documentIds);
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content("You are an educational AI assistant. Create 5 useful study flashcards based on the document text. "
-                        + "You must respond with a JSON object containing a 'flashcards' array. "
-                        + "Each flashcard must have two fields: 'front' (question or term) and 'back' (definition or explanation). Respond in " + lang + ".")
-                .build());
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Create flashcards based on this context:\n" + context)
-                .build());
+
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("count", 5);
+        promptVars.put("language", lang);
+        promptVars.put("content", context);
+
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "FLASHCARD_GENERATION",
+                promptVars,
+                null,
+                "STUDIO_USER",
+                "STUDIO_FLASHCARD",
+                cacheKey,
+                "docs-v1",
+                true
+        );
 
         List<StudioFlashcardResponse> list = new ArrayList<>();
         try {
-            OpenAiResponse response = geminiService.chat(messages, true);
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
             JsonArray arr = jsonObj.getAsJsonArray("flashcards");
             for (int i = 0; i < arr.size(); i++) {
                 JsonObject item = arr.get(i).getAsJsonObject();
@@ -332,27 +340,27 @@ public class AiStudioServiceImpl implements AiStudioService {
         }
 
         String context = getContextFromDocuments(documentIds);
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content("You are an educational AI assistant. Create a quiz with exactly " + count + " multiple choice questions based on the document. "
-                        + "The difficulty level should be: " + difficulty + ". Respond in " + lang + ". "
-                        + "You must respond with a JSON object containing a 'questions' array. "
-                        + "Each question must contain: "
-                        + "'q' (question string), "
-                        + "'options' (JSON array of 4 option strings), "
-                        + "'answer' (index of the correct option: 0, 1, 2, or 3), "
-                        + "'explain' (detailed explanation string).")
-                .build());
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Create quiz for this context:\n" + context)
-                .build());
+
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("count", count);
+        promptVars.put("difficulty", difficulty != null ? difficulty : "Medium");
+        promptVars.put("language", lang);
+        promptVars.put("content", context);
+
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "QUIZ_GENERATION",
+                promptVars,
+                null,
+                "STUDIO_USER",
+                "STUDIO_QUIZ",
+                cacheKey,
+                "docs-v1",
+                true
+        );
 
         List<StudioQuizResponse> list = new ArrayList<>();
         try {
-            OpenAiResponse response = geminiService.chat(messages, true);
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
             JsonArray arr = jsonObj.getAsJsonArray("questions");
             for (int i = 0; i < arr.size(); i++) {
                 JsonObject item = arr.get(i).getAsJsonObject();
@@ -411,26 +419,41 @@ public class AiStudioServiceImpl implements AiStudioService {
         }
 
         String context = getContextFromDocuments(documentIds);
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content("You are an academic counselor. Extract 5 common questions and answers (FAQs) that students are likely to ask about the provided documents. "
-                        + "You must respond with a JSON object containing a 'faqs' array. "
-                        + "Each FAQ must contain: 'q' (question string in " + lang + ") and 'a' (answer string in " + lang + ").")
-                .build());
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Context:\n" + context)
-                .build());
+
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("language", lang);
+        promptVars.put("content", context);
+
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "FAQ_GENERATION",
+                promptVars,
+                null,
+                "STUDIO_USER",
+                "STUDIO_FAQ",
+                cacheKey,
+                "docs-v1",
+                true
+        );
 
         List<StudioFaqResponse> list = new ArrayList<>();
         try {
-            OpenAiResponse response = geminiService.chat(messages, true);
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
-            JsonArray arr = jsonObj.getAsJsonArray("faqs");
-            for (int i = 0; i < arr.size(); i++) {
-                JsonObject item = arr.get(i).getAsJsonObject();
-                list.add(new StudioFaqResponse(item.get("q").getAsString(), item.get("a").getAsString()));
+            JsonArray arr = null;
+            try {
+                JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
+                if (jsonObj.has("faqs")) {
+                    arr = jsonObj.getAsJsonArray("faqs");
+                }
+            } catch (Exception ex) {
+                arr = gson.fromJson(execResult.getContent(), JsonArray.class);
+            }
+
+            if (arr != null) {
+                for (int i = 0; i < arr.size(); i++) {
+                    JsonObject item = arr.get(i).getAsJsonObject();
+                    String qStr = item.has("question") ? item.get("question").getAsString() : item.get("q").getAsString();
+                    String aStr = item.has("answer") ? item.get("answer").getAsString() : item.get("a").getAsString();
+                    list.add(new StudioFaqResponse(qStr, aStr));
+                }
             }
             saveToCache(cacheKey, "faq", lang, list);
         } catch (Exception e) {

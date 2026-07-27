@@ -48,6 +48,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     private final DocumentChunkingService documentChunkingService;
     private final AiLimitService aiLimitService;
     private final GeminiService geminiService;
+    private final com.lumiedu.prompt.service.PromptEngineService promptEngineService;
+    private final com.lumiedu.user.repository.UserRepository userRepository;
 
     private final Gson gson = new Gson();
 
@@ -84,35 +86,34 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
         String context = sb.toString();
 
-        // 4. Construct prompt
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content(
-                        "You are a helpful educational AI assistant. Summarize the user's document in the requested language: "
-                                + lang + ". "
-                                + "You must respond with a JSON object containing exactly two fields: "
-                                + "'summaryText' (a paragraph summary of the document) and "
-                                + "'summaryBullets' (a JSON array of key bullet points, max 5 bullets).")
-                .build());
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Document Subject: " + doc.getSubject() + "\nDocument Title: " + doc.getTitle()
-                        + "\n\nContent:\n" + context)
-                .build());
+        // 4. Construct prompt variables and execute via PromptEngineService
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("language", lang);
+        promptVars.put("subject", doc.getSubject() != null ? doc.getSubject() : "General");
+        promptVars.put("title", doc.getTitle() != null ? doc.getTitle() : "Untitled Document");
+        promptVars.put("content", context);
 
-        // 5. Call OpenAI
-        OpenAiResponse response = openAiService.chat(messages, true);
-
-        // 6. Log usage
         Long userId = doc.getUserId() != null ? doc.getUserId() : 1L;
-        saveUsageLog(userId, "SUMMARY", response);
+        com.lumiedu.user.entity.User currentUser = userRepository.findById(userId).orElse(null);
+
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "DOCUMENT_SUMMARY",
+                promptVars,
+                currentUser,
+                currentUser != null ? currentUser.getEmail() : null,
+                "DOCUMENT_SUMMARY",
+                String.valueOf(documentId),
+                "doc-v" + documentId,
+                true
+        );
+
+        String rawResponseText = execResult.getContent();
 
         // 7. Parse response
         String summaryText = "";
         String summaryBulletsJson = "";
         try {
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            JsonObject jsonObj = gson.fromJson(rawResponseText, JsonObject.class);
             summaryText = jsonObj.get("summaryText").getAsString();
             JsonElement bulletsElem = jsonObj.get("summaryBullets");
             if (bulletsElem.isJsonArray()) {
@@ -123,7 +124,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         } catch (Exception e) {
             System.err.println("Failed to parse summary JSON response: " + e.getMessage());
             // Fallback
-            summaryText = response.getContent();
+            summaryText = rawResponseText;
             summaryBulletsJson = gson
                     .toJson(Arrays.asList("Tổng quan kiến thức cốt lõi.", "Chi tiết phương pháp và bài học."));
         }
@@ -291,41 +292,37 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             history = history.subList(history.size() - 10, history.size());
         }
 
-        // 4. Construct messages for Gemini
-        List<ChatMessageDto> promptMsgs = new ArrayList<>();
-        String systemInstruction = "You are a friendly AI study assistant named LumiEdu AI. "
-                + "Help the student understand and discuss their documents. "
-                + "Answer primarily in Vietnamese unless the user writes in another language. ";
+        // 4. Construct context and variables for CHAT_QA
+        StringBuilder fullContextBuilder = new StringBuilder();
         if (!docMetaContext.isEmpty()) {
-            systemInstruction += "\n\nThe student has attached the following documents for this session:\n"
-                    + docMetaContext;
+            fullContextBuilder.append("Attached Documents Metadata:\n").append(docMetaContext).append("\n\n");
         }
         if (!ragContext.isEmpty()) {
-            systemInstruction += "\n\nHere is relevant content extracted from the documents to help you answer:\n"
-                    + ragContext;
-        } else if (!docMetaContext.isEmpty()) {
-            systemInstruction += "\n\nNote: The full text of the documents is not yet available for search, but please use the document titles and metadata above to help the student as best you can.";
-        }
-        if (thinkingMode) {
-            systemInstruction += " Think step-by-step and write your reasoning inside a <thought>...</thought> tag FIRST, then write the response.";
+            fullContextBuilder.append("Extracted Document Content:\n").append(ragContext);
         }
 
-        promptMsgs.add(ChatMessageDto.builder().role("system").content(systemInstruction).build());
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("context", fullContextBuilder.toString().isEmpty() ? "No additional document context available." : fullContextBuilder.toString());
+        promptVars.put("question", userMessage);
 
-        for (AiChatMessage msg : history) {
-            String role = "USER".equalsIgnoreCase(msg.getSender()) ? "user" : "assistant";
-            String content = msg.getMessageText();
-            if ("assistant".equals(role) && msg.getThought() != null && !msg.getThought().trim().isEmpty()) {
-                content = "<thought>\n" + msg.getThought() + "\n</thought>\n" + content;
-            }
-            promptMsgs.add(ChatMessageDto.builder().role(role).content(content).build());
-        }
+        com.lumiedu.user.entity.User currentUser = userRepository.findById(session.getUserId()).orElse(null);
 
-        // 5. Call Gemini
-        OpenAiResponse response = geminiService.chat(promptMsgs, false);
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "CHAT_QA",
+                promptVars,
+                currentUser,
+                currentUser != null ? currentUser.getEmail() : null,
+                "CHAT_QA",
+                String.valueOf(session.getId()),
+                "session-v" + session.getId(),
+                false
+        );
 
-        // 6. Log usage
-        saveUsageLog(session.getUserId(), "CHAT", response);
+        OpenAiResponse response = OpenAiResponse.builder()
+                .content(execResult.getContent())
+                .promptTokens(execResult.getPromptTokens())
+                .completionTokens(execResult.getCompletionTokens())
+                .build();
 
         // 7. Save and return AI Message
         AiChatMessage aiMessage = AiChatMessage.builder()
@@ -358,33 +355,49 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
         String context = sb.toString();
 
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content(
-                        "You are an educational AI assistant. Create 5 useful study flashcards based on the document text. "
-                                + "You must respond with a JSON object containing a 'flashcards' array. "
-                                + "Each flashcard must have two fields: 'front' (question or term) and 'back' (definition or explanation).")
-                .build());
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Create flashcards based on this text:\n\n" + context)
-                .build());
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("count", 5);
+        promptVars.put("language", "vi");
+        promptVars.put("content", context);
 
-        OpenAiResponse response = openAiService.chat(messages, true);
-        saveUsageLog(doc.getUserId() != null ? doc.getUserId() : 1L, "FLASHCARD", response);
+        Long userId = doc.getUserId() != null ? doc.getUserId() : 1L;
+        com.lumiedu.user.entity.User currentUser = userRepository.findById(userId).orElse(null);
+
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "FLASHCARD_GENERATION",
+                promptVars,
+                currentUser,
+                currentUser != null ? currentUser.getEmail() : null,
+                "FLASHCARD_GENERATION",
+                String.valueOf(documentId),
+                "doc-v" + documentId,
+                true
+        );
+
+        String rawResponseText = execResult.getContent();
 
         List<Flashcard> list = new ArrayList<>();
         try {
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
-            JsonArray arr = jsonObj.getAsJsonArray("flashcards");
-            for (int i = 0; i < arr.size(); i++) {
-                JsonObject item = arr.get(i).getAsJsonObject();
-                list.add(Flashcard.builder()
-                        .documentId(documentId)
-                        .question(item.get("front").getAsString())
-                        .answer(item.get("back").getAsString())
-                        .build());
+            JsonArray arr = null;
+            try {
+                JsonObject jsonObj = gson.fromJson(rawResponseText, JsonObject.class);
+                if (jsonObj.has("flashcards")) {
+                    arr = jsonObj.getAsJsonArray("flashcards");
+                }
+            } catch (Exception e) {
+                // If direct array
+                arr = gson.fromJson(rawResponseText, JsonArray.class);
+            }
+
+            if (arr != null) {
+                for (int i = 0; i < arr.size(); i++) {
+                    JsonObject item = arr.get(i).getAsJsonObject();
+                    list.add(Flashcard.builder()
+                            .documentId(documentId)
+                            .question(item.get("front").getAsString())
+                            .answer(item.get("back").getAsString())
+                            .build());
+                }
             }
         } catch (Exception e) {
             System.err.println("Failed to parse flashcards JSON response: " + e.getMessage());
@@ -421,27 +434,26 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
         String context = sb.toString();
 
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content("You are an educational AI assistant. Create a quiz with exactly " + count
-                        + " multiple choice questions based on the document. "
-                        + "The difficulty level should be: " + difficulty + ". "
-                        + "Custom request: " + customPrompt + ". "
-                        + "You must respond with a JSON object containing a 'questions' array. "
-                        + "Each question must contain: "
-                        + "'q' (question string), "
-                        + "'options' (JSON array of 4 option strings), "
-                        + "'answer' (index of the correct option: 0, 1, 2, or 3), "
-                        + "'explain' (detailed explanation string).")
-                .build());
-        messages.add(ChatMessageDto.builder()
-                .role("user")
-                .content("Create quiz for this document text:\n\n" + context)
-                .build());
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("count", count);
+        promptVars.put("difficulty", difficulty != null ? difficulty : "Medium");
+        promptVars.put("language", "vi");
+        promptVars.put("content", context);
 
-        OpenAiResponse response = openAiService.chat(messages, true);
-        saveUsageLog(userId, "QUIZ", response);
+        com.lumiedu.user.entity.User currentUser = userRepository.findById(userId).orElse(null);
+
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "QUIZ_GENERATION",
+                promptVars,
+                currentUser,
+                currentUser != null ? currentUser.getEmail() : null,
+                "QUIZ_GENERATION",
+                String.valueOf(documentId),
+                "doc-v" + documentId,
+                true
+        );
+
+        String rawResponseText = execResult.getContent();
 
         Quiz quiz = Quiz.builder()
                 .documentId(documentId)
@@ -452,7 +464,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
         List<QuizQuestion> questions = new ArrayList<>();
         try {
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            JsonObject jsonObj = gson.fromJson(rawResponseText, JsonObject.class);
             JsonArray arr = jsonObj.getAsJsonArray("questions");
             for (int i = 0; i < arr.size(); i++) {
                 JsonObject item = arr.get(i).getAsJsonObject();
@@ -462,12 +474,33 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                     options.add(optsArr.get(j).getAsString());
                 }
 
+                String qText = item.has("questionText") ? item.get("questionText").getAsString()
+                        : (item.has("question") ? item.get("question").getAsString() : item.get("q").getAsString());
+
+                int ansIdx = 0;
+                if (item.has("answerIndex")) {
+                    ansIdx = item.get("answerIndex").getAsInt();
+                } else if (item.has("answer")) {
+                    try {
+                        ansIdx = item.get("answer").getAsInt();
+                    } catch (Exception ex) {
+                        String ansStr = item.get("answer").getAsString();
+                        ansIdx = Math.max(0, options.indexOf(ansStr));
+                    }
+                } else if (item.has("correctAnswer")) {
+                    String ansStr = item.get("correctAnswer").getAsString();
+                    ansIdx = Math.max(0, options.indexOf(ansStr));
+                }
+
+                String explainText = item.has("explanation") ? item.get("explanation").getAsString()
+                        : (item.has("explain") ? item.get("explain").getAsString() : "No explanation provided.");
+
                 questions.add(QuizQuestion.builder()
                         .quiz(quiz)
-                        .questionText(item.get("q").getAsString())
+                        .questionText(qText)
                         .options(gson.toJson(options))
-                        .answerIndex(item.get("answer").getAsInt())
-                        .explanation(item.get("explain").getAsString())
+                        .answerIndex(ansIdx)
+                        .explanation(explainText)
                         .build());
             }
         } catch (Exception e) {
@@ -640,42 +673,34 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
         String docContext = docContextBuilder.toString();
 
-        List<ChatMessageDto> messages = new ArrayList<>();
-        messages.add(ChatMessageDto.builder()
-                .role("system")
-                .content(
-                        "You are an expert academic counselor. Generate a structured week-by-week study plan roadmap in markdown. "
-                                + "You must respond with a JSON object containing: "
-                                + "'title' (a concise name for the plan), "
-                                + "'subject' (the academic subject), "
-                                + "'difficulty' (either 'Easy', 'Medium', or 'Hard' based on subject complexity), "
-                                + "'hoursEst' (estimated study hours required, e.g., 20, as a number), "
-                                + "'planText' (the markdown roadmap text, including weekly goals and active recall milestones), "
-                                + "'curriculum' (a JSON array representing modules of study). "
-                                + "Each module object in the 'curriculum' array must contain:\n"
-                                + "- 'title' (module/week title),\n"
-                                + "- 'description' (module description),\n"
-                                + "- 'lessons' (array of lesson objects, each having 'title', 'duration' (e.g., '25 min'), "
-                                + "'type' ('reading' or 'quiz' or 'video' or 'practice'), "
-                                + "'linkedDocName' (if reading type, matching the reference material filename, e.g. Co_Hoc_Luong_Tu_Chuong2.pdf), "
-                                + "and 'pageRange' (optional page range, e.g., 'Trang 15 - 30')).")
-                .build());
+        Map<String, Object> promptVars = new HashMap<>();
+        promptVars.put("subject", subject);
+        promptVars.put("durationWeeks", durationWeeks);
+        promptVars.put("goal", goal != null ? goal : "Comprehensive Mastery");
+        promptVars.put("dailyHours", 2);
+        promptVars.put("context", docContext.isEmpty() ? "No additional reference materials uploaded." : docContext);
 
-        String userQuery = "Subject: " + subject + "\nGoal: " + goal + "\nDuration: " + durationWeeks + " weeks.";
-        if (!docContext.isEmpty()) {
-            userQuery += "\n\nReference Material:\n" + docContext;
-        }
-        messages.add(ChatMessageDto.builder().role("user").content(userQuery).build());
+        com.lumiedu.user.entity.User currentUser = userRepository.findById(userId).orElse(null);
 
-        OpenAiResponse response = openAiService.chat(messages, true);
-        saveUsageLog(userId, "STUDY_PLAN", response);
+        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                "STUDY_PLAN",
+                promptVars,
+                currentUser,
+                currentUser != null ? currentUser.getEmail() : null,
+                "STUDY_PLAN",
+                documentIds != null ? documentIds.toString() : "0",
+                "docs-v1",
+                true
+        );
+
+        String rawResponseText = execResult.getContent();
 
         String title = "Kế hoạch học tập " + subject;
-        String planText = response.getContent();
+        String planText = rawResponseText;
         String curriculumJson = "";
 
         try {
-            JsonObject jsonObj = gson.fromJson(response.getContent(), JsonObject.class);
+            JsonObject jsonObj = gson.fromJson(rawResponseText, JsonObject.class);
             title = jsonObj.get("title").getAsString();
             planText = jsonObj.get("planText").getAsString();
             JsonObject wrapper = new JsonObject();

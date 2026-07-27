@@ -1,12 +1,18 @@
 package com.lumiedu.prompt;
 
+import com.lumiedu.ai.service.GeminiService;
+import com.lumiedu.ai.service.OpenAiService.OpenAiResponse;
+import com.lumiedu.prompt.entity.AiExecutionLog;
 import com.lumiedu.prompt.entity.Prompt;
 import com.lumiedu.prompt.entity.PromptVersion;
 import com.lumiedu.prompt.enums.PromptCategory;
 import com.lumiedu.prompt.enums.PromptVersionStatus;
 import com.lumiedu.prompt.repository.PromptRepository;
 import com.lumiedu.prompt.repository.PromptVersionRepository;
+import com.lumiedu.prompt.service.AiExecutionLogService;
+import com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult;
 import com.lumiedu.prompt.service.impl.PromptEngineServiceImpl;
+import com.lumiedu.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +25,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,11 +40,19 @@ class PromptEngineServiceTest {
     @Mock
     private PromptVersionRepository promptVersionRepository;
 
+    @Mock
+    private AiExecutionLogService aiExecutionLogService;
+
+    @Mock
+    private GeminiService geminiService;
+
     @InjectMocks
     private PromptEngineServiceImpl promptEngineService;
 
     private Prompt activePrompt;
     private PromptVersion publishedVersion;
+    private User testUser;
+    private AiExecutionLog processingLog;
 
     @BeforeEach
     void setUp() {
@@ -52,6 +70,16 @@ class PromptEngineServiceTest {
                 .version("v1.0.0")
                 .markdownContent("# Role\nYou are an AI assistant.\n\n# User Question\n{{question}}")
                 .status(PromptVersionStatus.PUBLISHED)
+                .build();
+
+        testUser = User.builder()
+                .id(100L)
+                .email("student@lumiedu.vn")
+                .fullName("Test Student")
+                .build();
+
+        processingLog = AiExecutionLog.builder()
+                .id(999L)
                 .build();
     }
 
@@ -115,5 +143,38 @@ class PromptEngineServiceTest {
 
         assertTrue(exception.getMessage().contains("Unrendered variables detected"));
         assertTrue(exception.getMessage().contains("course"));
+    }
+
+    @Test
+    void testExecutePrompt_Success() {
+        when(promptRepository.findByCode("CHAT_QA")).thenReturn(Optional.of(activePrompt));
+        when(promptVersionRepository.findPublishedVersionByPromptCode("CHAT_QA")).thenReturn(Optional.of(publishedVersion));
+        when(aiExecutionLogService.createProcessingLog(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(processingLog);
+        when(geminiService.chat(anyList(), anyBoolean())).thenReturn(OpenAiResponse.builder()
+                .content("Answer from Gemini AI")
+                .promptTokens(10)
+                .completionTokens(20)
+                .build());
+
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("question", "What is Java?");
+
+        PromptEngineExecutionResult result = promptEngineService.executePrompt(
+                "CHAT_QA",
+                vars,
+                testUser,
+                "STU001",
+                "CHAT_QA",
+                "kb-123",
+                "v1.0.0",
+                false
+        );
+
+        assertNotNull(result);
+        assertEquals("Answer from Gemini AI", result.getContent());
+        assertEquals("v1.0.0", result.getPromptVersionNumber());
+        assertEquals("Google", result.getLlmProvider());
+        verify(aiExecutionLogService, times(1)).updateLogStatus(eq(999L), any(), any(), eq(30), any(), any());
     }
 }
