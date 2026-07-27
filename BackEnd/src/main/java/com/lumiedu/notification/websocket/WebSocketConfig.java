@@ -17,7 +17,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(notificationWebSocketHandler, "/api/ws/notifications")
-                .setAllowedOriginPatterns("*");
+        registry.addHandler(notificationWebSocketHandler, "/api/ws/notifications", "/ws/notifications")
+                .setAllowedOrigins("http://localhost:5173", "https://lumiedu.vercel.app")
+                .setAllowedOriginPatterns("http://localhost:*", "https://*.vercel.app");
     }
 }
