@@ -270,7 +270,9 @@ class NotificationRealtimeManager {
 
   private persistNotification(notif: RealtimeNotification) {
     try {
-      const userEmail = getCurrentUser().email;
+      const currentUser = getCurrentUser();
+      if (!currentUser || !currentUser.email) return;
+      const userEmail = currentUser.email;
       const key = `aiStudyHubUserNotifications:${userEmail}`;
       const stored = localStorage.getItem(key);
       let currentNotifs = stored ? JSON.parse(stored) : [];
