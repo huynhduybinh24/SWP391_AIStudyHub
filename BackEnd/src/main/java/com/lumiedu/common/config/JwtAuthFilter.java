@@ -24,6 +24,29 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        // 1. Skip OPTIONS preflight requests completely
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            return true;
+        }
+
+        // 2. Skip public auth endpoints
+        if (path.startsWith("/api/auth/")) {
+            return true;
+        }
+
+        // 3. Skip static assets, actuator, error
+        if (path.startsWith("/actuator") || path.startsWith("/error")) {
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
