@@ -156,30 +156,51 @@ export function ChatPage() {
   const [reportingLogId, setReportingLogId] = useState<number | undefined>()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Load user documents and previous chat sessions from database on mount
+  // Load user documents and previous chat sessions from database in parallel with instant cache
   useEffect(() => {
     const fetchUserDocsAndSessions = async () => {
+      // Initialize from local cache if present so user sees 0ms load
+      try {
+        const savedDocs = localStorage.getItem('aiStudyHubCachedChatDocs')
+        if (savedDocs) {
+          const parsed = JSON.parse(savedDocs)
+          if (parsed && parsed.length > 0) setAllDocuments(parsed)
+        }
+      } catch (e) {}
+
       setLoadingDocs(true)
       try {
-        const docs = await documentService.getAllDocuments(Number(userId))
-        setAllDocuments(docs)
+        const [docsRes, sessionsRes] = await Promise.allSettled([
+          documentService.getAllDocuments(Number(userId)),
+          aiService.getUserSessions(Number(userId))
+        ])
 
-        const sessions = await aiService.getUserSessions(Number(userId))
-        const mappedConv: ChatConversation[] = sessions.map(session => {
-          const docIds = session.documents ? session.documents.map((d: any) => d.id) : (session.documentId ? [session.documentId] : []);
-          return {
-            id: `session-${session.id}`,
-            title: session.title || docs.filter(d => docIds.includes(d.id)).map(d => d.title).join(', ') || "Thảo luận tài liệu",
-            preview: "Xem lịch sử trò chuyện...",
-            updatedAt: new Date(session.updatedAt || session.createdAt || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-            messages: [], // load lazily on click
-            documentIds: docIds
-          }
-        })
-        setConversations(mappedConv)
+        let docs: DocumentResponse[] = []
+        if (docsRes.status === 'fulfilled' && Array.isArray(docsRes.value)) {
+          docs = docsRes.value
+          setAllDocuments(docs)
+          try {
+            localStorage.setItem('aiStudyHubCachedChatDocs', JSON.stringify(docs))
+          } catch (e) {}
+        }
+
+        if (sessionsRes.status === 'fulfilled' && Array.isArray(sessionsRes.value)) {
+          const sessions = sessionsRes.value
+          const mappedConv: ChatConversation[] = sessions.map(session => {
+            const docIds = session.documents ? session.documents.map((d: any) => d.id) : (session.documentId ? [session.documentId] : []);
+            return {
+              id: `session-${session.id}`,
+              title: session.title || docs.filter(d => docIds.includes(d.id)).map(d => d.title).join(', ') || "Thảo luận tài liệu",
+              preview: "Xem lịch sử trò chuyện...",
+              updatedAt: new Date(session.updatedAt || session.createdAt || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+              messages: [],
+              documentIds: docIds
+            }
+          })
+          setConversations(mappedConv)
+        }
       } catch (err) {
         console.error('Failed to load user documents or sessions', err)
-        toast.error('Không thể tải danh sách tài liệu hoặc lịch sử trò chuyện.')
       } finally {
         setLoadingDocs(false)
       }
