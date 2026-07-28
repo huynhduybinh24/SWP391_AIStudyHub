@@ -269,6 +269,60 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     @Override
+    public AdminUserResponse updateUser(Long id, AdminUpdateUserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        checkNotSelf(user, "update");
+
+        if (request.getFullName() != null && !request.getFullName().trim().isEmpty()) {
+            user.setFullName(request.getFullName().trim());
+        }
+
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            String newEmail = request.getEmail().trim().toLowerCase();
+            if (!newEmail.equalsIgnoreCase(user.getEmail())) {
+                if (userRepository.existsByEmail(newEmail)) {
+                    throw new IllegalArgumentException("Email is already in use by another user");
+                }
+                user.setEmail(newEmail);
+            }
+        }
+
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
+
+        User saved = userRepository.save(user);
+        return mapUserToResponse(saved);
+    }
+
+    private void checkNotSelf(User targetUser, String action) {
+        if (targetUser == null) return;
+
+        if (adminEmail != null && adminEmail.equalsIgnoreCase(targetUser.getEmail())) {
+            throw new IllegalArgumentException("Cannot " + action + " the primary admin account");
+        }
+
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth != null && auth.isAuthenticated()) {
+            Object details = auth.getDetails();
+            if (details instanceof Long currentUserId) {
+                if (currentUserId.equals(targetUser.getId())) {
+                    throw new IllegalArgumentException("Cannot " + action + " your own account");
+                }
+            }
+
+            String currentEmail = auth.getName();
+            if (currentEmail != null && currentEmail.equalsIgnoreCase(targetUser.getEmail())) {
+                throw new IllegalArgumentException("Cannot " + action + " your own account");
+            }
+        }
+    }
+
+    @Override
     public void deleteUser(Long id, String reason) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
@@ -333,33 +387,5 @@ public class AdminUserServiceImpl implements AdminUserService {
         } finally {
             jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1");
         }
-    }
-
-    private AdminUserResponse mapUserToResponse(User user) {
-        PlanType planType = PlanType.FREE;
-        Optional<UserSubscription> activeSub = userSubscriptionRepository
-                .findFirstByUserIdAndStatusOrderByEndDateDesc(user.getId(), SubscriptionStatus.ACTIVE);
-        
-        Long storageLimit = user.getStorageLimitMb();
-        if (user.getRole() == UserRole.ADMIN) {
-            storageLimit = 51200L;
-        } else {
-            if (activeSub.isPresent()) {
-                var plan = activeSub.get().getSubscriptionPlan();
-                if (plan != null && plan.getStorageLimitMb() != null) {
-                    storageLimit = plan.getStorageLimitMb();
-                }
-            } else {
-                var freePlan = subscriptionPlanRepository.findByPlanType(PlanType.FREE);
-                if (freePlan.isPresent() && freePlan.get().getStorageLimitMb() != null) {
-                    storageLimit = freePlan.get().getStorageLimitMb();
-                }
-            }
-        }
-
-        if (activeSub.isPresent() && activeSub.get().getSubscriptionPlan() != null) {
-            planType = activeSub.get().getSubscriptionPlan().getPlanType();
-        }
-        return AdminUserMapper.toResponse(user, planType, storageLimit);
     }
 }

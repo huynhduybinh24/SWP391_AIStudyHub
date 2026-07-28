@@ -171,7 +171,6 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
         return AdminDashboardStatsResponse.builder()
                 .totalUsers(totalUsers)
-                .activeUsers(totalUsers)
                 .premiumUsers(premiumUsers)
                 .totalDocuments(totalDocuments)
                 .pendingDocuments(pendingDocuments)
