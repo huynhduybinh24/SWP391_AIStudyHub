@@ -169,8 +169,8 @@ export function RegisterForm() {
     const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback')
 
     if (provider === 'google') {
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '123456789-dummy.apps.googleusercontent.com'
-      if (clientId.includes('dummy')) {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '299923810846-kfk4pv295irthtmvfdpuj91gijqkilmh.apps.googleusercontent.com'
+      if (!clientId || clientId.includes('dummy')) {
         window.location.href = `${window.location.origin}/auth/callback?code=mock-google-code-123456`
         return
       }
