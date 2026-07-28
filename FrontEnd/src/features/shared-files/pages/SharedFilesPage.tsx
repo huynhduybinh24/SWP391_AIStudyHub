@@ -551,13 +551,7 @@ export function SharedFilesPage() {
         return updatedMap
       })
       
-      const msg = language === 'vi' 
-        ? `Đã cập nhật vai trò thành ${newRole}`
-        : (language === 'ja'
-          ? `役割を${newRole}に更新しました`
-          : (language === 'ko'
-            ? `역할을 ${newRole}(으)로 업데이트했습니다`
-            : `Updated role to ${newRole}`))
+      const msg = language === 'vi' ? 'Đã cập nhật quyền thành viên' : 'Member role updated successfully'
       toast.success(msg)
 
       if (selectedWorkspaceId && selectedWorkspaceId !== 'all') {
@@ -568,6 +562,37 @@ export function SharedFilesPage() {
     } catch (err: any) {
       console.error("Failed to update member role:", err)
       const errMsg = err.response?.data?.message || err.message || (language === 'vi' ? 'Lỗi khi cập nhật vai trò' : 'Failed to update member role')
+      toast.error(errMsg)
+    }
+  }
+
+  const handleRemoveWorkspaceMember = async (id: string) => {
+    try {
+      if (!id || id === 'undefined' || id === 'null') {
+        toast.error(language === 'vi' ? 'Mã thành viên không hợp lệ' : 'Invalid member ID')
+        return
+      }
+
+      const targetCollab = activeCollaborators.find(c => c.id === id || (c.email && c.email.toLowerCase() === id.toLowerCase()))
+      const memberIdToUse = targetCollab?.id || id
+      const targetWorkspaceId = (selectedWorkspaceId && selectedWorkspaceId !== 'all') 
+        ? selectedWorkspaceId 
+        : (targetCollab?.workspaceId || (workspaces[0] ? String(workspaces[0].id) : ''))
+
+      if (targetWorkspaceId) {
+        await apiClient.delete(`/workspaces/${targetWorkspaceId}/members/${memberIdToUse}`)
+        toast.success(language === 'vi' ? 'Đã xóa thành viên khỏi nhóm' : 'Removed member from workspace')
+        
+        setActiveCollaborators(prev => prev.filter(c => c.id !== id && c.id !== memberIdToUse))
+        if (selectedWorkspaceId !== 'all') {
+          fetchWorkspaceDetails(selectedWorkspaceId)
+        } else {
+          fetchCombinedCollaborators()
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to remove workspace member", err)
+      const errMsg = err.response?.data?.message || (language === 'vi' ? 'Xóa thành viên thất bại' : 'Failed to remove member')
       toast.error(errMsg)
     }
   }
@@ -1481,7 +1506,8 @@ export function SharedFilesPage() {
         onClose={() => setModals(prev => ({ ...prev, collaborators: false }))}
         collaborators={allWorkspaceCollaborators.length > 0 ? allWorkspaceCollaborators : activeCollaborators}
         onUpdateRole={handleUpdateCollaboratorRole}
-        canManage={true}
+        onRemoveCollaborator={handleRemoveWorkspaceMember}
+        canManage={selectedWorkspaceId === 'all' || Boolean(workspaces.find(w => String(w.id) === String(selectedWorkspaceId) && (String(w.ownerId) === String(user?.id) || (w.ownerEmail && w.ownerEmail.toLowerCase() === user?.email?.toLowerCase()))))}
         onOpenAddCollaborator={() => setModals(prev => ({ ...prev, addCollaborator: true }))}
       />
 

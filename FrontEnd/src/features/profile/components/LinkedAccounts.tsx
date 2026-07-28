@@ -51,13 +51,16 @@ export function LinkedAccounts() {
         const googleLink = response.data.find((tp) => tp.providerType === 'GOOGLE')
         const microsoftLink = response.data.find((tp) => tp.providerType === 'MICROSOFT')
 
+        const driveStatus = await apiClient.get<any>('/integrations/google-drive/status').catch(() => null)
+        const isDriveConnected = driveStatus?.data?.isConnected || driveStatus?.data?.connected
+
         setLinkedAccounts([
           {
             id: 'google',
             provider: 'Google',
-            email: googleLink ? googleLink.providerEmail : '',
-            connected: !!googleLink,
-            connectedAt: googleLink ? googleLink.linkedAt?.split('T')[0] : null,
+            email: googleLink ? googleLink.providerEmail : (driveStatus?.data?.googleEmail || authUser.email || ''),
+            connected: !!googleLink || !!isDriveConnected,
+            connectedAt: googleLink ? googleLink.linkedAt?.split('T')[0] : (driveStatus?.data?.connectedAt?.split('T')[0] || null),
             permissions: ['Read profile', 'Access files', 'Sync data'],
             lastSync: null,
           },
@@ -90,7 +93,8 @@ export function LinkedAccounts() {
         return
       }
       
-      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email%20profile&prompt=select_account&state=link_account`
+      const scope = encodeURIComponent('email profile https://www.googleapis.com/auth/drive.file')
+      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=link_account`
     } else {
       setSelectedAccount(account)
       setLoginModalOpen(true)

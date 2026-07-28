@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Users, Mail, Plus, Lock } from 'lucide-react'
+import { X, Users, Mail, Plus, Lock, Trash2 } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 
 export interface Collaborator {
@@ -16,6 +16,7 @@ interface CollaboratorsModalProps {
   onClose: () => void
   collaborators: Collaborator[]
   onUpdateRole: (id: string, newRole: 'Owner' | 'Editor' | 'View Only') => void
+  onRemoveCollaborator?: (id: string) => void
   canManage: boolean
   onOpenAddCollaborator: () => void
 }
@@ -25,6 +26,7 @@ export function CollaboratorsModal({
   onClose,
   collaborators,
   onUpdateRole,
+  onRemoveCollaborator,
   canManage,
   onOpenAddCollaborator
 }: CollaboratorsModalProps) {
@@ -166,29 +168,42 @@ export function CollaboratorsModal({
                       </span>
                     </div>
                   ) : (
-                    <div className="flex gap-1 shrink-0 bg-slate-150/40 dark:bg-slate-800/60 p-0.5 rounded-xl border border-slate-200/40 dark:border-slate-800/30 w-fit">
-                      {(['Editor', 'View Only'] as const).map((r) => {
-                        const isActive = c.role === r
-                        return (
-                          <button
-                            key={r}
-                            type="button"
-                            disabled={!canManage}
-                            onClick={() => onUpdateRole(c.id, r)}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all duration-200 ${
-                              isActive
-                                ? r === 'Editor'
-                                  ? 'bg-emerald-600 text-white shadow-sm'
-                                  : 'bg-slate-600 text-white shadow-sm'
-                                : 'text-slate-550 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250 hover:bg-slate-200/40 dark:hover:bg-slate-700/40'
-                            } ${!canManage ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-                          >
-                            {r === 'Editor' 
-                              ? (language === 'vi' ? 'Chỉnh sửa' : 'Editor')
-                              : (language === 'vi' ? 'Chỉ xem' : 'View Only')}
-                          </button>
-                        )
-                      })}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex gap-1 bg-slate-150/40 dark:bg-slate-800/60 p-0.5 rounded-xl border border-slate-200/40 dark:border-slate-800/30 w-fit">
+                        {(['Editor', 'View Only'] as const).map((r) => {
+                          const isActive = c.role === r
+                          return (
+                            <button
+                              key={r}
+                              type="button"
+                              disabled={!canManage}
+                              onClick={() => onUpdateRole(c.id, r)}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all duration-200 ${
+                                isActive
+                                  ? r === 'Editor'
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'bg-slate-600 text-white shadow-sm'
+                                  : 'text-slate-550 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250 hover:bg-slate-200/40 dark:hover:bg-slate-700/40'
+                              } ${!canManage ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                            >
+                              {r === 'Editor' 
+                                ? (language === 'vi' ? 'Chỉnh sửa' : 'Editor')
+                                : (language === 'vi' ? 'Chỉ xem' : 'View Only')}
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      {canManage && (
+                        <button
+                          type="button"
+                          onClick={() => onRemoveCollaborator?.(c.id)}
+                          title={language === 'vi' ? 'Xóa thành viên khỏi nhóm' : 'Remove member from workspace'}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

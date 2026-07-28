@@ -1009,19 +1009,42 @@ public class DocumentServiceImpl implements DocumentService {
         }
         share = documentShareRepository.save(share);
 
-        // 1. Google Drive permission sharing (best-effort)
-        if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+        // 1. Google Drive permission sharing (best-effort & auto-upload if needed)
+        String gDriveFileId = document.getGoogleDriveFileId();
+        if (gDriveFileId == null || gDriveFileId.startsWith("gdrive_") || !"GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider())) {
+            try {
+                java.nio.file.Path localFilePath = resolveUploadPath(document.getFileType()).resolve(document.getFileName()).toAbsolutePath().normalize();
+                java.io.File localFile = localFilePath.toFile();
+                if (!localFile.exists()) {
+                    localFilePath = java.nio.file.Paths.get(uploadDir, "google_drive_staging", document.getFileName()).toAbsolutePath().normalize();
+                    localFile = localFilePath.toFile();
+                }
+                if (localFile.exists()) {
+                    byte[] fileData = java.nio.file.Files.readAllBytes(localFile.toPath());
+                    String uploadedFileId = googleDriveService.uploadFile(fileData, document.getOriginalFileName(), document.getMimeType(), document.getUserId());
+                    if (uploadedFileId != null && !uploadedFileId.startsWith("gdrive_")) {
+                        document.setGoogleDriveFileId(uploadedFileId);
+                        document.setStorageProvider("GOOGLE_DRIVE");
+                        documentRepository.save(document);
+                        gDriveFileId = uploadedFileId;
+                        log.info("Auto-uploaded document ID {} to Google Drive on share: new gDriveFileId = {}", documentId, uploadedFileId);
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("Failed to auto-upload document ID {} to Google Drive on share: {}", documentId, ex.getMessage());
+            }
+        }
+
+        if (gDriveFileId != null && !gDriveFileId.startsWith("gdrive_")) {
             String gDriveRole = "reader";
             if ("editor".equalsIgnoreCase(role) || "writer".equalsIgnoreCase(role)) {
                 gDriveRole = "writer";
             }
             try {
-                googleDriveService.shareFile(document.getGoogleDriveFileId(), sharee.getEmail(), gDriveRole, document.getUserId());
-            } catch (IOException e) {
-                log.warn("Google Drive permission sharing skipped/failed for document {} and collaborator {}: {}",
-                        documentId, sharee.getEmail(), e.getMessage());
+                googleDriveService.shareFile(gDriveFileId, sharee.getEmail(), gDriveRole, document.getUserId());
+                log.info("Successfully shared Google Drive file {} with email {}", gDriveFileId, sharee.getEmail());
             } catch (Exception e) {
-                log.error("Failed to share file on Google Drive for document {} and collaborator {}: {}",
+                log.warn("Google Drive permission sharing skipped/failed for document {} and collaborator {}: {}",
                         documentId, sharee.getEmail(), e.getMessage());
             }
         }

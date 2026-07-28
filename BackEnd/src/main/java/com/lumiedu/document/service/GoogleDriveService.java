@@ -23,6 +23,10 @@ public interface GoogleDriveService {
 
     String uploadFile(MultipartFile file, String folderName, Long userId) throws IOException;
     String uploadFile(MultipartFile file, java.util.List<String> folderHierarchy, Long userId) throws IOException;
+    default String uploadFile(byte[] fileData, String fileName, String contentType, Long userId) throws IOException {
+        return uploadFile(fileData, fileName, contentType, "LumiEdu_Workspace", userId);
+    }
+    String uploadFile(byte[] fileData, String fileName, String contentType, String folderName, Long userId) throws IOException;
     Resource downloadFile(String googleDriveFileId, Long userId) throws IOException;
     void deleteFile(String googleDriveFileId, Long userId) throws IOException;
 

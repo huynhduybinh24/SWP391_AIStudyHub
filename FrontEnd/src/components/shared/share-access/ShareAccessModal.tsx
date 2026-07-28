@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Mail, UserPlus, ArrowLeft, Settings, Link } from 'lucide-react'
+import { X, Mail, UserPlus, ArrowLeft, Settings, Link, Trash2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
@@ -84,6 +84,7 @@ export function ShareAccessModal({
 
   const [newEmail, setNewEmail] = useState('')
   const [newRole, setNewRole] = useState<ShareRole>('viewer')
+  const [inputErrorMsg, setInputErrorMsg] = useState<string | null>(null)
 
   const modalRef = useRef<HTMLDivElement>(null)
   const emailInputRef = useRef<HTMLInputElement>(null)
@@ -339,7 +340,12 @@ export function ShareAccessModal({
       } catch (err: any) {
         console.error('Failed to add share via API:', err)
         const apiErrMsg = err.response?.data?.message || err.message || 'Lưu chia sẻ trên máy chủ thất bại'
-        triggerToast(apiErrMsg, 'warning')
+        const finalMsg = (apiErrMsg.includes("registered user") || apiErrMsg.includes("existing registered user"))
+          ? (language === 'vi' ? `Email "${emailTrimmed}" chưa đăng ký tài khoản trên hệ thống LumiEdu!` : `Email "${emailTrimmed}" is not registered on LumiEdu!`)
+          : apiErrMsg
+        setInputErrorMsg(finalMsg)
+        triggerToast(finalMsg, 'error')
+        return
       }
     }
 
@@ -406,21 +412,18 @@ export function ShareAccessModal({
   }
 
   const handleRemoveCollaborator = async (collabId: string) => {
-    const targetCollab = localCollaborators.find(c => String(c.id) === String(collabId) || c.email.toLowerCase() === String(collabId).toLowerCase())
+    const targetCollab = localCollaborators.find(
+      c => String(c.id) === String(collabId) || c.email.toLowerCase() === String(collabId).toLowerCase()
+    )
+    const emailToRemove = targetCollab ? targetCollab.email : (collabId.includes('@') ? collabId : '')
     const isNumeric = fileId && /^\d+$/.test(fileId)
 
-    if (isNumeric && targetCollab && targetCollab.role !== 'owner') {
-      try {
-        await documentService.deleteDocumentShare(fileId, targetCollab.email)
-      } catch (err: any) {
-        console.error('Failed to remove share via API:', err)
-        const apiErrMsg = err.response?.data?.message || err.message || 'Failed to remove share'
-        triggerToast(apiErrMsg, 'error')
-        return
-      }
-    }
-
-    const updated = localCollaborators.filter(c => String(c.id) !== String(collabId) && c.email.toLowerCase() !== String(collabId).toLowerCase())
+    // 1. INSTANT UI REMOVAL ON CLICK
+    const updated = localCollaborators.filter(
+      c => String(c.id) !== String(collabId) && 
+           c.email.toLowerCase() !== String(collabId).toLowerCase() && 
+           (emailToRemove ? c.email.toLowerCase() !== emailToRemove.toLowerCase() : true)
+    )
     setLocalCollaborators(updated)
 
     if (onCollaboratorsChange) {
@@ -429,6 +432,17 @@ export function ShareAccessModal({
 
     if (onRemoveCollaborator) {
       onRemoveCollaborator(collabId)
+    }
+
+    // 2. PERSIST DELETION TO DATABASE
+    if (isNumeric && emailToRemove && targetCollab?.role !== 'owner') {
+      try {
+        await documentService.deleteDocumentShare(fileId, emailToRemove)
+      } catch (err: any) {
+        console.error('Failed to remove share via API:', err)
+        const apiErrMsg = err.response?.data?.message || err.message || 'Failed to remove share'
+        triggerToast(apiErrMsg, 'error')
+      }
     }
 
     const msg = language === 'vi' ? 'Đã xóa quyền truy cập' : (t.shareAccess?.collaboratorRemovedToast || 'Collaborator removed')
@@ -586,7 +600,10 @@ export function ShareAccessModal({
                     autoCapitalize="off"
                     spellCheck={false}
                     value={newEmail}
-                    onChange={e => setNewEmail(e.target.value)}
+                    onChange={e => {
+                      setNewEmail(e.target.value)
+                      setInputErrorMsg(null)
+                    }}
                     onKeyDown={e => {
                       if (e.key === 'Enter') {
                         e.preventDefault()
@@ -624,6 +641,13 @@ export function ShareAccessModal({
                       : (language === 'vi' ? 'BẤM CHIA SẺ NGAY' : 'CLICK TO SHARE NOW')}
                   </span>
                 </button>
+
+                {inputErrorMsg && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/80 text-rose-600 dark:text-rose-300 text-xs font-bold animate-fadeIn">
+                    <AlertCircle className="size-4 shrink-0 text-rose-500" />
+                    <span>{inputErrorMsg}</span>
+                  </div>
+                )}
               </div>
 
               {/* People with Access Section */}
@@ -681,17 +705,28 @@ export function ShareAccessModal({
                           </div>
                         </div>
 
-                        <div className="w-28 shrink-0 flex justify-end">
+                        <div className="shrink-0 flex items-center gap-1.5 justify-end">
                           {person.role === 'owner' ? (
                             <span className="text-xs font-medium text-slate-500 dark:text-slate-400 px-2 py-1">
                               {language === 'vi' ? 'Chủ sở hữu' : (t.shareAccess?.ownerRoleText || 'Owner')}
                             </span>
                           ) : (
-                            <PermissionDropdown
-                              value={person.role}
-                              onChange={role => handleRoleChange(person.id, role as ShareRole)}
-                              type="user"
-                            />
+                            <>
+                              <PermissionDropdown
+                                value={person.role}
+                                onChange={role => handleRoleChange(person.id, role as ShareRole)}
+                                showRemove={true}
+                                onRemove={() => handleRemoveCollaborator(person.id)}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCollaborator(person.id)}
+                                title={language === 'vi' ? 'Xóa quyền chia sẻ' : 'Remove share access'}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>

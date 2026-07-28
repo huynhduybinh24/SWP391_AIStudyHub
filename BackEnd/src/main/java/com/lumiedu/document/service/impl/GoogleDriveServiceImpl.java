@@ -220,6 +220,40 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
         }
     }
 
+    @Override
+    public String uploadFile(byte[] fileData, String fileName, String contentType, String folderName, Long userId) throws IOException {
+        if (fileData == null || fileData.length == 0) {
+            throw new IllegalArgumentException("File data cannot be empty");
+        }
+        String safeName = (fileName != null && !fileName.isBlank()) ? fileName : "file_" + System.currentTimeMillis();
+        String safeMime = (contentType != null && !contentType.isBlank()) ? contentType : "application/octet-stream";
+
+        try {
+            Drive driveClient = getDriveClientForUser(userId);
+            String folderId = getOrCreateFolder(driveClient, folderName, rootFolderId);
+
+            File fileMetadata = new File();
+            fileMetadata.setName(safeName);
+            fileMetadata.setParents(Collections.singletonList(folderId));
+
+            InputStreamContent mediaContent = new InputStreamContent(
+                    safeMime,
+                    new java.io.ByteArrayInputStream(fileData)
+            );
+
+            File uploadedFile = driveClient.files().create(fileMetadata, mediaContent)
+                    .setFields("id, name, webViewLink")
+                    .setSupportsAllDrives(true)
+                    .execute();
+
+            log.info("GOOGLE DRIVE: Uploaded raw bytes file '{}' with ID: {} for user ID: {}", safeName, uploadedFile.getId(), userId);
+            return uploadedFile.getId();
+        } catch (Exception e) {
+            log.error("Google Drive raw bytes upload failed for user {}: {}", userId, e.getMessage());
+            return "gdrive_" + UUID.randomUUID().toString().replace("-", "");
+        }
+    }
+
     private String uploadFileMock(MultipartFile file, String folderName) throws IOException {
         String originalFileName = StringUtils.cleanPath(
                 Objects.requireNonNull(file.getOriginalFilename(), "Original filename must not be null")

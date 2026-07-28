@@ -437,6 +437,18 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
         }
       })
 
+      // Trigger Privacy Shield Overlay immediately (0ms delay) to hide old user data
+      window.dispatchEvent(new CustomEvent('aiStudyHubStartUserSwitch', {
+        detail: {
+          name: userToUse.name,
+          avatar: userToUse.avatarUrl || '/logo.png',
+          email: userToUse.email
+        }
+      }))
+      sessionStorage.setItem('aiStudyHubSwitchingUser', 'true')
+      sessionStorage.setItem('aiStudyHubSwitchTargetName', userToUse.name)
+      sessionStorage.setItem('aiStudyHubSwitchTargetAvatar', userToUse.avatarUrl || '/logo.png')
+
       // 3. Dispatch Custom Event
       window.dispatchEvent(new Event('aiStudyHubUserChanged'))
 
@@ -450,16 +462,9 @@ export function ChangeUserModal({ isOpen, onClose }: ChangeUserModalProps) {
       setShowSavePrompt(false)
       onClose()
 
-      // Set switching flag in sessionStorage for clean transition
-      sessionStorage.setItem('aiStudyHubSwitchingUser', 'true')
-
-      // Redirect and reload to clean the SPA state for the new user role
+      // Redirect and reload to clean the SPA state for the new user - ALWAYS LAND ON /dashboard FIRST
       setTimeout(() => {
-        if (userToUse.role?.toLowerCase() === 'admin') {
-          window.location.href = '/dashboard/admin?tab=overview'
-        } else {
-          window.location.href = '/dashboard'
-        }
+        window.location.href = '/dashboard'
       }, 500)
     } catch (err) {
       console.error('Failed to switch user:', err)

@@ -18,11 +18,39 @@ import { adminService, AdminStats, AdminUser, AdminDocument } from '../services/
 import { getSystemStatusSync, updateSystemStatus, SystemStatus, SystemStatusState } from '@/features/admin/services/systemStatusService'
 import { useToast } from '@/components/ui/Toast'
 import { Modal } from '@/components/ui/Modal'
+import { Link } from 'react-router-dom'
 type AdminTab = 'overview' | 'users' | 'packages' | 'notifications' | 'documents' | 'analytics' | 'activity-logs' | 'reports' | 'ai-moderation' | 'support' | 'prompts' | 'ai-logs'
 
 export function AdminDashboardPage() {
+  const authUser = useAuthStore((s) => s.user)
+  const userRole = authUser?.role?.toLowerCase()
   const { t, language } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
+
+  // Strict Double-Lock Security Guard
+  if (userRole !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[65vh] text-center p-8 bg-white dark:bg-slate-900 rounded-3xl border border-red-200 dark:border-red-950/50 shadow-sm my-6">
+        <div className="size-20 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center mb-5">
+          <Shield className="size-10 text-red-600 dark:text-red-400 animate-pulse" />
+        </div>
+        <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-2">
+          {language === 'vi' ? 'Truy Cập Bị Từ Chối (403 Forbidden)' : 'Access Denied (403 Forbidden)'}
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mb-6 leading-relaxed">
+          {language === 'vi'
+            ? `Tài khoản (${authUser?.email || 'User'}) không có quyền hạn truy cập vào trang Quản trị Hệ thống Admin.`
+            : `Your account (${authUser?.email || 'User'}) does not have administrator privileges.`}
+        </p>
+        <Link
+          to="/dashboard"
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98]"
+        >
+          {language === 'vi' ? 'Quay về Trang chủ Dashboard' : 'Return to Dashboard'}
+        </Link>
+      </div>
+    )
+  }
   const activeTab = (searchParams.get('tab') as AdminTab) || 'overview'
   
   const toast = useToast()

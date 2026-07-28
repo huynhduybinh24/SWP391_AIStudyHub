@@ -6,6 +6,7 @@ import { router } from '@/app/router/routes'
 import { ToastContainer } from '@/components/ui/Toast'
 import { ThemeProvider } from '@/features/settings/components/ThemeProvider'
 import { LanguageProvider } from '@/context/LanguageContext'
+import { UserSwitchPrivacyOverlay } from '@/components/shared/UserSwitchPrivacyOverlay'
 import { realtimeNotificationManager } from '@/features/notifications/services/notificationRealtime'
 import { checkAndPurgeExpiredLogs } from '@/services/activityLogService'
 
@@ -33,6 +34,7 @@ export function AppProviders() {
       <ThemeProvider>
         <LanguageProvider>
           <RouterProvider router={router} />
+          <UserSwitchPrivacyOverlay />
           <ToastContainer />
         </LanguageProvider>
       </ThemeProvider>
