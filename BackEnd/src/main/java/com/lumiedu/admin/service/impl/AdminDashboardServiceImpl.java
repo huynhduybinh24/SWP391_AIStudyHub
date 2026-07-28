@@ -40,7 +40,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     @Override
     public AdminDashboardStatsResponse getStats() {
         // 1. Basic Counts (Fast Count Queries)
-        long totalAdmins = userRepository.findByRole(UserRole.ADMIN).size();
+        long totalAdmins = userRepository.countByRole(UserRole.ADMIN);
         long totalUsers = Math.max(0, userRepository.count() - totalAdmins);
         long totalDocuments = documentRepository.count();
         long totalNotifications = notificationRepository.count();

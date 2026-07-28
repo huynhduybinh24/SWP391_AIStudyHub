@@ -75,19 +75,48 @@ public class AdminUserServiceImpl implements AdminUserService {
         // Phân trang thủ công
         int total = users.size();
         int start = page * size;
+        List<User> pagedUsers;
         if (start >= total) {
-            users = Collections.emptyList();
+            pagedUsers = Collections.emptyList();
         } else {
             int end = Math.min(start + size, total);
-            users = users.subList(start, end);
+            pagedUsers = users.subList(start, end);
+        }
+
+        if (pagedUsers.isEmpty()) {
+            return Collections.emptyList();
         }
 
         Long cachedFreePlanLimit = subscriptionPlanRepository.findByPlanType(PlanType.FREE)
                 .map(SubscriptionPlan::getStorageLimitMb)
                 .orElse(1024L);
 
-        return users.stream()
-                .map(u -> mapUserToResponseWithFreeLimit(u, cachedFreePlanLimit))
+        List<Long> pagedUserIds = pagedUsers.stream().map(User::getId).collect(Collectors.toList());
+        List<UserSubscription> activeSubs = userSubscriptionRepository.findByUserIdInAndStatus(pagedUserIds, SubscriptionStatus.ACTIVE);
+        java.util.Map<Long, UserSubscription> activeSubMap = activeSubs.stream()
+                .collect(Collectors.toMap(s -> s.getUser().getId(), s -> s, (s1, s2) -> s1));
+
+        return pagedUsers.stream()
+                .map(u -> {
+                    UserSubscription activeSub = activeSubMap.get(u.getId());
+                    PlanType planType = PlanType.FREE;
+                    Long storageLimit = u.getStorageLimitMb();
+                    if (u.getRole() == UserRole.ADMIN) {
+                        storageLimit = 51200L;
+                    } else if (activeSub != null) {
+                        var plan = activeSub.getSubscriptionPlan();
+                        if (plan != null && plan.getStorageLimitMb() != null) {
+                            storageLimit = plan.getStorageLimitMb();
+                        }
+                    } else if (storageLimit == null) {
+                        storageLimit = cachedFreePlanLimit;
+                    }
+
+                    if (activeSub != null && activeSub.getSubscriptionPlan() != null) {
+                        planType = activeSub.getSubscriptionPlan().getPlanType();
+                    }
+                    return AdminUserMapper.toResponse(u, planType, storageLimit);
+                })
                 .collect(Collectors.toList());
     }
 
