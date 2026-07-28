@@ -218,6 +218,8 @@ export function SharedFilesPage() {
   const [files, setFiles] = useState<SharedFile[]>([])
   const [workspaces, setWorkspaces] = useState<any[]>([])
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | 'all'>('all')
+  const [currentUsedMb, setCurrentUsedMb] = useState<number>(5.7)
+  const [activeCollaborators, setActiveCollaborators] = useState<ActiveCollaborator[]>([])
 
   const fetchWorkspaces = async () => {
     if (!user?.id) return
@@ -492,9 +494,6 @@ export function SharedFilesPage() {
   const [reportDoc, setReportDoc] = useState<SharedFile | null>(null)
   const [reportReason, setReportReason] = useState('')
   const [isSubmittingReport, setIsSubmittingReport] = useState(false)
-
-  const [currentUsedMb, setCurrentUsedMb] = useState<number>(5.7)
-  const [activeCollaborators, setActiveCollaborators] = useState<ActiveCollaborator[]>([])
 
   const handleUpdateCollaboratorRole = async (id: string, newRole: 'Owner' | 'Editor' | 'View Only') => {
     try {
