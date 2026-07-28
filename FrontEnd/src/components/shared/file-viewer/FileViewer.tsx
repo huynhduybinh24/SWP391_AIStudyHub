@@ -586,7 +586,7 @@ export function FileViewer({
                   <iframe
                     ref={iframeRef}
                     src={pdfUrl}
-                    className={cn("w-full h-full border-none", isShareModalOpen && "pointer-events-none")}
+                    className={cn("w-full h-full border-none", isShareModalOpen ? "invisible opacity-0 pointer-events-none" : "visible opacity-100")}
                     title={fileName}
                   />
                 ) : (
