@@ -284,10 +284,14 @@ export function SharedFilesPage() {
       const list = wsResponse.data?.data || wsResponse.data || []
       
       const allMembersMap: Record<string, ActiveCollaborator> = {}
-      for (const ws of list) {
-        try {
-          const detailRes = await apiClient.get(`/workspaces/${ws.id}?userId=${user.id}`)
-          const detail = detailRes.data?.data || detailRes.data
+      const detailResults = await Promise.allSettled(
+        list.map((ws: any) => apiClient.get(`/workspaces/${ws.id}?userId=${user.id}`))
+      )
+
+      detailResults.forEach((res, idx) => {
+        if (res.status === 'fulfilled') {
+          const ws = list[idx]
+          const detail = res.value.data?.data || res.value.data
           if (detail && detail.members) {
             detail.members.forEach((mem: any) => {
               const memRoleStr = String(mem.role || '').toUpperCase()
@@ -300,14 +304,12 @@ export function SharedFilesPage() {
                 name: mem.fullName || mem.email || 'Member',
                 email: mem.email || '',
                 role: role,
-                workspaceId: String(ws.id)
+                workspaceId: String(ws?.id || '')
               }
             })
           }
-        } catch (e) {
-          // ignore error
         }
-      }
+      })
       
       const collabsList = Object.values(allMembersMap)
       if (collabsList.length > 0) {
