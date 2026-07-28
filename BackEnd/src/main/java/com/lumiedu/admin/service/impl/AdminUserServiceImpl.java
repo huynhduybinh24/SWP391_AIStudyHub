@@ -82,8 +82,12 @@ public class AdminUserServiceImpl implements AdminUserService {
             users = users.subList(start, end);
         }
 
+        Long cachedFreePlanLimit = subscriptionPlanRepository.findByPlanType(PlanType.FREE)
+                .map(SubscriptionPlan::getStorageLimitMb)
+                .orElse(1024L);
+
         return users.stream()
-                .map(this::mapUserToResponse)
+                .map(u -> mapUserToResponseWithFreeLimit(u, cachedFreePlanLimit))
                 .collect(Collectors.toList());
     }
 
@@ -92,31 +96,44 @@ public class AdminUserServiceImpl implements AdminUserService {
     public AdminUserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-        return mapUserToResponse(user);
+        Long cachedFreePlanLimit = subscriptionPlanRepository.findByPlanType(PlanType.FREE)
+                .map(SubscriptionPlan::getStorageLimitMb)
+                .orElse(1024L);
+        return mapUserToResponseWithFreeLimit(user, cachedFreePlanLimit);
     }
 
-    @Override
-    public AdminUserResponse updateUser(Long id, AdminUpdateUserRequest request) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-        if (request.getAvatarUrl() != null) {
-            user.setAvatarUrl(request.getAvatarUrl());
-        }
-
-        User saved = userRepository.save(user);
-        return mapUserToResponse(saved);
+    private AdminUserResponse mapUserToResponse(User user) {
+        Long cachedFreePlanLimit = subscriptionPlanRepository.findByPlanType(PlanType.FREE)
+                .map(SubscriptionPlan::getStorageLimitMb)
+                .orElse(1024L);
+        return mapUserToResponseWithFreeLimit(user, cachedFreePlanLimit);
     }
 
-    private void checkNotSelf(User targetUser, String action) {
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getName() != null) {
-            if (auth.getName().equalsIgnoreCase(targetUser.getEmail())) {
-                throw new IllegalStateException("You cannot " + action + " your own account.");
+    private AdminUserResponse mapUserToResponseWithFreeLimit(User user, Long freePlanLimit) {
+        PlanType planType = PlanType.FREE;
+        Optional<UserSubscription> activeSub = userSubscriptionRepository
+                .findFirstByUserIdAndStatusOrderByEndDateDesc(user.getId(), SubscriptionStatus.ACTIVE);
+        
+        Long storageLimit = user.getStorageLimitMb();
+        if (user.getRole() == UserRole.ADMIN) {
+            storageLimit = 51200L;
+        } else {
+            if (activeSub.isPresent()) {
+                var plan = activeSub.get().getSubscriptionPlan();
+                if (plan != null && plan.getStorageLimitMb() != null) {
+                    storageLimit = plan.getStorageLimitMb();
+                }
+            } else {
+                if (storageLimit == null) {
+                    storageLimit = freePlanLimit;
+                }
             }
         }
+
+        if (activeSub.isPresent() && activeSub.get().getSubscriptionPlan() != null) {
+            planType = activeSub.get().getSubscriptionPlan().getPlanType();
+        }
+        return AdminUserMapper.toResponse(user, planType, storageLimit);
     }
 
     @Override
