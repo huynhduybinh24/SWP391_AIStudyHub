@@ -210,6 +210,14 @@ export function ShareAccessModal({
         collaborators || initialCollaborators || []
       )
       setLocalCollaborators(mergedInitial)
+
+      // Auto-focus input and claim focus from any PDF iframe
+      const focusTimer = setTimeout(() => {
+        if (emailInputRef.current) {
+          emailInputRef.current.focus()
+        }
+      }, 150)
+      return () => clearTimeout(focusTimer)
     }
   }, [isOpen, generalAccess, _owner, user, collaborators, initialCollaborators, workspaceCollaborators])
 
@@ -326,9 +334,8 @@ export function ShareAccessModal({
         await documentService.addOrUpdateDocumentShare(fileId, emailTrimmed, newRole)
       } catch (err: any) {
         console.error('Failed to add share via API:', err)
-        const apiErrMsg = err.response?.data?.message || err.message || 'Failed to share document'
-        triggerToast(apiErrMsg, 'error')
-        return
+        const apiErrMsg = err.response?.data?.message || err.message || 'Lưu chia sẻ trên máy chủ thất bại'
+        triggerToast(apiErrMsg, 'warning')
       }
     }
 
@@ -448,29 +455,22 @@ export function ShareAccessModal({
   if (typeof document === 'undefined') return null
 
   return createPortal(
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-x-hidden overflow-y-auto">
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 bg-slate-950/60 dark:bg-black/80 backdrop-blur-md cursor-pointer"
-        />
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 overflow-x-hidden overflow-y-auto">
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-950/60 dark:bg-black/80 backdrop-blur-md cursor-pointer z-0"
+      />
 
-        {/* Modal Window Container */}
-        <motion.div
-          ref={modalRef}
-          initial={{ opacity: 0, scale: 0.95, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-          onClick={e => e.stopPropagation()}
-          className="relative z-[100000] w-full max-w-[500px] overflow-hidden rounded-[28px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 shadow-2xl text-left backdrop-blur-xl pointer-events-auto"
-          role="dialog"
-          aria-modal="true"
-        >
+      {/* Modal Window Container */}
+      <div
+        ref={modalRef}
+        onClick={e => e.stopPropagation()}
+        onMouseDown={e => e.stopPropagation()}
+        className="relative z-10 w-full max-w-[500px] overflow-hidden rounded-[28px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 shadow-2xl text-left backdrop-blur-xl pointer-events-auto"
+        role="dialog"
+        aria-modal="true"
+      >
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2 max-w-[80%]">
@@ -551,15 +551,27 @@ export function ShareAccessModal({
           ) : (
             /* Main Share Access Content */
             <div className="space-y-5 text-left">
-              {/* Add Collaborator Input Row */}
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-indigo-500">
-                    <Mail className="size-4" />
-                  </div>
+              {/* Redesigned 1-Click Share Box */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-2 border-indigo-500/30 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Mail className="size-4 text-indigo-500" />
+                    <span>{language === 'vi' ? 'Nhập email người cần chia sẻ' : 'Enter recipient email'}</span>
+                  </label>
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    {language === 'vi' ? 'Tự động gửi mail thông báo' : 'Auto email notification'}
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
                   <input
                     ref={emailInputRef}
-                    type="email"
+                    type="text"
+                    inputMode="email"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
                     value={newEmail}
                     onChange={e => setNewEmail(e.target.value)}
                     onKeyDown={e => {
@@ -568,28 +580,36 @@ export function ShareAccessModal({
                         handleAddCollaborator()
                       }
                     }}
-                    placeholder={language === 'vi' ? 'Nhập email người dùng...' : (t.shareAccess?.emailInputPlaceholder || 'Add people by email...')}
-                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-800/80 rounded-xl text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    placeholder={language === 'vi' ? 'Ví dụ: nguoinhan@gmail.com...' : 'Example: user@gmail.com...'}
+                    className="flex-1 px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-xs"
                   />
-                </div>
 
-                <div className="w-28">
-                  <PermissionDropdown
-                    value={newRole}
-                    onChange={role => setNewRole(role as ShareRole)}
-                    type="invite"
-                  />
+                  <div className="w-28 shrink-0">
+                    <PermissionDropdown
+                      value={newRole}
+                      onChange={role => setNewRole(role as ShareRole)}
+                      type="invite"
+                    />
+                  </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleAddCollaborator}
-                  disabled={!newEmail}
-                  className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center shrink-0 gap-1.5 shadow-md shadow-indigo-500/25 active:scale-95"
-                  title={language === 'vi' ? 'Thêm người dùng' : (t.shareAccess?.addPeopleTooltip || 'Add person')}
+                  disabled={!newEmail || !newEmail.includes('@')}
+                  className={cn(
+                    "w-full py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-98",
+                    newEmail && newEmail.includes('@')
+                      ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/30"
+                      : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed opacity-60"
+                  )}
                 >
                   <UserPlus className="size-4" />
-                  <span>{language === 'vi' ? 'Thêm' : 'Add'}</span>
+                  <span>
+                    {newEmail && newEmail.includes('@')
+                      ? (language === 'vi' ? `XÁC NHẬN CHIA SẺ CHO "${newEmail}"` : `CONFIRM SHARE TO "${newEmail}"`)
+                      : (language === 'vi' ? 'BẤM CHIA SẺ NGAY' : 'CLICK TO SHARE NOW')}
+                  </span>
                 </button>
               </div>
 
@@ -708,10 +728,9 @@ export function ShareAccessModal({
             >
               {language === 'vi' ? 'Xong' : (t.shareAccess?.doneButton || 'Done')}
             </Button>
-          </div>
-        </motion.div>
+        </div>
       </div>
-    </AnimatePresence>,
+    </div>,
     document.body
   )
 }

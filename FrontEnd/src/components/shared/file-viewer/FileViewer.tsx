@@ -95,6 +95,37 @@ export function FileViewer({
   const [zoomScale, setZoomScale] = useState(100)
   const [currentPage, setCurrentPage] = useState(initialPage || 1)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+
+  // Inline Share Quick Form State
+  const [isInlineShareOpen, setIsInlineShareOpen] = useState(false)
+  const [inlineEmail, setInlineEmail] = useState('')
+  const [inlineRole, setInlineRole] = useState<'viewer' | 'editor'>('viewer')
+  const [isSubmittingShare, setIsSubmittingShare] = useState(false)
+
+  const handleInlineShareSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (!inlineEmail || !inlineEmail.includes('@')) {
+      showToast('Vui lòng nhập địa chỉ email hợp lệ!')
+      return
+    }
+    if (!documentId) {
+      showToast('Không tìm thấy ID tài liệu')
+      return
+    }
+    setIsSubmittingShare(true)
+    try {
+      await documentService.addOrUpdateDocumentShare(documentId, inlineEmail.trim().toLowerCase(), inlineRole)
+      showToast(`Đã chia sẻ tài liệu thành công tới ${inlineEmail.trim()}`)
+      setInlineEmail('')
+      setIsInlineShareOpen(false)
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || err.message || 'Chia sẻ tài liệu thất bại'
+      showToast(errMsg)
+    } finally {
+      setIsSubmittingShare(false)
+    }
+  }
 
   const normType = fileType.toLowerCase()
   const [pdfUrl, setPdfUrl] = useState<string>('')
@@ -250,7 +281,6 @@ export function FileViewer({
   const [scanStep, setScanStep] = useState('')
 
   // 4. Modal state
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
 
   // Timer references for simulations
   const aiTimeoutRef = useRef<any>(null)
@@ -556,7 +586,7 @@ export function FileViewer({
                   <iframe
                     ref={iframeRef}
                     src={pdfUrl}
-                    className="w-full h-full border-none"
+                    className={cn("w-full h-full border-none", isShareModalOpen && "pointer-events-none")}
                     title={fileName}
                   />
                 ) : (
@@ -659,11 +689,57 @@ export function FileViewer({
             <Button
               variant="secondary"
               onClick={() => setIsShareModalOpen(true)}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98 text-xs cursor-pointer"
+              className="w-full bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98 text-xs cursor-pointer"
             >
-              <Share2 className="h-4.5 w-4.5 text-slate-550" />
+              <Share2 className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
               {t.fileViewer.shareAccess}
             </Button>
+
+            {isInlineShareOpen && (
+              <form onSubmit={handleInlineShareSubmit} className="p-4 bg-white dark:bg-slate-900 border-2 border-indigo-500/30 rounded-2xl space-y-3 text-left shadow-lg transition-all animate-in fade-in duration-200">
+                <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
+                    <Share2 className="size-3.5" />
+                    Chia sẻ tài liệu nhanh
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsInlineShareOpen(false)}
+                    className="text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <input
+                  type="email"
+                  required
+                  placeholder="Nhập email người nhận (VD: a@gmail.com)..."
+                  value={inlineEmail}
+                  onChange={e => setInlineEmail(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={inlineRole}
+                    onChange={e => setInlineRole(e.target.value as 'viewer' | 'editor')}
+                    className="px-2.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                  >
+                    <option value="viewer">Viewer (Chỉ xem)</option>
+                    <option value="editor">Editor (Chỉnh sửa)</option>
+                  </select>
+
+                  <Button
+                    type="submit"
+                    disabled={isSubmittingShare || !inlineEmail}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1 cursor-pointer shadow-md shadow-indigo-500/20"
+                  >
+                    {isSubmittingShare ? <Loader2 className="size-3.5 animate-spin" /> : 'Gửi chia sẻ'}
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
 
         </div>
