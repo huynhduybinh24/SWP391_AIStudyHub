@@ -85,6 +85,16 @@ export function ShareAccessModal({
   const [newRole, setNewRole] = useState<ShareRole>('viewer')
 
   const modalRef = useRef<HTMLDivElement>(null)
+  const emailInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        emailInputRef.current?.focus()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [isOpen])
 
   // Helper to trigger toast notifications
   const triggerToast = (msg: string, type: 'success' | 'error' | 'warning' = 'success') => {
@@ -546,6 +556,7 @@ export function ShareAccessModal({
                     <Mail className="size-4" />
                   </div>
                   <input
+                    ref={emailInputRef}
                     type="email"
                     autoFocus
                     value={newEmail}
@@ -659,15 +670,12 @@ export function ShareAccessModal({
 
               {/* General Access Section */}
               <div>
-                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
-                  {language === 'vi' ? 'QUYỀN TRUY CẬP CHUNG' : (t.shareAccess?.generalAccessHeader || 'GENERAL ACCESS')}
-                </h4>
-
                 <GeneralAccessSelector
-                  type={localGeneralAccess}
+                  value={localGeneralAccess}
                   onChange={handleGeneralAccessTypeChange}
-                  role={publicRole}
-                  onRoleChange={setPublicRole}
+                  publicRole={publicRole}
+                  onPublicRoleChange={setPublicRole}
+                  showToast={triggerToast}
                 />
               </div>
             </div>
