@@ -571,10 +571,11 @@ export function ShareAccessModal({
                   type="button"
                   onClick={handleAddCollaborator}
                   disabled={!newEmail}
-                  className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-center shrink-0"
+                  className="px-3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center shrink-0 gap-1.5 shadow-sm shadow-indigo-500/20"
                   title={language === 'vi' ? 'Thêm người dùng' : (t.shareAccess?.addPeopleTooltip || 'Add person')}
                 >
                   <UserPlus className="size-4" />
+                  <span>{language === 'vi' ? 'Thêm' : 'Add'}</span>
                 </button>
               </div>
 
@@ -686,7 +687,12 @@ export function ShareAccessModal({
             <Button
               type="button"
               size="sm"
-              onClick={onClose}
+              onClick={async () => {
+                if (newEmail && newEmail.includes('@')) {
+                  await handleAddCollaborator()
+                }
+                onClose()
+              }}
               className="px-5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-md shadow-indigo-500/20"
             >
               {language === 'vi' ? 'Xong' : (t.shareAccess?.doneButton || 'Done')}
