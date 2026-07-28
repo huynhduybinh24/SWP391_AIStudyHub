@@ -50,11 +50,11 @@ export function StatisticsSection() {
   const statistics = useMemo<StatisticItem[]>(() => {
     if (isAdmin) {
       const stats = adminStats || {
-        totalUsers: 142,
-        flaggedDocuments: 8,
-        pendingDocuments: 3,
-        storageUsedGB: 12.4,
-        storageLimitGB: 500
+        totalUsers: 0,
+        flaggedDocuments: 0,
+        pendingDocuments: 0,
+        storageUsedGB: 0,
+        storageLimitGB: 100
       }
       return [
         {
