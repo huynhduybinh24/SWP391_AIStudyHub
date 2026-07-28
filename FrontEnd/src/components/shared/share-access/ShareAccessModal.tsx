@@ -454,7 +454,8 @@ export function ShareAccessModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-          className="relative z-10 w-full max-w-[500px] overflow-hidden rounded-[28px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 shadow-2xl text-left backdrop-blur-xl"
+          onClick={e => e.stopPropagation()}
+          className="relative z-10 w-full max-w-[500px] overflow-hidden rounded-[28px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 shadow-2xl text-left backdrop-blur-xl pointer-events-auto"
           role="dialog"
           aria-modal="true"
         >
@@ -546,6 +547,7 @@ export function ShareAccessModal({
                   </div>
                   <input
                     type="email"
+                    autoFocus
                     value={newEmail}
                     onChange={e => setNewEmail(e.target.value)}
                     onKeyDown={e => {
