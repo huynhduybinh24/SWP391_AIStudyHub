@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class EmailService {
 
     private final JavaMailSender mailSender;
@@ -57,9 +58,9 @@ public class EmailService {
             }
 
             mailSender.send(message);
-            System.out.println("Email sent successfully to " + to + " (From: " + from + ")");
+            log.info("Email sent successfully to {} (From: {})", to, from);
         } catch (Exception e) {
-            System.err.println("Failed to send email to " + to + ": " + e.getMessage());
+            log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
         }
     }
 
