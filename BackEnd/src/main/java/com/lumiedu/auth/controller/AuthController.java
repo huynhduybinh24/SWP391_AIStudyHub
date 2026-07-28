@@ -52,6 +52,8 @@ public class AuthController {
     private final SystemSettingRepository systemSettingRepository;
     private final AuthService authService;
     private final com.lumiedu.email.service.EmailService emailService;
+    private final com.lumiedu.integration.repository.UserGoogleDriveConnectionRepository googleDriveConnectionRepository;
+    private final com.lumiedu.integration.service.EncryptionService encryptionService;
 
     private final java.util.concurrent.ConcurrentHashMap<String, OtpDetails> registerOtpMap = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<String, java.time.LocalDateTime> otpCooldownMap = new java.util.concurrent.ConcurrentHashMap<>();
@@ -119,6 +121,7 @@ public class AuthController {
 
                 JsonObject tokenJson = JsonParser.parseString(tokenResponse.getBody()).getAsJsonObject();
                 String accessToken = tokenJson.get("access_token").getAsString();
+                String refreshToken = (tokenJson.has("refresh_token") && !tokenJson.get("refresh_token").isJsonNull()) ? tokenJson.get("refresh_token").getAsString() : null;
 
                 // Fetch User Profile
                 HttpHeaders userInfoHeaders = new HttpHeaders();
@@ -207,6 +210,25 @@ public class AuthController {
                         .providerEmail(email)
                         .build();
                 thirdPartyAccountRepository.save(tpAccount);
+            }
+        }
+
+        // Auto-connect Google Drive for user if Google OAuth returned a refresh token
+        if (refreshToken != null && !refreshToken.isBlank() && user != null) {
+            try {
+                final User targetUser = user;
+                com.lumiedu.integration.entity.UserGoogleDriveConnection conn = googleDriveConnectionRepository.findByUserId(user.getId())
+                        .orElseGet(() -> com.lumiedu.integration.entity.UserGoogleDriveConnection.builder().user(targetUser).build());
+                conn.setUser(targetUser);
+                conn.setGoogleEmail(email);
+                conn.setEncryptedRefreshToken(encryptionService.encrypt(refreshToken));
+                conn.setIsConnected(true);
+                conn.setConnectedAt(java.time.LocalDateTime.now());
+                conn.setDisconnectedAt(null);
+                googleDriveConnectionRepository.save(conn);
+                log.info("Automatically connected Google Drive for user ID: {} with email: {}", user.getId(), email);
+            } catch (Exception ex) {
+                log.warn("Auto-connection of Google Drive failed for user ID {}: {}", user.getId(), ex.getMessage());
             }
         }
 
