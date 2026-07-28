@@ -3,6 +3,7 @@ package com.lumiedu.document.service.impl;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.model.FileList;
 import com.google.api.services.drive.model.Permission;
 import com.lumiedu.document.service.GoogleDriveService;
 import lombok.RequiredArgsConstructor;
@@ -220,6 +221,42 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
         }
     }
 
+    private String findExistingFileId(Drive driveClient, String fileName, String parentFolderId) {
+        if (driveClient == null || fileName == null || fileName.isBlank()) {
+            return null;
+        }
+        try {
+            // Clean filename by stripping quotes/backslashes to ensure valid Google Drive API query syntax
+            String cleanName = fileName.replaceAll("['\"\\\\]", "").trim();
+            if (cleanName.isEmpty()) return null;
+
+            StringBuilder q = new StringBuilder();
+            q.append("name = '").append(cleanName).append("' and trashed = false");
+            if (parentFolderId != null && !parentFolderId.isBlank() && !"root".equalsIgnoreCase(parentFolderId) && !parentFolderId.startsWith("gdrive_")) {
+                q.append(" and '").append(parentFolderId).append("' in parents");
+            }
+
+            Drive.Files.List request = driveClient.files()
+                    .list()
+                    .setQ(q.toString())
+                    .setPageSize(1)
+                    .setFields("files(id, name)");
+
+            FileList existingFiles = request.execute();
+
+            if (existingFiles != null && existingFiles.getFiles() != null && !existingFiles.getFiles().isEmpty()) {
+                File found = existingFiles.getFiles().get(0);
+                if (found != null && found.getId() != null) {
+                    log.info("GOOGLE DRIVE: Found existing file '{}' with ID: {}", fileName, found.getId());
+                    return found.getId();
+                }
+            }
+        } catch (Throwable t) {
+            log.warn("GOOGLE DRIVE: Anti-duplicate lookup skipped safely: {}", t.getMessage());
+        }
+        return null;
+    }
+
     @Override
     public String uploadFile(byte[] fileData, String fileName, String contentType, String folderName, Long userId) throws IOException {
         if (fileData == null || fileData.length == 0) {
@@ -231,6 +268,12 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
         try {
             Drive driveClient = getDriveClientForUser(userId);
             String folderId = getOrCreateFolder(driveClient, folderName, rootFolderId);
+
+            // Prevent duplicate file upload to Google Drive
+            String existingId = findExistingFileId(driveClient, safeName, folderId);
+            if (existingId != null) {
+                return existingId;
+            }
 
             File fileMetadata = new File();
             fileMetadata.setName(safeName);
