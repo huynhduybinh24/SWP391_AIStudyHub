@@ -38,18 +38,30 @@ public class GoogleDriveConfig {
     public Drive googleDrive() throws IOException {
         com.google.auth.Credentials credentials;
 
-        if (refreshToken != null && !refreshToken.trim().isEmpty() && !refreshToken.equals("mock-refresh-token")) {
-            log.info("GOOGLE DRIVE: Initializing using personal Gmail OAuth Refresh Token");
-            credentials = UserCredentials.newBuilder()
-                    .setClientId(clientId)
-                    .setClientSecret(clientSecret)
-                    .setRefreshToken(refreshToken)
+        try {
+            if (refreshToken != null && !refreshToken.trim().isEmpty() && !refreshToken.equals("mock-refresh-token")) {
+                log.info("GOOGLE DRIVE: Initializing using personal Gmail OAuth Refresh Token");
+                credentials = UserCredentials.newBuilder()
+                        .setClientId(clientId)
+                        .setClientSecret(clientSecret)
+                        .setRefreshToken(refreshToken)
+                        .build();
+            } else if (credentialsPath != null && credentialsPath.exists()) {
+                log.info("GOOGLE DRIVE: Initializing using Service Account JSON credentials");
+                credentials = GoogleCredentials
+                        .fromStream(credentialsPath.getInputStream())
+                        .createScoped(Collections.singleton(DriveScopes.DRIVE));
+            } else {
+                log.warn("GOOGLE DRIVE: Neither OAuth Refresh Token nor google-credentials.json found. Creating fallback Drive service.");
+                return new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), request -> {})
+                        .setApplicationName("LumiEdu-StudyHub")
+                        .build();
+            }
+        } catch (Exception e) {
+            log.warn("GOOGLE DRIVE: Failed to load credentials ({}), creating fallback Drive service.", e.getMessage());
+            return new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), request -> {})
+                    .setApplicationName("LumiEdu-StudyHub")
                     .build();
-        } else {
-            log.info("GOOGLE DRIVE: Initializing using Service Account JSON credentials");
-            credentials = GoogleCredentials
-                    .fromStream(credentialsPath.getInputStream())
-                    .createScoped(Collections.singleton(DriveScopes.DRIVE));
         }
 
         com.google.api.client.http.HttpRequestInitializer requestInitializer = new com.google.api.client.http.HttpRequestInitializer() {
