@@ -41,6 +41,7 @@ import com.lumiedu.admin.entity.SystemSetting;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -137,7 +138,13 @@ public class AuthController {
                 name = userJson.has("name") ? userJson.get("name").getAsString() : email.split("@")[0];
                 avatarUrl = userJson.has("picture") ? userJson.get("picture").getAsString() : null;
 
+            } catch (org.springframework.web.client.HttpStatusCodeException e) {
+                log.error("[Google OAuth] HTTP error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+                String responseBody = e.getResponseBodyAsString();
+                String msg = (responseBody != null && !responseBody.isBlank()) ? responseBody : e.getMessage();
+                return ResponseEntity.badRequest().body(Map.of("message", "Google OAuth authentication failed (" + e.getStatusCode() + "): " + msg));
             } catch (Exception e) {
+                log.error("[Google OAuth] Error: {}", e.getMessage(), e);
                 return ResponseEntity.badRequest().body(Map.of("message", "Google OAuth authentication failed: " + e.getMessage()));
             }
         }
