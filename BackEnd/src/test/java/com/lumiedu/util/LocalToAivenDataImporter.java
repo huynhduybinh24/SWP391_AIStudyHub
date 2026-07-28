@@ -9,9 +9,9 @@ import java.sql.Statement;
 public class LocalToAivenDataImporter {
 
     public static void main(String[] args) {
-        String aivenUrl = "jdbc:mysql://mysql-3234de44-lumiedu-project1.d.aivencloud.com:12699/defaultdb?useSSL=true&trustServerCertificate=true&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&serverTimezone=Asia/Ho_Chi_Minh";
-        String aivenUser = "avnadmin";
-        String aivenPass = "AVNS_XbDfvRbVCLB2-X6TnB-";
+        String aivenUrl = System.getenv().getOrDefault("SPRING_DATASOURCE_URL", "jdbc:mysql://mysql-3234de44-lumiedu-project1.d.aivencloud.com:12699/defaultdb?useSSL=true&trustServerCertificate=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh");
+        String aivenUser = System.getenv().getOrDefault("SPRING_DATASOURCE_USERNAME", "avnadmin");
+        String aivenPass = System.getenv().getOrDefault("SPRING_DATASOURCE_PASSWORD", "AIVEN_DB_PASSWORD");
         String sqlFile = "local_lumiedu_backup.sql";
 
         System.out.println("Starting HIGH-SPEED batch import of 23MB " + sqlFile + " into Aiven MySQL...");
