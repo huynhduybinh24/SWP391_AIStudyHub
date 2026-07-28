@@ -25,26 +25,37 @@ export function normalizeSemester(sem: any): string {
   return semStr.toUpperCase();
 }
 
+let cachedSubjects: FptSubjectInfo[] = (() => {
+  try {
+    const saved = localStorage.getItem('aiStudyHubCachedSubjects')
+    return saved ? JSON.parse(saved) : []
+  } catch (e) {
+    return []
+  }
+})()
+
 export function useSubjects(userId?: number | null) {
-  const [subjects, setSubjects] = useState<FptSubjectInfo[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [subjects, setSubjects] = useState<FptSubjectInfo[]>(cachedSubjects)
+  const [loading, setLoading] = useState(cachedSubjects.length === 0)
 
   const fetchSubjects = useCallback(async () => {
-    setLoading(true);
+    if (cachedSubjects.length === 0) {
+      setLoading(true)
+    }
     try {
-      const url = userId ? `/subjects?userId=${userId}` : '/subjects';
-      const response = await apiClient.get<any[]>(url);
+      const url = userId ? `/subjects?userId=${userId}` : '/subjects'
+      const response = await apiClient.get<any[]>(url)
       const mapped = response.data.map((s: any) => {
-        const codeVal = s.code || s.subjectCode || s.id || '';
-        const nameVal = s.name || s.subjectName || '';
-        const semVal = s.semesterName || s.semester || s.semesterNo || s.term || '';
+        const codeVal = s.code || s.subjectCode || s.id || ''
+        const nameVal = s.name || s.subjectName || ''
+        const semVal = s.semesterName || s.semester || s.semesterNo || s.term || ''
         
-        let majorsArr: string[] = [];
-        const majorsVal = s.majors || s.major || s.majorCode || '';
+        let majorsArr: string[] = []
+        const majorsVal = s.majors || s.major || s.majorCode || ''
         if (Array.isArray(majorsVal)) {
-          majorsArr = majorsVal.map((m: any) => String(m).trim().toUpperCase());
+          majorsArr = majorsVal.map((m: any) => String(m).trim().toUpperCase())
         } else if (typeof majorsVal === 'string') {
-          majorsArr = majorsVal.split(',').map((m: string) => m.trim().toUpperCase());
+          majorsArr = majorsVal.split(',').map((m: string) => m.trim().toUpperCase())
         }
 
         return {
@@ -53,19 +64,25 @@ export function useSubjects(userId?: number | null) {
           courseCode: codeVal,
           semester: normalizeSemester(semVal),
           majors: majorsArr
-        };
-      });
-      setSubjects(mapped);
+        }
+      })
+
+      cachedSubjects = mapped
+      try {
+        localStorage.setItem('aiStudyHubCachedSubjects', JSON.stringify(mapped))
+      } catch (e) {}
+
+      setSubjects(mapped)
     } catch (err) {
-      console.error('Failed to fetch subjects:', err);
+      console.error('Failed to fetch subjects:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [userId]);
+  }, [userId])
 
   useEffect(() => {
-    fetchSubjects();
-  }, [fetchSubjects]);
+    fetchSubjects()
+  }, [fetchSubjects])
 
-  return { subjects, loading, refreshSubjects: fetchSubjects };
+  return { subjects, loading, refreshSubjects: fetchSubjects }
 }
