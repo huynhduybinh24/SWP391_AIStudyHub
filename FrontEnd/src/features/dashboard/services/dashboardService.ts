@@ -84,22 +84,15 @@ const MOCK_DASHBOARD: DashboardData = {
 
 export const dashboardService = {
   async getDashboard(): Promise<DashboardData> {
-    await new Promise((r) => setTimeout(r, 300))
-
     const weekDays = getCurrentWeekDays()
     const todayStr = formatDateLocal(new Date())
 
     const dynamicActivity = weekDays.map((day) => {
-      // Find default mock hours for this day of the week
       const mockDay = MOCK_DASHBOARD.weeklyActivity[day.index]
       const mockHours = mockDay ? mockDay.hours : 0
-
-      // Read current tracked seconds from localStorage
       let seconds = getTrackedSeconds(day.dateStr)
 
-      // If no tracked time exists yet
       if (seconds === 0) {
-        // Only initialize past days or today to make the dashboard look populated and natural
         if (day.dateStr <= todayStr) {
           seconds = addTrackedSeconds(day.dateStr, mockHours * 3600)
         }
@@ -113,11 +106,9 @@ export const dashboardService = {
       }
     })
 
-    // Calculate total hours for this week
     const totalWeeklyHours = dynamicActivity.reduce((acc, curr) => acc + curr.hours, 0)
     const formattedTotalWeeklyHours = Number(totalWeeklyHours.toFixed(1))
 
-    // Calculate dynamic trend (compared to baseline of 12 hours)
     const diff = formattedTotalWeeklyHours - 12
     const weeklyTrend = diff >= 0 ? `+${diff.toFixed(1)} hrs` : `-${Math.abs(diff).toFixed(1)} hrs`
 
@@ -129,21 +120,23 @@ export const dashboardService = {
         ? 8192
         : 8
 
-    if (user?.id) {
-      try {
-        const usage = await storageService.getStorageUsage(Number(user.id))
-        storageUsedMb = usage.storageUsedMb
-        storageTotalMb = usage.storageLimitMb
-      } catch (e) {
-        console.error('Failed to fetch storage usage for dashboard:', e)
-      }
-    }
-
     let documents: DashboardData["documents"] = []
+    let alerts: AlertItem[] = []
+
     if (user?.id) {
-      try {
-        const backendDocs = await documentService.getAllDocuments(Number(user.id))
-        const sortedDocs = [...backendDocs].sort((a, b) => {
+      const [storageRes, docsRes, notifsRes] = await Promise.allSettled([
+        storageService.getStorageUsage(Number(user.id)),
+        documentService.getAllDocuments(Number(user.id)),
+        userNotificationService.getNotifications(user)
+      ])
+
+      if (storageRes.status === 'fulfilled' && storageRes.value) {
+        storageUsedMb = storageRes.value.storageUsedMb
+        storageTotalMb = storageRes.value.storageLimitMb
+      }
+
+      if (docsRes.status === 'fulfilled' && Array.isArray(docsRes.value)) {
+        const sortedDocs = [...docsRes.value].sort((a, b) => {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         })
         const latestDocs = sortedDocs.slice(0, 3)
@@ -154,16 +147,10 @@ export const dashboardService = {
           timestamp: formatTimestamp(doc.createdAt),
           type: detectType(doc.fileName || doc.originalFileName || '', doc.mimeType || '')
         }))
-      } catch (e) {
-        console.error('Failed to fetch user documents for dashboard:', e)
       }
-    }
 
-    let alerts: AlertItem[] = []
-    if (user) {
-      try {
-        const notifications = await userNotificationService.getNotifications(user)
-        const sortedNotifs = [...notifications].sort((a, b) => {
+      if (notifsRes.status === 'fulfilled' && Array.isArray(notifsRes.value)) {
+        const sortedNotifs = [...notifsRes.value].sort((a, b) => {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         })
         const latestNotifs = sortedNotifs.slice(0, 4)
@@ -196,8 +183,6 @@ export const dashboardService = {
             variant
           }
         })
-      } catch (e) {
-        console.error('Failed to fetch user notifications for dashboard alerts:', e)
       }
     }
 
