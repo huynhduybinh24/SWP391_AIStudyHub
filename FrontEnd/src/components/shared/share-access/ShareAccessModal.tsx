@@ -219,7 +219,7 @@ export function ShareAccessModal({
       }, 150)
       return () => clearTimeout(focusTimer)
     }
-  }, [isOpen, generalAccess, _owner, user, collaborators, initialCollaborators, workspaceCollaborators])
+  }, [isOpen, fileId])
 
   // Load API document shares silently in background when fileId is numeric
   useEffect(() => {
@@ -277,7 +277,7 @@ export function ShareAccessModal({
     return () => {
       isMounted = false
     }
-  }, [isOpen, fileId, collaborators, initialCollaborators])
+  }, [isOpen, fileId])
 
   const handleCopyLink = async () => {
     try {
