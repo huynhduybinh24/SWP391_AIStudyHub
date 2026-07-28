@@ -243,6 +243,10 @@ export function ShareAccessModal({
         if (docRes.status === 'fulfilled' && docRes.value) {
           ownerName = docRes.value.ownerName || ownerName
           ownerEmail = docRes.value.ownerEmail || ownerEmail
+          if (docRes.value.visibility) {
+            const isPub = String(docRes.value.visibility).toUpperCase() === 'PUBLIC'
+            setLocalGeneralAccess(isPub ? 'public' : 'restricted')
+          }
         }
 
         let shareCollabs: Collaborator[] = []
@@ -365,7 +369,7 @@ export function ShareAccessModal({
       return
     }
 
-    const targetCollab = localCollaborators.find(c => c.id === collabId)
+    const targetCollab = localCollaborators.find(c => String(c.id) === String(collabId) || c.email.toLowerCase() === String(collabId).toLowerCase())
     const isNumeric = fileId && /^\d+$/.test(fileId)
 
     if (isNumeric && targetCollab && targetCollab.role !== 'owner') {
@@ -380,7 +384,7 @@ export function ShareAccessModal({
     }
 
     const updated = localCollaborators.map(c => {
-      if (c.id === collabId) {
+      if (String(c.id) === String(collabId) || c.email.toLowerCase() === String(collabId).toLowerCase()) {
         return { ...c, role }
       }
       return c
@@ -402,7 +406,7 @@ export function ShareAccessModal({
   }
 
   const handleRemoveCollaborator = async (collabId: string) => {
-    const targetCollab = localCollaborators.find(c => c.id === collabId)
+    const targetCollab = localCollaborators.find(c => String(c.id) === String(collabId) || c.email.toLowerCase() === String(collabId).toLowerCase())
     const isNumeric = fileId && /^\d+$/.test(fileId)
 
     if (isNumeric && targetCollab && targetCollab.role !== 'owner') {
@@ -416,7 +420,7 @@ export function ShareAccessModal({
       }
     }
 
-    const updated = localCollaborators.filter(c => c.id !== collabId)
+    const updated = localCollaborators.filter(c => String(c.id) !== String(collabId) && c.email.toLowerCase() !== String(collabId).toLowerCase())
     setLocalCollaborators(updated)
 
     if (onCollaboratorsChange) {
@@ -431,10 +435,19 @@ export function ShareAccessModal({
     triggerToast(msg)
   }
 
-  const handleGeneralAccessTypeChange = (type: 'restricted' | 'public') => {
+  const handleGeneralAccessTypeChange = async (type: 'restricted' | 'public') => {
     setLocalGeneralAccess(type)
     if (onGeneralAccessChange) {
       onGeneralAccessChange(type)
+    }
+    const isNumeric = fileId && /^\d+$/.test(fileId)
+    if (isNumeric) {
+      try {
+        const visVal = type === 'public' ? 'PUBLIC' : 'PRIVATE'
+        await documentService.updateDocument(fileId, { visibility: visVal })
+      } catch (err: any) {
+        console.error('Failed to update general access on server:', err)
+      }
     }
     const msg = type === 'public' 
       ? (language === 'vi' ? 'Bất kỳ ai có liên kết đều có thể truy cập' : (t.shareAccess?.anyoneWithLinkToast || 'Anyone with link can access'))

@@ -136,6 +136,11 @@ export const documentService = {
     await apiClient.delete<ApiResponse<void>>(`/documents/${documentId}/shares?email=${encodeURIComponent(email)}`)
   },
 
+  async updateDocument(id: number | string, data: { title?: string; description?: string; subject?: string; visibility?: string }): Promise<DocumentResponse> {
+    const response = await apiClient.put<ApiResponse<DocumentResponse>>(`/documents/${id}`, data)
+    return response.data.data
+  },
+
   async getMyUploads(): Promise<DocumentResponse[]> {
     const response = await apiClient.get<ApiResponse<DocumentResponse[]>>('/documents/my-uploads')
     const list = response.data.data || []
