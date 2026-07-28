@@ -125,37 +125,50 @@ export function CloudStoragePage() {
   const user = useAuthStore((s) => s.user)
   const toast = useToast()
   
-  const [storageData, setStorageData] = useState<StorageUsage | null>(null)
-  const [uploads, setUploads] = useState<any[]>([])
+  const [storageData, setStorageData] = useState<StorageUsage | null>(() => {
+    try {
+      const saved = localStorage.getItem('aiStudyHubCachedStorageUsage')
+      return saved ? JSON.parse(saved) : null
+    } catch (e) {
+      return null
+    }
+  })
+  const [uploads, setUploads] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('aiStudyHubCachedCloudDocs')
+      return saved ? JSON.parse(saved) : []
+    } catch (e) {
+      return []
+    }
+  })
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [baseUsedStorage, setBaseUsedStorage] = useState(0) // stored in MB
+  const [baseUsedStorage, setBaseUsedStorage] = useState(storageData ? storageData.storageUsedMb : 0)
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
   const [trashSize, setTrashSize] = useState(0)
   const [tempSize, setTempSize] = useState(0)
   const [isMounted, setIsMounted] = useState(false)
 
-  const loadUserDocuments = async () => {
-    if (!user?.id) return;
-    try {
-      const docs = await documentService.getAllDocuments(Number(user.id));
-      const mapped = docs.map(mapDocumentToCloudFile);
-      setUploads(mapped);
-    } catch (err) {
-      console.error("Failed to load user documents:", err);
-    }
-  };
-
   useEffect(() => {
     if (user?.id) {
-      storageService.getStorageUsage(Number(user.id))
-        .then(data => {
-          setStorageData(data)
-          setBaseUsedStorage(data.storageUsedMb)
-        })
-        .catch(err => {
-          console.error("Failed to fetch storage usage:", err)
-        })
-      loadUserDocuments();
+      Promise.allSettled([
+        storageService.getStorageUsage(Number(user.id)),
+        documentService.getAllDocuments(Number(user.id))
+      ]).then(([storageRes, docsRes]) => {
+        if (storageRes.status === 'fulfilled' && storageRes.value) {
+          setStorageData(storageRes.value)
+          setBaseUsedStorage(storageRes.value.storageUsedMb)
+          try {
+            localStorage.setItem('aiStudyHubCachedStorageUsage', JSON.stringify(storageRes.value))
+          } catch (e) {}
+        }
+        if (docsRes.status === 'fulfilled' && Array.isArray(docsRes.value)) {
+          const mapped = docsRes.value.map(mapDocumentToCloudFile)
+          setUploads(mapped)
+          try {
+            localStorage.setItem('aiStudyHubCachedCloudDocs', JSON.stringify(mapped))
+          } catch (e) {}
+        }
+      })
     }
   }, [user?.id])
 
