@@ -666,8 +666,15 @@ export function NotificationsPage() {
   const filterParam = searchParams.get('filter') || 'all'
   const [activeFilter, setActiveFilter] = useState(filterParam)
 
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [loading, setLoading] = useState(true)
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    try {
+      const saved = localStorage.getItem('aiStudyHubCachedNotifications')
+      return saved ? JSON.parse(saved) : []
+    } catch (e) {
+      return []
+    }
+  })
+  const [loading, setLoading] = useState(notifications.length === 0)
   const [error, setError] = useState<string | null>(null)
 
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
@@ -697,17 +704,20 @@ export function NotificationsPage() {
   }
 
   const fetchNotifications = useCallback(async (filter: string, showSilent: boolean = false) => {
-    if (!showSilent) setLoading(true)
+    if (!showSilent && notifications.length === 0) setLoading(true)
     setError(null)
     try {
       const data = await notificationApi.getNotifications(filter)
       setNotifications(data)
+      try {
+        localStorage.setItem('aiStudyHubCachedNotifications', JSON.stringify(data))
+      } catch (e) {}
     } catch (err) {
       setError(language === 'vi' ? 'Không thể tải thông báo' : language === 'ja' ? 'é€šçŸ¥ã ®å –å¾—ã «å¤±æ•—ã —ã ¾ã —ã Ÿ' : language === 'ko' ? 'ì•Œë¦¼ì „ ê°€ì ¸ì˜¤ëŠ” ë ° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤' : 'Failed to fetch notifications')
     } finally {
       if (!showSilent) setLoading(false)
     }
-  }, [language])
+  }, [language, notifications.length])
 
   const normalize = (str: string) => str.toLowerCase().replace(/[\s-_]+/g, '')
 
