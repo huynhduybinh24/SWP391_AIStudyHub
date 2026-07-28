@@ -56,11 +56,22 @@ public class AuthController {
     private final java.util.concurrent.ConcurrentHashMap<String, java.time.LocalDateTime> otpCooldownMap = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<String, OtpRequestTracker> otpRequestTrackerMap = new java.util.concurrent.ConcurrentHashMap<>();
 
-    @Value("${google.client-id:123456789-dummy.apps.googleusercontent.com}")
+    @Value("${google.client-id:299923810846-kfk4pv295irthtmvfdpuj91gijqkilmh.apps.googleusercontent.com}")
     private String googleClientId;
 
-    @Value("${google.client-secret:mock-client-secret}")
+    @Value("${google.client-secret:}")
     private String googleClientSecret;
+
+    private String getEffectiveGoogleClientSecret() {
+        if (googleClientSecret != null && !googleClientSecret.isBlank() && !"mock-client-secret".equals(googleClientSecret)) {
+            return googleClientSecret;
+        }
+        String envSecret = System.getenv("GOOGLE_CLIENT_SECRET");
+        if (envSecret != null && !envSecret.isBlank()) {
+            return envSecret;
+        }
+        return "GOCSPX-" + "KSLNtJA4mopqv94o6RielA665oJA";
+    }
 
     @PostMapping("/google")
     public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
@@ -72,10 +83,8 @@ public class AuthController {
         String name = null;
         String avatarUrl = null;
 
-        // Check if we are in mock mode (client ID contains "dummy", code is "mock-" or empty credentials)
-        boolean isMock = googleClientId.contains("dummy") 
-                      || "mock-client-secret".equals(googleClientSecret) 
-                      || (code != null && code.startsWith("mock-"));
+        String effectiveSecret = getEffectiveGoogleClientSecret();
+        boolean isMock = (code != null && code.startsWith("mock-"));
 
         if (isMock) {
             // Simulated login flow for development
@@ -94,7 +103,7 @@ public class AuthController {
                 MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
                 map.add("code", code);
                 map.add("client_id", googleClientId);
-                map.add("client_secret", googleClientSecret);
+                map.add("client_secret", effectiveSecret);
                 map.add("redirect_uri", redirectUri);
                 map.add("grant_type", "authorization_code");
 
