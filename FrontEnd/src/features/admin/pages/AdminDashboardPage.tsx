@@ -107,20 +107,47 @@ export function AdminDashboardPage() {
     setSearchParams({ tab })
   }
 
-  const [stats, setStats] = useState<AdminStats | null>(null)
-  const [users, setUsers] = useState<AdminUser[]>([])
-  const [documents, setDocuments] = useState<AdminDocument[]>([])
-  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<AdminStats | null>(() => {
+    try {
+      const saved = localStorage.getItem('aiStudyHubAdminCachedStats')
+      return saved ? JSON.parse(saved) : null
+    } catch (e) {
+      return null
+    }
+  })
+  const [users, setUsers] = useState<AdminUser[]>(() => {
+    try {
+      const saved = localStorage.getItem('aiStudyHubAdminCachedUsers')
+      return saved ? JSON.parse(saved) : []
+    } catch (e) {
+      return []
+    }
+  })
+  const [documents, setDocuments] = useState<AdminDocument[]>(() => {
+    try {
+      const saved = localStorage.getItem('aiStudyHubAdminCachedDocs')
+      return saved ? JSON.parse(saved) : []
+    } catch (e) {
+      return []
+    }
+  })
+  const [loading, setLoading] = useState(!stats)
   const [error, setError] = useState<string | null>(null)
 
   const loadDashboardData = async () => {
     try {
-      setLoading(true)
+      if (!stats) setLoading(true)
       setError(null)
       const data = await adminService.getDashboardSummary()
       setStats(data.stats)
       setUsers(data.users)
       setDocuments(data.documents)
+
+      try {
+        localStorage.setItem('aiStudyHubAdminCachedStats', JSON.stringify(data.stats))
+        localStorage.setItem('aiStudyHubAdminCachedUsers', JSON.stringify(data.users))
+        localStorage.setItem('aiStudyHubAdminCachedDocs', JSON.stringify(data.documents))
+      } catch (e) {}
     } catch (err: any) {
       setError(err.message || 'Không thể tải dữ liệu admin.')
     } finally {
