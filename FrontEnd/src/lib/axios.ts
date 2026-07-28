@@ -8,10 +8,7 @@ const getProductionApiUrl = (): string => {
   if (customViteUrl && customViteUrl.trim()) {
     return customViteUrl.trim()
   }
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return 'https://swp391aistudyhub-production.up.railway.app/api'
-  }
-  return env.apiBaseUrl || 'https://swp391aistudyhub-production.up.railway.app/api'
+  return 'https://lumiedu-backend.onrender.com/api'
 }
 
 export const apiClient = axios.create({
