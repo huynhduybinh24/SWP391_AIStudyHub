@@ -181,29 +181,41 @@ public class DocumentServiceImpl implements DocumentService {
         String driveSyncError = null;
 
         if (FILE_TYPE_DOCUMENT.equals(fileType)) {
-            // Check if user is connected
+            java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(), request.getUserId());
+
+            // 1. Try User's connected Google Drive if available
             if (request.getUserId() != null && googleDriveService.isUserDriveConnected(request.getUserId())) {
                 try {
-                    java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(), request.getUserId());
                     googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy, request.getUserId());
                     if (googleDriveFileId != null && !googleDriveFileId.startsWith("gdrive_")) {
                         savedFileName = googleDriveFileId + "." + extension;
                         fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
                         uploadedToGDrive = true;
                     } else {
-                        log.warn("Google Drive upload returned a mock or null file ID: {}. Falling back to local storage.", googleDriveFileId);
+                        log.warn("User Google Drive upload returned mock/null ID: {}. Trying System Google Drive.", googleDriveFileId);
                     }
                 } catch (Exception e) {
-                    log.error("Real Google Drive upload failed for userId={}: {}", request.getUserId(), e.getMessage(), e);
-                    driveSyncStatus = "FAILED";
-                    driveSyncError = e.getMessage();
+                    log.warn("User Google Drive upload failed for userId={}: {}. Trying System Drive.", request.getUserId(), e.getMessage());
                 }
-            } else {
-                log.info("User {} has not connected Google Drive. Storing file locally.", request.getUserId());
             }
 
+            // 2. Fallback: Upload to System Google Drive if user drive not connected or failed
             if (!uploadedToGDrive) {
-                // Keep storage provider as LOCAL and store the file locally
+                try {
+                    googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy);
+                    if (googleDriveFileId != null && !googleDriveFileId.startsWith("gdrive_")) {
+                        savedFileName = googleDriveFileId + "." + extension;
+                        fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
+                        uploadedToGDrive = true;
+                        log.info("Uploaded to System Google Drive successfully with ID: {}", googleDriveFileId);
+                    }
+                } catch (Exception e) {
+                    log.warn("System Google Drive upload failed: {}. Storing file locally.", e.getMessage());
+                }
+            }
+
+            // 3. Fallback: Store file locally if both User & System Google Drive are unavailable
+            if (!uploadedToGDrive) {
                 String newFileName = UUID.randomUUID() + "." + extension;
                 Path targetPath = resolveUploadPath(FILE_TYPE_DOCUMENT).resolve(newFileName);
                 try {

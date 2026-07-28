@@ -121,6 +121,17 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                     .setSupportsAllDrives(true)
                     .execute();
 
+            try {
+                Permission permission = new Permission()
+                        .setType("anyone")
+                        .setRole("reader");
+                googleDrive.permissions().create(uploadedFile.getId(), permission)
+                        .setSupportsAllDrives(true)
+                        .execute();
+            } catch (Exception pe) {
+                log.warn("Failed to set reader permission on uploaded Drive file {}: {}", uploadedFile.getId(), pe.getMessage());
+            }
+
             log.info("GOOGLE DRIVE: Uploaded file '{}' with ID: {}", file.getOriginalFilename(), uploadedFile.getId());
             return uploadedFile.getId();
         } catch (Exception e) {

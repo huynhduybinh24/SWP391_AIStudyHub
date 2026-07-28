@@ -482,8 +482,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             User adder = userRepository.findById(wd.getAddedBy()).orElse(null);
             String adderName = adder != null ? adder.getFullName() : "Unknown";
 
-            if (doc != null && (doc.getModerationStatus() == null
-                    || doc.getModerationStatus() == com.lumiedu.document.enums.DocumentStatus.APPROVED)) {
+            if (doc != null && !Boolean.TRUE.equals(doc.getDeleted())) {
                 return WorkspaceDocumentResponse.builder()
                         .id(wd.getId())
                         .workspaceId(workspace.getId())
