@@ -21,6 +21,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@lombok.extern.slf4j.Slf4j
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -100,9 +101,14 @@ public class AuthService {
     }
 
     public String forgotPassword(ForgotPasswordRequest request) {
-        User user = userRepository.findByEmail(request.getEmail()).orElse(null);
+        if (request == null || request.getEmail() == null || request.getEmail().isBlank()) {
+            return "If the email exists, a reset OTP will be sent.";
+        }
+        String cleanEmail = request.getEmail().trim();
+        User user = userRepository.findByEmail(cleanEmail)
+                .orElseGet(() -> userRepository.findByEmail(cleanEmail.toLowerCase()).orElse(null));
         if (user == null) {
-            // Return same message to prevent email enumeration
+            log.warn("[ForgotPassword] Email '{}' not found in database. OTP email not sent.", cleanEmail);
             return "If the email exists, a reset OTP will be sent.";
         }
 
@@ -129,7 +135,7 @@ public class AuthService {
 
         passwordResetTokenRepository.save(resetToken);
 
-        System.out.println("=== PASSWORD RESET OTP FOR " + user.getEmail() + ": " + otp + " ===");
+        log.info("=== PASSWORD RESET OTP FOR {}: {} ===", user.getEmail(), otp);
 
         // Gửi email chứa mã OTP xác thực
         emailService.sendEmail(
