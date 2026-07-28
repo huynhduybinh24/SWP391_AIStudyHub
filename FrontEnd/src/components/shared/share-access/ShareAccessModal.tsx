@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Mail, UserPlus, ArrowLeft, Settings, Link } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -444,17 +445,18 @@ export function ShareAccessModal({
   }
 
   if (!isOpen) return null
+  if (typeof document === 'undefined') return null
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-x-hidden overflow-y-auto">
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-x-hidden overflow-y-auto">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-[#060c18]/50 dark:bg-black/80 backdrop-blur-md cursor-pointer"
+          className="fixed inset-0 bg-slate-950/60 dark:bg-black/80 backdrop-blur-md cursor-pointer"
         />
 
         {/* Modal Window Container */}
@@ -465,7 +467,7 @@ export function ShareAccessModal({
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 350 }}
           onClick={e => e.stopPropagation()}
-          className="relative z-10 w-full max-w-[500px] overflow-hidden rounded-[28px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 shadow-2xl text-left backdrop-blur-xl pointer-events-auto"
+          className="relative z-[100000] w-full max-w-[500px] overflow-hidden rounded-[28px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 shadow-2xl text-left backdrop-blur-xl pointer-events-auto"
           role="dialog"
           aria-modal="true"
         >
@@ -552,13 +554,12 @@ export function ShareAccessModal({
               {/* Add Collaborator Input Row */}
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-indigo-500">
                     <Mail className="size-4" />
                   </div>
                   <input
                     ref={emailInputRef}
                     type="email"
-                    autoFocus
                     value={newEmail}
                     onChange={e => setNewEmail(e.target.value)}
                     onKeyDown={e => {
@@ -567,8 +568,8 @@ export function ShareAccessModal({
                         handleAddCollaborator()
                       }
                     }}
-                    placeholder={language === 'vi' ? 'Thêm người bằng email...' : (t.shareAccess?.emailInputPlaceholder || 'Add people by email...')}
-                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+                    placeholder={language === 'vi' ? 'Nhập email người dùng...' : (t.shareAccess?.emailInputPlaceholder || 'Add people by email...')}
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-800/80 rounded-xl text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                   />
                 </div>
 
@@ -584,7 +585,7 @@ export function ShareAccessModal({
                   type="button"
                   onClick={handleAddCollaborator}
                   disabled={!newEmail}
-                  className="px-3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center shrink-0 gap-1.5 shadow-sm shadow-indigo-500/20"
+                  className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center shrink-0 gap-1.5 shadow-md shadow-indigo-500/25 active:scale-95"
                   title={language === 'vi' ? 'Thêm người dùng' : (t.shareAccess?.addPeopleTooltip || 'Add person')}
                 >
                   <UserPlus className="size-4" />
@@ -624,7 +625,7 @@ export function ShareAccessModal({
                         <div className="flex items-center gap-3 min-w-0">
                           <div
                             className={cn(
-                              'size-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0',
+                              'size-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-xs',
                               person.avatarBg || 'bg-indigo-600'
                             )}
                           >
@@ -703,14 +704,15 @@ export function ShareAccessModal({
                 }
                 onClose()
               }}
-              className="px-5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-md shadow-indigo-500/20"
+              className="px-6 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-md shadow-indigo-500/25 active:scale-95"
             >
               {language === 'vi' ? 'Xong' : (t.shareAccess?.doneButton || 'Done')}
             </Button>
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }
 
