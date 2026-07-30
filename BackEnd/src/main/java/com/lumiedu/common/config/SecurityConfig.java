@@ -34,9 +34,14 @@ public class SecurityConfig {
             // Disable CSRF — stateless REST API, not needed
             .csrf(AbstractHttpConfigurer::disable)
 
-            // Stateless session — JWT handles auth
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Exception handling for unauthenticated / expired tokens
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"status\":401,\"message\":\"Token expired or unauthenticated. Please sign in again.\"}");
+                })
+            )
 
             // Authorization rules
             .authorizeHttpRequests(auth -> auth
@@ -45,7 +50,7 @@ public class SecurityConfig {
                 // ===== PUBLIC ENDPOINTS =====
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/billing/plans").permitAll()
-                .requestMatchers("/api/billing/webhook").permitAll()
+                .requestMatchers("/api/billing/webhook/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/integrations/google-drive/callback").permitAll()
 
                 // Public document browsing (read-only)
