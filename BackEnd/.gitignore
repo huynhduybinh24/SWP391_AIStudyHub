@@ -18,3 +18,7 @@ src/main/resources/google-credentials.json
 
 # Local database file
 data/
+
+# Local Payment Mechanism doc
+PAYMENT_MECHANISM.md
+

@@ -15,6 +15,7 @@ export interface PricingPlan {
   buttonVariant: 'outline' | 'primary' | 'secondary'
   popular?: boolean
   isCurrent?: boolean
+  isLowerPlan?: boolean
 }
 
 interface PricingCardProps {
@@ -139,7 +140,7 @@ export function PricingCard({
           >
             {plan.buttonText}
           </button>
-        ) : plan.buttonVariant === 'primary' ? (
+        ) : plan.isLowerPlan ? null : plan.buttonVariant === 'primary' ? (
           <button
             type="button"
             onClick={handleButtonClick}

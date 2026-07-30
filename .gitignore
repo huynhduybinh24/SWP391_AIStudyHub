@@ -17,3 +17,8 @@ FrontEnd/playwright.config.ts
 FrontEnd/playwright-report/
 FrontEnd/test-results/
 
+# Local payment documentation
+PAYMENT_MECHANISM.md
+BackEnd/PAYMENT_MECHANISM.md
+
+

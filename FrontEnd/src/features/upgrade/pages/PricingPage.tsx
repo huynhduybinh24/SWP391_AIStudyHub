@@ -195,6 +195,7 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
       // Determine localized button text
       let buttonText = ''
       let buttonVariant: 'outline' | 'primary' | 'secondary' = 'primary'
+      let isLowerPlan = false
       
       if (isCurrent) {
         buttonText = language === 'vi' ? 'Gói Hiện tại' : 'Current Plan'
@@ -203,8 +204,9 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
         const isUpgrade = pkg.priceMonthly > currentPlanPrice
         if (isUpgrade) {
           buttonText = language === 'vi' ? 'Nâng cấp' : 'Upgrade'
+          buttonVariant = 'primary'
         } else {
-          buttonText = language === 'vi' ? 'Hạ gói' : 'Downgrade'
+          isLowerPlan = true
         }
       }
 
@@ -240,7 +242,8 @@ export function PricingPage({ isPublic = false }: { isPublic?: boolean }) {
         buttonText,
         buttonVariant,
         popular: pkg.id === 'pkg-pro',
-        isCurrent
+        isCurrent,
+        isLowerPlan
       }
     })
 
