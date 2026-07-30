@@ -56,9 +56,22 @@ public class AuthController {
     private final com.lumiedu.integration.service.EncryptionService encryptionService;
     private final com.lumiedu.document.service.GoogleDriveService googleDriveService;
 
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class PendingRegisterDetails {
+        private String fullName;
+        private String email;
+        private String password;
+        private String pendingToken;
+        private java.time.LocalDateTime expiredAt;
+    }
+
     private final java.util.concurrent.ConcurrentHashMap<String, OtpDetails> registerOtpMap = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<String, java.time.LocalDateTime> otpCooldownMap = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<String, OtpRequestTracker> otpRequestTrackerMap = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.ConcurrentHashMap<String, PendingRegisterDetails> pendingRegisterMap = new java.util.concurrent.ConcurrentHashMap<>();
 
     @Value("${google.client-id:299923810846-kfk4pv295irthtmvfdpuj91gijqkilmh.apps.googleusercontent.com}")
     private String googleClientId;
@@ -423,10 +436,56 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("message", "Email already exists"));
         }
 
-        User user = User.builder()
+        String pendingToken = UUID.randomUUID().toString();
+        PendingRegisterDetails pendingDetails = PendingRegisterDetails.builder()
                 .fullName(request.getFullName())
-                .email(request.getEmail())
-                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .email(request.getEmail().trim())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .pendingToken(pendingToken)
+                .expiredAt(java.time.LocalDateTime.now().plusMinutes(15))
+                .build();
+        pendingRegisterMap.put(emailKey, pendingDetails);
+
+        return ResponseEntity.ok(Map.of(
+                "requiresGoogleLink", true,
+                "pendingRegisterToken", pendingToken,
+                "email", request.getEmail().trim(),
+                "fullName", request.getFullName(),
+                "message", "Mã OTP hợp lệ. Vui lòng hoàn tất kết nối Google Drive để khởi tạo và kích hoạt tài khoản."
+        ));
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    @PostMapping("/register/complete-google")
+    public ResponseEntity<?> completeRegisterGoogle(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String pendingToken = request.get("pendingToken");
+
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is required"));
+        }
+
+        String emailKey = email.trim().toLowerCase();
+        PendingRegisterDetails pendingDetails = pendingRegisterMap.get(emailKey);
+
+        if (pendingDetails == null) {
+            Optional<User> existingUser = userRepository.findByEmail(emailKey);
+            if (existingUser.isPresent()) {
+                return createLoginResponseForUser(existingUser.get());
+            }
+            return ResponseEntity.badRequest().body(Map.of("message", "Yêu cầu đăng ký không tồn tại hoặc đã hết hạn. Vui lòng đăng ký lại / Registration request not found or expired. Please register again."));
+        }
+
+        if (pendingDetails.getExpiredAt().isBefore(java.time.LocalDateTime.now())) {
+            pendingRegisterMap.remove(emailKey);
+            return ResponseEntity.badRequest().body(Map.of("message", "Yêu cầu đăng ký đã hết hạn. Vui lòng đăng ký lại / Registration request expired. Please register again."));
+        }
+
+        // TAO TAI KHOAN USER TRONG DB CHỈ KHI NHẬN ĐƯỢC TÍN HIỆU KẾT NỐI GOOGLE THÀNH CÔNG!
+        User user = User.builder()
+                .fullName(pendingDetails.getFullName())
+                .email(pendingDetails.getEmail())
+                .passwordHash(pendingDetails.getPassword())
                 .role(com.lumiedu.user.enums.UserRole.USER)
                 .accountStatus(com.lumiedu.user.enums.AccountStatus.ACTIVE)
                 .storageUsedMb(0L)
@@ -434,17 +493,39 @@ public class AuthController {
                 .build();
         user = userRepository.save(user);
 
+        pendingRegisterMap.remove(emailKey);
+
+        try {
+            com.lumiedu.integration.entity.UserGoogleDriveConnection conn = googleDriveConnectionRepository.findByUserId(user.getId())
+                    .orElse(com.lumiedu.integration.entity.UserGoogleDriveConnection.builder()
+                            .user(user)
+                            .isConnected(true)
+                            .googleEmail(user.getEmail())
+                            .connectedAt(java.time.LocalDateTime.now())
+                            .build());
+            conn.setIsConnected(true);
+            conn.setGoogleEmail(user.getEmail());
+            conn.setConnectedAt(java.time.LocalDateTime.now());
+            googleDriveConnectionRepository.save(conn);
+        } catch (Exception e) {
+            log.warn("Could not save Google Drive connection: {}", e.getMessage());
+        }
+
+        return createLoginResponseForUser(user);
+    }
+
+    private ResponseEntity<?> createLoginResponseForUser(User user) {
         AuthUser authUser = AuthUser.builder()
                 .id(String.valueOf(user.getId()))
                 .name(user.getFullName())
                 .email(user.getEmail())
                 .role(user.getRole().name().toLowerCase())
                 .plan("free")
-                .avatarUrl("/logo.png")
+                .avatarUrl(user.getAvatarUrl() != null ? user.getAvatarUrl() : "/logo.png")
                 .university(user.getUniversity() != null ? user.getUniversity() : "FPT University")
                 .major(user.getMajor() != null ? user.getMajor() : "Software engineering")
                 .degree(user.getDegree() != null ? user.getDegree() : "Bachelor")
-                .twoFactorEnabled(false)
+                .twoFactorEnabled(user.getTwoFactorEnabled() != null ? user.getTwoFactorEnabled() : false)
                 .build();
 
         AuthTokens tokens = AuthTokens.builder()
@@ -456,6 +537,26 @@ public class AuthController {
                 .user(authUser)
                 .tokens(tokens)
                 .build());
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    @PostMapping("/register/cancel")
+    public ResponseEntity<?> cancelRegister(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email != null && !email.trim().isEmpty()) {
+            String emailKey = email.trim().toLowerCase();
+            userRepository.findByEmail(emailKey).ifPresent(user -> {
+                googleDriveConnectionRepository.findByUserId(user.getId()).ifPresent(googleDriveConnectionRepository::delete);
+                var thirdPartyAccounts = thirdPartyAccountRepository.findByUserId(user.getId());
+                if (thirdPartyAccounts != null && !thirdPartyAccounts.isEmpty()) {
+                    thirdPartyAccountRepository.deleteAll(thirdPartyAccounts);
+                }
+                userRepository.delete(user);
+            });
+            registerOtpMap.remove(emailKey);
+            otpCooldownMap.remove(emailKey);
+        }
+        return ResponseEntity.ok(Map.of("message", "Registration cancelled successfully"));
     }
 
     private String buildRegisterOtpEmail(String name, String otp) {

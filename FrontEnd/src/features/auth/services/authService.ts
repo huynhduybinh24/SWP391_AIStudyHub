@@ -109,9 +109,21 @@ export const authService = {
     await apiClient.post('/auth/register/send-otp', { email, fullName })
   },
 
-  async register(credentials: RegisterCredentials): Promise<LoginResponse> {
-    const { data } = await apiClient.post<BackendAuthResponse>('/auth/register/verify-otp', credentials)
+  async register(credentials: RegisterCredentials): Promise<any> {
+    const { data } = await apiClient.post<any>('/auth/register/verify-otp', credentials)
+    if (data.requiresGoogleLink) {
+      return data
+    }
     return mapToLoginResponse(data)
+  },
+
+  async completeRegisterGoogle(email: string, pendingToken?: string): Promise<LoginResponse> {
+    const { data } = await apiClient.post<BackendAuthResponse>('/auth/register/complete-google', { email, pendingToken })
+    return mapToLoginResponse(data)
+  },
+
+  async cancelRegister(email: string): Promise<void> {
+    await apiClient.post('/auth/register/cancel', { email })
   },
 
   async googleLogin(code: string, redirectUri: string): Promise<LoginResponse> {

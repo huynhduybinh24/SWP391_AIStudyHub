@@ -141,12 +141,36 @@ export function CallbackPage() {
             <p className="text-danger dark:text-red-400 text-sm font-medium bg-danger/5 dark:bg-danger/10 border border-danger/10 rounded-xl p-3 max-w-[320px] leading-relaxed">
               {errorMsg}
             </p>
-            <Button
-              onClick={() => navigate('/login')}
-              className="mt-4 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-sm active:scale-[0.98] transition-all"
-            >
-              {language === 'vi' ? 'Quay lại trang đăng nhập' : 'Back to Login'}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full justify-center">
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  const currentUser = useAuthStore.getState().user
+                  if (currentUser?.email) {
+                    try {
+                      await authService.cancelRegister(currentUser.email)
+                    } catch (e) {
+                      console.error(e)
+                    }
+                  }
+                  useAuthStore.getState().logout()
+                  navigate('/register', { replace: true })
+                }}
+                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-semibold text-xs shadow-sm transition-all"
+              >
+                {language === 'vi' ? 'Quay lại đăng ký' : 'Back to Register'}
+              </Button>
+
+              <Button
+                onClick={() => {
+                  useAuthStore.getState().logout()
+                  navigate('/login', { replace: true })
+                }}
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-xs shadow-sm transition-all"
+              >
+                {language === 'vi' ? 'Quay lại trang đăng nhập' : 'Back to Login'}
+              </Button>
+            </div>
           </div>
         )}
       </div>

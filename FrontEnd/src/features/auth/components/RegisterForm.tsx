@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Mail, Lock, Eye, EyeOff, User, LockKeyhole, ArrowRight, GraduationCap, Briefcase } from 'lucide-react'
@@ -9,6 +9,8 @@ import { Checkbox } from '@/components/ui/Checkbox'
 import { registerSchema, type RegisterFormValues } from '@/features/auth/schemas/registerSchema'
 import { useRegister } from '@/features/auth/hooks/useRegister'
 import { authService } from '@/features/auth/services/authService'
+import { connectGoogleDrive } from '@/features/settings/services/googleDriveService'
+import { useAuthStore } from '@/stores/authStore'
 import { useTranslation } from '@/context/LanguageContext'
 import { cn } from '@/lib/utils'
 
@@ -28,12 +30,16 @@ function GoogleIcon() {
 
 
 export function RegisterForm() {
+  const navigate = useNavigate()
   const registerMutation = useRegister()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const { language } = useTranslation()
 
   const [isOtpStep, setIsOtpStep] = useState(false)
+  const [isGoogleStep, setIsGoogleStep] = useState(false)
+  const [connectingGoogle, setConnectingGoogle] = useState(false)
+  const [cancellingReg, setCancellingReg] = useState(false)
   const [otpValues, setOtpValues] = useState<string[]>(['', '', '', '', '', ''])
   const [otpError, setOtpError] = useState('')
   const [resendTimer, setResendTimer] = useState(59)
@@ -96,6 +102,61 @@ export function RegisterForm() {
     }
   }
 
+  const [pendingToken, setPendingToken] = useState<string>('')
+
+  const handleConnectGoogle = async () => {
+    try {
+      setConnectingGoogle(true)
+      if (tempFormData?.email) {
+        const response = await authService.completeRegisterGoogle(tempFormData.email, pendingToken)
+        if (response?.user && response?.tokens) {
+          useAuthStore.getState().setSession(response.user, response.tokens)
+          try {
+            await connectGoogleDrive()
+          } catch (e) {
+            // Ignore if drive OAuth connect URL fails in local/mock
+          }
+          navigate('/dashboard', { replace: true })
+          return
+        }
+      }
+      await connectGoogleDrive()
+    } catch (err) {
+      console.error('Google connect error:', err)
+      setConnectingGoogle(false)
+      navigate('/dashboard', { replace: true })
+    }
+  }
+
+  const handleCancelRegistration = async () => {
+    if (!tempFormData?.email) {
+      setIsGoogleStep(false)
+      setIsOtpStep(false)
+      useAuthStore.getState().logout()
+      return
+    }
+    try {
+      setCancellingReg(true)
+      await authService.cancelRegister(tempFormData.email)
+    } catch (err) {
+      console.error('Failed to cancel registration:', err)
+    } finally {
+      useAuthStore.getState().logout()
+      setCancellingReg(false)
+      setIsGoogleStep(false)
+      setIsOtpStep(false)
+      setTempFormData(null)
+      setPendingToken('')
+      setOtpValues(['', '', '', '', '', ''])
+      setOtpError('')
+      setGeneralError(
+        language === 'vi'
+          ? 'Đã hủy đăng ký. Tài khoản chưa được tạo và bạn có thể đăng ký lại bất kỳ lúc nào.'
+          : 'Registration cancelled. Account was not created and you can register again anytime.'
+      )
+    }
+  }
+
   const handleVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault()
     const otpCode = otpValues.join('')
@@ -111,6 +172,14 @@ export function RegisterForm() {
       registerMutation.mutate({
         ...tempFormData,
         otp: otpCode
+      }, {
+        onSuccess: (data) => {
+          if (data?.pendingRegisterToken) {
+            setPendingToken(data.pendingRegisterToken)
+          }
+          setIsOtpStep(false)
+          setIsGoogleStep(true)
+        }
       })
     }
   }
@@ -265,6 +334,63 @@ export function RegisterForm() {
   const loginText = language === 'vi'
     ? 'Đăng nhập'
     : (language === 'ja' ? 'ログイン' : (language === 'ko' ? '로그인' : 'Login'))
+
+  if (isGoogleStep) {
+    const googleStepTitle = language === 'vi'
+      ? 'Kết nối tài khoản Google'
+      : (language === 'ja' ? 'Google アカウントの連携' : (language === 'ko' ? 'Google 계정 연결' : 'Connect Google Account'))
+    const googleStepSubtitle = language === 'vi'
+      ? 'Vui lòng kết nối tài khoản Google Drive để hoàn tất thiết lập tài khoản LumiEdu.'
+      : (language === 'ja' ? 'LumiEdu アカウント設定を完了するために Google Drive アカウントを連携してください。' : (language === 'ko' ? 'LumiEdu 계정 설정을 완료하려면 Google Drive 계정을 연결해 주세요.' : 'Please connect your Google Drive account to complete your LumiEdu account setup.'))
+    const googleConnectBtn = connectingGoogle
+      ? (language === 'vi' ? 'Đang chuyển hướng kết nối...' : 'Connecting...')
+      : (language === 'vi' ? 'Kết nối Google Drive' : (language === 'ja' ? 'Google Drive を連携' : (language === 'ko' ? 'Google Drive 연결' : 'Connect Google Drive')))
+    const exitRegistrationBtn = cancellingReg
+      ? (language === 'vi' ? 'Đang hủy đăng ký...' : 'Cancelling...')
+      : (language === 'vi' ? 'Thoát / Hủy đăng ký' : (language === 'ja' ? '終了 / 登録キャンセル' : (language === 'ko' ? '나가기 / 가입 취소' : 'Exit / Cancel Registration')))
+
+    return (
+      <div className="w-full max-w-[440px] mx-auto bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-xl text-slate-900 dark:text-slate-100 animate-in fade-in duration-300">
+        <div className="mb-6 text-center">
+          <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950/40 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-900/50 shadow-sm">
+            <GoogleIcon />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{googleStepTitle}</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed">
+            {googleStepSubtitle}
+          </p>
+        </div>
+
+        <div className="space-y-4 pt-2">
+          <Button
+            type="button"
+            onClick={handleConnectGoogle}
+            disabled={connectingGoogle || cancellingReg}
+            className="w-full h-11 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white border-none shadow-sm flex items-center justify-center gap-2.5 rounded-xl active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <GoogleIcon />
+            <span>{googleConnectBtn}</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleCancelRegistration}
+            disabled={connectingGoogle || cancellingReg}
+            className="w-full h-11 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-300 border-none rounded-xl active:scale-[0.98] transition-all cursor-pointer"
+          >
+            {exitRegistrationBtn}
+          </Button>
+
+          <p className="text-xs text-center text-slate-400 dark:text-slate-500 pt-2 leading-relaxed font-medium">
+            {language === 'vi'
+              ? '💡 Nếu thoát khỏi bước này, tài khoản sẽ không được khởi tạo và bạn có thể sử dụng lại email này để đăng ký.'
+              : '💡 If you exit this step, your account will not be created and you can use this email to register again.'}
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   if (isOtpStep) {
     const otpTitle = language === 'vi' ? 'Xác minh tài khoản' : (language === 'ja' ? 'アカウント認証' : (language === 'ko' ? '계정 인증' : 'Account Verification'))

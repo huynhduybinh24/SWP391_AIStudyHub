@@ -6,18 +6,13 @@ import { connectGoogleDrive } from '@/features/settings/services/googleDriveServ
 import type { RegisterCredentials } from '@/types/auth'
 
 export function useRegister() {
-  const navigate = useNavigate()
   const setSession = useAuthStore((s) => s.setSession)
 
   return useMutation({
     mutationFn: (values: RegisterCredentials) => authService.register(values),
-    onSuccess: async (data) => {
-      setSession(data.user, data.tokens)
-      try {
-        await connectGoogleDrive()
-      } catch (err) {
-        console.error('Auto connect Google Drive after registration failed:', err)
-        navigate('/dashboard', { replace: true })
+    onSuccess: (data) => {
+      if (data?.user && data?.tokens) {
+        setSession(data.user, data.tokens)
       }
     },
   })
