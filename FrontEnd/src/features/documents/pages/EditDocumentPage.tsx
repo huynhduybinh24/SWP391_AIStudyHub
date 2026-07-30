@@ -1258,7 +1258,7 @@ Dưới đây là tóm tắt nhanh từ trợ lý AI:
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setIsNewRoleDropdownOpen(false)} />
                             <div className="absolute right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl z-50 py-1.5 w-44 animate-fade-in text-left">
-                              {(['viewer', 'commenter', 'editor'] as const).map((r) => (
+                              {(['viewer', 'editor'] as const).map((r) => (
                                 <button
                                   key={r}
                                   type="button"
@@ -1344,7 +1344,7 @@ Dưới đây là tóm tắt nhanh từ trợ lý AI:
                                   <>
                                     <div className="fixed inset-0 z-40" onClick={() => setActiveCollaboratorDropdownId(null)} />
                                     <div className="absolute right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl z-50 py-1.5 w-44 animate-fade-in text-left">
-                                      {(['viewer', 'commenter', 'editor'] as const).map((r) => (
+                                      {(['viewer', 'editor'] as const).map((r) => (
                                         <button
                                           key={r}
                                           type="button"
@@ -1493,7 +1493,7 @@ Dưới đây là tóm tắt nhanh từ trợ lý AI:
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setIsPublicRoleDropdownOpen(false)} />
                               <div className="absolute right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl z-50 py-1.5 w-40 animate-fade-in text-left">
-                                {(['viewer', 'commenter', 'editor'] as const).map((r) => (
+                                {(['viewer', 'editor'] as const).map((r) => (
                                   <button
                                     key={r}
                                     type="button"

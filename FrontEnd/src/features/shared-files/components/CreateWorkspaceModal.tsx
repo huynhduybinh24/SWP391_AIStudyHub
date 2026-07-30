@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, FolderPlus, HelpCircle } from 'lucide-react'
+import { X, FolderPlus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
@@ -152,51 +152,6 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
                   rows={3}
                   className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-xs font-semibold placeholder-slate-400 text-slate-800 dark:text-slate-100 focus:outline-none resize-none"
                 />
-              </div>
-
-              {/* Access Type */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                  <span>{language === 'vi' ? 'Chế độ truy cập' : 'Access Level'}</span>
-                  <HelpCircle className="size-3 text-slate-400" />
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setAccessType('PRIVATE')}
-                    className={cn(
-                      "flex flex-col items-start p-3 rounded-2xl border text-left cursor-pointer transition-all",
-                      accessType === 'PRIVATE'
-                        ? "border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10"
-                        : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-                    )}
-                  >
-                    <span className="text-xs font-bold text-slate-900 dark:text-white">
-                      {language === 'vi' ? 'Riêng tư (Private)' : 'Private'}
-                    </span>
-                    <span className="text-[10px] text-slate-500 mt-1">
-                      {language === 'vi' ? 'Chỉ thành viên được mời mới có thể tham gia.' : 'Only invited members can access.'}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setAccessType('PUBLIC')}
-                    className={cn(
-                      "flex flex-col items-start p-3 rounded-2xl border text-left cursor-pointer transition-all",
-                      accessType === 'PUBLIC'
-                        ? "border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10"
-                        : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-                    )}
-                  >
-                    <span className="text-xs font-bold text-slate-900 dark:text-white">
-                      {language === 'vi' ? 'Công khai (Public)' : 'Public'}
-                    </span>
-                    <span className="text-[10px] text-slate-500 mt-1">
-                      {language === 'vi' ? 'Bất kỳ ai cũng có thể tìm và xem.' : 'Anyone can search and view.'}
-                    </span>
-                  </button>
-                </div>
               </div>
 
               {/* Action buttons */}

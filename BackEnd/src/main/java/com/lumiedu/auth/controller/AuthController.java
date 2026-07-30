@@ -54,6 +54,7 @@ public class AuthController {
     private final com.lumiedu.email.service.EmailService emailService;
     private final com.lumiedu.integration.repository.UserGoogleDriveConnectionRepository googleDriveConnectionRepository;
     private final com.lumiedu.integration.service.EncryptionService encryptionService;
+    private final com.lumiedu.document.service.GoogleDriveService googleDriveService;
 
     private final java.util.concurrent.ConcurrentHashMap<String, OtpDetails> registerOtpMap = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<String, java.time.LocalDateTime> otpCooldownMap = new java.util.concurrent.ConcurrentHashMap<>();
@@ -243,6 +244,12 @@ public class AuthController {
 
                 googleDriveConnectionRepository.save(conn);
                 log.info("Auto-connected/synced Google Drive connection for user ID: {} with email: {}", targetUser.getId(), userGoogleEmail);
+
+                try {
+                    googleDriveService.initializeUserDriveStructure(targetUser.getId());
+                } catch (Exception initEx) {
+                    log.warn("Failed to initialize user Google Drive structure on login for user {}: {}", targetUser.getId(), initEx.getMessage());
+                }
             } catch (Exception ex) {
                 log.warn("Auto-connection of Google Drive on login skipped/failed for user ID {}: {}", user.getId(), ex.getMessage());
             }

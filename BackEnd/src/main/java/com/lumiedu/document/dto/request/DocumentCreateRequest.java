@@ -17,4 +17,6 @@ public class DocumentCreateRequest {
     private String visibility;
     private Long userId;
     private List<String> tags;
+    private Boolean isWorkspaceUpload;
+    private Long workspaceId;
 }

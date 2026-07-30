@@ -39,7 +39,9 @@ export const documentService = {
     subject: string,
     visibility: string,
     userId: number,
-    tags: string[]
+    tags: string[],
+    isWorkspaceUpload?: boolean,
+    workspaceId?: number
   ): Promise<DocumentResponse> {
     const formData = new FormData()
     formData.append('file', file)
@@ -48,6 +50,8 @@ export const documentService = {
     if (subject) formData.append('subject', subject)
     formData.append('visibility', visibility)
     formData.append('userId', String(userId))
+    if (isWorkspaceUpload) formData.append('isWorkspaceUpload', 'true')
+    if (workspaceId) formData.append('workspaceId', String(workspaceId))
     
     if (tags && tags.length > 0) {
       tags.forEach(tag => {

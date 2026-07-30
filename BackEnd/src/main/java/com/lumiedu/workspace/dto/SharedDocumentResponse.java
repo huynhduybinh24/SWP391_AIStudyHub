@@ -29,4 +29,6 @@ public class SharedDocumentResponse {
     private String role;
     private String sharedAt;
     private Boolean sharedWithMe;
+    private String workspaceName;
+    private String shareSource; // "WORKSPACE" or "DIRECT"
 }

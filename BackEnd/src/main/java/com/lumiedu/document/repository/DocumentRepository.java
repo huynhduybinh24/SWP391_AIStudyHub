@@ -52,6 +52,8 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     boolean existsByUserIdAndSubjectIgnoreCaseAndChecksumAndDeletedFalse(Long userId, String subject, String checksum);
 
+    boolean existsByUserIdAndChecksumAndDeletedFalse(Long userId, String checksum);
+
     boolean existsByOriginalFileNameIgnoreCaseAndDeletedFalse(String originalFileName);
 
     boolean existsByTitleIgnoreCaseAndDeletedFalse(String title);
@@ -63,4 +65,12 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     boolean existsBySubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(String subject, String title);
 
     boolean existsBySubjectIgnoreCaseAndChecksumAndDeletedFalse(String subject, String checksum);
+
+    Optional<Document> findFirstByChecksumAndDeletedFalse(String checksum);
+
+    Optional<Document> findFirstByUserIdAndChecksumAndDeletedFalse(Long userId, String checksum);
+
+    Optional<Document> findFirstByUserIdAndTitleIgnoreCaseAndDeletedFalse(Long userId, String title);
+
+    Optional<Document> findFirstByUserIdAndOriginalFileNameIgnoreCaseAndDeletedFalse(Long userId, String originalFileName);
 }

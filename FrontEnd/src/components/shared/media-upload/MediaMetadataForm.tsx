@@ -14,8 +14,8 @@ interface MediaMetadataFormProps {
   tags: string[];
   onTagsChange: (tags: string[]) => void;
   showPermission?: boolean;
-  permission?: 'viewer' | 'commenter' | 'editor';
-  onPermissionChange?: (val: 'viewer' | 'commenter' | 'editor') => void;
+  permission?: 'viewer' | 'editor';
+  onPermissionChange?: (val: 'viewer' | 'editor') => void;
   mediaType?: string;
   isProcessing?: boolean;
   titleLabel: string;
@@ -267,7 +267,6 @@ export function MediaMetadataForm({
               className="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-55 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:border-[#3155F6] focus:outline-none transition-colors px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white cursor-pointer shadow-sm pr-10"
             >
               <option value="viewer">Viewer</option>
-              <option value="commenter">Commenter</option>
               <option value="editor">Editor</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 dark:text-slate-500">

@@ -17,4 +17,16 @@ public interface WorkspaceDocumentRepository extends JpaRepository<WorkspaceDocu
     List<WorkspaceDocument> findByDocumentId(Long documentId);
 
     boolean existsByWorkspaceIdAndDocumentId(Long workspaceId, Long documentId);
+
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT COUNT(wd) > 0 FROM WorkspaceDocument wd
+            JOIN Document d ON wd.documentId = d.id
+            WHERE wd.workspaceId = :workspaceId
+            AND d.deleted = false
+            AND d.checksum = :checksum
+            """)
+    boolean existsByWorkspaceIdAndChecksum(
+            @org.springframework.data.repository.query.Param("workspaceId") Long workspaceId,
+            @org.springframework.data.repository.query.Param("checksum") String checksum
+    );
 }

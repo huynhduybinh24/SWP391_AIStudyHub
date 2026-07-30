@@ -187,6 +187,16 @@ export function WorkspaceFileTable({
                                   <Users className="size-3.5 text-slate-400" />
                                 </span>
                               )}
+
+                              {file.shareSource === 'DIRECT' ? (
+                                <span className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-purple-50 text-purple-700 border border-purple-200/80 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800">
+                                  {language === 'vi' ? '👤 Cá nhân 1-1' : '👤 Direct 1-on-1'}
+                                </span>
+                              ) : (
+                                <span className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200/80 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800">
+                                  {language === 'vi' ? `👥 Nhóm: ${file.workspaceName || 'Workspace'}` : `👥 Group: ${file.workspaceName || 'Workspace'}`}
+                                </span>
+                              )}
                             </div>
 
                             {/* Star Icon for Favorite toggle on hover */}

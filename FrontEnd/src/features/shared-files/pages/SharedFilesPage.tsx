@@ -25,7 +25,9 @@ import SharedFilesUploadModal from '../components/SharedFilesUploadModal'
 
 // Modals & Overlays
 import InviteModal from '../components/InviteModal'
+import PendingInvitationsModal from '../components/PendingInvitationsModal'
 import { CreateWorkspaceModal } from '../components/CreateWorkspaceModal'
+import ConfirmDeleteWorkspaceModal from '../components/ConfirmDeleteWorkspaceModal'
 import AIReportModal from '../components/AIReportModal'
 import SummaryModal from '../components/SummaryModal'
 import QuizModal from '../components/QuizModal'
@@ -36,6 +38,7 @@ import ConfirmRemoveAccessModal from '../components/ConfirmRemoveAccessModal'
 import CollaboratorsModal, { Collaborator as ActiveCollaborator } from '../components/CollaboratorsModal'
 import AIInsightsModal from '../components/AIInsightsModal'
 import AddCollaboratorModal from '../components/AddCollaboratorModal'
+import { AIScanningModal } from '../components/AIScanningModal'
 import { SharedFile } from '../components/SharedFilesTable'
 import { X, HardDrive } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
@@ -220,6 +223,24 @@ export function SharedFilesPage() {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | 'all'>('all')
   const [currentUsedMb, setCurrentUsedMb] = useState<number>(5.7)
   const [activeCollaborators, setActiveCollaborators] = useState<ActiveCollaborator[]>([])
+  const [pendingInvitationsCount, setPendingInvitationsCount] = useState<number>(0)
+  const [aiScanningModalOpen, setAiScanningModalOpen] = useState<boolean>(false)
+  const [scanningFileName, setScanningFileName] = useState<string>('')
+
+  const fetchPendingInvitationsCount = async () => {
+    if (!user?.id) return
+    try {
+      const res = await apiClient.get(`/workspaces/invitations?userId=${user.id}`)
+      const list = res.data?.data || res.data || []
+      setPendingInvitationsCount(list.length)
+    } catch (err) {
+      console.error("Failed to fetch pending invitations count", err)
+    }
+  }
+
+  useEffect(() => {
+    fetchPendingInvitationsCount()
+  }, [user?.id])
 
   const fetchWorkspaces = async () => {
     if (!user?.id) return
@@ -247,7 +268,7 @@ export function SharedFilesPage() {
     if (typeLower.includes('powerpoint') || typeLower.includes('officedocument.presentationml')) return 'pptx'
     if (typeLower.includes('excel') || typeLower.includes('spreadsheet') || typeLower.includes('officedocument.spreadsheetml')) return 'xlsx'
     if (typeLower.includes('image') || typeLower.includes('png') || typeLower.includes('jpeg')) return 'image'
-    return 'txt'
+    return 'pdf'
   }
 
   const fetchSharedFiles = async () => {
@@ -296,13 +317,17 @@ export function SharedFilesPage() {
           const detail = res.value.data?.data || res.value.data
           if (detail && detail.members) {
             detail.members.forEach((mem: any) => {
-              const memRoleStr = String(mem.role || '').toUpperCase()
-              let role: 'Owner' | 'Editor' | 'View Only' = 'View Only'
-              if (memRoleStr === 'OWNER') role = 'Owner'
-              else if (memRoleStr === 'COLLABORATOR' || memRoleStr === 'EDITOR' || memRoleStr.includes('EDIT')) role = 'Editor'
+              const memStatusStr = String(mem.status || '').toUpperCase()
+              const memRoleUpper = String(mem.role || '').toUpperCase()
+              if (memStatusStr !== 'ACCEPTED' && memRoleUpper !== 'OWNER') return
 
-              allMembersMap[mem.userId] = {
-                id: String(mem.userId),
+              let role: 'Owner' | 'Editor' | 'View Only' = 'View Only'
+              if (memRoleUpper === 'OWNER') role = 'Owner'
+              else if (memRoleUpper === 'COLLABORATOR' || memRoleUpper === 'EDITOR' || memRoleUpper.includes('EDIT')) role = 'Editor'
+
+              const key = String(mem.userId || mem.email || mem.id)
+              allMembersMap[key] = {
+                id: String(mem.userId || mem.id || mem.email),
                 name: mem.fullName || mem.email || 'Member',
                 email: mem.email || '',
                 role: role,
@@ -372,7 +397,8 @@ export function SharedFilesPage() {
             permission: filePermission,
             dateShared: doc.createdAt ? doc.createdAt.substring(0, 10) : 'Just now',
             type: fileType,
-            size: doc.fileSize ? formatStorageSize(doc.fileSize) : '3.5 MB',
+            size: doc.fileSize ? formatStorageSize(doc.fileSize) : '0 MB',
+            fileSize: doc.fileSize || 0,
             totalPages: 10,
             description: doc.description || 'No description available.',
             tags: [],
@@ -382,14 +408,23 @@ export function SharedFilesPage() {
         })
         setFiles(mappedFiles)
 
-        const mappedCollabs: ActiveCollaborator[] = (workspace.members || []).map((mem: any) => ({
-          id: String(mem.userId || mem.id || ''),
-          name: mem.fullName || mem.email || 'Member',
-          email: mem.email || '',
-          role: mem.role === 'OWNER' ? 'Owner' : (mem.role === 'COLLABORATOR' ? 'Editor' : 'View Only'),
-          avatarUrl: undefined,
-          workspaceId: String(workspace.id)
-        })).filter(c => Boolean(c.id))
+        const mappedCollabs: ActiveCollaborator[] = (workspace.members || [])
+          .filter((mem: any) => String(mem.status || '').toUpperCase() === 'ACCEPTED' || String(mem.role || '').toUpperCase() === 'OWNER')
+          .map((mem: any) => {
+            const memRoleUpper = String(mem.role || '').toUpperCase()
+            let role: 'Owner' | 'Editor' | 'View Only' = 'View Only'
+            if (memRoleUpper === 'OWNER') role = 'Owner'
+            else if (memRoleUpper === 'COLLABORATOR' || memRoleUpper === 'EDITOR' || memRoleUpper.includes('EDIT')) role = 'Editor'
+
+            return {
+              id: String(mem.userId || mem.id || mem.email),
+              name: mem.fullName || mem.email || 'Member',
+              email: mem.email || '',
+              role: role,
+              avatarUrl: undefined,
+              workspaceId: String(workspace.id)
+            }
+          }).filter((c: any) => Boolean(c.id))
         setActiveCollaborators(mappedCollabs)
       }
     } catch (err) {
@@ -412,42 +447,35 @@ export function SharedFilesPage() {
   }, [selectedWorkspaceId, user])
 
   useEffect(() => {
-    let totalMb = 0
+    let totalBytes = 0
     const isAll = !selectedWorkspaceId || selectedWorkspaceId === 'all'
 
-    files.forEach(f => {
-      let fileSizeMb = 0
-      if (f.size) {
-        const matches = String(f.size).match(/^([\d.]+)\s*([A-Za-z]+)?/)
-        if (matches) {
-          const val = parseFloat(matches[1]) || 0
-          const unit = (matches[2] || '').toUpperCase()
-          if (unit === 'GB') fileSizeMb = val * 1024
-          else if (unit === 'MB') fileSizeMb = val
-          else if (unit === 'KB') fileSizeMb = val / 1024
-          else if (unit === 'B' || (!unit && val > 10000)) fileSizeMb = val / (1024 * 1024)
-          else if (val > 0 && val <= 5000) fileSizeMb = val
-        }
-      }
-      totalMb += fileSizeMb
-    })
-
-    totalMb = Math.round(totalMb * 10) / 10
-
     if (isAll) {
-      if (totalMb <= 0 || totalMb > 5000) {
-        totalMb = 5.7
-      }
+      workspaces.forEach((ws: any) => {
+        (ws.documents || []).forEach((doc: any) => {
+          if (doc.fileSize && typeof doc.fileSize === 'number') {
+            totalBytes += doc.fileSize
+          }
+        })
+      })
     } else {
-      if (totalMb <= 0 || totalMb > 5000) {
-        totalMb = 3.5
+      const currentWs = workspaces.find((w: any) => String(w.id) === String(selectedWorkspaceId))
+      if (currentWs && currentWs.documents) {
+        currentWs.documents.forEach((doc: any) => {
+          if (doc.fileSize && typeof doc.fileSize === 'number') {
+            totalBytes += doc.fileSize
+          }
+        })
       }
     }
 
-    setCurrentUsedMb(totalMb)
-    localStorage.setItem('aiStudyHubStorageUsedMb', totalMb.toString())
+    let calculatedMb = totalBytes > 0 ? (totalBytes / (1024 * 1024)) : 0
+    calculatedMb = Math.round(calculatedMb * 10) / 10
+
+    setCurrentUsedMb(calculatedMb)
+    localStorage.setItem('aiStudyHubStorageUsedMb', calculatedMb.toString())
     window.dispatchEvent(new Event('aiStudyHubUserChanged'))
-  }, [files, selectedWorkspaceId])
+  }, [files, workspaces, selectedWorkspaceId])
 
   // Modals Visibility
   const [modals, setModals] = useState({
@@ -463,6 +491,9 @@ export function SharedFilesPage() {
     permission: false,
     confirmDelete: false,
     createWorkspace: false,
+    addCollaborator: false,
+    confirmDeleteWorkspace: false,
+    pendingInvitations: false,
   })
 
   // Workspace Configurations
@@ -485,9 +516,28 @@ export function SharedFilesPage() {
         ? 'Vui lòng chọn một nhóm học tập từ menu thả xuống góc trên bên trái trước khi tải tài liệu lên!'
         : 'Please select a study group from the top-left dropdown before uploading documents!'
       toast.error(msg)
-    } else {
-      setUploadModalOpen(true)
+      return
     }
+
+    const currentWorkspace = workspaces.find(w => String(w.id) === String(selectedWorkspaceId))
+    const currentUserIdStr = String(user?.id || '')
+    const currentUserEmailStr = (user?.email || '').toLowerCase()
+
+    const currentMember = currentWorkspace?.members?.find((m: any) => 
+      String(m.userId) === currentUserIdStr || (m.email && m.email.toLowerCase() === currentUserEmailStr)
+    )
+    const currentRole = String(currentMember?.role || '').toUpperCase()
+    const isOwner = String(currentWorkspace?.ownerId) === currentUserIdStr || currentRole === 'OWNER'
+
+    if (currentWorkspace && !isOwner && currentRole === 'VIEWER') {
+      const msg = language === 'vi'
+        ? 'Thành viên với vai trò Viewer (Người xem) không được phép tải tài liệu lên nhóm!'
+        : 'Viewers are not allowed to upload documents to this workspace!'
+      toast.error(msg)
+      return
+    }
+
+    setUploadModalOpen(true)
   }
 
   // Report Document States
@@ -495,7 +545,7 @@ export function SharedFilesPage() {
   const [reportReason, setReportReason] = useState('')
   const [isSubmittingReport, setIsSubmittingReport] = useState(false)
 
-  const handleUpdateCollaboratorRole = async (id: string, newRole: 'Owner' | 'Editor' | 'View Only') => {
+  const handleUpdateCollaboratorRole = async (id: string, newRole: 'Owner' | 'Editor' | 'View Only' | 'Viewer') => {
     try {
       if (!id || id === 'undefined' || id === 'null') {
         toast.error(language === 'vi' ? 'Mã thành viên không hợp lệ' : 'Invalid member ID')
@@ -530,7 +580,8 @@ export function SharedFilesPage() {
       setActiveCollaborators(prev =>
         prev.map(c => {
           if (c.id === id || c.id === memberIdToUse || (targetCollab?.email && c.email?.toLowerCase() === targetCollab.email.toLowerCase())) {
-            return { ...c, role: newRole }
+            const mappedRole: 'Owner' | 'Editor' | 'View Only' = newRole === 'Owner' ? 'Owner' : (newRole === 'Editor' ? 'Editor' : 'View Only')
+            return { ...c, role: mappedRole }
           }
           return c
         })
@@ -1132,25 +1183,40 @@ export function SharedFilesPage() {
 
   const handleDeleteConfirm = async () => {
     if (!selectedFile) return
-    if (selectedWorkspaceId !== 'all') {
-      try {
+    try {
+      toast.info(language === 'vi' ? 'Đang xóa tài liệu trên hệ thống và Google Drive...' : 'Deleting document from system and Google Drive...')
+      if (selectedWorkspaceId !== 'all') {
         await apiClient.delete(
           `/workspaces/${selectedWorkspaceId}/documents/${selectedFile.id}?userId=${user?.id}`
         )
-        toast.success(t.toasts.deleteSuccess || 'Document removed from workspace successfully')
+        toast.success(language === 'vi' ? 'Đã xóa tài liệu khỏi hệ thống và Google Drive thành công!' : 'Successfully deleted document from system and Google Drive!')
         fetchWorkspaceDetails(selectedWorkspaceId)
-      } catch (err: any) {
-        console.error('Failed to remove document from workspace:', err)
-        const errMsg = err.response?.data?.message || err.message || 'Failed to delete file'
-        toast.error(errMsg)
+      } else if (selectedFile.shareSource === 'WORKSPACE' && selectedFile.workspaceName) {
+        const wsMatch = workspaces.find(w => w.name === selectedFile.workspaceName)
+        if (wsMatch) {
+          await apiClient.delete(
+            `/workspaces/${wsMatch.id}/documents/${selectedFile.id}?userId=${user?.id}`
+          )
+        } else {
+          await documentService.deleteDocumentShare(selectedFile.id, user?.email || '')
+        }
+        toast.success(language === 'vi' ? 'Đã xóa tài liệu khỏi hệ thống và Google Drive thành công!' : 'Successfully deleted document from system and Google Drive!')
+      } else {
+        await documentService.deleteDocumentShare(selectedFile.id, user?.email || '')
+        toast.success(language === 'vi' ? 'Đã xóa tài liệu khỏi hệ thống và Google Drive thành công!' : 'Successfully deleted document from system and Google Drive!')
       }
-    } else {
-      setFiles(prev => prev.filter(f => f.id !== selectedFile.id))
-      toast.success(t.toasts.deleteSuccess)
+
+      setFiles(prev => prev.filter(f => !(f.id === selectedFile.id && (f.shareSource || 'DIRECT') === (selectedFile.shareSource || 'DIRECT'))))
+      fetchSharedFiles()
+    } catch (err: any) {
+      console.error('Failed to remove document access:', err)
+      const errMsg = err.response?.data?.message || err.message || 'Thao tác xóa thất bại'
+      toast.error(errMsg)
+    } finally {
+      setSelectedFile(null)
+      setViewingFile(null)
+      setModals(prev => ({ ...prev, confirmDelete: false }))
     }
-    setSelectedFile(null)
-    setViewingFile(null)
-    setModals(prev => ({ ...prev, confirmDelete: false }))
   }
 
   const handleStarToggle = (file: SharedFile) => {
@@ -1279,6 +1345,66 @@ export function SharedFilesPage() {
     return sortOrder === 'recent' ? timeB - timeA : timeA - timeB
   })
 
+  const allWorkspaceCollaborators = useMemo(() => {
+    const map: Record<string, ActiveCollaborator> = {}
+    
+    activeCollaborators.forEach(c => {
+      if (c.email) map[c.email.toLowerCase()] = c
+    })
+
+    workspaces.forEach(ws => {
+      if (ws.members && Array.isArray(ws.members)) {
+        ws.members.forEach((mem: any) => {
+          const email = (mem.email || '').toLowerCase()
+          if (email && !map[email]) {
+            const memRoleStr = String(mem.role || '').toUpperCase()
+            let role: 'Owner' | 'Editor' | 'View Only' = 'View Only'
+            if (memRoleStr === 'OWNER') role = 'Owner'
+            else if (memRoleStr === 'COLLABORATOR' || memRoleStr === 'EDITOR' || memRoleStr.includes('EDIT')) role = 'Editor'
+
+            map[email] = {
+              id: String(mem.userId || mem.id || ''),
+              name: mem.fullName || mem.email || 'Member',
+              email: mem.email,
+              role: role,
+              workspaceId: String(ws.id)
+            }
+          }
+        })
+      }
+    })
+
+    return Object.values(map)
+  }, [activeCollaborators, workspaces])
+
+  const isCurrentWorkspaceOwner = useMemo(() => {
+    if (!selectedWorkspaceId || selectedWorkspaceId === 'all') return false
+    const ws = workspaces.find(w => String(w.id) === String(selectedWorkspaceId))
+    if (!ws) return false
+    return String(ws.ownerId) === String(user?.id) || (ws.ownerEmail && ws.ownerEmail.toLowerCase() === (user?.email || '').toLowerCase())
+  }, [selectedWorkspaceId, workspaces, user])
+
+  const handleDeleteWorkspace = async () => {
+    if (!selectedWorkspaceId || selectedWorkspaceId === 'all' || !user?.id) return
+    try {
+      await apiClient.delete(`/workspaces/${selectedWorkspaceId}?userId=${user.id}`)
+      toast.success(language === 'vi' ? 'Đã xóa nhóm học tập thành công!' : 'Workspace deleted successfully!')
+      setSelectedWorkspaceId('all')
+      fetchWorkspaces()
+      fetchSharedFiles()
+    } catch (err: any) {
+      console.error('Failed to delete workspace:', err)
+      toast.error(err.response?.data?.message || (language === 'vi' ? 'Không thể xóa nhóm học tập' : 'Failed to delete workspace'))
+    }
+  }
+
+  const peopleList = Array.from(
+    new Set([
+      ...files.map(f => f.ownerEmail).filter(Boolean),
+      ...allWorkspaceCollaborators.map(c => c.email).filter(Boolean)
+    ])
+  ) as string[]
+
   // Full Screen File Viewer Mode
   if (viewingFile) {
     const showToastWrapper = (msg: string) => {
@@ -1315,45 +1441,6 @@ export function SharedFilesPage() {
     )
   }
 
-  const allWorkspaceCollaborators = useMemo(() => {
-    const map: Record<string, ActiveCollaborator> = {}
-    
-    activeCollaborators.forEach(c => {
-      if (c.email) map[c.email.toLowerCase()] = c
-    })
-
-    workspaces.forEach(ws => {
-      if (ws.members && Array.isArray(ws.members)) {
-        ws.members.forEach((mem: any) => {
-          const email = (mem.email || '').toLowerCase()
-          if (email && !map[email]) {
-            const memRoleStr = String(mem.role || '').toUpperCase()
-            let role: 'Owner' | 'Editor' | 'View Only' = 'View Only'
-            if (memRoleStr === 'OWNER') role = 'Owner'
-            else if (memRoleStr === 'COLLABORATOR' || memRoleStr === 'EDITOR' || memRoleStr.includes('EDIT')) role = 'Editor'
-
-            map[email] = {
-              id: String(mem.userId || mem.id || ''),
-              name: mem.fullName || mem.email || 'Member',
-              email: mem.email,
-              role: role,
-              workspaceId: String(ws.id)
-            }
-          }
-        })
-      }
-    })
-
-    return Object.values(map)
-  }, [activeCollaborators, workspaces])
-
-  const peopleList = Array.from(
-    new Set([
-      ...files.map(f => f.ownerEmail).filter(Boolean),
-      ...allWorkspaceCollaborators.map(c => c.email).filter(Boolean)
-    ])
-  ) as string[]
-
   return (
     <motion.div
       variants={pageContainerVariants}
@@ -1373,6 +1460,10 @@ export function SharedFilesPage() {
               onInviteClick={() => setModals(prev => ({ ...prev, invite: true }))}
               onAIAnalyzeClick={handleAIAnalyze}
               onCreateWorkspaceClick={() => setModals(prev => ({ ...prev, createWorkspace: true }))}
+              onPendingInvitationsClick={() => setModals(prev => ({ ...prev, pendingInvitations: true }))}
+              pendingInvitationsCount={pendingInvitationsCount}
+              onDeleteWorkspaceClick={() => setModals(prev => ({ ...prev, confirmDeleteWorkspace: true }))}
+              isOwner={isCurrentWorkspaceOwner}
               isAnalyzing={isAnalyzing}
               workspaces={workspaces}
               selectedWorkspaceId={selectedWorkspaceId}
@@ -1507,7 +1598,7 @@ export function SharedFilesPage() {
         collaborators={allWorkspaceCollaborators.length > 0 ? allWorkspaceCollaborators : activeCollaborators}
         onUpdateRole={handleUpdateCollaboratorRole}
         onRemoveCollaborator={handleRemoveWorkspaceMember}
-        canManage={selectedWorkspaceId === 'all' || Boolean(workspaces.find(w => String(w.id) === String(selectedWorkspaceId) && (String(w.ownerId) === String(user?.id) || (w.ownerEmail && w.ownerEmail.toLowerCase() === user?.email?.toLowerCase()))))}
+        canManage={selectedWorkspaceId === 'all' || Boolean(workspaces.find(w => String(w.id) === String(selectedWorkspaceId) && (String(w.ownerId) === String(user?.id) || (w.ownerEmail && w.ownerEmail.toLowerCase() === user?.email?.toLowerCase()) || (w.members || []).some((m: any) => (String(m.userId) === String(user?.id) || (m.email && m.email.toLowerCase() === (user?.email || '').toLowerCase())) && String(m.role).toUpperCase() !== 'VIEWER'))))}
         onOpenAddCollaborator={() => setModals(prev => ({ ...prev, addCollaborator: true }))}
       />
 
@@ -1539,13 +1630,22 @@ export function SharedFilesPage() {
               ? `Đã gửi lời mời thành công đến ${email} với vai trò ${role}` 
               : `Invitation sent successfully to ${email} as ${role}`
             toast.success(msg)
+            setModals(prev => ({ ...prev, invite: false }))
           } catch (err: any) {
             console.error('Failed to invite member:', err)
             const errorMsg = err.response?.data?.message || err.message || 'Failed to invite member'
             toast.error(errorMsg)
-          } finally {
-            setModals(prev => ({ ...prev, invite: false }))
+            throw new Error(errorMsg)
           }
+        }}
+      />
+
+      <PendingInvitationsModal
+        isOpen={modals.pendingInvitations}
+        onClose={() => setModals(prev => ({ ...prev, pendingInvitations: false }))}
+        onInviteResponded={() => {
+          fetchWorkspaces()
+          fetchPendingInvitationsCount()
         }}
       />
 
@@ -1558,6 +1658,13 @@ export function SharedFilesPage() {
             setSelectedWorkspaceId(newWs.id.toString())
           }
         }}
+      />
+
+      <ConfirmDeleteWorkspaceModal
+        isOpen={modals.confirmDeleteWorkspace}
+        onClose={() => setModals(prev => ({ ...prev, confirmDeleteWorkspace: false }))}
+        onConfirm={handleDeleteWorkspace}
+        workspaceName={workspaces.find(w => String(w.id) === String(selectedWorkspaceId))?.name || ''}
       />
 
       <AIReportModal
@@ -1711,7 +1818,16 @@ export function SharedFilesPage() {
         onClose={() => setUploadModalOpen(false)}
         onSave={async (newFile, rawFile, metadata) => {
           if (rawFile) {
+            // 1. Show AI Scanning Modal IMMEDIATELY as upload & moderation begins
+            setUploadModalOpen(false)
+            setScanningFileName(newFile.name)
+            setAiScanningModalOpen(true)
+
             try {
+              const targetWsId = (selectedWorkspaceId && selectedWorkspaceId !== 'all')
+                ? Number(selectedWorkspaceId)
+                : (workspaces.length > 0 ? Number(workspaces[0].id) : undefined)
+
               const title = newFile.name.substring(0, newFile.name.lastIndexOf('.')) || newFile.name
               const uploadedDoc = await documentService.uploadDocument(
                 rawFile,
@@ -1720,7 +1836,9 @@ export function SharedFilesPage() {
                 metadata?.subject || 'GENERAL',
                 'SHARED', // visibility
                 Number(user?.id || 1),
-                metadata?.tags || []
+                metadata?.tags || [],
+                true, // isWorkspaceUpload
+                targetWsId
               )
               
               const createdSharedFile: SharedFile = {
@@ -1734,24 +1852,39 @@ export function SharedFilesPage() {
                 description: metadata?.description || '',
                 tags: metadata?.tags || [],
                 previewContent: '',
-                summary: 'AI Workspace Summary: Document uploaded and ready for analysis.',
+                summary: 'AI Workspace Summary: Document uploaded to workspace.',
                 url: uploadedDoc.fileUrl || ''
               }
 
-              if (selectedWorkspaceId && selectedWorkspaceId !== 'all') {
-                await apiClient.post(
-                  `/workspaces/${selectedWorkspaceId}/documents/${uploadedDoc.id}?userId=${user?.id}`
-                )
+              if (targetWsId) {
+                try {
+                  await apiClient.post(
+                    `/workspaces/${targetWsId}/documents/${uploadedDoc.id}?userId=${user?.id}`
+                  )
+                } catch (e) {
+                  // Safe ignore if backend ALREADY linked it inside uploadDocument
+                }
               }
               
               setFiles(prev => [createdSharedFile, ...prev.filter(f => f.id !== createdSharedFile.id)])
               setSelectedFile(createdSharedFile)
-              toast.success(t.toasts?.uploadSuccess || 'File uploaded successfully')
+
+              // 2. Upload & Moderation complete: close AI Scanning Modal and announce success
+              setAiScanningModalOpen(false)
               
+              const uploadNotice = language === 'vi'
+                ? 'Tải tệp & Kiểm duyệt AI thành công! Tài liệu đã được lưu vào Nhóm.'
+                : 'File upload & AI Moderation completed successfully!'
+              toast.success(uploadNotice)
+              
+              fetchWorkspaces()
               if (selectedWorkspaceId && selectedWorkspaceId !== 'all') {
                 fetchWorkspaceDetails(selectedWorkspaceId)
+              } else {
+                fetchSharedFiles()
               }
             } catch (err: any) {
+              setAiScanningModalOpen(false)
               console.error('Failed to upload file to backend:', err)
               const errMsg = err.response?.data?.message || err.message || 'Upload failed'
               toast.error(errMsg)
@@ -1762,6 +1895,14 @@ export function SharedFilesPage() {
             toast.success(t.toasts?.uploadSuccess || 'File uploaded successfully')
           }
         }}
+      />
+
+      {/* AI Moderation Scanning Modal */}
+      <AIScanningModal
+        isOpen={aiScanningModalOpen}
+        onClose={() => setAiScanningModalOpen(false)}
+        fileName={scanningFileName}
+        language={language as any}
       />
 
       {/* Custom Report File Modal */}

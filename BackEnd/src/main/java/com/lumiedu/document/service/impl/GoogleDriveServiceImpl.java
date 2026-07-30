@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -166,10 +167,12 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                 fileMetadata.setName(file.getOriginalFilename());
                 fileMetadata.setParents(Collections.singletonList(currentParentId));
 
+                byte[] fileBytes = file.getBytes();
                 InputStreamContent mediaContent = new InputStreamContent(
                         file.getContentType(),
-                        file.getInputStream()
+                        new java.io.ByteArrayInputStream(fileBytes)
                 );
+                mediaContent.setLength(fileBytes.length);
 
                 File uploadedFile = userDrive.files().create(fileMetadata, mediaContent)
                         .setFields("id, name, webViewLink")
@@ -203,10 +206,12 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             fileMetadata.setName(file.getOriginalFilename());
             fileMetadata.setParents(Collections.singletonList(currentParentId));
 
+            byte[] fileBytes = file.getBytes();
             InputStreamContent mediaContent = new InputStreamContent(
                     file.getContentType(),
-                    file.getInputStream()
+                    new java.io.ByteArrayInputStream(fileBytes)
             );
+            mediaContent.setLength(fileBytes.length);
 
             File uploadedFile = googleDrive.files().create(fileMetadata, mediaContent)
                     .setFields("id, name, webViewLink")
@@ -232,7 +237,7 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
             StringBuilder q = new StringBuilder();
             q.append("name = '").append(cleanName).append("' and trashed = false");
-            if (parentFolderId != null && !parentFolderId.isBlank() && !"root".equalsIgnoreCase(parentFolderId) && !parentFolderId.startsWith("gdrive_")) {
+            if (parentFolderId != null && !parentFolderId.isBlank() && !parentFolderId.startsWith("gdrive_")) {
                 q.append(" and '").append(parentFolderId).append("' in parents");
             }
 
@@ -267,7 +272,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
         try {
             Drive driveClient = getDriveClientForUser(userId);
-            String folderId = getOrCreateFolder(driveClient, folderName, rootFolderId);
+            String parentFolderId = (userId != null && isUserDriveConnected(userId)) ? "root" : rootFolderId;
+            String folderId = getOrCreateFolder(driveClient, folderName, parentFolderId);
 
             // Prevent duplicate file upload to Google Drive
             String existingId = findExistingFileId(driveClient, safeName, folderId);
@@ -293,6 +299,52 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             return uploadedFile.getId();
         } catch (Exception e) {
             log.error("Google Drive raw bytes upload failed for user {}: {}", userId, e.getMessage());
+            return "gdrive_" + UUID.randomUUID().toString().replace("-", "");
+        }
+    }
+
+    @Override
+    public String uploadFile(byte[] fileData, String fileName, String contentType, List<String> folderHierarchy, Long userId) throws IOException {
+        if (fileData == null || fileData.length == 0) {
+            throw new IllegalArgumentException("File data cannot be empty");
+        }
+        String safeName = (fileName != null && !fileName.isBlank()) ? fileName : "file_" + System.currentTimeMillis();
+        String safeMime = (contentType != null && !contentType.isBlank()) ? contentType : "application/octet-stream";
+
+        try {
+            Drive driveClient = getDriveClientForUser(userId);
+            String currentParentId = (userId != null && isUserDriveConnected(userId)) ? "root" : rootFolderId;
+            if (folderHierarchy != null) {
+                for (String folderName : folderHierarchy) {
+                    if (folderName != null && !folderName.isBlank()) {
+                        currentParentId = getOrCreateFolder(driveClient, folderName.trim(), currentParentId);
+                    }
+                }
+            }
+
+            String existingId = findExistingFileId(driveClient, safeName, currentParentId);
+            if (existingId != null) {
+                return existingId;
+            }
+
+            File fileMetadata = new File();
+            fileMetadata.setName(safeName);
+            fileMetadata.setParents(Collections.singletonList(currentParentId));
+
+            InputStreamContent mediaContent = new InputStreamContent(
+                    safeMime,
+                    new java.io.ByteArrayInputStream(fileData)
+            );
+
+            File uploadedFile = driveClient.files().create(fileMetadata, mediaContent)
+                    .setFields("id, name, webViewLink")
+                    .setSupportsAllDrives(true)
+                    .execute();
+
+            log.info("GOOGLE DRIVE: Uploaded raw bytes file '{}' to hierarchy with ID: {} for user ID: {}", safeName, uploadedFile.getId(), userId);
+            return uploadedFile.getId();
+        } catch (Exception e) {
+            log.error("Google Drive raw bytes upload hierarchy failed for user {}: {}", userId, e.getMessage());
             return "gdrive_" + UUID.randomUUID().toString().replace("-", "");
         }
     }
@@ -483,8 +535,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                     @Override
                     public void initialize(com.google.api.client.http.HttpRequest request) throws IOException {
                         credentialsAdapter.initialize(request);
-                        request.setConnectTimeout(5000);
-                        request.setReadTimeout(5000);
+                        request.setConnectTimeout(30000);
+                        request.setReadTimeout(90000);
                     }
                 };
 
@@ -534,6 +586,93 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
         return createdFolder.getId();
     }
 
+    @Override
+    public void moveFileToFolder(String fileId, String targetFolderId, Long userId) throws IOException {
+        if (fileId == null || targetFolderId == null || fileId.startsWith("gdrive_") || targetFolderId.startsWith("gdrive_")) {
+            throw new IOException("Invalid fileId or targetFolderId for move");
+        }
+        Drive driveClient = getDriveClientForUser(userId);
+        
+        File file = driveClient.files().get(fileId).setFields("parents").setSupportsAllDrives(true).execute();
+        StringBuilder previousParents = new StringBuilder();
+        if (file.getParents() != null) {
+            for (String parent : file.getParents()) {
+                if (previousParents.length() > 0) previousParents.append(",");
+                previousParents.append(parent);
+            }
+        }
+
+        var updateReq = driveClient.files().update(fileId, null)
+                .setAddParents(targetFolderId)
+                .setFields("id, parents")
+                .setSupportsAllDrives(true);
+
+        if (previousParents.length() > 0) {
+            updateReq.setRemoveParents(previousParents.toString());
+        }
+
+        updateReq.execute();
+        log.info("Moved Google Drive file {} to target folder {}", fileId, targetFolderId);
+    }
+
+    @Override
+    public String getOrCreateFolder(String folderName, Long userId) throws IOException {
+        Drive driveClient = getDriveClientForUser(userId);
+        String parentFolderId = (userId != null && isUserDriveConnected(userId)) ? "root" : rootFolderId;
+        return getOrCreateFolder(driveClient, folderName, parentFolderId);
+    }
+
+    @Override
+    public void initializeUserDriveStructure(Long userId) {
+        if (userId == null || !isUserDriveConnected(userId)) {
+            return;
+        }
+        try {
+            Drive userDrive = getDriveClientForUser(userId);
+            String rootId = getOrCreateFolder(userDrive, "LumiEdu StudyHub", "root");
+            try {
+                com.google.api.services.drive.model.File folderMetadata = new com.google.api.services.drive.model.File();
+                folderMetadata.setDescription("Thư mục hệ thống LumiEdu StudyHub. Vui lòng không tự ý thêm, sửa, xóa file trực tiếp từ Google Drive mà hãy thực hiện qua ứng dụng LumiEdu.");
+                userDrive.files().update(rootId, folderMetadata).execute();
+            } catch (Exception descEx) {
+                log.debug("Could not set description on root system folder: {}", descEx.getMessage());
+            }
+            java.util.List<String> defaultSemesters = java.util.List.of(
+                    "Học kỳ 1", "Học kỳ 2", "Học kỳ 3", "Học kỳ 4",
+                    "Học kỳ 5", "Học kỳ 6", "Học kỳ 7", "Học kỳ 8", "Học kỳ 9", "Chung"
+            );
+            for (String sem : defaultSemesters) {
+                getOrCreateFolder(userDrive, sem, rootId);
+            }
+            log.info("Initialized 'LumiEdu StudyHub' system folder structure on Google Drive for user ID: {}", userId);
+        } catch (Exception e) {
+            log.warn("Failed to initialize Google Drive folder structure for user ID {}: {}", userId, e.getMessage());
+        }
+    }
+
+    @Override
+    public void deleteUserDriveStructure(Long userId) {
+        if (userId == null || !isUserDriveConnected(userId)) {
+            return;
+        }
+        try {
+            Drive userDrive = getDriveClientForUser(userId);
+            String folderSearchQuery = "mimeType = 'application/vnd.google-apps.folder' and (name = 'LumiEdu StudyHub' or name contains 'Nhóm ') and 'root' in parents and trashed = false";
+            FileList result = userDrive.files().list()
+                    .setQ(folderSearchQuery)
+                    .setFields("files(id, name)")
+                    .execute();
+            if (result.getFiles() != null && !result.getFiles().isEmpty()) {
+                for (com.google.api.services.drive.model.File folder : result.getFiles()) {
+                    userDrive.files().delete(folder.getId()).execute();
+                    log.info("Deleted system/workspace folder '{}' (ID: {}) from user ID {} Google Drive", folder.getName(), folder.getId(), userId);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to delete system/workspace folder structure from Google Drive for user ID {}: {}", userId, e.getMessage());
+        }
+    }
+
     private String getOrCreateFolder(String folderName, String parentFolderId) throws IOException {
         return getOrCreateFolder(this.googleDrive, folderName, parentFolderId);
     }
@@ -576,6 +715,10 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                 if (permissionsList.getPermissions() != null) {
                     for (Permission p : permissionsList.getPermissions()) {
                         if (email.equalsIgnoreCase(p.getEmailAddress())) {
+                            if ("owner".equalsIgnoreCase(p.getRole())) {
+                                log.info("GOOGLE DRIVE: Email {} is already owner of file ID {}, skip permission update.", email, googleDriveFileId);
+                                return;
+                            }
                             existingPermissionId = p.getId();
                             break;
                         }
@@ -605,6 +748,11 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                 log.info("GOOGLE DRIVE: Shared file ID: {} with email: {} as role: {} using client for user: {}", googleDriveFileId, email, role, userId);
             }
         } catch (Exception e) {
+            String errStr = e.getMessage() != null ? e.getMessage() : "";
+            if (errStr.contains("cannotRemoveOwner") || errStr.contains("alreadyExists") || errStr.contains("owner")) {
+                log.info("GOOGLE DRIVE: Safe skip shareFile for file {} and email {}: {}", googleDriveFileId, email, errStr);
+                return;
+            }
             log.error("Google Drive sharing failed for file ID: {} and email: {} and user {}. Error: {}", googleDriveFileId, email, userId, e.getMessage());
             if (isUserDriveConnected(userId)) {
                 try {

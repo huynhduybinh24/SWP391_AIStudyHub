@@ -66,6 +66,12 @@ export function ShareDocumentModal({ isOpen, onClose, documentId, documentTitle 
     if (!selectedWorkspaceId || !documentId || !user?.id) return
 
     setSharing(true)
+    addToast(
+      language === 'vi'
+        ? 'Đang chia sẻ tài liệu vào nhóm học tập và Google Drive...'
+        : 'Sharing document to study group and Google Drive...',
+      'info'
+    )
     try {
       await apiClient.post(
         `/workspaces/${selectedWorkspaceId}/documents/${documentId}?userId=${user.id}`

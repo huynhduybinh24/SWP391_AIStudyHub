@@ -38,6 +38,7 @@ public class GoogleDriveIntegrationServiceImpl implements GoogleDriveIntegration
     private final UserGoogleDriveConnectionRepository connectionRepository;
     private final UserRepository userRepository;
     private final EncryptionService encryptionService;
+    private final com.lumiedu.document.service.GoogleDriveService googleDriveService;
 
     @Value("${google.drive.client-id:}")
     private String clientId;
@@ -193,6 +194,12 @@ public class GoogleDriveIntegrationServiceImpl implements GoogleDriveIntegration
 
             connectionRepository.save(connection);
             log.info("Successfully connected Google Drive for user ID: {} with email: {}", userId, googleEmail);
+
+            try {
+                googleDriveService.initializeUserDriveStructure(userId);
+            } catch (Exception initEx) {
+                log.warn("Failed to auto-create LumiEdu folder structure on Google Drive for user {}: {}", userId, initEx.getMessage());
+            }
 
         } catch (Exception e) {
             log.error("Google Drive callback processing failed for user ID {}: {}", userId, e.getMessage());

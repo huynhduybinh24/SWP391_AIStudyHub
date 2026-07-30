@@ -14,8 +14,6 @@ import { CreateStudyPlanModal } from '@/features/study-plans/pages/CreateStudyPl
 import { useTranslation } from '@/context/LanguageContext'
 import { useAuthStore } from '@/stores/authStore'
 import { ContinueLearningCard } from '@/features/dashboard/components/ContinueLearningCard'
-import { mockContinueLearningItem } from '@/features/dashboard/mock/continueLearning'
-
 export function DashboardPage() {
   const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
@@ -25,21 +23,15 @@ export function DashboardPage() {
   const [continueLearningItem, setContinueLearningItem] = useState(() => {
     try {
       const stored = localStorage.getItem('aiStudyHubLastOpenedDocument')
-      return stored ? JSON.parse(stored) : mockContinueLearningItem
+      return stored ? JSON.parse(stored) : null
     } catch (e) {
-      return mockContinueLearningItem
+      return null
     }
   })
 
   useEffect(() => {
     const handleUpdate = () => {
       refetch()
-      try {
-        const stored = localStorage.getItem('aiStudyHubLastOpenedDocument')
-        if (stored) {
-          setContinueLearningItem(JSON.parse(stored))
-        }
-      } catch (e) {}
     }
     window.addEventListener('aiStudyHubNotificationsUpdated', handleUpdate)
     window.addEventListener('aiStudyHubUserChanged', handleUpdate)
@@ -50,6 +42,28 @@ export function DashboardPage() {
       window.removeEventListener('aiStudyHubLastOpenedDocumentUpdated', handleUpdate)
     }
   }, [refetch])
+
+  useEffect(() => {
+    if (data?.documents) {
+      try {
+        const stored = localStorage.getItem('aiStudyHubLastOpenedDocument')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          const isReal = data.documents.some((d: any) => String(d.id) === String(parsed.id))
+          if (!isReal) {
+            localStorage.removeItem('aiStudyHubLastOpenedDocument')
+            setContinueLearningItem(null)
+          } else {
+            setContinueLearningItem(parsed)
+          }
+        } else {
+          setContinueLearningItem(null)
+        }
+      } catch (e) {
+        setContinueLearningItem(null)
+      }
+    }
+  }, [data?.documents])
 
   if (user?.role?.toLowerCase() === 'admin') {
     return <Navigate to="/dashboard/admin" replace />
@@ -82,9 +96,11 @@ export function DashboardPage() {
         <StorageWidget usedMb={data.storageUsedMb} totalMb={data.storageTotalMb} />
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
-        <ContinueLearningCard item={continueLearningItem} />
-      </div>
+      {continueLearningItem && (
+        <div className="grid grid-cols-12 gap-6">
+          <ContinueLearningCard item={continueLearningItem} />
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-6">
         <RecentDocuments documents={data.documents} />

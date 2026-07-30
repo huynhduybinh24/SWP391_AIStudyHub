@@ -142,23 +142,31 @@ export function FileViewer({
   }, [previewContent])
 
   useEffect(() => {
-    if (normType === 'pdf' && documentId) {
+    if (normType === 'pdf') {
       setLoadingPdf(true)
       setPdfLoadError(false)
-      documentService.downloadDocument(documentId)
-        .then((blob) => {
-          const url = URL.createObjectURL(blob)
-          setPdfUrl(url)
-        })
-        .catch((err) => {
-          console.error("Failed to fetch PDF blob for viewer:", err)
-          setPdfLoadError(true)
-        })
-        .finally(() => {
-          setLoadingPdf(false)
-        })
+      if (documentId) {
+        documentService.downloadDocument(documentId)
+          .then((blob) => {
+            const pdfBlob = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' })
+            const url = URL.createObjectURL(pdfBlob)
+            setPdfUrl(url)
+          })
+          .catch((err) => {
+            console.error("Failed to fetch PDF blob for viewer:", err)
+            if (fileUrl) {
+              setPdfUrl(fileUrl)
+            }
+          })
+          .finally(() => {
+            setLoadingPdf(false)
+          })
+      } else if (fileUrl) {
+        setPdfUrl(fileUrl)
+        setLoadingPdf(false)
+      }
     }
-  }, [documentId, normType])
+  }, [documentId, normType, fileUrl])
 
   useEffect(() => {
     if (!documentId) return
@@ -551,7 +559,7 @@ export function FileViewer({
             isFullscreen ? "fixed inset-4 z-50 bg-slate-955 shadow-2xl" : "relative shadow-xl"
           )}
         >
-          {normType === 'pdf' && !pdfLoadError ? (
+          {normType === 'pdf' ? (
             <div className="flex flex-col h-full w-full">
               {/* PDF Toolbar */}
               <div className="flex items-center justify-between gap-4 border-b bg-blue-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 px-6 py-4 select-none">

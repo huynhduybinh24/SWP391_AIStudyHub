@@ -23,6 +23,8 @@ export interface SharedFile {
   timeGroup?: 'thisWeek' | 'lastWeek' | 'earlierThisYear'
   collaborators?: boolean
   url?: string
+  shareSource?: 'WORKSPACE' | 'DIRECT' | string
+  workspaceName?: string
   editHistory?: {
     id: string
     user: string
@@ -155,7 +157,7 @@ export function SharedFilesTable({
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
           {files.map((file) => (
             <tr
-              key={file.id}
+              key={`${file.id}-${file.shareSource || 'DIRECT'}-${file.workspaceName || ''}`}
               className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
             >
               <td className="py-4 px-6 font-bold text-slate-900 dark:text-slate-100">

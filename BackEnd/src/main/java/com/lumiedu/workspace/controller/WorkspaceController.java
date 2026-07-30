@@ -40,6 +40,16 @@ public class WorkspaceController {
         }
     }
 
+    @GetMapping("/invitations")
+    public ResponseEntity<ApiResponse<List<WorkspaceResponse>>> getPendingInvitations(@RequestParam Long userId) {
+        try {
+            List<WorkspaceResponse> response = workspaceService.getPendingInvitations(userId);
+            return ResponseEntity.ok(ApiResponse.ok("Pending invitations retrieved successfully.", response));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<WorkspaceResponse>> getWorkspaceById(
             @PathVariable Long id,
@@ -192,6 +202,20 @@ public class WorkspaceController {
         try {
             List<WorkspaceAiReportResponse> response = workspaceService.getWorkspaceAiReports(id, userId);
             return ResponseEntity.ok(ApiResponse.ok("Workspace AI reports retrieved successfully.", response));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteWorkspace(
+            @PathVariable Long id,
+            @RequestParam Long userId) {
+        try {
+            workspaceService.deleteWorkspace(id, userId);
+            return ResponseEntity.ok(ApiResponse.ok("Workspace deleted successfully.", null));
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {

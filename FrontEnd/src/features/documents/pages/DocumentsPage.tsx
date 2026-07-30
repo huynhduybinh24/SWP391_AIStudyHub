@@ -4,6 +4,7 @@ import { logActivity } from '@/services/activityLogService'
 import { aiService } from '@/services/aiService'
 import type { AiSummaryResponse, FlashcardResponse, QuizQuestionResponse } from '@/services/aiService'
 import { useAuthStore } from '@/stores/authStore'
+import { toast } from '@/components/ui/Toast'
 import { documentService } from '@/services/documentService'
 import { useSubjects } from '@/hooks/useSubjects'
 import {
@@ -28,6 +29,7 @@ import { Modal } from '@/components/ui/Modal'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
 import { apiClient } from '@/lib/axios'
+import { ConfirmModal } from '@/features/shared-files/components/ConfirmModal'
 
 // Types
 interface DocumentItem {
@@ -885,6 +887,7 @@ export function DocumentsPage() {
   const [newDocType, setNewDocType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [hasUploadError, setHasUploadError] = useState(false)
+  const [docToDelete, setDocToDelete] = useState<DocumentItem | null>(null)
 
   // Reset newDocSubject when uploadMajor, uploadSemester, or dynamicSubjects changes
   useEffect(() => {
@@ -1164,29 +1167,38 @@ export function DocumentsPage() {
   }
 
   // Delete Action
-  const handleDeleteDocument = async (id: string) => {
+  const handleDeleteDocument = (id: string) => {
     const targetDoc = documents.find(d => d.id === id)
     if (targetDoc) {
-      try {
-        await documentService.deleteDocument(id)
-        setDocuments((prev) => prev.filter((d) => d.id !== id))
-        
-        // Log document deletion activity
-        logActivity({
-          eventKey: 'documentDeleted',
-          category: 'moderation',
-          status: 'success',
-          eventTextEn: 'Document deleted',
-          eventTextVi: 'Xóa tài liệu',
-          detailsTextEn: `Permanently deleted document '${targetDoc.title || targetDoc.fileName}' from storage.`,
-          detailsTextVi: `Đã xóa vĩnh viễn tài liệu '${targetDoc.title || targetDoc.fileName}' khỏi kho lưu trữ.`
-        })
+      setDocToDelete(targetDoc)
+    }
+  }
 
-        showToast(`Đã xóa tài liệu "${targetDoc.title || targetDoc.fileName}"`)
-      } catch (e) {
-        console.error('Failed to delete document:', e)
-        showToast('Có lỗi xảy ra khi xóa tài liệu. Vui lòng thử lại!')
-      }
+  const confirmDeleteDocument = async () => {
+    if (!docToDelete) return
+    const targetDoc = docToDelete
+    setDocToDelete(null)
+
+    try {
+      toast.info(language === 'vi' ? 'Đang xóa tài liệu trên hệ thống và Google Drive...' : 'Deleting document from system and Google Drive...')
+      await documentService.deleteDocument(targetDoc.id)
+      setDocuments((prev) => prev.filter((d) => d.id !== targetDoc.id))
+      
+      // Log document deletion activity
+      logActivity({
+        eventKey: 'documentDeleted',
+        category: 'moderation',
+        status: 'success',
+        eventTextEn: 'Document deleted',
+        eventTextVi: 'Xóa tài liệu',
+        detailsTextEn: `Permanently deleted document '${targetDoc.title || targetDoc.fileName}' from storage.`,
+        detailsTextVi: `Đã xóa vĩnh viễn tài liệu '${targetDoc.title || targetDoc.fileName}' khỏi kho lưu trữ.`
+      })
+
+      toast.success(language === 'vi' ? `Đã xóa tài liệu "${targetDoc.title || targetDoc.fileName}" thành công!` : `Successfully deleted document "${targetDoc.title || targetDoc.fileName}"!`)
+    } catch (e) {
+      console.error('Failed to delete document:', e)
+      toast.error(language === 'vi' ? 'Có lỗi xảy ra khi xóa tài liệu. Vui lòng thử lại!' : 'Failed to delete document. Please try again!')
     }
   }
 
@@ -2863,6 +2875,17 @@ export function DocumentsPage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={Boolean(docToDelete)}
+        onClose={() => setDocToDelete(null)}
+        onConfirm={confirmDeleteDocument}
+        title={language === 'vi' ? 'Xác nhận xóa tài liệu' : 'Confirm Delete Document'}
+        message={language === 'vi' ? `Bạn có chắc chắn muốn xóa tài liệu "${docToDelete?.title || docToDelete?.fileName}"? Hành động này không thể hoàn tác.` : `Are you sure you want to delete "${docToDelete?.title || docToDelete?.fileName}"? This action cannot be undone.`}
+        confirmText={language === 'vi' ? 'Xóa tài liệu' : 'Delete Document'}
+        cancelText={language === 'vi' ? 'Hủy' : 'Cancel'}
+        type="danger"
+      />
 
     </div>
   )

@@ -41,6 +41,7 @@ public class UserServiceImpl implements UserService {
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final com.lumiedu.document.service.GoogleDriveService googleDriveService;
 
     @Override
     @Transactional(readOnly = true)
@@ -105,6 +106,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long userId) {
+        // Xóa cấu trúc thư mục LumiEdu StudyHub trên Google Drive cá nhân của user
+        try {
+            googleDriveService.deleteUserDriveStructure(userId);
+        } catch (Exception e) {
+            // Log warning if drive cleanup fails
+        }
+
         // Thực hiện xóa cứng toàn bộ các bảng liên quan đến user
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0");
         try {

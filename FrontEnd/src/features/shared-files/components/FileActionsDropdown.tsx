@@ -42,10 +42,10 @@ export function FileActionsDropdown({
   const [coords, setCoords] = useState({ top: 0, left: 0 })
   const [_focusedIndex, setFocusedIndex] = useState(-1)
 
-  const isExplicitViewer = file.permission === 'Viewer' || file.permission === 'View Only'
-  const isUserOwner = !isExplicitViewer && (file.owner === 'me' || file.permission === 'Owner' || (Boolean(user?.email) && Boolean(file.ownerEmail) && file.ownerEmail!.toLowerCase() === user!.email!.toLowerCase()))
-  const isOwner = isUserOwner
-  const isEditor = !isExplicitViewer && !isOwner && file.permission === 'Editor'
+  const permStr = String(file.permission || '').toLowerCase()
+  const isViewer = permStr.includes('viewer') || permStr.includes('view') || permStr.includes('read')
+  const isOwner = !isViewer && (permStr.includes('owner') || (file.owner === 'me' && permStr !== 'editor') || (Boolean(user?.email) && Boolean(file.ownerEmail) && file.ownerEmail!.toLowerCase() === user!.email!.toLowerCase()))
+  const isEditor = !isViewer && !isOwner && (permStr.includes('editor') || permStr.includes('edit') || permStr.includes('collaborator'))
 
 
   const updatePosition = () => {

@@ -14,6 +14,7 @@ interface PermissionDropdownProps {
   align?: 'left' | 'right'
   ariaLabel?: string
   className?: string
+  disabled?: boolean
 }
 
 export function PermissionDropdown({
@@ -23,7 +24,8 @@ export function PermissionDropdown({
   showRemove = false,
   align = 'right',
   ariaLabel = 'Select permission level',
-  className
+  className,
+  disabled = false
 }: PermissionDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -117,9 +119,12 @@ export function PermissionDropdown({
       <button
         ref={buttonRef}
         type="button"
+        disabled={disabled}
         onClick={() => {
-          setIsOpen(!isOpen)
-          setFocusedIndex(0)
+          if (!disabled) {
+            setIsOpen(!isOpen)
+            setFocusedIndex(0)
+          }
         }}
         onKeyDown={handleKeyDown}
         aria-haspopup="listbox"
@@ -128,6 +133,7 @@ export function PermissionDropdown({
         className={cn(
           "flex items-center justify-between gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-semibold transition-all select-none shadow-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50",
           "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700",
+          disabled && "opacity-60 cursor-not-allowed pointer-events-none",
           className
         )}
       >

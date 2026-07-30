@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Mail, UserPlus, ArrowLeft, Settings, Link, Trash2, AlertCircle } from 'lucide-react'
+import { X, Mail, UserPlus, ArrowLeft, Settings, Link, Trash2, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
@@ -85,6 +85,8 @@ export function ShareAccessModal({
   const [newEmail, setNewEmail] = useState('')
   const [newRole, setNewRole] = useState<ShareRole>('viewer')
   const [inputErrorMsg, setInputErrorMsg] = useState<string | null>(null)
+  const [isSharingLoading, setIsSharingLoading] = useState(false)
+  const [shareSuccessMsg, setShareSuccessMsg] = useState<string | null>(null)
 
   const modalRef = useRef<HTMLDivElement>(null)
   const emailInputRef = useRef<HTMLInputElement>(null)
@@ -197,6 +199,9 @@ export function ShareAccessModal({
       setNewRole('viewer')
       setIsLoading(false)
       setHasError(false)
+      setIsSharingLoading(false)
+      setShareSuccessMsg(null)
+      setInputErrorMsg(null)
 
       if (generalAccess) {
         setLocalGeneralAccess(generalAccess)
@@ -296,8 +301,12 @@ export function ShareAccessModal({
   }
 
   const handleAddCollaborator = async () => {
+    setInputErrorMsg(null)
+    setShareSuccessMsg(null)
+
     if (!newEmail || !newEmail.includes('@')) {
       const msg = language === 'vi' ? 'Vui lòng nhập địa chỉ email hợp lệ!' : (t.shareAccess?.invalidEmailError || 'Please enter a valid email address')
+      setInputErrorMsg(msg)
       triggerToast(msg, 'error')
       return
     }
@@ -308,6 +317,7 @@ export function ShareAccessModal({
     )
     if (isAlreadyAdded) {
       const msg = language === 'vi' ? 'Email này đã có trong danh sách truy cập!' : (t.shareAccess?.userAlreadyAddedError || 'User is already added')
+      setInputErrorMsg(msg)
       triggerToast(msg, 'warning')
       return
     }
@@ -334,39 +344,54 @@ export function ShareAccessModal({
     }
 
     const isNumeric = fileId && /^\d+$/.test(fileId)
-    if (isNumeric) {
-      try {
+    setIsSharingLoading(true)
+    triggerToast(
+      language === 'vi'
+        ? 'Đang chia sẻ tài liệu trên hệ thống và Google Drive...'
+        : 'Sharing document on system and Google Drive...',
+      'info'
+    )
+
+    try {
+      if (isNumeric) {
         await documentService.addOrUpdateDocumentShare(fileId, emailTrimmed, newRole)
-      } catch (err: any) {
-        console.error('Failed to add share via API:', err)
-        const apiErrMsg = err.response?.data?.message || err.message || 'Lưu chia sẻ trên máy chủ thất bại'
-        const finalMsg = (apiErrMsg.includes("registered user") || apiErrMsg.includes("existing registered user"))
-          ? (language === 'vi' ? `Email "${emailTrimmed}" chưa đăng ký tài khoản trên hệ thống LumiEdu!` : `Email "${emailTrimmed}" is not registered on LumiEdu!`)
-          : apiErrMsg
-        setInputErrorMsg(finalMsg)
-        triggerToast(finalMsg, 'error')
-        return
       }
+
+      const updated = [...localCollaborators, newCollab]
+      setLocalCollaborators(updated)
+
+      if (onCollaboratorsChange) {
+        onCollaboratorsChange(updated)
+      }
+
+      if (onShareSubmit) {
+        const permString = newRole === 'editor' ? 'Editor' : 'Viewer'
+        onShareSubmit(emailTrimmed, permString)
+      }
+
+      setNewEmail('')
+      setNewRole('viewer')
+      const successMsg = language === 'vi' 
+        ? `Đã chia sẻ tài liệu thành công tới "${emailTrimmed}"!`
+        : (t.shareAccess?.collaboratorAddedToast || `Successfully shared document to "${emailTrimmed}"!`)
+      
+      setShareSuccessMsg(successMsg)
+      triggerToast(successMsg, 'success')
+
+      setTimeout(() => {
+        setShareSuccessMsg(null)
+      }, 5000)
+    } catch (err: any) {
+      console.error('Failed to add share via API:', err)
+      const apiErrMsg = err.response?.data?.message || err.message || 'Lưu chia sẻ trên máy chủ thất bại'
+      const finalMsg = (apiErrMsg.includes("registered user") || apiErrMsg.includes("existing registered user"))
+        ? (language === 'vi' ? `Email "${emailTrimmed}" chưa đăng ký tài khoản trên hệ thống LumiEdu!` : `Email "${emailTrimmed}" is not registered on LumiEdu!`)
+        : apiErrMsg
+      setInputErrorMsg(finalMsg)
+      triggerToast(finalMsg, 'error')
+    } finally {
+      setIsSharingLoading(false)
     }
-
-    const updated = [...localCollaborators, newCollab]
-    setLocalCollaborators(updated)
-
-    if (onCollaboratorsChange) {
-      onCollaboratorsChange(updated)
-    }
-
-    if (onShareSubmit) {
-      const permString = newRole === 'editor' ? 'Editor' : 'Viewer'
-      onShareSubmit(emailTrimmed, permString)
-    }
-
-    setNewEmail('')
-    setNewRole('viewer')
-    const successMsg = language === 'vi' 
-      ? `Đã chia sẻ tài liệu thành công tới ${emailTrimmed}`
-      : (t.shareAccess?.collaboratorAddedToast || 'Collaborator added successfully')
-    triggerToast(successMsg)
   }
 
   const handleRoleChange = async (collabId: string, role: ShareRole) => {
@@ -599,26 +624,28 @@ export function ShareAccessModal({
                     autoCorrect="off"
                     autoCapitalize="off"
                     spellCheck={false}
+                    disabled={isSharingLoading}
                     value={newEmail}
                     onChange={e => {
                       setNewEmail(e.target.value)
                       setInputErrorMsg(null)
+                      setShareSuccessMsg(null)
                     }}
                     onKeyDown={e => {
-                      if (e.key === 'Enter') {
+                      if (e.key === 'Enter' && !isSharingLoading) {
                         e.preventDefault()
                         handleAddCollaborator()
                       }
                     }}
                     placeholder={language === 'vi' ? 'Ví dụ: nguoinhan@gmail.com...' : 'Example: user@gmail.com...'}
-                    className="flex-1 px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-xs"
+                    className="flex-1 px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
                   />
 
                   <div className="w-28 shrink-0">
                     <PermissionDropdown
                       value={newRole}
                       onChange={role => setNewRole(role as ShareRole)}
-                      type="invite"
+                      disabled={isSharingLoading}
                     />
                   </div>
                 </div>
@@ -626,21 +653,39 @@ export function ShareAccessModal({
                 <button
                   type="button"
                   onClick={handleAddCollaborator}
-                  disabled={!newEmail || !newEmail.includes('@')}
+                  disabled={!newEmail || !newEmail.includes('@') || isSharingLoading}
                   className={cn(
                     "w-full py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-98",
-                    newEmail && newEmail.includes('@')
+                    isSharingLoading
+                      ? "bg-indigo-500 text-white cursor-wait opacity-90 shadow-indigo-500/30"
+                      : newEmail && newEmail.includes('@')
                       ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/30"
                       : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed opacity-60"
                   )}
                 >
-                  <UserPlus className="size-4" />
-                  <span>
-                    {newEmail && newEmail.includes('@')
-                      ? (language === 'vi' ? `XÁC NHẬN CHIA SẺ CHO "${newEmail}"` : `CONFIRM SHARE TO "${newEmail}"`)
-                      : (language === 'vi' ? 'BẤM CHIA SẺ NGAY' : 'CLICK TO SHARE NOW')}
-                  </span>
+                  {isSharingLoading ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin text-white" />
+                      <span>{language === 'vi' ? 'ĐANG ĐỒNG BỘ & CHIA SẺ...' : 'SHARING & SYNCING...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="size-4" />
+                      <span>
+                        {newEmail && newEmail.includes('@')
+                          ? (language === 'vi' ? `XÁC NHẬN CHIA SẺ CHO "${newEmail}"` : `CONFIRM SHARE TO "${newEmail}"`)
+                          : (language === 'vi' ? 'BẤM CHIA SẺ NGAY' : 'CLICK TO SHARE NOW')}
+                      </span>
+                    </>
+                  )}
                 </button>
+
+                {shareSuccessMsg && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 text-xs font-bold animate-fadeIn">
+                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <span>{shareSuccessMsg}</span>
+                  </div>
+                )}
 
                 {inputErrorMsg && (
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/80 text-rose-600 dark:text-rose-300 text-xs font-bold animate-fadeIn">

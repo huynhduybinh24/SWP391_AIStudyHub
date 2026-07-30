@@ -15,6 +15,8 @@ export interface SharedFile {
   tags?: string[];
   previewContent?: string;
   url?: string;
+  shareSource?: 'WORKSPACE' | 'DIRECT' | string;
+  workspaceName?: string;
   editHistory?: Array<{
     id: string;
     user: string;

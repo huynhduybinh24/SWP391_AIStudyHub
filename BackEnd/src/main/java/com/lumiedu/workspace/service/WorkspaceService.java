@@ -20,4 +20,6 @@ public interface WorkspaceService {
     Document importDocumentToPersonal(Long workspaceId, Long documentId, Long userId);
     WorkspaceAiReportResponse generateWorkspaceAiReport(Long workspaceId, Long userId);
     List<WorkspaceAiReportResponse> getWorkspaceAiReports(Long workspaceId, Long userId);
+    void deleteWorkspace(Long workspaceId, Long userId);
+    List<WorkspaceResponse> getPendingInvitations(Long userId);
 }

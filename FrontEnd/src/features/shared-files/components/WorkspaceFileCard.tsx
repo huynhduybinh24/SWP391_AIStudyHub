@@ -186,23 +186,23 @@ export function WorkspaceFileCard({
               <span className="text-slate-300 dark:text-slate-755 font-black">&bull;</span>
               <span>{formatSharedDate(file.dateShared)}</span>
               <span className="text-slate-300 dark:text-slate-755 font-black">&bull;</span>
-              <div>{getPermissionBadge(file.permission)}</div>
+              {getPermissionBadge(file.permission)}
+              <span className="text-slate-300 dark:text-slate-755 font-black">&bull;</span>
+              {file.shareSource === 'DIRECT' ? (
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-purple-50 text-purple-700 border border-purple-200/80 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800">
+                  {language === 'vi' ? '👤 Cá nhân 1-1' : '👤 Direct 1-on-1'}
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200/80 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800">
+                  {language === 'vi' ? `👥 Nhóm: ${file.workspaceName || 'Workspace'}` : `👥 Group: ${file.workspaceName || 'Workspace'}`}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         {/* Right action details */}
         <div className="flex items-center gap-4 ml-4 shrink-0 overflow-visible" onClick={(e) => e.stopPropagation()}>
-          {file.name.includes('Notes') ? (
-            <div className="flex -space-x-1.5 shrink-0 hidden sm:flex">
-              <div className="size-6 rounded-full bg-[#0fbf7c] text-white flex items-center justify-center font-bold text-[9px]">S</div>
-              <div className="size-6 rounded-full bg-[#5f6ffc] text-white flex items-center justify-center font-bold text-[9px]">D</div>
-            </div>
-          ) : file.name.includes('Assets') ? (
-            <span className="rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 px-2 py-0.5 text-[9px] font-black text-slate-550 dark:text-slate-300 tracking-wider">
-              +3
-            </span>
-          ) : null}
 
           {file.name.includes('Notes') && (
             <span className="rounded-md bg-blue-50/70 dark:bg-blue-955 border border-blue-100/50 dark:border-blue-900/50 px-2.5 py-0.5 text-[9px] font-black tracking-wider text-[#3155F6] dark:text-blue-400">

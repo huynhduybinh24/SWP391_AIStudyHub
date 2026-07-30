@@ -8,7 +8,7 @@ import {
   FileSpreadsheet,
   Eraser,
   Trash2,
-  FileIcon,
+  File as FileIcon,
   BarChart2,
   AlertTriangle,
   Archive,
@@ -119,7 +119,7 @@ const mapDocumentToCloudFile = (doc: DocumentResponse) => {
 
 export function CloudStoragePage() {
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const user = useAuthStore((s) => s.user)
@@ -148,7 +148,7 @@ export function CloudStoragePage() {
   const [tempSize, setTempSize] = useState(0)
   const [isMounted, setIsMounted] = useState(false)
 
-  useEffect(() => {
+  const loadUserDocuments = () => {
     if (user?.id) {
       Promise.allSettled([
         storageService.getStorageUsage(Number(user.id)),
@@ -170,6 +170,10 @@ export function CloudStoragePage() {
         }
       })
     }
+  }
+
+  useEffect(() => {
+    loadUserDocuments()
   }, [user?.id])
 
   const totalStorageMb = storageData ? storageData.storageLimitMb : getStorageLimitByPlan(user?.plan)
@@ -274,8 +278,9 @@ export function CloudStoragePage() {
 
   const handleDelete = async (id: string | number) => {
     try {
+      toast.info(language === 'vi' ? 'Đang xóa tài liệu trên hệ thống và Google Drive...' : 'Deleting document from system and Google Drive...');
       await documentService.deleteDocument(id);
-      toast.success('File deleted successfully');
+      toast.success(language === 'vi' ? 'Đã xóa tài liệu khỏi hệ thống và Google Drive thành công!' : 'Document deleted successfully from system and Google Drive');
       loadUserDocuments();
       if (user?.id) {
         storageService.getStorageUsage(Number(user.id))
@@ -287,7 +292,7 @@ export function CloudStoragePage() {
       }
     } catch (err) {
       console.error("Failed to delete document:", err);
-      toast.error('Failed to delete file');
+      toast.error(language === 'vi' ? 'Có lỗi xảy ra khi xóa tài liệu' : 'Failed to delete file');
     }
   }
 
@@ -431,17 +436,19 @@ export function CloudStoragePage() {
                 {t.cloudStorage.noRecentUploads}
               </div>
             ) : (
-              uploads.map((file, i) => (
-                <div
-                  key={file.id}
-                  className={`flex items-center gap-4 p-5 group cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors ${
-                    i !== uploads.length - 1 ? 'border-b border-border' : ''
-                  }`}
-                  onClick={() => navigate(`/dashboard/storage/explorer/preview?id=${file.id}`)}
-                >
-                  <div className={`p-2.5 rounded-lg ${file.bgColor}`}>
-                    <file.icon className={`size-6 ${file.iconColor}`} />
-                  </div>
+              uploads.map((file, i) => {
+                const { icon: IconComp, iconColor, bgColor } = getFileExtensionInfo(file.name || '')
+                return (
+                  <div
+                    key={file.id}
+                    className={`flex items-center gap-4 p-5 group cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors ${
+                      i !== uploads.length - 1 ? 'border-b border-border' : ''
+                    }`}
+                    onClick={() => navigate(`/dashboard/storage/explorer/preview?id=${file.id}`)}
+                  >
+                    <div className={`p-2.5 rounded-lg ${bgColor}`}>
+                      <IconComp className={`size-6 ${iconColor}`} />
+                    </div>
                   <div className="flex-1 flex flex-col">
                     <span className="font-medium text-foreground text-[15px] group-hover:text-primary transition-colors">
                       {file.name}
@@ -461,7 +468,8 @@ export function CloudStoragePage() {
                     <Trash2 className="size-4" />
                   </button>
                 </div>
-              ))
+              )
+            })
             )}
           </div>
         </Card>

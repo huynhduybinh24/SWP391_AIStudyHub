@@ -69,8 +69,8 @@ export function ConfirmModal({
     switch (type) {
       case 'danger':
         return {
-          iconBg: 'bg-red-50 dark:bg-red-950/40 text-red-650 dark:text-red-400',
-          confirmBtn: 'bg-red-600 hover:bg-red-750 dark:bg-red-650 dark:hover:bg-red-750 focus:ring-red-500 text-white shadow-md shadow-red-650/10'
+          iconBg: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400',
+          confirmBtn: 'bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 focus:ring-red-500 text-white shadow-md shadow-red-600/20'
         }
       case 'warning':
         return {

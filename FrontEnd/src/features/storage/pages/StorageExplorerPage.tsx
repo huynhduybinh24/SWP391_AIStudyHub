@@ -9,7 +9,7 @@ import {
   Cloud,
   FileText,
   FileImage,
-  FileIcon,
+  File as FileIcon,
   Sparkles,
   Trash2,
   Check,
@@ -249,8 +249,9 @@ export function StorageExplorerPage() {
   const handleDeleteFile = async (id: string | number, e: React.MouseEvent) => {
     e.stopPropagation()
     try {
+      toast.info(language === 'vi' ? 'Đang xóa tài liệu trên hệ thống và Google Drive...' : 'Deleting document from system and Google Drive...');
       await documentService.deleteDocument(id);
-      toast.success('File deleted successfully');
+      toast.success(language === 'vi' ? 'Đã xóa tài liệu khỏi hệ thống và Google Drive thành công!' : 'Document deleted successfully from system and Google Drive');
       loadUserFiles();
       if (user?.id) {
         storageService.getStorageUsage(Number(user.id))
@@ -261,7 +262,7 @@ export function StorageExplorerPage() {
       }
     } catch (err) {
       console.error("Failed to delete document:", err);
-      toast.error('Failed to delete file');
+      toast.error(language === 'vi' ? 'Có lỗi xảy ra khi xóa tài liệu' : 'Failed to delete file');
     }
   }
 

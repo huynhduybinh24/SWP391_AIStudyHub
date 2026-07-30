@@ -22,7 +22,7 @@ export function LinkedAccountManageModal({
 }: LinkedAccountManageModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   const [isSyncing, setIsSyncing] = useState(false)
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   // Focus trap & ESC key handler
   useEffect(() => {

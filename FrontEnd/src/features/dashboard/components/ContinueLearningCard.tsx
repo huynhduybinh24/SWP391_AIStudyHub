@@ -13,30 +13,7 @@ export function ContinueLearningCard({ item }: ContinueLearningCardProps) {
   const { t, language } = useTranslation()
 
   if (!item) {
-    // Empty state
-    return (
-      <Link to="/dashboard/documents" className="col-span-12 block group">
-        <Card className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4 hover:shadow-md transition-all duration-300 dark:hover:border-slate-700/80 cursor-pointer">
-          <div className="flex items-center gap-4 text-center sm:text-left flex-col sm:flex-row min-w-0">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400">
-              <BookOpen className="size-6" />
-            </div>
-            <div className="space-y-1 min-w-0">
-              <h4 className="text-base font-bold text-foreground">
-                {t.dashboard.noRecentDocs}
-              </h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {t.dashboard.noRecentDocsDesc}
-              </p>
-            </div>
-          </div>
-          <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 group-hover:underline flex items-center gap-1 shrink-0">
-            {t.dashboard.browseDocs}
-            <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-1" />
-          </span>
-        </Card>
-      </Link>
-    )
+    return null
   }
 
   // Active state

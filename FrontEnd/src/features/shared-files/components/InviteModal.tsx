@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Mail, ChevronDown, Check, FolderPlus, HelpCircle, FolderOpen } from 'lucide-react'
+import { X, Mail, ChevronDown, Check, FolderPlus, FolderOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/context/LanguageContext'
@@ -38,10 +38,15 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit, defaultWorkspaceI
   const [wsAccessType, setWsAccessType] = useState<'PRIVATE' | 'PUBLIC'>('PRIVATE')
   const [creatingWs, setCreatingWs] = useState(false)
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+
   // Fetch workspaces when modal opens
   useEffect(() => {
     if (isOpen && user?.id) {
       setEmail('')
+      setErrorMsg('')
+      setIsSubmitting(false)
       setRole('Viewer')
       setIsRoleDropdownOpen(false)
       setIsWorkspaceDropdownOpen(false)
@@ -109,34 +114,42 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit, defaultWorkspaceI
       setIsCreatingWorkspace(false)
     } catch (err: any) {
       console.error('Failed to create workspace:', err)
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to create workspace'
-      addToast(errorMsg, 'error')
+      const msg = err.response?.data?.message || err.message || 'Failed to create workspace'
+      addToast(msg, 'error')
     } finally {
       setCreatingWs(false)
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim()) return
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email.trim())) {
-      alert(t.validation.invalidEmail)
+      setErrorMsg(t.validation?.invalidEmail || 'Địa chỉ email không đúng định dạng')
       return
     }
 
     if (!selectedWorkspaceId) {
-      addToast(
+      setErrorMsg(
         language === 'vi'
           ? 'Vui lòng chọn hoặc tạo một nhóm học tập trước khi mời!'
-          : 'Please select or create a study group first!',
-        'error'
+          : 'Please select or create a study group first!'
       )
       return
     }
 
-    onInviteSubmit(email.trim(), role, selectedWorkspaceId)
+    setErrorMsg('')
+    setIsSubmitting(true)
+    try {
+      await onInviteSubmit(email.trim(), role, selectedWorkspaceId)
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Lỗi khi gửi lời mời'
+      setErrorMsg(msg)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const selectedWorkspace = workspaces.find((w) => w.id.toString() === selectedWorkspaceId)
@@ -319,6 +332,13 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit, defaultWorkspaceI
                 ) : (
                   // Form
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {errorMsg && (
+                      <div className="text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 p-3 rounded-2xl border border-rose-200 dark:border-rose-800 flex items-start gap-2 animate-fade-in">
+                        <span className="shrink-0 font-bold">⚠️</span>
+                        <span>{errorMsg}</span>
+                      </div>
+                    )}
+
                     {/* Workspace Selector */}
                     <div className="space-y-1.5 relative">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
@@ -382,8 +402,16 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit, defaultWorkspaceI
                         type="text"
                         placeholder="name@example.com"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-xs font-semibold placeholder-slate-400 text-slate-800 dark:text-slate-100 focus:outline-none"
+                        onChange={(e) => {
+                          setEmail(e.target.value)
+                          if (errorMsg) setErrorMsg('')
+                        }}
+                        className={cn(
+                          "w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border text-xs font-semibold placeholder-slate-400 text-slate-800 dark:text-slate-100 focus:outline-none transition-all",
+                          errorMsg
+                            ? "border-rose-400 dark:border-rose-600 focus:border-rose-500 bg-rose-50/30 dark:bg-rose-950/20"
+                            : "border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900"
+                        )}
                         required
                       />
                     </div>
@@ -433,16 +461,17 @@ export function InviteModal({ isOpen, onClose, onInviteSubmit, defaultWorkspaceI
                       <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer"
+                        disabled={isSubmitting}
+                        className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
                       >
                         {t.common.cancel}
                       </button>
                       <Button
                         type="submit"
-                        disabled={!email.trim() || !selectedWorkspaceId}
-                        className="bg-[#3155F6] hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md shadow-blue-500/10"
+                        disabled={!email.trim() || !selectedWorkspaceId || isSubmitting}
+                        className="bg-[#3155F6] hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md shadow-blue-500/10 disabled:opacity-50"
                       >
-                        {t.sharedFiles.sendInvite}
+                        {isSubmitting ? (language === 'vi' ? 'Đang gửi...' : 'Sending...') : t.sharedFiles.sendInvite}
                       </Button>
                     </div>
                   </form>

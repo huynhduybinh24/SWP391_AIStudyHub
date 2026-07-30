@@ -32,6 +32,21 @@ export function FileTypeIcon({ type, className }: FileTypeIconProps) {
           <FileSpreadsheet className="size-4.5 stroke-[2]" />
         </div>
       )
+    case 'ppt':
+    case 'pptx':
+    case 'powerpoint':
+      return (
+        <div className={cn("size-8 rounded-lg flex items-center justify-center bg-orange-50 dark:bg-orange-955/35 text-orange-500", className)}>
+          <FileText className="size-4.5 stroke-[2]" />
+        </div>
+      )
+    case 'txt':
+    case 'text':
+      return (
+        <div className={cn("size-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300", className)}>
+          <FileText className="size-4.5 stroke-[2]" />
+        </div>
+      )
     case 'png':
     case 'jpg':
     case 'jpeg':

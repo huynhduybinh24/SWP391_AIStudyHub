@@ -9,6 +9,7 @@ export interface Collaborator {
   email: string
   role: 'Owner' | 'Editor' | 'View Only'
   avatarUrl?: string
+  workspaceId?: string
 }
 
 interface CollaboratorsModalProps {

@@ -294,34 +294,50 @@ export function FilePreviewModal({
                   <Download className="size-4" />
                   <span>Download</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onShare(file)}
-                  className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98]"
-                >
-                  <Share2 className="size-4" />
-                  <span>Share</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onRename(file)}
-                  className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98]"
-                >
-                  <Edit3 className="size-4" />
-                  <span>Rename</span>
-                </button>
+                {(() => {
+                  const permStr = String(file.permission || '').toLowerCase()
+                  const isViewer = permStr.includes('viewer') || permStr.includes('view') || permStr.includes('read')
+                  if (isViewer) return null
+                  return (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onShare(file)}
+                        className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                      >
+                        <Share2 className="size-4" />
+                        <span>Share</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRename(file)}
+                        className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                      >
+                        <Edit3 className="size-4" />
+                        <span>Rename</span>
+                      </button>
+                    </>
+                  )
+                })()}
               </div>
 
               {/* Right Actions */}
               <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => onDelete(file)}
-                  className="inline-flex items-center gap-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/30 text-red-650 dark:text-red-400 border border-red-200/40 dark:border-red-900/20 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98]"
-                >
-                  <Trash2 className="size-4" />
-                  <span>Delete</span>
-                </button>
+                {(() => {
+                  const permStr = String(file.permission || '').toLowerCase()
+                  const isViewer = permStr.includes('viewer') || permStr.includes('view') || permStr.includes('read')
+                  if (isViewer) return null
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => onDelete(file)}
+                      className="inline-flex items-center gap-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/30 text-red-650 dark:text-red-400 border border-red-200/40 dark:border-red-900/20 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                    >
+                      <Trash2 className="size-4" />
+                      <span>Delete</span>
+                    </button>
+                  )
+                })()}
                 <button
                   type="button"
                   onClick={onClose}

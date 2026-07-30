@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Loader2, X, Paperclip, FileIcon, Zap, BrainCircuit, ChevronDown, Mic, CloudUpload, Library, Sparkles } from 'lucide-react'
+import { Send, Loader2, X, Paperclip, File as FileIcon, Zap, BrainCircuit, ChevronDown, Mic, CloudUpload, Library, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUiStore } from '@/stores/uiStore'
 import { AIChatbotIcon } from '@/components/layout/FloatingAssistantButton'

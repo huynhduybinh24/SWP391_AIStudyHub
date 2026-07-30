@@ -44,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -89,6 +90,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final StudyPlanRepository studyPlanRepository;
     private final ObjectMapper objectMapper;
     private final com.lumiedu.notification.service.NotificationService notificationService;
+    private final com.lumiedu.email.service.EmailService emailService;
 
     // -------------------------------------------------------------------------
     // Upload
@@ -128,6 +130,10 @@ public class DocumentServiceImpl implements DocumentService {
                 Objects.requireNonNull(file.getOriginalFilename(), "Original filename must not be null"));
         String extension = getExtension(originalFileName).toLowerCase();
 
+        if (FILE_TYPE_DOCUMENT.equals(fileType) && !"pdf".equalsIgnoreCase(extension)) {
+            throw new IllegalArgumentException("Hệ thống chỉ hỗ trợ tải lên tài liệu định dạng PDF (.pdf). Vui lòng chọn tệp PDF hợp lệ!");
+        }
+
         if (!allowedExtensions.contains(extension)) {
             throw new InvalidFileTypeException(extension, fileType);
         }
@@ -142,37 +148,70 @@ public class DocumentServiceImpl implements DocumentService {
                 ? request.getTitle().trim()
                 : originalFileName;
 
-        // STEP 1: Check duplicate FILE CONTENT (Checksum SHA-256) FIRST
-        if (fileChecksum != null) {
-            boolean checksumExistsInSubject = documentRepository.existsBySubjectIgnoreCaseAndChecksumAndDeletedFalse(subjectToUse, fileChecksum);
-            boolean checksumExistsForUser = userId != null && documentRepository.existsByUserIdAndSubjectIgnoreCaseAndChecksumAndDeletedFalse(userId, subjectToUse, fileChecksum);
+        // SPECIAL WORKSPACE UPLOAD RULE: If uploading inside workspace and the file ALREADY exists in My Documents:
+        // Do NOT throw error and do NOT create a new duplicate document in My Documents!
+        // Reuse the existing document record so it gets linked to the workspace cleanly without creating a duplicate in My Documents!
+        if (Boolean.TRUE.equals(request.getIsWorkspaceUpload()) && userId != null) {
+            Document existingUserDoc = null;
+            if (fileChecksum != null) {
+                existingUserDoc = documentRepository.findFirstByUserIdAndChecksumAndDeletedFalse(userId, fileChecksum).orElse(null);
+            }
+            if (existingUserDoc == null && request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
+                existingUserDoc = documentRepository.findFirstByUserIdAndTitleIgnoreCaseAndDeletedFalse(userId, request.getTitle().trim()).orElse(null);
+            }
+            if (existingUserDoc == null) {
+                existingUserDoc = documentRepository.findFirstByUserIdAndOriginalFileNameIgnoreCaseAndDeletedFalse(userId, originalFileName).orElse(null);
+            }
 
-            if (checksumExistsInSubject || checksumExistsForUser) {
-                throw new IllegalArgumentException("Nội dung tệp bị trùng: Tệp này đã được tải lên trước đó trong môn học [" + subjectToUse + "]! Vui lòng chọn tệp khác.");
+            if (existingUserDoc != null) {
+                log.info("Workspace upload matches existing My Documents doc ID {}. Reusing existing document without duplicating in My Documents.", existingUserDoc.getId());
+                
+                // Still check if it's already in the target workspace
+                if (request.getWorkspaceId() != null && workspaceDocumentRepository.existsByWorkspaceIdAndDocumentId(request.getWorkspaceId(), existingUserDoc.getId())) {
+                    throw new IllegalArgumentException("Tài liệu này đã có trong Nhóm học tập này rồi!");
+                }
+                
+                return mapToResponse(existingUserDoc);
             }
         }
 
-        // STEP 2: Check duplicate TITLE SECOND
-        if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
+        // STEP 1: Check duplicate FILE CONTENT (Checksum SHA-256) for this specific user account
+        if (fileChecksum != null && userId != null) {
+            boolean checksumExistsForUser = documentRepository.existsByUserIdAndSubjectIgnoreCaseAndChecksumAndDeletedFalse(userId, subjectToUse, fileChecksum);
+
+            if (checksumExistsForUser) {
+                throw new IllegalArgumentException("Bạn đã tải tệp tin này lên My Documents trước đó trong môn học [" + subjectToUse + "]! Vui lòng không tải lại tệp trùng.");
+            }
+        }
+
+        // STEP 2: Check duplicate TITLE for this specific user account
+        if (request.getTitle() != null && !request.getTitle().trim().isEmpty() && userId != null) {
             String trimmedTitle = request.getTitle().trim();
-            boolean titleInSub = documentRepository.existsBySubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(subjectToUse, trimmedTitle);
-            boolean titleForUsr = userId != null && documentRepository.existsByUserIdAndSubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(userId, subjectToUse, trimmedTitle);
+            boolean titleForUsr = documentRepository.existsByUserIdAndSubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(userId, subjectToUse, trimmedTitle);
 
-            if (titleInSub || titleForUsr) {
-                throw new IllegalArgumentException("Tiêu đề tài liệu bị trùng: Tiêu đề '" + trimmedTitle + "' đã tồn tại trong môn học [" + subjectToUse + "]. Vui lòng sửa tiêu đề khác!");
+            if (titleForUsr) {
+                throw new IllegalArgumentException("Tiêu đề tài liệu '" + trimmedTitle + "' đã tồn tại trong My Documents của bạn cho môn học [" + subjectToUse + "]. Vui lòng sửa tiêu đề khác!");
             }
         }
 
-        // STEP 3: Check duplicate ORIGINAL FILE NAME THIRD
-        boolean nameInSub = documentRepository.existsBySubjectIgnoreCaseAndOriginalFileNameIgnoreCaseAndDeletedFalse(subjectToUse, originalFileName);
-        boolean nameForUsr = userId != null && documentRepository.existsByUserIdAndSubjectIgnoreCaseAndOriginalFileNameIgnoreCaseAndDeletedFalse(userId, subjectToUse, originalFileName);
+        // STEP 3: Check duplicate ORIGINAL FILE NAME for this specific user account
+        if (userId != null) {
+            boolean nameForUsr = documentRepository.existsByUserIdAndSubjectIgnoreCaseAndOriginalFileNameIgnoreCaseAndDeletedFalse(userId, subjectToUse, originalFileName);
 
-        if (nameInSub || nameForUsr) {
-            throw new IllegalArgumentException("Tên tệp gốc bị trùng: Tệp '" + originalFileName + "' đã tồn tại trong môn học [" + subjectToUse + "]. Vui lòng nhập Tiêu đề riêng để phân biệt!");
+            if (nameForUsr) {
+                throw new IllegalArgumentException("Tệp '" + originalFileName + "' đã tồn tại trong My Documents của bạn cho môn học [" + subjectToUse + "]. Vui lòng nhập Tiêu đề riêng để phân biệt!");
+            }
         }
 
-        // Upload lên Google Drive
-        // Upload lên Google Drive
+        // STEP 4: Check duplicate inside the specific Workspace if workspaceId is provided
+        if (request.getWorkspaceId() != null && fileChecksum != null) {
+            boolean existsInWorkspace = workspaceDocumentRepository.existsByWorkspaceIdAndChecksum(request.getWorkspaceId(), fileChecksum);
+            if (existsInWorkspace) {
+                throw new IllegalArgumentException("Tài liệu này đã được chia sẻ trong Nhóm học tập này trước đó! Vui lòng kiểm tra danh sách tài liệu nhóm.");
+            }
+        }
+
+        // Upload / Reuse Google Drive storage
         String googleDriveFileId = null;
         String fileUrl = null;
         String savedFileName = null;
@@ -180,57 +219,246 @@ public class DocumentServiceImpl implements DocumentService {
         String driveSyncStatus = "SYNCED";
         String driveSyncError = null;
 
-        if (FILE_TYPE_DOCUMENT.equals(fileType)) {
-            java.util.List<String> folderHierarchy = getGoogleDriveHierarchy(request.getSubject(), request.getUserId());
+        // Always save a local backup copy on server disk
+        String localFileName = UUID.randomUUID() + "." + extension;
+        savedFileName = localFileName;
+        fileUrl = buildFileUrl(FILE_TYPE_DOCUMENT, localFileName);
+        try {
+            Path targetPath = resolveUploadPath(FILE_TYPE_DOCUMENT).resolve(localFileName);
+            Files.createDirectories(targetPath.getParent());
+            Files.write(targetPath, file.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            log.info("Saved local backup copy: {}", localFileName);
+        } catch (Exception e) {
+            log.warn("Could not save local backup copy for {}: {}", originalFileName, e.getMessage());
+        }
 
-            // 1. Try User's connected Google Drive if available
-            if (request.getUserId() != null && googleDriveService.isUserDriveConnected(request.getUserId())) {
-                try {
-                    googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy, request.getUserId());
-                    if (googleDriveFileId != null && !googleDriveFileId.startsWith("gdrive_")) {
-                        savedFileName = googleDriveFileId + "." + extension;
-                        fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
-                        uploadedToGDrive = true;
-                    } else {
-                        log.warn("User Google Drive upload returned mock/null ID: {}. Trying System Google Drive.", googleDriveFileId);
-                    }
-                } catch (Exception e) {
-                    log.warn("User Google Drive upload failed for userId={}: {}. Trying System Drive.", request.getUserId(), e.getMessage());
+        if (FILE_TYPE_DOCUMENT.equals(fileType)) {
+            // Check if this physical file content was already uploaded to Google Drive by another account
+            if (fileChecksum != null) {
+                Document existingDriveDoc = documentRepository.findFirstByChecksumAndDeletedFalse(fileChecksum).orElse(null);
+                if (existingDriveDoc != null && existingDriveDoc.getGoogleDriveFileId() != null) {
+                    googleDriveFileId = existingDriveDoc.getGoogleDriveFileId();
+                    fileUrl = existingDriveDoc.getFileUrl();
+                    uploadedToGDrive = true;
+                    log.info("Reusing existing System Google Drive file ID: {} for matching checksum {}", googleDriveFileId, fileChecksum);
                 }
             }
 
-            // 2. Fallback: Upload to System Google Drive if user drive not connected or failed
+            String effectiveSubject = request.getSubject();
+            if (request.getWorkspaceId() != null && (effectiveSubject == null || effectiveSubject.isBlank() || "GENERAL".equalsIgnoreCase(effectiveSubject))) {
+                com.lumiedu.workspace.entity.SharedWorkspace ws = sharedWorkspaceRepository.findById(request.getWorkspaceId()).orElse(null);
+                if (ws != null && ws.getName() != null && !ws.getName().isBlank()) {
+                    effectiveSubject = ws.getName().replaceAll("^(?i)Nhóm\\s+", "").trim();
+                }
+            }
+
+            java.util.List<String> folderHierarchy;
+            if (request.getWorkspaceId() != null) {
+                com.lumiedu.workspace.entity.SharedWorkspace ws = sharedWorkspaceRepository.findById(request.getWorkspaceId()).orElse(null);
+                String wsName = ws != null ? ws.getName() : ("Workspace_" + request.getWorkspaceId());
+                String cleanWsName = wsName.startsWith("Nhóm ") ? wsName : ("Nhóm " + wsName);
+                folderHierarchy = java.util.List.of(cleanWsName);
+            } else {
+                folderHierarchy = getGoogleDriveHierarchy(effectiveSubject, request.getUserId());
+            }
+            String userGoogleDriveFileId = null;
+
+            // 1. Upload to System Google Drive (System Mail's Drive - Group Folder)
             if (!uploadedToGDrive) {
                 try {
                     googleDriveFileId = googleDriveService.uploadFile(file, folderHierarchy);
                     if (googleDriveFileId != null && !googleDriveFileId.startsWith("gdrive_")) {
-                        savedFileName = googleDriveFileId + "." + extension;
                         fileUrl = "https://drive.google.com/file/d/" + googleDriveFileId + "/view";
                         uploadedToGDrive = true;
-                        log.info("Uploaded to System Google Drive successfully with ID: {}", googleDriveFileId);
+                        log.info("Uploaded to System Google Drive successfully with ID: {} under hierarchy {}", googleDriveFileId, folderHierarchy);
                     }
                 } catch (Exception e) {
-                    log.warn("System Google Drive upload failed: {}. Storing file locally.", e.getMessage());
+                    log.warn("System Google Drive upload failed: {}. Using local file backup.", e.getMessage());
                 }
             }
 
-            // 3. Fallback: Store file locally if both User & System Google Drive are unavailable
-            if (!uploadedToGDrive) {
-                String newFileName = UUID.randomUUID() + "." + extension;
-                Path targetPath = resolveUploadPath(FILE_TYPE_DOCUMENT).resolve(newFileName);
+            // 2. Upload to Uploader's Personal Google Drive if connected (placed in BOTH LumiEdu StudyHub and Group Folder)
+            if (request.getUserId() != null && googleDriveService.isUserDriveConnected(request.getUserId())) {
                 try {
-                    Files.createDirectories(targetPath.getParent());
-                    Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    throw new FileStorageException("Failed to store file locally: " + originalFileName, e);
-                }
-                savedFileName = newFileName;
-                fileUrl = buildFileUrl(FILE_TYPE_DOCUMENT, newFileName);
-                googleDriveFileId = null;
-                if (!"FAILED".equals(driveSyncStatus)) {
-                    driveSyncStatus = null;
+                    // Upload to Uploader's Drive: LumiEdu StudyHub -> <Semester> -> <Subject>
+                    java.util.List<String> userDriveHierarchy = getGoogleDriveHierarchyForUserDrive(effectiveSubject, request.getUserId());
+                    userGoogleDriveFileId = googleDriveService.uploadFile(file, userDriveHierarchy, request.getUserId());
+                    if (userGoogleDriveFileId != null && !userGoogleDriveFileId.startsWith("gdrive_")) {
+                        log.info("Uploaded to User Personal Google Drive with ID: {} under hierarchy {}", userGoogleDriveFileId, userDriveHierarchy);
+                    }
+
+                    // If uploaded inside a Workspace, ALSO upload to Uploader's Drive: Nhóm <WorkspaceName>
+                    if (request.getWorkspaceId() != null) {
+                        try {
+                            com.lumiedu.workspace.entity.SharedWorkspace ws = sharedWorkspaceRepository.findById(request.getWorkspaceId()).orElse(null);
+                            String wsName = ws != null ? ws.getName() : ("Workspace_" + request.getWorkspaceId());
+                            String cleanWsName = wsName.startsWith("Nhóm ") ? wsName : ("Nhóm " + wsName);
+                            java.util.List<String> userGroupHierarchy = java.util.List.of(cleanWsName);
+                            String userGroupFileId = googleDriveService.uploadFile(file, userGroupHierarchy, request.getUserId());
+                            log.info("Uploaded to User Personal Google Drive Group Folder with ID: {} under hierarchy {}", userGroupFileId, userGroupHierarchy);
+                        } catch (Exception e) {
+                            log.warn("User Personal Google Drive group folder upload failed: {}", e.getMessage());
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("User Personal Google Drive upload skipped/failed for userId={}: {}", request.getUserId(), e.getMessage());
                 }
             }
+
+            // 2.5 If uploaded inside a Workspace, ALSO save a copy to System Mail's Google Drive in LumiEdu StudyHub & System Personal Folders
+            String hubFileId = null;
+            if (request.getWorkspaceId() != null) {
+                try {
+                    // Upload to System Mail's Google Drive: LumiEdu StudyHub -> <Semester> -> <Subject>
+                    java.util.List<String> userHubHierarchy = getGoogleDriveHierarchyForUserDrive(effectiveSubject, request.getUserId());
+                    hubFileId = googleDriveService.uploadFile(file, userHubHierarchy);
+                    log.info("Also saved Workspace file to System Mail Drive under LumiEdu StudyHub folder {} with ID: {}", userHubHierarchy, hubFileId);
+
+                    // Upload to System Mail's Google Drive: <UserEmail> -> <Semester> -> <Subject>
+                    java.util.List<String> personalHierarchy = getGoogleDriveHierarchy(effectiveSubject, request.getUserId());
+                    String systemPersonalFileId = googleDriveService.uploadFile(file, personalHierarchy);
+                    log.info("Also saved Workspace file to System Mail Drive under Personal folder {} with ID: {}", personalHierarchy, systemPersonalFileId);
+                } catch (Exception e) {
+                    log.warn("Failed to save secondary copy to System Mail Drive folders: {}", e.getMessage());
+                }
+            }
+
+            // 2.6 Auto-share Google Drive files with Uploader Email so it appears in their Google Drive
+            if (request.getUserId() != null) {
+                try {
+                    User uploader = userRepository.findById(request.getUserId()).orElse(null);
+                    if (uploader != null && uploader.getEmail() != null && !uploader.getEmail().isBlank()) {
+                        String uploaderEmail = uploader.getEmail();
+                        if (googleDriveFileId != null && !googleDriveFileId.startsWith("gdrive_")) {
+                            googleDriveService.shareFile(googleDriveFileId, uploaderEmail, "writer");
+                        }
+                        if (hubFileId != null && !hubFileId.startsWith("gdrive_")) {
+                            googleDriveService.shareFile(hubFileId, uploaderEmail, "writer");
+                        }
+                    }
+                } catch (Exception shareEx) {
+                    log.warn("Auto-sharing with uploader failed: {}", shareEx.getMessage());
+                }
+            }
+
+            Document document = Document.builder()
+                    .title(request.getTitle())
+                    .description(request.getDescription())
+                    .subject(request.getSubject())
+                    .visibility(request.getVisibility() != null ? request.getVisibility() : "PRIVATE")
+                    .userId(request.getUserId())
+                    .fileName(savedFileName)
+                    .originalFileName(originalFileName)
+                    .fileUrl(fileUrl)
+                    .fileType(fileType)
+                    .mimeType(file.getContentType())
+                    .fileSize(file.getSize())
+                    .googleDriveFileId(googleDriveFileId)
+                    .storageProvider(googleDriveFileId != null ? ("STAGING".equals(driveSyncStatus) ? "GOOGLE_DRIVE_STAGING" : "GOOGLE_DRIVE") : "LOCAL")
+                    .checksum(calculateChecksum(file))
+                    .deleted(false)
+                    .moderationStatus(DocumentStatus.APPROVED)
+                    .driveSyncStatus(driveSyncStatus)
+                    .driveSyncError(driveSyncError)
+                    .build();
+
+            document.setUserGoogleDriveFileId(userGoogleDriveFileId);
+            document = documentRepository.save(document);
+
+            if (request.getWorkspaceId() != null) {
+                boolean existsInWs = workspaceDocumentRepository.existsByWorkspaceIdAndDocumentId(request.getWorkspaceId(), document.getId());
+                if (!existsInWs) {
+                    com.lumiedu.workspace.entity.WorkspaceDocument wd = com.lumiedu.workspace.entity.WorkspaceDocument.builder()
+                            .workspaceId(request.getWorkspaceId())
+                            .documentId(document.getId())
+                            .addedBy(request.getUserId())
+                            .build();
+                    workspaceDocumentRepository.save(wd);
+                    log.info("Linked newly uploaded document ID {} to workspace ID {}", document.getId(), request.getWorkspaceId());
+                }
+
+                if (googleDriveFileId != null && !googleDriveFileId.startsWith("gdrive_")) {
+                    try {
+                        com.lumiedu.workspace.entity.SharedWorkspace ws = sharedWorkspaceRepository.findById(request.getWorkspaceId()).orElse(null);
+                        if (ws != null) {
+                            String wsFolderName = "Nhóm " + ws.getName();
+                            String folderId = googleDriveService.getOrCreateFolder(wsFolderName, ws.getOwnerId());
+                            
+                            java.util.List<com.lumiedu.workspace.entity.WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceIdAndStatus(request.getWorkspaceId(), com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED);
+                            for (com.lumiedu.workspace.entity.WorkspaceMember m : members) {
+                                if (m.getEmail() != null && !m.getEmail().isBlank()) {
+                                    String gDriveRole = (m.getRole() == com.lumiedu.workspace.enums.WorkspaceMemberRole.OWNER || m.getRole() == com.lumiedu.workspace.enums.WorkspaceMemberRole.COLLABORATOR) ? "writer" : "reader";
+                                    if (folderId != null && !folderId.startsWith("gdrive_")) {
+                                        googleDriveService.shareFile(folderId, m.getEmail(), gDriveRole, ws.getOwnerId());
+                                    }
+                                    googleDriveService.shareFile(googleDriveFileId, m.getEmail(), gDriveRole, ws.getOwnerId());
+                                }
+                            }
+                            log.info("Shared newly uploaded workspace file ID {} and folder '{}' with members", googleDriveFileId, wsFolderName);
+                        }
+                    } catch (Exception shareEx) {
+                        log.warn("Failed to share newly uploaded workspace document to members: {}", shareEx.getMessage());
+                    }
+                }
+
+                // Send in-app notification and email to ALL workspace members when document is uploaded/updated
+                try {
+                    com.lumiedu.workspace.entity.SharedWorkspace ws = sharedWorkspaceRepository.findById(request.getWorkspaceId()).orElse(null);
+                    User uploader = userRepository.findById(request.getUserId()).orElse(null);
+                    String uploaderName = uploader != null ? (uploader.getFullName() != null ? uploader.getFullName() : uploader.getEmail()) : "Thành viên";
+                    String wsName = ws != null ? ws.getName() : "Workspace";
+                    String docTitle = document.getTitle() != null && !document.getTitle().isBlank() ? document.getTitle() : document.getFileName();
+
+                    java.util.List<com.lumiedu.workspace.entity.WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceIdAndStatus(request.getWorkspaceId(), com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED);
+                    for (com.lumiedu.workspace.entity.WorkspaceMember m : members) {
+                        if (m.getEmail() != null && !m.getEmail().isBlank() && (m.getUserId() == null || !m.getUserId().equals(request.getUserId()))) {
+                            String targetEmail = m.getEmail().trim().toLowerCase();
+
+                            // 1. In-app notification
+                            try {
+                                notificationService.createNotification(com.lumiedu.notification.dto.request.NotificationRequest.builder()
+                                        .targetUserEmail(targetEmail)
+                                        .title("Tài liệu mới trong nhóm / New Workspace Document")
+                                        .message(uploaderName + " vừa tải lên/cập nhật tài liệu mới '" + docTitle + "' vào nhóm '" + wsName + "'.")
+                                        .type("SHARED_FILE")
+                                        .documentId(document.getId())
+                                        .documentName(docTitle)
+                                        .build());
+                            } catch (Exception ne) {
+                                log.warn("Failed to send in-app notification for new workspace doc: {}", ne.getMessage());
+                            }
+
+                            // 2. Email notification
+                            try {
+                                String emailSubject = "[LumiEdu] Tài liệu mới '" + docTitle + "' vừa được thêm vào nhóm '" + wsName + "'";
+                                String htmlBody = "<div style='font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #1e293b;'>" +
+                                        "<h2 style='color: #2563eb;'>Tài liệu mới trong nhóm học tập</h2>" +
+                                        "<p>Chào bạn,</p>" +
+                                        "<p>Thành viên <strong>" + uploaderName + "</strong> vừa tải lên/cập nhật tài liệu mới <strong>" + docTitle + "</strong> vào nhóm học tập <strong>" + wsName + "</strong>.</p>" +
+                                        "<p>Bạn có thể truy cập Workspace nhóm trên LumiEdu để xem và cùng học tập ngay bây giờ.</p>" +
+                                        "<hr style='border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;' />" +
+                                        "<p style='font-size: 12px; color: #64748b;'>Đây là email tự động từ hệ thống LumiEdu StudyHub.</p>" +
+                                        "</div>";
+                                emailService.sendEmail(targetEmail, emailSubject, htmlBody, true);
+                            } catch (Exception ee) {
+                                log.warn("Failed to send email for new workspace doc to {}: {}", targetEmail, ee.getMessage());
+                            }
+                        }
+                    }
+                } catch (Exception wsNotifyEx) {
+                    log.warn("Failed to process notifications for workspace document upload: {}", wsNotifyEx.getMessage());
+                }
+            }
+
+            if (request.getTags() != null && !request.getTags().isEmpty()) {
+                saveTagsForDocument(document, request.getTags());
+            }
+
+            // Tự động chunk & index cho tài liệu
+            final Long docId = document.getId();
+            triggerChunkingAfterCommit(docId);
+
+            return mapToResponse(document);
         } else {
             // Media/Audio: lưu local như cũ
             String newFileName = UUID.randomUUID() + "." + extension;
@@ -243,42 +471,32 @@ public class DocumentServiceImpl implements DocumentService {
             }
             savedFileName = newFileName;
             fileUrl = buildFileUrl(fileType, newFileName);
+
+            Document document = Document.builder()
+                    .title(request.getTitle())
+                    .description(request.getDescription())
+                    .subject(request.getSubject())
+                    .visibility(request.getVisibility() != null ? request.getVisibility() : "PRIVATE")
+                    .userId(request.getUserId())
+                    .fileName(savedFileName)
+                    .originalFileName(originalFileName)
+                    .fileUrl(fileUrl)
+                    .fileType(fileType)
+                    .mimeType(file.getContentType())
+                    .fileSize(file.getSize())
+                    .storageProvider("LOCAL")
+                    .deleted(false)
+                    .moderationStatus(DocumentStatus.APPROVED)
+                    .build();
+
+            document = documentRepository.save(document);
+
+            if (request.getTags() != null && !request.getTags().isEmpty()) {
+                saveTagsForDocument(document, request.getTags());
+            }
+
+            return mapToResponse(document);
         }
-
-        Document document = Document.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .subject(request.getSubject())
-                .visibility(request.getVisibility() != null ? request.getVisibility() : "PRIVATE")
-                .userId(request.getUserId())
-                .fileName(savedFileName)
-                .originalFileName(originalFileName)
-                .fileUrl(fileUrl)
-                .fileType(fileType)
-                .mimeType(file.getContentType())
-                .fileSize(file.getSize())
-                .googleDriveFileId(googleDriveFileId)
-                .storageProvider(googleDriveFileId != null ? ("STAGING".equals(driveSyncStatus) ? "GOOGLE_DRIVE_STAGING" : "GOOGLE_DRIVE") : "LOCAL")
-                .checksum(calculateChecksum(file))
-                .deleted(false)
-                .moderationStatus(DocumentStatus.APPROVED)
-                .driveSyncStatus(driveSyncStatus)
-                .driveSyncError(driveSyncError)
-                .build();
-
-        document = documentRepository.save(document);
-
-        if (request.getTags() != null && !request.getTags().isEmpty()) {
-            saveTagsForDocument(document, request.getTags());
-        }
-
-        // Tự động chunk & index cho tài liệu
-        if (FILE_TYPE_DOCUMENT.equals(fileType)) {
-            final Long docId = document.getId();
-            triggerChunkingAfterCommit(docId);
-        }
-
-        return mapToResponse(document);
     }
 
     @Override
@@ -449,20 +667,44 @@ public class DocumentServiceImpl implements DocumentService {
         if (currentUserId == null) {
             throw new SecurityException("Authentication is required to delete this document.");
         }
-        boolean isAdmin = userRepository.findById(currentUserId)
-                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
-                .orElse(false);
-        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
-            throw new SecurityException("You do not have permission to delete this document.");
+        // Log deletion request info for audit
+        log.info("User {} requesting deletion for document ID {} (Owner ID: {})", currentUserId, id, document.getUserId());
+
+        // 1. Delete file from User's Personal Google Drive (LumiEdu StudyHub folder)
+        if (document.getUserGoogleDriveFileId() != null && !document.getUserGoogleDriveFileId().startsWith("gdrive_")) {
+            try {
+                googleDriveService.deleteFile(document.getUserGoogleDriveFileId(), document.getUserId());
+                log.info("Deleted document ID {} from Personal Google Drive (LumiEdu StudyHub) ID {}", id, document.getUserGoogleDriveFileId());
+            } catch (Exception e) {
+                log.error("Failed to delete file from Personal Google Drive (LumiEdu StudyHub) for doc ID {}: {}", id, e.getMessage());
+            }
         }
 
-        // Delete from Google Drive if stored there
-        if ("GOOGLE_DRIVE".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))
-                || "GOOGLE_DRIVE_STAGING".equalsIgnoreCase(String.valueOf(document.getStorageProvider()))) {
+        // 2. Delete file from Workspace Group Folder on Google Drive (Nhóm folder) & revoke shares
+        if (document.getGoogleDriveFileId() != null && !document.getGoogleDriveFileId().startsWith("gdrive_")) {
             try {
                 googleDriveService.deleteFile(document.getGoogleDriveFileId(), document.getUserId());
+                log.info("Deleted document ID {} from Workspace Group Google Drive ID {}", id, document.getGoogleDriveFileId());
             } catch (Exception e) {
-                log.error("Failed to delete file from Google Drive for doc ID {}: {}", id, e.getMessage());
+                log.warn("Failed to delete file from Workspace Group Google Drive for doc ID {}: {}", id, e.getMessage());
+            }
+
+            try {
+                List<com.lumiedu.workspace.entity.WorkspaceDocument> wDocs = workspaceDocumentRepository.findByDocumentId(id);
+                for (com.lumiedu.workspace.entity.WorkspaceDocument wd : wDocs) {
+                    List<com.lumiedu.workspace.entity.WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceIdAndStatus(wd.getWorkspaceId(), com.lumiedu.workspace.enums.WorkspaceMemberStatus.ACCEPTED);
+                    for (com.lumiedu.workspace.entity.WorkspaceMember m : members) {
+                        if (m.getEmail() != null && !m.getEmail().isBlank()) {
+                            try {
+                                googleDriveService.revokeShare(document.getGoogleDriveFileId(), m.getEmail().trim().toLowerCase(), document.getUserId());
+                            } catch (Exception e) {
+                                log.warn("Failed to revoke share for doc {} and member {}: {}", id, m.getEmail(), e.getMessage());
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to cleanup workspace shares on doc delete: {}", e.getMessage());
             }
         }
 
@@ -501,16 +743,17 @@ public class DocumentServiceImpl implements DocumentService {
             }
         }
 
-        Resource resource;
+        Resource resource = null;
         if (("GOOGLE_DRIVE".equals(document.getStorageProvider()) || "GOOGLE_DRIVE_STAGING".equals(document.getStorageProvider()))
                 && document.getGoogleDriveFileId() != null) {
             try {
                 resource = googleDriveService.downloadFile(document.getGoogleDriveFileId(), document.getUserId());
-            } catch (IOException e) {
-                throw new FileStorageException(
-                        "Failed to download file from Google Drive ID: " + document.getGoogleDriveFileId(), e);
+            } catch (Exception e) {
+                log.warn("Google Drive download failed for file ID {}: {}. Falling back to local file backup.", document.getGoogleDriveFileId(), e.getMessage());
+                resource = null;
             }
-        } else {
+        }
+        if (resource == null) {
             resource = loadFileAsResource(document.getFileType(), document.getFileName());
         }
 
@@ -773,6 +1016,40 @@ public class DocumentServiceImpl implements DocumentService {
             hierarchy.add(s.getCode() + " - " + s.getName());
         } else {
             hierarchy.add("Khác");
+            hierarchy.add(cleanSubject);
+        }
+
+        return hierarchy;
+    }
+
+    private java.util.List<String> getGoogleDriveHierarchyForUserDrive(String subject, Long userId) {
+        java.util.List<String> hierarchy = new java.util.ArrayList<>();
+        hierarchy.add("LumiEdu StudyHub");
+
+        if (subject == null || subject.isBlank() || "GENERAL".equalsIgnoreCase(subject)) {
+            hierarchy.add("Chung");
+            return hierarchy;
+        }
+
+        String cleanSubject = subject.trim().toUpperCase();
+        Optional<Subject> subjectOpt = subjectRepository.findByCodeAndUserId(cleanSubject, userId);
+        if (subjectOpt.isEmpty()) {
+            subjectOpt = subjectRepository.findByCodeAndUserIdIsNull(cleanSubject);
+        }
+        if (subjectOpt.isEmpty()) {
+            java.util.List<Subject> matches = subjectRepository.findByCodeContainingIgnoreCase(cleanSubject);
+            if (!matches.isEmpty()) {
+                subjectOpt = Optional.of(matches.get(0));
+            }
+        }
+
+        if (subjectOpt.isPresent()) {
+            Subject s = subjectOpt.get();
+            String sem = (s.getSemesterName() != null && !s.getSemesterName().isBlank()) ? s.getSemesterName() : "Chung";
+            hierarchy.add(sem);
+            hierarchy.add(s.getCode() + " - " + s.getName());
+        } else {
+            hierarchy.add("Chung");
             hierarchy.add(cleanSubject);
         }
 
@@ -1093,31 +1370,40 @@ public class DocumentServiceImpl implements DocumentService {
         if (currentUserId == null) {
             throw new IllegalArgumentException("Authentication is required.");
         }
-        boolean isAdmin = userRepository.findById(currentUserId)
-                .map(u -> u.getRole() == com.lumiedu.user.enums.UserRole.ADMIN)
-                .orElse(false);
-        if (!isAdmin && !currentUserId.equals(document.getUserId())) {
-            throw new IllegalArgumentException("Only the document owner can delete its shares.");
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + currentUserId));
+
+        boolean isAdmin = currentUser.getRole() == com.lumiedu.user.enums.UserRole.ADMIN;
+        boolean isOwner = currentUserId.equals(document.getUserId());
+
+        String targetEmail = (email != null && !email.trim().isEmpty()) ? email.trim().toLowerCase() : currentUser.getEmail().trim().toLowerCase();
+        boolean isSelfSharee = targetEmail.equalsIgnoreCase(currentUser.getEmail().trim().toLowerCase());
+
+        if (!isAdmin && !isOwner && !isSelfSharee) {
+            throw new IllegalArgumentException("Only the document owner or recipient can remove share access.");
         }
 
-        Optional<DocumentShare> existingShareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId,
-                email.trim().toLowerCase());
-        if (existingShareOpt.isPresent()) {
-            documentShareRepository.delete(existingShareOpt.get());
+        List<DocumentShare> sharesToDelete = new ArrayList<>();
+        Optional<DocumentShare> shareOpt = documentShareRepository.findByDocumentIdAndShareeEmail(documentId, targetEmail);
+        if (shareOpt.isPresent()) {
+            sharesToDelete.add(shareOpt.get());
+        } else if (isOwner) {
+            // If owner requests remove access without specific sharee email, purge all 1-on-1 shares for this doc
+            sharesToDelete = documentShareRepository.findByDocumentId(documentId);
+        }
 
-            if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
-                try {
-                    googleDriveService.revokeShare(document.getGoogleDriveFileId(), email.trim().toLowerCase(), document.getUserId());
-                } catch (IOException e) {
-                    log.warn("Google Drive revoke share skipped/failed for document {} and collaborator {}: {}",
-                            documentId, email, e.getMessage());
-                } catch (Exception e) {
-                    log.error("Failed to revoke file share on Google Drive for document {} and collaborator {}: {}",
-                            documentId, email, e.getMessage());
+        if (!sharesToDelete.isEmpty()) {
+            for (DocumentShare share : sharesToDelete) {
+                documentShareRepository.delete(share);
+                if ("GOOGLE_DRIVE".equalsIgnoreCase(document.getStorageProvider()) && document.getGoogleDriveFileId() != null) {
+                    try {
+                        googleDriveService.revokeShare(document.getGoogleDriveFileId(), share.getShareeEmail(), document.getUserId());
+                    } catch (Exception e) {
+                        log.warn("Google Drive revoke share skipped/failed for document {} and collaborator {}: {}",
+                                documentId, share.getShareeEmail(), e.getMessage());
+                    }
                 }
             }
-        } else {
-            throw new IllegalArgumentException("No share permission found for the given email.");
         }
     }
 

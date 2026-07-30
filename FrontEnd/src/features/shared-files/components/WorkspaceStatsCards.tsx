@@ -4,6 +4,7 @@ import { motion, type Variants } from 'framer-motion'
 import { useTranslation } from '@/context/LanguageContext'
 import { formatStorageSize } from '@/utils/storageFormat'
 import { getCurrentUserStorageSummary } from '@/services/storageService'
+import { useAuthStore } from '@/stores/authStore'
 
 interface WorkspaceStatsCardsProps {
   onViewAIReport: () => void
@@ -12,6 +13,7 @@ interface WorkspaceStatsCardsProps {
   activeCollaboratorsCount?: number
   filesCount?: number
   workspaceName?: string
+  usedMb?: number
 }
 
 export function WorkspaceStatsCards({
@@ -20,9 +22,11 @@ export function WorkspaceStatsCards({
   onActiveCardClick,
   activeCollaboratorsCount,
   filesCount,
-  workspaceName
+  workspaceName,
+  usedMb
 }: WorkspaceStatsCardsProps) {
   const { language, t } = useTranslation()
+  const user = useAuthStore((s) => s.user)
 
   // ── Storage data: same source as QuotaDetailsModal ──────────────────────
   const [storageSummary, setStorageSummary] = useState(() => getCurrentUserStorageSummary())
@@ -33,12 +37,10 @@ export function WorkspaceStatsCards({
     return () => window.removeEventListener('aiStudyHubUserChanged', refresh)
   }, [])
 
-  let { usedMb, totalMb, percentage: usedPercentage } = storageSummary
-  if (usedMb === 0 && filesCount && filesCount > 0) {
-    usedMb = Math.round(filesCount * 3.5 * 10) / 10
-    const rawPercentage = (usedMb / totalMb) * 100
-    usedPercentage = Math.min(Math.max(1, Math.round(rawPercentage)), 100)
-  }
+  let { usedMb: defaultUsedMb, totalMb } = storageSummary
+  const currentUsedMb = usedMb !== undefined ? usedMb : defaultUsedMb
+  const rawPercentage = (currentUsedMb / totalMb) * 100
+  const usedPercentage = Math.min(Math.max(currentUsedMb > 0 ? 1 : 0, Math.round(rawPercentage)), 100)
 
   // SVG Stroke parameters for dynamic circular progress
   const radius = 18
@@ -130,9 +132,9 @@ export function WorkspaceStatsCards({
           </div>
 
           <div>
-            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{formatStorageSize(usedMb)}</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{formatStorageSize(currentUsedMb)}</span>
             <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">
-              {t.sharedFiles.used} {formatStorageSize(usedMb)} {t.sharedFiles.usedOf} {formatStorageSize(totalMb)}
+              {t.sharedFiles.used} {formatStorageSize(currentUsedMb)} {t.sharedFiles.usedOf} {formatStorageSize(totalMb)}
               <span className="ml-1 text-blue-400 dark:text-blue-500">(shared)</span>
             </p>
           </div>
@@ -179,24 +181,29 @@ export function WorkspaceStatsCards({
 
         <div className="mt-5 flex items-center gap-3">
           {/* Avatar stack */}
-          <div className="flex -space-x-2 group-hover:-space-x-0.5 transition-all duration-300 shrink-0">
-            <div className="size-8.5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-[#0fbf7c] text-white flex items-center justify-center font-bold text-xs">S</div>
-            <div className="size-8.5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-[#5f6ffc] text-white flex items-center justify-center font-bold text-xs">D</div>
-            <div className="size-8.5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-450 flex items-center justify-center font-extrabold text-[10px] select-none">
-              +{Math.max(0, (activeCollaboratorsCount ?? 8) - 2)}
+          <div className="flex items-center shrink-0">
+            <div className="size-8.5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-blue-600 text-white flex items-center justify-center font-bold text-xs uppercase shadow-xs">
+              {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
+            {typeof activeCollaboratorsCount === 'number' && activeCollaboratorsCount > 1 ? (
+              <div className="size-8.5 -ml-2 rounded-full ring-2 ring-white dark:ring-slate-900 bg-emerald-500 text-white flex items-center justify-center font-extrabold text-[10px] select-none shadow-xs">
+                +{activeCollaboratorsCount - 1}
+              </div>
+            ) : null}
           </div>
 
           <div>
             <span className="text-xl font-black text-slate-900 dark:text-white leading-none">
-              {activeCollaboratorsCount ?? 8}
+              {activeCollaboratorsCount ?? 1}
             </span>
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t.sharedFiles.teamMembers}</span>
           </div>
         </div>
 
-        <p className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold mt-6 leading-relaxed">
-          {t.sharedFiles.activeEditing}
+        <p className="text-[10px] text-slate-450 dark:text-slate-500 font-semibold mt-4 leading-relaxed">
+          {typeof activeCollaboratorsCount === 'number' && activeCollaboratorsCount > 1
+            ? (language === 'vi' ? 'Các thành viên đang cùng hoạt động trong không gian này.' : 'Members are active in this workspace.')
+            : (language === 'vi' ? 'Bạn đang hoạt động trong không gian này.' : 'You are active in this workspace.')}
         </p>
       </motion.div>
 

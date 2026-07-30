@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Upload, UserPlus, Sparkles, FolderPlus, ChevronDown, FolderClosed, Layers } from 'lucide-react'
+import { Upload, UserPlus, Sparkles, FolderPlus, ChevronDown, FolderClosed, Layers, Trash2, Mail } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
 import { cn } from '@/lib/utils'
 
@@ -8,6 +8,10 @@ interface SharedWorkspaceHeaderProps {
   onInviteClick: () => void
   onAIAnalyzeClick: () => void
   onCreateWorkspaceClick: () => void
+  onPendingInvitationsClick?: () => void
+  onDeleteWorkspaceClick?: () => void
+  pendingInvitationsCount?: number
+  isOwner?: boolean
   isAnalyzing: boolean
   workspaces: any[]
   selectedWorkspaceId: string | 'all'
@@ -19,6 +23,10 @@ export function SharedWorkspaceHeader({
   onInviteClick,
   onAIAnalyzeClick,
   onCreateWorkspaceClick,
+  onPendingInvitationsClick,
+  onDeleteWorkspaceClick,
+  pendingInvitationsCount = 0,
+  isOwner = false,
   isAnalyzing,
   workspaces,
   selectedWorkspaceId,
@@ -122,6 +130,23 @@ export function SharedWorkspaceHeader({
 
         {/* Right Side: Action buttons container */}
         <div className="flex items-center gap-3 flex-wrap md:flex-nowrap shrink-0">
+          {/* -1. Pending Invitations Button */}
+          {onPendingInvitationsClick && (
+            <button
+              type="button"
+              onClick={onPendingInvitationsClick}
+              className="relative flex items-center justify-center gap-2 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-extrabold px-5 h-11 text-xs border border-amber-300/40 dark:border-amber-700/40 active:scale-[0.98] transition-all duration-200 cursor-pointer hover:scale-[1.02] shrink-0"
+            >
+              <Mail className="size-4 text-amber-600 dark:text-amber-400" />
+              <span>{language === 'vi' ? 'Nhóm đang mời' : 'Group Invites'}</span>
+              {pendingInvitationsCount > 0 && (
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white font-black text-[10px] shadow-sm animate-pulse">
+                  {pendingInvitationsCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* 0. Create Workspace Button */}
           <button
             type="button"
@@ -151,6 +176,19 @@ export function SharedWorkspaceHeader({
             <UserPlus className="size-4" />
             <span>{t.sharedFiles.invite}</span>
           </button>
+
+          {/* 3. Delete Workspace Button (Owner Only) */}
+          {selectedWorkspaceId !== 'all' && isOwner && onDeleteWorkspaceClick && (
+            <button
+              type="button"
+              onClick={onDeleteWorkspaceClick}
+              className="flex items-center justify-center gap-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-955/30 dark:hover:bg-rose-955/50 dark:text-rose-400 font-bold px-4 h-11 text-xs border border-rose-200 dark:border-rose-900/50 active:scale-[0.98] transition-all duration-200 cursor-pointer shrink-0"
+              title={language === 'vi' ? 'Xóa nhóm học tập' : 'Delete Workspace'}
+            >
+              <Trash2 className="size-4" />
+              <span className="hidden sm:inline">{language === 'vi' ? 'Xóa Nhóm' : 'Delete Group'}</span>
+            </button>
+          )}
 
         </div>
       </div>

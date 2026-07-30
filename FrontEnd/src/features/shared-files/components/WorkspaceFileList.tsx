@@ -112,7 +112,7 @@ export function WorkspaceFileList({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 transition-all duration-300 overflow-visible">
           {files.map((file) => (
             <WorkspaceFileCard
-              key={file.id}
+              key={`${file.id}-${file.shareSource || 'DIRECT'}-${file.workspaceName || ''}`}
               file={file}
               viewMode="grid"
               isSelected={selectedFile?.id === file.id}

@@ -62,8 +62,8 @@ public class SharedDocumentController {
         String currentUserEmail = currentUser.getEmail();
         String currentUserFullName = currentUser.getFullName();
 
-        // Map to keep unique documents and their highest permission level
-        Map<Long, SharedDocumentResponse> sharedFilesMap = new HashMap<>();
+        // Map to keep unique documents by share source (Workspace vs Direct 1-on-1)
+        Map<String, SharedDocumentResponse> sharedFilesMap = new LinkedHashMap<>();
 
         // 1. Find all accepted memberships of the user
         List<WorkspaceMember> memberships = workspaceMemberRepository.findByUserIdAndStatus(currentUserId, WorkspaceMemberStatus.ACCEPTED);
@@ -97,7 +97,7 @@ public class SharedDocumentController {
 
                 Document doc = docOpt.get();
 
-                if (Boolean.TRUE.equals(doc.getDeleted()) || doc.getModerationStatus() != com.lumiedu.document.enums.DocumentStatus.APPROVED) {
+                if (Boolean.TRUE.equals(doc.getDeleted()) || (doc.getModerationStatus() != null && doc.getModerationStatus() != com.lumiedu.document.enums.DocumentStatus.APPROVED)) {
                     continue;
                 }
 
@@ -163,10 +163,13 @@ public class SharedDocumentController {
                         .role(role)
                         .sharedAt(dateShared)
                         .sharedWithMe(sharedWithMe)
+                        .workspaceName(workspace.getName())
+                        .shareSource("WORKSPACE")
                         .build();
 
-                if (sharedFilesMap.containsKey(doc.getId())) {
-                    SharedDocumentResponse existing = sharedFilesMap.get(doc.getId());
+                String mapKey = doc.getId() + "_WORKSPACE_" + workspace.getName();
+                if (sharedFilesMap.containsKey(mapKey)) {
+                    SharedDocumentResponse existing = sharedFilesMap.get(mapKey);
                     if ("Owner".equals(permission)) {
                         existing.setPermission("Owner");
                         existing.setRole("owner");
@@ -176,7 +179,7 @@ public class SharedDocumentController {
                         existing.setRole("editor");
                     }
                 } else {
-                    sharedFilesMap.put(doc.getId(), response);
+                    sharedFilesMap.put(mapKey, response);
                 }
             }
         }
@@ -190,7 +193,7 @@ public class SharedDocumentController {
             }
             Document doc = docOpt.get();
 
-            if (Boolean.TRUE.equals(doc.getDeleted()) || doc.getModerationStatus() != com.lumiedu.document.enums.DocumentStatus.APPROVED) {
+            if (Boolean.TRUE.equals(doc.getDeleted()) || doc.getModerationStatus() == com.lumiedu.document.enums.DocumentStatus.REJECTED) {
                 continue;
             }
 
@@ -260,10 +263,13 @@ public class SharedDocumentController {
                     .role(role)
                     .sharedAt(dateShared)
                     .sharedWithMe(true)
+                    .workspaceName(null)
+                    .shareSource("DIRECT")
                     .build();
 
-            if (sharedFilesMap.containsKey(doc.getId())) {
-                SharedDocumentResponse existing = sharedFilesMap.get(doc.getId());
+            String mapKey = doc.getId() + "_DIRECT";
+            if (sharedFilesMap.containsKey(mapKey)) {
+                SharedDocumentResponse existing = sharedFilesMap.get(mapKey);
                 if ("Owner".equals(permission)) {
                     existing.setPermission("Owner");
                     existing.setRole("owner");
@@ -273,14 +279,14 @@ public class SharedDocumentController {
                     existing.setRole("editor");
                 }
             } else {
-                sharedFilesMap.put(doc.getId(), response);
+                sharedFilesMap.put(mapKey, response);
             }
         }
 
         // 3. Fetch documents owned by the current user that are shared internally with others
         List<Document> myDocs = documentRepository.findAllByUserIdAndDeletedFalse(currentUserId);
         for (Document doc : myDocs) {
-            if (doc.getModerationStatus() != com.lumiedu.document.enums.DocumentStatus.APPROVED) {
+            if (Boolean.TRUE.equals(doc.getDeleted()) || doc.getModerationStatus() == com.lumiedu.document.enums.DocumentStatus.REJECTED) {
                 continue;
             }
 
@@ -335,16 +341,19 @@ public class SharedDocumentController {
                     .role("owner")
                     .sharedAt(dateShared)
                     .sharedWithMe(false)
+                    .workspaceName(null)
+                    .shareSource("DIRECT")
                     .build();
 
-            if (sharedFilesMap.containsKey(doc.getId())) {
-                SharedDocumentResponse existing = sharedFilesMap.get(doc.getId());
+            String mapKey = doc.getId() + "_DIRECT";
+            if (sharedFilesMap.containsKey(mapKey)) {
+                SharedDocumentResponse existing = sharedFilesMap.get(mapKey);
                 existing.setPermission("Owner");
                 existing.setRole("owner");
                 existing.setOwner("me");
                 existing.setSharedWithMe(false);
             } else {
-                sharedFilesMap.put(doc.getId(), response);
+                sharedFilesMap.put(mapKey, response);
             }
         }
 

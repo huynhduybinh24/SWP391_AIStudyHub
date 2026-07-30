@@ -16,6 +16,7 @@ import com.lumiedu.user.enums.AccountStatus;
 import com.lumiedu.user.enums.UserRole;
 import com.lumiedu.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -37,6 +39,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final EmailService emailService;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final com.lumiedu.document.service.GoogleDriveService googleDriveService;
 
     @Value("${app.admin.email}")
     private String adminEmail;
@@ -378,6 +381,13 @@ public class AdminUserServiceImpl implements AdminUserService {
         String emailHtml = emailService.buildHtmlTemplate("Tài khoản bị xóa / Account Deleted", "Tài khoản của bạn đã bị xóa / Account Deleted", bodyContent);
                 
         emailService.sendEmail(user.getEmail(), adminEmail, "LumiEdu Support", subject, emailHtml, true);
+
+        // Xóa cấu trúc thư mục LumiEdu StudyHub trên Google Drive cá nhân của user
+        try {
+            googleDriveService.deleteUserDriveStructure(id);
+        } catch (Exception e) {
+            log.warn("Failed to delete Google Drive user structure for deleted user {}: {}", id, e.getMessage());
+        }
 
         // Thực hiện xóa cứng toàn bộ các bảng liên quan đến user
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0");

@@ -364,7 +364,7 @@ export function SharedFilesUploadModal({ isOpen, onClose, onSave }: SharedFilesU
                 onDescriptionChange={setDescription}
                 tags={selectedTags}
                 onTagsChange={setSelectedTags}
-                showPermission={true}
+                showPermission={false}
                 permission={permission}
                 onPermissionChange={setPermission}
                 mediaType={activeTab}

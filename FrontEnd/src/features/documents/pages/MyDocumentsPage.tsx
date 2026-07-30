@@ -33,6 +33,7 @@ import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { apiClient } from '@/lib/axios'
 import { useAuthStore } from '@/stores/authStore'
+import { ConfirmModal } from '@/features/shared-files/components/ConfirmModal'
 
 interface DocumentItem {
   id: string
@@ -363,16 +364,7 @@ export default function MyDocumentsPage() {
     }
   }
 
-  const handleDeleteSemester = async (id: number) => {
-    try {
-      await apiClient.delete(`/semesters/${id}`)
-      toast.success(language === 'vi' ? 'Đã xóa học kỳ!' : 'Semester deleted!')
-      fetchSemestersAndSubjects()
-    } catch (err) {
-      console.error(err)
-      toast.error('Failed to delete semester')
-    }
-  }
+  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState<{ type: 'doc' | 'semester' | 'subject'; id: string | number; title?: string } | null>(null)
 
   // --- Subject CRUD ---
   const handleCreateSubject = async (semesterName: string) => {
@@ -419,15 +411,48 @@ export default function MyDocumentsPage() {
     }
   }
 
-  const handleDeleteSubject = async (id: number) => {
-    try {
-      await apiClient.delete(`/subjects/${id}`)
-      toast.success(language === 'vi' ? 'Đã xóa môn học!' : 'Subject deleted!')
-      fetchSemestersAndSubjects()
-      if (refreshSubjects) refreshSubjects()
-    } catch (err) {
-      console.error(err)
-      toast.error('Failed to delete subject')
+  const handleDeleteSemester = (id: number, name?: string) => {
+    setDeleteConfirmTarget({ type: 'semester', id, title: name || `Học kỳ #${id}` })
+  }
+
+  const handleDeleteSubject = (id: number, name?: string) => {
+    setDeleteConfirmTarget({ type: 'subject', id, title: name || `Môn học #${id}` })
+  }
+
+  const handleDeleteDocumentTarget = (id: string, name?: string) => {
+    setDeleteConfirmTarget({ type: 'doc', id, title: name || `Tài liệu #${id}` })
+  }
+
+  const confirmDeleteAction = async () => {
+    if (!deleteConfirmTarget) return
+    const target = deleteConfirmTarget
+    setDeleteConfirmTarget(null)
+
+    if (target.type === 'doc') {
+      try {
+        await handleDeleteDocument(String(target.id))
+      } catch (err) {
+        console.error(err)
+      }
+    } else if (target.type === 'semester') {
+      try {
+        await apiClient.delete(`/semesters/${target.id}`)
+        toast.success(language === 'vi' ? 'Đã xóa học kỳ!' : 'Semester deleted!')
+        fetchSemestersAndSubjects()
+      } catch (err) {
+        console.error(err)
+        toast.error('Failed to delete semester')
+      }
+    } else if (target.type === 'subject') {
+      try {
+        await apiClient.delete(`/subjects/${target.id}`)
+        toast.success(language === 'vi' ? 'Đã xóa môn học!' : 'Subject deleted!')
+        fetchSemestersAndSubjects()
+        if (refreshSubjects) refreshSubjects()
+      } catch (err) {
+        console.error(err)
+        toast.error('Failed to delete subject')
+      }
     }
   }
 
@@ -1439,6 +1464,29 @@ export default function MyDocumentsPage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={Boolean(deleteConfirmTarget)}
+        onClose={() => setDeleteConfirmTarget(null)}
+        onConfirm={confirmDeleteAction}
+        title={
+          deleteConfirmTarget?.type === 'doc'
+            ? (language === 'vi' ? 'Xác nhận xóa tài liệu' : 'Confirm Delete Document')
+            : deleteConfirmTarget?.type === 'semester'
+            ? (language === 'vi' ? 'Xác nhận xóa học kỳ' : 'Confirm Delete Semester')
+            : (language === 'vi' ? 'Xác nhận xóa môn học' : 'Confirm Delete Subject')
+        }
+        message={
+          deleteConfirmTarget?.type === 'doc'
+            ? (language === 'vi' ? `Bạn có chắc muốn xóa tài liệu "${deleteConfirmTarget?.title}"?` : `Are you sure you want to delete "${deleteConfirmTarget?.title}"?`)
+            : deleteConfirmTarget?.type === 'semester'
+            ? (language === 'vi' ? `Bạn có chắc muốn xóa học kỳ "${deleteConfirmTarget?.title}"? Tất cả môn học và dữ liệu liên quan có thể bị ảnh hưởng.` : `Are you sure you want to delete semester "${deleteConfirmTarget?.title}"?`)
+            : (language === 'vi' ? `Bạn có chắc muốn xóa môn học "${deleteConfirmTarget?.title}"?` : `Are you sure you want to delete subject "${deleteConfirmTarget?.title}"?`)
+        }
+        confirmText={language === 'vi' ? 'Xác nhận xóa' : 'Delete'}
+        cancelText={language === 'vi' ? 'Hủy' : 'Cancel'}
+        type="danger"
+      />
     </div>
   )
 }

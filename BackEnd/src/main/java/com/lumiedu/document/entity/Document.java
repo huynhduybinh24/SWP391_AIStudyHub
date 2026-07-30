@@ -30,6 +30,9 @@ public class Document {
     @Column(name = "google_drive_file_id", length = 100)
     private String googleDriveFileId;
 
+    @Column(name = "user_google_drive_file_id", length = 100)
+    private String userGoogleDriveFileId;
+
     @Column(name = "storage_provider", length = 50)
     private String storageProvider = "LOCAL";
 
@@ -167,6 +170,9 @@ public class Document {
 
     public String getGoogleDriveFileId() { return googleDriveFileId; }
     public void setGoogleDriveFileId(String googleDriveFileId) { this.googleDriveFileId = googleDriveFileId; }
+
+    public String getUserGoogleDriveFileId() { return userGoogleDriveFileId; }
+    public void setUserGoogleDriveFileId(String userGoogleDriveFileId) { this.userGoogleDriveFileId = userGoogleDriveFileId; }
 
     public String getStorageProvider() { return storageProvider; }
     public void setStorageProvider(String storageProvider) { this.storageProvider = storageProvider; }
