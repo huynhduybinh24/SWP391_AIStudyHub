@@ -5,6 +5,8 @@ import { storageService, getCurrentUserStorageSummary } from '@/services/storage
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { documentService } from '@/services/documentService'
 import { userNotificationService } from '@/features/notifications/services/userNotificationService'
+import { aiService } from '@/services/aiService'
+import { sharedFileService } from '@/features/shared-files/services/sharedFileService'
 
 function formatTimestamp(dateStr: string): string {
   try {
@@ -118,12 +120,16 @@ export const dashboardService = {
     let storageUsedMb = (user?.storageUsedMb && user.storageUsedMb > 0) ? user.storageUsedMb : fallbackSummary.usedMb
     let documents: DashboardData["documents"] = []
     let alerts: AlertItem[] = []
+    let pendingPlans = 0
+    let newSharedDocuments = 0
 
     if (user?.id) {
-      const [storageRes, docsRes, notifsRes] = await Promise.allSettled([
+      const [storageRes, docsRes, notifsRes, plansRes, sharedRes] = await Promise.allSettled([
         storageService.getStorageUsage(Number(user.id)),
         documentService.getAllDocuments(Number(user.id)),
-        userNotificationService.getNotifications(user)
+        userNotificationService.getNotifications(user),
+        aiService.getStudyPlans(Number(user.id)),
+        sharedFileService.getSharedFiles()
       ])
 
       if (storageRes.status === 'fulfilled' && storageRes.value) {
@@ -197,10 +203,22 @@ export const dashboardService = {
           }
         })
       }
+
+      if (plansRes.status === 'fulfilled' && Array.isArray(plansRes.value)) {
+        pendingPlans = plansRes.value.filter((p: any) => 
+          !p.status || p.status === 'PENDING' || p.status === 'DRAFT' || p.status === 'IN_PROGRESS'
+        ).length
+      }
+
+      if (sharedRes.status === 'fulfilled' && Array.isArray(sharedRes.value)) {
+        newSharedDocuments = sharedRes.value.length
+      }
     }
 
     return {
       ...MOCK_DASHBOARD,
+      pendingPlans,
+      newSharedDocuments,
       documents,
       alerts,
       storageUsedMb,

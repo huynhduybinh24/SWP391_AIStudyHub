@@ -241,7 +241,12 @@ export const vi: typeof en = {
   dashboard: {
     title: "Chào mừng trở lại,",
     subtitle: "Dưới đây là tiến độ học tập của bạn hôm nay.",
-    welcomeSubtitle: (pending: number, newDocs: number) => `Bạn có ${pending} kế hoạch học tập đang chờ và ${newDocs} tài liệu chia sẻ mới để xem lại.`,
+    welcomeSubtitle: (pending: number, newDocs: number) => {
+      if (pending === 0 && newDocs === 0) return 'Bạn đã cập nhật đầy đủ thông tin! Hãy tạo kế hoạch học tập mới hoặc khám phá thêm tài liệu bên dưới.'
+      if (pending > 0 && newDocs === 0) return `Bạn có ${pending} kế hoạch học tập đang chờ xem lại.`
+      if (pending === 0 && newDocs > 0) return `Bạn có ${newDocs} tài liệu chia sẻ mới để xem lại.`
+      return `Bạn có ${pending} kế hoạch học tập đang chờ và ${newDocs} tài liệu chia sẻ mới để xem lại.`
+    },
     newStudyPlan: "Kế hoạch học mới",
     recentDocuments: "Tài liệu gần đây",
     viewAll: "Xem tất cả",

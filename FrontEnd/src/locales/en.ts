@@ -239,7 +239,12 @@ export const en = {
   dashboard: {
     title: "Welcome back,",
     subtitle: "Here's what's happening with your study goals today.",
-    welcomeSubtitle: (pending: number, newDocs: number) => `You have ${pending} study plans pending and ${newDocs} new shared documents to review.`,
+    welcomeSubtitle: (pending: number, newDocs: number) => {
+      if (pending === 0 && newDocs === 0) return 'All caught up! Create a new study plan or explore your study documents below.'
+      if (pending > 0 && newDocs === 0) return `You have ${pending} study plan${pending > 1 ? 's' : ''} pending.`
+      if (pending === 0 && newDocs > 0) return `You have ${newDocs} new shared document${newDocs > 1 ? 's' : ''} to review.`
+      return `You have ${pending} study plans pending and ${newDocs} new shared documents to review.`
+    },
     newStudyPlan: "New Study Plan",
     recentDocuments: "Recent Documents",
     viewAll: "View All",
