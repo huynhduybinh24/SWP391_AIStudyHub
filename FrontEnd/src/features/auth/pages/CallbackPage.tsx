@@ -87,7 +87,16 @@ export function CallbackPage() {
       } catch (err: any) {
         console.error('Google login failed:', err)
         setStatus('error')
-        setErrorMsg(err.message || 'Đã xảy ra lỗi khi đăng nhập bằng Google.')
+        const rawMsg = err?.message || ''
+        if (rawMsg.toLowerCase().includes('timeout')) {
+          setErrorMsg(
+            language === 'vi'
+              ? 'Server Backend (Render Free Tier) đang trong trạng thái nghỉ (Cold Start) nên mất hơn 30 giây để khởi động. Vui lòng bấm thử lại.'
+              : 'Server Backend on Render Free Tier is waking up from cold start. Please click to try again.'
+          )
+        } else {
+          setErrorMsg(rawMsg || (language === 'vi' ? 'Đã xảy ra lỗi khi đăng nhập bằng Google.' : 'An error occurred during Google authentication.'))
+        }
       }
     }
 

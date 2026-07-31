@@ -14,7 +14,7 @@ const getProductionApiUrl = (): string => {
 export const apiClient = axios.create({
   baseURL: getProductionApiUrl(),
   headers: { 'Content-Type': 'application/json' },
-  timeout: 30_000,
+  timeout: 60_000,
 })
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
