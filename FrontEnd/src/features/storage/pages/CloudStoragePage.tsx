@@ -176,7 +176,11 @@ export function CloudStoragePage() {
     loadUserDocuments()
   }, [user?.id])
 
-  const totalStorageMb = storageData ? storageData.storageLimitMb : getStorageLimitByPlan(user?.plan)
+  const totalStorageMb = Math.max(
+    storageData?.storageLimitMb || 0,
+    user?.storageLimitMb || 0,
+    getStorageLimitByPlan(user?.plan)
+  )
   const TOTAL_STORAGE_GB = totalStorageMb / 1024;
 
   useEffect(() => {
@@ -185,12 +189,12 @@ export function CloudStoragePage() {
   }, [])
 
   const recentUploadsMb = useMemo(() => {
-    const recentUploadsBytes = uploads.reduce((acc, curr) => acc + curr.sizeBytes, 0)
+    const recentUploadsBytes = uploads.reduce((acc, curr) => acc + (curr.sizeBytes || 0), 0)
     return recentUploadsBytes / (1024 * 1024)
   }, [uploads])
 
   const totalUsedMb = useMemo(() => {
-    return baseUsedStorage + recentUploadsMb
+    return baseUsedStorage > 0 ? baseUsedStorage : recentUploadsMb
   }, [baseUsedStorage, recentUploadsMb])
 
   const usageInfo = calculateStorageUsage(totalUsedMb, totalStorageMb)
