@@ -157,6 +157,7 @@ export function StorageExplorerPage() {
     if (!user?.id) return;
     try {
       const docs = await documentService.getAllDocuments(Number(user.id));
+      setDbFiles(docs);
       const mapped = docs.map(mapDocumentToExplorerFile);
       setFiles(mapped);
     } catch (err) {
@@ -184,7 +185,14 @@ export function StorageExplorerPage() {
   )
   const totalGb = totalMb / 1024
 
-  const usedMb = usage ? usage.storageUsedMb : (user?.storageUsedMb || 0)
+  const realDocsMb = useMemo(() => {
+    if (!dbFiles || dbFiles.length === 0) return 0;
+    return dbFiles.reduce((acc, doc) => acc + ((doc.fileSize || 0) / (1024 * 1024)), 0);
+  }, [dbFiles]);
+
+  const usedMb = realDocsMb > 0 
+    ? Number(realDocsMb.toFixed(2)) 
+    : (usage && usage.storageUsedMb > 0 ? usage.storageUsedMb : (user?.storageUsedMb || 0));
 
   const usedGb = usedMb / 1024
   const usageInfo = calculateStorageUsage(usedMb, totalMb)
@@ -264,8 +272,45 @@ export function StorageExplorerPage() {
     }
   }
 
+  const dynamicFolders = useMemo(() => {
+    if (!dbFiles || dbFiles.length === 0) return folders;
+    const groups: Record<string, { count: number; bytes: number }> = {};
+
+    dbFiles.forEach((doc) => {
+      const subjectName = doc.subject?.trim() || 'General';
+      if (!groups[subjectName]) {
+        groups[subjectName] = { count: 0, bytes: 0 };
+      }
+      groups[subjectName].count += 1;
+      groups[subjectName].bytes += doc.fileSize || 0;
+    });
+
+    const palette = [
+      { color: '#2563eb', bgColor: '#dbeafe' },
+      { color: '#0d9488', bgColor: '#ccfbf1' },
+      { color: '#8b5cf6', bgColor: '#ede9fe' },
+      { color: '#f59e0b', bgColor: '#fef3c7' },
+      { color: '#ec4899', bgColor: '#fce7f3' },
+    ];
+
+    return Object.entries(groups).map(([subjectName, meta], idx) => {
+      const p = palette[idx % palette.length];
+      const sizeMb = meta.bytes / (1024 * 1024);
+      const formattedSize = sizeMb >= 1024 ? `${(sizeMb / 1024).toFixed(1)} GB` : `${sizeMb.toFixed(1)} MB`;
+      return {
+        id: `subject-${idx}`,
+        name: subjectName,
+        itemsCount: meta.count,
+        size: formattedSize,
+        color: p.color,
+        bgColor: p.bgColor,
+        category: 'Study',
+      };
+    });
+  }, [dbFiles, folders]);
+
   const filteredFolders = useMemo(() => {
-    let result = folders
+    let result = dynamicFolders
     if (folderFilter !== 'All Folders') {
       result = result.filter(f => f.category === folderFilter)
     }
@@ -273,7 +318,31 @@ export function StorageExplorerPage() {
       result = result.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
     }
     return result
-  }, [folders, searchQuery, folderFilter])
+  }, [dynamicFolders, searchQuery, folderFilter])
+
+  const categoryBreakdown = useMemo(() => {
+    let docsBytes = 0;
+    let imgBytes = 0;
+    let otherBytes = 0;
+
+    dbFiles.forEach((doc) => {
+      const ext = (doc.originalFileName || doc.fileName || doc.title).split('.').pop()?.toLowerCase() || '';
+      const size = doc.fileSize || 0;
+      if (['pdf', 'doc', 'docx', 'txt', 'ppt', 'pptx', 'xls', 'xlsx'].includes(ext)) {
+        docsBytes += size;
+      } else if (['png', 'jpg', 'jpeg', 'webp', 'svg', 'gif'].includes(ext)) {
+        imgBytes += size;
+      } else {
+        otherBytes += size;
+      }
+    });
+
+    return {
+      docsMb: docsBytes / (1024 * 1024),
+      imgMb: imgBytes / (1024 * 1024),
+      otherMb: otherBytes / (1024 * 1024),
+    };
+  }, [dbFiles]);
 
   const backendFiles = useMemo(() => {
     return dbFiles.map(doc => {
@@ -295,7 +364,7 @@ export function StorageExplorerPage() {
   }, [dbFiles, language])
 
   const allFilesList = useMemo(() => {
-    return [...backendFiles, ...files]
+    return backendFiles.length > 0 ? backendFiles : files
   }, [backendFiles, files])
 
   const filteredFiles = useMemo(() => {
@@ -701,7 +770,7 @@ export function StorageExplorerPage() {
             </div>
 
             <div className="text-center mt-6 mb-8">
-              <h3 className="font-bold text-foreground text-[15px]">{t.storageExplorer.usedOfText(displayUsedGb, displayTotalGb)}</h3>
+              <h3 className="font-bold text-foreground text-[15px]">{formatStorageSize(usedMb)} of {formatStorageSize(totalMb)}</h3>
             </div>
 
             <div className="flex flex-col gap-3 mb-8">
@@ -710,21 +779,21 @@ export function StorageExplorerPage() {
                   <div className="w-2.5 h-2.5 rounded-full bg-[#2563eb]"></div>
                   <span className="text-foreground font-medium">{t.storageExplorer.documents}</span>
                 </div>
-                <span className="text-muted font-medium">{formatStorageSize(usedMb * 0.6)}</span>
+                <span className="text-muted font-medium">{formatStorageSize(categoryBreakdown.docsMb)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#0d9488]"></div>
                   <span className="text-foreground font-medium">{t.storageExplorer.images}</span>
                 </div>
-                <span className="text-muted font-medium">{formatStorageSize(usedMb * 0.3)}</span>
+                <span className="text-muted font-medium">{formatStorageSize(categoryBreakdown.imgMb)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1] dark:bg-slate-700"></div>
                   <span className="text-foreground font-medium">{t.storageExplorer.other}</span>
                 </div>
-                <span className="text-muted font-medium">{formatStorageSize(usedMb * 0.1)}</span>
+                <span className="text-muted font-medium">{formatStorageSize(categoryBreakdown.otherMb)}</span>
               </div>
             </div>
 
