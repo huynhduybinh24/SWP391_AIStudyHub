@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 @Transactional
 public class PromptEngineServiceImpl implements PromptEngineService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PromptEngineServiceImpl.class);
 
     private final PromptRepository promptRepository;
     private final PromptVersionRepository promptVersionRepository;

@@ -30,6 +30,7 @@ import { storageService, type StorageUsage } from '@/services/storageService'
 import { documentService, type DocumentResponse } from '@/services/documentService'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { formatStorageSize, calculateStorageUsage } from '@/utils/storageFormat'
+import { sharedFileService } from '@/features/shared-files/services/sharedFileService'
 
 const formatFileTime = (time: string) => time;
 
@@ -66,7 +67,7 @@ const INITIAL_UPLOADS = [
   },
 ]
 
-const SHARED_FILES_GB = 1.2;
+
 
 const getFileExtensionInfo = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase();
@@ -148,12 +149,15 @@ export function CloudStoragePage() {
   const [tempSize, setTempSize] = useState(0)
   const [isMounted, setIsMounted] = useState(false)
 
+  const [sharedFilesMb, setSharedFilesMb] = useState<number>(0)
+
   const loadUserDocuments = () => {
     if (user?.id) {
       Promise.allSettled([
         storageService.getStorageUsage(Number(user.id)),
-        documentService.getAllDocuments(Number(user.id))
-      ]).then(([storageRes, docsRes]) => {
+        documentService.getAllDocuments(Number(user.id)),
+        sharedFileService.getSharedFiles()
+      ]).then(([storageRes, docsRes, sharedRes]) => {
         if (storageRes.status === 'fulfilled' && storageRes.value) {
           setStorageData(storageRes.value)
           setBaseUsedStorage(storageRes.value.storageUsedMb)
@@ -167,6 +171,27 @@ export function CloudStoragePage() {
           try {
             localStorage.setItem('aiStudyHubCachedCloudDocs', JSON.stringify(mapped))
           } catch (e) {}
+        }
+        if (sharedRes.status === 'fulfilled' && Array.isArray(sharedRes.value)) {
+          let totalMb = 0
+          sharedRes.value.forEach((f) => {
+            if (!f.size) return
+            const sizeStr = String(f.size).trim().toLowerCase()
+            const num = parseFloat(sizeStr)
+            if (isNaN(num)) return
+            if (sizeStr.endsWith('gb')) {
+              totalMb += num * 1024
+            } else if (sizeStr.endsWith('mb')) {
+              totalMb += num
+            } else if (sizeStr.endsWith('kb')) {
+              totalMb += num / 1024
+            } else if (sizeStr.endsWith('bytes') || sizeStr.endsWith('b')) {
+              totalMb += num / (1024 * 1024)
+            } else {
+              totalMb += num
+            }
+          })
+          setSharedFilesMb(totalMb)
         }
       })
     }
@@ -419,7 +444,7 @@ export function CloudStoragePage() {
               <FolderOpen className="size-4 text-[#2563eb]" />
               {t.cloudStorage.sharedFiles}
             </div>
-            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{SHARED_FILES_GB} GB</div>
+            <div className="text-[28px] font-bold text-foreground mt-2 leading-none">{formatStorageSize(sharedFilesMb)}</div>
           </CardContent>
         </Card>
       </div>
