@@ -1,7 +1,7 @@
 import type { DashboardData, AlertItem } from '@/features/dashboard/types'
 import { getCurrentWeekDays, getTrackedSeconds, addTrackedSeconds, formatDateLocal } from '../utils/studyTime'
 import { useAuthStore } from '@/stores/authStore'
-import { storageService } from '@/services/storageService'
+import { storageService, getCurrentUserStorageSummary } from '@/services/storageService'
 import { getStorageLimitByPlan } from '@/constants/storagePlans'
 import { documentService } from '@/services/documentService'
 import { userNotificationService } from '@/features/notifications/services/userNotificationService'

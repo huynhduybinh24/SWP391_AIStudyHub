@@ -4,6 +4,7 @@ export type UserRole = 'user' | 'admin'
 export interface AuthUser {
   id: string
   name: string
+  fullName?: string
   email: string
   role: UserRole
   avatarUrl?: string
@@ -12,6 +13,8 @@ export interface AuthUser {
   major?: string
   degree?: string
   twoFactorEnabled?: boolean
+  storageUsedMb?: number
+  storageLimitMb?: number
 }
 
 export interface AuthTokens {
