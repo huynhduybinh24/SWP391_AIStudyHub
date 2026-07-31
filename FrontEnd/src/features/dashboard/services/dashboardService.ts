@@ -139,7 +139,7 @@ export const dashboardService = {
 
       if (docsRes.status === 'fulfilled' && Array.isArray(docsRes.value)) {
         const docStorageMb = docsRes.value.reduce((acc, doc) => acc + ((doc.fileSize || 0) / (1024 * 1024)), 0)
-        if (docStorageMb > 0 && storageUsedMb === 0) {
+        if (docStorageMb > 0) {
           storageUsedMb = Number(docStorageMb.toFixed(2))
         }
 
