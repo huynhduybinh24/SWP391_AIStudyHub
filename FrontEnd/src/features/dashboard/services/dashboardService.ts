@@ -114,14 +114,7 @@ export const dashboardService = {
 
     const user = useAuthStore.getState().user
     let storageTotalMb = getStorageLimitByPlan(user?.plan)
-    let storageUsedMb = user?.plan === 'pro' 
-      ? 2457.6 
-      : ((user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise')
-        ? 8192
-        : 8
-
-    let documents: DashboardData["documents"] = []
-    let alerts: AlertItem[] = []
+    let storageUsedMb = 0
 
     if (user?.id) {
       const [storageRes, docsRes, notifsRes] = await Promise.allSettled([
@@ -132,7 +125,11 @@ export const dashboardService = {
 
       if (storageRes.status === 'fulfilled' && storageRes.value) {
         storageUsedMb = storageRes.value.storageUsedMb
-        storageTotalMb = storageRes.value.storageLimitMb
+        storageTotalMb = Math.max(
+          storageRes.value.storageLimitMb || 0,
+          user?.storageLimitMb || 0,
+          getStorageLimitByPlan(user?.plan)
+        )
       }
 
       if (docsRes.status === 'fulfilled' && Array.isArray(docsRes.value)) {

@@ -25,7 +25,7 @@ export function StorageWidget({ usedMb: propUsedMb, totalMb: propTotalMb }: Stor
 
   // Prefer live API props when they carry a real non-zero used value;
   // fall back to helper otherwise (mock / API not yet connected).
-  const usedMb  = (propUsedMb  != null && propUsedMb  > 0) ? propUsedMb  : summary.usedMb
+  const usedMb  = (propUsedMb  != null && propUsedMb  >= 0) ? propUsedMb  : summary.usedMb
   const totalMb = (propTotalMb != null && propTotalMb > 0) ? propTotalMb : summary.totalMb
 
   const usage = calculateStorageUsage(usedMb, totalMb)

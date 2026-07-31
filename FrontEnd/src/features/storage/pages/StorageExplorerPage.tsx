@@ -177,16 +177,14 @@ export function StorageExplorerPage() {
     }
   }, [user?.id])
 
-  const totalMb = usage ? usage.storageLimitMb : getStorageLimitByPlan(user?.plan)
+  const totalMb = Math.max(
+    usage?.storageLimitMb || 0,
+    user?.storageLimitMb || 0,
+    getStorageLimitByPlan(user?.plan)
+  )
   const totalGb = totalMb / 1024
 
-  const usedMb = usage
-    ? usage.storageUsedMb
-    : user?.plan === 'pro'
-      ? 2457.6
-      : ((user?.plan as string) === 'premium' || (user?.plan as string) === 'institutional' || (user?.plan as string) === 'enterprise')
-        ? 8192
-        : 8
+  const usedMb = usage ? usage.storageUsedMb : (user?.storageUsedMb || 0)
 
   const usedGb = usedMb / 1024
   const usageInfo = calculateStorageUsage(usedMb, totalMb)
