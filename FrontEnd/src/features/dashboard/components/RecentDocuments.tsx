@@ -41,6 +41,7 @@ interface RecentDocumentsProps {
 
 export function RecentDocuments({ documents }: RecentDocumentsProps) {
   const { t } = useTranslation()
+  const safeDocs = Array.isArray(documents) ? documents : []
 
   return (
     <section className="col-span-5 space-y-4">
@@ -53,13 +54,13 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
         </Link>
       </div>
       <Card className="divide-y divide-slate-200 dark:divide-slate-800">
-        {documents.length === 0 ? (
+        {safeDocs.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500 dark:text-slate-400">
             <p className="text-sm font-medium">{t.dashboard.noDocs}</p>
             <p className="text-xs mt-1 text-slate-400 dark:text-slate-500">{t.dashboard.uploadPrompt}</p>
           </div>
         ) : (
-          documents.map((doc) => {
+          safeDocs.map((doc) => {
             const meta = iconMap[doc.type]
             const Icon = meta.icon
             return (

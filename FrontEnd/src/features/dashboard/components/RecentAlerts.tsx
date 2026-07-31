@@ -16,6 +16,7 @@ interface RecentAlertsProps {
 
 export function RecentAlerts({ alerts }: RecentAlertsProps) {
   const { t } = useTranslation()
+  const safeAlerts = Array.isArray(alerts) ? alerts : []
 
   return (
     <section className="col-span-3 space-y-4">
@@ -23,12 +24,12 @@ export function RecentAlerts({ alerts }: RecentAlertsProps) {
         {t.dashboard.recentAlerts}
       </CardTitle>
       <Card className="divide-y divide-slate-200 dark:divide-slate-800 p-2">
-        {alerts.length === 0 ? (
+        {safeAlerts.length === 0 ? (
           <div className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
             {t.notificationsPage.noNotifications}
           </div>
         ) : (
-          alerts.map((alert) => (
+          safeAlerts.map((alert) => (
             <article key={alert.id} className="flex gap-3 px-3 py-3">
               <span
                 className={cn('mt-1.5 size-2 shrink-0 rounded-full', dotColors[alert.variant])}

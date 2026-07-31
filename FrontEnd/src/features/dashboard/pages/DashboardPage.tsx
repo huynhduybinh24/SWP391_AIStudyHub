@@ -103,17 +103,17 @@ export function DashboardPage() {
       )}
 
       <div className="grid grid-cols-12 gap-6">
-        <RecentDocuments documents={data.documents} />
+        <RecentDocuments documents={data?.documents || []} />
         <QuickAskCard />
         <WeeklyActivityChart
-          data={data.weeklyActivity.map((item, idx) => ({
+          data={(data?.weeklyActivity || []).map((item, idx) => ({
             ...item,
             day: (t.dashboard.weekdays && t.dashboard.weekdays[idx]) || item.day
           }))}
-          totalHours={data.weeklyHours}
-          trend={data.weeklyTrend}
+          totalHours={data?.weeklyHours || 0}
+          trend={data?.weeklyTrend || '0 hrs'}
         />
-        <RecentAlerts alerts={data.alerts} />
+        <RecentAlerts alerts={data?.alerts || []} />
       </div>
 
       <CreateStudyPlanModal
