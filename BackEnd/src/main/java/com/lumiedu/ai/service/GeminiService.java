@@ -104,6 +104,17 @@ public class GeminiService {
                 requestBody.add("systemInstruction", systemInstructionObj);
             }
 
+            if (contentsArray.size() == 0) {
+                JsonObject contentObj = new JsonObject();
+                contentObj.addProperty("role", "user");
+                JsonArray partsArray = new JsonArray();
+                JsonObject partObj = new JsonObject();
+                partObj.addProperty("text", "Please analyze and process according to system instructions.");
+                partsArray.add(partObj);
+                contentObj.add("parts", partsArray);
+                contentsArray.add(contentObj);
+            }
+
             requestBody.add("contents", contentsArray);
 
             JsonObject generationConfig = new JsonObject();
