@@ -211,7 +211,13 @@ export const dashboardService = {
       }
 
       if (sharedRes.status === 'fulfilled' && Array.isArray(sharedRes.value)) {
-        newSharedDocuments = sharedRes.value.length
+        const currentUserEmail = user?.email?.toLowerCase() || ''
+        newSharedDocuments = sharedRes.value.filter((f: any) => {
+          const ownerEmail = String(f.ownerEmail || '').toLowerCase()
+          const owner = String(f.owner || '').toLowerCase()
+          const perm = String(f.permission || f.role || '').toLowerCase()
+          return owner !== 'me' && ownerEmail !== currentUserEmail && perm !== 'owner'
+        }).length
       }
     }
 
