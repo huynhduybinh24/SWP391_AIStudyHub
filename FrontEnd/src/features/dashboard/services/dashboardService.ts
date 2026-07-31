@@ -114,7 +114,8 @@ export const dashboardService = {
 
     const user = useAuthStore.getState().user
     let storageTotalMb = getStorageLimitByPlan(user?.plan)
-    let storageUsedMb = 0
+    const fallbackSummary = getCurrentUserStorageSummary()
+    let storageUsedMb = (user?.storageUsedMb && user.storageUsedMb > 0) ? user.storageUsedMb : fallbackSummary.usedMb
     let documents: DashboardData["documents"] = []
     let alerts: AlertItem[] = []
 
@@ -126,7 +127,9 @@ export const dashboardService = {
       ])
 
       if (storageRes.status === 'fulfilled' && storageRes.value) {
-        storageUsedMb = storageRes.value.storageUsedMb
+        if (typeof storageRes.value.storageUsedMb === 'number' && storageRes.value.storageUsedMb > 0) {
+          storageUsedMb = storageRes.value.storageUsedMb
+        }
         storageTotalMb = Math.max(
           storageRes.value.storageLimitMb || 0,
           user?.storageLimitMb || 0,
