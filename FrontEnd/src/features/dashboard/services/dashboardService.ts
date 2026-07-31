@@ -115,6 +115,8 @@ export const dashboardService = {
     const user = useAuthStore.getState().user
     let storageTotalMb = getStorageLimitByPlan(user?.plan)
     let storageUsedMb = 0
+    let documents: DashboardData["documents"] = []
+    let alerts: AlertItem[] = []
 
     if (user?.id) {
       const [storageRes, docsRes, notifsRes] = await Promise.allSettled([
