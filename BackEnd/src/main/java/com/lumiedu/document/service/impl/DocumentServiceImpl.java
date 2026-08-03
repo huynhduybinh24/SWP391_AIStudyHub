@@ -180,7 +180,7 @@ public class DocumentServiceImpl implements DocumentService {
             boolean checksumExistsForUser = documentRepository.existsByUserIdAndSubjectIgnoreCaseAndChecksumAndDeletedFalse(userId, subjectToUse, fileChecksum);
 
             if (checksumExistsForUser) {
-                throw new IllegalArgumentException("Bạn đã tải tệp tin này lên My Documents trước đó trong môn học [" + subjectToUse + "]! Vui lòng không tải lại tệp trùng.");
+                throw new IllegalArgumentException("[Trùng nội dung tệp] Bạn đã tải một tệp tin có nội dung giống hệt 100% lên My Documents trước đó cho môn học [" + subjectToUse + "]. Vui lòng không tải lại tệp trùng!");
             }
         }
 
@@ -190,7 +190,7 @@ public class DocumentServiceImpl implements DocumentService {
             boolean titleForUsr = documentRepository.existsByUserIdAndSubjectIgnoreCaseAndTitleIgnoreCaseAndDeletedFalse(userId, subjectToUse, trimmedTitle);
 
             if (titleForUsr) {
-                throw new IllegalArgumentException("Tiêu đề tài liệu '" + trimmedTitle + "' đã tồn tại trong My Documents của bạn cho môn học [" + subjectToUse + "]. Vui lòng sửa tiêu đề khác!");
+                throw new IllegalArgumentException("[Trùng tiêu đề] Tiêu đề tài liệu '" + trimmedTitle + "' đã tồn tại trong môn học [" + subjectToUse + "]. Vui lòng đổi sang Tiêu đề khác ở ô thông tin!");
             }
         }
 
@@ -199,7 +199,7 @@ public class DocumentServiceImpl implements DocumentService {
             boolean nameForUsr = documentRepository.existsByUserIdAndSubjectIgnoreCaseAndOriginalFileNameIgnoreCaseAndDeletedFalse(userId, subjectToUse, originalFileName);
 
             if (nameForUsr) {
-                throw new IllegalArgumentException("Tệp '" + originalFileName + "' đã tồn tại trong My Documents của bạn cho môn học [" + subjectToUse + "]. Vui lòng nhập Tiêu đề riêng để phân biệt!");
+                throw new IllegalArgumentException("[Trùng tên tệp gốc] Tệp '" + originalFileName + "' đã tồn tại trong môn học [" + subjectToUse + "]. Vui lòng nhập 'Tiêu đề tài liệu' riêng để phân biệt hoặc đổi tên file trên máy!");
             }
         }
 
@@ -207,7 +207,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (request.getWorkspaceId() != null && fileChecksum != null) {
             boolean existsInWorkspace = workspaceDocumentRepository.existsByWorkspaceIdAndChecksum(request.getWorkspaceId(), fileChecksum);
             if (existsInWorkspace) {
-                throw new IllegalArgumentException("Tài liệu này đã được chia sẻ trong Nhóm học tập này trước đó! Vui lòng kiểm tra danh sách tài liệu nhóm.");
+                throw new IllegalArgumentException("[Trùng tài liệu nhóm] Tài liệu này đã được tải lên/chia sẻ trong Nhóm học tập này trước đó. Vui lòng kiểm tra lại danh sách tài liệu nhóm!");
             }
         }
 
