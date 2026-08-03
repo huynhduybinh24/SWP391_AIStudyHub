@@ -3,8 +3,10 @@ package com.lumiedu.ai.service;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.lumiedu.ai.exception.AiApiException;
 import com.lumiedu.ai.service.OpenAiService.ChatMessageDto;
 import com.lumiedu.ai.service.OpenAiService.OpenAiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -15,25 +17,33 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
+@Slf4j
 @Service
 public class GeminiService {
 
-    @Value("${gemini.api.key}")
+    @Value("${gemini.api-key:}")
     private String apiKey;
 
-    private static final String MODEL_NAME = "gemini-3.1-flash-lite";
+    @Value("${gemini.primary-model:gemini-3.1-flash-lite}")
+    private String primaryModel;
+
+    @Value("${gemini.fallback-model:gemini-3.5-flash-lite}")
+    private String fallbackModel;
+
+    @Value("${gemini.embedding-model:gemini-embedding-001}")
+    private String embeddingModel;
+
     private static final int MAX_RETRIES = 3;
-    private static final long RETRY_DELAY_MS = 3000;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(30))
             .build();
     private final Gson gson = new Gson();
 
-    private List<String> apiKeys = new ArrayList<>();
+    private final List<String> apiKeys = new ArrayList<>();
     private int currentKeyIndex = 0;
 
     private synchronized void initKeys() {
@@ -60,22 +70,33 @@ public class GeminiService {
         initKeys();
         if (apiKeys.size() > 1) {
             currentKeyIndex = (currentKeyIndex + 1) % apiKeys.size();
-            System.out.println("Rotating to next Gemini API Key. New index: " + currentKeyIndex);
+            log.info("[Gemini Key Rotation] Rotated key index to {}", currentKeyIndex);
         }
     }
 
+    private String maskKey(String key) {
+        if (key == null || key.length() < 6) return "key-***";
+        return key.substring(0, 3) + "***" + key.substring(key.length() - 3);
+    }
+
+    public String generateContent(String prompt) {
+        List<ChatMessageDto> messages = new ArrayList<>();
+        messages.add(new ChatMessageDto("user", prompt != null ? prompt : ""));
+        OpenAiResponse response = chat(messages, false);
+        return response != null ? response.getContent() : "";
+    }
+
     public OpenAiResponse chat(List<ChatMessageDto> messages, boolean isJson) {
-        String initialKey = getActiveKey();
-        if (initialKey == null) {
-            throw new RuntimeException("Gemini API key is not configured.");
+        String activeKey = getActiveKey();
+        if (activeKey == null) {
+            throw AiApiException.unauthorized("Gemini API key is not configured on the backend server.");
         }
 
-        try {
-            JsonObject requestBody = new JsonObject();
-            
-            String systemInstructionText = "";
-            JsonArray contentsArray = new JsonArray();
+        JsonObject requestBody = new JsonObject();
+        String systemInstructionText = "";
+        JsonArray contentsArray = new JsonArray();
 
+        if (messages != null) {
             for (ChatMessageDto msg : messages) {
                 if ("system".equalsIgnoreCase(msg.getRole())) {
                     systemInstructionText = msg.getContent();
@@ -83,125 +104,175 @@ public class GeminiService {
                     JsonObject contentObj = new JsonObject();
                     String role = "assistant".equalsIgnoreCase(msg.getRole()) ? "model" : "user";
                     contentObj.addProperty("role", role);
-                    
+
                     JsonArray partsArray = new JsonArray();
                     JsonObject partObj = new JsonObject();
-                    partObj.addProperty("text", msg.getContent());
+                    partObj.addProperty("text", msg.getContent() != null ? msg.getContent() : "");
                     partsArray.add(partObj);
                     contentObj.add("parts", partsArray);
-                    
+
                     contentsArray.add(contentObj);
                 }
             }
+        }
 
-            if (!systemInstructionText.isEmpty()) {
-                JsonObject systemInstructionObj = new JsonObject();
-                JsonArray partsArray = new JsonArray();
-                JsonObject partObj = new JsonObject();
-                partObj.addProperty("text", systemInstructionText);
-                partsArray.add(partObj);
-                systemInstructionObj.add("parts", partsArray);
-                requestBody.add("systemInstruction", systemInstructionObj);
+        if (systemInstructionText != null && !systemInstructionText.isEmpty()) {
+            JsonObject systemInstructionObj = new JsonObject();
+            JsonArray partsArray = new JsonArray();
+            JsonObject partObj = new JsonObject();
+            partObj.addProperty("text", systemInstructionText);
+            partsArray.add(partObj);
+            systemInstructionObj.add("parts", partsArray);
+            requestBody.add("systemInstruction", systemInstructionObj);
+        }
+
+        if (contentsArray.size() == 0) {
+            JsonObject contentObj = new JsonObject();
+            contentObj.addProperty("role", "user");
+            JsonArray partsArray = new JsonArray();
+            JsonObject partObj = new JsonObject();
+            partObj.addProperty("text", "Please process request.");
+            partsArray.add(partObj);
+            contentObj.add("parts", partsArray);
+            contentsArray.add(contentObj);
+        }
+
+        requestBody.add("contents", contentsArray);
+
+        JsonObject generationConfig = new JsonObject();
+        generationConfig.addProperty("temperature", 0.7);
+        if (isJson) {
+            generationConfig.addProperty("responseMimeType", "application/json");
+        }
+        requestBody.add("generationConfig", generationConfig);
+
+        String requestBodyJson = gson.toJson(requestBody);
+
+        // First attempt using primary model, fallback to secondary model if temporary error occurs
+        try {
+            return callGenerateContentApi(primaryModel, requestBodyJson);
+        } catch (AiApiException e) {
+            if (e.getStatus().is5xxServerError() || e.getStatus().value() == 429 || e.getStatus().value() == 504) {
+                log.warn("[Gemini Primary Model Fallback] Primary model {} failed with status {}. Attempting fallback model {}",
+                        primaryModel, e.getStatus().value(), fallbackModel);
+                return callGenerateContentApi(fallbackModel, requestBodyJson);
+            }
+            throw e;
+        }
+    }
+
+    private OpenAiResponse callGenerateContentApi(String selectedModel, String requestBodyJson) {
+        String requestId = UUID.randomUUID().toString().substring(0, 8);
+        long startTime = System.currentTimeMillis();
+
+        initKeys();
+        int keysAttemptedCount = 0;
+        int maxKeyAttempts = Math.max(1, apiKeys.size());
+
+        while (keysAttemptedCount < maxKeyAttempts) {
+            String activeKey = getActiveKey();
+            if (activeKey == null) {
+                throw AiApiException.unauthorized("Gemini API key is not configured.");
             }
 
-            if (contentsArray.size() == 0) {
-                JsonObject contentObj = new JsonObject();
-                contentObj.addProperty("role", "user");
-                JsonArray partsArray = new JsonArray();
-                JsonObject partObj = new JsonObject();
-                partObj.addProperty("text", "Please analyze and process according to system instructions.");
-                partsArray.add(partObj);
-                contentObj.add("parts", partsArray);
-                contentsArray.add(contentObj);
-            }
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/" + selectedModel + ":generateContent?key=" + activeKey;
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
+                    .timeout(Duration.ofSeconds(60))
+                    .build();
 
-            requestBody.add("contents", contentsArray);
-
-            JsonObject generationConfig = new JsonObject();
-            generationConfig.addProperty("temperature", 0.7);
-            if (isJson) {
-                generationConfig.addProperty("responseMimeType", "application/json");
-            }
-            requestBody.add("generationConfig", generationConfig);
-
-            String requestBodyJson = gson.toJson(requestBody);
-
-            HttpResponse<String> response = null;
-            Exception lastException = null;
-            for (int attempt = 1; attempt <= 3; attempt++) {
-                String activeKey = getActiveKey();
-                if (activeKey == null) {
-                    throw new RuntimeException("Gemini API key is not configured.");
-                }
-
-                String url = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL_NAME + ":generateContent?key=" + activeKey;
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
-                        .timeout(Duration.ofSeconds(60))
-                        .build();
-
+            for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
                 try {
-                    response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                    HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                     int status = response.statusCode();
-                    if (status == 429 || status == 403 || status == 401) {
-                        String msg = status == 429 ? "rate limited (429)" : (status == 403 ? "forbidden (403)" : "unauthorized (401)");
-                        System.err.println("Gemini API call failed with " + msg + ", attempt " + attempt + "/3. Rotating API key...");
+                    long duration = System.currentTimeMillis() - startTime;
+
+                    if (status == 200) {
+                        log.info("[Gemini Success] reqId={} key={} model={} status=200 duration={}ms",
+                                requestId, maskKey(activeKey), selectedModel, duration);
+                        return parseGenerateContentResponse(response.body());
+                    }
+
+                    log.warn("[Gemini Response Error] reqId={} key={} model={} status={} attempt={}/{}",
+                            requestId, maskKey(activeKey), selectedModel, status, attempt, MAX_RETRIES);
+
+                    if (status == 400) {
+                        throw AiApiException.badRequest("AI_INVALID_REQUEST", "Gemini API rejected request format.");
+                    }
+
+                    if (status == 401 || status == 403) {
+                        log.warn("[Gemini Auth Error] reqId={} status={}. Rotating API key.", requestId, status);
                         rotateKey();
-                        if (attempt < 3) {
+                        break; // Try next key
+                    }
+
+                    if (status == 429) {
+                        if (attempt < MAX_RETRIES) {
                             Thread.sleep(1000L * attempt);
                             continue;
+                        } else {
+                            throw AiApiException.rateLimited("Gemini API rate limit exceeded. Please try again shortly.");
                         }
-                    } else if (status >= 500 && status < 600) {
-                        System.err.println("Gemini API call failed with server error (" + status + "), attempt " + attempt + "/3. Retrying...");
-                        if (attempt < 3) {
-                            Thread.sleep(3000L * attempt);
+                    }
+
+                    if (status >= 500) {
+                        if (attempt < MAX_RETRIES) {
+                            Thread.sleep(2000L * attempt);
                             continue;
+                        } else {
+                            throw AiApiException.serviceUnavailable("AI_MODEL_UNAVAILABLE", "Gemini AI service is temporarily unavailable.");
                         }
                     }
-                    break;
-                } catch (java.io.IOException | InterruptedException e) {
-                    lastException = e;
-                    System.err.println("Gemini network/timeout error, attempt " + attempt + "/3. Error: " + e.getMessage());
-                    if (e instanceof InterruptedException) {
+
+                    throw AiApiException.badGateway("AI_RESPONSE_INVALID", "Gemini API returned unexpected status: " + status);
+
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw AiApiException.gatewayTimeout("Gemini API execution was interrupted.");
+                } catch (java.io.IOException ioe) {
+                    log.warn("[Gemini Network Error] reqId={} attempt={}/{} error={}", requestId, attempt, MAX_RETRIES, ioe.getMessage());
+                    if (attempt == MAX_RETRIES) {
+                        throw AiApiException.gatewayTimeout("Gemini API connection timed out.");
+                    }
+                    try {
+                        Thread.sleep(2000L * attempt);
+                    } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
-                        throw new RuntimeException("Gemini call interrupted", e);
-                    }
-                    if (attempt < 3) {
-                        try {
-                            Thread.sleep(3000L * attempt);
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                            throw new RuntimeException("Gemini call interrupted during retry delay", ie);
-                        }
+                        throw AiApiException.gatewayTimeout("Gemini API execution interrupted during retry.");
                     }
                 }
             }
 
-            if (response == null || response.statusCode() != 200) {
-                String errMsg = "Gemini API call failed. Status: " + (response != null ? response.statusCode() : "unknown");
-                if (response != null && response.body() != null) {
-                    errMsg += ", Body: " + response.body();
-                }
-                if (lastException != null) {
-                    errMsg += ", Cause: " + lastException.getMessage();
-                }
-                throw new RuntimeException(errMsg);
+            keysAttemptedCount++;
+        }
+
+        throw AiApiException.unauthorized("All configured Gemini API keys failed authentication or rate limits.");
+    }
+
+    private OpenAiResponse parseGenerateContentResponse(String responseBody) {
+        try {
+            JsonObject responseJson = gson.fromJson(responseBody, JsonObject.class);
+            JsonArray candidates = responseJson.getAsJsonArray("candidates");
+            if (candidates == null || candidates.size() == 0) {
+                throw AiApiException.badGateway("AI_RESPONSE_INVALID", "Gemini API response contained no candidates.");
             }
 
-            JsonObject responseJson = gson.fromJson(response.body(), JsonObject.class);
-            JsonObject candidate = responseJson.getAsJsonArray("candidates").get(0).getAsJsonObject();
-            JsonObject contentObject = candidate.getAsJsonObject("content");
-            JsonObject partObject = contentObject.getAsJsonArray("parts").get(0).getAsJsonObject();
-            String rawContent = partObject.get("text").getAsString();
+            JsonObject firstCandidate = candidates.get(0).getAsJsonObject();
+            JsonObject contentObject = firstCandidate.getAsJsonObject("content");
+            JsonArray parts = contentObject.getAsJsonArray("parts");
+            if (parts == null || parts.size() == 0) {
+                throw AiApiException.badGateway("AI_RESPONSE_INVALID", "Gemini API candidate contained no text parts.");
+            }
 
-            String thought = "";
+            String rawContent = parts.get(0).getAsJsonObject().get("text").getAsString();
+
+            // Sanitize raw text: remove internal <thought> tags to prevent leaking private reasoning
             String cleanContent = rawContent;
             if (rawContent.contains("<thought>") && rawContent.contains("</thought>")) {
                 int start = rawContent.indexOf("<thought>");
                 int end = rawContent.indexOf("</thought>");
-                thought = rawContent.substring(start + 9, end).trim();
                 cleanContent = (rawContent.substring(0, start) + rawContent.substring(end + 10)).trim();
             }
 
@@ -223,116 +294,93 @@ public class GeminiService {
 
             return OpenAiResponse.builder()
                     .content(cleanContent)
-                    .thought(thought)
+                    .thought("Answer generated using the selected document context.")
                     .promptTokens(promptTokens)
                     .completionTokens(completionTokens)
                     .costEstimate(totalCost)
                     .build();
 
+        } catch (AiApiException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            }
-            throw new RuntimeException("Exception occurred during Gemini API call: " + e.getMessage(), e);
+            log.error("[Gemini Parsing Error] Failed to parse response", e);
+            throw AiApiException.badGateway("AI_RESPONSE_INVALID", "Failed to parse AI provider response.");
         }
     }
 
     public float[] getEmbedding(String text) {
-        String initialKey = getActiveKey();
-        if (initialKey == null) {
-            throw new RuntimeException("Gemini API key is not configured.");
+        String activeKey = getActiveKey();
+        if (activeKey == null) {
+            throw AiApiException.unauthorized("Gemini API key is not configured.");
         }
 
-        try {
-            JsonObject requestBody = new JsonObject();
-            JsonObject contentObj = new JsonObject();
-            JsonArray partsArray = new JsonArray();
-            JsonObject partObj = new JsonObject();
-            partObj.addProperty("text", text);
-            partsArray.add(partObj);
-            contentObj.add("parts", partsArray);
-            requestBody.add("content", contentObj);
+        JsonObject requestBody = new JsonObject();
+        JsonObject contentObj = new JsonObject();
+        JsonArray partsArray = new JsonArray();
+        JsonObject partObj = new JsonObject();
+        partObj.addProperty("text", text != null ? text : "");
+        partsArray.add(partObj);
+        contentObj.add("parts", partsArray);
+        requestBody.add("content", contentObj);
 
-            String requestBodyJson = gson.toJson(requestBody);
+        String requestBodyJson = gson.toJson(requestBody);
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + embeddingModel + ":embedContent?key=" + activeKey;
 
-            HttpResponse<String> response = null;
-            Exception lastException = null;
-            for (int attempt = 1; attempt <= 3; attempt++) {
-                String activeKey = getActiveKey();
-                if (activeKey == null) {
-                    throw new RuntimeException("Gemini API key is not configured.");
-                }
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
+                .timeout(Duration.ofSeconds(30))
+                .build();
 
-                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=" + activeKey;
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
-                        .timeout(Duration.ofSeconds(30))
-                        .build();
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                int status = response.statusCode();
 
-                try {
-                    response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                    int status = response.statusCode();
-                    if (status == 429 || status == 403 || status == 401) {
-                        String msg = status == 429 ? "rate limited (429)" : (status == 403 ? "forbidden (403)" : "unauthorized (401)");
-                        System.err.println("Gemini Embedding API call failed with " + msg + ", attempt " + attempt + "/3. Rotating API key...");
-                        rotateKey();
-                        if (attempt < 3) {
-                            Thread.sleep(1000L * attempt);
-                            continue;
-                        }
-                    } else if (status >= 500 && status < 600) {
-                        System.err.println("Gemini Embedding API call failed with server error (" + status + "), attempt " + attempt + "/3. Retrying...");
-                        if (attempt < 3) {
-                            Thread.sleep(3000L * attempt);
-                            continue;
-                        }
+                if (status == 200) {
+                    JsonObject responseJson = gson.fromJson(response.body(), JsonObject.class);
+                    JsonObject embeddingObj = responseJson.getAsJsonObject("embedding");
+                    JsonArray valuesArray = embeddingObj.getAsJsonArray("values");
+
+                    float[] vector = new float[valuesArray.size()];
+                    for (int i = 0; i < valuesArray.size(); i++) {
+                        vector[i] = valuesArray.get(i).getAsFloat();
                     }
-                    break;
-                } catch (java.io.IOException | InterruptedException e) {
-                    lastException = e;
-                    System.err.println("Gemini Embedding network/timeout error, attempt " + attempt + "/3. Error: " + e.getMessage());
-                    if (e instanceof InterruptedException) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("Gemini Embedding call interrupted", e);
-                    }
-                    if (attempt < 3) {
-                        try {
-                            Thread.sleep(3000L * attempt);
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                            throw new RuntimeException("Gemini Embedding call interrupted during retry delay", ie);
-                        }
-                    }
+                    return vector;
+                }
+
+                if (status == 400) {
+                    throw AiApiException.badRequest("AI_INVALID_REQUEST", "Gemini embedding request invalid.");
+                }
+
+                if (status == 401 || status == 403) {
+                    rotateKey();
+                    activeKey = getActiveKey();
+                    url = "https://generativelanguage.googleapis.com/v1beta/models/" + embeddingModel + ":embedContent?key=" + activeKey;
+                    request = HttpRequest.newBuilder()
+                            .uri(URI.create(url))
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
+                            .timeout(Duration.ofSeconds(30))
+                            .build();
+                    continue;
+                }
+
+                if (attempt < MAX_RETRIES) {
+                    Thread.sleep(1000L * attempt);
+                }
+
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                throw AiApiException.gatewayTimeout("Gemini embedding execution interrupted.");
+            } catch (java.io.IOException ioe) {
+                if (attempt == MAX_RETRIES) {
+                    throw AiApiException.gatewayTimeout("Gemini embedding network timeout.");
                 }
             }
-
-            if (response == null || response.statusCode() != 200) {
-                String errMsg = "Gemini Embedding API call failed. Status: " + (response != null ? response.statusCode() : "unknown");
-                if (response != null && response.body() != null) {
-                    errMsg += ", Body: " + response.body();
-                }
-                if (lastException != null) {
-                    errMsg += ", Cause: " + lastException.getMessage();
-                }
-                throw new RuntimeException(errMsg);
-            }
-
-            JsonObject responseJson = gson.fromJson(response.body(), JsonObject.class);
-            JsonObject embeddingObj = responseJson.getAsJsonObject("embedding");
-            JsonArray valuesArray = embeddingObj.getAsJsonArray("values");
-
-            float[] vector = new float[valuesArray.size()];
-            for (int i = 0; i < valuesArray.size(); i++) {
-                vector[i] = valuesArray.get(i).getAsFloat();
-            }
-            return vector;
-        } catch (Exception e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            }
-            throw new RuntimeException("Exception occurred during Gemini Embedding call: " + e.getMessage(), e);
         }
+
+        throw AiApiException.serviceUnavailable("AI_MODEL_UNAVAILABLE", "Failed to generate text embeddings from Gemini.");
     }
 }

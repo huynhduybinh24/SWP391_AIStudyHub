@@ -1,80 +1,46 @@
 package com.lumiedu.ai.service.impl;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.lumiedu.ai.service.OpenAiService.ChatMessageDto;
+import com.lumiedu.ai.service.OpenAiService.OpenAiResponse;
+import com.lumiedu.ai.service.GeminiService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class GeminiServiceImpl {
 
-    @Value("${gemini.api.key:}")
-    private String apiKey;
-
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final GeminiService geminiService;
 
     public String chat(String systemPrompt, String userMessage) {
-        if (apiKey != null && !apiKey.trim().isEmpty() && !"mock-gemini-key".equalsIgnoreCase(apiKey) && !"mock-key".equalsIgnoreCase(apiKey)) {
-            try {
-                log.info("Querying Google Gemini API for content moderation...");
-                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" + apiKey;
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-
-                // Build Request JSON structured according to Gemini API specs
-                JsonObject requestBody = new JsonObject();
-                
-                JsonArray contentsArray = new JsonArray();
-                JsonObject contentObj = new JsonObject();
-                contentObj.addProperty("role", "user");
-                
-                JsonArray partsArray = new JsonArray();
-                JsonObject partObj = new JsonObject();
-                partObj.addProperty("text", systemPrompt + "\n\nUser Message / Text to evaluate:\n" + userMessage);
-                partsArray.add(partObj);
-                
-                contentObj.add("parts", partsArray);
-                contentsArray.add(contentObj);
-                requestBody.add("contents", contentsArray);
-
-                // Force response format as JSON
-                JsonObject generationConfig = new JsonObject();
-                generationConfig.addProperty("responseMimeType", "application/json");
-                requestBody.add("generationConfig", generationConfig);
-
-                HttpEntity<String> entity = new HttpEntity<>(requestBody.toString(), headers);
-                String responseStr = restTemplate.postForObject(url, entity, String.class);
-
-                JsonObject responseJson = JsonParser.parseString(responseStr).getAsJsonObject();
-                JsonArray candidates = responseJson.getAsJsonArray("candidates");
-                if (candidates != null && candidates.size() > 0) {
-                    JsonObject firstCandidate = candidates.get(0).getAsJsonObject();
-                    JsonObject content = firstCandidate.getAsJsonObject("content");
-                    if (content != null) {
-                        JsonArray parts = content.getAsJsonArray("parts");
-                        if (parts != null && parts.size() > 0) {
-                            return parts.get(0).getAsJsonObject().get("text").getAsString();
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Failed to query Gemini API, using keyword-based fallback. Error: " + e.getMessage(), e);
+        try {
+            List<ChatMessageDto> messages = new ArrayList<>();
+            if (systemPrompt != null && !systemPrompt.isEmpty()) {
+                messages.add(new ChatMessageDto("system", systemPrompt));
             }
+            messages.add(new ChatMessageDto("user", userMessage != null ? userMessage : ""));
+
+            OpenAiResponse response = geminiService.chat(messages, true);
+            if (response != null && response.getContent() != null) {
+                return response.getContent();
+            }
+        } catch (Exception e) {
+            log.warn("[GeminiServiceImpl] Gemini API query failed, utilizing fallback scan: {}", e.getMessage());
         }
 
         // Fallback moderation based on keywords
-        log.info("Applying keyword-based content scan fallback...");
-        String textLower = userMessage.toLowerCase();
-        
-        boolean isSuspicious = textLower.contains("làm hộ bài thi") 
+        log.info("[GeminiServiceImpl] Applying keyword-based content scan fallback...");
+        String textLower = (userMessage != null ? userMessage : "").toLowerCase();
+
+        boolean isSuspicious = textLower.contains("làm hộ bài thi")
                 || textLower.contains("thi hộ")
                 || textLower.contains("quảng cáo cờ bạc")
                 || textLower.contains("cá độ")
@@ -97,8 +63,8 @@ public class GeminiServiceImpl {
                 violationDetailEn = "Detected keywords related to exam paper leaks.";
             }
             return String.format(
-                "{\"riskLevel\": \"SUSPICIOUS\", \"reasonEn\": \"%s\", \"reasonVi\": \"%s\", \"confidenceScore\": 0.95}", 
-                violationDetailEn, violationDetail
+                    "{\"riskLevel\": \"SUSPICIOUS\", \"reasonEn\": \"%s\", \"reasonVi\": \"%s\", \"confidenceScore\": 0.95}",
+                    violationDetailEn, violationDetail
             );
         } else {
             return "{\"riskLevel\": \"SAFE\", \"reasonEn\": \"Approved automatically by keyword scan fallback.\", \"reasonVi\": \"Được duyệt tự động bằng bộ quét từ khóa dự phòng.\", \"confidenceScore\": 1.0}";

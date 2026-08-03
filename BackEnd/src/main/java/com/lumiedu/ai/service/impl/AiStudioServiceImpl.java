@@ -7,27 +7,29 @@ import com.google.gson.reflect.TypeToken;
 import com.lumiedu.ai.dto.StudioResponses.*;
 import com.lumiedu.ai.entity.AiStudioCache;
 import com.lumiedu.ai.entity.DocumentChunk;
+import com.lumiedu.ai.exception.AiApiException;
 import com.lumiedu.ai.repository.AiStudioCacheRepository;
 import com.lumiedu.ai.repository.DocumentChunkRepository;
+import com.lumiedu.ai.service.AiDocumentAccessService;
 import com.lumiedu.ai.service.AiStudioService;
 import com.lumiedu.ai.service.GeminiService;
-import com.lumiedu.ai.service.OpenAiService.ChatMessageDto;
-import com.lumiedu.ai.service.OpenAiService.OpenAiResponse;
 import com.lumiedu.document.entity.Document;
 import com.lumiedu.document.repository.DocumentRepository;
+import com.lumiedu.prompt.service.PromptEngineService;
+import com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -37,8 +39,8 @@ public class AiStudioServiceImpl implements AiStudioService {
     private final DocumentChunkRepository documentChunkRepository;
     private final AiStudioCacheRepository aiStudioCacheRepository;
     private final GeminiService geminiService;
-    private final com.lumiedu.prompt.service.PromptEngineService promptEngineService;
-    private final com.lumiedu.user.repository.UserRepository userRepository;
+    private final PromptEngineService promptEngineService;
+    private final AiDocumentAccessService aiDocumentAccessService;
     private final Gson gson = new Gson();
 
     private String getContextFromDocuments(List<Long> documentIds) {
@@ -46,27 +48,141 @@ public class AiStudioServiceImpl implements AiStudioService {
             return "";
         }
         StringBuilder sb = new StringBuilder();
+        sb.append("<document_context>\n");
+        Set<String> seenChunkContents = new HashSet<>();
+        int maxContextChars = 15000;
+
         for (Long docId : documentIds) {
+            if (docId == null) continue;
             Document doc = documentRepository.findById(docId).orElse(null);
-            if (doc != null) {
-                sb.append("--- Document Title: ").append(doc.getTitle()).append(" ---\n");
+            if (doc == null || Boolean.TRUE.equals(doc.getDeleted())) {
+                continue;
             }
+
             List<DocumentChunk> chunks = documentChunkRepository.findByDocumentId(docId);
             if (chunks != null && !chunks.isEmpty()) {
                 for (DocumentChunk chunk : chunks) {
-                    sb.append(chunk.getContent()).append("\n");
+                    if (chunk.getContent() == null) continue;
+                    String rawContent = chunk.getContent().trim();
+                    if (rawContent.isEmpty()) continue;
+
+                    if (seenChunkContents.contains(rawContent)) {
+                        continue;
+                    }
+                    seenChunkContents.add(rawContent);
+
+                    String sanitizedContent = sanitizeChunkContent(rawContent);
+
+                    String chunkBlock = String.format("  <source id=\"%d\" title=\"%s\" chunk=\"%d\">\n    %s\n  </source>\n",
+                            docId,
+                            sanitizeAttribute(doc.getTitle() != null ? doc.getTitle() : "Untitled"),
+                            chunk.getChunkIndex() != null ? chunk.getChunkIndex() : 0,
+                            sanitizedContent);
+
+                    if (sb.length() + chunkBlock.length() > maxContextChars) {
+                        int remaining = maxContextChars - sb.length();
+                        if (remaining > 100) {
+                            sb.append(chunkBlock, 0, remaining).append("\n... [Context truncated]");
+                        }
+                        sb.append("</document_context>");
+                        return sb.toString();
+                    }
+
+                    sb.append(chunkBlock);
                 }
             }
         }
+        sb.append("</document_context>");
         return sb.toString();
     }
 
-    private String generateCacheKey(List<Long> documentIds) {
-        if (documentIds == null) return "";
-        return documentIds.stream()
-                .sorted()
-                .map(String::valueOf)
-                .collect(Collectors.joining(","));
+    private String sanitizeChunkContent(String text) {
+        if (text == null) return "";
+        String cleaned = text.replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]", "");
+        return cleaned.replace("<document_context>", "&lt;document_context&gt;")
+                      .replace("</document_context>", "&lt;/document_context&gt;")
+                      .replace("</source>", "&lt;/source&gt;");
+    }
+
+    private String sanitizeAttribute(String attr) {
+        if (attr == null) return "";
+        return attr.replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    public String generateCacheKey(
+            List<Long> documentIds,
+            String featureType,
+            String language,
+            String difficulty,
+            Integer count
+    ) {
+        Long userId = null;
+        try {
+            userId = aiDocumentAccessService.getCurrentUserId();
+        } catch (Exception e) {
+            // Unauthenticated context fallback
+        }
+
+        List<Long> sortedIds = (documentIds == null) ? Collections.emptyList() :
+                documentIds.stream().filter(Objects::nonNull).sorted().collect(Collectors.toList());
+
+        long maxUpdatedAt = 0L;
+        for (Long docId : sortedIds) {
+            Document doc = documentRepository.findById(docId).orElse(null);
+            if (doc != null && doc.getUpdatedAt() != null) {
+                long ts = doc.getUpdatedAt().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+                if (ts > maxUpdatedAt) {
+                    maxUpdatedAt = ts;
+                }
+            }
+        }
+
+        String promptCode = getPromptCodeForFeature(featureType);
+        String promptVersion = "docs-v1";
+        String model = "gemini-1.5-flash";
+
+        String rawIdentity = String.format(
+                "user:%s|docs:%s|feature:%s|lang:%s|diff:%s|count:%s|promptCode:%s|promptVer:%s|model:%s|docTime:%d",
+                userId != null ? userId.toString() : "ANONYMOUS",
+                sortedIds.toString(),
+                featureType != null ? featureType : "",
+                language != null ? language.trim().toLowerCase() : "vi",
+                difficulty != null ? difficulty.trim().toLowerCase() : "",
+                count != null ? count.toString() : "",
+                promptCode,
+                promptVersion,
+                model,
+                maxUpdatedAt
+        );
+
+        return sha256Hex(rawIdentity);
+    }
+
+    private String getPromptCodeForFeature(String featureType) {
+        if (featureType == null) return "UNKNOWN";
+        if (featureType.startsWith("summary")) return "DOCUMENT_SUMMARY";
+        if (featureType.startsWith("mindmap")) return "MINDMAP_GENERATION";
+        if (featureType.startsWith("infographic")) return "SLIDE_GENERATION";
+        if (featureType.startsWith("flashcard")) return "FLASHCARD_GENERATION";
+        if (featureType.startsWith("quiz")) return "QUIZ_GENERATION";
+        if (featureType.startsWith("faq")) return "FAQ_GENERATION";
+        return featureType.toUpperCase();
+    }
+
+    private String sha256Hex(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : digest) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("SHA-256 digest creation failed", e);
+        }
     }
 
     private void saveToCache(String cacheKey, String featureType, String language, Object responseObj) {
@@ -87,21 +203,42 @@ public class AiStudioServiceImpl implements AiStudioService {
                 aiStudioCacheRepository.save(cache);
             }
         } catch (Exception e) {
-            System.err.println("Failed to save response to cache: " + e.getMessage());
+            log.warn("Failed to save response to cache: {}", e.getMessage());
         }
     }
 
+    private String cleanMarkdownJson(String json) {
+        if (json == null) return "";
+        String trimmed = json.trim();
+        if (trimmed.startsWith("```")) {
+            int firstLineEnd = trimmed.indexOf('\n');
+            int lastFence = trimmed.lastIndexOf("```");
+            if (firstLineEnd != -1 && lastFence > firstLineEnd) {
+                return trimmed.substring(firstLineEnd + 1, lastFence).trim();
+            }
+        }
+        return trimmed;
+    }
+
+    // --- SUMMARY ---
+
     @Override
     public StudioSummaryResponse generateSummary(List<Long> documentIds, String language) {
-        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
-        String cacheKey = generateCacheKey(documentIds);
+        return generateSummary(documentIds, language, false);
+    }
 
-        Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, "summary", lang);
-        if (cached.isPresent()) {
-            try {
-                return gson.fromJson(cached.get().getCachedResponse(), StudioSummaryResponse.class);
-            } catch (Exception e) {
-                System.err.println("Failed to read cached summary: " + e.getMessage());
+    public StudioSummaryResponse generateSummary(List<Long> documentIds, String language, boolean forceRegenerate) {
+        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
+        String cacheKey = generateCacheKey(documentIds, "summary", lang, null, null);
+
+        if (!forceRegenerate) {
+            Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, "summary", lang);
+            if (cached.isPresent()) {
+                try {
+                    return gson.fromJson(cached.get().getCachedResponse(), StudioSummaryResponse.class);
+                } catch (Exception e) {
+                    log.warn("Failed to read cached summary: {}", e.getMessage());
+                }
             }
         }
 
@@ -113,57 +250,90 @@ public class AiStudioServiceImpl implements AiStudioService {
         promptVars.put("title", "Studio Combined Documents");
         promptVars.put("content", context);
 
-        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+        com.lumiedu.user.entity.User currentUser = aiDocumentAccessService.getCurrentAuthenticatedUser();
+        String userEmail = (currentUser != null && currentUser.getEmail() != null) ? currentUser.getEmail() : "user";
+
+        PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
                 "DOCUMENT_SUMMARY",
                 promptVars,
-                null,
-                "STUDIO_USER",
+                currentUser,
+                userEmail,
                 "STUDIO_SUMMARY",
                 cacheKey,
                 "docs-v1",
                 true
         );
 
-        StudioSummaryResponse finalResponse;
+        String rawContent = execResult.getContent();
+        StudioSummaryResponse response;
         try {
-            JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
-            String summaryText = jsonObj.has("summaryText") ? jsonObj.get("summaryText").getAsString() : "No summary text generated.";
-            List<String> bullets = new ArrayList<>();
-            if (jsonObj.has("summaryBullets")) {
-                JsonArray arr = jsonObj.getAsJsonArray("summaryBullets");
-                for (int i = 0; i < arr.size(); i++) {
-                    bullets.add(arr.get(i).getAsString());
-                }
-            } else if (jsonObj.has("keyBullets")) {
-                JsonArray arr = jsonObj.getAsJsonArray("keyBullets");
-                for (int i = 0; i < arr.size(); i++) {
-                    bullets.add(arr.get(i).getAsString());
-                }
+            response = validateSummary(rawContent);
+        } catch (Exception initialEx) {
+            log.warn("Initial summary validation failed: {}. Attempting 1 repair.", initialEx.getMessage());
+            try {
+                String repairPrompt = "The following JSON summary response was invalid: " + initialEx.getMessage() + "\nFix formatting and return strictly valid JSON matching {\"summaryText\":\"...\",\"summaryBullets\":[\"...\"]}:\n" + rawContent;
+                String repairedRaw = geminiService.generateContent(repairPrompt);
+                response = validateSummary(repairedRaw);
+            } catch (Exception repairEx) {
+                throw AiApiException.badGateway("AI_RESPONSE_INVALID", "Failed to generate valid Summary: " + repairEx.getMessage());
             }
-            finalResponse = new StudioSummaryResponse(summaryText, bullets);
-            saveToCache(cacheKey, "summary", lang, finalResponse);
-        } catch (Exception e) {
-            System.err.println("Failed to generate studio summary: " + e.getMessage());
-            finalResponse = StudioSummaryResponse.builder()
-                    .summaryText("Tài liệu chính nói về phương pháp học tập thông minh, tập trung vào cách thức hoạt động của mô hình RAG (Retrieval-Augmented Generation) kết hợp với cơ sở dữ liệu Vector để tối ưu hóa việc trả lời và truy xuất thông tin từ tài liệu người dùng.")
-                    .keyBullets(Arrays.asList("Sử dụng Vector Database để lưu trữ chunk.", "Truy xuất thông tin phù hợp bằng Cosine Similarity.", "Giảm thiểu hiện tượng ảo tưởng (hallucination) của LLM.", "Tích hợp đa nguồn dữ liệu học tập."))
-                    .build();
         }
 
-        return finalResponse;
+        saveToCache(cacheKey, "summary", lang, response);
+        return response;
     }
+
+    private StudioSummaryResponse validateSummary(String rawJson) {
+        String cleaned = cleanMarkdownJson(rawJson);
+        JsonObject jsonObj = gson.fromJson(cleaned, JsonObject.class);
+        String summaryText = null;
+        if (jsonObj.has("summaryText")) {
+            summaryText = jsonObj.get("summaryText").getAsString();
+        } else if (jsonObj.has("summary")) {
+            summaryText = jsonObj.get("summary").getAsString();
+        }
+        if (summaryText == null || summaryText.trim().isEmpty() || summaryText.toLowerCase().contains("no summary text generated")) {
+            throw new IllegalArgumentException("Summary text is blank or invalid placeholder.");
+        }
+        List<String> bullets = new ArrayList<>();
+        if (jsonObj.has("summaryBullets")) {
+            JsonArray arr = jsonObj.getAsJsonArray("summaryBullets");
+            for (int i = 0; i < arr.size(); i++) {
+                String b = arr.get(i).getAsString();
+                if (b != null && !b.trim().isEmpty()) bullets.add(b.trim());
+            }
+        } else if (jsonObj.has("keyBullets")) {
+            JsonArray arr = jsonObj.getAsJsonArray("keyBullets");
+            for (int i = 0; i < arr.size(); i++) {
+                String b = arr.get(i).getAsString();
+                if (b != null && !b.trim().isEmpty()) bullets.add(b.trim());
+            }
+        }
+        if (bullets.isEmpty()) {
+            throw new IllegalArgumentException("Summary key bullets list is empty.");
+        }
+        return new StudioSummaryResponse(summaryText.trim(), bullets);
+    }
+
+    // --- MINDMAP ---
 
     @Override
     public StudioMindmapResponse generateMindmap(List<Long> documentIds, String language) {
-        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
-        String cacheKey = generateCacheKey(documentIds);
+        return generateMindmap(documentIds, language, false);
+    }
 
-        Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, "mindmap", lang);
-        if (cached.isPresent()) {
-            try {
-                return gson.fromJson(cached.get().getCachedResponse(), StudioMindmapResponse.class);
-            } catch (Exception e) {
-                System.err.println("Failed to read cached mindmap: " + e.getMessage());
+    public StudioMindmapResponse generateMindmap(List<Long> documentIds, String language, boolean forceRegenerate) {
+        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
+        String cacheKey = generateCacheKey(documentIds, "mindmap", lang, null, null);
+
+        if (!forceRegenerate) {
+            Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, "mindmap", lang);
+            if (cached.isPresent()) {
+                try {
+                    return gson.fromJson(cached.get().getCachedResponse(), StudioMindmapResponse.class);
+                } catch (Exception e) {
+                    log.warn("Failed to read cached mindmap: {}", e.getMessage());
+                }
             }
         }
 
@@ -173,50 +343,71 @@ public class AiStudioServiceImpl implements AiStudioService {
         promptVars.put("language", lang);
         promptVars.put("content", context);
 
-        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+        com.lumiedu.user.entity.User currentUser = aiDocumentAccessService.getCurrentAuthenticatedUser();
+        String userEmail = (currentUser != null && currentUser.getEmail() != null) ? currentUser.getEmail() : "user";
+
+        PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
                 "MINDMAP_GENERATION",
                 promptVars,
-                null,
-                "STUDIO_USER",
+                currentUser,
+                userEmail,
                 "STUDIO_MINDMAP",
                 cacheKey,
                 "docs-v1",
                 true
         );
 
-        StudioMindmapResponse finalResponse;
+        String rawContent = execResult.getContent();
+        StudioMindmapResponse response;
         try {
-            JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
-            String code = jsonObj.get("mermaidCode").getAsString();
-            finalResponse = new StudioMindmapResponse(code);
-            saveToCache(cacheKey, "mindmap", lang, finalResponse);
-        } catch (Exception e) {
-            System.err.println("Failed to generate mindmap: " + e.getMessage());
-            String defaultCode = "mindmap\n" +
-                    "  root((AI Study Hub))\n" +
-                    "    \"Tai lieu hoc tap\"\n" +
-                    "      \"Tom tat kien thuc\"\n" +
-                    "      \"Flashcards ghi nho\"\n" +
-                    "    \"Cong cu ho tro\"\n" +
-                    "      \"Hoi dap AI Chat\"\n" +
-                    "      \"Kiem tra Quiz\"";
-            finalResponse = new StudioMindmapResponse(defaultCode);
+            response = validateMindmap(rawContent);
+        } catch (Exception initialEx) {
+            log.warn("Initial mindmap validation failed: {}. Attempting 1 repair.", initialEx.getMessage());
+            try {
+                String repairPrompt = "The following JSON mindmap response was invalid: " + initialEx.getMessage() + "\nFix formatting and return strictly valid JSON matching {\"mermaidCode\":\"mindmap\\n  root(...)\"}:\n" + rawContent;
+                String repairedRaw = geminiService.generateContent(repairPrompt);
+                response = validateMindmap(repairedRaw);
+            } catch (Exception repairEx) {
+                throw AiApiException.badGateway("AI_RESPONSE_INVALID", "Failed to generate valid Mindmap: " + repairEx.getMessage());
+            }
         }
 
-        return finalResponse;
+        saveToCache(cacheKey, "mindmap", lang, response);
+        return response;
     }
+
+    private StudioMindmapResponse validateMindmap(String rawJson) {
+        String cleaned = cleanMarkdownJson(rawJson);
+        JsonObject jsonObj = gson.fromJson(cleaned, JsonObject.class);
+        if (!jsonObj.has("mermaidCode")) {
+            throw new IllegalArgumentException("JSON missing 'mermaidCode' field.");
+        }
+        String code = jsonObj.get("mermaidCode").getAsString();
+        if (code == null || code.trim().isEmpty() || !code.contains("mindmap")) {
+            throw new IllegalArgumentException("Invalid or empty mermaid mindmap code.");
+        }
+        return new StudioMindmapResponse(code.trim());
+    }
+
+    // --- INFOGRAPHIC ---
 
     @Override
     public StudioInfographicResponse generateInfographic(List<Long> documentIds, String language) {
-        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
-        String cacheKey = generateCacheKey(documentIds);
+        return generateInfographic(documentIds, language, false);
+    }
 
-        Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, "infographic", lang);
-        if (cached.isPresent()) {
-            try {
-                return gson.fromJson(cached.get().getCachedResponse(), StudioInfographicResponse.class);
-            } catch (Exception e) {
-                System.err.println("Failed to read cached infographic: " + e.getMessage());
+    public StudioInfographicResponse generateInfographic(List<Long> documentIds, String language, boolean forceRegenerate) {
+        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
+        String cacheKey = generateCacheKey(documentIds, "infographic", lang, null, null);
+
+        if (!forceRegenerate) {
+            Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, "infographic", lang);
+            if (cached.isPresent()) {
+                try {
+                    return gson.fromJson(cached.get().getCachedResponse(), StudioInfographicResponse.class);
+                } catch (Exception e) {
+                    log.warn("Failed to read cached infographic: {}", e.getMessage());
+                }
             }
         }
 
@@ -226,60 +417,98 @@ public class AiStudioServiceImpl implements AiStudioService {
         promptVars.put("language", lang);
         promptVars.put("content", context);
 
-        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+        com.lumiedu.user.entity.User currentUser = aiDocumentAccessService.getCurrentAuthenticatedUser();
+        String userEmail = (currentUser != null && currentUser.getEmail() != null) ? currentUser.getEmail() : "user";
+
+        PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
                 "SLIDE_GENERATION",
                 promptVars,
-                null,
-                "STUDIO_USER",
+                currentUser,
+                userEmail,
                 "STUDIO_INFOGRAPHIC",
                 cacheKey,
                 "docs-v1",
                 true
         );
 
-        StudioInfographicResponse finalResponse;
+        String rawContent = execResult.getContent();
+        StudioInfographicResponse response;
         try {
-            JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
-            String title = jsonObj.get("title").getAsString();
-            String subtitle = jsonObj.get("subtitle").getAsString();
-            List<InfographicItem> items = new ArrayList<>();
-            JsonArray arr = jsonObj.getAsJsonArray("items");
-            for (int i = 0; i < arr.size(); i++) {
-                JsonObject obj = arr.get(i).getAsJsonObject();
-                items.add(InfographicItem.builder()
-                        .label(obj.get("label").getAsString())
-                        .value(obj.get("value").getAsString())
-                        .description(obj.get("description").getAsString())
-                        .iconType(obj.get("iconType").getAsString())
-                        .build());
+            response = validateInfographic(rawContent);
+        } catch (Exception initialEx) {
+            log.warn("Initial infographic validation failed: {}. Attempting 1 repair.", initialEx.getMessage());
+            try {
+                String repairPrompt = "The following JSON infographic response was invalid: " + initialEx.getMessage() + "\nFix formatting and return strictly valid JSON matching {\"title\":\"...\",\"subtitle\":\"...\",\"items\":[...]}:\n" + rawContent;
+                String repairedRaw = geminiService.generateContent(repairPrompt);
+                response = validateInfographic(repairedRaw);
+            } catch (Exception repairEx) {
+                throw AiApiException.badGateway("AI_RESPONSE_INVALID", "Failed to generate valid Infographic: " + repairEx.getMessage());
             }
-            finalResponse = new StudioInfographicResponse(title, subtitle, items);
-            saveToCache(cacheKey, "infographic", lang, finalResponse);
-        } catch (Exception e) {
-            System.err.println("Failed to generate infographic: " + e.getMessage());
-            List<InfographicItem> items = Arrays.asList(
-                    new InfographicItem("Lý thuyết", "01", "Nắm vững lý thuyết cơ bản và thuật ngữ chuyên ngành.", "lightbulb"),
-                    new InfographicItem("Thực hành", "80%", "Dành 80% thời gian thực hành bài tập và tự kiểm tra.", "chart"),
-                    new InfographicItem("Ghi nhớ", "Flash", "Sử dụng Flashcard để ôn tập lặp lại ngắt quãng.", "brain")
-            );
-            finalResponse = new StudioInfographicResponse("Bản Đồ Họa Thông Tin Tài Liệu", "Lộ trình ôn tập hiệu quả", items);
         }
 
-        return finalResponse;
+        saveToCache(cacheKey, "infographic", lang, response);
+        return response;
     }
+
+    private StudioInfographicResponse validateInfographic(String rawJson) {
+        String cleaned = cleanMarkdownJson(rawJson);
+        JsonObject jsonObj = gson.fromJson(cleaned, JsonObject.class);
+        String title = jsonObj.has("title") ? jsonObj.get("title").getAsString() : null;
+        String subtitle = jsonObj.has("subtitle") ? jsonObj.get("subtitle").getAsString() : null;
+        if (title == null || title.trim().isEmpty() || subtitle == null || subtitle.trim().isEmpty()) {
+            throw new IllegalArgumentException("Infographic title or subtitle is missing.");
+        }
+
+        if (!jsonObj.has("items")) {
+            throw new IllegalArgumentException("Infographic items array missing.");
+        }
+        JsonArray arr = jsonObj.getAsJsonArray("items");
+        if (arr == null || arr.size() == 0) {
+            throw new IllegalArgumentException("Infographic items array is empty.");
+        }
+
+        List<InfographicItem> items = new ArrayList<>();
+        for (int i = 0; i < arr.size(); i++) {
+            JsonObject obj = arr.get(i).getAsJsonObject();
+            String label = obj.has("label") ? obj.get("label").getAsString() : null;
+            String value = obj.has("value") ? obj.get("value").getAsString() : null;
+            String desc = obj.has("description") ? obj.get("description").getAsString() : null;
+            if (label == null || label.trim().isEmpty() || value == null || value.trim().isEmpty() || desc == null || desc.trim().isEmpty()) {
+                continue;
+            }
+            items.add(InfographicItem.builder()
+                    .label(label.trim())
+                    .value(value.trim())
+                    .description(desc.trim())
+                    .iconType(obj.has("iconType") ? obj.get("iconType").getAsString() : "lightbulb")
+                    .build());
+        }
+        if (items.isEmpty()) {
+            throw new IllegalArgumentException("No valid infographic items remained after validation.");
+        }
+        return new StudioInfographicResponse(title.trim(), subtitle.trim(), items);
+    }
+
+    // --- FLASHCARDS ---
 
     @Override
     public List<StudioFlashcardResponse> generateFlashcards(List<Long> documentIds, String language) {
-        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
-        String cacheKey = generateCacheKey(documentIds);
+        return generateFlashcards(documentIds, language, false);
+    }
 
-        Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, "flashcards", lang);
-        if (cached.isPresent()) {
-            try {
-                Type listType = new TypeToken<List<StudioFlashcardResponse>>() {}.getType();
-                return gson.fromJson(cached.get().getCachedResponse(), listType);
-            } catch (Exception e) {
-                System.err.println("Failed to read cached flashcards: " + e.getMessage());
+    public List<StudioFlashcardResponse> generateFlashcards(List<Long> documentIds, String language, boolean forceRegenerate) {
+        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
+        String cacheKey = generateCacheKey(documentIds, "flashcards", lang, null, null);
+
+        if (!forceRegenerate) {
+            Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, "flashcards", lang);
+            if (cached.isPresent()) {
+                try {
+                    Type listType = new TypeToken<List<StudioFlashcardResponse>>() {}.getType();
+                    return gson.fromJson(cached.get().getCachedResponse(), listType);
+                } catch (Exception e) {
+                    log.warn("Failed to read cached flashcards: {}", e.getMessage());
+                }
             }
         }
 
@@ -290,131 +519,223 @@ public class AiStudioServiceImpl implements AiStudioService {
         promptVars.put("language", lang);
         promptVars.put("content", context);
 
-        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+        com.lumiedu.user.entity.User currentUser = aiDocumentAccessService.getCurrentAuthenticatedUser();
+        String userEmail = (currentUser != null && currentUser.getEmail() != null) ? currentUser.getEmail() : "user";
+
+        PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
                 "FLASHCARD_GENERATION",
                 promptVars,
-                null,
-                "STUDIO_USER",
+                currentUser,
+                userEmail,
                 "STUDIO_FLASHCARD",
                 cacheKey,
                 "docs-v1",
                 true
         );
 
-        List<StudioFlashcardResponse> list = new ArrayList<>();
+        String rawContent = execResult.getContent();
+        List<StudioFlashcardResponse> list;
         try {
-            JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
-            JsonArray arr = jsonObj.getAsJsonArray("flashcards");
-            for (int i = 0; i < arr.size(); i++) {
-                JsonObject item = arr.get(i).getAsJsonObject();
-                list.add(new StudioFlashcardResponse(item.get("front").getAsString(), item.get("back").getAsString()));
+            list = validateFlashcards(rawContent);
+        } catch (Exception initialEx) {
+            log.warn("Initial flashcards validation failed: {}. Attempting 1 repair.", initialEx.getMessage());
+            try {
+                String repairPrompt = "The following JSON flashcard response was invalid: " + initialEx.getMessage() + "\nFix formatting and return strictly valid JSON matching {\"flashcards\":[{\"front\":\"...\",\"back\":\"...\"}]}:\n" + rawContent;
+                String repairedRaw = geminiService.generateContent(repairPrompt);
+                list = validateFlashcards(repairedRaw);
+            } catch (Exception repairEx) {
+                throw AiApiException.badGateway("AI_RESPONSE_INVALID", "Failed to generate valid Flashcards: " + repairEx.getMessage());
             }
-            saveToCache(cacheKey, "flashcards", lang, list);
-        } catch (Exception e) {
-            System.err.println("Failed to generate studio flashcards: " + e.getMessage());
-            list.clear();
-            list.add(new StudioFlashcardResponse("Khái niệm Singleton Pattern là gì?", "Đảm bảo một Class chỉ có duy nhất một Instance và cung cấp điểm truy cập toàn cục."));
-            list.add(new StudioFlashcardResponse("Mục tiêu chính của RAG (Retrieval-Augmented Generation)?", "Cung cấp context từ tài liệu ngoài giúp mô hình LLM trả lời chính xác, tránh hiện tượng ảo tưởng."));
-            list.add(new StudioFlashcardResponse("Vector Database là gì?", "Cơ sở dữ liệu chuyên biệt để lưu trữ và tìm kiếm các vector embedding nhanh chóng."));
-            list.add(new StudioFlashcardResponse("Định lý CAP bao gồm các yếu tố nào?", "Consistency (Tính nhất quán), Availability (Tính khả dụng), Partition Tolerance (Tính chịu phân mảnh)."));
-            list.add(new StudioFlashcardResponse("Vai trò của Docker trong triển khai ứng dụng?", "Đóng gói ứng dụng và môi trường chạy độc lập giúp chạy đồng nhất trên mọi máy chủ."));
         }
 
+        saveToCache(cacheKey, "flashcards", lang, list);
         return list;
     }
 
+    private List<StudioFlashcardResponse> validateFlashcards(String rawJson) {
+        String cleaned = cleanMarkdownJson(rawJson);
+        JsonObject jsonObj = gson.fromJson(cleaned, JsonObject.class);
+        if (!jsonObj.has("flashcards")) {
+            throw new IllegalArgumentException("JSON missing 'flashcards' array.");
+        }
+        JsonArray arr = jsonObj.getAsJsonArray("flashcards");
+        if (arr == null || arr.size() == 0) {
+            throw new IllegalArgumentException("Flashcards array is empty.");
+        }
+        List<StudioFlashcardResponse> list = new ArrayList<>();
+        Set<String> seenFronts = new HashSet<>();
+
+        for (int i = 0; i < arr.size(); i++) {
+            JsonObject item = arr.get(i).getAsJsonObject();
+            String front = item.has("front") ? item.get("front").getAsString() : (item.has("question") ? item.get("question").getAsString() : null);
+            String back = item.has("back") ? item.get("back").getAsString() : (item.has("answer") ? item.get("answer").getAsString() : null);
+            if (front == null || front.trim().isEmpty() || back == null || back.trim().isEmpty()) {
+                continue;
+            }
+            String normFront = front.trim().toLowerCase();
+            if (seenFronts.contains(normFront)) {
+                continue;
+            }
+            seenFronts.add(normFront);
+            list.add(new StudioFlashcardResponse(front.trim(), back.trim()));
+        }
+
+        if (list.isEmpty()) {
+            throw new IllegalArgumentException("No valid non-duplicate flashcards remained after validation.");
+        }
+        return list;
+    }
+
+    // --- QUIZ ---
+
     @Override
     public List<StudioQuizResponse> generateQuiz(List<Long> documentIds, String difficulty, int count, String language) {
-        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
-        String cacheKey = generateCacheKey(documentIds);
-        String featureType = "quiz_" + difficulty + "_" + count;
+        return generateQuiz(documentIds, difficulty, count, language, false);
+    }
 
-        Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, featureType, lang);
-        if (cached.isPresent()) {
-            try {
-                Type listType = new TypeToken<List<StudioQuizResponse>>() {}.getType();
-                return gson.fromJson(cached.get().getCachedResponse(), listType);
-            } catch (Exception e) {
-                System.err.println("Failed to read cached quiz: " + e.getMessage());
+    public List<StudioQuizResponse> generateQuiz(List<Long> documentIds, String difficulty, int count, String language, boolean forceRegenerate) {
+        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
+        String diff = (difficulty != null && !difficulty.trim().isEmpty()) ? difficulty.trim().toLowerCase() : "medium";
+        int requestedCount = count > 0 ? count : 5;
+
+        String featureType = "quiz_" + diff + "_" + requestedCount;
+        String cacheKey = generateCacheKey(documentIds, featureType, lang, diff, requestedCount);
+
+        if (!forceRegenerate) {
+            Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, featureType, lang);
+            if (cached.isPresent()) {
+                try {
+                    Type listType = new TypeToken<List<StudioQuizResponse>>() {}.getType();
+                    return gson.fromJson(cached.get().getCachedResponse(), listType);
+                } catch (Exception e) {
+                    log.warn("Failed to read cached quiz: {}", e.getMessage());
+                }
             }
         }
 
         String context = getContextFromDocuments(documentIds);
 
         Map<String, Object> promptVars = new HashMap<>();
-        promptVars.put("count", count);
-        promptVars.put("difficulty", difficulty != null ? difficulty : "Medium");
+        promptVars.put("count", requestedCount);
+        promptVars.put("difficulty", diff);
         promptVars.put("language", lang);
         promptVars.put("content", context);
 
-        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+        com.lumiedu.user.entity.User currentUser = aiDocumentAccessService.getCurrentAuthenticatedUser();
+        String userEmail = (currentUser != null && currentUser.getEmail() != null) ? currentUser.getEmail() : "user";
+
+        PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
                 "QUIZ_GENERATION",
                 promptVars,
-                null,
-                "STUDIO_USER",
+                currentUser,
+                userEmail,
                 "STUDIO_QUIZ",
                 cacheKey,
                 "docs-v1",
                 true
         );
 
-        List<StudioQuizResponse> list = new ArrayList<>();
+        String rawContent = execResult.getContent();
+        List<StudioQuizResponse> list;
         try {
-            JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
-            JsonArray arr = jsonObj.getAsJsonArray("questions");
-            for (int i = 0; i < arr.size(); i++) {
-                JsonObject item = arr.get(i).getAsJsonObject();
-                JsonArray optsArr = item.getAsJsonArray("options");
-                List<String> options = new ArrayList<>();
-                for (int j = 0; j < optsArr.size(); j++) {
-                    options.add(optsArr.get(j).getAsString());
-                }
-                list.add(new StudioQuizResponse(
-                        item.get("q").getAsString(),
-                        options,
-                        item.get("answer").getAsInt(),
-                        item.get("explain").getAsString()
-                ));
+            list = validateQuiz(rawContent, requestedCount);
+        } catch (Exception initialEx) {
+            log.warn("Initial quiz validation failed: {}. Attempting 1 repair.", initialEx.getMessage());
+            try {
+                String repairPrompt = "The following JSON quiz response was invalid: " + initialEx.getMessage() + "\nFix options (must be exactly 4 non-blank options), correct answer index (0,1,2,3), explanation and return valid JSON:\n" + rawContent;
+                String repairedRaw = geminiService.generateContent(repairPrompt);
+                list = validateQuiz(repairedRaw, requestedCount);
+            } catch (Exception repairEx) {
+                throw AiApiException.badGateway("AI_RESPONSE_INVALID", "Failed to generate valid Quiz: " + repairEx.getMessage());
             }
-            saveToCache(cacheKey, featureType, lang, list);
-        } catch (Exception e) {
-            System.err.println("Failed to generate studio quiz: " + e.getMessage());
-            list.clear();
-            list.add(new StudioQuizResponse(
-                    "Theo tài liệu ôn tập, phương pháp học tập chủ động tốt nhất là gì?",
-                    Arrays.asList("Học thuộc lòng", "Active Recall (Chủ động gợi nhớ)", "Chỉ đọc lướt qua", "Tập trung ghi chép thụ động"),
-                    1,
-                    "Active Recall kích thích trí não hoạt động để tự khôi phục thông tin, giúp tạo liên kết thần kinh bền vững hơn."
-            ));
-            list.add(new StudioQuizResponse(
-                    "Kỹ thuật RAG viết tắt của cụm từ nào?",
-                    Arrays.asList("Real-time Active Generation", "Response Action Group", "Retrieval-Augmented Generation", "Random Access Gate"),
-                    2,
-                    "RAG là Retrieval-Augmented Generation (Tối ưu hóa sinh phản hồi nhờ truy xuất tài liệu ngoài)."
-            ));
-            list.add(new StudioQuizResponse(
-                    "Độ tương đồng Cosine (Cosine Similarity) được dùng để làm gì?",
-                    Arrays.asList("Tính toán đạo hàm", "Đo góc lệch hình học", "So sánh độ tương đồng ngữ nghĩa giữa hai vector", "Mã hóa dữ liệu nhạy cảm"),
-                    2,
-                    "Cosine Similarity đo góc cos giữa hai vector trong không gian đa chiều, thể hiện mức độ tương đồng ngữ nghĩa."
-            ));
         }
 
+        saveToCache(cacheKey, featureType, lang, list);
         return list;
     }
 
+    private List<StudioQuizResponse> validateQuiz(String rawJson, int requestedCount) {
+        String cleaned = cleanMarkdownJson(rawJson);
+        JsonObject jsonObj = gson.fromJson(cleaned, JsonObject.class);
+        if (!jsonObj.has("questions")) {
+            throw new IllegalArgumentException("JSON missing 'questions' array.");
+        }
+        JsonArray arr = jsonObj.getAsJsonArray("questions");
+        if (arr == null || arr.size() == 0) {
+            throw new IllegalArgumentException("Quiz questions array is empty.");
+        }
+        List<StudioQuizResponse> list = new ArrayList<>();
+        Set<String> seenQuestions = new HashSet<>();
+
+        for (int i = 0; i < arr.size(); i++) {
+            JsonObject item = arr.get(i).getAsJsonObject();
+            String question = item.has("q") ? item.get("q").getAsString() : (item.has("question") ? item.get("question").getAsString() : null);
+            if (question == null || question.trim().isEmpty()) continue;
+            String normQ = question.trim().toLowerCase();
+            if (seenQuestions.contains(normQ)) continue;
+
+            if (!item.has("options")) continue;
+            JsonArray optsArr = item.getAsJsonArray("options");
+            if (optsArr == null || optsArr.size() != 4) continue;
+            List<String> options = new ArrayList<>();
+            boolean invalidOpt = false;
+            for (int j = 0; j < optsArr.size(); j++) {
+                String opt = optsArr.get(j).getAsString();
+                if (opt == null || opt.trim().isEmpty()) {
+                    invalidOpt = true;
+                    break;
+                }
+                options.add(opt.trim());
+            }
+            if (invalidOpt) continue;
+
+            Integer correctAns = null;
+            if (item.has("answer")) {
+                try {
+                    correctAns = item.get("answer").getAsInt();
+                } catch (Exception ex) {
+                    String strAns = item.get("answer").getAsString().trim().toUpperCase();
+                    if (strAns.startsWith("A") || strAns.equals("0")) correctAns = 0;
+                    else if (strAns.startsWith("B") || strAns.equals("1")) correctAns = 1;
+                    else if (strAns.startsWith("C") || strAns.equals("2")) correctAns = 2;
+                    else if (strAns.startsWith("D") || strAns.equals("3")) correctAns = 3;
+                }
+            }
+            if (correctAns == null || correctAns < 0 || correctAns >= 4) continue;
+
+            String explanation = item.has("explain") ? item.get("explain").getAsString() : (item.has("explanation") ? item.get("explanation").getAsString() : null);
+            if (explanation == null || explanation.trim().isEmpty()) continue;
+
+            seenQuestions.add(normQ);
+            list.add(new StudioQuizResponse(question.trim(), options, correctAns, explanation.trim()));
+        }
+
+        if (list.isEmpty() || list.size() < Math.min(requestedCount, 1)) {
+            throw new IllegalArgumentException("Quiz question count (" + list.size() + ") is insufficient for requested count (" + requestedCount + ").");
+        }
+        return list;
+    }
+
+    // --- FAQ ---
+
     @Override
     public List<StudioFaqResponse> generateFaq(List<Long> documentIds, String language) {
-        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
-        String cacheKey = generateCacheKey(documentIds);
+        return generateFaq(documentIds, language, false);
+    }
 
-        Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, "faq", lang);
-        if (cached.isPresent()) {
-            try {
-                Type listType = new TypeToken<List<StudioFaqResponse>>() {}.getType();
-                return gson.fromJson(cached.get().getCachedResponse(), listType);
-            } catch (Exception e) {
-                System.err.println("Failed to read cached FAQ: " + e.getMessage());
+    public List<StudioFaqResponse> generateFaq(List<Long> documentIds, String language, boolean forceRegenerate) {
+        String lang = (language == null || language.trim().isEmpty()) ? "vi" : language.trim();
+        String cacheKey = generateCacheKey(documentIds, "faq", lang, null, null);
+
+        if (!forceRegenerate) {
+            Optional<AiStudioCache> cached = aiStudioCacheRepository.findByCacheKeyAndFeatureTypeAndLanguage(cacheKey, "faq", lang);
+            if (cached.isPresent()) {
+                try {
+                    Type listType = new TypeToken<List<StudioFaqResponse>>() {}.getType();
+                    return gson.fromJson(cached.get().getCachedResponse(), listType);
+                } catch (Exception e) {
+                    log.warn("Failed to read cached FAQ: {}", e.getMessage());
+                }
             }
         }
 
@@ -424,46 +745,70 @@ public class AiStudioServiceImpl implements AiStudioService {
         promptVars.put("language", lang);
         promptVars.put("content", context);
 
-        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+        com.lumiedu.user.entity.User currentUser = aiDocumentAccessService.getCurrentAuthenticatedUser();
+        String userEmail = (currentUser != null && currentUser.getEmail() != null) ? currentUser.getEmail() : "user";
+
+        PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
                 "FAQ_GENERATION",
                 promptVars,
-                null,
-                "STUDIO_USER",
+                currentUser,
+                userEmail,
                 "STUDIO_FAQ",
                 cacheKey,
                 "docs-v1",
                 true
         );
 
-        List<StudioFaqResponse> list = new ArrayList<>();
+        String rawContent = execResult.getContent();
+        List<StudioFaqResponse> list;
         try {
-            JsonArray arr = null;
+            list = validateFaq(rawContent);
+        } catch (Exception initialEx) {
+            log.warn("Initial FAQ validation failed: {}. Attempting 1 repair.", initialEx.getMessage());
             try {
-                JsonObject jsonObj = gson.fromJson(execResult.getContent(), JsonObject.class);
-                if (jsonObj.has("faqs")) {
-                    arr = jsonObj.getAsJsonArray("faqs");
-                }
-            } catch (Exception ex) {
-                arr = gson.fromJson(execResult.getContent(), JsonArray.class);
+                String repairPrompt = "The following JSON FAQ response was invalid: " + initialEx.getMessage() + "\nFix formatting and return strictly valid JSON matching {\"faqs\":[{\"question\":\"...\",\"answer\":\"...\"}]}:\n" + rawContent;
+                String repairedRaw = geminiService.generateContent(repairPrompt);
+                list = validateFaq(repairedRaw);
+            } catch (Exception repairEx) {
+                throw AiApiException.badGateway("AI_RESPONSE_INVALID", "Failed to generate valid FAQ: " + repairEx.getMessage());
             }
-
-            if (arr != null) {
-                for (int i = 0; i < arr.size(); i++) {
-                    JsonObject item = arr.get(i).getAsJsonObject();
-                    String qStr = item.has("question") ? item.get("question").getAsString() : item.get("q").getAsString();
-                    String aStr = item.has("answer") ? item.get("answer").getAsString() : item.get("a").getAsString();
-                    list.add(new StudioFaqResponse(qStr, aStr));
-                }
-            }
-            saveToCache(cacheKey, "faq", lang, list);
-        } catch (Exception e) {
-            System.err.println("Failed to generate studio FAQs: " + e.getMessage());
-            list.clear();
-            list.add(new StudioFaqResponse("Làm thế nào để hệ thống AI hiểu được tài liệu PDF?", "Hệ thống sẽ trích xuất văn bản từ tài liệu PDF, phân đoạn thành các chunk và chuyển đổi thành vector embedding để đưa vào cơ sở dữ liệu."));
-            list.add(new StudioFaqResponse("Tại sao cần chia nhỏ tài liệu thành từng phần (Chunking)?", "Chia nhỏ giúp mô hình LLM dễ dàng tiếp nhận các thông tin trọng tâm mà không vượt quá giới hạn token đầu vào (Context Window)."));
-            list.add(new StudioFaqResponse("Làm sao để thực hành hiệu quả?", "Bạn nên làm các quiz tự luyện và lật thẻ flashcard hàng ngày để củng cố phản xạ và ghi nhớ sâu kiến thức."));
         }
 
+        saveToCache(cacheKey, "faq", lang, list);
+        return list;
+    }
+
+    private List<StudioFaqResponse> validateFaq(String rawJson) {
+        String cleaned = cleanMarkdownJson(rawJson);
+        JsonArray arr = null;
+        try {
+            JsonObject jsonObj = gson.fromJson(cleaned, JsonObject.class);
+            if (jsonObj.has("faqs")) {
+                arr = jsonObj.getAsJsonArray("faqs");
+            }
+        } catch (Exception ex) {
+            arr = gson.fromJson(cleaned, JsonArray.class);
+        }
+        if (arr == null || arr.size() == 0) {
+            throw new IllegalArgumentException("FAQ array is empty or missing.");
+        }
+        List<StudioFaqResponse> list = new ArrayList<>();
+        Set<String> seenQs = new HashSet<>();
+
+        for (int i = 0; i < arr.size(); i++) {
+            JsonObject item = arr.get(i).getAsJsonObject();
+            String q = item.has("question") ? item.get("question").getAsString() : (item.has("q") ? item.get("q").getAsString() : null);
+            String a = item.has("answer") ? item.get("answer").getAsString() : (item.has("a") ? item.get("a").getAsString() : null);
+            if (q == null || q.trim().isEmpty() || a == null || a.trim().isEmpty()) continue;
+            String normQ = q.trim().toLowerCase();
+            if (seenQs.contains(normQ)) continue;
+            seenQs.add(normQ);
+            list.add(new StudioFaqResponse(q.trim(), a.trim()));
+        }
+
+        if (list.isEmpty()) {
+            throw new IllegalArgumentException("No valid non-duplicate FAQs remained after validation.");
+        }
         return list;
     }
 }
