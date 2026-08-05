@@ -28,9 +28,6 @@ public class QuizController {
             @RequestParam(value = "userId", required = false) Long userId) {
         aiDocumentAccessService.validateAndGetDocument(documentId);
         Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
-        if (userId != null) {
-            aiDocumentAccessService.verifyUserAccess(userId);
-        }
         QuizResponse quiz = aiAssistantService.getQuizResponse(documentId, authenticatedUserId);
         return ResponseEntity.ok(ApiResponse.ok("Quiz questions loaded successfully.", quiz));
     }

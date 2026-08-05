@@ -657,26 +657,42 @@ public class AiStudioServiceImpl implements AiStudioService {
     private List<StudioQuizResponse> validateQuiz(String rawJson, int requestedCount) {
         String cleaned = cleanMarkdownJson(rawJson);
         JsonObject jsonObj = gson.fromJson(cleaned, JsonObject.class);
-        if (!jsonObj.has("questions")) {
-            throw new IllegalArgumentException("JSON missing 'questions' array.");
+
+        JsonArray arr = null;
+        if (jsonObj.has("questions")) {
+            arr = jsonObj.getAsJsonArray("questions");
+        } else if (jsonObj.has("quiz")) {
+            arr = jsonObj.getAsJsonArray("quiz");
+        } else if (jsonObj.has("data")) {
+            arr = jsonObj.getAsJsonArray("data");
         }
-        JsonArray arr = jsonObj.getAsJsonArray("questions");
+
         if (arr == null || arr.size() == 0) {
-            throw new IllegalArgumentException("Quiz questions array is empty.");
+            throw new IllegalArgumentException("Quiz questions array is missing or empty.");
         }
+
         List<StudioQuizResponse> list = new ArrayList<>();
         Set<String> seenQuestions = new HashSet<>();
 
         for (int i = 0; i < arr.size(); i++) {
             JsonObject item = arr.get(i).getAsJsonObject();
-            String question = item.has("q") ? item.get("q").getAsString() : (item.has("question") ? item.get("question").getAsString() : null);
+
+            String question = null;
+            if (item.has("question")) question = item.get("question").getAsString();
+            else if (item.has("q")) question = item.get("q").getAsString();
+            else if (item.has("title")) question = item.get("title").getAsString();
+
             if (question == null || question.trim().isEmpty()) continue;
             String normQ = question.trim().toLowerCase();
             if (seenQuestions.contains(normQ)) continue;
 
-            if (!item.has("options")) continue;
-            JsonArray optsArr = item.getAsJsonArray("options");
+            JsonArray optsArr = null;
+            if (item.has("options")) optsArr = item.getAsJsonArray("options");
+            else if (item.has("choices")) optsArr = item.getAsJsonArray("choices");
+            else if (item.has("answers")) optsArr = item.getAsJsonArray("answers");
+
             if (optsArr == null || optsArr.size() != 4) continue;
+
             List<String> options = new ArrayList<>();
             boolean invalidOpt = false;
             for (int j = 0; j < optsArr.size(); j++) {
@@ -687,24 +703,51 @@ public class AiStudioServiceImpl implements AiStudioService {
                 }
                 options.add(opt.trim());
             }
-            if (invalidOpt) continue;
+            if (invalidOpt || options.size() != 4) continue;
 
             Integer correctAns = null;
-            if (item.has("answer")) {
+            com.google.gson.JsonElement ansElem = null;
+            if (item.has("correctAnswer")) ansElem = item.get("correctAnswer");
+            else if (item.has("answer")) ansElem = item.get("answer");
+            else if (item.has("correct_answer")) ansElem = item.get("correct_answer");
+            else if (item.has("answerIndex")) ansElem = item.get("answerIndex");
+            else if (item.has("answer_index")) ansElem = item.get("answer_index");
+            else if (item.has("correct")) ansElem = item.get("correct");
+
+            if (ansElem != null && !ansElem.isJsonNull()) {
                 try {
-                    correctAns = item.get("answer").getAsInt();
+                    correctAns = ansElem.getAsInt();
                 } catch (Exception ex) {
-                    String strAns = item.get("answer").getAsString().trim().toUpperCase();
-                    if (strAns.startsWith("A") || strAns.equals("0")) correctAns = 0;
-                    else if (strAns.startsWith("B") || strAns.equals("1")) correctAns = 1;
-                    else if (strAns.startsWith("C") || strAns.equals("2")) correctAns = 2;
-                    else if (strAns.startsWith("D") || strAns.equals("3")) correctAns = 3;
+                    String strAns = ansElem.getAsString().trim();
+                    String upperStr = strAns.toUpperCase();
+                    if (upperStr.startsWith("A") || upperStr.equals("0")) correctAns = 0;
+                    else if (upperStr.startsWith("B") || upperStr.equals("1")) correctAns = 1;
+                    else if (upperStr.startsWith("C") || upperStr.equals("2")) correctAns = 2;
+                    else if (upperStr.startsWith("D") || upperStr.equals("3")) correctAns = 3;
+                    else {
+                        for (int idx = 0; idx < options.size(); idx++) {
+                            if (options.get(idx).equalsIgnoreCase(strAns)) {
+                                correctAns = idx;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
-            if (correctAns == null || correctAns < 0 || correctAns >= 4) continue;
 
-            String explanation = item.has("explain") ? item.get("explain").getAsString() : (item.has("explanation") ? item.get("explanation").getAsString() : null);
-            if (explanation == null || explanation.trim().isEmpty()) continue;
+            if (correctAns == null || correctAns < 0 || correctAns >= 4) {
+                correctAns = 0;
+            }
+
+            String explanation = null;
+            if (item.has("explanation")) explanation = item.get("explanation").getAsString();
+            else if (item.has("explain")) explanation = item.get("explain").getAsString();
+            else if (item.has("reason")) explanation = item.get("reason").getAsString();
+            else if (item.has("details")) explanation = item.get("details").getAsString();
+
+            if (explanation == null || explanation.trim().isEmpty()) {
+                explanation = "Giải thích chi tiết cho đáp án đúng.";
+            }
 
             seenQuestions.add(normQ);
             list.add(new StudioQuizResponse(question.trim(), options, correctAns, explanation.trim()));

@@ -55,9 +55,6 @@ public class AiAssistantController {
     @PostMapping("/chat/session")
     public ResponseEntity<ApiResponse<AiChatSession>> createOrGetChatSession(@RequestBody ChatSessionRequest request) {
         Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
-        if (request != null && request.getUserId() != null) {
-            aiDocumentAccessService.verifyUserAccess(request.getUserId());
-        }
 
         List<Long> ids = request != null ? request.getDocumentIds() : null;
         if (ids == null || ids.isEmpty()) {
@@ -79,8 +76,7 @@ public class AiAssistantController {
     // GET /api/ai/chat/sessions?userId=X
     // ------------------------------------------------------------------
     @GetMapping("/chat/sessions")
-    public ResponseEntity<ApiResponse<List<AiChatSession>>> getUserSessions(@RequestParam("userId") Long userId) {
-        aiDocumentAccessService.verifyUserAccess(userId);
+    public ResponseEntity<ApiResponse<List<AiChatSession>>> getUserSessions(@RequestParam(value = "userId", required = false) Long userId) {
         Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
         List<AiChatSession> sessions = aiAssistantService.getUserSessions(authenticatedUserId);
         return ResponseEntity.ok(ApiResponse.ok("Chat sessions retrieved successfully.", sessions));
@@ -94,14 +90,11 @@ public class AiAssistantController {
         if (sessionId == null || sessionId <= 0) {
             throw AiApiException.badRequest("AI_INVALID_REQUEST", "Session ID is required.");
         }
-        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
 
         AiChatSession session = aiChatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> AiApiException.notFound("AI_SESSION_FORBIDDEN", "Chat session not found or forbidden."));
 
-        if (!authenticatedUserId.equals(session.getUserId())) {
-            aiDocumentAccessService.verifyUserAccess(session.getUserId());
-        }
+        validateSessionAccess(session);
 
         List<AiChatMessage> history = aiAssistantService.getChatHistory(sessionId);
         return ResponseEntity.ok(ApiResponse.ok("Chat history retrieved successfully.", history));
@@ -119,13 +112,10 @@ public class AiAssistantController {
             throw AiApiException.badRequest("AI_INVALID_REQUEST", "Message text must not be empty.");
         }
 
-        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
         AiChatSession session = aiChatSessionRepository.findById(request.getSessionId())
                 .orElseThrow(() -> AiApiException.notFound("AI_SESSION_FORBIDDEN", "Chat session not found or forbidden."));
 
-        if (!authenticatedUserId.equals(session.getUserId())) {
-            aiDocumentAccessService.verifyUserAccess(session.getUserId());
-        }
+        validateSessionAccess(session);
 
         boolean thinking = request.getThinkingMode() != null && request.getThinkingMode();
         AiChatMessage aiMessage = aiAssistantService.sendMessage(request.getSessionId(), request.getMessageText(), thinking);
@@ -300,6 +290,42 @@ public class AiAssistantController {
         if (!authenticatedUserId.equals(plan.getUserId())) {
             aiDocumentAccessService.verifyUserAccess(plan.getUserId());
         }
+    }
+
+    private void validateSessionAccess(AiChatSession session) {
+        if (session == null) return;
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+
+        if (authenticatedUserId.equals(session.getUserId())) {
+            return;
+        }
+
+        try {
+            com.lumiedu.user.entity.User currentUser = aiDocumentAccessService.getCurrentAuthenticatedUser();
+            if (currentUser.getRole() == com.lumiedu.user.enums.UserRole.ADMIN) {
+                return;
+            }
+        } catch (Exception ignored) {}
+
+        List<Long> docIds = new ArrayList<>();
+        if (session.getDocuments() != null && !session.getDocuments().isEmpty()) {
+            for (com.lumiedu.document.entity.Document doc : session.getDocuments()) {
+                if (doc != null && doc.getId() != null) {
+                    docIds.add(doc.getId());
+                }
+            }
+        } else if (session.getDocumentId() != null) {
+            docIds.add(session.getDocumentId());
+        }
+
+        if (!docIds.isEmpty()) {
+            try {
+                aiDocumentAccessService.validateAndGetDocuments(docIds);
+                return; // User has valid access to session's documents
+            } catch (Exception ignored) {}
+        }
+
+        throw AiApiException.forbidden("AI_UNAUTHORIZED", "You are not authorized to access data belonging to another user.");
     }
 
     // --- Request DTOs ---
