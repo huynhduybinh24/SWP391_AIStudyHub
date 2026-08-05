@@ -21,7 +21,8 @@ import {
   FolderDown,
   HardDrive,
   TrendingUp,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -887,6 +888,7 @@ export function DocumentsPage() {
   const [newDocType, setNewDocType] = useState<'pdf' | 'word' | 'image' | 'text' | 'slides'>('pdf')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [hasUploadError, setHasUploadError] = useState(false)
+  const [uploadErrorMessage, setUploadErrorMessage] = useState<string | null>(null)
   const [docToDelete, setDocToDelete] = useState<DocumentItem | null>(null)
 
   // Reset newDocSubject when uploadMajor, uploadSemester, or dynamicSubjects changes
@@ -1059,6 +1061,7 @@ export function DocumentsPage() {
     }, 150)
 
     try {
+      setUploadErrorMessage(null)
       const finalTitle = newDocTitle || selectedFile.name.split('.')[0] || 'Untitled Study Material'
       const response = await documentService.uploadDocument(
         selectedFile,
@@ -1078,6 +1081,7 @@ export function DocumentsPage() {
         setIsUploading(false)
         setUploadProgress(0)
         setIsUploadModalOpen(false)
+        setUploadErrorMessage(null)
 
         // Log document upload
         logActivity({
@@ -1101,7 +1105,10 @@ export function DocumentsPage() {
           detailsTextVi: `Đã tạo thành công Tóm tắt AI cho tài liệu '${finalTitle}'.`
         })
 
-        showToast(language === 'en' ? 'Document uploaded successfully.' : 'Tải lên tài liệu thành công.')
+        const successMsg = language === 'en'
+          ? `🎉 Document "${finalTitle}" uploaded successfully!`
+          : `🎉 Tải lên tài liệu "${finalTitle}" thành công!`
+        toast.success(successMsg)
         
         const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
         setUploadedSubjectKey(finalSubjectKey)
@@ -1157,12 +1164,28 @@ export function DocumentsPage() {
           }
         }, 1000)
       }, 500)
-    } catch (error) {
+    } catch (error: any) {
       clearInterval(progressInterval)
       setIsUploading(false)
       setUploadProgress(0)
       console.error('Failed to upload document:', error)
-      showToast('Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!')
+
+      const rawMsg = error.response?.data?.message || error.message || ''
+      const isVi = language === 'vi'
+      let displayMsg = rawMsg
+
+      if (rawMsg.includes('[Trùng') || rawMsg.includes('trùng') || rawMsg.includes('duplicate') || rawMsg.includes('400')) {
+        if (!rawMsg.includes('[Trùng')) {
+          displayMsg = isVi 
+            ? `⚠️ [Trùng lặp dữ liệu]: Tệp tin hoặc Tiêu đề đã tồn tại trong môn học này trên My Documents!` 
+            : `⚠️ [Duplicate Data]: File or Title already exists in this subject in My Documents!`
+        }
+      } else if (!displayMsg) {
+        displayMsg = isVi ? 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!' : 'Failed to upload document. Please try again!'
+      }
+
+      setUploadErrorMessage(displayMsg)
+      toast.error(displayMsg)
     }
   }
 
@@ -1653,6 +1676,32 @@ export function DocumentsPage() {
             </div>
           ) : (
             <>
+              {uploadErrorMessage && (
+                <div className="p-4 bg-rose-50 dark:bg-rose-950/70 border-2 border-rose-500 rounded-2xl text-rose-900 dark:text-rose-200 text-xs flex items-start gap-3.5 shadow-lg animate-shake">
+                  <AlertTriangle className="w-6 h-6 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1.5 flex-1 text-left">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-sm text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
+                        ⚠️ {language === 'en' ? 'Duplicate Document / Title Warning' : 'Cảnh báo trùng lặp tệp / tiêu đề'}
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setUploadErrorMessage(null)}
+                        className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300 font-bold text-sm px-1 cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <p className="font-semibold text-rose-800 dark:text-rose-200 leading-relaxed text-xs">
+                      {uploadErrorMessage}
+                    </p>
+                    <div className="pt-2 text-[11px] text-rose-700 dark:text-rose-300 border-t border-rose-200/80 dark:border-rose-800/80 mt-1 flex items-center gap-1 font-medium">
+                      <span>💡 <strong>{language === 'en' ? 'How to fix:' : 'Hướng dẫn khắc phục:'}</strong> {language === 'en' ? 'Please change the Document Title below or rename your file on device before clicking Process with AI again.' : 'Vui lòng thay đổi Tiêu đề tài liệu ở ô bên dưới hoặc đổi tên file trên máy trước khi bấm Tải lên lại.'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-1.5 text-left">
                 <label htmlFor="doc-title-input" className="text-sm font-bold text-slate-700 dark:text-slate-300">
                   Document Title (Optional)

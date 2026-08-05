@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import {
   Send, Bot, User, Loader2, Copy, RefreshCw, Sparkles,
-  FileText, Lightbulb, AlertTriangle, Plus, PanelLeftOpen
+  FileText, Lightbulb, AlertTriangle, Plus, PanelLeftOpen, Flag
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { aiService, AiChatMessageResponse } from '@/services/aiService'
@@ -9,6 +9,7 @@ import { useAiWorkspaceStore } from '@/stores/aiWorkspaceStore'
 import { useToast } from '@/components/ui/Toast'
 import { mapAiErrorCodeToMessage } from '@/utils/aiErrorMapper'
 import { SourceCitationsView } from '../SourceCitationsView'
+import { ReportAiLogModal } from '../ReportAiLogModal'
 import { MarkdownRenderer } from '../../pages/ChatPage'
 
 // Helper to sanitize any raw XML thoughts or reasoning wrappers if returned by API
@@ -31,6 +32,8 @@ export function TabChatbot() {
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [sessionDocIdsSnapshot, setSessionDocIdsSnapshot] = useState<number[]>([])
+  const [reportingLogId, setReportingLogId] = useState<number | string | null>(null)
+  const [isReportOpen, setIsReportOpen] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -307,6 +310,19 @@ export function TabChatbot() {
                         <RefreshCw className="size-3.5" />
                         <span>Tạo lại</span>
                       </button>
+
+                      <button
+                        id={`report-msg-btn-${msg.id}`}
+                        onClick={() => {
+                          setReportingLogId(msg.executionLogId || msg.id)
+                          setIsReportOpen(true)
+                        }}
+                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Báo cáo câu trả lời AI cho Admin"
+                      >
+                        <Flag className="size-3.5" />
+                        <span>Báo cáo</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -353,6 +369,12 @@ export function TabChatbot() {
           </button>
         </form>
       </div>
+
+      <ReportAiLogModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        logId={reportingLogId || undefined}
+      />
     </div>
   )
 }

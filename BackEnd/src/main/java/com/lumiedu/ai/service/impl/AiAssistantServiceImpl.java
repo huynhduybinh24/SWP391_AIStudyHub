@@ -237,7 +237,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         // 1. Check billing limit
-        if (!aiLimitService.isWithinDailyLimit(session.getUserId(), "CHAT")) {
+        if (aiLimitService != null && !aiLimitService.isWithinDailyLimit(currentUserId, "CHAT")) {
             throw AiApiException.rateLimited("Bạn đã vượt quá hạn mức sử dụng AI Chat hàng ngày của gói dịch vụ hiện tại.");
         }
 
