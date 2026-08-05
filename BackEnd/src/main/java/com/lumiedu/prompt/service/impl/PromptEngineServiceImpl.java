@@ -35,6 +35,7 @@ public class PromptEngineServiceImpl implements PromptEngineService {
     private final PromptVersionRepository promptVersionRepository;
     private final AiExecutionLogService aiExecutionLogService;
     private final GeminiService geminiService;
+    private final com.lumiedu.user.repository.UserRepository userRepository;
 
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{([a-zA-Z0-9_]+)\\}\\}");
 
@@ -125,10 +126,44 @@ public class PromptEngineServiceImpl implements PromptEngineService {
                 ? "UNVERSIONED"
                 : knowledgeVersion.trim();
 
+        // Safe User Resolution:
+        // 1. Explicitly passed user object
+        User currentUser = user;
+
+        // 2. Resolve from SecurityContextHolder
+        if (currentUser == null) {
+            try {
+                org.springframework.security.core.Authentication auth =
+                        org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+                    if (auth.getPrincipal() instanceof User) {
+                        currentUser = (User) auth.getPrincipal();
+                    } else if (auth.getDetails() instanceof Long) {
+                        Long userId = (Long) auth.getDetails();
+                        currentUser = userRepository.findById(userId).orElse(null);
+                    } else if (auth.getName() != null) {
+                        currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("SecurityContext user resolution skipped: {}", e.getMessage());
+            }
+        }
+
+        // 3. Fallback for system background execution (e.g. background document chunking/moderation)
+        if (currentUser == null) {
+            currentUser = userRepository.findByEmail("admin@lumiedu.com")
+                    .orElseGet(() -> userRepository.findByRole(com.lumiedu.user.enums.UserRole.ADMIN).stream().findFirst().orElse(null));
+        }
+
+        if (currentUser == null) {
+            throw new IllegalStateException("Cannot persist AI execution log: No authenticated user or system admin available.");
+        }
+
         // 2. Create Processing Log BEFORE calling Gemini
         AiExecutionLog logEntry = aiExecutionLogService.createProcessingLog(
-                user,
-                studentCode,
+                currentUser,
+                studentCode != null ? studentCode : (currentUser.getEmail() != null ? currentUser.getEmail() : "user"),
                 featureType != null ? featureType : promptCode,
                 publishedVersion,
                 knowledgeBaseId,
@@ -195,17 +230,25 @@ public class PromptEngineServiceImpl implements PromptEngineService {
         } catch (Exception e) {
             log.error("AI Execution failed for promptCode={}, version={}: {}", promptCode, publishedVersion.getVersion(), e.getMessage(), e);
 
-            // 6. Update Log to FAILED
-            aiExecutionLogService.updateLogStatus(
-                    logId,
-                    ExecutionStatus.FAILED,
-                    e.getMessage(),
-                    0,
-                    null,
-                    null
-            );
+            String sanitizedErrorMsg = e.getMessage() != null
+                    ? e.getMessage().replaceAll("(?i)(key|token|secret|bearer)\\s*[:=]\\s*[^\\s]+", "$1=[REDACTED]").replaceAll("(?i)(bearer)\\s+[^\\s]+", "$1 [REDACTED]")
+                    : "AI Execution Failed";
 
-            throw new RuntimeException("AI Engine Execution Failed [" + promptCode + " - " + publishedVersion.getVersion() + "]: " + e.getMessage(), e);
+            // 6. Update Log to FAILED safely
+            try {
+                aiExecutionLogService.updateLogStatus(
+                        logId,
+                        ExecutionStatus.FAILED,
+                        sanitizedErrorMsg,
+                        0,
+                        null,
+                        null
+                );
+            } catch (Exception logEx) {
+                log.warn("Failed to update execution log error status: {}", logEx.getMessage());
+            }
+
+            throw new RuntimeException("AI Engine Execution Failed [" + promptCode + " - " + publishedVersion.getVersion() + "]: " + sanitizedErrorMsg, e);
         }
     }
 }
