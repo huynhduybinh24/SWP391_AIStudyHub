@@ -21,12 +21,23 @@ export interface AiChatSessionResponse {
   documents?: any[]
 }
 
+export interface SourceCitation {
+  documentId: number
+  documentTitle: string
+  chunkId?: number
+  chunkIndex?: number
+  pageNumber?: number
+  section?: string
+  excerpt?: string
+}
+
 export interface AiChatMessageResponse {
   id: number
   sessionId: number
   sender: 'USER' | 'AI'
   messageText: string
   thought?: string
+  sources?: SourceCitation[]
   createdAt: string
 }
 
@@ -65,10 +76,15 @@ export interface StudyPlanResponse {
 export interface StudioSummaryResponse {
   summaryText: string
   keyBullets: string[]
+  sources?: SourceCitation[]
+  cached?: boolean
+  generatedAt?: string
 }
 
 export interface StudioMindmapResponse {
   mermaidCode: string
+  sources?: SourceCitation[]
+  cached?: boolean
 }
 
 export interface InfographicItem {
@@ -82,11 +98,14 @@ export interface StudioInfographicResponse {
   title: string
   subtitle: string
   items: InfographicItem[]
+  sources?: SourceCitation[]
+  cached?: boolean
 }
 
 export interface StudioFlashcardResponse {
   front: string
   back: string
+  documentId?: number
 }
 
 export interface StudioQuizResponse {
@@ -94,11 +113,14 @@ export interface StudioQuizResponse {
   options: string[]
   answerIndex: number
   explanation: string
+  documentId?: number
 }
 
 export interface StudioFaqResponse {
   question: string
   answer: string
+  category?: string
+  documentId?: number
 }
 
 export const aiService = {
@@ -248,33 +270,33 @@ export const aiService = {
   },
 
   // AI Studio Features
-  async generateStudioSummary(documentIds: number[], language = 'vi'): Promise<StudioSummaryResponse> {
-    const response = await apiClient.post<ApiResponse<StudioSummaryResponse>>('/ai/studio/summary', { documentIds, language })
+  async generateStudioSummary(documentIds: number[], language = 'vi', forceRegenerate = false): Promise<StudioSummaryResponse> {
+    const response = await apiClient.post<ApiResponse<StudioSummaryResponse>>('/ai/studio/summary', { documentIds, language, forceRegenerate })
     return response.data.data
   },
 
-  async generateStudioMindmap(documentIds: number[], language = 'vi'): Promise<StudioMindmapResponse> {
-    const response = await apiClient.post<ApiResponse<StudioMindmapResponse>>('/ai/studio/mindmap', { documentIds, language })
+  async generateStudioMindmap(documentIds: number[], language = 'vi', forceRegenerate = false): Promise<StudioMindmapResponse> {
+    const response = await apiClient.post<ApiResponse<StudioMindmapResponse>>('/ai/studio/mindmap', { documentIds, language, forceRegenerate })
     return response.data.data
   },
 
-  async generateStudioInfographic(documentIds: number[], language = 'vi'): Promise<StudioInfographicResponse> {
-    const response = await apiClient.post<ApiResponse<StudioInfographicResponse>>('/ai/studio/infographic', { documentIds, language })
+  async generateStudioInfographic(documentIds: number[], language = 'vi', forceRegenerate = false): Promise<StudioInfographicResponse> {
+    const response = await apiClient.post<ApiResponse<StudioInfographicResponse>>('/ai/studio/infographic', { documentIds, language, forceRegenerate })
     return response.data.data
   },
 
-  async generateStudioFlashcards(documentIds: number[], language = 'vi'): Promise<StudioFlashcardResponse[]> {
-    const response = await apiClient.post<ApiResponse<StudioFlashcardResponse[]>>('/ai/studio/flashcards', { documentIds, language })
+  async generateStudioFlashcards(documentIds: number[], language = 'vi', forceRegenerate = false): Promise<StudioFlashcardResponse[]> {
+    const response = await apiClient.post<ApiResponse<StudioFlashcardResponse[]>>('/ai/studio/flashcards', { documentIds, language, forceRegenerate })
     return response.data.data
   },
 
-  async generateStudioQuiz(documentIds: number[], difficulty = 'medium', count = 5, language = 'vi'): Promise<StudioQuizResponse[]> {
-    const response = await apiClient.post<ApiResponse<StudioQuizResponse[]>>('/ai/studio/quiz', { documentIds, difficulty, count, language })
+  async generateStudioQuiz(documentIds: number[], difficulty = 'medium', count = 5, language = 'vi', forceRegenerate = false): Promise<StudioQuizResponse[]> {
+    const response = await apiClient.post<ApiResponse<StudioQuizResponse[]>>('/ai/studio/quiz', { documentIds, difficulty, count, language, forceRegenerate })
     return response.data.data
   },
 
-  async generateStudioFaq(documentIds: number[], language = 'vi'): Promise<StudioFaqResponse[]> {
-    const response = await apiClient.post<ApiResponse<StudioFaqResponse[]>>('/ai/studio/faq', { documentIds, language })
+  async generateStudioFaq(documentIds: number[], language = 'vi', forceRegenerate = false): Promise<StudioFaqResponse[]> {
+    const response = await apiClient.post<ApiResponse<StudioFaqResponse[]>>('/ai/studio/faq', { documentIds, language, forceRegenerate })
     return response.data.data
   }
 }

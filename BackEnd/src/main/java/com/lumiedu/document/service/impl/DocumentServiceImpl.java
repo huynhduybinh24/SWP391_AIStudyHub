@@ -131,7 +131,7 @@ public class DocumentServiceImpl implements DocumentService {
         String extension = getExtension(originalFileName).toLowerCase();
 
         if (FILE_TYPE_DOCUMENT.equals(fileType) && !"pdf".equalsIgnoreCase(extension)) {
-            throw new IllegalArgumentException("Hệ thống chỉ hỗ trợ tải lên tài liệu định dạng PDF (.pdf). Vui lòng chọn tệp PDF hợp lệ!");
+            throw new InvalidFileTypeException(extension, fileType);
         }
 
         if (!allowedExtensions.contains(extension)) {

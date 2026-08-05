@@ -2,7 +2,9 @@ package com.lumiedu.ai.controller;
 
 import com.lumiedu.ai.dto.QuizResponse;
 import com.lumiedu.ai.dto.QuizSubmitResponse;
+import com.lumiedu.ai.exception.AiApiException;
 import com.lumiedu.ai.service.AiAssistantService;
+import com.lumiedu.ai.service.AiDocumentAccessService;
 import com.lumiedu.document.dto.response.ApiResponse;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -18,29 +20,41 @@ import java.util.Map;
 public class QuizController {
 
     private final AiAssistantService aiAssistantService;
+    private final AiDocumentAccessService aiDocumentAccessService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<QuizResponse>> getQuiz(
             @RequestParam("documentId") Long documentId,
             @RequestParam(value = "userId", required = false) Long userId) {
-        QuizResponse quiz = aiAssistantService.getQuizResponse(documentId, userId);
+        aiDocumentAccessService.validateAndGetDocument(documentId);
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+        if (userId != null) {
+            aiDocumentAccessService.verifyUserAccess(userId);
+        }
+        QuizResponse quiz = aiAssistantService.getQuizResponse(documentId, authenticatedUserId);
         return ResponseEntity.ok(ApiResponse.ok("Quiz questions loaded successfully.", quiz));
     }
 
     @PostMapping("/regenerate")
     public ResponseEntity<ApiResponse<QuizResponse>> regenerateQuiz(@RequestBody RegenerateRequest request) {
+        if (request == null || request.getDocumentId() == null) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Document ID is required.");
+        }
+        aiDocumentAccessService.validateAndGetDocument(request.getDocumentId());
         QuizResponse quiz = aiAssistantService.regenerateQuizResponse(request.getDocumentId(), request.getPrompt());
         return ResponseEntity.ok(ApiResponse.ok("Quiz regenerated successfully.", quiz));
     }
 
     @PostMapping("/submit")
     public ResponseEntity<ApiResponse<QuizSubmitResponse>> submitQuiz(@RequestBody SubmitRequest request) {
-        Long userId = request.getUserId();
-        if (userId == null) {
-            userId = 1L;
+        if (request == null || request.getDocumentId() == null) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Document ID is required.");
         }
+        aiDocumentAccessService.validateAndGetDocument(request.getDocumentId());
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+
         QuizSubmitResponse result = aiAssistantService.submitQuiz(
-                userId,
+                authenticatedUserId,
                 request.getDocumentId(),
                 request.getAnswers()
         );
@@ -60,4 +74,3 @@ public class QuizController {
         private Map<Long, Integer> answers;
     }
 }
-// Force JDT LS revalidation

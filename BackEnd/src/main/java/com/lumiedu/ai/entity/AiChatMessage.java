@@ -1,8 +1,11 @@
 package com.lumiedu.ai.entity;
 
+import com.lumiedu.ai.dto.ChatSourceDto;
 import com.lumiedu.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.List;
 
 @Entity
 @Table(name = "ai_chat_messages")
@@ -31,4 +34,7 @@ public class AiChatMessage extends BaseEntity {
 
     @Column(name = "execution_log_id")
     private Long executionLogId;
+
+    @Transient
+    private List<ChatSourceDto> sources;
 }

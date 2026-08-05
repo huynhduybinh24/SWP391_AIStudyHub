@@ -4,12 +4,15 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.lumiedu.ai.dto.ChatSourceDto;
 import com.lumiedu.ai.dto.QuizResponse;
 import com.lumiedu.ai.dto.QuizQuestionResponse;
 import com.lumiedu.ai.dto.QuizSubmitResponse;
 import com.lumiedu.ai.entity.*;
+import com.lumiedu.ai.exception.AiApiException;
 import com.lumiedu.ai.repository.*;
 import com.lumiedu.ai.service.AiAssistantService;
+import com.lumiedu.ai.service.AiDocumentAccessService;
 import com.lumiedu.ai.service.AiLimitService;
 import com.lumiedu.ai.service.DocumentChunkingService;
 import com.lumiedu.ai.service.OpenAiService;
@@ -50,6 +53,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     private final GeminiService geminiService;
     private final com.lumiedu.prompt.service.PromptEngineService promptEngineService;
     private final com.lumiedu.user.repository.UserRepository userRepository;
+    private final AiDocumentAccessService aiDocumentAccessService;
 
     private final Gson gson = new Gson();
 
@@ -225,11 +229,16 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     @Override
     public AiChatMessage sendMessage(Long sessionId, String messageText, boolean thinkingMode) {
         AiChatSession session = aiChatSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Chat session not found."));
+                .orElseThrow(() -> AiApiException.notFound("AI_SESSION_NOT_FOUND", "Chat session not found."));
+
+        Long currentUserId = aiDocumentAccessService.getCurrentUserId();
+        if (session.getUserId() != null && !session.getUserId().equals(currentUserId)) {
+            aiDocumentAccessService.verifyUserAccess(session.getUserId());
+        }
 
         // 1. Check billing limit
         if (!aiLimitService.isWithinDailyLimit(session.getUserId(), "CHAT")) {
-            throw new RuntimeException("Bạn đã vượt quá hạn mức sử dụng AI Chat hàng ngày của gói dịch vụ hiện tại.");
+            throw AiApiException.rateLimited("Bạn đã vượt quá hạn mức sử dụng AI Chat hàng ngày của gói dịch vụ hiện tại.");
         }
 
         // Save User Message
@@ -240,11 +249,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 .build();
         aiChatMessageRepository.save(userMessage);
 
-        // 2. Ensure chunks exist, then perform RAG search
-        String ragContext = "";
-        StringBuilder docMetaContext = new StringBuilder();
+        // 2. Gather authorized documents attached to session
         List<Document> docObjects = new ArrayList<>();
-
         if (session.getDocuments() != null && !session.getDocuments().isEmpty()) {
             docObjects.addAll(session.getDocuments());
         } else if (session.getDocumentId() != null) {
@@ -254,86 +260,89 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             }
         }
 
-        List<Long> docIds = new ArrayList<>();
+        List<Long> authorizedDocIds = new ArrayList<>();
+        StringBuilder docMetaContext = new StringBuilder();
+
         for (Document doc : docObjects) {
-            docIds.add(doc.getId());
-            docMetaContext.append("Tài liệu: ").append(doc.getTitle());
-            if (doc.getSubject() != null) docMetaContext.append(" | Môn học: ").append(doc.getSubject());
-            if (doc.getDescription() != null && !doc.getDescription().isEmpty()) {
-                docMetaContext.append("\nMô tả: ").append(doc.getDescription());
-            }
-            docMetaContext.append("\n");
-            
-            // Auto-index chunks if not yet indexed
-            List<DocumentChunk> existingChunks = documentChunkRepository.findByDocumentId(doc.getId());
-            if (existingChunks.isEmpty()) {
-                try {
-                    documentChunkingService.chunkAndIndexDocument(doc.getId());
-                    System.out.println("Auto-indexed chunks for document: " + doc.getTitle());
-                } catch (Exception e) {
-                    System.err.println("Failed to auto-index chunks for doc " + doc.getId() + ": " + e.getMessage());
+            try {
+                Document validDoc = aiDocumentAccessService.validateAndGetDocument(doc.getId());
+                authorizedDocIds.add(validDoc.getId());
+                docMetaContext.append("Tài liệu: ").append(validDoc.getTitle());
+                if (validDoc.getSubject() != null) docMetaContext.append(" | Môn học: ").append(validDoc.getSubject());
+                if (validDoc.getDescription() != null && !validDoc.getDescription().isEmpty()) {
+                    docMetaContext.append("\nMô tả: ").append(validDoc.getDescription());
                 }
+                docMetaContext.append("\n");
+
+                // Auto-index chunks if not yet indexed
+                List<DocumentChunk> existingChunks = documentChunkRepository.findByDocumentId(validDoc.getId());
+                if (existingChunks.isEmpty()) {
+                    try {
+                        documentChunkingService.chunkAndIndexDocument(validDoc.getId());
+                    } catch (Exception e) {
+                        System.err.println("Failed to auto-index chunks for doc " + validDoc.getId() + ": " + e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore document if un-authorized or deleted
             }
         }
 
-        if (!docIds.isEmpty()) {
-            ragContext = performRagSearch(docIds, messageText);
-            if (!ragContext.isEmpty()) {
-                System.out.println("========== RETRIEVE CONTEXT ==========");
-                System.out.println("Question: " + messageText);
-                System.out.print(ragContext);
-                System.out.println("======================================");
+        RagSearchResult ragResult = new RagSearchResult("", Collections.emptyList());
+        if (!authorizedDocIds.isEmpty()) {
+            ragResult = performRagSearch(authorizedDocIds, messageText);
+        }
+
+        String aiResponseContent;
+        List<ChatSourceDto> sources = ragResult.getSources();
+        Long execLogId = null;
+
+        // If session has authorized documents attached, but RAG returned no matching chunks/context
+        if (!authorizedDocIds.isEmpty() && (ragResult.getContextText() == null || ragResult.getContextText().trim().isEmpty())) {
+            aiResponseContent = "Không tìm thấy thông tin phù hợp trong các tài liệu được đính kèm để trả lời câu hỏi của bạn. Vui lòng thử diễn đạt lại câu hỏi hoặc cung cấp thêm thông tin.";
+            sources = Collections.emptyList();
+        } else {
+            StringBuilder fullContextBuilder = new StringBuilder();
+            if (!docMetaContext.isEmpty()) {
+                fullContextBuilder.append("Attached Documents Metadata:\n").append(docMetaContext).append("\n\n");
             }
+            if (!ragResult.getContextText().isEmpty()) {
+                fullContextBuilder.append(ragResult.getContextText());
+            }
+
+            Map<String, Object> promptVars = new HashMap<>();
+            promptVars.put("context", fullContextBuilder.toString().isEmpty() ? "No additional document context available." : fullContextBuilder.toString());
+            promptVars.put("question", messageText);
+
+            com.lumiedu.user.entity.User currentUser = userRepository.findById(session.getUserId()).orElse(null);
+
+            com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
+                    "CHAT_QA",
+                    promptVars,
+                    currentUser,
+                    currentUser != null ? currentUser.getEmail() : null,
+                    "CHAT_QA",
+                    String.valueOf(session.getId()),
+                    "session-v" + session.getId(),
+                    false
+            );
+
+            aiResponseContent = execResult.getContent();
+            execLogId = execResult.getLogId();
         }
 
-        // 3. Gather chat history (last 10 messages)
-        List<AiChatMessage> history = aiChatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
-        if (history.size() > 10) {
-            history = history.subList(history.size() - 10, history.size());
-        }
-
-        // 4. Construct context and variables for CHAT_QA
-        StringBuilder fullContextBuilder = new StringBuilder();
-        if (!docMetaContext.isEmpty()) {
-            fullContextBuilder.append("Attached Documents Metadata:\n").append(docMetaContext).append("\n\n");
-        }
-        if (!ragContext.isEmpty()) {
-            fullContextBuilder.append("Extracted Document Content:\n").append(ragContext);
-        }
-
-        Map<String, Object> promptVars = new HashMap<>();
-        promptVars.put("context", fullContextBuilder.toString().isEmpty() ? "No additional document context available." : fullContextBuilder.toString());
-        promptVars.put("question", messageText);
-
-        com.lumiedu.user.entity.User currentUser = userRepository.findById(session.getUserId()).orElse(null);
-
-        com.lumiedu.prompt.service.PromptEngineService.PromptEngineExecutionResult execResult = promptEngineService.executePrompt(
-                "CHAT_QA",
-                promptVars,
-                currentUser,
-                currentUser != null ? currentUser.getEmail() : null,
-                "CHAT_QA",
-                String.valueOf(session.getId()),
-                "session-v" + session.getId(),
-                false
-        );
-
-        OpenAiResponse response = OpenAiResponse.builder()
-                .content(execResult.getContent())
-                .promptTokens(execResult.getPromptTokens())
-                .completionTokens(execResult.getCompletionTokens())
-                .build();
-
-        // 7. Save and return AI Message
+        // Save and return AI Message with structured sources
         AiChatMessage aiMessage = AiChatMessage.builder()
                 .sessionId(sessionId)
                 .sender("AI")
-                .messageText(response.getContent())
-                .thought(response.getThought())
-                .executionLogId(execResult != null ? execResult.getLogId() : null)
+                .messageText(aiResponseContent)
+                .executionLogId(execLogId)
+                .sources(sources)
                 .build();
 
-        return aiChatMessageRepository.save(aiMessage);
+        AiChatMessage savedMessage = aiChatMessageRepository.save(aiMessage);
+        savedMessage.setSources(sources);
+        return savedMessage;
     }
 
     @Override
@@ -829,22 +838,51 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
     }
 
-    private String performRagSearch(List<Long> documentIds, String query) {
+    private static class RagSearchResult {
+        private final String contextText;
+        private final List<ChatSourceDto> sources;
+
+        public RagSearchResult(String contextText, List<ChatSourceDto> sources) {
+            this.contextText = contextText;
+            this.sources = sources;
+        }
+
+        public String getContextText() { return contextText; }
+        public List<ChatSourceDto> getSources() { return sources; }
+    }
+
+    private RagSearchResult performRagSearch(List<Long> documentIds, String query) {
         if (documentIds == null || documentIds.isEmpty()) {
-            return "";
+            return new RagSearchResult("", Collections.emptyList());
         }
         
         List<DocumentChunk> chunks = new ArrayList<>();
+        Map<Long, Document> docMap = new HashMap<>();
+
         for (Long documentId : documentIds) {
-            chunks.addAll(documentChunkRepository.findByDocumentId(documentId));
+            if (documentId != null) {
+                try {
+                    Document doc = aiDocumentAccessService.validateAndGetDocument(documentId);
+                    if (doc != null && !Boolean.TRUE.equals(doc.getDeleted())) {
+                        docMap.put(doc.getId(), doc);
+                        chunks.addAll(documentChunkRepository.findByDocumentId(doc.getId()));
+                    }
+                } catch (Exception e) {
+                    // Exclude unauthorized documents
+                }
+            }
         }
 
         if (chunks.isEmpty()) {
-            return "";
+            return new RagSearchResult("", Collections.emptyList());
         }
 
-        // 1. Get embedding for the query
-        float[] queryVector = geminiService.getEmbedding(query);
+        float[] queryVector = null;
+        try {
+            queryVector = geminiService.getEmbedding(query);
+        } catch (Exception e) {
+            System.err.println("Failed to get query embedding: " + e.getMessage());
+        }
 
         class ChunkVectorScore implements Comparable<ChunkVectorScore> {
             DocumentChunk chunk;
@@ -862,47 +900,107 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
         
         List<ChunkVectorScore> scoredChunks = new ArrayList<>();
-        for (DocumentChunk chunk : chunks) {
-            if (chunk.getEmbedding() != null && !chunk.getEmbedding().isEmpty()) {
-                try {
-                    float[] chunkVector = gson.fromJson(chunk.getEmbedding(), float[].class);
-                    double similarity = cosineSimilarity(queryVector, chunkVector);
-                    scoredChunks.add(new ChunkVectorScore(chunk, similarity));
-                } catch (Exception e) {
-                    System.err.println("Failed to parse or compute similarity for chunk ID " + chunk.getId() + ": " + e.getMessage());
+        if (queryVector != null && queryVector.length > 0) {
+            for (DocumentChunk chunk : chunks) {
+                if (chunk.getEmbedding() != null && !chunk.getEmbedding().isEmpty()) {
+                    try {
+                        float[] chunkVector = gson.fromJson(chunk.getEmbedding(), float[].class);
+                        double similarity = cosineSimilarity(queryVector, chunkVector);
+                        // Reject dimension mismatch (-1.0) and below threshold (0.25)
+                        if (similarity >= 0.25) {
+                            scoredChunks.add(new ChunkVectorScore(chunk, similarity));
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Failed to parse or compute similarity for chunk ID " + chunk.getId() + ": " + e.getMessage());
+                    }
                 }
             }
         }
         
-        // 2. If no chunks have embeddings, fallback to keyword search
-        if (scoredChunks.isEmpty()) {
-            System.out.println("No chunk embeddings found. Falling back to keyword search.");
-            return performKeywordSearch(chunks, query);
+        List<DocumentChunk> candidateChunks = new ArrayList<>();
+        if (!scoredChunks.isEmpty()) {
+            Collections.sort(scoredChunks);
+            for (ChunkVectorScore cs : scoredChunks) {
+                candidateChunks.add(cs.chunk);
+            }
+        } else {
+            candidateChunks = performKeywordSearchChunks(chunks, query);
+        }
+
+        if (candidateChunks.isEmpty()) {
+            return new RagSearchResult("", Collections.emptyList());
         }
         
-        Collections.sort(scoredChunks);
         StringBuilder result = new StringBuilder();
+        result.append("<document_context>\n");
         Set<String> seenSnippets = new HashSet<>();
+        List<ChatSourceDto> sources = new ArrayList<>();
         int count = 0;
-        for (ChunkVectorScore item : scoredChunks) {
-            if (count >= 5) break;
-            DocumentChunk c = item.chunk;
+        int currentCharacterCount = 0;
+        final int MAX_CHAR_BUDGET = 6000;
+
+        for (DocumentChunk c : candidateChunks) {
+            if (count >= 5 || currentCharacterCount >= MAX_CHAR_BUDGET) break;
             String snippet = c.getContent() != null ? c.getContent().trim() : "";
-            if (!snippet.isEmpty() && seenSnippets.add(snippet)) {
-                result.append("--- Source Document ID: ").append(c.getDocumentId()).append(" ---\n");
-                result.append(snippet).append("\n\n");
+            String normalizedSnippet = snippet.toLowerCase().replaceAll("\\s+", " ");
+
+            if (!snippet.isEmpty() && seenSnippets.add(normalizedSnippet)) {
+                Document doc = docMap.get(c.getDocumentId());
+                if (doc == null) {
+                    doc = documentRepository.findById(c.getDocumentId()).orElse(null);
+                }
+                String docTitle = doc != null ? doc.getTitle() : ("Document " + c.getDocumentId());
+
+                String sanitizedContent = sanitizeChunkContent(snippet);
+                String chunkBlock = String.format("  <source id=\"%d\" title=\"%s\" chunk=\"%d\">\n    %s\n  </source>\n",
+                        c.getDocumentId(), sanitizeAttribute(docTitle), c.getChunkIndex() != null ? c.getChunkIndex() : 0, sanitizedContent);
+
+                if (currentCharacterCount + chunkBlock.length() > MAX_CHAR_BUDGET && count > 0) {
+                    break;
+                }
+
+                result.append(chunkBlock);
+                currentCharacterCount += chunkBlock.length();
                 count++;
+
+                String excerpt = snippet.length() > 150 ? snippet.substring(0, 150) + "..." : snippet;
+                sources.add(ChatSourceDto.builder()
+                        .documentId(c.getDocumentId())
+                        .documentTitle(docTitle)
+                        .chunkId(c.getId())
+                        .chunkIndex(c.getChunkIndex())
+                        .excerpt(excerpt)
+                        .build());
             }
         }
+        result.append("</document_context>");
         
-        return result.toString();
+        return new RagSearchResult(result.toString(), sources);
+    }
+
+    private String sanitizeChunkContent(String text) {
+        if (text == null) return "";
+        String cleaned = text.replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]", "");
+        return cleaned.replace("<document_context>", "&lt;document_context&gt;")
+                      .replace("</document_context>", "&lt;/document_context&gt;")
+                      .replace("</source>", "&lt;/source&gt;");
+    }
+
+    private String sanitizeAttribute(String attr) {
+        if (attr == null) return "";
+        return attr.replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private double cosineSimilarity(float[] vectorA, float[] vectorB) {
+        if (vectorA == null || vectorB == null) return 0.0;
+        if (vectorA.length != vectorB.length) {
+            System.err.println("Vector dimension mismatch: vectorA=" + vectorA.length + " vs vectorB=" + vectorB.length + ". Vector comparison rejected.");
+            return -1.0;
+        }
         double dotProduct = 0.0;
         double normA = 0.0;
         double normB = 0.0;
-        for (int i = 0; i < Math.min(vectorA.length, vectorB.length); i++) {
+        for (int i = 0; i < vectorA.length; i++) {
             dotProduct += vectorA[i] * vectorB[i];
             normA += Math.pow(vectorA[i], 2);
             normB += Math.pow(vectorB[i], 2);
@@ -913,7 +1011,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
-    private String performKeywordSearch(List<DocumentChunk> chunks, String query) {
+    private List<DocumentChunk> performKeywordSearchChunks(List<DocumentChunk> chunks, String query) {
         String[] keywords = query.toLowerCase().split("\\s+");
 
         class ChunkScore implements Comparable<ChunkScore> {
@@ -934,7 +1032,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         List<ChunkScore> scoredChunks = new ArrayList<>();
         for (DocumentChunk chunk : chunks) {
             int score = 0;
-            String contentLower = chunk.getContent().toLowerCase();
+            String contentLower = chunk.getContent() != null ? chunk.getContent().toLowerCase() : "";
             for (String kw : keywords) {
                 if (kw.length() > 2 && contentLower.contains(kw)) {
                     score++;
@@ -946,34 +1044,15 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
 
         if (scoredChunks.isEmpty()) {
-            StringBuilder fallback = new StringBuilder();
-            Map<Long, DocumentChunk> firstChunks = new HashMap<>();
-            for (DocumentChunk chunk : chunks) {
-                firstChunks.putIfAbsent(chunk.getDocumentId(), chunk);
-            }
-            for (DocumentChunk firstChunk : firstChunks.values()) {
-                fallback.append("--- Source Document ID: ").append(firstChunk.getDocumentId()).append(" ---\n");
-                fallback.append(firstChunk.getContent()).append("\n\n");
-            }
-            return fallback.toString();
+            return Collections.emptyList();
         }
         
         Collections.sort(scoredChunks);
-        StringBuilder result = new StringBuilder();
-        Set<String> seenSnippets = new HashSet<>();
-        int count = 0;
-        for (ChunkScore item : scoredChunks) {
-            if (count >= 5) break;
-            DocumentChunk c = item.chunk;
-            String snippet = c.getContent() != null ? c.getContent().trim() : "";
-            if (!snippet.isEmpty() && seenSnippets.add(snippet)) {
-                result.append("--- Source Document ID: ").append(c.getDocumentId()).append(" ---\n");
-                result.append(snippet).append("\n\n");
-                count++;
-            }
+        List<DocumentChunk> result = new ArrayList<>();
+        for (ChunkScore cs : scoredChunks) {
+            result.add(cs.chunk);
         }
-
-        return result.toString();
+        return result;
     }
 
     private List<DocumentChunk> getOrWaitForChunks(Long documentId) {

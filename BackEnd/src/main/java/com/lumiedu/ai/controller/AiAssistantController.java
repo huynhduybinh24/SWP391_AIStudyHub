@@ -1,15 +1,19 @@
 package com.lumiedu.ai.controller;
 
 import com.lumiedu.ai.entity.*;
+import com.lumiedu.ai.exception.AiApiException;
+import com.lumiedu.ai.repository.AiChatSessionRepository;
+import com.lumiedu.ai.repository.StudyPlanRepository;
 import com.lumiedu.ai.service.AiAssistantService;
+import com.lumiedu.ai.service.AiDocumentAccessService;
 import com.lumiedu.document.dto.response.ApiResponse;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/ai")
@@ -17,6 +21,9 @@ import java.util.ArrayList;
 public class AiAssistantController {
 
     private final AiAssistantService aiAssistantService;
+    private final AiDocumentAccessService aiDocumentAccessService;
+    private final AiChatSessionRepository aiChatSessionRepository;
+    private final StudyPlanRepository studyPlanRepository;
 
     // ------------------------------------------------------------------
     // POST /api/ai/summary/generate
@@ -25,6 +32,7 @@ public class AiAssistantController {
     public ResponseEntity<ApiResponse<AiSummary>> generateSummary(
             @RequestParam("documentId") Long documentId,
             @RequestParam(value = "language", defaultValue = "vi") String language) {
+        aiDocumentAccessService.validateAndGetDocument(documentId);
         AiSummary summary = aiAssistantService.generateSummary(documentId, language);
         return ResponseEntity.ok(ApiResponse.ok("Summary generated successfully.", summary));
     }
@@ -36,6 +44,7 @@ public class AiAssistantController {
     public ResponseEntity<ApiResponse<AiSummary>> getSummary(
             @PathVariable("documentId") Long documentId,
             @RequestParam(value = "language", defaultValue = "vi") String language) {
+        aiDocumentAccessService.validateAndGetDocument(documentId);
         AiSummary summary = aiAssistantService.getSummary(documentId, language);
         return ResponseEntity.ok(ApiResponse.ok("Summary retrieved successfully.", summary));
     }
@@ -45,14 +54,24 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @PostMapping("/chat/session")
     public ResponseEntity<ApiResponse<AiChatSession>> createOrGetChatSession(@RequestBody ChatSessionRequest request) {
-        List<Long> ids = request.getDocumentIds();
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+        if (request != null && request.getUserId() != null) {
+            aiDocumentAccessService.verifyUserAccess(request.getUserId());
+        }
+
+        List<Long> ids = request != null ? request.getDocumentIds() : null;
         if (ids == null || ids.isEmpty()) {
-            ids = new java.util.ArrayList<>();
-            if (request.getDocumentId() != null) {
+            ids = new ArrayList<>();
+            if (request != null && request.getDocumentId() != null) {
                 ids.add(request.getDocumentId());
             }
         }
-        AiChatSession session = aiAssistantService.createOrGetChatSession(ids, request.getUserId());
+
+        if (!ids.isEmpty()) {
+            aiDocumentAccessService.validateAndGetDocuments(ids);
+        }
+
+        AiChatSession session = aiAssistantService.createOrGetChatSession(ids, authenticatedUserId);
         return ResponseEntity.ok(ApiResponse.ok("Chat session retrieved or created successfully.", session));
     }
 
@@ -61,7 +80,9 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @GetMapping("/chat/sessions")
     public ResponseEntity<ApiResponse<List<AiChatSession>>> getUserSessions(@RequestParam("userId") Long userId) {
-        List<AiChatSession> sessions = aiAssistantService.getUserSessions(userId);
+        aiDocumentAccessService.verifyUserAccess(userId);
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+        List<AiChatSession> sessions = aiAssistantService.getUserSessions(authenticatedUserId);
         return ResponseEntity.ok(ApiResponse.ok("Chat sessions retrieved successfully.", sessions));
     }
 
@@ -70,6 +91,18 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @GetMapping("/chat/messages")
     public ResponseEntity<ApiResponse<List<AiChatMessage>>> getChatHistory(@RequestParam("sessionId") Long sessionId) {
+        if (sessionId == null || sessionId <= 0) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Session ID is required.");
+        }
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+
+        AiChatSession session = aiChatSessionRepository.findById(sessionId)
+                .orElseThrow(() -> AiApiException.notFound("AI_SESSION_FORBIDDEN", "Chat session not found or forbidden."));
+
+        if (!authenticatedUserId.equals(session.getUserId())) {
+            aiDocumentAccessService.verifyUserAccess(session.getUserId());
+        }
+
         List<AiChatMessage> history = aiAssistantService.getChatHistory(sessionId);
         return ResponseEntity.ok(ApiResponse.ok("Chat history retrieved successfully.", history));
     }
@@ -79,6 +112,21 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @PostMapping("/chat/send")
     public ResponseEntity<ApiResponse<AiChatMessage>> sendMessage(@RequestBody SendMessageRequest request) {
+        if (request == null || request.getSessionId() == null) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Session ID is required.");
+        }
+        if (request.getMessageText() == null || request.getMessageText().trim().isEmpty()) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Message text must not be empty.");
+        }
+
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+        AiChatSession session = aiChatSessionRepository.findById(request.getSessionId())
+                .orElseThrow(() -> AiApiException.notFound("AI_SESSION_FORBIDDEN", "Chat session not found or forbidden."));
+
+        if (!authenticatedUserId.equals(session.getUserId())) {
+            aiDocumentAccessService.verifyUserAccess(session.getUserId());
+        }
+
         boolean thinking = request.getThinkingMode() != null && request.getThinkingMode();
         AiChatMessage aiMessage = aiAssistantService.sendMessage(request.getSessionId(), request.getMessageText(), thinking);
         return ResponseEntity.ok(ApiResponse.ok("Message sent and reply received.", aiMessage));
@@ -89,6 +137,7 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @GetMapping("/flashcards/{documentId}")
     public ResponseEntity<ApiResponse<List<Flashcard>>> getFlashcards(@PathVariable("documentId") Long documentId) {
+        aiDocumentAccessService.validateAndGetDocument(documentId);
         List<Flashcard> flashcards = aiAssistantService.generateFlashcards(documentId);
         return ResponseEntity.ok(ApiResponse.ok("Flashcards retrieved successfully.", flashcards));
     }
@@ -103,6 +152,10 @@ public class AiAssistantController {
             @RequestParam(value = "count", defaultValue = "10") int count,
             @RequestParam(value = "prompt", defaultValue = "") String prompt
     ) {
+        aiDocumentAccessService.validateAndGetDocument(documentId);
+        if (count <= 0 || count > 50) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Quiz count must be between 1 and 50.");
+        }
         List<QuizQuestion> questions = aiAssistantService.generateQuiz(documentId, difficulty, count, prompt);
         return ResponseEntity.ok(ApiResponse.ok("Quiz generated successfully.", questions));
     }
@@ -112,6 +165,13 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @PostMapping("/quiz/modify")
     public ResponseEntity<ApiResponse<List<QuizQuestion>>> modifyQuiz(@RequestBody ModifyQuizRequest request) {
+        if (request == null || request.getDocumentId() == null) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Document ID is required.");
+        }
+        if (request.getPrompt() == null || request.getPrompt().trim().isEmpty()) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Prompt must not be empty.");
+        }
+        aiDocumentAccessService.validateAndGetDocument(request.getDocumentId());
         List<QuizQuestion> questions = aiAssistantService.modifyQuizWithAi(request.getDocumentId(), request.getPrompt());
         return ResponseEntity.ok(ApiResponse.ok("Quiz modified via AI prompt.", questions));
     }
@@ -121,6 +181,7 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @GetMapping("/quiz/{documentId}")
     public ResponseEntity<ApiResponse<List<QuizQuestion>>> getQuiz(@PathVariable("documentId") Long documentId) {
+        aiDocumentAccessService.validateAndGetDocument(documentId);
         List<QuizQuestion> questions = aiAssistantService.getQuiz(documentId);
         return ResponseEntity.ok(ApiResponse.ok("Quiz retrieved successfully.", questions));
     }
@@ -130,18 +191,32 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @PostMapping("/study-plans/generate")
     public ResponseEntity<ApiResponse<StudyPlan>> generateStudyPlan(@RequestBody StudyPlanRequest request) {
-        List<Long> docIds = request.getDocumentIds();
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+        if (request != null && request.getUserId() != null) {
+            aiDocumentAccessService.verifyUserAccess(request.getUserId());
+        }
+
+        List<Long> docIds = request != null ? request.getDocumentIds() : null;
         if (docIds == null || docIds.isEmpty()) {
             docIds = new ArrayList<>();
-            if (request.getDocumentId() != null) {
+            if (request != null && request.getDocumentId() != null) {
                 docIds.add(request.getDocumentId());
             }
         }
+
+        if (!docIds.isEmpty()) {
+            aiDocumentAccessService.validateAndGetDocuments(docIds);
+        }
+
+        int duration = (request != null && request.getDurationWeeks() != null) ? request.getDurationWeeks() : 4;
+        String subject = (request != null && request.getSubject() != null) ? request.getSubject() : "General Study";
+        String goal = (request != null && request.getGoal() != null) ? request.getGoal() : "Master Core Concepts";
+
         StudyPlan plan = aiAssistantService.generateStudyPlan(
-                request.getUserId(),
-                request.getSubject(),
-                request.getGoal(),
-                request.getDurationWeeks(),
+                authenticatedUserId,
+                subject,
+                goal,
+                duration,
                 docIds);
         return ResponseEntity.ok(ApiResponse.ok("Study plan generated successfully.", plan));
     }
@@ -151,7 +226,9 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @GetMapping("/study-plans/user/{userId}")
     public ResponseEntity<ApiResponse<List<StudyPlan>>> getStudyPlans(@PathVariable("userId") Long userId) {
-        List<StudyPlan> plans = aiAssistantService.getStudyPlans(userId);
+        aiDocumentAccessService.verifyUserAccess(userId);
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+        List<StudyPlan> plans = aiAssistantService.getStudyPlans(authenticatedUserId);
         return ResponseEntity.ok(ApiResponse.ok("Study plans retrieved successfully.", plans));
     }
 
@@ -160,6 +237,7 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @GetMapping("/study-plans/{planId}/completed-lessons")
     public ResponseEntity<ApiResponse<List<String>>> getCompletedLessons(@PathVariable("planId") Long planId) {
+        verifyStudyPlanOwnership(planId);
         List<String> completedIds = aiAssistantService.getCompletedLessons(planId);
         return ResponseEntity.ok(ApiResponse.ok("Completed lessons retrieved.", completedIds));
     }
@@ -171,7 +249,9 @@ public class AiAssistantController {
     public ResponseEntity<ApiResponse<List<String>>> updateCompletedLessons(
             @PathVariable("planId") Long planId,
             @RequestBody CompletedLessonsRequest request) {
-        List<String> updatedIds = aiAssistantService.updateCompletedLessons(planId, request.getLessonIds());
+        verifyStudyPlanOwnership(planId);
+        List<String> lessonIds = request != null ? request.getLessonIds() : new ArrayList<>();
+        List<String> updatedIds = aiAssistantService.updateCompletedLessons(planId, lessonIds);
         return ResponseEntity.ok(ApiResponse.ok("Completed lessons updated.", updatedIds));
     }
 
@@ -180,6 +260,10 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @PostMapping("/study-plans")
     public ResponseEntity<ApiResponse<StudyPlan>> createStudyPlan(@RequestBody StudyPlan studyPlan) {
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+        if (studyPlan != null) {
+            studyPlan.setUserId(authenticatedUserId);
+        }
         StudyPlan saved = aiAssistantService.saveStudyPlan(studyPlan);
         return ResponseEntity.ok(ApiResponse.ok("Study plan saved successfully.", saved));
     }
@@ -191,6 +275,7 @@ public class AiAssistantController {
     public ResponseEntity<ApiResponse<StudyPlan>> updateStudyPlan(
             @PathVariable("id") Long id,
             @RequestBody StudyPlan studyPlan) {
+        verifyStudyPlanOwnership(id);
         StudyPlan updated = aiAssistantService.updateStudyPlan(id, studyPlan);
         return ResponseEntity.ok(ApiResponse.ok("Study plan updated successfully.", updated));
     }
@@ -200,8 +285,21 @@ public class AiAssistantController {
     // ------------------------------------------------------------------
     @DeleteMapping("/study-plans/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteStudyPlan(@PathVariable("id") Long id) {
+        verifyStudyPlanOwnership(id);
         aiAssistantService.deleteStudyPlan(id);
         return ResponseEntity.ok(ApiResponse.ok("Study plan deleted successfully.", null));
+    }
+
+    private void verifyStudyPlanOwnership(Long planId) {
+        if (planId == null || planId <= 0) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Study plan ID is required.");
+        }
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+        StudyPlan plan = studyPlanRepository.findById(planId)
+                .orElseThrow(() -> AiApiException.notFound("AI_UNAUTHORIZED", "Study plan not found or access forbidden."));
+        if (!authenticatedUserId.equals(plan.getUserId())) {
+            aiDocumentAccessService.verifyUserAccess(plan.getUserId());
+        }
     }
 
     // --- Request DTOs ---
