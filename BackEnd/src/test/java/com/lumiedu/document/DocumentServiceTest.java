@@ -237,7 +237,6 @@ public class DocumentServiceTest {
                 .deleted(false)
                 .build();
 
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
         when(documentRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(existingDoc));
 
         documentService.deleteDocument(1L, 1L);
