@@ -273,7 +273,11 @@ export function UploadPage() {
       }, 1000);
     } catch (err: any) {
       console.error('Failed to upload document:', err);
-      const errorMsg = err.response?.data?.message || err.message || (language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!');
+      const rawMsg = err.response?.data?.message || err.body?.message || (typeof err.response?.data === 'string' ? err.response.data : '') || err.message || '';
+      let errorMsg = rawMsg;
+      if (!errorMsg || errorMsg.startsWith('Request failed') || errorMsg === 'AxiosError') {
+        errorMsg = (language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!');
+      }
       toast.error(errorMsg);
       setIsProcessing(false);
     }

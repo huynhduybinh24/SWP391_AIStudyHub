@@ -306,7 +306,11 @@ export function UploadSubjectDocumentPage() {
       }, 1000)
     } catch (error: any) {
       console.error('Failed to upload document:', error)
-      const errorMsg = error.response?.data?.message || error.message || (language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!')
+      const rawMsg = error.response?.data?.message || error.body?.message || (typeof error.response?.data === 'string' ? error.response.data : '') || error.message || ''
+      let errorMsg = rawMsg
+      if (!errorMsg || errorMsg.startsWith('Request failed') || errorMsg === 'AxiosError') {
+        errorMsg = (language === 'en' ? 'Failed to upload document. Please try again.' : 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!')
+      }
       showToast(errorMsg)
       setIsProcessing(false)
     }

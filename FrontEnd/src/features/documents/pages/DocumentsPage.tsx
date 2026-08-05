@@ -944,18 +944,14 @@ export function DocumentsPage() {
 
   // Helper trigger notification toast
   const showToast = (message: string) => {
-    setToastMessage(message)
-    setIsToastVisible(true)
-  }
-
-  useEffect(() => {
-    if (isToastVisible) {
-      const timer = setTimeout(() => {
-        setIsToastVisible(false)
-      }, 3500)
-      return () => clearTimeout(timer)
+    if (!message) return
+    const isError = message.includes('❌') || message.includes('⚠️') || message.toLowerCase().includes('lỗi') || message.toLowerCase().includes('error') || message.toLowerCase().includes('fail') || message.toLowerCase().includes('trùng')
+    if (isError) {
+      toast.error(message)
+    } else {
+      toast.success(message)
     }
-  }, [isToastVisible])
+  }
 
   // Mapping functions helper for backend DocumentResponse -> DocumentItem
   const mapMimeOrExtensionToType = (fileType: string, fileName: string): 'pdf' | 'word' | 'image' | 'text' | 'slides' => {
@@ -1029,10 +1025,13 @@ export function DocumentsPage() {
     }
   }, [userId, fetchDocuments])
 
-  const handleUploadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleUploadSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) e.preventDefault()
+    if (isUploading) return
     if (!selectedFile) {
-      showToast('Vui lòng chọn một tệp tin để tải lên!')
+      const msg = language === 'en' ? 'Please select a study document file to upload!' : 'Vui lòng chọn một tệp tin tài liệu học tập để tải lên!'
+      setUploadErrorMessage(msg)
+      toast.error(msg, 6000)
       return
     }
 
@@ -1108,7 +1107,7 @@ export function DocumentsPage() {
         const successMsg = language === 'en'
           ? `🎉 Document "${finalTitle}" uploaded successfully!`
           : `🎉 Tải lên tài liệu "${finalTitle}" thành công!`
-        toast.success(successMsg)
+        toast.success(successMsg, 6000)
         
         const finalSubjectKey = (response.subject || newDocSubject || 'general').toLowerCase()
         setUploadedSubjectKey(finalSubjectKey)
@@ -1170,22 +1169,16 @@ export function DocumentsPage() {
       setUploadProgress(0)
       console.error('Failed to upload document:', error)
 
-      const rawMsg = error.response?.data?.message || error.message || ''
+      const rawMsg = error.response?.data?.message || error.body?.message || (typeof error.response?.data === 'string' ? error.response.data : '') || error.message || ''
       const isVi = language === 'vi'
       let displayMsg = rawMsg
 
-      if (rawMsg.includes('[Trùng') || rawMsg.includes('trùng') || rawMsg.includes('duplicate') || rawMsg.includes('400')) {
-        if (!rawMsg.includes('[Trùng')) {
-          displayMsg = isVi 
-            ? `⚠️ [Trùng lặp dữ liệu]: Tệp tin hoặc Tiêu đề đã tồn tại trong môn học này trên My Documents!` 
-            : `⚠️ [Duplicate Data]: File or Title already exists in this subject in My Documents!`
-        }
-      } else if (!displayMsg) {
+      if (!displayMsg || displayMsg.startsWith('Request failed') || displayMsg === 'AxiosError') {
         displayMsg = isVi ? 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại!' : 'Failed to upload document. Please try again!'
       }
 
       setUploadErrorMessage(displayMsg)
-      toast.error(displayMsg)
+      toast.error(displayMsg, 8000)
     }
   }
 
@@ -1587,17 +1580,6 @@ export function DocumentsPage() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Toast popup */}
-      {isToastVisible && toastMessage && (
-        <div className="fixed bottom-24 right-6 z-50 flex items-center gap-3.5 rounded-2xl bg-slate-900 text-white px-5 py-4 shadow-2xl animate-slide-in-right max-w-sm">
-          <CheckCircle2 className="h-5 w-5 text-blue-400 shrink-0" />
-          <p className="text-sm font-medium leading-normal">{toastMessage}</p>
-          <button onClick={() => setIsToastVisible(false)} className="text-white/60 hover:text-white ml-2" aria-label="Close Notification">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
       {/* Renders MyDocumentsPage or SubjectCategoryPage */}
       <Outlet
         context={{
@@ -1677,27 +1659,15 @@ export function DocumentsPage() {
           ) : (
             <>
               {uploadErrorMessage && (
-                <div className="p-4 bg-rose-50 dark:bg-rose-950/70 border-2 border-rose-500 rounded-2xl text-rose-900 dark:text-rose-200 text-xs flex items-start gap-3.5 shadow-lg animate-shake">
-                  <AlertTriangle className="w-6 h-6 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                  <div className="space-y-1.5 flex-1 text-left">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-sm text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
-                        ⚠️ {language === 'en' ? 'Duplicate Document / Title Warning' : 'Cảnh báo trùng lặp tệp / tiêu đề'}
-                      </h4>
-                      <button
-                        type="button"
-                        onClick={() => setUploadErrorMessage(null)}
-                        className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300 font-bold text-sm px-1 cursor-pointer"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <p className="font-semibold text-rose-800 dark:text-rose-200 leading-relaxed text-xs">
-                      {uploadErrorMessage}
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-700/50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-sm font-medium flex items-start gap-3 animate-fade-in text-left">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-amber-900 dark:text-amber-100">{uploadErrorMessage}</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      {language === 'vi' 
+                        ? '👉 Vui lòng đổi "Document Title" ở khung phía dưới hoặc chọn tệp tin khác trước khi bấm Process lại!'
+                        : '👉 Please change the "Document Title" below or select another file before clicking Process again!'}
                     </p>
-                    <div className="pt-2 text-[11px] text-rose-700 dark:text-rose-300 border-t border-rose-200/80 dark:border-rose-800/80 mt-1 flex items-center gap-1 font-medium">
-                      <span>💡 <strong>{language === 'en' ? 'How to fix:' : 'Hướng dẫn khắc phục:'}</strong> {language === 'en' ? 'Please change the Document Title below or rename your file on device before clicking Process with AI again.' : 'Vui lòng thay đổi Tiêu đề tài liệu ở ô bên dưới hoặc đổi tên file trên máy trước khi bấm Tải lên lại.'}</span>
-                    </div>
                   </div>
                 </div>
               )}
@@ -1875,8 +1845,8 @@ export function DocumentsPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!selectedFile || hasUploadError}
-                  className="rounded-xl bg-[#2563eb] text-white font-semibold shadow-md shadow-blue-500/10 px-6"
+                  disabled={!selectedFile || hasUploadError || isUploading}
+                  className="rounded-xl bg-[#2563eb] text-white font-semibold shadow-md shadow-blue-500/10 px-6 cursor-pointer"
                 >
                   {t.upload.processAI}
                 </Button>
