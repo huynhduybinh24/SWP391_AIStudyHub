@@ -312,7 +312,7 @@ export default function SubjectCategoryPage() {
   }, [activeMenuId])
 
   // Filter documents strictly by active subject
-  const subjectDocuments = documents.filter((doc) => doc.subject === activeSubjectId)
+  const subjectDocuments = documents.filter((doc) => (doc.subject || '').toUpperCase() === activeSubjectId.toUpperCase())
 
   // Filter logic within active subject
   const filteredDocuments = subjectDocuments.filter((doc) => {
