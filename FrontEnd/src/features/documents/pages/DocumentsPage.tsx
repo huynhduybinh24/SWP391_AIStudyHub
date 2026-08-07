@@ -1190,9 +1190,21 @@ export function DocumentsPage() {
 
   // Delete Action
   const handleDeleteDocument = (id: string) => {
-    const targetDoc = documents.find(d => d.id === id)
+    const targetDoc = documents.find(d => String(d.id) === String(id))
     if (targetDoc) {
       setDocToDelete(targetDoc)
+    } else {
+      // Direct deletion fallback if document object isn't in state list
+      documentService.deleteDocument(id)
+        .then(() => {
+          setDocuments(prev => prev.filter(d => String(d.id) !== String(id)))
+          queryClient.invalidateQueries({ queryKey: ['userDocuments'] })
+          toast.success(language === 'vi' ? 'Đã xóa tài liệu thành công!' : 'Successfully deleted document!')
+        })
+        .catch((err) => {
+          console.error('Failed to delete document:', err)
+          toast.error(language === 'vi' ? 'Có lỗi xảy ra khi xóa tài liệu.' : 'Failed to delete document.')
+        })
     }
   }
 

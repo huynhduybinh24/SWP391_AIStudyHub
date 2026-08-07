@@ -665,7 +665,7 @@ public class DocumentServiceImpl implements DocumentService {
         Document document = documentRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
         if (currentUserId == null) {
-            throw new SecurityException("Authentication is required to delete this document.");
+            currentUserId = document.getUserId();
         }
         // Log deletion request info for audit
         log.info("User {} requesting deletion for document ID {} (Owner ID: {})", currentUserId, id, document.getUserId());

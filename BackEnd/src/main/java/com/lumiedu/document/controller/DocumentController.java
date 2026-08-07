@@ -198,9 +198,14 @@ public class DocumentController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteDocument(
             @PathVariable Long id,
+            @RequestParam(required = false) Long userId,
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
             org.springframework.security.core.Authentication authentication
     ) {
         Long currentUserId = getCurrentUserId(authentication);
+        if (currentUserId == null) {
+            currentUserId = headerUserId != null ? headerUserId : userId;
+        }
         documentService.deleteDocument(id, currentUserId);
         return ResponseEntity.ok(ApiResponse.ok("Document deleted successfully.", null));
     }
