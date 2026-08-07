@@ -209,8 +209,6 @@ export default function SubjectCategoryPage() {
         showToast(language === 'en' ? 'This document was rejected by admin.' : 'Tài liệu này đã bị quản trị viên từ chối.')
         return
       }
-      openPreviewModal(targetDoc)
-      return
     }
 
     setActiveMenuId(null)
@@ -620,7 +618,8 @@ export default function SubjectCategoryPage() {
                           onClick={(e) => {
                             e.stopPropagation()
                             setActiveMenuId(null)
-                            openChatDrawer(doc)
+                            if (openChatDrawer) openChatDrawer(doc)
+                            navigate(`/dashboard/chat?docId=${doc.id}`)
                           }}
                           className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-955/40 hover:text-indigo-600 cursor-pointer"
                         >
@@ -632,7 +631,11 @@ export default function SubjectCategoryPage() {
                           onClick={(e) => {
                             e.stopPropagation()
                             setActiveMenuId(null)
-                            openQuizModal(doc)
+                            if (openQuizModal) {
+                              openQuizModal(doc)
+                            } else {
+                              handleOpenDocument(doc)
+                            }
                           }}
                           className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-955/40 hover:text-purple-600 cursor-pointer"
                         >
@@ -687,7 +690,8 @@ export default function SubjectCategoryPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      openChatDrawer(doc)
+                      if (openChatDrawer) openChatDrawer(doc)
+                      navigate(`/dashboard/chat?docId=${doc.id}`)
                     }}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50/70 hover:bg-indigo-100 dark:bg-indigo-955/30 dark:hover:bg-indigo-955/60 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold transition-all cursor-pointer"
                   >
@@ -698,7 +702,11 @@ export default function SubjectCategoryPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      openQuizModal(doc)
+                      if (openQuizModal) {
+                        openQuizModal(doc)
+                      } else {
+                        handleOpenDocument(doc)
+                      }
                     }}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50/70 hover:bg-purple-100 dark:bg-purple-955/30 dark:hover:bg-purple-955/60 text-purple-600 dark:text-purple-400 text-[11px] font-bold transition-all cursor-pointer"
                   >
