@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   BookOpen, Search, CheckSquare, Square, Filter, FileText,
   Loader2, FolderOpen, History, MessageSquare, Plus, ChevronRight,
