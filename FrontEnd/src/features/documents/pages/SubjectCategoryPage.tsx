@@ -158,15 +158,6 @@ export default function SubjectCategoryPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
 
-  const handleOpenDocument = (docOrId: any) => {
-    const targetDoc = typeof docOrId === 'string'
-      ? (subjectDocuments.find(d => d.id === docOrId) || documents.find(d => d.id === docOrId))
-      : docOrId
-    if (targetDoc) {
-      openPreviewModal(targetDoc)
-    }
-  }
-
   const { user } = useAuthStore()
   const [stats, setStats] = useState<{
     studyProgress: number
@@ -203,18 +194,25 @@ export default function SubjectCategoryPage() {
     }
   }, [activeSubjectId, user, refreshDocuments])
 
-  const handleOpenDocument = (docId: string) => {
-    const doc = documents.find((d) => d.id === docId)
-    if (doc) {
-      if (doc.status === 'SCANNING' || doc.status === 'PENDING' || doc.status === 'QUEUED') {
+  const handleOpenDocument = (docOrId: any) => {
+    const targetDoc = typeof docOrId === 'string'
+      ? (subjectDocuments.find((d) => d.id === docOrId) || documents.find((d) => d.id === docOrId))
+      : docOrId
+    const docId = targetDoc ? targetDoc.id : String(docOrId)
+
+    if (targetDoc) {
+      if (targetDoc.status === 'SCANNING' || targetDoc.status === 'PENDING' || targetDoc.status === 'QUEUED') {
         showToast(language === 'en' ? 'AI is processing this document. Please wait.' : 'AI đang xử lý tài liệu này. Vui lòng đợi!')
         return
       }
-      if (doc.status === 'REJECTED') {
+      if (targetDoc.status === 'REJECTED') {
         showToast(language === 'en' ? 'This document was rejected by admin.' : 'Tài liệu này đã bị quản trị viên từ chối.')
         return
       }
+      openPreviewModal(targetDoc)
+      return
     }
+
     setActiveMenuId(null)
     if (typeof window !== 'undefined') {
       window.history.scrollRestoration = 'manual'
