@@ -8,6 +8,9 @@ const getProductionApiUrl = (): string => {
   if (customViteUrl && customViteUrl.trim()) {
     return customViteUrl.trim()
   }
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:8080/api'
+  }
   return 'https://lumiedu-backend.onrender.com/api'
 }
 
