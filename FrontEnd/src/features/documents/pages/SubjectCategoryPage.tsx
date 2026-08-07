@@ -231,6 +231,23 @@ export default function SubjectCategoryPage() {
     navigate(`/dashboard/documents/document/${docId}`)
   }
 
+  const handleDeleteDocument = (docId: string) => {
+    const targetDoc = subjectDocuments.find(d => String(d.id) === String(docId)) || documents.find(d => String(d.id) === String(docId))
+    const title = targetDoc?.title || targetDoc?.fileName || 'tài liệu này'
+
+    if (window.confirm(language === 'vi' ? `Bạn có chắc chắn muốn xóa "${title}"?` : `Are you sure you want to delete "${title}"?`)) {
+      documentService.deleteDocument(docId)
+        .then(() => {
+          showToast(language === 'vi' ? `Đã xóa tài liệu "${title}" thành công!` : `Successfully deleted document "${title}"!`)
+          if (refreshDocuments) refreshDocuments()
+        })
+        .catch((err) => {
+          console.error('Failed to delete document:', err)
+          showToast(language === 'vi' ? 'Có lỗi xảy ra khi xóa tài liệu.' : 'Failed to delete document.')
+        })
+    }
+  }
+
   const menuRef = useRef<HTMLDivElement>(null)
   const filterContainerRef = useRef<HTMLDivElement>(null)
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false)

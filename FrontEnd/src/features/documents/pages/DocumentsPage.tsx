@@ -1216,7 +1216,8 @@ export function DocumentsPage() {
     try {
       toast.info(language === 'vi' ? 'Đang xóa tài liệu trên hệ thống và Google Drive...' : 'Deleting document from system and Google Drive...')
       await documentService.deleteDocument(targetDoc.id)
-      setDocuments((prev) => prev.filter((d) => d.id !== targetDoc.id))
+      setDocuments((prev) => prev.filter((d) => String(d.id) !== String(targetDoc.id)))
+      await fetchDocuments()
       queryClient.invalidateQueries({ queryKey: ['userDocuments'] })
 
       const numId = Number(targetDoc.id)
