@@ -833,8 +833,10 @@ export function DocumentsPage() {
         data = await aiService.generateQuiz(targetDoc.id)
       }
       setQuizQuestionsForModal(data)
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
+      const errorMsg = e?.response?.data?.message || e?.message || 'Không thể tạo bài trắc nghiệm.'
+      showToast(errorMsg)
       setQuizQuestionsForModal([])
     } finally {
       setIsLoadingQuizForModal(false)
