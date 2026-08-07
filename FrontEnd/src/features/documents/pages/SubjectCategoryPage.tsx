@@ -158,6 +158,15 @@ export default function SubjectCategoryPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
 
+  const handleOpenDocument = (docOrId: any) => {
+    const targetDoc = typeof docOrId === 'string'
+      ? (subjectDocuments.find(d => d.id === docOrId) || documents.find(d => d.id === docOrId))
+      : docOrId
+    if (targetDoc) {
+      openPreviewModal(targetDoc)
+    }
+  }
+
   const { user } = useAuthStore()
   const [stats, setStats] = useState<{
     studyProgress: number
@@ -601,7 +610,7 @@ export default function SubjectCategoryPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleOpenDocument(doc.id)
+                            handleOpenDocument(doc)
                           }}
                           className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-955/40 hover:text-blue-600 cursor-pointer"
                         >
@@ -664,7 +673,7 @@ export default function SubjectCategoryPage() {
                 </div>
 
                 <div 
-                  onClick={() => handleOpenDocument(doc.id)}
+                  onClick={() => handleOpenDocument(doc)}
                   className="mt-3 cursor-pointer group-hover:text-blue-600 transition-colors"
                 >
                   <h4 className="line-clamp-1 text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" title={doc.title || doc.fileName}>
