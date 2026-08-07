@@ -12,8 +12,8 @@ import { mapAiErrorCodeToMessage } from '@/utils/aiErrorMapper'
 export function useUserDocuments(userId?: number) {
   return useQuery({
     queryKey: ['userDocuments', userId],
-    queryFn: () => documentService.getAllDocuments(userId),
-    enabled: true,
+    queryFn: () => (userId ? documentService.getAllDocuments(userId) : Promise.resolve([])),
+    enabled: !!userId,
     staleTime: 0,
     refetchOnWindowFocus: true,
   })

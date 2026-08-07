@@ -121,8 +121,8 @@ public class DocumentController {
             isAdmin = authentication.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ADMIN"));
         }
-        Long targetUserId = userId;
-        if (!isAdmin && targetUserId == null) {
+        Long targetUserId = currentUserId != null ? currentUserId : userId;
+        if (!isAdmin && currentUserId != null) {
             targetUserId = currentUserId;
         }
         List<DocumentResponse> documents = documentService.getAllDocuments(targetUserId);
