@@ -53,10 +53,10 @@ public class PromptSeedServiceImpl implements PromptSeedService {
         Optional<PromptVersion> publishedOpt = promptVersionRepository.findPublishedVersionByPromptId(lockedPrompt.getId());
         if (publishedOpt.isPresent()) {
             PromptVersion publishedVer = publishedOpt.get();
-            if (!publishedVer.getMarkdownContent().contains("CRITICAL RULES & EXAM POLICY")) {
+            if (!publishedVer.getMarkdownContent().contains("RELEVANCY CHECK")) {
                 publishedVer.setMarkdownContent(markdownContent.trim());
                 promptVersionRepository.saveAndFlush(publishedVer);
-                log.info("Updated published prompt version template with CRITICAL RULES: code={}, version={}", normalizedCode, publishedVer.getVersion());
+                log.info("Updated published prompt version template with RELEVANCY CHECK: code={}, version={}", normalizedCode, publishedVer.getVersion());
             } else {
                 log.info("Skip prompt seed: code={} already has updated published version {}", normalizedCode, publishedVer.getVersion());
             }

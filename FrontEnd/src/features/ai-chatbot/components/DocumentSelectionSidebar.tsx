@@ -203,16 +203,6 @@ export function DocumentSelectionSidebar({
             <BookOpen className="size-3 text-blue-600" />
             <span>Chọn 1 tài liệu để hỏi AI</span>
           </span>
-
-          {selectedDocumentIds.length > 0 && (
-            <button
-              id="clear-all-docs-btn"
-              onClick={clearSelectedDocuments}
-              className="text-[11px] text-rose-500 hover:underline font-semibold cursor-pointer"
-            >
-              Bỏ chọn
-            </button>
-          )}
         </div>
       </div>
 
