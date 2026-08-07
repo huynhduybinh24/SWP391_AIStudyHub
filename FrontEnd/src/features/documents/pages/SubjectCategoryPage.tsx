@@ -145,7 +145,7 @@ export default function SubjectCategoryPage() {
     openPreviewModal,
     openQuizModal,
     handleDownloadFile,
-    handleDeleteDocument,
+    handleDeleteDocument: contextDeleteDocument,
     renderFileIcon,
     renderStatusBadge,
     showToast,
