@@ -16,6 +16,7 @@ import { TabSummary } from '../components/tabs/TabSummary'
 import { TabFlashcards } from '../components/tabs/TabFlashcards'
 import { TabQuiz } from '../components/tabs/TabQuiz'
 import { TabFaq } from '../components/tabs/TabFaq'
+import { ConfirmModal } from '@/features/shared-files/components/ConfirmModal'
 import { cn } from '@/lib/utils'
 
 export function MarkdownRenderer({ content }: { content: string }) {
@@ -94,6 +95,18 @@ export function ChatPage() {
   const queryClient = useQueryClient()
   const toast = useToast()
 
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
+
   const {
     activeTab,
     setActiveTab,
@@ -145,36 +158,50 @@ export function ChatPage() {
     setActiveTab('chat')
   }
 
-  const handleDeleteSession = async (sessionId: number) => {
+  const handleDeleteSession = (sessionId: number) => {
     const targetSession = sessions.find((s) => s.id === sessionId)
     const title = targetSession?.title || `Hội thoại #${sessionId}`
-    if (window.confirm(`Bạn có chắc chắn muốn xóa cuộc trò chuyện "${title}"?`)) {
-      try {
-        await aiService.deleteChatSession(sessionId)
-        if (activeSessionId === sessionId) {
-          setActiveSessionId(null)
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa cuộc trò chuyện',
+      message: `Bạn có chắc chắn muốn xóa cuộc trò chuyện "${title}"? Thao tác này không thể hoàn tác.`,
+      onConfirm: async () => {
+        try {
+          await aiService.deleteChatSession(sessionId)
+          if (activeSessionId === sessionId) {
+            setActiveSessionId(null)
+          }
+          queryClient.invalidateQueries({ queryKey: ['userChatSessions', userId] })
+          toast.success(`Đã xóa cuộc trò chuyện "${title}"!`)
+        } catch (err) {
+          console.error('Failed to delete chat session:', err)
+          toast.error('Có lỗi xảy ra khi xóa cuộc trò chuyện.')
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }))
         }
-        queryClient.invalidateQueries({ queryKey: ['userChatSessions', userId] })
-        toast.success(`Đã xóa cuộc trò chuyện "${title}"!`)
-      } catch (err) {
-        console.error('Failed to delete chat session:', err)
-        toast.error('Có lỗi xảy ra khi xóa cuộc trò chuyện.')
-      }
-    }
+      },
+    })
   }
 
-  const handleClearAllSessions = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa TẤT CẢ lịch sử cuộc trò chuyện?')) {
-      try {
-        await aiService.clearAllChatSessions(userId)
-        setActiveSessionId(null)
-        queryClient.invalidateQueries({ queryKey: ['userChatSessions', userId] })
-        toast.success('Đã xóa tất cả lịch sử trò chuyện!')
-      } catch (err) {
-        console.error('Failed to clear chat sessions:', err)
-        toast.error('Có lỗi xảy ra khi xóa lịch sử trò chuyện.')
-      }
-    }
+  const handleClearAllSessions = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa tất cả lịch sử hội thoại',
+      message: 'Bạn có chắc chắn muốn xóa TẤT CẢ lịch sử cuộc trò chuyện? Thao tác này không thể hoàn tác.',
+      onConfirm: async () => {
+        try {
+          await aiService.clearAllChatSessions(userId)
+          setActiveSessionId(null)
+          queryClient.invalidateQueries({ queryKey: ['userChatSessions', userId] })
+          toast.success('Đã xóa tất cả lịch sử trò chuyện!')
+        } catch (err) {
+          console.error('Failed to clear chat sessions:', err)
+          toast.error('Có lỗi xảy ra khi xóa lịch sử trò chuyện.')
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }))
+        }
+      },
+    })
   }
 
   const handleTogglePinSession = async (sessionId: number) => {
@@ -258,6 +285,18 @@ export function ChatPage() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* ── Synchronized Confirmation Modal ── */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        type="danger"
+      />
     </div>
   )
 }
