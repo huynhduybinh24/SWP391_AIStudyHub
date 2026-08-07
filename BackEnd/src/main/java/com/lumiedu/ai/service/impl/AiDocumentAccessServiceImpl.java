@@ -119,26 +119,46 @@ public class AiDocumentAccessServiceImpl implements AiDocumentAccessService {
     }
 
     private boolean checkUserAccessToDocument(User currentUser, Document doc) {
+        if (currentUser == null || doc == null) {
+            return false;
+        }
+
         // 1. Document Owner
-        if (doc.getUserId() != null && currentUser != null && doc.getUserId().equals(currentUser.getId())) {
+        if (doc.getUserId() != null && doc.getUserId().equals(currentUser.getId())) {
             return true;
         }
 
         // 2. Administrator
-        if (currentUser != null && currentUser.getRole() == UserRole.ADMIN) {
+        if (currentUser.getRole() == UserRole.ADMIN) {
             return true;
         }
 
-        // 3. Approved / Available Study Material (Non-rejected & Non-deleted)
-        if (doc.getModerationStatus() == null || doc.getModerationStatus() == DocumentStatus.APPROVED) {
-            return true;
-        }
-
-        // 4. Explicit Document Share
-        if (currentUser != null && currentUser.getEmail() != null) {
+        // 3. Explicit Document Share
+        if (currentUser.getEmail() != null) {
             boolean isShared = documentShareRepository.findByDocumentIdAndShareeEmail(doc.getId(), currentUser.getEmail()).isPresent();
             if (isShared) {
                 return true;
+            }
+        }
+
+        // 4. Workspace Member Access
+        List<WorkspaceDocument> workspaceDocs = workspaceDocumentRepository.findByDocumentId(doc.getId());
+        if (workspaceDocs != null && !workspaceDocs.isEmpty()) {
+            for (WorkspaceDocument wsDoc : workspaceDocs) {
+                boolean isMemberByUserId = workspaceMemberRepository.findByWorkspaceIdAndUserId(wsDoc.getWorkspaceId(), currentUser.getId())
+                        .filter(m -> m.getStatus() == WorkspaceMemberStatus.ACCEPTED)
+                        .isPresent();
+                if (isMemberByUserId) {
+                    return true;
+                }
+                if (currentUser.getEmail() != null) {
+                    boolean isMemberByEmail = workspaceMemberRepository.findByWorkspaceIdAndEmail(wsDoc.getWorkspaceId(), currentUser.getEmail())
+                            .filter(m -> m.getStatus() == WorkspaceMemberStatus.ACCEPTED)
+                            .isPresent();
+                    if (isMemberByEmail) {
+                        return true;
+                    }
+                }
             }
         }
 

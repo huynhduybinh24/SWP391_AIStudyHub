@@ -546,14 +546,54 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional(readOnly = true)
     public List<DocumentResponse> getAllDocuments(Long userId) {
-        List<Document> allDocs = documentRepository.findAllByDeletedFalse();
+        if (userId == null) {
+            return new ArrayList<>();
+        }
+
+        String userEmail = "";
+        Optional<User> uOpt = userRepository.findById(userId);
+        if (uOpt.isPresent()) {
+            userEmail = uOpt.get().getEmail();
+        }
+
+        List<Document> ownedDocs = documentRepository.findAllByUserIdAndDeletedFalse(userId);
+
+        List<DocumentShare> shares = (userEmail != null && !userEmail.isBlank())
+                ? documentShareRepository.findByShareeEmail(userEmail.trim().toLowerCase())
+                : new ArrayList<>();
+
+        List<Long> sharedDocIds = shares.stream()
+                .map(DocumentShare::getDocumentId)
+                .collect(Collectors.toList());
+
+        List<Document> sharedDocs = new ArrayList<>();
+        if (!sharedDocIds.isEmpty()) {
+            sharedDocs = documentRepository.findAllById(sharedDocIds).stream()
+                    .filter(d -> d.getDeleted() != null && !d.getDeleted())
+                    .collect(Collectors.toList());
+        }
+
         Set<Long> seenIds = new HashSet<>();
         List<DocumentResponse> responseList = new ArrayList<>();
 
-        for (Document d : allDocs) {
+        for (Document d : ownedDocs) {
             if (isApprovedForUser(d) && seenIds.add(d.getId())) {
                 DocumentResponse res = mapToResponse(d);
-                res.setRole(d.getUserId() != null && d.getUserId().equals(userId) ? "owner" : "viewer");
+                res.setRole("owner");
+                responseList.add(res);
+            }
+        }
+
+        Map<Long, String> sharedRoleMap = shares.stream()
+                .collect(Collectors.toMap(
+                        DocumentShare::getDocumentId,
+                        DocumentShare::getRole,
+                        (r1, r2) -> r1));
+
+        for (Document d : sharedDocs) {
+            if (isApprovedForUser(d) && seenIds.add(d.getId())) {
+                DocumentResponse res = mapToResponse(d);
+                res.setRole(sharedRoleMap.getOrDefault(d.getId(), "viewer"));
                 responseList.add(res);
             }
         }
