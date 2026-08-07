@@ -116,7 +116,7 @@ export function DocumentSelectionSidebar({
               Tài liệu nguồn
             </h2>
             <span id="selected-doc-counter" className="text-[10px] text-slate-400 font-medium block mt-1">
-              {selectedDocumentIds.length} / {documents.length} đã chọn
+              {selectedDocumentIds.length > 0 ? '1 / 1 đã chọn' : '0 / 1 đã chọn'}
             </span>
           </div>
         </div>
@@ -199,19 +199,10 @@ export function DocumentSelectionSidebar({
 
         {/* Selection Bar Actions */}
         <div className="flex items-center justify-between text-xs pt-0.5">
-          <button
-            id="select-all-docs-btn"
-            onClick={handleToggleAll}
-            disabled={readyFilteredDocuments.length === 0}
-            className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-blue-600 font-medium cursor-pointer disabled:opacity-40"
-          >
-            {allFilteredSelected ? (
-              <CheckSquare className="size-3.5 text-blue-600" />
-            ) : (
-              <Square className="size-3.5 text-slate-400" />
-            )}
-            <span>{allFilteredSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}</span>
-          </button>
+          <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+            <BookOpen className="size-3 text-blue-600" />
+            <span>Chọn 1 tài liệu để hỏi AI</span>
+          </span>
 
           {selectedDocumentIds.length > 0 && (
             <button
@@ -219,7 +210,7 @@ export function DocumentSelectionSidebar({
               onClick={clearSelectedDocuments}
               className="text-[11px] text-rose-500 hover:underline font-semibold cursor-pointer"
             >
-              Xóa chọn
+              Bỏ chọn
             </button>
           )}
         </div>
@@ -270,12 +261,12 @@ export function DocumentSelectionSidebar({
                 )}
               >
                 <input
-                  type="checkbox"
-                  id={`doc-checkbox-${doc.id}`}
+                  type="radio"
+                  id={`doc-radio-${doc.id}`}
                   checked={isSelected}
                   disabled={!isReady}
                   onChange={() => {}}
-                  className="size-4 accent-blue-600 rounded mt-0.5 pointer-events-none"
+                  className="size-4 accent-blue-600 rounded-full mt-0.5 pointer-events-none"
                 />
 
                 <div className="flex-1 min-w-0">

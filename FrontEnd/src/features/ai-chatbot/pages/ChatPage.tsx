@@ -171,7 +171,7 @@ export function ChatPage() {
 
           <div className="hidden sm:flex items-center gap-2 pb-2">
             <span className="text-[11px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700">
-              {selectedDocumentIds.length} tài liệu được chọn
+              {selectedDocumentIds.length > 0 ? '1 tài liệu được chọn' : 'Chưa chọn tài liệu'}
             </span>
           </div>
         </div>

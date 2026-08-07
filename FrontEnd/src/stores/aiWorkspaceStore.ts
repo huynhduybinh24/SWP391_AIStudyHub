@@ -42,16 +42,14 @@ export const useAiWorkspaceStore = create<AiWorkspaceState>((set) => ({
   sourceFilter: 'ALL',
   isSidebarOpen: true,
 
-  setSelectedDocumentIds: (ids) => set({ selectedDocumentIds: normalizeDocIds(ids) }),
+  setSelectedDocumentIds: (ids) => set({ selectedDocumentIds: ids.length > 0 ? [normalizeDocIds(ids)[0]] : [] }),
   toggleDocumentId: (id) =>
     set((state) => {
-      const exists = state.selectedDocumentIds.includes(id)
-      const updated = exists
-        ? state.selectedDocumentIds.filter((docId) => docId !== id)
-        : [...state.selectedDocumentIds, id]
-      return { selectedDocumentIds: normalizeDocIds(updated) }
+      const targetId = Number(id)
+      const isAlreadySelected = state.selectedDocumentIds.length === 1 && state.selectedDocumentIds[0] === targetId
+      return { selectedDocumentIds: isAlreadySelected ? [] : [targetId] }
     }),
-  selectAllDocuments: (ids) => set({ selectedDocumentIds: normalizeDocIds(ids) }),
+  selectAllDocuments: (ids) => set({ selectedDocumentIds: ids.length > 0 ? [normalizeDocIds(ids)[0]] : [] }),
   clearSelectedDocuments: () => set({ selectedDocumentIds: [] }),
   setActiveTab: (activeTab) => set({ activeTab }),
   setActiveSessionId: (activeSessionId) => set({ activeSessionId }),
