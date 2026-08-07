@@ -168,7 +168,7 @@ public class DocumentServiceImpl implements DocumentService {
                 
                 // Still check if it's already in the target workspace
                 if (request.getWorkspaceId() != null && workspaceDocumentRepository.existsByWorkspaceIdAndDocumentId(request.getWorkspaceId(), existingUserDoc.getId())) {
-                    throw new IllegalArgumentException("Tài liệu này đã có trong Nhóm học tập này rồi!");
+                    throw new IllegalArgumentException("[Trùng tài liệu nhóm] Tài liệu này đã được tải lên/chia sẻ trong Nhóm học tập này trước đó. Vui lòng kiểm tra lại danh sách tài liệu nhóm!");
                 }
                 
                 return mapToResponse(existingUserDoc);

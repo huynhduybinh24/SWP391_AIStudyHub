@@ -403,8 +403,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         }
 
         boolean exists = workspaceDocumentRepository.existsByWorkspaceIdAndDocumentId(workspaceId, documentId);
+        if (!exists && document.getChecksum() != null) {
+            exists = workspaceDocumentRepository.existsByWorkspaceIdAndChecksum(workspaceId, document.getChecksum());
+        }
         if (exists) {
-            throw new IllegalArgumentException("Document is already shared in this workspace.");
+            throw new IllegalArgumentException("[Trùng tài liệu nhóm] Tài liệu này đã được tải lên/chia sẻ trong Nhóm học tập này trước đó. Vui lòng kiểm tra lại danh sách tài liệu nhóm!");
         }
 
         WorkspaceDocument workspaceDocument = WorkspaceDocument.builder()

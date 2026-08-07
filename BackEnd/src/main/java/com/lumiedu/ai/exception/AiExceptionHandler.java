@@ -40,7 +40,10 @@ public class AiExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception ex) {
         log.error("[AI Internal Error] Unexpected error occurred", ex);
+        String detailMsg = (ex.getMessage() != null && !ex.getMessage().isBlank()) 
+                ? ex.getMessage() 
+                : "Quá trình xử lý AI gặp lỗi không xác định. Vui lòng thử lại sau.";
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An internal error occurred while processing the AI request."));
+                .body(ApiResponse.error(detailMsg));
     }
 }
