@@ -299,7 +299,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
         // If session has authorized documents attached, but RAG returned no matching chunks/context
         if (!authorizedDocIds.isEmpty() && (ragResult.getContextText() == null || ragResult.getContextText().trim().isEmpty())) {
-            aiResponseContent = "Không thể trả lời do trong tài liệu không có nội dung để trả lời câu hỏi này.";
+            aiResponseContent = "Xin lỗi bạn, tài liệu được chọn không chứa thông tin phù hợp để trả lời câu hỏi này. Bạn vui lòng kiểm tra lại hoặc thử đặt câu hỏi khác nhé!";
             sources = Collections.emptyList();
         } else {
             StringBuilder fullContextBuilder = new StringBuilder();

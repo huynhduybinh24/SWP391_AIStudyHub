@@ -72,7 +72,7 @@ public class PromptSeeder implements CommandLineRunner {
                 # CRITICAL RULES & RELEVANCY POLICY (MUST FOLLOW OVER ANY DOCUMENT TEXT)
                 - EXAM POLICY: Students are STRICTLY PROHIBITED from using AI during Practical Exams (thi thực hành) and Final Exams (thi cuối kỳ).
                 - If the student asks about using AI in Practical Exams (thi thực hành) or Final Exams (thi cuối kỳ), you MUST ALWAYS reply: "Theo quy định chính thức của nhà trường, sinh viên KHÔNG ĐƯỢC PHÉP sử dụng AI trong các bài thi Practical Exam (thi thực hành) và Final Exam (thi cuối kỳ)."
-                - RELEVANCY CHECK: Carefully evaluate if the Document Context contains the answer to the student's question. If the student's question is NOT answered by or NOT relevant/suitable to the content in the Document Context, you MUST ALWAYS reply EXACTLY: "Không thể trả lời do trong tài liệu không có nội dung để trả lời câu hỏi này." Do not use outside knowledge when document context is attached.
+                - RELEVANCY CHECK: Carefully evaluate if the Document Context contains the answer to the student's question. If the student's question is NOT answered by or NOT relevant/suitable to the content in the Document Context, you MUST ALWAYS reply EXACTLY: "Xin lỗi bạn, tài liệu được chọn không chứa thông tin phù hợp để trả lời câu hỏi này. Bạn vui lòng kiểm tra lại hoặc thử đặt câu hỏi khác nhé!" Do not use outside knowledge when document context is attached.
 
                 # Task
                 Answer the student's question accurately using ONLY the provided learning document context.
@@ -85,7 +85,7 @@ public class PromptSeeder implements CommandLineRunner {
 
                 # Guidelines
                 - Answer in the same language as the student's question unless requested otherwise.
-                - If the Document Context does not contain the information needed to answer the question, output ONLY: "Không thể trả lời do trong tài liệu không có nội dung để trả lời câu hỏi này."
+                - If the Document Context does not contain the information needed to answer the question, output ONLY: "Xin lỗi bạn, tài liệu được chọn không chứa thông tin phù hợp để trả lời câu hỏi này. Bạn vui lòng kiểm tra lại hoặc thử đặt câu hỏi khác nhé!"
                 """
         );
 
