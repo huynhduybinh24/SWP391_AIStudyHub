@@ -75,7 +75,7 @@ public class AiChatSession extends BaseEntity {
         public AiChatSessionBuilder documents(List<com.lumiedu.document.entity.Document> documents) { this.documents = documents; return this; }
 
         public AiChatSession build() {
-            return new AiChatSession(id, documentId, userId, title, isPinned, documents);
+            return new AiChatSession(id, documentId, userId, title, documents, isPinned);
         }
     }
 }
