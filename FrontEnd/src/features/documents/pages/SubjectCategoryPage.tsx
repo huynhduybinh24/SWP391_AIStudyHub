@@ -201,7 +201,7 @@ export default function SubjectCategoryPage() {
     const docId = targetDoc ? targetDoc.id : String(docOrId)
 
     if (targetDoc) {
-      if (targetDoc.status === 'SCANNING' || targetDoc.status === 'PENDING' || targetDoc.status === 'QUEUED') {
+      if (targetDoc.status === 'SCANNING' || targetDoc.status === 'QUEUED') {
         showToast(language === 'en' ? 'AI is processing this document. Please wait.' : 'AI đang xử lý tài liệu này. Vui lòng đợi!')
         return
       }

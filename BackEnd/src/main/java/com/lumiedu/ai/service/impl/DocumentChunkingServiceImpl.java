@@ -133,6 +133,8 @@ public class DocumentChunkingServiceImpl implements DocumentChunkingService {
             }
 
             documentChunkRepository.saveAll(documentChunks);
+            doc.setStatus("ANALYZED");
+            documentRepository.save(doc);
             System.out.println("Successfully chunked, embedded, and saved " + documentChunks.size() + " chunks for document: " + doc.getTitle());
         } finally {
             processingDocs.remove(documentId);
