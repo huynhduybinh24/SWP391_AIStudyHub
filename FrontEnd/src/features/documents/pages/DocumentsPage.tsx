@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { useAiWorkspaceStore } from '@/stores/aiWorkspaceStore'
 import { logActivity } from '@/services/activityLogService'
 import { aiService } from '@/services/aiService'
 import type { AiSummaryResponse, FlashcardResponse, QuizQuestionResponse } from '@/services/aiService'
@@ -794,6 +796,8 @@ const QUIZ_QUESTIONS = [
 export function DocumentsPage() {
   const { language, t } = useTranslation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { selectedDocumentIds, setSelectedDocumentIds } = useAiWorkspaceStore()
   const user = useAuthStore(state => state.user)
   const userId = Number(user?.id || 1)
   const [documents, setDocuments] = useState<DocumentItem[]>([])
@@ -1201,6 +1205,12 @@ export function DocumentsPage() {
       toast.info(language === 'vi' ? 'Đang xóa tài liệu trên hệ thống và Google Drive...' : 'Deleting document from system and Google Drive...')
       await documentService.deleteDocument(targetDoc.id)
       setDocuments((prev) => prev.filter((d) => d.id !== targetDoc.id))
+      queryClient.invalidateQueries({ queryKey: ['userDocuments'] })
+
+      const numId = Number(targetDoc.id)
+      if (selectedDocumentIds.includes(numId)) {
+        setSelectedDocumentIds(selectedDocumentIds.filter((id) => id !== numId))
+      }
       
       // Log document deletion activity
       logActivity({

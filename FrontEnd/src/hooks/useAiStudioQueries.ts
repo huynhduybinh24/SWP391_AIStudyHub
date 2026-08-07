@@ -14,7 +14,8 @@ export function useUserDocuments(userId?: number) {
     queryKey: ['userDocuments', userId],
     queryFn: () => documentService.getAllDocuments(userId),
     enabled: true,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   })
 }
 

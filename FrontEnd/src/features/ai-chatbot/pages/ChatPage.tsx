@@ -106,12 +106,20 @@ export function ChatPage() {
 
   const { data: sessions = [] } = useUserChatSessions(userId)
 
-  // Auto-select first document if non selected initially
+  // Auto-select valid remaining document if previous selection was deleted or none selected
   useEffect(() => {
-    if (documents.length > 0 && selectedDocumentIds.length === 0) {
-      setSelectedDocumentIds([documents[0].id])
+    if (documents.length > 0) {
+      const validDocIds = documents.map((d) => Number(d.id))
+      const currentSelected = selectedDocumentIds[0]
+      if (currentSelected && !validDocIds.includes(currentSelected)) {
+        setSelectedDocumentIds([validDocIds[0]])
+      } else if (selectedDocumentIds.length === 0) {
+        setSelectedDocumentIds([validDocIds[0]])
+      }
+    } else if (selectedDocumentIds.length > 0) {
+      setSelectedDocumentIds([])
     }
-  }, [documents])
+  }, [documents, selectedDocumentIds, setSelectedDocumentIds])
 
   const tabs: { id: WorkspaceTab; label: string; icon: any }[] = [
     { id: 'chat', label: 'AI Chatbot', icon: MessageSquare },
