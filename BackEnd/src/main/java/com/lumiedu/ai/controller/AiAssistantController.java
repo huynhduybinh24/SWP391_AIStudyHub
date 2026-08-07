@@ -111,6 +111,22 @@ public class AiAssistantController {
     }
 
     // ------------------------------------------------------------------
+    // PUT /api/ai/chat/sessions/{sessionId}/pin
+    // ------------------------------------------------------------------
+    @PutMapping("/chat/sessions/{sessionId}/pin")
+    public ResponseEntity<ApiResponse<AiChatSession>> togglePinSession(@PathVariable("sessionId") Long sessionId) {
+        if (sessionId == null || sessionId <= 0) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Session ID is required.");
+        }
+        AiChatSession session = aiChatSessionRepository.findById(sessionId)
+                .orElseThrow(() -> AiApiException.notFound("AI_SESSION_FORBIDDEN", "Chat session not found or forbidden."));
+        validateSessionAccess(session);
+        session.setIsPinned(!Boolean.TRUE.equals(session.getIsPinned()));
+        AiChatSession saved = aiChatSessionRepository.save(session);
+        return ResponseEntity.ok(ApiResponse.ok("Session pin toggled successfully.", saved));
+    }
+
+    // ------------------------------------------------------------------
     // GET /api/ai/chat/messages
     // ------------------------------------------------------------------
     @GetMapping("/chat/messages")

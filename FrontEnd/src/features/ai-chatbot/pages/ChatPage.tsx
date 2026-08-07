@@ -177,6 +177,19 @@ export function ChatPage() {
     }
   }
 
+  const handleTogglePinSession = async (sessionId: number) => {
+    const targetSession = sessions.find((s) => s.id === sessionId)
+    const currentPinned = targetSession?.isPinned
+    try {
+      await aiService.togglePinChatSession(sessionId)
+      queryClient.invalidateQueries({ queryKey: ['userChatSessions', userId] })
+      toast.success(currentPinned ? 'Đã bỏ ghim cuộc trò chuyện!' : 'Đã ghim cuộc trò chuyện lên đầu!')
+    } catch (err) {
+      console.error('Failed to toggle pin session:', err)
+      toast.error('Có lỗi xảy ra khi tháo/ghim cuộc trò chuyện.')
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-110px)] overflow-hidden font-sans select-none relative bg-slate-100/40 dark:bg-slate-950">
       {/* ── Left Sidebar: Document Selection ── */}
@@ -187,6 +200,7 @@ export function ChatPage() {
         sessions={sessions}
         onSelectSession={handleSelectSession}
         onDeleteSession={handleDeleteSession}
+        onTogglePinSession={handleTogglePinSession}
         onClearAllSessions={handleClearAllSessions}
         onNewChat={handleNewChat}
       />

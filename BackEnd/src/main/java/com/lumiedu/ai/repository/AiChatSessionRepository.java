@@ -13,7 +13,7 @@ import java.util.List;
 @Repository
 public interface AiChatSessionRepository extends JpaRepository<AiChatSession, Long> {
     List<AiChatSession> findByDocumentIdAndUserId(Long documentId, Long userId);
-    // Find sessions by user ID ordered by updated_at descending
+    List<AiChatSession> findByUserIdOrderByIsPinnedDescUpdatedAtDesc(Long userId);
     List<AiChatSession> findByUserIdOrderByUpdatedAtDesc(Long userId);
 
     @Modifying

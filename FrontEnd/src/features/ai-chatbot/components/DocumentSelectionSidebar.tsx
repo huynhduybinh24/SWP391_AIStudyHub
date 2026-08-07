@@ -1,8 +1,7 @@
-import { useMemo } from 'react'
 import {
   BookOpen, Search, CheckSquare, Square, Filter, FileText,
   Loader2, FolderOpen, History, MessageSquare, Plus, ChevronRight,
-  ShieldCheck, AlertCircle, Trash2
+  ShieldCheck, AlertCircle, Trash2, Pin, PinOff
 } from 'lucide-react'
 import { DocumentResponse } from '@/services/documentService'
 import { useAiWorkspaceStore } from '@/stores/aiWorkspaceStore'
@@ -16,6 +15,7 @@ interface DocumentSelectionSidebarProps {
   sessions?: AiChatSessionResponse[]
   onSelectSession?: (sessionId: number) => void
   onDeleteSession?: (sessionId: number) => void
+  onTogglePinSession?: (sessionId: number) => void
   onClearAllSessions?: () => void
   onNewChat?: () => void
 }
@@ -27,6 +27,7 @@ export function DocumentSelectionSidebar({
   sessions = [],
   onSelectSession,
   onDeleteSession,
+  onTogglePinSession,
   onClearAllSessions,
   onNewChat,
 }: DocumentSelectionSidebarProps) {
@@ -320,11 +321,32 @@ export function DocumentSelectionSidebar({
                   'group flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-left transition-colors cursor-pointer w-full',
                   activeSessionId === sess.id
                     ? 'bg-blue-100/70 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                    : sess.isPinned
+                    ? 'bg-amber-50/70 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/40'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                 )}
               >
                 <MessageSquare className="size-3.5 shrink-0 text-slate-400" />
                 <span className="truncate flex-1">{sess.title || `Hội thoại #${sess.id}`}</span>
+                
+                {onTogglePinSession && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onTogglePinSession(sess.id)
+                    }}
+                    className={cn(
+                      'p-1 rounded-lg transition-colors cursor-pointer',
+                      sess.isPinned
+                        ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                        : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-955/40 opacity-0 group-hover:opacity-100'
+                    )}
+                    title={sess.isPinned ? 'Bỏ ghim cuộc trò chuyện' : 'Ghim cuộc trò chuyện'}
+                  >
+                    {sess.isPinned ? <Pin className="size-3.5 fill-amber-500 text-amber-600" /> : <Pin className="size-3.5" />}
+                  </button>
+                )}
+
                 {onDeleteSession && (
                   <button
                     onClick={(e) => {
@@ -337,7 +359,7 @@ export function DocumentSelectionSidebar({
                     <Trash2 className="size-3.5" />
                   </button>
                 )}
-                <ChevronRight className="size-3 text-slate-400 shrink-0 group-hover:hidden" />
+                {!sess.isPinned && <ChevronRight className="size-3 text-slate-400 shrink-0 group-hover:hidden" />}
               </div>
             ))}
           </div>

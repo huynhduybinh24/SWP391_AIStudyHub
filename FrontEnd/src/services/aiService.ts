@@ -16,6 +16,7 @@ export interface AiChatSessionResponse {
   documentId?: number
   userId: number
   title?: string
+  isPinned?: boolean
   createdAt: string
   updatedAt: string
   documents?: any[]
@@ -153,6 +154,11 @@ export const aiService = {
 
   async clearAllChatSessions(userId?: number): Promise<void> {
     await apiClient.delete(`/ai/chat/sessions/clear-all${userId ? `?userId=${userId}` : ''}`)
+  },
+
+  async togglePinChatSession(sessionId: number | string): Promise<AiChatSessionResponse> {
+    const response = await apiClient.put<ApiResponse<AiChatSessionResponse>>(`/ai/chat/sessions/${sessionId}/pin`)
+    return response.data.data
   },
 
   async getChatHistory(sessionId: number | string): Promise<AiChatMessageResponse[]> {

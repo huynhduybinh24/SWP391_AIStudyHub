@@ -218,7 +218,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     @Override
     public List<AiChatSession> getUserSessions(Long userId) {
-        return aiChatSessionRepository.findByUserIdOrderByUpdatedAtDesc(userId);
+        return aiChatSessionRepository.findByUserIdOrderByIsPinnedDescUpdatedAtDesc(userId);
     }
 
     @Override

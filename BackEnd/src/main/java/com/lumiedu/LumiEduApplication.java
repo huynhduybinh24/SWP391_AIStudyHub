@@ -33,6 +33,12 @@ public class LumiEduApplication {
             } catch (Exception e) {
                 System.err.println("Could not update documents subject column: " + e.getMessage());
             }
+            try {
+                jdbcTemplate.execute("ALTER TABLE ai_chat_sessions ADD COLUMN is_pinned BOOLEAN NOT NULL DEFAULT FALSE");
+                System.out.println("Successfully added is_pinned column to ai_chat_sessions table");
+            } catch (Exception e) {
+                // Column may already exist
+            }
         };
     }
 }
