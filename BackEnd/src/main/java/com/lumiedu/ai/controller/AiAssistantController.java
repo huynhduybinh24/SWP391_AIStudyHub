@@ -83,6 +83,34 @@ public class AiAssistantController {
     }
 
     // ------------------------------------------------------------------
+    // DELETE /api/ai/chat/sessions/{sessionId}
+    // ------------------------------------------------------------------
+    @DeleteMapping("/chat/sessions/{sessionId}")
+    public ResponseEntity<ApiResponse<Void>> deleteChatSession(@PathVariable("sessionId") Long sessionId) {
+        if (sessionId == null || sessionId <= 0) {
+            throw AiApiException.badRequest("AI_INVALID_REQUEST", "Session ID is required.");
+        }
+        AiChatSession session = aiChatSessionRepository.findById(sessionId)
+                .orElseThrow(() -> AiApiException.notFound("AI_SESSION_FORBIDDEN", "Chat session not found or forbidden."));
+        validateSessionAccess(session);
+        aiAssistantService.deleteChatSession(sessionId);
+        return ResponseEntity.ok(ApiResponse.ok("Chat session deleted successfully.", null));
+    }
+
+    // ------------------------------------------------------------------
+    // DELETE /api/ai/chat/sessions/clear-all
+    // ------------------------------------------------------------------
+    @DeleteMapping("/chat/sessions/clear-all")
+    public ResponseEntity<ApiResponse<Void>> clearAllChatSessions(@RequestParam(value = "userId", required = false) Long userId) {
+        Long authenticatedUserId = aiDocumentAccessService.getCurrentUserId();
+        Long targetUserId = authenticatedUserId != null ? authenticatedUserId : userId;
+        if (targetUserId != null) {
+            aiAssistantService.deleteAllUserChatSessions(targetUserId);
+        }
+        return ResponseEntity.ok(ApiResponse.ok("All chat sessions deleted successfully.", null));
+    }
+
+    // ------------------------------------------------------------------
     // GET /api/ai/chat/messages
     // ------------------------------------------------------------------
     @GetMapping("/chat/messages")

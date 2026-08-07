@@ -20,6 +20,10 @@ public interface AiAssistantService {
 
     AiChatMessage sendMessage(Long sessionId, String messageText, boolean thinkingMode);
 
+    void deleteChatSession(Long sessionId);
+
+    void deleteAllUserChatSessions(Long userId);
+
     List<Flashcard> generateFlashcards(Long documentId);
 
     // Old quiz methods adapted to new entity

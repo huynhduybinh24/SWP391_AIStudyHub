@@ -346,6 +346,24 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     @Override
+    @Transactional
+    public void deleteChatSession(Long sessionId) {
+        if (sessionId == null) return;
+        aiChatMessageRepository.deleteBySessionId(sessionId);
+        aiChatSessionRepository.deleteSessionDocumentsBySessionId(sessionId);
+        aiChatSessionRepository.deleteById(sessionId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllUserChatSessions(Long userId) {
+        if (userId == null) return;
+        aiChatMessageRepository.deleteByUserId(userId);
+        aiChatSessionRepository.deleteSessionDocumentsByUserId(userId);
+        aiChatSessionRepository.deleteByUserId(userId);
+    }
+
+    @Override
     public List<Flashcard> generateFlashcards(Long documentId) {
         flashcardRepository.deleteByDocumentId(documentId);
 

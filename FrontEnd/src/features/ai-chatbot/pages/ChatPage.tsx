@@ -7,6 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/authStore'
 import { useAiWorkspaceStore, WorkspaceTab } from '@/stores/aiWorkspaceStore'
 import { useUserDocuments, useUserChatSessions } from '@/hooks/useAiStudioQueries'
+import { useQueryClient } from '@tanstack/react-query'
+import { aiService } from '@/services/aiService'
+import { useToast } from '@/components/ui/Toast'
 import { DocumentSelectionSidebar } from '../components/DocumentSelectionSidebar'
 import { TabChatbot } from '../components/tabs/TabChatbot'
 import { TabSummary } from '../components/tabs/TabSummary'
@@ -88,10 +91,13 @@ function renderTextWithBold(text: string) {
 export function ChatPage() {
   const user = useAuthStore((state) => state.user)
   const userId = Number(user?.id || 0)
+  const queryClient = useQueryClient()
+  const toast = useToast()
 
   const {
     activeTab,
     setActiveTab,
+    activeSessionId,
     setActiveSessionId,
     selectedDocumentIds,
     setSelectedDocumentIds,
@@ -139,6 +145,38 @@ export function ChatPage() {
     setActiveTab('chat')
   }
 
+  const handleDeleteSession = async (sessionId: number) => {
+    const targetSession = sessions.find((s) => s.id === sessionId)
+    const title = targetSession?.title || `Hội thoại #${sessionId}`
+    if (window.confirm(`Bạn có chắc chắn muốn xóa cuộc trò chuyện "${title}"?`)) {
+      try {
+        await aiService.deleteChatSession(sessionId)
+        if (activeSessionId === sessionId) {
+          setActiveSessionId(null)
+        }
+        queryClient.invalidateQueries({ queryKey: ['userChatSessions', userId] })
+        toast.success(`Đã xóa cuộc trò chuyện "${title}"!`)
+      } catch (err) {
+        console.error('Failed to delete chat session:', err)
+        toast.error('Có lỗi xảy ra khi xóa cuộc trò chuyện.')
+      }
+    }
+  }
+
+  const handleClearAllSessions = async () => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa TẤT CẢ lịch sử cuộc trò chuyện?')) {
+      try {
+        await aiService.clearAllChatSessions(userId)
+        setActiveSessionId(null)
+        queryClient.invalidateQueries({ queryKey: ['userChatSessions', userId] })
+        toast.success('Đã xóa tất cả lịch sử trò chuyện!')
+      } catch (err) {
+        console.error('Failed to clear chat sessions:', err)
+        toast.error('Có lỗi xảy ra khi xóa lịch sử trò chuyện.')
+      }
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-110px)] overflow-hidden font-sans select-none relative bg-slate-100/40 dark:bg-slate-950">
       {/* ── Left Sidebar: Document Selection ── */}
@@ -148,6 +186,8 @@ export function ChatPage() {
         isErrorDocs={isErrorDocs}
         sessions={sessions}
         onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
+        onClearAllSessions={handleClearAllSessions}
         onNewChat={handleNewChat}
       />
 

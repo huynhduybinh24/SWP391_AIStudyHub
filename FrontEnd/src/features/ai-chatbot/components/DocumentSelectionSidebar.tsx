@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import {
   BookOpen, Search, CheckSquare, Square, Filter, FileText,
   Loader2, FolderOpen, History, MessageSquare, Plus, ChevronRight,
-  ShieldCheck, AlertCircle
+  ShieldCheck, AlertCircle, Trash2
 } from 'lucide-react'
 import { DocumentResponse } from '@/services/documentService'
 import { useAiWorkspaceStore } from '@/stores/aiWorkspaceStore'
@@ -15,6 +15,8 @@ interface DocumentSelectionSidebarProps {
   isErrorDocs: boolean
   sessions?: AiChatSessionResponse[]
   onSelectSession?: (sessionId: number) => void
+  onDeleteSession?: (sessionId: number) => void
+  onClearAllSessions?: () => void
   onNewChat?: () => void
 }
 
@@ -24,6 +26,8 @@ export function DocumentSelectionSidebar({
   isErrorDocs,
   sessions = [],
   onSelectSession,
+  onDeleteSession,
+  onClearAllSessions,
   onNewChat,
 }: DocumentSelectionSidebarProps) {
   const {
@@ -292,17 +296,28 @@ export function DocumentSelectionSidebar({
       {/* ── Sessions Drawer Section ── */}
       {sessions && sessions.length > 0 && (
         <div className="border-t border-slate-200/80 dark:border-slate-800 p-3 bg-slate-50/40 dark:bg-slate-900/50 max-h-48 overflow-y-auto">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 mb-2">
-            <History className="size-3.5 text-slate-400" />
-            <span>Lịch sử hội thoại ({sessions.length})</span>
+          <div className="flex items-center justify-between gap-1.5 text-xs font-bold text-slate-500 mb-2">
+            <div className="flex items-center gap-1.5">
+              <History className="size-3.5 text-slate-400" />
+              <span>Lịch sử hội thoại ({sessions.length})</span>
+            </div>
+            {onClearAllSessions && (
+              <button
+                onClick={onClearAllSessions}
+                className="text-[11px] text-rose-500 hover:text-rose-600 hover:underline font-semibold cursor-pointer transition-colors"
+                title="Xóa tất cả lịch sử hội thoại"
+              >
+                Xóa tất cả
+              </button>
+            )}
           </div>
           <div className="flex flex-col gap-1">
             {sessions.map((sess) => (
-              <button
+              <div
                 key={sess.id}
                 onClick={() => onSelectSession?.(sess.id)}
                 className={cn(
-                  'flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-left transition-colors cursor-pointer w-full truncate',
+                  'group flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-left transition-colors cursor-pointer w-full',
                   activeSessionId === sess.id
                     ? 'bg-blue-100/70 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -310,8 +325,20 @@ export function DocumentSelectionSidebar({
               >
                 <MessageSquare className="size-3.5 shrink-0 text-slate-400" />
                 <span className="truncate flex-1">{sess.title || `Hội thoại #${sess.id}`}</span>
-                <ChevronRight className="size-3 text-slate-400 shrink-0" />
-              </button>
+                {onDeleteSession && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDeleteSession(sess.id)
+                    }}
+                    className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/40 rounded-lg transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                    title="Xóa cuộc trò chuyện này"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                )}
+                <ChevronRight className="size-3 text-slate-400 shrink-0 group-hover:hidden" />
+              </div>
             ))}
           </div>
         </div>

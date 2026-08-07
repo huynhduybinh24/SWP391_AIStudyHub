@@ -147,6 +147,14 @@ export const aiService = {
     return response.data.data
   },
 
+  async deleteChatSession(sessionId: number | string): Promise<void> {
+    await apiClient.delete(`/ai/chat/sessions/${sessionId}`)
+  },
+
+  async clearAllChatSessions(userId?: number): Promise<void> {
+    await apiClient.delete(`/ai/chat/sessions/clear-all${userId ? `?userId=${userId}` : ''}`)
+  },
+
   async getChatHistory(sessionId: number | string): Promise<AiChatMessageResponse[]> {
     const response = await apiClient.get<ApiResponse<AiChatMessageResponse[]>>(`/ai/chat/messages?sessionId=${sessionId}`)
     return response.data.data

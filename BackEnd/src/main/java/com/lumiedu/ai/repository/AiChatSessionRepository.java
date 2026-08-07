@@ -23,6 +23,20 @@ public interface AiChatSessionRepository extends JpaRepository<AiChatSession, Lo
 
     @Modifying
     @Transactional
+    @Query(value = "DELETE FROM ai_chat_session_documents WHERE session_id = :sessionId", nativeQuery = true)
+    void deleteSessionDocumentsBySessionId(@Param("sessionId") Long sessionId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM ai_chat_session_documents WHERE session_id IN (SELECT id FROM ai_chat_sessions WHERE user_id = :userId)", nativeQuery = true)
+    void deleteSessionDocumentsByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Transactional
+    void deleteByUserId(Long userId);
+
+    @Modifying
+    @Transactional
     @Query("UPDATE AiChatSession s SET s.documentId = null WHERE s.documentId = :documentId")
     void nullifyDocumentId(@Param("documentId") Long documentId);
 }
